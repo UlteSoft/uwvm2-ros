@@ -49,7 +49,7 @@ match little-endian units. UTF-8, ASCII, BCD and LEB retain their encoding order
 
 Integer and floating-point decoding uses integer bit patterns, including for
 Float80/128. Every binary floating-point row is accompanied by an unconditional
-**hex** row containing its exact Hexfloat value. A rounded decimal presentation has an **≈** prefix; hovering the
+**hex** row containing its exact Hexfloat value. Numeric values, including Bin and floating-point values, use the numeric colour. A rounded decimal presentation keeps its plain numeric text; hovering the
 value provides its exact hexadecimal significand and binary exponent. Decimal
 BID/DPD values retain the exact coefficient and decimal exponent in the value's
 hover. Signed zero, infinity and quiet/signaling NaNs are distinguished. NaN

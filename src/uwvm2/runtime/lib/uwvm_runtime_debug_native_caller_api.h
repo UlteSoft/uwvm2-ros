@@ -563,16 +563,16 @@
         // All allocation and reference retention precede admission/domain guards.
         // This cursor is exclusively a sealed event provider, NEVER registered
         // as a logical capture and NEVER publishes the old copied parent locals.
-        auto parent{::std::shared_ptr<llvm_jit_debug_native_activation_cursor>{new llvm_jit_debug_native_activation_cursor}};
+        auto parent{::std::shared_ptr<llvm_jit_debug_native_activation_cursor>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_native_activation_cursor>([&](llvm_jit_debug_native_activation_cursor* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_native_activation_cursor; }))}};
         parent->capture_ = capture; parent->ledger_ = cursor_->ledger_; parent->session_ = session_;
         parent->thread_ = cursor_->thread_; parent->begin_ = evidence_.parent_begin;
         parent->end_ = evidence_.parent_end; parent->first_ = evidence_.return_pc;
         parent->count_ = cursor_->count_ - 1u;
-        parent->expected_storage_ = ::std::make_unique<details::debug_activation::frame[]>(parent->count_);
+        parent->expected_storage_ = ::uwvm2::utils::container::make_unique<details::debug_activation::frame[]>(parent->count_);
         for(::std::size_t n{}; n != parent->count_; ++n) { parent->expected_storage_[n] = cursor_->expected_[n]; }
         parent->expected_ = parent->expected_storage_.get(); parent->return_origin_ = cursor_;
         parent->return_stack_ = evidence_.target_sp;
-        auto window{::std::make_shared<llvm_jit_debug_native_return_event::resume_window>()};
+        auto window{::uwvm2::utils::container::make_shared<llvm_jit_debug_native_return_event::resume_window>()};
         llvm_jit_debug_native_return_event event{window,owner,parent,parent->provider(parent),session_,evidence_.thread,
             evidence_.origin_pc,evidence_.origin_sp,evidence_.origin_begin,evidence_.origin_end,evidence_.revision,
             evidence_.return_pc,evidence_.target_sp,evidence_.parent_begin,evidence_.parent_end,
@@ -661,7 +661,7 @@
     namespace
     {
         ::std::mutex g_debug_native_return_continuation_mutex{};
-        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_return_continuation const>> g_debug_native_return_continuations{};
+        ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_debug_native_return_continuation const>> g_debug_native_return_continuations{};
         [[nodiscard, maybe_unused]] llvm_jit_debug_native_return_continuation_owner canonical_native_return_continuation(
             llvm_jit_debug_native_return_continuation_owner const& supplied) noexcept
         {
@@ -689,7 +689,7 @@
         {
             auto const cursor{canonical_native_activation_cursor(supplied)};
             if(!cursor || session == nullptr) { return {}; }
-            auto candidate{::std::shared_ptr<llvm_jit_debug_native_return_continuation>{new llvm_jit_debug_native_return_continuation}};
+            auto candidate{::std::shared_ptr<llvm_jit_debug_native_return_continuation>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_native_return_continuation>([&](llvm_jit_debug_native_return_continuation* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_native_return_continuation; }))}};
             llvm_jit_debug_native_backtrace_view trace{};
             if(!llvm_jit_debug_native_return_continuation::observe(cursor, session, trace, 1u, ::std::addressof(candidate->evidence_)) ||
                trace.count != 1u || !trace.frames[0u].valid) { return {}; }
@@ -834,7 +834,7 @@
            origin->code_owners_.size() != origin->snapshot_.frames.size()) { return false; }
         // Allocate and copy immutable identities before domain/publication/native
         // admission. Only the exact final kernel witness may publish this copy.
-        auto candidate{::std::shared_ptr<llvm_jit_debug_activation_capture>{new llvm_jit_debug_activation_capture}};
+        auto candidate{::std::shared_ptr<llvm_jit_debug_activation_capture>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_activation_capture>([&](llvm_jit_debug_activation_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_activation_capture; }))}};
         candidate->control_ = origin->control_; candidate->ticket_ = origin->ticket_;
         candidate->native_return_anchor_ = origin->native_return_anchor_ ? origin->native_return_anchor_ : origin;
         candidate->snapshot_ = origin->snapshot_; candidate->snapshot_.frames.pop_back();

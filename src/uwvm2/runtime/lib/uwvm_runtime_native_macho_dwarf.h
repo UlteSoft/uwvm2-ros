@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <algorithm>
 #include <vector>
 #include <cstdint>
@@ -43,7 +44,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
             auto copy{::llvm::WritableMemoryBuffer::getNewMemBuffer(bytes->size())};
             if(!copy) { return false; }
             ::std::copy(bytes->begin(), bytes->end(), copy->getBufferStart());
-            ::std::vector<::std::pair<::std::uint64_t, unsigned>> patched{};
+            ::uwvm2::utils::container::std_vector<::std::pair<::std::uint64_t, unsigned>> patched{};
             for(auto const& relocation : section.relocations())
             {
                 auto const raw{relocation.getRawDataRefImpl()};

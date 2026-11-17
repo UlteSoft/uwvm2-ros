@@ -132,8 +132,8 @@ function uwvm_ros_selected_vendor_registry()
                 if not is_plat("linux") then
                     error("--" .. name .. " requires the Linux ROS Gateway boundary")
                 end
-                if not (get_config("import-ros1") or get_config("import-ros2")) or
-                    (ros2_only and not get_config("import-ros2")) then
+                if not (get_config("import-u2rosv1-ros1") or get_config("import-u2rosv1-ros2")) or
+                    (ros2_only and not get_config("import-u2rosv1-ros2")) then
                     error("--" .. name .. " requires an explicitly selected ROS backend")
                 end
                 if not supplied or header:find('[;\"\r\n]') or not os.isfile(header) then
@@ -152,8 +152,8 @@ function uwvm_ros_selected_vendor_registry()
     select_entries("ros-vendor-", ros_vendor_options, false)
     select_entries("ros-platform-", ros_platform_options, true)
     if get_config("ros-platform-jetson") then
-        if not is_plat("linux") or not is_arch("arm64", "aarch64") or not get_config("import-ros2") then
-            error("--ros-platform-jetson requires Linux ARM64 and explicit --import-ros2=y")
+        if not is_plat("linux") or not is_arch("arm64", "aarch64") or not get_config("import-u2rosv1-ros2") then
+            error("--ros-platform-jetson requires Linux ARM64 and explicit --import-u2rosv1-ros2=y")
         end
     end
     local original = get_config("ros-custom-registry-header")

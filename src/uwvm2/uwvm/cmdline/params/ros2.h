@@ -3,6 +3,12 @@
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
+/** @file @brief Deprecated legacy ROS VM command-line settings.
+ * @deprecated Use the classified ROSv2 interfaces and --ros-scene-* deployment.
+ * @details This label changes help text only; parsing, defaults and authority
+ * checks retain their existing contracts. Migration requires an implemented
+ * ROSv2 provider and an explicit new grant; no legacy rights are inherited.
+ */
 #pragma once
 #if defined(UWVM_IMPORT_ROS2)
 #ifndef UWVM_MODULE
@@ -16,271 +22,271 @@ namespace uwvm2::uwvm::cmdline::params
 {
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_interface{
         .name{u8"--ros2-group-interface"},
-        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
         .usage{u8"<group:str> <namespace.function:str> <hidden|deny|allow>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::interface, 3>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_interface{
         .name{u8"--ros2-single-interface"},
-        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
         .usage{u8"<single:str> <namespace.function:str> <hidden|deny|allow>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::interface, 3>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_interface{
         .name{u8"--ros2-global-interface"},
-        .describe{u8"Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden."},
         .usage{u8"<namespace.function:str> <hidden|deny|allow>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::interface, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_add_module{
         .name{u8"--ros2-global-add-module"},
-        .describe{u8"Bind one exact loaded module to the explicit Global contract; unbound modules stay denied."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Bind one exact loaded module to the explicit Global contract; unbound modules stay denied."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::bind_global_module, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_buffer_audit_limits{
         .name{u8"--ros2-buffer-audit-limits"},
-        .describe{u8"Explicit process-global journal quotas/profile reference; must immediately precede --ros2-buffer-audit. Grants no authority."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit process-global journal quotas/profile reference; must immediately precede --ros2-buffer-audit. Grants no authority."},
         .usage{u8"<payload-bytes:uint> <operation-records:uint> <total-file-bytes:uint> <record-bytes:uint> <profile:sha256>"},
         .handle{::std::addressof(details::ros_details::buffer_audit_limits_configuration)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_buffer_audit{
         .name{u8"--ros2-buffer-audit"},
-        .describe{u8"Opt-in bounded host-only buffer/checked-IPC journal; consumes an empty private write-only regular-file FD. Grants no authority."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Opt-in bounded host-only buffer/checked-IPC journal; consumes an empty private write-only regular-file FD. Grants no authority."},
         .usage{u8"<run-id:ASCII> <inherited-fd:uint>"},
         .handle{::std::addressof(details::ros_details::buffer_audit_configuration)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot_audit_run{
         .name{u8"--portable-robot-audit-run"},
-        .describe{u8"Opt in to at most eight process-correlated portable operation records on stdout; disabled by default."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Opt in to at most eight process-correlated portable operation records on stdout; disabled by default."},
         .usage{u8"<run-id:32-lowercase-hex>"},
         .handle{::std::addressof(details::ros_details::portable_audit_configuration)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot_audit_inputs{
         .name{u8"--portable-robot-audit-inputs"},
-        .describe{u8"Observe exact bounded adapter/policy bytes for denied-call diagnostics; grants no permission and does not enable audit."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Observe exact bounded adapter/policy bytes for denied-call diagnostics; grants no permission and does not enable audit."},
         .usage{u8"<adapter:absolute-path> <policy:absolute-path>"},
         .handle{::std::addressof(details::ros_details::portable_audit_inputs_configuration)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter portable_robot{
         .name{u8"--portable-robot"},
-        .describe{u8"Select exact portable adapter bytes and a separate explicit deployment grant."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Select exact portable adapter bytes and a separate explicit deployment grant."},
         .usage{u8"<adapter:absolute-path> <adapter:sha256> <policy:absolute-path> <policy:sha256>"},
         .handle{::std::addressof(details::ros_details::portable_configuration)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_enable{
         .name{u8"--ros2-global-enable"},
-        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8""},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::enable, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_disable{
         .name{u8"--ros2-global-disable"},
-        .describe{u8"Explicit ROS2 global disable configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global disable configuration; default deny."},
         .usage{u8""},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::disable, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_gateway_socket{
         .name{u8"--ros2-global-gateway-socket"},
-        .describe{u8"Explicit ROS2 global gateway-socket configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global gateway-socket configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_gateway_uid{
         .name{u8"--ros2-global-gateway-uid"},
-        .describe{u8"Explicit ROS2 global gateway-uid configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global gateway-uid configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_audit_deny_max_rate_hz{
         .name{u8"--ros2-global-audit-deny-max-rate-hz"},
-        .describe{u8"Explicit ROS2 global audit-deny-max-rate-hz configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global audit-deny-max-rate-hz configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_audit_deny_burst{
         .name{u8"--ros2-global-audit-deny-burst"},
-        .describe{u8"Explicit ROS2 global audit-deny-burst configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global audit-deny-burst configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_audit_deny_max_records{
         .name{u8"--ros2-global-audit-deny-max-records"},
-        .describe{u8"Explicit ROS2 global audit-deny-max-records configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global audit-deny-max-records configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_audit_deny_max_bytes{
         .name{u8"--ros2-global-audit-deny-max-bytes"},
-        .describe{u8"Explicit ROS2 global audit-deny-max-bytes configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global audit-deny-max-bytes configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_node_name{
         .name{u8"--ros2-global-node-name"},
-        .describe{u8"Explicit ROS2 global node-name configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global node-name configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_namespace{
         .name{u8"--ros2-global-namespace"},
-        .describe{u8"Explicit ROS2 global namespace configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global namespace configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_domain_id{
         .name{u8"--ros2-global-domain-id"},
-        .describe{u8"Explicit ROS2 global domain-id configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global domain-id configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_rmw_implementation{
         .name{u8"--ros2-global-rmw-implementation"},
-        .describe{u8"Explicit ROS2 global rmw-implementation configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global rmw-implementation configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_security_mode{
         .name{u8"--ros2-global-security-mode"},
-        .describe{u8"Explicit ROS2 global security-mode configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global security-mode configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_keystore{
         .name{u8"--ros2-global-keystore"},
-        .describe{u8"Explicit ROS2 global keystore configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global keystore configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_enclave{
         .name{u8"--ros2-global-enclave"},
-        .describe{u8"Explicit ROS2 global enclave configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global enclave configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_connect_timeout_ms{
         .name{u8"--ros2-global-connect-timeout-ms"},
-        .describe{u8"Explicit ROS2 global connect-timeout-ms configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global connect-timeout-ms configuration; default deny."},
         .usage{u8"<value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_connect_timeout_ms_on_proc_exit{
         .name{u8"--ros2-global-connect-timeout-ms.on-proc-exit"},
-        .describe{u8"ROS2 global connection wait on proc_exit: cancel (default) or wait."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] ROS2 global connection wait on proc_exit: cancel (default) or wait."},
         .usage{u8"<cancel|wait>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::connection, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_grant{
         .name{u8"--ros2-global-grant"},
-        .describe{u8"Explicit ROS2 global grant configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global grant configuration; default deny."},
         .usage{u8"<capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::grant, 5>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_global_set{
         .name{u8"--ros2-global-set"},
-        .describe{u8"Explicit ROS2 global set configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 global set configuration; default deny."},
         .usage{u8"<capability:str> <key:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::set, 3>)},
         .pretreatment{::std::addressof(details::ros_details::set_pretreatment<details::ros_details::model::scope::global>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_create{
         .name{u8"--ros2-single-create"},
-        .describe{u8"Explicit ROS2 single create configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single create configuration; default deny."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::create, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_enable{
         .name{u8"--ros2-single-enable"},
-        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_disable{
         .name{u8"--ros2-single-disable"},
-        .describe{u8"Explicit ROS2 single disable configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single disable configuration; default deny."},
         .usage{u8"<module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::disable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_gateway_socket{
         .name{u8"--ros2-single-gateway-socket"},
-        .describe{u8"Explicit ROS2 single gateway-socket configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single gateway-socket configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_gateway_uid{
         .name{u8"--ros2-single-gateway-uid"},
-        .describe{u8"Explicit ROS2 single gateway-uid configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single gateway-uid configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_audit_deny_max_rate_hz{
         .name{u8"--ros2-single-audit-deny-max-rate-hz"},
-        .describe{u8"Explicit ROS2 single audit-deny-max-rate-hz configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single audit-deny-max-rate-hz configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_audit_deny_burst{
         .name{u8"--ros2-single-audit-deny-burst"},
-        .describe{u8"Explicit ROS2 single audit-deny-burst configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single audit-deny-burst configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_audit_deny_max_records{
         .name{u8"--ros2-single-audit-deny-max-records"},
-        .describe{u8"Explicit ROS2 single audit-deny-max-records configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single audit-deny-max-records configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_audit_deny_max_bytes{
         .name{u8"--ros2-single-audit-deny-max-bytes"},
-        .describe{u8"Explicit ROS2 single audit-deny-max-bytes configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single audit-deny-max-bytes configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_node_name{
         .name{u8"--ros2-single-node-name"},
-        .describe{u8"Explicit ROS2 single node-name configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single node-name configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_namespace{
         .name{u8"--ros2-single-namespace"},
-        .describe{u8"Explicit ROS2 single namespace configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single namespace configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_domain_id{
         .name{u8"--ros2-single-domain-id"},
-        .describe{u8"Explicit ROS2 single domain-id configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single domain-id configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_rmw_implementation{
         .name{u8"--ros2-single-rmw-implementation"},
-        .describe{u8"Explicit ROS2 single rmw-implementation configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single rmw-implementation configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_security_mode{
         .name{u8"--ros2-single-security-mode"},
-        .describe{u8"Explicit ROS2 single security-mode configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single security-mode configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_keystore{
         .name{u8"--ros2-single-keystore"},
-        .describe{u8"Explicit ROS2 single keystore configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single keystore configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_enclave{
         .name{u8"--ros2-single-enclave"},
-        .describe{u8"Explicit ROS2 single enclave configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single enclave configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
@@ -289,7 +295,7 @@ namespace uwvm2::uwvm::cmdline::params
     /// performed inside this module's exports while preserving its local owners.
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_call_boundary{
         .name{u8"--ros2-single-call-boundary"},
-        .describe{u8"Select same-module or explicit module-exports ROS delegation for one Single target."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Select same-module or explicit module-exports ROS delegation for one Single target."},
         .usage{u8"<module:str> <boundary:str>"},
         .handle{::std::addressof(
             details::ros_details::
@@ -298,7 +304,7 @@ namespace uwvm2::uwvm::cmdline::params
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_connect_timeout_ms{
         .name{u8"--ros2-single-connect-timeout-ms"},
-        .describe{u8"Explicit ROS2 single connect-timeout-ms configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single connect-timeout-ms configuration; default deny."},
         .usage{u8"<module:str> <value:str>"},
         .handle{::std::addressof(
             details::ros_details::
@@ -306,7 +312,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_connect_timeout_ms_on_proc_exit{
         .name{u8"--ros2-single-connect-timeout-ms.on-proc-exit"},
-        .describe{u8"ROS2 single connection wait on proc_exit: cancel (default) or wait."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] ROS2 single connection wait on proc_exit: cancel (default) or wait."},
         .usage{u8"<module:str> <cancel|wait>"},
         .handle{::std::addressof(
             details::ros_details::
@@ -314,7 +320,7 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_grant{
         .name{u8"--ros2-single-grant"},
-        .describe{u8"Explicit ROS2 single grant configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single grant configuration; default deny."},
         .usage{u8"<module:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>"},
         .handle{::std::addressof(
             details::ros_details::
@@ -322,145 +328,145 @@ namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_single_set{
         .name{u8"--ros2-single-set"},
-        .describe{u8"Explicit ROS2 single set configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 single set configuration; default deny."},
         .usage{u8"<module:str> <capability:str> <key:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::single, details::ros_details::action::set, 4>)},
         .pretreatment{::std::addressof(details::ros_details::set_pretreatment<details::ros_details::model::scope::single>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_create{
         .name{u8"--ros2-group-create"},
-        .describe{u8"Explicit ROS2 group create configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group create configuration; default deny."},
         .usage{u8"<group:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::create, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_add_module{
         .name{u8"--ros2-group-add-module"},
-        .describe{u8"Explicit ROS2 group add-module configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group add-module configuration; default deny."},
         .usage{u8"<group:str> <module:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::add_module, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_enable{
         .name{u8"--ros2-group-enable"},
-        .describe{u8"Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured."},
         .usage{u8"<group:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::enable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_disable{
         .name{u8"--ros2-group-disable"},
-        .describe{u8"Explicit ROS2 group disable configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group disable configuration; default deny."},
         .usage{u8"<group:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::disable, 1>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_gateway_socket{
         .name{u8"--ros2-group-gateway-socket"},
-        .describe{u8"Explicit ROS2 group gateway-socket configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group gateway-socket configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_gateway_uid{
         .name{u8"--ros2-group-gateway-uid"},
-        .describe{u8"Explicit ROS2 group gateway-uid configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group gateway-uid configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_audit_deny_max_rate_hz{
         .name{u8"--ros2-group-audit-deny-max-rate-hz"},
-        .describe{u8"Explicit ROS2 group audit-deny-max-rate-hz configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group audit-deny-max-rate-hz configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_audit_deny_burst{
         .name{u8"--ros2-group-audit-deny-burst"},
-        .describe{u8"Explicit ROS2 group audit-deny-burst configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group audit-deny-burst configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_audit_deny_max_records{
         .name{u8"--ros2-group-audit-deny-max-records"},
-        .describe{u8"Explicit ROS2 group audit-deny-max-records configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group audit-deny-max-records configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_audit_deny_max_bytes{
         .name{u8"--ros2-group-audit-deny-max-bytes"},
-        .describe{u8"Explicit ROS2 group audit-deny-max-bytes configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group audit-deny-max-bytes configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_node_name{
         .name{u8"--ros2-group-node-name"},
-        .describe{u8"Explicit ROS2 group node-name configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group node-name configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_namespace{
         .name{u8"--ros2-group-namespace"},
-        .describe{u8"Explicit ROS2 group namespace configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group namespace configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_domain_id{
         .name{u8"--ros2-group-domain-id"},
-        .describe{u8"Explicit ROS2 group domain-id configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group domain-id configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_rmw_implementation{
         .name{u8"--ros2-group-rmw-implementation"},
-        .describe{u8"Explicit ROS2 group rmw-implementation configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group rmw-implementation configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_security_mode{
         .name{u8"--ros2-group-security-mode"},
-        .describe{u8"Explicit ROS2 group security-mode configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group security-mode configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_keystore{
         .name{u8"--ros2-group-keystore"},
-        .describe{u8"Explicit ROS2 group keystore configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group keystore configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_enclave{
         .name{u8"--ros2-group-enclave"},
-        .describe{u8"Explicit ROS2 group enclave configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group enclave configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_connect_timeout_ms{
         .name{u8"--ros2-group-connect-timeout-ms"},
-        .describe{u8"Explicit ROS2 group connect-timeout-ms configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group connect-timeout-ms configuration; default deny."},
         .usage{u8"<group:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_connect_timeout_ms_on_proc_exit{
         .name{u8"--ros2-group-connect-timeout-ms.on-proc-exit"},
-        .describe{u8"ROS2 group connection wait on proc_exit: cancel (default) or wait."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] ROS2 group connection wait on proc_exit: cancel (default) or wait."},
         .usage{u8"<group:str> <cancel|wait>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::connection, 2>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_grant{
         .name{u8"--ros2-group-grant"},
-        .describe{u8"Explicit ROS2 group grant configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group grant configuration; default deny."},
         .usage{u8"<group:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::grant, 6>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_group_set{
         .name{u8"--ros2-group-set"},
-        .describe{u8"Explicit ROS2 group set configuration; default deny."},
+        .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Explicit ROS2 group set configuration; default deny."},
         .usage{u8"<group:str> <capability:str> <key:str> <value:str>"},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::group, details::ros_details::action::set, 4>)},
         .pretreatment{::std::addressof(details::ros_details::set_pretreatment<details::ros_details::model::scope::group>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_check_policy{
-        .name{u8"--ros2-check-policy"}, .describe{u8"Validate explicit ROS policy; no Guest execution."},
+        .name{u8"--ros2-check-policy"}, .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Validate explicit ROS policy; no Guest execution."},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::check, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
     inline constexpr ::uwvm2::utils::cmdline::parameter ros2_dump_effective_policy{
-        .name{u8"--ros2-dump-effective-policy"}, .describe{u8"Validate explicit ROS policy; no Guest execution."},
+        .name{u8"--ros2-dump-effective-policy"}, .describe{u8"[deprecated; migrate to --ros-scene-* / uwvm_ros_v2] Validate explicit ROS policy; no Guest execution."},
         .handle{::std::addressof(details::ros_details::callback<details::ros_details::model::version::ros2, details::ros_details::model::scope::global, details::ros_details::action::dump, 0>)},
         .cate{::uwvm2::utils::cmdline::categorization::ros2}};
 }

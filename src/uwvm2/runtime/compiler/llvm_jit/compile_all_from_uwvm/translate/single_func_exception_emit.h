@@ -103,7 +103,7 @@
 // native exception activation pointer or a pointer-width canonical identity.
 [[nodiscard]] inline bool emit_llvm_jit_caught_tuple(runtime_local_func_llvm_jit_emit_state_t& state,
     llvm_jit_exception_handler_t const& handler, ::llvm::Value* guest_object,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t>& values) noexcept
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t>& values) noexcept
 {
     auto const target_count{get_runtime_block_result_count(handler.params)};
     if(handler.with_reference &&
@@ -322,7 +322,7 @@
                             // [safe                         ] edge is its sole predecessor.
                             builder.SetInsertPoint(selected);
                         }
-                        ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+                        ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
                         if(!emit_llvm_jit_caught_tuple(state, handler, entry.guest_object, values)) { return nullptr; }
                         // The catch can now release its native value owner.
                         // Publish both payload references and a new exnref

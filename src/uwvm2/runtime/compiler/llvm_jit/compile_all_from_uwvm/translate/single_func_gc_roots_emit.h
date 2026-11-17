@@ -122,6 +122,7 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
         ::llvm::ConstantInt::get(intptr, offsetof(native::root_frame, live_count)), "gc.root.live")};
     auto const store{builder.CreateStore(::llvm::ConstantInt::get(intptr, count), address)};
     store->setAlignment(::llvm::Align{alignof(::std::size_t)});
+    store->setMetadata("uwvm.gc.root.store.v1", ::llvm::MDNode::get(builder.getContext(), {}));
     retain_runtime_llvm_jit_gc_root_instruction(roots, address);
     retain_runtime_llvm_jit_gc_root_instruction(roots, store);
     roots.snapshots.push_back({::llvm::WeakTrackingVH{store}, ::std::move(roots.pending_root_stores)});
@@ -137,18 +138,41 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
     if(state.ir_builder == nullptr || state.local_types.size() != state.local_pointers.size()) { return false; }
     auto& builder{*state.ir_builder};
     ::std::size_t count{};
+    bool const unique_roots=state.gc_local_value_keys_enabled();
+    ::llvm::SmallPtrSet<::llvm::Value*,8u> seen{};
+    auto const append=[&](::llvm::Value* value) noexcept
+    {
+        if(value==nullptr) { return false; }
+        // A precise nonmoving mark root is a value, not a local/operand name.
+        // Deduplicate only proven identical complete SSA carriers. Distinct
+        // tokens, changed locals and unknown joins retain independent slots.
+        if(unique_roots)
+        {
+            auto* const key{state.gc_local_value_key(value)};
+            if(key != nullptr && !seen.insert(key).second) { return true; }
+        }
+        return emit_runtime_llvm_jit_gc_root_slot(builder,state.gc_root_frame,value,count++);
+    };
     for(::std::size_t index{}; index != state.local_types.size(); ++index)
     {
         if(!llvm_jit_gc_root_carrier_type(state.local_types[index])) { continue; }
         auto const pointer{state.local_pointers.index_unchecked(index)};
         if(pointer == nullptr) { return false; }
-        auto const value{builder.CreateLoad(pointer->getAllocatedType(), pointer, "gc.root.local")};
-        if(!emit_runtime_llvm_jit_gc_root_slot(builder, state.gc_root_frame, value, count++)) { return false; }
+        ::llvm::Value* value{};
+        if(unique_roots)
+        {
+            auto const known=state.gc_local_slot_values.find(pointer);
+            if(known!=state.gc_local_slot_values.end()) { value=known->second; }
+        }
+        // The existing local-value proof is invalidated by calls, allocation,
+        // control-flow and observers. No native pointer survives any boundary.
+        if(value==nullptr) { value=builder.CreateLoad(pointer->getAllocatedType(),pointer,"gc.root.local"); }
+        if(!append(value)) { return false; }
     }
     for(auto const& operand: state.operand_stack)
     {
         if(!llvm_jit_gc_root_carrier_type(operand.type)) { continue; }
-        if(!emit_runtime_llvm_jit_gc_root_slot(builder, state.gc_root_frame, operand.value, count++)) { return false; }
+        if(!append(operand.value)) { return false; }
     }
     if(state.checkpoint_observer_controls != nullptr)
     {
@@ -170,7 +194,7 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
     for(auto const& operand: extra)
     {
         if(!llvm_jit_gc_root_carrier_type(operand.type)) { continue; }
-        if(!emit_runtime_llvm_jit_gc_root_slot(builder, state.gc_root_frame, operand.value, count++)) { return false; }
+        if(!append(operand.value)) { return false; }
     }
     return publish_runtime_llvm_jit_gc_root_count(builder, state.gc_root_frame, count);
 }
@@ -240,6 +264,7 @@ inline void retain_runtime_llvm_jit_gc_root_instruction(
                     ::llvm::ConstantInt::get(intptr, slot.index), "gc.root.slot")};
                 auto const store{builder.CreateStore(value, address)};
                 store->setAlignment(::llvm::Align{alignof(::uwvm2::runtime::gc::root_reference)});
+                store->setMetadata("uwvm.gc.root.store.v1", ::llvm::MDNode::get(builder.getContext(), {}));
                 retain_runtime_llvm_jit_gc_root_instruction(roots, address);
                 retain_runtime_llvm_jit_gc_root_instruction(roots, store);
                 known[slot.index] = value;

@@ -58,7 +58,7 @@
             if(count == 0u ||
                frames[count - 1u].module != location.code_unit || frames[count - 1u].function != location.function ||
                frames[count - 1u].runtime_epoch != location.code_generation) { return {}; }
-            ::std::shared_ptr<llvm_jit_debug_activation_capture> candidate{new llvm_jit_debug_activation_capture};
+            ::std::shared_ptr<llvm_jit_debug_activation_capture> candidate{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_activation_capture>([&](llvm_jit_debug_activation_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_activation_capture; }))};
             candidate->control_ = control; candidate->ticket_ = ticket;
             // Retain the ACTUAL dynamically owned debug ledger before-park.
             // Captured identities do not keep a physical scope alive: its real

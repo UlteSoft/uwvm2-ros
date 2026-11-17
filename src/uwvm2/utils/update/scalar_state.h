@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 
 namespace uwvm2::utils::update
@@ -63,7 +64,7 @@ namespace uwvm2::utils::update
             }
             return false;
         }
-        inline bool globals(::std::span<unsigned char const> bytes, ::std::vector<value>& values)
+        inline bool globals(::std::span<unsigned char const> bytes, ::uwvm2::utils::container::std_vector<value>& values)
         {
             ::std::size_t pos{}; ::std::uint32_t count{};
             if(!u32(bytes, pos, count) || count > maximum_scalar_globals) { return false; }
@@ -165,8 +166,8 @@ namespace uwvm2::utils::update
     }
 
     inline status compare_scope(::std::span<unsigned char const> base, ::std::span<unsigned char const> target,
-        ::std::span<::std::uint64_t const> scopes, ::std::vector<function_body>& bodies,
-        ::std::vector<scalar_reset_record>& reset_records)
+        ::std::span<::std::uint64_t const> scopes, ::uwvm2::utils::container::std_vector<function_body>& bodies,
+        ::uwvm2::utils::container::std_vector<scalar_reset_record>& reset_records)
     {
         reset_records.clear(); bodies.clear();
         if(scopes.empty() || scopes.size() > maximum_functions) { return status::invalid_input; }
@@ -175,12 +176,12 @@ namespace uwvm2::utils::update
         auto const split_scope{::std::lower_bound(scopes.begin(), scopes.end(), immutable_global_tag)};
         auto const function_count{static_cast<::std::size_t>(split_scope - scopes.begin())};
         if(split_scope == scopes.end()) { return function_scope(base, target, scopes, bodies); }
-        ::std::vector<section> old_sections, new_sections;
-        ::std::vector<function_body> old_bodies;
+        ::uwvm2::utils::container::std_vector<section> old_sections, new_sections;
+        ::uwvm2::utils::container::std_vector<function_body> old_bodies;
         if(!split(base, old_sections, old_bodies) || !split(target, new_sections, bodies) ||
            old_sections.size() != new_sections.size() || old_bodies.size() != bodies.size()) { return status::validation_failed; }
         if(function_count && scopes[function_count - 1u] >= bodies.size()) { return status::invalid_input; }
-        ::std::vector<scalar_detail::value> old_globals, new_globals; bool found_globals{};
+        ::uwvm2::utils::container::std_vector<scalar_detail::value> old_globals, new_globals; bool found_globals{};
         for(::std::size_t i{}; i < old_sections.size(); ++i)
         {
             auto const& old{old_sections[i]}; auto const& next{new_sections[i]};

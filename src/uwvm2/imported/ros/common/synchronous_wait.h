@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -50,7 +52,7 @@ namespace uwvm2::imported::ros
         synchronous_wait_context* previous{current};
         bool (*check)(void*) noexcept{};
         void* context{};
-        ::std::unique_ptr<synchronous_quota_wait> owned_waiter;
+        ::uwvm2::utils::container::std_unique_ptr<synchronous_quota_wait> owned_waiter;
         bool native_wait_on_exit{};
         int external_cancellation_fd{-1};
     public:
@@ -244,7 +246,7 @@ namespace uwvm2::imported::ros
         if(!current) { return nullptr; }
         if(!current->owned_waiter)
         {
-            current->owned_waiter.reset(new(::std::nothrow) synchronous_quota_wait{});
+            current->owned_waiter.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<synchronous_quota_wait>([&](synchronous_quota_wait* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) synchronous_quota_wait{}; }));
             if(current->owned_waiter) { (void)current->owned_waiter->select_exit(current->native_wait_on_exit); }
         }
         return current->owned_waiter.get();

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <fast_io.h>
 # include <algorithm>
@@ -16,6 +17,7 @@
 # include <utility>
 # include <vector>
 # include <uwvm2/extension/memtag/tag_image.h>
+# include <uwvm2/runtime/checkpoint/feature_policy_schema.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -38,10 +40,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
         nofunc, noextern, bottom, noexception, defined
     };
     enum class reference_kind : ::std::uint8_t { null = 0u, function, external, structure, array, exception, i31, host };
-    inline constexpr ::std::uint64_t known_feature_mask{0x3ffffu};
+    inline constexpr ::std::uint64_t known_feature_mask{::uwvm2::runtime::checkpoint::feature_policy_schema::known_feature_mask};
     // Binding-only DATA: this ID never selects an executable host adapter.
     inline constexpr ::std::uint64_t builtin_wasip1_binding_kind{0x3150495341575755u};
     inline constexpr ::std::size_t builtin_wasip1_binding_bytes{108u};
+    inline constexpr ::std::uint64_t builtin_ros_v1_binding_kind{0x3156534f52575755u};
 
     struct value_type
     {
@@ -74,9 +77,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
         // The normative, kind-specific meanings are in checkpoint_format.md.
         // Every unused word must be zero; no field can encode a host pointer.
         ::std::array<::std::uint64_t, 8u> words{};
-        ::std::vector<object_id> links{};
-        ::std::vector<value> values{};
-        ::std::vector<::std::byte> bytes{};
+        ::uwvm2::utils::container::std_vector<object_id> links{};
+        ::uwvm2::utils::container::std_vector<value> values{};
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
         friend bool operator==(object const&, object const&) = default;
     };
     struct state
@@ -85,16 +88,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
         ::std::uint64_t checkpoint_id{}, parent_checkpoint_id{}, logical_instruction{}, replay_event_cursor{};
         ::std::uint64_t required_features{}, next_logical_thread{1u};
         // Objects have dense IDs index+1, preserving aliases and cycles.
-        ::std::vector<object> objects{};
-        ::std::vector<object_id> root_instances{};
-        ::std::vector<value> retained_roots{};
+        ::uwvm2::utils::container::std_vector<object> objects{};
+        ::uwvm2::utils::container::std_vector<object_id> root_instances{};
+        ::uwvm2::utils::container::std_vector<value> retained_roots{};
         friend bool operator==(state const&, state const&) = default;
     };
     struct limits
     {
-        ::std::uint64_t max_file_bytes{256u * 1024u * 1024u};
-        ::std::uint64_t max_objects{1048576u}, max_links{4194304u}, max_values{4194304u};
-        ::std::uint64_t max_payload_bytes{256u * 1024u * 1024u}, max_threads{4096u}, max_frames{1048576u};
+        // No implicit deployment quota. Defaults describe native addressability;
+        // a host may explicitly narrow each budget. Decoding still bounds every
+        // count by the authenticated input extent before allocating or indexing.
+        ::std::uint64_t max_file_bytes{static_cast<::std::uint64_t>(PTRDIFF_MAX)};
+        ::std::uint64_t max_objects{static_cast<::std::uint64_t>(PTRDIFF_MAX / sizeof(object))};
+        ::std::uint64_t max_links{static_cast<::std::uint64_t>(PTRDIFF_MAX / sizeof(object_id))};
+        ::std::uint64_t max_values{static_cast<::std::uint64_t>(PTRDIFF_MAX / sizeof(value))};
+        ::std::uint64_t max_payload_bytes{static_cast<::std::uint64_t>(PTRDIFF_MAX)};
+        ::std::uint64_t max_threads{static_cast<::std::uint64_t>(PTRDIFF_MAX / sizeof(object))};
+        ::std::uint64_t max_frames{static_cast<::std::uint64_t>(PTRDIFF_MAX / sizeof(object))};
     };
     enum class error
     {
@@ -112,10 +122,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
     {
         [[nodiscard]] inline bool valid_builtin_binding(object const& item) noexcept
         {
-            if(item.flags != 3u || item.words[0u] != builtin_wasip1_binding_kind || item.words[1u] != 1u ||
-                item.words[2u] == 0u || item.words[2u] > 128u || item.bytes.size() != builtin_wasip1_binding_bytes)
+            auto const ros=item.words[0u]==builtin_ros_v1_binding_kind;
+            if(item.flags != 3u || (!ros && item.words[0u] != builtin_wasip1_binding_kind) ||
+                item.words[1u] == 0u || item.words[1u] > (ros?4u:1u) ||
+                item.words[2u] == 0u || item.words[2u] > (ros?64u:128u) || item.bytes.size() != builtin_wasip1_binding_bytes)
             { return false; }
-            constexpr ::std::array<unsigned char, 12u> magic{'U','W','V','M','W','A','S','I','P','1','B','1'};
+            auto const magic=ros?::std::array<unsigned char,12u>{'U','W','V','M','R','O','S','V','1','B','0','1'}:
+                ::std::array<unsigned char,12u>{'U','W','V','M','W','A','S','I','P','1','B','1'};
             for(::std::size_t i{}; i != magic.size(); ++i)
             { if(item.bytes[i] != static_cast<::std::byte>(magic[i])) { return false; } }
             auto const get{[&](::std::size_t offset, ::std::uint64_t& value) noexcept
@@ -130,7 +143,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
             }};
             ::std::uint64_t index{}, revision{}, parameters{}, results{};
             if(!get(12u,index) || !get(20u,revision) || !get(60u,parameters) || !get(68u,results) ||
-                index >= 128u || index + 1u != item.words[2u] || revision != 1u || parameters > 16u || results > 16u)
+                index >= (ros?64u:128u) || index + 1u != item.words[2u] || revision != item.words[1u] || parameters > 16u || results > 16u)
             { return false; }
             bool digest{};
             for(::std::size_t i{28u}; i != 60u; ++i) { digest = digest || item.bytes[i] != ::std::byte{}; }
@@ -275,13 +288,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
         { if(!state_details::valid(item, snapshot)) { return error::incompatible_type; } }
         // Per-parent end offsets establish canonical, non-overlapping sparse
         // chunks in O(objects+links+values), including 64-bit logical offsets.
-        ::std::vector<::std::uint64_t> last_bytes(snapshot.objects.size(), 0u);
-        ::std::vector<bool> chunk_seen(snapshot.objects.size(), false);
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> last_bytes(snapshot.objects.size(), 0u);
+        ::uwvm2::utils::container::std_vector<bool> chunk_seen(snapshot.objects.size(), false);
         // Mutable continuation records belong to exactly one containing
         // thread/frame. A single bit census rejects shared and orphaned records
         // without confusing legal store/GC/exception aliases with stack state.
-        ::std::vector<bool> continuation_owned(snapshot.objects.size(), false);
-        ::std::vector<::std::uint64_t> logical_threads{};
+        ::uwvm2::utils::container::std_vector<bool> continuation_owned(snapshot.objects.size(), false);
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> logical_threads{};
         ::std::uint64_t last_event{}, last_event_instruction{}, event_count{};
         for(auto const& item : snapshot.objects)
         {
@@ -306,8 +319,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
             {
                 case object_kind::module:
                     if((item.flags == 0u ? !zeros_from(0u) :
-                        item.flags != 1u || w[0u] != 1u || w[1u] > 4u ||
-                        (w[2u] & ~((::std::uint64_t{1u} << 19u) - 1u)) != 0u || w[3u] > 3u || !zeros_from(4u)) ||
+                        item.flags != 1u || w[0u] != ::uwvm2::runtime::checkpoint::feature_policy_schema::revision ||
+                        !::uwvm2::runtime::checkpoint::feature_policy_schema::valid(w[1u], w[2u], w[3u]) || !zeros_from(4u)) ||
                        !item.links.empty() || !item.values.empty() || item.bytes.size() < 8u ||
                        item.bytes[0] != ::std::byte{} || item.bytes[1] != ::std::byte{'a'} || item.bytes[2] != ::std::byte{'s'} || item.bytes[3] != ::std::byte{'m'} ||
                        item.bytes[4] != ::std::byte{1u} || item.bytes[5] != ::std::byte{} || item.bytes[6] != ::std::byte{} || item.bytes[7] != ::std::byte{})
@@ -461,7 +474,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                     }
                     logical_threads.push_back(w[0]); break;
                 case object_kind::frame:
-                    if(item.flags > 2u || !zeros_from(7u) || item.links.empty() || !item.bytes.empty() ||
+                    if(item.flags > 2u || w[7u] > 1u || item.links.empty() || !item.bytes.empty() ||
                        !state_details::has_kind(snapshot, item.links[0], object_kind::function) ||
                        w[1] > item.values.size() || w[2] != item.values.size() - w[1] ||
                        w[3] > item.links.size() - 1u || w[4] != item.links.size() - 1u - w[3] ||
@@ -489,12 +502,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                        (item.flags < 2u && (item.links.size() != 1u || !links_are(object_kind::tag))) ||
                        (item.flags >= 2u && !item.links.empty())) { return error::invalid_shape; } break;
                 case object_kind::atomic_wait:
-                    if(item.flags > 1u || !zeros_from(4u) || !item.values.empty() || !item.bytes.empty() || item.links.size() != 1u ||
+                    if(item.flags > 2u || (w[7]!=32u && w[7]!=64u) ||
+                       (w[3]>INT64_MAX && w[3]!=UINT64_MAX) || (item.flags && w[4]!=UINT64_MAX) ||
+                       (item.flags==2u && w[3]) ||
+                       (item.flags==0u && w[4]>=cap.max_threads) || !item.values.empty() || !item.bytes.empty() || item.links.size() != 1u ||
                        !links_are(object_kind::memory) || (w[1] != 4u && w[1] != 8u) || (w[0] & (w[1] - 1u)) != 0u)
                     { return error::invalid_shape; }
                     {
                         auto const& memory{*state_details::lookup(snapshot, item.links[0])};
-                        if(memory.flags != 1u || memory.words[1] > (::std::uint64_t{1u} << 48u))
+                        if(memory.flags != 1u || memory.words[0]!=w[7] || memory.words[1] > (::std::uint64_t{1u} << 48u))
                         { return error::invalid_shape; }
                         if(w[1] - 1u > (::std::numeric_limits<::std::uint64_t>::max)() - w[0] ||
                            (w[0] + w[1] - 1u) / 65536u >= memory.words[1] || (w[1] == 4u && w[2] > 0xffffffffu))
@@ -505,7 +521,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                        (item.flags == 3u && !state_details::valid_builtin_binding(item)))
                     { return error::invalid_shape; } break;
                 case object_kind::event:
-                    if(item.flags > 8u || w[0] == 0u || w[0] <= last_event || w[1] < last_event_instruction ||
+                    if(item.flags > 15u || w[0] == 0u || w[0] <= last_event || w[1] < last_event_instruction ||
                        w[4] > item.values.size() || w[5] != item.values.size() - w[4]) { return error::invalid_shape; }
                     for(auto id : item.links)
                     { auto const* resource{state_details::lookup(snapshot,id)};

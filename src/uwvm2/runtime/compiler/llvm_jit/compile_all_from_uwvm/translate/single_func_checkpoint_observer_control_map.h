@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Same-fused-walk compilation DATA only. The vector below cannot authenticate
 // a publication, native address, paused participant or executable continuation.
 // Pending lexical ends are NEVER accepted by sealed_function_plan: only the
@@ -9,10 +10,10 @@ struct llvm_jit_checkpoint_observer_control_map
     struct scope
     {
         ::std::size_t entry{}, end{SIZE_MAX};
-        ::std::vector<link> pending{};
+        ::uwvm2::utils::container::std_vector<link> pending{};
     };
     ::uwvm2::runtime::checkpoint::function_plan* plan{};
-    ::std::vector<scope> scopes{};
+    ::uwvm2::utils::container::std_vector<scope> scopes{};
     [[nodiscard]] bool selected() const noexcept
     {
         namespace cp = ::uwvm2::runtime::checkpoint;

@@ -26,7 +26,7 @@
 # include <exception>
 # include <memory>
 # include <optional>
-# include <stop_token>
+# include <uwvm2/utils/thread/stop_token.h>
 # include <thread>
 # include <type_traits>
 # include <utility>
@@ -77,7 +77,7 @@ namespace uwvm2::uwvm::runtime::storage
                 notification->fetch_or(1u, ::std::memory_order_release);
             }
         };
-        ::std::optional<::std::stop_callback<on_stop>> stop_callback_{};
+        ::std::optional<::uwvm2::utils::thread::stop_callback<on_stop>> stop_callback_{};
         bool retired_{}, reconciling_{};
         [[nodiscard]] bool live_authority() const noexcept
         {

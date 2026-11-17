@@ -2,14 +2,14 @@
 // A real source-generation execution lease owns memory/mutex until physical join.
 #if defined(__linux__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         [[nodiscard]] threaded_grow_result grow_threaded_profile(::std::size_t delta_pages,
-            ::std::size_t original_maximum_bytes,::std::stop_token cancellation) noexcept
+            ::std::size_t original_maximum_bytes,::uwvm2::utils::thread::stop_token cancellation) noexcept
         {
             using phase=threaded_grow_status;threaded_grow_result result{};
             // No pre-existing byte may share a newly protected native page.
-            // The first profile accepts only normal 64KiB wasm32 pages and a
-            // real shared mmap memory. Small/custom pages are not guessed safe.
+            // Ordinary 64KiB pages have this disjoint commit geometry for
+            // shared/private memory32 and memory64 on every supported ABI.
             if(memory_begin==nullptr||memory_length_p==nullptr||growing_mutex_p==nullptr||
-               custom_page_size_log2!=16u||status!=mmap_memory_status_t::wasm32||!sequentially_consistent_size)
+               custom_page_size_log2!=16u||(status!=mmap_memory_status_t::wasm32&&status!=mmap_memory_status_t::wasm64))
                 return result;
             auto const [page_size,known_page]=::uwvm2::object::memory::platform_page::get_platform_page_size();
             if(!known_page||page_size==0u||page_size>65536u||!::std::has_single_bit(page_size))return result;
@@ -39,10 +39,10 @@
 #if SIZE_MAX > UINT32_MAX
             // A 32-bit native length cannot exceed the wasm32 4 GiB limit.
             // Keep the independent Wasm bound on wider host address spaces.
-            if(old > UINT64_C(4294967296)) { return result; }
+            if(status==mmap_memory_status_t::wasm32&&old > UINT64_C(4294967296)) { return result; }
 #endif
             auto maximum=(::std::min)(original_maximum_bytes,reservation_limit_bytes);
-            if constexpr(sizeof(::std::size_t)>=8u)maximum=(::std::min)(maximum,static_cast<::std::size_t>(UINT64_C(4294967296)));
+            if constexpr(sizeof(::std::size_t)>=8u)if(status==mmap_memory_status_t::wasm32)maximum=(::std::min)(maximum,static_cast<::std::size_t>(UINT64_C(4294967296)));
             if(old>maximum)return result;
             if(delta_pages>(SIZE_MAX>>16u)){result.status=phase::limit;return result;}
             auto const delta=delta_pages<<16u;
@@ -50,6 +50,9 @@
             auto const next=old+delta;result.attempted_length=next;
             if(base>UINTPTR_MAX-next)return result;
             if(delta==0u){result.status=phase::success;return result;}
+            ::uwvm2::utils::allocator::resource::resize_transaction<::uwvm2::utils::allocator::resource::pool::memory>
+                allocation_change{allocation_charge,next};
+            if(!allocation_change){result.status=phase::limit;return result;}
             if(memtag_shadow.enabled())
             {
                 auto const shadow_error{memtag_shadow.prepare_growth(next)};
@@ -80,6 +83,8 @@
             }
             // A stop racing after commit does not roll back a real Wasm grow
             // effect. Publish once; mandatory post-call probe prevents more work.
+            allocation_change.commit();
+            ::uwvm2::utils::allocator::sanitizer_mapping::accessible(begin,delta);
             memory_length_p->store(next,::std::memory_order_seq_cst);
             result.status=phase::success;return result;
         }

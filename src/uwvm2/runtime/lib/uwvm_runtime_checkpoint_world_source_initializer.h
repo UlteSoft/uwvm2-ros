@@ -2,13 +2,14 @@
 // prepared before retirement and rechecked after real OS/TLS join. It never
 // issues an initializer serial, source seal, epoch or execution permission.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 struct source_initializer_binding
 {
     module_type const* module{};
     file_type const* file{};
     ::std::size_t owner{SIZE_MAX}, preload{SIZE_MAX};
 };
-::std::vector<source_initializer_binding> source_initializer_bindings_{};
+::uwvm2::utils::container::std_vector<source_initializer_binding> source_initializer_bindings_{};
 decltype(source_type::builtin_wasip1_identity_) source_initializer_builtin_identity_{};
 decltype(source_type::builtin_wasip1_member_) source_initializer_builtin_member_{};
 decltype(source_type::builtin_wasip1_vector_begin_) source_initializer_builtin_vector_{};
@@ -39,7 +40,7 @@ decltype(source_type::builtin_wasip1_vector_begin_) source_initializer_builtin_v
         // every provider read. The builtin method resolves the real selected
         // loader/vector membership, never a saved host pointer or provider name.
         if(dense==SIZE_MAX || original->actual_validated_file(dense,source_initializer_observed_epoch_,::std::addressof(module))==nullptr ||
-           !original->actual_no_unadapted_native_memory_provider(dense,source_initializer_observed_epoch_,::std::addressof(module)))
+           !original->actual_checkpoint_builtin_provider_census(dense,source_initializer_observed_epoch_,::std::addressof(module)))
         { return false; }
     }
     return true;

@@ -4,6 +4,7 @@
  * and complete two-party leases remain mandatory. Source-recompile seam only.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/common/rmw_service_bindings.h>
 #include <uwvm2/imported/ros/common/quota.h>
@@ -86,7 +87,7 @@ namespace uwvm2::uwvm::imported::ros::host
         template<typename Capability>
         inline bool unsupported_wait(Capability const& cap,std::string_view key)
         {
-            auto found=cap.limits.find(std::string{key}+".on-exhausted");
+            auto found=cap.limits.find(::uwvm2::utils::container::std_string{key}+".on-exhausted");
             return found!=cap.limits.end()&&found->second=="wait";
         }
         /** ACTUAL post-association exception boundary. It routes allocation or

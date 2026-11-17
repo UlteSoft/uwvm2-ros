@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -45,7 +46,7 @@ namespace uwvm2::imported::ros::portable
         {
             ::std::uint32_t uid{},pid{};
             if(!ipc::peer_credentials(socket,uid,pid)||uid!=deployment.native_uid) { return false; }
-            auto path{::std::string{"/proc/"}+::std::to_string(pid)+"/exe"};
+            auto path{::uwvm2::utils::container::std_string{"/proc/"}+::uwvm2::utils::container::to_string(pid)+"/exe"};
             int fd{::open(path.c_str(),O_RDONLY|O_CLOEXEC)};if(fd<0) { return false; }
             struct release { int fd;~release(){::close(fd);} } held{fd};struct stat before{},after{},selected{};
             if(::fstat(fd,&before)!=0||!S_ISREG(before.st_mode)||before.st_size<=0||before.st_size>512*1024*1024) { return false; }
@@ -84,7 +85,7 @@ namespace uwvm2::imported::ros::portable
         }
         [[nodiscard]] bool connected() const noexcept { return fd_>=0&&session_; }
         error request(native_operation operation,::std::span<::std::uint8_t const> body,
-                      ::std::vector<::std::uint8_t>& output,::std::uint64_t deadline_ns)
+                      ::uwvm2::utils::container::std_vector<::std::uint8_t>& output,::std::uint64_t deadline_ns)
         {
 #if defined(__linux__)
             if(!connected()||next_==UINT64_MAX||body.size()>4096u||deadline_ns<=monotonic_ns()||
@@ -94,14 +95,14 @@ namespace uwvm2::imported::ros::portable
             wire_detail::put(header,4,1,2);wire_detail::put(header,6,static_cast<unsigned>(operation),2);
             wire_detail::put(header,8,binding_.size()+body.size(),4);wire_detail::put(header,16,next_,8);
             wire_detail::put(header,24,session_,8);wire_detail::put(header,32,deadline_ns,8);
-            ::std::vector<::std::uint8_t> request(header.begin(),header.end());request.insert(request.end(),binding_.begin(),binding_.end());request.insert(request.end(),body.begin(),body.end());
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> request(header.begin(),header.end());request.insert(request.end(),binding_.begin(),binding_.end());request.insert(request.end(),body.begin(),body.end());
             if(!ipc::transfer(fd_,request.data(),request.size(),true,until)||!ipc::transfer(fd_,header.data(),header.size(),false,until)) { close();return error::deadline; }
             auto size{wire_detail::get(header,8,4)},status{wire_detail::get(header,12,4)};
             if(header[0]!='U'||header[1]!='P'||header[2]!='N'||header[3]!='1'||wire_detail::get(header,4,2)!=1||
                wire_detail::get(header,6,2)!=static_cast<unsigned>(operation)||wire_detail::get(header,16,8)!=next_||
                wire_detail::get(header,24,8)!=session_||wire_detail::get(header,32,8)!=deadline_ns||size<binding_.size()||size>binding_.size()+4096u)
             { close();return error::malformed; }
-            ::std::vector<::std::uint8_t> response(static_cast<::std::size_t>(size));
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> response(static_cast<::std::size_t>(size));
             if(!ipc::transfer(fd_,response.data(),response.size(),false,until)) { close();return error::deadline; }
             if(!::std::equal(binding_.begin(),binding_.end(),response.begin())) { close();return error::denied; }
             ++next_;
@@ -139,7 +140,7 @@ namespace uwvm2::imported::ros::portable
             { ::std::copy(digest_value->begin(),digest_value->end(),binding_.begin()+static_cast<::std::ptrdiff_t>(at));at+=32u; }
             for(auto value:{owner.generation,deployment.policy_epoch,deployment.mapping.epoch,deployment.native_generation,owner_ordinal})
             { wire_detail::put(binding_,at,value,8);at+=8u; }
-            ::std::vector<::std::uint8_t> answer{};auto e{request(native_operation::bind,{},answer,deadline_ns)};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> answer{};auto e{request(native_operation::bind,{},answer,deadline_ns)};
             if(e!=error::ok||!answer.empty()) { close();return e==error::ok?error::malformed:e; }return error::ok;
 #else
             (void)deployment;(void)deadline_ns;return error::unsupported;

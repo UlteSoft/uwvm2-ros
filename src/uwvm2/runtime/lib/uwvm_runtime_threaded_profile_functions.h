@@ -1,20 +1,32 @@
 // Include INSIDE uwvm2::runtime::lib after the actual bridge class definition.
 #if defined(__linux__) && defined(UWVM_USE_THREAD_LOCAL) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && (defined(UWVM_RUNTIME_UWVM_INTERPRETER) || defined(UWVM_RUNTIME_LLVM_JIT))
-    inline ::std::int32_t runtime_threaded_profile_bridge::spawn_actual(lease& caller, ::std::uint32_t argument) noexcept
+    inline ::std::int32_t runtime_threaded_profile_bridge::spawn_actual(lease& caller, ::std::uint32_t argument, ::std::size_t executing_module, ::std::uint32_t replay_tid) noexcept
     {
         if(!actual_lease(caller, caller.world()) || caller.cancellation().stop_requested()) { return -1; }
         ::std::shared_ptr<profile_state> state;
         {
-            ::std::unique_lock registry{control_owner().registry, ::std::try_to_lock};
-            if(!registry.owns_lock()) { return -1; }
+            // A concurrent host status query is not a failed Guest spawn.
+            // This scope performs only the retained-owner lookup, with no Group
+            // lock, provider callback, compilation or physical join held here.
+            ::std::lock_guard registry{control_owner().registry};
+            if(caller.cancellation().stop_requested()) { return -1; }
             state = control_owner().profile;
             if(!state || state->joined || state->native.get() != caller.group_ ||
                state->admitted.get() != &caller.admission()) { return -1; }
         }
-        auto reservation{state->native->reserve()};
+        // The authenticated executing module owns the new child's charge,
+        // including cross-module calls and raw re-exported imports.
+        if(executing_module>=g_runtime.modules.size())return -1;
+        auto name=g_runtime.modules.index_unchecked(executing_module).module_name;
+        ::std::u8string_view identity{name.data(),name.size()};
+        namespace i1t=::uwvm2::utils::control::wasithread;
+        if(replay_tid&&!state->native->reap_replay_departures())return -1;
+        auto authority=i1t::runtime_policy().reserve(identity,true);
+        if(!authority.held){i1t::diagnose(authority,identity);return -1;}
+        auto reservation{replay_tid?state->native->reserve_selected(false,replay_tid):state->native->reserve()};
         if(!reservation) { return -1; }
-        ::std::unique_ptr<concrete_compile_work> job;
-        try { job = ::std::make_unique<concrete_compile_work>(state, false, 0u, argument, ::std::span<::std::byte const>{}); }
+        ::uwvm2::utils::container::std_unique_ptr<concrete_compile_work> job;
+        try { job = ::uwvm2::utils::container::make_unique<concrete_compile_work>(state, false, executing_module, 0u, argument, ::std::span<::std::byte const>{}, ::std::move(authority.held)); }
         catch(...) { return -1; }
         auto submitted{state->native->submit_compilation(::std::move(reservation), ::std::move(job))};
         if(!submitted.ticket) { return -1; }
@@ -29,6 +41,57 @@
         }
     }
 
+    extern "C++" bool runtime_threaded_profile_snapshot_capture_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const* stop,
+        ::uwvm2::utils::container::std_vector<::std::byte>& output) noexcept
+    {
+        namespace p=::uwvm2::utils::control;
+        if(!p::debug_permissions::full_allowed()||p::dump_permissions::permit(p::dump_permissions::disclosure::full).status!=p::dump_permissions::denial::none)return false;
+        return runtime_threaded_profile_bridge::capture_journal_archive(stop,output);
+    }
+    extern "C++" bool runtime_threaded_profile_snapshot_replay_configure_host_api(::std::span<::std::byte const> bytes) noexcept
+    {
+        namespace p=::uwvm2::utils::control;
+        if(!p::debug_permissions::full_allowed()||p::dump_permissions::permit(p::dump_permissions::disclosure::full).status!=p::dump_permissions::denial::none)return false;
+        ::uwvm2::runtime::wasm_threads::threaded_snapshot snapshot;
+        return ::uwvm2::runtime::wasm_threads::decode_threaded_snapshot(bytes,snapshot)&&
+            runtime_threaded_profile_bridge::configure_journal(&snapshot.history,snapshot.environments);
+    }
+    extern "C++" bool runtime_threaded_profile_snapshot_reattach_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const& stop,::std::span<::std::byte const> bytes) noexcept
+    {
+        namespace p=::uwvm2::utils::control;
+        if(!p::debug_permissions::full_allowed()||p::dump_permissions::permit(p::dump_permissions::disclosure::full).status!=p::dump_permissions::denial::none)return false;
+        ::uwvm2::runtime::wasm_threads::threaded_snapshot snapshot;
+        return ::uwvm2::runtime::wasm_threads::decode_threaded_snapshot(bytes,snapshot)&&
+            runtime_threaded_profile_bridge::reattach_journal(stop,snapshot.history);
+    }
+    extern "C++" bool runtime_threaded_profile_record_configure_host_api(bool hold_entry) noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::full_allowed() || ::uwvm2::utils::control::dump_permissions::permit(::uwvm2::utils::control::dump_permissions::disclosure::full).status!=::uwvm2::utils::control::dump_permissions::denial::none)return false;return runtime_threaded_profile_bridge::configure_journal(nullptr,{},hold_entry);}
+    extern "C++" bool runtime_threaded_profile_replay_configure_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history const& history) noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::full_allowed() || ::uwvm2::utils::control::dump_permissions::permit(::uwvm2::utils::control::dump_permissions::disclosure::full).status!=::uwvm2::utils::control::dump_permissions::denial::none)return false;return runtime_threaded_profile_bridge::configure_journal(&history);}
+    extern "C++" ::uwvm2::runtime::wasm_threads::journal_observation runtime_threaded_profile_record_status_host_api() noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())return {};return runtime_threaded_profile_bridge::journal_status();}
+    extern "C++" bool runtime_threaded_profile_terminal_host_api(::std::uint32_t& code,unsigned& kind) noexcept
+    {return runtime_threaded_profile_bridge::terminal_decision(code,kind);}
+    extern "C++" bool runtime_threaded_profile_unresolved_imports_host_api() noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())return false;return runtime_threaded_profile_bridge::unresolved_native_imports();}
+    extern "C++" bool runtime_threaded_profile_record_capture_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const* stop,
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history& output) noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::full_allowed() || ::uwvm2::utils::control::dump_permissions::permit(::uwvm2::utils::control::dump_permissions::disclosure::full).status!=::uwvm2::utils::control::dump_permissions::denial::none)return false;return runtime_threaded_profile_bridge::capture_journal(stop,output);}
+    extern "C++" bool runtime_threaded_profile_record_reattach_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const& stop,
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history const& history) noexcept
+    {
+        namespace p=::uwvm2::utils::control;
+        if(!p::debug_permissions::full_allowed()||p::dump_permissions::permit(p::dump_permissions::disclosure::full).status!=p::dump_permissions::denial::none)return false;
+        return runtime_threaded_profile_bridge::reattach_journal(stop,history);
+    }
+    extern "C++" bool runtime_threaded_profile_replay_continue_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const& stop) noexcept
+    {if(!::uwvm2::utils::control::debug_permissions::full_allowed())return false;return runtime_threaded_profile_bridge::continue_recorded_interval(stop);}
     extern "C++" bool runtime_threaded_profile_debug_observation_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_debug_observation purpose) noexcept
     { if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; } return runtime_threaded_profile_bridge::configure_debug_observation(purpose); }
@@ -79,7 +142,7 @@
         { return runtime_threaded_profile_bridge::active_host_module(); }
         inline bool has_active_host_call() noexcept { return runtime_threaded_profile_bridge::has_active_host_call(); }
         inline bool active_host_stop_requested() noexcept { return runtime_threaded_profile_bridge::active_host_stop_requested(); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         inline bool observed_caller(ros_caller_identity& out) noexcept { return runtime_threaded_profile_bridge::observed_caller(out); }
         inline bool caller_source_facts(ros_caller_source_facts& out,bool allow_exports) noexcept
         {return runtime_threaded_profile_bridge::caller_source_facts(out,allow_exports);}

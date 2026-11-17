@@ -4,6 +4,10 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 #include <atomic>
 #include <algorithm>
@@ -18,12 +22,13 @@
 #include <new>
 #include <optional>
 #include <span>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #include <utility>
 #include "admission.h"
 #include "threaded_debug_session.h"
 #include "threaded_debug_control.h"
 #include "wait.h"
+#include "execution_journal.h"
 #endif
 #ifndef UWVM_MODULE
 #if defined(__linux__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -42,7 +47,7 @@ namespace uwvm2::runtime::wasm_threads
     // A rejected initial profile has executed no Guest instruction. Preserve
     // that admission outcome separately from a failure of the native runtime.
     enum class termination_kind : unsigned
-    { running, cancelled, trap, proc_exit, native_failure, memory_failure, main_return, preparation_rejected };
+    { running, cancelled, trap, proc_exit, native_failure, memory_failure, main_return, preparation_rejected, replay_refused };
     struct group_outcome
     {
         termination_kind kind{termination_kind::running};
@@ -86,7 +91,7 @@ namespace uwvm2::runtime::wasm_threads
         public:
             ChildLease(ChildLease const&) = delete;
             ChildLease& operator=(ChildLease const&) = delete;
-            [[nodiscard]] ::std::stop_token cancellation() const noexcept { return group_->cancellation_.get_token(); }
+            [[nodiscard]] ::uwvm2::utils::thread::stop_token cancellation() const noexcept { return group_->cancellation_.get_token(); }
             [[nodiscard]] wait_domain& waits() const noexcept { return group_->waits_; }
             // A borrowed level-triggered fd. Host pollers MUST NOT consume it or
             // retain it past this actual native call. It closes only after join.
@@ -95,8 +100,21 @@ namespace uwvm2::runtime::wasm_threads
             [[nodiscard]] ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const& world() const noexcept;
             [[nodiscard]] group_outcome read_outcome() const noexcept { return group_->read_outcome(); }
             void request_trap(::std::uint32_t kind, ::std::size_t module, ::std::size_t function,
-                ::std::uint64_t offset) noexcept
-            { group_->request_stop({termination_kind::trap, kind, module, function, offset}); }
+                ::std::uint64_t offset,journal_fault category=journal_fault::execution) noexcept
+            {
+                auto* context=current_thread_journal;
+                if(context&&!cancellation().stop_requested())
+                {
+                    auto event=journal_at(journal_kind::trap);event.a=static_cast<::std::uint32_t>(category);
+                    // The authentic last Wasm instruction is portable; native
+                    // trap enums and a JIT's unavailable PC sentinel are not.
+                    if(!context->has_location){event.module=context->logical_module(module);event.function=function;event.offset=offset;}
+                    if(!context->journal->select(*context,::std::move(event),false))
+                    {group_->request_stop({termination_kind::replay_refused,125u,module,function,offset});return;}
+                }
+                group_->request_stop({termination_kind::trap,kind,module,function,offset});
+                if(context)context->journal->release(*context);
+            }
             void request_proc_exit(::std::uint32_t code) noexcept
             { group_->request_stop({termination_kind::proc_exit, code, 0u, 0u, 0u}); }
             void report_memory_failure(::std::uint32_t phase, bool tainted,
@@ -128,6 +146,11 @@ namespace uwvm2::runtime::wasm_threads
             // Borrowed only while the actual slot owns this exact engine. Group
             // copies metadata under its lock and never exports this pointer.
             [[nodiscard]] virtual code_debug_image const* debug_image() const noexcept = 0;
+            // Run on the authentic worker, outside Group/P/provider/wait locks,
+            // before a requested stop can publish a coherent execution state.
+            // Pending asynchronous safety reports belong to that worker and
+            // must be delivered, or fault, before it becomes observable.
+            virtual void synchronize_debug_stop() noexcept = 0;
             // The concrete Runtime adapter MUST hold the real child world and
             // one actually compiled/bound engine. There is no callback fallback,
             // parent Guest entry, ready flag or successful default implementation.
@@ -185,13 +208,13 @@ namespace uwvm2::runtime::wasm_threads
         template<typename T> class stable_slots
         {
             mutable ::std::mutex registry_;
-            ::std::vector<::std::unique_ptr<T>> entries_;
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<T>> entries_;
         public:
             bool append() noexcept
             {
                 try
                 {
-                    auto value=::std::make_unique<T>();
+                    auto value=::uwvm2::utils::container::make_unique<T>();
                     ::std::lock_guard lock{registry_};entries_.push_back(::std::move(value));return true;
                 }
                 catch(...) { return false; }
@@ -214,27 +237,30 @@ namespace uwvm2::runtime::wasm_threads
             // Borrowed ONLY within this exact native_entry lexical scope.
             ::uwvm2::utils::thread::cooperative_pause_domain::participant* debug_participant{};
             wait_pause_policy* debug_wait_policy{};
-            ::std::uint64_t debug_participant_id{}, debug_poll_serial{};
-            bool debug_in_poll{}, debug_host_active{};
+            ::std::uint64_t debug_participant_id{}, debug_poll_serial{}, debug_poll_sequence{};
+            bool debug_in_poll{}, debug_host_active{}, debug_host_retained{};
             debug_stopped_worker debug_cell{};
             bool initial_main{};
             ::pthread_t thread{};
             native_stack stack;
             bool native_created{};
-            ::std::unique_ptr<ChildWork> work;
+            ::uwvm2::utils::container::std_unique_ptr<ChildWork> work;
             // Deliberate retention cycle until the manager physically joins.
             // Dropping an external handle must not destroy live native code.
             ::std::shared_ptr<ThreadedGroup> native_retention;
             bool launch_published{};
-            ::std::atomic<bool> body_returned{};
+            ::std::atomic<bool> body_returned{}, journal_departed{};
         };
+        // Cold native ownership identity. An inherited Group cannot issue a
+        // new observer in a fork child merely by using that child's current PID.
+        ::std::uint64_t const native_process_{static_cast<::std::uint64_t>(::getpid())};
         ::std::shared_ptr<ThreadedSpawnAdmission const> admission_;
         ::std::weak_ptr<ThreadedGroup> canonical_owner_;
         stable_slots<slot> slots_;
         ::std::atomic<::std::size_t> slot_count_{};
         ::std::mutex mutex_, retirement_mutex_;
         ::std::condition_variable changes_;
-        ::std::stop_source cancellation_;
+        ::uwvm2::utils::thread::stop_source cancellation_;
         wait_domain waits_;
         ::std::atomic_flag outcome_claimed_{};
         ::std::atomic<termination_kind> outcome_kind_{termination_kind::running};
@@ -254,6 +280,7 @@ namespace uwvm2::runtime::wasm_threads
         ::std::atomic<bool> debug_closed_{};
         ::std::uint64_t next_debug_incarnation_{1u};
         inline static thread_local slot* current_debug_slot_{};
+        ::std::shared_ptr<threaded_execution_journal> execution_journal_{};
         int stop_fd_{-1};
         int initialization_error_{};
 
@@ -344,7 +371,7 @@ namespace uwvm2::runtime::wasm_threads
                 auto const minimum_extra{sizeof(debug_control_state)-sizeof(debug_pause_domain)+minimum_pbytes+minimum_scratch};
                 if(minimum_extra>purpose.maximum_control_storage_bytes||minimum_extra>=limits.max_live_storage_bytes-fixed_storage_bytes_)
                 {accepting_=false;initialization_error_=ENOMEM;return;}
-                debug_control_.reset(new debug_control_state{debug_count});
+                debug_control_.reset(::uwvm2::utils::allocator::fast_io_strict::object<debug_control_state>([&](debug_control_state* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) debug_control_state{debug_count}; }));
                 auto const pbytes{debug_control_->pause.requested_storage_bytes()};
                 auto const scratch_bytes{debug_count*sizeof(debug_pause_domain::stopped_participant)};
                 if(pbytes==SIZE_MAX||pbytes>SIZE_MAX-sizeof(debug_control_state)||
@@ -434,7 +461,7 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] bool observing_debug() const noexcept
         {return admission_&&admission_->debug_observation()==threaded_debug_observation::readonly_metadata;}
         [[nodiscard]] bool debug_live(::std::uint64_t epoch) const noexcept
-        {return epoch==1u&&observing_debug()&&!debug_closed_.load(::std::memory_order_acquire)&&initialization_error_==0;}
+        {return epoch==1u&&native_process_==static_cast<::std::uint64_t>(::getpid())&&observing_debug()&&!debug_closed_.load(::std::memory_order_acquire)&&initialization_error_==0;}
         [[nodiscard]] debug_read_status debug_workers(::std::uint64_t epoch,
             ::std::span<threaded_debug_worker_ticket> output,::std::size_t& needed) noexcept
         {
@@ -481,7 +508,7 @@ namespace uwvm2::runtime::wasm_threads
             ::std::copy(image.logical_pcs().begin(),image.logical_pcs().end(),logical.begin());
             ::std::copy(image.cfi_ranges().begin(),image.cfi_ranges().end(),cfi.begin());
             output={s.tid,s.debug_native_tid,s.debug_incarnation,admission_->source_generation(),admission_->source_validation_epoch(),
-                ticket.position_,admission_->source_module_id(),s.debug_state,image.backend(),counts,
+                ticket.position_,image.source_module(),s.debug_state,image.backend(),counts,
                 image.exact_logical_pc_map(),false,false,false};
             if(!debug_live(epoch)){output={};return debug_read_status::stale;}
             return debug_read_status::ok;
@@ -566,9 +593,9 @@ namespace uwvm2::runtime::wasm_threads
         }
 
         [[nodiscard]] threaded_debug_session debug_session() noexcept
-        { return debug_live(1u)?threaded_debug_session{canonical_owner_,1u}:threaded_debug_session{}; }
+        { return debug_live(1u)?threaded_debug_session{canonical_owner_,1u,native_process_}:threaded_debug_session{}; }
         [[nodiscard]] threaded_debug_control_session debug_control_session() noexcept
-        {return debug_control_&&debug_live(1u)?threaded_debug_control_session{canonical_owner_,1u}:threaded_debug_control_session{};}
+        {return debug_control_&&debug_live(1u)?threaded_debug_control_session{canonical_owner_,1u,native_process_}:threaded_debug_control_session{};}
         [[nodiscard]] SpawnReservation reserve() noexcept { return reserve_selected(false); }
 
     private:
@@ -577,13 +604,19 @@ namespace uwvm2::runtime::wasm_threads
         // is never a successful wasi.thread-spawn result. Parent code must be
         // independently compiled with the same threaded execution controls.
         [[nodiscard]] SpawnReservation reserve_initial_main() noexcept { return reserve_selected(true); }
-        [[nodiscard]] SpawnReservation reserve_selected(bool initial_main) noexcept
+        [[nodiscard]] SpawnReservation reserve_selected(bool initial_main, ::std::uint32_t replay_tid=0u) noexcept
         {
             if(initialization_error_ != 0 || !admission_) { return {}; }
             auto retained{canonical_owner_.lock()};
             if(!retained) { return {}; }
             ::std::lock_guard lock{mutex_};
             auto const& limits{admission_->limits()};
+            if(replay_tid)
+            {
+                if(initial_main||!execution_journal_||replay_tid>=(1u<<29u))return {};
+                for(::std::size_t i{1u};i<slot_count_.load(::std::memory_order_acquire);++i)
+                    if(slots_[i].phase!=slot_phase::empty&&slots_[i].tid==replay_tid)return {};
+            }
             if(initialization_error_ != 0 || !runtime_control_charged_ || !accepting_ || stop_requested_.load(::std::memory_order_acquire) ||
                (observing_debug() && next_debug_incarnation_ == UINT64_MAX) ||
                (initial_main ? initial_main_reserved_ :
@@ -613,7 +646,9 @@ namespace uwvm2::runtime::wasm_threads
                 auto& selected{slots_[i]};
                 if(selected.phase != slot_phase::empty) { continue; }
                 selected.phase = slot_phase::preparing; selected.initial_main = initial_main;
-                selected.tid = initial_main ? 0u : limits.max_spawn_attempts==UINT32_MAX ? static_cast<::std::uint32_t>(i) : next_tid_++;
+                selected.tid = initial_main ? 0u : replay_tid ? replay_tid : limits.max_spawn_attempts==UINT32_MAX ? static_cast<::std::uint32_t>(i) : next_tid_++;
+                if(replay_tid>=next_tid_)next_tid_=replay_tid+1u;
+                selected.journal_departed.store(false,::std::memory_order_relaxed);
                 if(observing_debug())selected.debug_incarnation = next_debug_incarnation_++;
                 selected.debug_registered = false; selected.debug_native_tid = 0u;
                 selected.body_returned.store(false, ::std::memory_order_relaxed);
@@ -628,9 +663,58 @@ namespace uwvm2::runtime::wasm_threads
             return {};
         }
 
+        // Only the authenticated replay adapter calls this. A recorded leave
+        // proves that a child has no remaining Guest work, but its real TLS and
+        // native stack still require pthread join. Finish those departures before
+        // recreating a recorded spawn; kernel cleanup timing must not change the
+        // Guest TID or manufacture a capacity failure during deterministic replay.
+        [[nodiscard]] bool reap_replay_departures() noexcept
+        {
+            if(!execution_journal_||!current_thread_journal||current_thread_journal->journal!=execution_journal_.get())return false;
+            for(;;)
+            {
+                if(cancellation_.stop_requested())return false;
+                {
+                    ::std::lock_guard lock{mutex_};bool needed{};
+                    for(::std::size_t i{1u};i<slot_count_.load(::std::memory_order_acquire);++i)
+                        needed|=slots_[i].phase!=slot_phase::empty&&slots_[i].journal_departed.load(::std::memory_order_acquire);
+                    // The manager may already have reaped all departures while
+                    // owning retirement_mutex_. Do not wait for that mutex when
+                    // no departed native resource remains to retire.
+                    if(!needed)return true;
+                }
+                bool pending{};
+                {
+                    ::std::unique_lock retirement{retirement_mutex_,::std::try_to_lock};
+                    if(!retirement.owns_lock())pending=true;
+                    else for(::std::size_t i{1u};i<slot_count_.load(::std::memory_order_acquire);++i)
+                    {
+                        ::pthread_t thread{};::std::uint32_t tid{};bool native{};
+                        {
+                            ::std::lock_guard lock{mutex_};auto& s=slots_[i];
+                            if(s.phase==slot_phase::empty||!s.journal_departed.load(::std::memory_order_acquire))continue;
+                            if(debug_control_&&debug_control_->phase!=debug_control_phase::idle)return false;
+                            if(s.phase!=slot_phase::running||!s.native_created||::pthread_equal(s.thread,::pthread_self()))return false;
+                            tid=s.tid;thread=s.thread;native=s.native_created;s.phase=slot_phase::joining;
+                        }
+                        auto joined=native?::pthread_tryjoin_np(thread,nullptr):0;
+                        {
+                            ::std::lock_guard lock{mutex_};auto& s=slots_[i];
+                            if(joined==0){s.native_created=false;s.phase=slot_phase::cleaning;}
+                            else{s.phase=slot_phase::running;pending=true;}
+                        }
+                        if(joined!=0&&joined!=EBUSY)return false;
+                        if(joined==0&&retire_slot_storage(i,tid)!=0)return false;
+                    }
+                }
+                if(!pending)return true;
+                ::std::unique_lock lock{mutex_};changes_.wait_for(lock,::std::chrono::milliseconds{1});
+            }
+        }
+
     public:
         [[nodiscard]] launch_result launch(SpawnReservation&& reservation,
-            ::std::unique_ptr<ChildWork> work, ::std::uint32_t opaque_argument) noexcept
+            ::uwvm2::utils::container::std_unique_ptr<ChildWork> work, ::std::uint32_t opaque_argument) noexcept
         {
             if(initialization_error_ != 0 || !admission_) { return {-1, initialization_error_}; }
             if(!actual_compiler_reservation(reservation) || !work || !work->retained_world() ||
@@ -750,6 +834,16 @@ namespace uwvm2::runtime::wasm_threads
                     ::std::uint32_t expected_tid{};
                     {
                         ::std::lock_guard lock{mutex_};
+                        // A coherent private all-stop retains both live
+                        // workers and returned child owners. Reaping cannot
+                        // change a slot/World while that stop is being issued,
+                        // read or resumed. Terminal request_stop closes control
+                        // first, so real cancellation/join remains available.
+                        if(debug_control_ &&
+                           (debug_control_->phase==debug_control_phase::arming ||
+                            debug_control_->phase==debug_control_phase::armed ||
+                            debug_control_->phase==debug_control_phase::resuming))
+                            return {false,0u,0u,EBUSY};
                         auto& selected{slots_[i]};
                         expected_tid = selected.tid;
                         if(selected.phase == slot_phase::empty) { continue; }
@@ -816,16 +910,34 @@ namespace uwvm2::runtime::wasm_threads
 
     inline debug_read_status threaded_debug_session::workers(::std::span<threaded_debug_worker_ticket> output,
         ::std::size_t& needed) const noexcept
-    {if(!epoch_){needed=0u;return debug_read_status::unavailable;}auto group{group_.lock()};if(!group){needed=0u;return debug_read_status::stale;}return group->debug_workers(epoch_,output,needed);}
+    {if(!epoch_){needed=0u;return debug_read_status::unavailable;}if(native_process_!=static_cast<::std::uint64_t>(::getpid())){needed=0u;return debug_read_status::stale;}auto group{group_.lock()};if(!group){needed=0u;return debug_read_status::stale;}return group->debug_workers(epoch_,output,needed);}
     inline debug_read_status threaded_debug_session::read(threaded_debug_worker_ticket const& ticket,debug_worker_snapshot& output,
         ::std::span<debug_function_row> functions,::std::span<debug_logical_pc_row> logical,::std::span<debug_cfi_row> cfi) const noexcept
-    {if(!epoch_){output={};return debug_read_status::unavailable;}auto group{group_.lock()};if(!group){output={};return debug_read_status::stale;}return group->debug_read(epoch_,ticket,output,functions,logical,cfi);}
+    {if(!epoch_){output={};return debug_read_status::unavailable;}if(native_process_!=static_cast<::std::uint64_t>(::getpid())){output={};return debug_read_status::stale;}auto group{group_.lock()};if(!group){output={};return debug_read_status::stale;}return group->debug_read(epoch_,ticket,output,functions,logical,cfi);}
 
     inline wait_pause_policy* ThreadedGroup::ChildLease::debug_wait_attachment() const noexcept
     {return group_->debug_control_&&current_debug_slot_==slot_&&owns_current_native_thread()?slot_->debug_wait_policy:nullptr;}
     inline bool ThreadedGroup::ChildLease::debug_safepoint(debug_stop_site site,::std::size_t module,
         ::std::size_t function,::std::uint64_t offset,::std::size_t instruction) noexcept
-    {return !group_->debug_control_||group_->debug_poll(*slot_,site,module,function,offset,instruction);}
+    {
+        auto* context=current_thread_journal;
+        if(context&&site==debug_stop_site::before_instruction)
+        {
+            context->journal->release(*context);
+            context->location={};context->location.module=module;context->location.function=function;context->location.offset=offset;context->location.a=instruction;context->has_location=true;
+        }
+        if(group_->debug_control_&&!group_->debug_poll(*slot_,site,module,function,offset,instruction))return false;
+        if(context&&site==debug_stop_site::before_instruction)
+        {
+            // The decoded-instruction ordinal is a backend-local debugger
+            // index (LLVM can omit unreachable structural entries). Only the
+            // validated Wasm byte offset is the portable execution identity.
+            auto event=journal_at(journal_kind::instruction);
+            if(!context->journal->select(*context,::std::move(event)))
+            {if(!cancellation().stop_requested())group_->request_stop({termination_kind::replay_refused,125u,module,function,offset});return false;}
+        }
+        return true;
+    }
     inline void ThreadedGroup::SpawnReservation::cancel() noexcept
     { if(group_ != nullptr) { group_->cancel_reservation(position_, tid_); clear(); } retained_group_.reset(); }
     inline ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const& ThreadedGroup::ChildLease::world() const noexcept
@@ -842,7 +954,8 @@ namespace uwvm2::runtime::wasm_threads
     [[nodiscard]] host_dispatch_status dispatch_import(ThreadedGroup::ChildLease&,
         ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const&,
         ::std::size_t caller_module, ::std::size_t caller_function, ::std::size_t imported_function,
-        ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module=false) noexcept;
+        ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module=false,
+        ::std::size_t import_receiver=SIZE_MAX) noexcept;
     [[nodiscard]] import_admission admit_import(
         ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const&,
         ::std::size_t caller_module, ::std::size_t imported_function) noexcept;

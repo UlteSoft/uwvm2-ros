@@ -8,6 +8,9 @@
  * A successful peek borrows; only a distinct successful ACK consumes it.
  */
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -29,7 +32,7 @@ namespace uwvm2::uwvm::imported::ros::host
         core::authorization source{},paired{};
         core::rmw_service_bindings::entry const* pair{};
         core::rmw_endpoint_history::entry const* endpoint{};
-        rmw_service_journal* journal{};::std::unique_ptr<audit_result> audit{};
+        rmw_service_journal* journal{};::uwvm2::utils::container::std_unique_ptr<audit_result> audit{};
         rmw_srv_wire::control request{};
         ::std::uint32_t prepare(::std::uint64_t handle,::std::uint64_t incarnation,
             ::std::uint64_t activation_peer,::std::string_view function)
@@ -59,7 +62,7 @@ namespace uwvm2::uwvm::imported::ros::host
                 journal=&backend->rmw_service_journals.emplace(handle,rmw_service_journal{}).first->second;
             }
             if(journal){journal->begin_api();}
-            audit.reset(new audit_result{caller.runtime_instance,caller.generation,core::version::ros2,source.capability()->alias});
+            audit.reset(::uwvm2::utils::allocator::fast_io_strict::object<audit_result>([&](audit_result* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) audit_result{caller.runtime_instance,caller.generation,core::version::ros2,source.capability()->alias}; }));
             audit->function=function;
             ::std::uint64_t source_timeout{};
             if(!core::read_quota(*source.capability(),"timeout-ms",source_timeout)){return 22;}
@@ -110,7 +113,7 @@ namespace uwvm2::uwvm::imported::ros::host
         return function(call);
 #endif
     }
-    inline bool rmw_service_encode(rmw_srv_wire::control const& request,::std::vector<::std::uint8_t>& packet) noexcept
+    inline bool rmw_service_encode(rmw_srv_wire::control const& request,::uwvm2::utils::container::std_vector<::std::uint8_t>& packet) noexcept
     {
         ::std::array<::std::uint8_t,rmw_srv_wire::header_bytes> raw{};
         if(packet.size()!=rmw_srv_wire::header_bytes+request.body_bytes||!rmw_srv_wire::encode(request,false,raw)){return false;}
@@ -160,7 +163,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(required!=static_cast<rmw_wire::role>(0)&&call.request.kind!=required){return call.finish(95);}
             auto& backend{*call.backend};call.request.operation=operation;
             // Reserve the complete RPC packet before connect/native effects.
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
             if(operation==rmw_srv_wire::command::activate)
             {
                 ::std::uint64_t maximum{core::unlimited_quota};::std::size_t maximum_native{};
@@ -250,7 +253,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!core::ipc::request_data_fits("rmw.service-v1",cap.alias,length+rmw_srv_wire::header_bytes)){return call.finish(90);}
             if(!core::read_quota(cap,rmw_service_values::send_limit_key(respond),maximum)){return call.finish(22);}
             if(length>maximum){return call.finish(90);}
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes+static_cast<::std::size_t>(length));
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes+static_cast<::std::size_t>(length));
             auto body{::std::span<::std::uint8_t>{raw.data()+rmw_srv_wire::header_bytes,static_cast<::std::size_t>(length)}};
             if(!observed_read(memory,input,body.data(),body.size())){return call.finish(22);}
             core::authorization admitted;core::result granted;
@@ -297,7 +300,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!memory_range(memory,output,capacity)){return call.finish(22);}
             if(auto error{call.prepare(handle,incarnation,0,"rmw.service_peek")}){return call.finish(error);}
             if(call.journal->pending_sequence){return call.finish(17);}
-            // The old event_poll_v1 contract charges one observer poll operation
+            // The old event_stream_poll contract charges one observer poll operation
             // even when native returns idle11. Header/body credit is separate.
             core::authorization polling;
             if(call.request.kind==rmw_wire::role::client)
@@ -308,7 +311,7 @@ namespace uwvm2::uwvm::imported::ros::host
             }
             call.request.operation=rmw_srv_wire::command::peek;call.request.capacity=capacity;
             call.request.writer_bytes=static_cast<::std::uint8_t>(expected_writer);
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
             if(!rmw_service_encode(call.request,raw)){return call.finish(22);}
             auto budget{call.begin()};if(!budget){return call.finish(110);}
             rmw_rpc_guard guard{*call.backend,true,13};
@@ -382,7 +385,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(auto error{call.prepare(handle,incarnation,0,operation==rmw_srv_wire::command::commit?"rmw.service_commit":"rmw.service_cancel")}){return call.finish(error);}
             if(!sequence||!reservation||sequence!=call.journal->pending_sequence||reservation!=call.journal->pending_reservation){return call.finish(13);}
             call.request.operation=operation;call.request.sequence=sequence;call.request.reservation=reservation;
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
             if(!rmw_service_encode(call.request,raw)){return call.finish(22);}
             auto budget{call.begin()};if(!budget){return call.finish(110);}
             if(operation==rmw_srv_wire::command::commit){call.journal->committed(115);}
@@ -417,7 +420,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(auto error{call.prepare(handle,incarnation,0,"rmw.client_abandon")}){return call.finish(error);}
             if(call.request.kind!=rmw_wire::role::client){return call.finish(95);}
             call.request.operation=rmw_srv_wire::command::abandon;call.request.ticket=ticket;
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
             if(!rmw_service_encode(call.request,raw)){return call.finish(22);}
             auto budget{call.begin()};if(!budget){return call.finish(110);}
             rmw_rpc_guard guard{*call.backend,true,13};
@@ -470,7 +473,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(auto error{call.backend->rmw_service_queries.bind(association,query.capability()->alias,call.source.capability()->alias,
                 call.request.owner.session,history_native,history)}){return call.finish(error);}
             call.request.operation=rmw_srv_wire::command::available;call.request.peer=availability;call.request.wait_ns=wait_ns;
-            ::std::vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> raw(rmw_srv_wire::header_bytes);
             if(!rmw_service_encode(call.request,raw)){return call.finish(22);}
             auto budget{call.begin()};if(!budget){return call.finish(110);}
             // No sleep or graph fallback. The original deadline must cover the

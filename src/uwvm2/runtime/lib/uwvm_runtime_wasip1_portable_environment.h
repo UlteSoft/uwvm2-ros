@@ -24,14 +24,10 @@
         auto proof=capture_current(key,selected,epoch,profile,false);
         if(proof.status!=status::captured || !proof.capsule) { return proof; }out.observed_runtime_epoch=epoch;
         auto& environment=resolve_wasip1_env_for_runtime_module_id(static_cast<::std::size_t>(selected.module));
-        auto* arguments=::std::addressof(storage::wasip1_argument_storage);
-        auto* variables=::std::addressof(storage::wasip1_environment_storage);
-        if(::std::addressof(environment)!=::std::addressof(storage::default_wasip1_env))
-        {
-            auto group=find_wasip1_override_for_runtime_module_id_slow(static_cast<::std::size_t>(selected.module));
-            if(group==nullptr || ::std::addressof(group->env)!=::std::addressof(environment)) { out.status=status::stale_environment;return out; }
-            arguments=::std::addressof(group->argument_storage);variables=::std::addressof(group->environment_storage);
-        }
+        runtime_wasip1_debug_environment::strings* arguments{};
+        runtime_wasip1_debug_environment::strings* variables{};
+        if(!runtime_wasip1_debug_environment::resolve_text_owners(static_cast<::std::size_t>(selected.module),environment,arguments,variables))
+        { out.status=status::unavailable_owned_text;return out; }
         auto& table=environment.fd_storage;
         if(table.opens.size()>pp::max_rows || table.renumber_map.size()>pp::max_rows-table.opens.size() || table.closes.size()>table.opens.size())
         { out.status=status::resource_limit;return out; }
@@ -61,7 +57,7 @@
         { out.status=s;out.diagnostic=::fast_io::u8concat_fast_io(u8"resource=",index,u8" ",why);return out; };
         if(!selected.portable_restore)
         {
-            auto s=::std::make_shared<pp::snapshot>();s->recording_label=selected.recording_label;
+            auto s=::uwvm2::utils::container::make_shared<pp::snapshot>();s->recording_label=selected.recording_label;
             s->original_wasm=proof.capsule->data_.original_wasm;s->builtin_interface=proof.capsule->data_.builtin_interface;
             if(!runtime_wasip1_debug_environment::bound_text(*arguments,environment.argv) ||
                !runtime_wasip1_debug_environment::bound_text(*variables,environment.envs)) { out.status=status::unavailable_owned_text;return out; }
@@ -74,10 +70,10 @@
             { out.status=status::resource_limit;return out; }
             s->opens_size=static_cast<::std::uint32_t>(table.opens.size());
             for(auto n:table.closes) { s->closed.push_back(static_cast<::std::uint32_t>(n)); }
-            ::std::vector<::std::uint64_t> numbers{};
+            ::uwvm2::utils::container::std_vector<::std::uint64_t> numbers{};
             for(::std::size_t n{};n<table.opens.size();++n) { numbers.push_back(n); }
             for(auto const& [n,unused]:table.renumber_map) { (void)unused;if(n<0) { out.status=status::unavailable_environment;return out; } numbers.push_back(n); }
-            ::std::sort(numbers.begin(),numbers.end());::std::vector<fd_ref> actuals{};
+            ::std::sort(numbers.begin(),numbers.end());::uwvm2::utils::container::std_vector<fd_ref> actuals{};
             ::uwvm2::utils::container::map<void const*,::std::size_t> resource_indices{};
             for(auto n:numbers)
             {
@@ -164,9 +160,9 @@
         { if(!protected_cell(n,table.opens.index_unchecked(n))) { return fail(status::capability_denied,n,u8"target reserved descriptor must remain reserved"); } }
         for(auto const& [n,cell]:table.renumber_map)
         { if(n<0 || !protected_cell(static_cast<::std::uint64_t>(n),cell)) { return fail(status::capability_denied,static_cast<::std::size_t>(n),u8"target reserved descriptor must remain reserved"); } }
-        ::std::vector<::std::uint64_t> bases(s.resources.size()),inherits(s.resources.size());
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> bases(s.resources.size()),inherits(s.resources.size());
         for(auto const& b:s.bindings) { bases[b.resource_index]|=b.base;inherits[b.resource_index]|=b.inheriting; }
-        ::std::vector<fd*> targets(s.resources.size());
+        ::uwvm2::utils::container::std_vector<fd*> targets(s.resources.size());
         for(auto const& b:selected.portable_rebindings)
         {
             if(b.resource_index>=s.resources.size() || b.target_descriptor>INT32_MAX || targets[b.resource_index]!=nullptr)
@@ -199,7 +195,7 @@
         };
         for(auto const& cell:table.opens) { index_target(cell); }
         for(auto const& [n,cell]:table.renumber_map) { (void)n;index_target(cell); }
-        ::std::vector<fd_ref> replacements{};replacements.reserve(s.resources.size());
+        ::uwvm2::utils::container::std_vector<fd_ref> replacements{};replacements.reserve(s.resources.size());
         for(::std::size_t i{};i<s.resources.size();++i)
         {
             auto r=s.resources[i];fd* target=targets[i];
@@ -434,7 +430,7 @@
         prepared.reserve(selected.size());
         for(::std::size_t index{};index!=selected.size();++index)
         {
-            auto next{::std::make_unique<prepared_current_environment>()};
+            auto next{::uwvm2::utils::container::make_unique<prepared_current_environment>()};
             auto checked{portable_current(key,selected[index],epoch,profile,next.get())};
             if(checked.status!=status::captured)
             {

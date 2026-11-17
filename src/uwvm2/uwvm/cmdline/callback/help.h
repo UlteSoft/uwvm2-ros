@@ -271,12 +271,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             output_category_hint(u8"<wasm>", u8"wasm");
             output_category_hint(u8"<secure>", u8"secure");
             output_category_hint(u8"<runtime>", u8"runtime");
+            output_category_hint(u8"<wasithread I1T>", u8"wasithread");
             output_category_hint(u8"<log>", u8"log");
 #if defined(UWVM_IMPORT_ROS1)
-            output_category_hint(u8"<ros1>", u8"ros1");
+            output_category_hint(u8"<ros1 deprecated>", u8"ros1");
 #endif
 #if defined(UWVM_IMPORT_ROS2)
-            output_category_hint(u8"<ros2>", u8"ros2");
+            output_category_hint(u8"<ros2 deprecated>", u8"ros2");
+#endif
+#if defined(UWVM_IMPORT_ROSV2)
+            output_category_hint(u8"<rosv2>", u8"rosv2");
 #endif
 #if defined(UWVM_IMPORT_WASI)
             output_category_hint(u8"<wasi>", u8"wasi");
@@ -323,12 +327,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::ros1);
         }
 #endif
+#if defined(UWVM_IMPORT_ROSV2)
+        else if(currp1_str == u8"rosv2")
+        {
+            help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::ros_scene);
+        }
+#endif
 #if defined(UWVM_IMPORT_ROS2)
         else if(currp1_str == u8"ros2")
         {
             help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::ros2);
         }
 #endif
+        else if(currp1_str == u8"wasithread" || currp1_str == u8"I1T")
+        {
+            help_output_singal_cate(u8log_output_ul, ::uwvm2::utils::cmdline::categorization::wasithread);
+        }
         else if(currp1_str == u8"update")
         {
             ::fast_io::io::perrln(u8log_output_ul, u8"Production update arguments (signed, exclusive transfer):");

@@ -31,7 +31,7 @@
         function->getFunctionType() != state.llvm_function->getFunctionType())) { return false; }
     auto prepared{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *wasm_type)};
     if(!prepared.valid) { return false; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
 #endif
     auto const core_parameter_count{function->arg_size()};

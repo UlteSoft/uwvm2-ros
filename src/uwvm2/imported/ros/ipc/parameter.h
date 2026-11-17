@@ -2,6 +2,7 @@
  * UWVM2 canonical typed parameters. APL-2.0.                *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 #include "../common/types.h"
 #include "../common/quota.h"
@@ -24,16 +25,16 @@ namespace uwvm2::imported::ros::ipc
     struct parameter_value
     {
         parameter_kind type{parameter_kind::unsupported};
-        std::string string_value{};
+        ::uwvm2::utils::container::std_string string_value{};
         bool bool_value{};
         std::int64_t integer_value{};
         double double_value{};
-        std::vector<std::uint8_t> bool_array_value{};
-        std::vector<std::int32_t> int32_array_value{};
-        std::vector<std::int64_t> int64_array_value{};
-        std::vector<double> double_array_value{};
-        std::vector<std::string> string_array_value{};
-        std::vector<std::uint8_t> byte_array_value{};
+        ::uwvm2::utils::container::std_vector<std::uint8_t> bool_array_value{};
+        ::uwvm2::utils::container::std_vector<std::int32_t> int32_array_value{};
+        ::uwvm2::utils::container::std_vector<std::int64_t> int64_array_value{};
+        ::uwvm2::utils::container::std_vector<double> double_array_value{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> string_array_value{};
+        ::uwvm2::utils::container::std_vector<std::uint8_t> byte_array_value{};
     };
     inline constexpr parameter_kind parameter_type(version backend,std::string_view type) noexcept
     {
@@ -203,7 +204,7 @@ namespace uwvm2::imported::ros::ipc
         if(nonzero&&std::abs(candidate)<=std::numeric_limits<double>::min())
 #endif
         {
-            std::istringstream stream{std::string{text}};stream.imbue(std::locale::classic());
+            ::uwvm2::utils::container::std_istringstream stream{::uwvm2::utils::container::std_string{text}};stream.imbue(std::locale::classic());
             stream>>std::noskipws>>candidate;
             if(stream.fail()||!stream.eof()) { return false; }
         }
@@ -348,7 +349,7 @@ namespace uwvm2::imported::ros::ipc
     namespace parameter_detail
     {
         // Call only after parameter_encoded_size succeeds.
-        inline void append_checked(parameter_value const& value,std::vector<std::uint8_t>& bytes)
+        inline void append_checked(parameter_value const& value,::uwvm2::utils::container::std_vector<std::uint8_t>& bytes)
         {
             if(array_parameter(value.type))
             {
@@ -372,10 +373,10 @@ namespace uwvm2::imported::ros::ipc
             else { put(bytes,static_cast<std::uint64_t>(value.integer_value),value.type==parameter_kind::int32?4:8); }
         }
     }
-    inline std::uint32_t encode_parameter(parameter_value const& value,std::vector<std::uint8_t>& output)
+    inline std::uint32_t encode_parameter(parameter_value const& value,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     {
         std::size_t size{};auto error{parameter_encoded_size(value,size)};if(error) { return error; }
-        std::vector<std::uint8_t> candidate;candidate.reserve(size);parameter_detail::append_checked(value,candidate);
+        ::uwvm2::utils::container::std_vector<std::uint8_t> candidate;candidate.reserve(size);parameter_detail::append_checked(value,candidate);
         output=std::move(candidate);return 0;
     }
     inline std::uint32_t validate_parameter_contract(version backend,capability_spec const& cap)

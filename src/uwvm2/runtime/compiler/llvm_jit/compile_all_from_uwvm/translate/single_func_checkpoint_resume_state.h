@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Same-walk compiler state only. None of these LLVM handles escape into a
 // checkpoint file or identify a live runtime publication.
 struct runtime_local_func_llvm_jit_emit_state_t;
@@ -13,7 +14,7 @@ struct llvm_jit_checkpoint_resume_dispatch_emit_state
     ::llvm::Value* flag_count{};
     ::llvm::AllocaInst* executed_flags{};
     ::llvm::BasicBlock* reject{};
-    ::std::vector<::std::uint64_t> installed_sites{};
+    ::uwvm2::utils::container::std_vector<::std::uint64_t> installed_sites{};
     // Compiler-owned zero SSA inputs remain zero in the public normal body.
     // Only the exact-original-ABI private clone substitutes authenticated
     // owner/TLS getter results. Normal execution folds its selector away and
@@ -31,5 +32,5 @@ struct llvm_jit_checkpoint_call_emit_state
     // activation/root frame remains live. These are compiler-owned SSA handles,
     // never native addresses, wire labels or independent resume permission.
     ::llvm::BasicBlock* nested_return_predecessor{};
-    ::std::vector<::llvm::Value*> nested_after_values{};
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> nested_after_values{};
 };

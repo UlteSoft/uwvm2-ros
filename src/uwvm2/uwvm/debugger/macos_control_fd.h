@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(__APPLE__) && defined(__MACH__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -121,7 +124,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // send_bytes borrows it only while this owned word remains alive.
             return send_bytes(reinterpret_cast<char const*>(::std::addressof(header)), sizeof(header)) && send_bytes(bytes, size);
         }
-        [[nodiscard]] bool send_text(::std::string const& message) const noexcept
+        [[nodiscard]] bool send_text(::uwvm2::utils::container::std_string const& message) const noexcept
         {
             if(message.size() > maximum_reply_bytes)
             { return send_literal("error: bounded debugger response exceeded 65536 bytes\n"); }
@@ -240,7 +243,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         macos_control_fd(macos_control_fd const&) = delete;
         macos_control_fd& operator=(macos_control_fd const&) = delete;
         ~macos_control_fd() { close_endpoint(); }
-        [[nodiscard]] static ::std::unique_ptr<macos_control_fd> adopt(int fd) noexcept
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<macos_control_fd> adopt(int fd) noexcept
         {
             if(fd < 3) { return {}; }
             ::fast_io::native_file supplied{fd};
@@ -262,8 +265,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(posix_abi::getsockopt_noexcept(fd, SOL_LOCAL, LOCAL_PEERTOKEN, &token, &length) != 0 || length != sizeof(token)) { return {}; }
             // Ownership moves only after successful allocation. Rejection still
             // retires the inherited endpoint through supplied's native_file.
-            auto channel{::std::unique_ptr<macos_control_fd>{new (::std::nothrow) macos_control_fd(
-                ::std::move(supplied), pid, credential.cr_uid, credential.cr_gid, token)}};
+            auto channel{::uwvm2::utils::container::std_unique_ptr<macos_control_fd>{::uwvm2::utils::allocator::fast_io_strict::try_object<macos_control_fd>([&](macos_control_fd* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) macos_control_fd(
+                ::std::move(supplied), pid, credential.cr_uid, credential.cr_gid, token); })}};
             if(!channel) { return {}; }
             if(!channel->peer_live()) { return {}; }
             int const flags{posix_abi::fcntl_noexcept(fd, F_GETFD)};
@@ -297,7 +300,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(!frame.valid) { continue; }
                 if(command_view{frame.bytes.data(), frame.size} == "permissions")
                 {
-                    auto const text=::fast_io::concat_std("permissions ",::std::string{::uwvm2::utils::control::debug_permissions::name()},"\n");
+                    auto const text=::uwvm2::utils::container::concat("permissions ",::uwvm2::utils::container::std_string{::uwvm2::utils::control::debug_permissions::name()},"\n");
                     if(!send_text(text.data(),text.size()))return;
                     continue;
                 }
@@ -343,6 +346,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::wasip1_state:
                     case console_command_kind::host_trace:
                     case console_command_kind::ros_state:
+                    case console_command_kind::scene_state:
+                    case console_command_kind::wasithread_state:
                     case console_command_kind::watchpoint:
                 case console_command_kind::breakpoint_commands:
                 case console_command_kind::callback_echo:
@@ -359,8 +364,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::source_print_options:
                     case console_command_kind::source_printer_config:
                     case console_command_kind::wasm_disassemble:
+                    case console_command_kind::snapshot_record:
+                    case console_command_kind::snapshot_restore:
                     case console_command_kind::wasm_dump:
                     case console_command_kind::module_list:
+                    case console_command_kind::host_interfaces:
                     case console_command_kind::protocol: break;
                 }
                 if(!send_text(details::execute_control_command(control, command))) { return; }

@@ -2,6 +2,7 @@
 // runtime namespace after full publications/real execution and publication
 // guards. Not selected by the current runtime; no ordinary guest IR is emitted.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++"
 {
@@ -35,14 +36,14 @@ extern "C++"
             // Declaration counts in exact function/table/memory/global/tag/data/
             // element index order. No native vector, pointer or JIT view is copied.
             ::std::array<::std::uint64_t, 7u> declaration_counts{};
-            ::std::vector<::std::byte> original_module{};
-            ::std::vector<data_segment> data{};
+            ::uwvm2::utils::container::std_vector<::std::byte> original_module{};
+            ::uwvm2::utils::container::std_vector<data_segment> data{};
         };
         struct result
         {
             status observation{status::invalid_management_scope};
             ::std::uint64_t observed_runtime_epoch{};
-            ::std::vector<module_data> modules{};
+            ::uwvm2::utils::container::std_vector<module_data> modules{};
             // This particular DATA producer has no whole mutable-resource, root,
             // host adapter, publication, restore or replay credential.
             inline static constexpr bool complete_instance = false;
@@ -182,7 +183,7 @@ extern "C++"
                 // Complete actual dense cohort, including modules absent from all
                 // live frames. ALL origins/counts/quotas are checked before byte
                 // copying, allocation of payload vectors or positive DATA output.
-                ::std::vector<source_owner> sources(modules);
+                ::uwvm2::utils::container::std_vector<source_owner> sources(modules);
                 ::std::size_t source_bytes{}, segments{};
                 for(::std::size_t id{}; id != modules; ++id)
                 {

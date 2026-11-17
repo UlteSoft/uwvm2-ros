@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <limits>
@@ -48,7 +49,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     // Published store layouts never rebuild it. No parser pointers survive.
     class gc_trace_metadata
     {
-        ::std::unique_ptr<::std::size_t[]> reference_fields_{};
+        ::uwvm2::utils::allocator::resource::owned_array<::std::size_t> reference_fields_{};
         ::std::size_t field_count_{};
         ::std::size_t reference_count_{};
         gc_trace_type::composite_kind kind_{};
@@ -120,7 +121,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 }
 #endif
             }
-            ::std::unique_ptr<::std::size_t[]> indices{};
+            ::uwvm2::utils::allocator::resource::owned_array<::std::size_t> indices{};
             if(kind == gc_trace_type::composite_kind::struct_ && references != 0uz
 #if defined(UWVM_EXPERIMENTAL_INLINE_GC_TRACE_METADATA) && UWVM_EXPERIMENTAL_INLINE_GC_TRACE_METADATA == 1
                && field_count > 64uz
@@ -133,7 +134,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #if defined(UWVM2TEST_GC_TRACE_METADATA_ALLOCATION_PROBE) && UWVM2TEST_GC_TRACE_METADATA_ALLOCATION_PROBE == 1
                 gc_trace_metadata_allocation_probe(references);
 #endif
-                indices.reset(new(::std::nothrow) ::std::size_t[references]);
+                indices = ::uwvm2::utils::allocator::resource::try_array<::std::size_t>(references);
                 if(!indices) { return gc_trace_metadata_status::out_of_memory; }
                 ::std::size_t position{};
                 for(::std::size_t index{}; index != field_count; ++index)

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_objects.h"
 #endif
@@ -16,13 +17,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     struct object_selector_step
     {
         object_selector_kind kind{};
-        ::std::string member{};
+        ::uwvm2::utils::container::std_string member{};
         ::std::int64_t index{};
     };
     struct object_selector
     {
-        ::std::string root_name{};
-        ::std::vector<object_selector_step> steps{};
+        ::uwvm2::utils::container::std_string root_name{};
+        ::uwvm2::utils::container::std_vector<object_selector_step> steps{};
     };
     struct object_selector_limits
     {
@@ -73,7 +74,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 // [safe] root began at text[0]; all parsed namespace segments are within text.
                 root = text.substr(0u, cursor);
             }
-            pending.root_name = ::fast_io::concat_std(root);
+            pending.root_name = ::uwvm2::utils::container::concat(root);
             while(cursor < text.size())
             {
                 if(pending.steps.size() >= cap.max_steps) { return object_selector_error::limit_exceeded; }
@@ -82,7 +83,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 if(opcode == '.')
                 {
                     ::std::string_view member{}; if(!identifier(true, member)) { return object_selector_error::malformed; }
-                    step.kind = object_selector_kind::member; step.member = ::fast_io::concat_std(member);
+                    step.kind = object_selector_kind::member; step.member = ::uwvm2::utils::container::concat(member);
                 }
                 else if(opcode == '[')
                 {
@@ -288,7 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         };
         [[nodiscard]] inline inline_query_error query(::std::span<type_record const> types, ::std::size_t root_type,
             ::std::span<object_selector_step const> steps, ::std::span<::std::byte const> bytes, ::std::span<::std::byte const> known_bits,
-            bool values, ::std::vector<object_node>& out, object_selector_limits const& cap) noexcept
+            bool values, ::uwvm2::utils::container::std_vector<object_node>& out, object_selector_limits const& cap) noexcept
         {
             out.clear();
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -309,7 +310,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 selected_object selected{}; selected.type = root_type;
                 if(!object_details::size(types[root_type], selected.extent)) { return inline_query_error::unavailable; }
                 if(values && selected.extent > bytes.size()) { return inline_query_error::malformed; }
-                resolver lookup{types, bytes, known_bits, cap, values}; ::std::string label{};
+                resolver lookup{types, bytes, known_bits, cap, values}; ::uwvm2::utils::container::std_string label{};
                 for(auto const& step : steps)
                 {
                     auto const cost{lookup.charge()}; if(cost != inline_query_error::none) { return cost; }
@@ -317,7 +318,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     if(step.kind == object_selector_kind::index)
                     {
                         auto const result{lookup.index(selected, step.index)}; if(result != inline_query_error::none) { return result; }
-                        label = ::fast_io::concat_std("[", ::fast_io::mnp::dec(step.index), "]");
+                        label = ::uwvm2::utils::container::concat("[", ::fast_io::mnp::dec(step.index), "]");
                     }
                     else
                     {
@@ -325,7 +326,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         auto const result{lookup.find_member(selected, step.member, pending, found)};
                         if(result != inline_query_error::none) { return result; }
                         if(!found) { return inline_query_error::unavailable; }
-                        selected = pending; label = ::fast_io::concat_std(::std::string_view{step.member});
+                        selected = pending; label = ::uwvm2::utils::container::concat(::std::string_view{step.member});
                     }
                 }
                 object_details::builder display{types, bytes, {}, cap.object_limits, values}; display.known_bits = known_bits;
@@ -347,17 +348,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     // it cannot widen it, follow pointers, execute code or perform a new read.
     [[nodiscard]] inline inline_query_error query_selected_object_value(::std::span<type_record const> types, ::std::size_t root_type,
         ::std::span<object_selector_step const> steps, ::std::span<::std::byte const> copied_root_bytes,
-        ::std::vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
+        ::uwvm2::utils::container::std_vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
     { return selector_details::query(types, root_type, steps, copied_root_bytes, {}, true, out, cap); }
     [[nodiscard]] inline inline_query_error query_selected_object_value_with_known_bits(::std::span<type_record const> types, ::std::size_t root_type,
         ::std::span<object_selector_step const> steps, ::std::span<::std::byte const> copied_root_bytes, ::std::span<::std::byte const> known_bits,
-        ::std::vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
+        ::uwvm2::utils::container::std_vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
     {
         if(known_bits.size() != copied_root_bytes.size()) { out.clear(); return inline_query_error::malformed; }
         return selector_details::query(types, root_type, steps, copied_root_bytes, known_bits, true, out, cap);
     }
     [[nodiscard]] inline inline_query_error query_selected_object_type(::std::span<type_record const> types, ::std::size_t root_type,
-        ::std::span<object_selector_step const> steps, ::std::vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
+        ::std::span<object_selector_step const> steps, ::uwvm2::utils::container::std_vector<object_node>& out, object_selector_limits const& cap = {}) noexcept
     {
         // A root declaration has no offset/index selection and needs no ABI
         // extent. Retain unknown-size metadata (e.g. Clang member pointers)

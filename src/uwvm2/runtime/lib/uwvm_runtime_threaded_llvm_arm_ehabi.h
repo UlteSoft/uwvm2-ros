@@ -14,7 +14,7 @@
                     if((s.executable||s.index||s.table)&&!s.authenticated)return false;
                     table_count+=s.index;
                 }
-                ::std::vector<arm_table> tables;tables.reserve(table_count);
+                ::uwvm2::utils::container::std_vector<arm_table> tables;tables.reserve(table_count);
                 ::std::size_t records{};
                 for(auto const& s:sections_)
                 {

@@ -59,6 +59,12 @@ namespace uwvm2::runtime::compiler::llvm_jit::details
     inline void llvm_jit_mcjit_configure_code_model(engine_builder_type& builder,
         ::llvm::Triple const& triple)
     {
+        if(triple.isOSBinFormatELF() && triple.getArch() == ::llvm::Triple::arm)
+        {
+            // ARM's full-address call lowering uses absolute literal-pool
+            // relocations. This is in-process MCJIT, not an offline PIC image.
+            builder.setRelocationModel(::llvm::Reloc::Static);
+        }
         if(triple.isOSBinFormatELF() &&
            (triple.getArch() == ::llvm::Triple::ppc64 || triple.getArch() == ::llvm::Triple::ppc64le))
         {
@@ -68,6 +74,23 @@ namespace uwvm2::runtime::compiler::llvm_jit::details
             // match that ABI here; this helper is only for in-process MCJIT.
             builder.setRelocationModel(::llvm::Reloc::Static);
             builder.setCodeModel(::llvm::CodeModel::Medium);
+        }
+    }
+
+    // RuntimeDyldELF places ARM call stubs at the end of the caller's code
+    // section and truncates their PC-relative offsets to 24 bits. A section
+    // larger than 32 MiB can therefore branch into unrelated memory, even
+    // when the actual callee is nearby. Materialize the full call address
+    // instead; LLVM places the literal pool within architectural reach.
+    // Apply before preoptimization and emission, so the effective target
+    // feature string and final IR also distinguish incompatible cache objects.
+    template<typename attribute_storage>
+    inline void llvm_jit_mcjit_append_call_range_features(::llvm::Triple const& triple,
+        attribute_storage& attributes)
+    {
+        if(triple.isOSBinFormatELF() && triple.getArch() == ::llvm::Triple::arm)
+        {
+            attributes.emplace_back("+long-calls");
         }
     }
 

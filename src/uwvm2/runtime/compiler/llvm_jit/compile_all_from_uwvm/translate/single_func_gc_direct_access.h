@@ -108,6 +108,12 @@ public:
             ::llvm::IRBuilder<> eb(&entry,entry.getFirstInsertionPt());
             state.gc_private_access_slot=eb.CreateAlloca(eb.getInt1Ty(),nullptr,"gc.private.access");
             state.gc_private_access_decision=eb.CreateStore(eb.getFalse(),state.gc_private_access_slot);
+            if(state.gc_local_value_keys_enabled() && !state.route_wasm_calls_through_runtime_bridge &&
+               state.debug_full_patchable_typed_target_base_address==0u)
+            {
+                state.gc_private_access_decision->setMetadata("uwvm.gc.private.decision.v1",
+                    ::llvm::MDNode::get(eb.getContext(), {}));
+            }
 
             // Ordinary compiled code already retains its genuine module and
             // that module's store. These two domain identities are immutable
@@ -214,11 +220,27 @@ public:
         ::llvm::cast<::llvm::LoadInst>(head)->setAtomic(::llvm::AtomicOrdering::Acquire);
         mark(b.CreateCondBr(nonzero(head),header,slow));b.SetInsertPoint(header);
         auto* const actual_token=b.CreateLoad(word,member(storage::gc_object_store::jit_local_token_offset));
-        auto* const actual_owner=b.CreateLoad(word,member(storage::gc_object_store::jit_local_owner_offset));
-        auto* const actual_kind=b.CreateLoad(b.getInt32Ty(),member(storage::gc_object_store::jit_local_kind_offset));
-        ::llvm::Value* exact=b.CreateAnd(b.CreateICmpEQ(actual_token,token),b.CreateAnd(
-            b.CreateICmpEQ(actual_owner,owner),b.CreateICmpEQ(actual_kind,b.getInt32(static_cast<unsigned>(
-                array?types::composite_kind::array:types::composite_kind::struct_)))));
+        // The genuine store-owned membership index contains only objects
+        // allocated and release-published by that same store. Foreign tokens
+        // can never enter it: a miss retains checked_foreign_object's lease.
+        // An exact local type index also fixes the immutable composite kind.
+        // Ordinary code can use those structural proofs instead of reloading
+        // owner and kind on every access. Untyped array.len still checks kind.
+        // Full token equality is always required, including bucket collisions.
+        bool const owned_domain=witnesses && !state.route_wasm_calls_through_runtime_bridge &&
+            state.debug_full_patchable_typed_target_base_address==0u;
+        ::llvm::Value* exact=b.CreateICmpEQ(actual_token,token);
+        if(!owned_domain)
+        {
+            auto* const actual_owner=b.CreateLoad(word,member(storage::gc_object_store::jit_local_owner_offset));
+            exact=b.CreateAnd(exact,b.CreateICmpEQ(actual_owner,owner));
+        }
+        if(!owned_domain || length_only)
+        {
+            auto* const actual_kind=b.CreateLoad(b.getInt32Ty(),member(storage::gc_object_store::jit_local_kind_offset));
+            exact=b.CreateAnd(exact,b.CreateICmpEQ(actual_kind,b.getInt32(static_cast<unsigned>(
+                array?types::composite_kind::array:types::composite_kind::struct_))));
+        }
         if(!length_only)
         {
             auto* const actual_type=b.CreateLoad(b.getInt32Ty(),member(storage::gc_object_store::jit_local_type_offset));
@@ -255,10 +277,21 @@ public:
                 auto* const locked=block("gc.local.locked");
                 private_access=b.CreateLoad(b.getInt1Ty(),state.gc_private_access_slot);
                 mark(b.CreateCondBr(private_access,locked,locking));b.SetInsertPoint(locking);
-                auto* const acquired=b.CreateAtomicCmpXchg(flag,b.getInt8(0u),b.getInt8(1u),::llvm::Align(1u),
+#if defined(__x86_64__) || defined(_M_X64)
+                // Same two-state atomic_flag protocol as object_lock:
+                // exchange(1, acquire) owns the lock only when it returned 0.
+                // A busy flag stays 1 and takes the complete checked fallback.
+                // X86 XCHG needs no implicit AL input or CMPXCHG result tuple.
+                auto* const previous=b.CreateAtomicRMW(::llvm::AtomicRMWInst::Xchg,flag,b.getInt8(1u),
+                    ::llvm::Align(1u),::llvm::AtomicOrdering::Acquire);
+                auto* const acquired=b.CreateICmpEQ(previous,b.getInt8(0u));
+#else
+                auto* const exchanged=b.CreateAtomicCmpXchg(flag,b.getInt8(0u),b.getInt8(1u),::llvm::Align(1u),
                     ::llvm::AtomicOrdering::Acquire,::llvm::AtomicOrdering::Monotonic);
-                acquired->setWeak(true);
-                mark(b.CreateCondBr(b.CreateExtractValue(acquired,1u),locked,slow));b.SetInsertPoint(locked);
+                exchanged->setWeak(true);
+                auto* const acquired=b.CreateExtractValue(exchanged,1u);
+#endif
+                mark(b.CreateCondBr(acquired,locked,slow));b.SetInsertPoint(locked);
             }
             auto* const data=reuse_element?nullptr:b.CreateLoad(ptr,member(storage::gc_object_store::jit_local_values_offset));
             unsigned stride=sizeof(storage::gc_object_value);

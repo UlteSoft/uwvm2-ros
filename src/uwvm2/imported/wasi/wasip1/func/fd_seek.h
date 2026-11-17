@@ -550,6 +550,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
         }
 
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm32(memory,
                                                                                         new_offset_ptrsz,
                                                                                         static_cast<underlying_new_offset_type_t>(new_offset_fpos));

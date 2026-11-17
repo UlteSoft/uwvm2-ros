@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <fast_io.h>
 # include <fast_io_dsal/string.h>
@@ -81,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     struct line_directory_record
     {
         ::std::uint64_t line_unit_offset{};
-        ::std::string directory{}; // owned, bounded DW_AT_comp_dir; metadata only.
+        ::uwvm2::utils::container::std_string directory{}; // owned, bounded DW_AT_comp_dir; metadata only.
     };
     struct die_key
     {
@@ -132,7 +133,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         bool signed_constant{}, implicit_constant{};
         // Delay vector's special-member instantiation until location_piece is
         // complete; its default constructor still produces an empty vector.
-        ::std::vector<location_piece> pieces;
+        ::uwvm2::utils::container::std_vector<location_piece> pieces;
         ::std::uint64_t composite_bits{};
         // Metadata provenance only, never read authority. The direct attribute
         // decoder sets this only after exact scalar validation succeeds;
@@ -216,10 +217,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         die_key identity{};
         ::std::size_t parent{no_record};
         scope_kind kind{};
-        ::std::string name{}, call_file{};
+        ::uwvm2::utils::container::std_string name{}, call_file{};
         ::std::uint64_t call_line{}, call_column{};
-        ::std::vector<code_range> ranges{};
-        ::std::vector<location_record> frame_base{};
+        ::uwvm2::utils::container::std_vector<code_range> ranges{};
+        ::uwvm2::utils::container::std_vector<location_record> frame_base{};
         bool concrete{};
         // Own DIE range attributes are distinct from absent attributes. An
         // explicitly empty range NEVER inherits an ancestor's active range.
@@ -235,7 +236,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     enum class type_kind : unsigned { unavailable, scalar, pointer, structure, class_type, union_type, array, enumeration, subroutine, member_pointer };
     struct member_record
     {
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         ::std::size_t type{no_record};
         ::std::uint64_t byte_offset{}, data_bit_offset{}, bit_size{};
         bool offset_known{}, bit_field{}, inherited{};
@@ -248,7 +249,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     };
     struct enumerator_record
     {
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         ::std::uint64_t bits{};
         bool signed_value{};
     };
@@ -262,16 +263,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     enum class variant_selector_kind : unsigned { unavailable, default_case, intervals };
     struct variant_record
     {
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         variant_selector_kind selector_kind{variant_selector_kind::unavailable};
-        ::std::vector<variant_selector_record> selectors{};
-        ::std::vector<member_record> members{};
+        ::uwvm2::utils::container::std_vector<variant_selector_record> selectors{};
+        ::uwvm2::utils::container::std_vector<member_record> members{};
         bool layout_supported{true}; // nested/dynamic variant layouts are explicit.
     };
     struct variant_part_record
     {
         member_record discriminant{};
-        ::std::vector<variant_record> variants{};
+        ::uwvm2::utils::container::std_vector<variant_record> variants{};
         ::std::uint8_t discriminant_bytes{};
         bool has_discriminant{}, discriminant_signed{}, discriminant_supported{};
     };
@@ -372,7 +373,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     };
     struct static_constant_record
     {
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         ::std::size_t type{no_record};
         ::std::uint64_t bits{};
         bool signed_value{}, available{};
@@ -381,15 +382,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     {
         die_key identity{};
         die_key declaration_identity{}; // final owned type DIE after cv/typedef wrappers
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         type_kind kind{};
         // Exact aggregate DIE name after cv/typedef wrappers. Keep the user's
         // display alias separately; this is metadata, never an ABI name guess.
-        ::std::string aggregate_name{};
+        ::uwvm2::utils::container::std_string aggregate_name{};
         // Cold C++ library completion evidence. These are copied declaration
         // labels, never code addresses, calls or source-memory capabilities.
-        ::std::string qualified_type_name{};
-        ::std::array<::std::string,3u> completion_anchors{};
+        ::uwvm2::utils::container::std_string qualified_type_name{};
+        ::std::array<::uwvm2::utils::container::std_string,3u> completion_anchors{};
         ::std::uint64_t encoding{};
         ::std::uint8_t byte_count{};
         // Object sizes and offsets are Wasm linear-memory quantities. They are
@@ -400,21 +401,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         // Function and member-pointer declarations remain owned metadata.
         // None of these references is executable or a guest read capability.
         ::std::size_t containing_type{no_record};
-        ::std::vector<::std::size_t> parameter_types{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> parameter_types{};
         // Owned DW_TAG_template_type_parameter references for library ABI
         // profiles. Template names alone do not establish an element layout.
-        ::std::vector<::std::size_t> template_types{};
-        ::std::vector<template_value_record> template_values{};
-        ::std::vector<static_constant_record> static_constants{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> template_types{};
+        ::uwvm2::utils::container::std_vector<template_value_record> template_values{};
+        ::uwvm2::utils::container::std_vector<static_constant_record> static_constants{};
         ::std::uint64_t calling_convention{};
         ::std::uint8_t method_qualifiers{};
         bool signature_complete{}, variadic{}, calling_convention_known{};
         bool method_lvalue_reference{}, method_rvalue_reference{}, first_parameter_artificial{};
-        ::std::vector<member_record> members{};
-        ::std::vector<dimension_record> dimensions{};
-        ::std::vector<enumerator_record> enumerators{};
+        ::uwvm2::utils::container::std_vector<member_record> members{};
+        ::uwvm2::utils::container::std_vector<dimension_record> dimensions{};
+        ::uwvm2::utils::container::std_vector<enumerator_record> enumerators{};
         bool size_known{}, contiguous_array{true}, row_major_array{true}, reference_type{}, rvalue_reference_type{};
-        ::std::vector<variant_part_record> variant_parts{};
+        ::uwvm2::utils::container::std_vector<variant_part_record> variant_parts{};
         // DWARF5 5.3 optional pointer/reference dereference class. Preserve its
         // explicit presence; it is metadata, never a memory/segment capability.
         ::std::uint64_t address_class{};
@@ -653,11 +654,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     {
         die_key identity{};
         ::std::size_t scope{no_record}, type{no_record};
-        ::std::string name{}, declaration_file{};
+        ::uwvm2::utils::container::std_string name{}, declaration_file{};
         ::std::uint64_t declaration_line{};
-        ::std::vector<location_record> locations{};
+        ::uwvm2::utils::container::std_vector<location_record> locations{};
         bool parameter{};
-        ::std::string qualified_name{};
+        ::uwvm2::utils::container::std_string qualified_name{};
         bool global{}, external{}, declaration{}, static_storage{};
         bool immutable_cpp_object_pointer{};
     };

@@ -6,6 +6,9 @@
 // Private definitions, included after actual runtime helpers/entries and
 // canonical checkpoint captures, before the sole coherent manager.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 extern "C++"
 {
@@ -100,8 +103,8 @@ extern "C++"
         try
 #endif
         {
-            actual = mutable_owner{new worker{::std::move(control), ::std::move(source), ::std::move(profile),
-                ::std::move(host), current_runtime_generation(), ::std::move(state), body}};
+            actual = mutable_owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<worker>([&](worker* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) worker{::std::move(control), ::std::move(source), ::std::move(profile),
+                ::std::move(host), current_runtime_generation(), ::std::move(state), body}; }))};
             actual->execution_ = ::std::move(execution);
             auto const admitted{runtime_checkpoint_host_bridge::begin_registered_worker_startup(actual->host_, actual->startup_)};
             if(admitted != runtime_checkpoint_host_bridge::status::ok)
@@ -111,8 +114,8 @@ extern "C++"
             // selected FastIO constructors throw only before a thread is owned;
             // after OS create succeeds their remaining assignments do not throw.
             // The worker gates its body until this owner and registry are ready.
-            actual->native_.reset(new ::fast_io::native_thread{[actual]() noexcept { actual_worker_body(actual); }});
-            actual->published_.store(true, ::std::memory_order_release);
+            actual->native_.reset(::uwvm2::utils::allocator::fast_io_strict::object<::fast_io::native_thread>([&](::fast_io::native_thread* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ::fast_io::native_thread{[actual]() noexcept { actual_worker_body(actual); }}; }));
+            release_publication(actual);
             return {result::started, actual};
         }
 #ifdef UWVM_CPP_EXCEPTIONS
@@ -123,7 +126,7 @@ extern "C++"
             // synchronously join/detach or drop it as rollback compensation.
             if(actual && actual->native_)
             {
-                actual->published_.store(true, ::std::memory_order_release);
+                release_publication(actual);
                 return {result::started, actual};
             }
             if(slot_index != (::std::numeric_limits<::std::size_t>::max)())
@@ -136,7 +139,11 @@ extern "C++"
     }
     void runtime_checkpoint_guest_worker_bridge::actual_worker_body(mutable_owner actual) noexcept
     {
-        while(!actual->published_.load(::std::memory_order_acquire)) { ::fast_io::this_thread::yield(); }
+        {
+            ::std::unique_lock lock{actual->publication_mutex_};
+            actual->publication_changed_.wait(lock,[&] { return actual->published_.load(::std::memory_order_acquire); });
+        }
+        if(actual->cancelled_before_publication_) { return; }
         if(actual_worker_ != nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
         actual_worker_ = actual.get();
         // A stop during startup is a negative rejection, never permission to
@@ -147,6 +154,7 @@ extern "C++"
             ::std::lock_guard lock{registry_mutex_};
             if(actual->participant_ != nullptr || actual->participant_id_ != 0u) [[unlikely]]
             { ::fast_io::fast_terminate(); } // real outer runtime scope must have left
+            actual->body_returned_ = true;
         }
         actual->startup_ = {}; // also covers no-entry or failed enrollment
         actual_worker_ = nullptr; // clear TLS borrow before genuine lease release
@@ -194,9 +202,9 @@ extern "C++"
     ::std::uint_least32_t runtime_checkpoint_guest_worker_bridge::completion_code() noexcept
     {
         auto const actual{actual_worker_};
-        if(actual == nullptr || actual->origin_ != worker::origin::initial_current ||
-           get_runtime_execution_entry_depth() != 0u || actual->participant_ != nullptr ||
-           !actual->execution_ || !actual_tuple_current(*actual)) { return 0u; }
+        if(actual == nullptr || get_runtime_execution_entry_depth() != 0u || actual->participant_ != nullptr ||
+           (actual->origin_ == worker::origin::initial_current && !actual->execution_) ||
+           !actual_tuple_current(*actual)) { return 0u; }
         return actual->guest_exit_ ? actual->guest_exit_code_ : 0u;
     }
 #if defined(UWVM_CPP_EXCEPTIONS)
@@ -205,7 +213,7 @@ extern "C++"
     {
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
         auto const actual{actual_worker_};
-        if(actual == nullptr || actual->origin_ != worker::origin::initial_current) { return; }
+        if(actual == nullptr) { return; }
         if(!actual_tuple_current(*actual) || get_runtime_execution_entry_depth() != 1u ||
            get_llvm_jit_generated_bridge_scope_depth() == 0u || g_debug_observer_active ||
            actual->participant_ == nullptr || actual->participant_id_ == 0u ||
@@ -288,15 +296,16 @@ extern "C++"
         static_cast<void>(params);static_cast<void>(bytes);
 #endif
     }
-    bool runtime_checkpoint_guest_worker_bridge::accept_guest_exit(guest_exit_signal const& caught) noexcept
+    bool runtime_checkpoint_guest_worker_bridge::accept_guest_exit(guest_exit_signal const& caught, void const* root_baseline) noexcept
     {
         auto const actual{actual_worker_};auto const participant{g_debug_pause_participant};auto const ledger{g_debug_activation_ledger};
-        if(actual == nullptr || actual != caught.actual_ || actual->origin_ != worker::origin::initial_current ||
+        if(actual == nullptr || actual != caught.actual_ ||
+           (actual->origin_ == worker::origin::initial_current && root_baseline != nullptr) ||
            !actual_tuple_current(*actual) || get_runtime_execution_entry_depth() != 1u ||
            actual->epoch_ != caught.epoch_ || actual->guest_exit_ ||
            participant == nullptr || participant != actual->participant_ || participant->identifier() != caught.participant_ ||
            actual->participant_id_ != caught.participant_ || ledger == nullptr || !ledger->valid() || ledger->count() != 0u ||
-           g_debug_observer_active || ::uwvm2::runtime::gc::current_root_frames() != nullptr) { return false; }
+           g_debug_observer_active || ::uwvm2::runtime::gc::current_root_frames() != root_baseline) { return false; }
         if(g_checkpoint_shadow_ledger != nullptr)
         {
             if(g_checkpoint_shadow_ledger->failure() != ::uwvm2::runtime::checkpoint::status::ok &&
@@ -416,18 +425,18 @@ extern "C++"
         ::std::size_t slot_index{(::std::numeric_limits<::std::size_t>::max)()};
         try
         {
-            actual = mutable_owner{new worker{control, source, profile, host, epoch, ::std::move(state), body,
-                worker::origin::restored_world}};
+            actual = mutable_owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<worker>([&](worker* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) worker{control, source, profile, host, epoch, ::std::move(state), body,
+                worker::origin::restored_world}; }))};
             // No ordinary try_enter and NO initial startup host operation. The
             // actual resume entry creates its closed-token lease and both ledgers.
             slot_index = register_actual_worker(actual);
-            actual->native_.reset(new ::fast_io::native_thread{[actual]() noexcept { actual_worker_body(actual); }});
-            actual->published_.store(true, ::std::memory_order_release); return actual;
+            actual->native_.reset(::uwvm2::utils::allocator::fast_io_strict::object<::fast_io::native_thread>([&](::fast_io::native_thread* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ::fast_io::native_thread{[actual]() noexcept { actual_worker_body(actual); }}; }));
+            release_publication(actual); return actual;
         }
         catch(...)
         {
             if(actual && actual->native_)
-            { actual->published_.store(true, ::std::memory_order_release); return actual; }
+            { release_publication(actual); return actual; }
             if(slot_index != (::std::numeric_limits<::std::size_t>::max)())
             {
                 unregister_unstarted_worker(actual,slot_index);
@@ -439,13 +448,31 @@ extern "C++"
     {
         try
         {
-            auto storage{pending_join_owner{new join_cohort{}}};
+            // A completed callback can outlive its last Wasm participant and
+            // still own native/TLS resources. Reserve for the real registry,
+            // not just the currently parked captures. A later registry growth
+            // is rechecked under the closed cohort and refuses before retirement.
+            ::std::size_t native_count{};
+            {
+                ::std::lock_guard lock{registry_mutex_};
+                auto const epoch=current_runtime_generation();
+                for(auto const& slot:registry_)
+                    if(slot.live && slot.live->epoch_==epoch)++native_count;
+            }
+            count=(::std::max)(count,native_count);
+            auto storage{pending_join_owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<join_cohort>([&](join_cohort* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) join_cohort{}; }))}};
             // Both actual-owner vectors are allocated before retirement begins.
             // The later sealed join path performs no growth or native creation.
             storage->members_.resize(count); storage->tentative_.resize(count);
             storage->canonical_ = storage; return storage;
         }
         catch(...) { return {}; }
+    }
+    ::std::size_t runtime_checkpoint_guest_worker_bridge::sealed_worker_count(pending_join_owner const& storage) noexcept
+    {
+        if(!storage || !same_owner(storage->canonical_.lock(),storage))return 0u;
+        ::std::lock_guard lock{storage->mutex_};
+        return storage->phase_==join_cohort::phase::empty?0u:storage->size_;
     }
     bool runtime_checkpoint_guest_worker_bridge::seal_from_actual_retirement_while_cohort_owned(
         pending_join_owner const& storage, retirement::owner const& supplied) noexcept
@@ -458,8 +485,8 @@ extern "C++"
         auto const& request{retirement::actual_request_};
         if(!same_owner(request, supplied) || request->phase != retirement::request_phase::prepared ||
            request->epoch != current_runtime_generation() || request->members.empty() ||
-           request->members.size() != storage->members_.size() ||
-           request->members.size() != storage->tentative_.size() ||
+           request->members.size() > storage->members_.size() ||
+           storage->members_.size() != storage->tentative_.size() ||
            !runtime_checkpoint_host_bridge::current_coherent_state(request->configuration, request->closed))
         { return false; }
         auto source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
@@ -469,22 +496,30 @@ extern "C++"
         auto& tentative{storage->tentative_};
         struct clear_tentative
         {
-            ::std::vector<mutable_owner>& values;
+            ::uwvm2::utils::container::std_vector<mutable_owner>& values;
             ~clear_tentative() { for(auto& value:values) { value.reset(); } }
         } cleanup{tentative};
-        ::std::size_t count{};
+        ::std::size_t count{},parked{};
         ::std::lock_guard registry_lock{registry_mutex_};
         // Enumerate our OWN actual native registry, never a supplied thread span.
-        // Every old actual native worker must map to exactly one authenticated
-        // full-cohort capture; startup/in-between scopes refuse replacement.
+        // Each live guest scope must map to exactly one authenticated capture.
+        // A callback proven returned by its own trampoline has no continuation;
+        // retain its real native owner for physical join as well. Startup and
+        // between-entry callbacks still refuse replacement.
         for(auto const& slot : registry_)
         {
             auto const& actual{slot.live};
             if(!actual || actual->epoch_ != request->epoch) { continue; }
             if(!actual_tuple_current(*actual) || !same_owner(actual->source_, source) ||
-               actual->participant_ == nullptr || actual->participant_id_ == 0u ||
                !actual->published_.load(::std::memory_order_acquire) || !actual->native_ || count == tentative.size())
             { return false; }
+            if(actual->body_returned_)
+            {
+                if(actual->participant_ != nullptr || actual->participant_id_ != 0u)return false;
+                tentative[count++] = actual;
+                continue;
+            }
+            if(actual->participant_ == nullptr || actual->participant_id_ == 0u)return false;
             ::std::size_t matches{};
             for(auto const& member : request->members)
             {
@@ -493,9 +528,9 @@ extern "C++"
                 if(member.captured->participant_ == actual->participant_id_) { ++matches; }
             }
             if(matches != 1u) { return false; }
-            tentative[count++] = actual;
+            tentative[count++] = actual;++parked;
         }
-        if(count != request->members.size()) { return false; }
+        if(parked != request->members.size()) { return false; }
         for(auto const& member : request->members)
         {
             ::std::size_t matches{};

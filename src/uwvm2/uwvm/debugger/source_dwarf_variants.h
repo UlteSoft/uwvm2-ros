@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_types.h"
 # include <bit>
@@ -31,7 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     // discriminant, ULEB128 otherwise. LLVM DwarfUnit::addDiscriminant emits
     // these exact shapes. This parses metadata only; it never evaluates DWARF.
     [[nodiscard]] inline variant_query_error decode_variant_selectors(::std::span<::std::byte const> bytes,
-        ::std::uint8_t width, bool signed_value, ::std::vector<variant_selector_record>& out,
+        ::std::uint8_t width, bool signed_value, ::uwvm2::utils::container::std_vector<variant_selector_record>& out,
         ::std::size_t max_selectors = 65536u, ::std::size_t max_expression_bytes = 256u) noexcept
     {
         out.clear();
@@ -41,7 +42,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         try
         {
 #endif
-            details::reader input{bytes}; ::std::vector<variant_selector_record> pending{};
+            details::reader input{bytes}; ::uwvm2::utils::container::std_vector<variant_selector_record> pending{};
             auto const endpoint{[&](::std::uint64_t& bits) noexcept
             {
                 if(signed_value)

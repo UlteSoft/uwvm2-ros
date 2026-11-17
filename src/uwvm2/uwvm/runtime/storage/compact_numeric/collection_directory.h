@@ -20,7 +20,7 @@
             // AFTER that lock on every return. It holds no shared/weak owners.
             // Caller-owned stores and genuine entry/pause admission pin the
             // raw descriptors; this directory cannot authorize collection.
-            ::std::unique_ptr<compact_directory_record[]> compact_directory_records{};
+            ::uwvm2::utils::container::std_unique_ptr<compact_directory_record[]> compact_directory_records{};
             ::std::size_t compact_directory_count{};
             auto build_compact_directory{[&]() noexcept -> gc_object_status
             {
@@ -32,7 +32,7 @@
                 // OOM may clear marks but cannot change any token/live/frontier,
                 // object, epoch, lease or registry, and never reaches sweep.
                 compact_directory_records.reset(
-                    new(::std::nothrow) compact_directory_record[compact_directory_count]);
+                    ::uwvm2::utils::allocator::fast_io_strict::try_array<compact_directory_record>(compact_directory_count, false));
                 if(!compact_directory_records) { return gc_object_status::out_of_memory; }
                 ::std::size_t filled{};
                 for(::std::size_t index{}; index != store_count; ++index)

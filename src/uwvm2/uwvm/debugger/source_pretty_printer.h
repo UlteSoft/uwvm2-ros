@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #ifndef UWVM_MODULE
 # include "source_dwarf_objects.h"
@@ -41,7 +42,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
     // can create a read capability, call guest code or keep a borrowed address.
     namespace details
     {
-        inline void number(::std::string& text, ::std::uint64_t value)
+        inline void number(::uwvm2::utils::container::std_string& text, ::std::uint64_t value)
         {
             char buffer[24u]; auto const converted{::std::to_chars(buffer,buffer+sizeof(buffer),value)};
             text.append(buffer,converted.ptr);
@@ -203,7 +204,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
         
             }
         }
-        inline void summary(dwarf::object_node& root, ::std::string_view profile, ::std::string text,
+        inline void summary(dwarf::object_node& root, ::std::string_view profile, ::uwvm2::utils::container::std_string text,
             ::std::uint64_t omitted = 0u)
         {
             bool const clipped{text.size() > 4096u};
@@ -211,10 +212,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             root.pretty_printer.assign(profile); root.pretty_summary = ::std::move(text);
             root.pretty_available = true; root.pretty_omitted = omitted; root.pretty_truncated = omitted != 0u || clipped;
         }
-        inline void scalar_text(dwarf::object_node const& value, ::std::string& text)
+        inline void scalar_text(dwarf::object_node const& value, ::uwvm2::utils::container::std_string& text)
         {
             if(value.pretty_available) { text += value.pretty_summary; return; }
-            if(value.display_text_available) { text += '"'; text += ::fast_io::concat_std(dwarf::escaped_metadata_text{value.display_text}); text += '"'; return; }
+            if(value.display_text_available) { text += '"'; text += ::uwvm2::utils::container::concat(dwarf::escaped_metadata_text{value.display_text}); text += '"'; return; }
             if(!value.value_available)
             {
                 if(value.kind == dwarf::type_kind::scalar || value.kind == dwarf::type_kind::pointer || value.kind == dwarf::type_kind::enumeration)
@@ -229,9 +230,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             if(value.scalar_kind == dwarf::numeric_kind::boolean) { text += value.bits ? "true" : "false"; return; }
             if(value.scalar_kind == dwarf::numeric_kind::f32_bits)
-            { text += ::fast_io::concat_std(::std::bit_cast<float>(static_cast<::std::uint32_t>(value.bits))); return; }
+            { text += ::uwvm2::utils::container::concat(::std::bit_cast<float>(static_cast<::std::uint32_t>(value.bits))); return; }
             if(value.scalar_kind == dwarf::numeric_kind::f64_bits)
-            { text += ::fast_io::concat_std(::std::bit_cast<double>(value.bits)); return; }
+            { text += ::uwvm2::utils::container::concat(::std::bit_cast<double>(value.bits)); return; }
             if(value.scalar_kind == dwarf::numeric_kind::signed_integer)
             {
                 dwarf::numeric_variable n{}; n.bits = value.bits; n.byte_count = value.scalar_bytes;
@@ -320,7 +321,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
         // with the same leaf spelling are never interchangeable. Transparent
         // inherited/anonymous wrappers retain their own checked parent nodes.
         [[nodiscard]] inline libcxx_lookup libcxx_string_member(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node> const& tree, libcxx_string_field owner,
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree, libcxx_string_field owner,
             ::std::string_view name, libcxx_string_field& out, ::std::size_t& work, unsigned depth = 0u) noexcept
         {
             if(depth >= 16u || owner.value.type >= types.size() || owner.node >= tree.size()) { return libcxx_lookup::invalid; }
@@ -370,7 +371,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             return found ? libcxx_lookup::found : libcxx_lookup::absent;
         }
         [[nodiscard]] inline bool libcxx_string_field_path(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node> const& tree, libcxx_string_field current,
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree, libcxx_string_field current,
             ::std::string_view path_name, libcxx_string_field& out) noexcept
         {
             ::std::size_t work{};
@@ -384,11 +385,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             out=current; return true;
         }
         [[nodiscard]] inline bool libcxx_string_path(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node> const& tree, ::std::size_t root,
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree, ::std::size_t root,
             ::std::string_view path_name, libcxx_string_field& out) noexcept
         { return libcxx_string_field_path(types,tree,{{root,0u},0u,{}},path_name,out); }
         [[nodiscard]] inline bool libcxx_string_unsigned(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node> const& tree, libcxx_string_field selected,
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree, libcxx_string_field selected,
             ::std::span<::std::byte const> bytes, ::std::span<::std::byte const> known, ::std::uint64_t& result) noexcept
         {
             if(selected.declaration == nullptr || selected.value.type >= types.size() || selected.node >= tree.size()) { return false; }
@@ -435,7 +436,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
         // One exact schema proof serves metadata-only type queries, value
         // indexing and rendering. No mode bits, Guest addresses or reads here.
         [[nodiscard]] inline bool libcxx_string_schema(::std::span<dwarf::type_record const> types,
-            ::std::size_t root,::std::vector<dwarf::object_node> const& tree,unsigned width,libcxx_string_layout& out) noexcept
+            ::std::size_t root,::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree,unsigned width,libcxx_string_layout& out) noexcept
         {
             if(root>=types.size() || tree.empty() || (width!=4u && width!=8u)) { return false; }
             libcxx_string_field rep{},long_rep{},short_rep{},long_data{},long_size{},long_cap{},long_flag{},short_data{},short_size{},short_flag{};
@@ -514,7 +515,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             return true;
         }
         [[nodiscard]] inline bool libcxx_string_extent(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node> const& tree,libcxx_string_layout const& layout,
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree,libcxx_string_layout const& layout,
             ::std::span<::std::byte const> bytes,::std::span<::std::byte const> known,
             ::std::uint64_t& length,bool& long_storage) noexcept
         {
@@ -820,7 +821,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             if(counted_vector_schema(types,root,width,data,length,capacity,element)) { count=0u;bounded=false;return true; }
             if((!family(types[root],"basic_string") && !family(types[root],"string")) ||
                !any_path(types,root,{"__r_","__rep_"},data)) { return false; }
-            ::std::vector<dwarf::object_node> layout{};libcxx_string_layout schema{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> layout{};libcxx_string_layout schema{};
             if(dwarf::query_type_layout(types,root,layout)!=dwarf::inline_query_error::none ||
                !libcxx_string_schema(types,root,layout,width,schema)) { return false; }
             element=schema.element;count=0u;bounded=false;return true;
@@ -855,7 +856,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             if((family(type,"basic_string") || family(type,"string")) && any_path(types,root,{"__r_","__rep_"},first))
             {
-                ::std::vector<dwarf::object_node> tree{};libcxx_string_layout layout{};
+                ::uwvm2::utils::container::std_vector<dwarf::object_node> tree{};libcxx_string_layout layout{};
                 auto const copied{known.empty() ? dwarf::query_object_value(types,root,bytes,tree) :
                     dwarf::query_object_value_with_known_bits(types,root,bytes,known,tree)};
                 if(copied==dwarf::inline_query_error::none && libcxx_string_schema(types,root,tree,width,layout))
@@ -944,16 +945,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
         }
         template<typename Session>
         [[nodiscard]] outcome extended_sequences(Session&, ::std::size_t, ::std::span<::std::byte const>,
-            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::std::vector<dwarf::object_node>&, ::std::size_t);
+            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::uwvm2::utils::container::std_vector<dwarf::object_node>&, ::std::size_t);
         template<typename Session>
         [[nodiscard]] outcome extended_values(Session&, ::std::size_t, ::std::span<::std::byte const>,
-            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::std::vector<dwarf::object_node>&, ::std::size_t);
+            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::uwvm2::utils::container::std_vector<dwarf::object_node>&, ::std::size_t);
         template<typename Session>
         [[nodiscard]] outcome extended_libcxx_nodes(Session&, ::std::size_t, ::std::span<::std::byte const>,
-            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::std::vector<dwarf::object_node>&, ::std::size_t);
+            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::uwvm2::utils::container::std_vector<dwarf::object_node>&, ::std::size_t);
         template<typename Session>
         [[nodiscard]] outcome extended_array(Session&, ::std::size_t, ::std::span<::std::byte const>,
-            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::std::vector<dwarf::object_node>&, ::std::size_t);
+            ::std::span<::std::byte const>, ::std::span<::std::byte const>, ::uwvm2::utils::container::std_vector<dwarf::object_node>&, ::std::size_t);
         template<typename Reader> struct session
         {
             ::std::span<dwarf::type_record const> types;
@@ -962,7 +963,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             limits cap;
             ::std::size_t reads{}, copied{}, elements{}, nodes{}, text_bytes{};
             bool limited{};
-            [[nodiscard]] bool read(::std::uint64_t address, ::std::size_t count, ::std::vector<::std::byte>& bytes)
+            [[nodiscard]] bool read(::std::uint64_t address, ::std::size_t count, ::uwvm2::utils::container::std_vector<::std::byte>& bytes)
             {
                 bytes.clear(); auto const maximum{width == 4u ? 0xffffffffull : ~::std::uint64_t{}};
                 if(count == 0u) { return true; }
@@ -972,8 +973,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 ++reads; copied += count;
                 return reader(address,count,bytes) && bytes.size() == count;
             }
-            [[nodiscard]] bool append(::std::vector<dwarf::object_node>& tree, ::std::size_t type,
-                ::std::span<::std::byte const> bytes, ::std::string name, ::std::size_t depth,
+            [[nodiscard]] bool append(::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, ::std::size_t type,
+                ::std::span<::std::byte const> bytes, ::uwvm2::utils::container::std_string name, ::std::size_t depth,
                 ::std::span<::std::byte const> known = {}, ::std::span<::std::byte const> eligible = {})
             {
                 if((!known.empty() && known.size() != bytes.size()) || (!eligible.empty() && eligible.size() != bytes.size())) { return false; }
@@ -1006,7 +1007,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             [[nodiscard]] outcome sequence(::std::size_t, ::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known, ::std::span<::std::byte const> pointer_known,
-                ::std::vector<dwarf::object_node>& tree, ::std::size_t depth,
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, ::std::size_t depth,
                 field start, field size, field finish, field capacity, bool endpoints, bool string, ::std::string_view profile,
                 ::std::size_t selected_element=dwarf::no_record,bool zero_sized=false)
             {
@@ -1050,14 +1051,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 // Prove the complete declared range before copying a prefix.
                 if(count != 0u && (address == 0u || address > maximum || (!zero_sized && count > (maximum-address)/extent+((maximum-address)%extent == extent-1u ? 1u : 0u))))
                 { return outcome::unavailable; }
-                ::std::string text{string ? "string length=" : "size="}; number(text,count);
+                ::uwvm2::utils::container::std_string text{string ? "string length=" : "size="}; number(text,count);
                 if(capacity.type != dwarf::no_record || endpoints) { text += " capacity="; number(text,allocated); }
                 auto remaining{elements <= cap.max_elements ? cap.max_elements-elements : 0u};
                 auto const available_bytes{copied <= cap.max_bytes ? cap.max_bytes-copied : 0u};
                 auto const display_elements{string ? (std::min)(remaining,static_cast<::std::size_t>(4096u/extent)) : remaining};
                 ::std::size_t shown{static_cast<::std::size_t>((std::min)(count,static_cast<::std::uint64_t>(display_elements)))};
                 if(!zero_sized) { shown = (std::min)(shown,static_cast<::std::size_t>(available_bytes/extent)); }
-                ::std::vector<::std::byte> data{};
+                ::uwvm2::utils::container::std_vector<::std::byte> data{};
                 if(shown != 0u && !zero_sized && !read(address,shown*static_cast<::std::size_t>(extent),data)) { return limited ? outcome::limit_exceeded : outcome::unavailable; }
                 if(string)
                 {
@@ -1070,7 +1071,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     {
                         tree[0u].display_text.assign(reinterpret_cast<char const*>(data.data()),data.size());
                         tree[0u].display_text_available = true; tree[0u].display_text_truncated = count > shown;
-                        text += ::fast_io::concat_std(dwarf::escaped_metadata_text{tree[0u].display_text});
+                        text += ::uwvm2::utils::container::concat(dwarf::escaped_metadata_text{tree[0u].display_text});
                     }
                     else if(extent == 1u) { tree[0u].display_text_available = true; tree[0u].display_text_truncated = count != 0u; }
                     else
@@ -1088,7 +1089,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     for(; appended != shown; ++appended)
                     {
                         if(elements >= cap.max_elements) { limited = true; break; }
-                        ::std::string label{"["}; number(label,appended); label += ']'; auto const before{tree.size()};
+                        ::uwvm2::utils::container::std_string label{"["}; number(label,appended); label += ']'; auto const before{tree.size()};
                         ++elements;
                         if(!append(tree,target,zero_sized ? ::std::span<::std::byte const>{} : ::std::span<::std::byte const>{data.data()+appended*extent,static_cast<::std::size_t>(extent)},::std::move(label),depth)) { break; }
                         if(appended < 8u && text.size() < 3000u)
@@ -1180,7 +1181,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             [[nodiscard]] outcome linked(::std::size_t root, ::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known, ::std::span<::std::byte const> pointer_known,
-                ::std::vector<dwarf::object_node>& tree, ::std::size_t depth, bool tree_order, bool hash)
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, ::std::size_t depth, bool tree_order, bool hash)
             {
                 field head{},count_field{},tail{}; ::std::size_t element{dwarf::no_record}, hash_impl{dwarf::no_record};
                 bool cache_known{}, cache_value{};
@@ -1204,7 +1205,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 ::std::uint64_t current{},count{},last{};
                 if(!bits(types,head,bytes,pointer_known.empty() ? known : pointer_known,current) || !bits(types,count_field,bytes,known,count) ||
                    (!tree_order && !hash && (!pointer(types,tail,width) || !bits(types,tail,bytes,pointer_known.empty() ? known : pointer_known,last)))) { return outcome::unavailable; }
-                ::std::string text{"size="}; number(text,count); text += " [";
+                ::uwvm2::utils::container::std_string text{"size="}; number(text,count); text += " [";
                 if(count == 0u)
                 { if((tree_order || hash) ? current != 0u : current != last) { return outcome::unavailable; } text += ']'; summary(tree[0u],"libstdc++ linked container",::std::move(text)); return outcome::formatted; }
                 // Empty tables above need no node ABI. A nonempty modern
@@ -1226,12 +1227,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 { if(!path(types,node,"_M_left",left) || !path(types,node,"_M_right",right) || !pointer(types,left,width) || !pointer(types,right,width)) { return outcome::unavailable; } }
                 else if(!path(types,node,hash ? "_M_nxt" : "_M_next",next) || !pointer(types,next,width)) { return outcome::unavailable; }
                 if(!tree_order && !hash && (!path(types,node,"_M_prev",previous) || !pointer(types,previous,width))) { return outcome::unavailable; }
-                struct pending_node { ::std::uint64_t address{}; ::std::vector<::std::byte> bytes{}; };
-                ::std::vector<pending_node> stack{}; ::std::vector<::std::uint64_t> visited{};
+                struct pending_node { ::std::uint64_t address{}; ::uwvm2::utils::container::std_vector<::std::byte> bytes{}; };
+                ::uwvm2::utils::container::std_vector<pending_node> stack{}; ::uwvm2::utils::container::std_vector<::std::uint64_t> visited{};
                 ::std::uint64_t emitted{},prior{},sentinel{};
                 while(emitted < count && elements < cap.max_elements)
                 {
-                    ::std::vector<::std::byte> data{}; ::std::uint64_t address{current};
+                    ::uwvm2::utils::container::std_vector<::std::byte> data{}; ::std::uint64_t address{current};
                     if(tree_order)
                     {
                         while(current != 0u)
@@ -1262,7 +1263,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                         prior = address;
                     }
                     if(value.offset > data.size() || types[element].byte_size > data.size()-value.offset) { return outcome::unavailable; }
-                    ::std::string label{"["}; number(label,emitted); label += ']'; auto const before{tree.size()}; ++elements;
+                    ::uwvm2::utils::container::std_string label{"["}; number(label,emitted); label += ']'; auto const before{tree.size()}; ++elements;
                     if(!append(tree,element,{data.data()+value.offset,static_cast<::std::size_t>(types[element].byte_size)},::std::move(label),depth)) { break; }
                     if(emitted < 8u && text.size() < 3000u) { if(emitted != 0u) { text += ", "; } scalar_text(tree[before],text); }
                     ++emitted;
@@ -1277,21 +1278,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
 #if UWVM_DEBUG_LANGUAGE_RUST
             [[nodiscard]] outcome rust_shared(::std::size_t root,::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-                ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
             {
                 rust_shared_layout layout{};::std::uint64_t address{},strong{},weak{};bool empty{};
                 if(!rust_shared_schema(types,root,width,layout) ||
                    !rust_shared_address(types,layout,bytes,known,eligible,width,address,empty)) { return outcome::unavailable; }
                 auto const profile{layout.atomic?(layout.weak_owner?"Rust Arc Weak":"Rust Arc"):(layout.weak_owner?"Rust Rc Weak":"Rust Rc")};
                 if(empty) { summary(tree[0u],profile,"empty strong=0 weak=0");return outcome::formatted; }
-                ::std::vector<::std::byte> header{};
+                ::uwvm2::utils::container::std_vector<::std::byte> header{};
                 if(!read(address,layout.header_bytes,header)) { return limited?outcome::limit_exceeded:outcome::unavailable; }
                 if(!rust_shared_counts(types,layout,header,width,strong,weak)) { return outcome::unavailable; }
-                ::std::string text{strong==0u?"expired strong=":"strong="};number(text,strong);text+=" weak=";number(text,weak);
+                ::uwvm2::utils::container::std_string text{strong==0u?"expired strong=":"strong="};number(text,strong);text+=" weak=";number(text,weak);
                 auto const available{elements<cap.max_elements?cap.max_elements-elements:0u};::std::size_t shown{};
                 if(strong!=0u && available!=0u)
                 {
-                    auto const size{static_cast<::std::size_t>(types[layout.value.type].byte_size)};::std::vector<::std::byte> value{};
+                    auto const size{static_cast<::std::size_t>(types[layout.value.type].byte_size)};::uwvm2::utils::container::std_vector<::std::byte> value{};
                     if(size!=0u && !read(address+layout.value.offset,size,value))
                     { return limited?outcome::limit_exceeded:outcome::unavailable; }
                     auto const before{tree.size()};++elements;
@@ -1303,7 +1304,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 for(unsigned i{};i!=2u && elements<cap.max_elements;++i)
                 {
                     auto const counter{i==0u?layout.strong:layout.weak};auto const count{i==0u?strong:weak};
-                    ::std::vector<::std::byte> value(width);
+                    ::uwvm2::utils::container::std_vector<::std::byte> value(width);
                     for(unsigned j{};j!=width;++j) { value[j]=static_cast<::std::byte>((count>>(8u*j))&255u); }
                     ++elements;if(!append(tree,counter.type,value,i==0u?"strong":"weak",depth))
                     { return limited?outcome::limit_exceeded:outcome::unavailable; }++shown;
@@ -1313,7 +1314,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             [[nodiscard]] outcome rust_deque(::std::size_t root,::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-                ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
             {
                 rust_deque_extent layout{};
                 if(!rust_deque_plan(types,root,bytes,known,eligible,width,layout)) { return outcome::unavailable; }
@@ -1325,7 +1326,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     auto const available{copied<=cap.max_bytes ? cap.max_bytes-copied : 0u};
                     shown=(std::min)(shown,static_cast<::std::size_t>(available/extent));
                 }
-                ::std::vector<::std::byte> data{};
+                ::uwvm2::utils::container::std_vector<::std::byte> data{};
                 if(shown!=0u && !layout.zero_sized)
                 {
                     auto const first{static_cast<::std::size_t>((std::min)(static_cast<::std::uint64_t>(shown),
@@ -1339,17 +1340,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     { return limited ? outcome::limit_exceeded : outcome::unavailable; }
                     if(first!=shown)
                     {
-                        ::std::vector<::std::byte> tail{};
+                        ::uwvm2::utils::container::std_vector<::std::byte> tail{};
                         if(!read(plan.address,(shown-first)*static_cast<::std::size_t>(extent),tail))
                         { return limited ? outcome::limit_exceeded : outcome::unavailable; }
                         data.insert(data.end(),tail.begin(),tail.end());
                     }
                 }
-                ::std::string text{"size="};number(text,plan.count);text+=" capacity=";number(text,layout.capacity);text+=" [";
+                ::uwvm2::utils::container::std_string text{"size="};number(text,plan.count);text+=" capacity=";number(text,layout.capacity);text+=" [";
                 ::std::size_t appended{};
                 for(;appended!=shown;++appended)
                 {
-                    ::std::string label{"["};number(label,appended);label+=']';auto const before{tree.size()};++elements;
+                    ::uwvm2::utils::container::std_string label{"["};number(label,appended);label+=']';auto const before{tree.size()};++elements;
                     if(!append(tree,plan.element,layout.zero_sized ? ::std::span<::std::byte const>{} :
                         ::std::span<::std::byte const>{data}.subspan(appended*extent,extent),::std::move(label),depth)) { break; }
                     if(appended<8u && text.size()<3000u)
@@ -1361,7 +1362,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
 #endif
             [[nodiscard]] outcome format_owned(::std::size_t root, ::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known, ::std::span<::std::byte const> pointer_known,
-                ::std::vector<dwarf::object_node>& tree, ::std::size_t depth)
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, ::std::size_t depth)
             {
                 if(root >= types.size() || tree.empty()) { return outcome::unavailable; }
                 auto const kind{types[root].kind};
@@ -1374,7 +1375,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
             }
             [[nodiscard]] outcome format_dispatch(::std::size_t root, ::std::span<::std::byte const> bytes,
                 ::std::span<::std::byte const> known, ::std::span<::std::byte const> pointer_known,
-                ::std::vector<dwarf::object_node>& tree, ::std::size_t depth)
+                ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, ::std::size_t depth)
             {
                 if(root >= types.size() || tree.empty() || tree[0u].type != root) { return outcome::unavailable; }
                 auto const& type{types[root]}; field a{},b{},c{};
@@ -1395,12 +1396,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                             if(!path(types,root,profile->data_path,a) || !details::pointer(types,a,width)) { return outcome::unavailable; }
                             ::std::uint64_t address{};
                             if(!bits(types,a,bytes,known,address) || (!pointer_known.empty() && !bits(types,a,bytes,pointer_known,address))) { return outcome::unavailable; }
-                            ::std::string text{address == 0u ? "empty" : "stored pointer"};
+                            ::uwvm2::utils::container::std_string text{address == 0u ? "empty" : "stored pointer"};
                             if(address != 0u && elements < cap.max_elements)
                             {
                                 auto const target{types[a.type].referenced_type}; auto const& value{types[target]};
                                 if(!value.size_known || value.byte_size == 0u || value.byte_size > cap.max_bytes) { return outcome::unavailable; }
-                                ::std::vector<::std::byte> copied_value{};
+                                ::uwvm2::utils::container::std_vector<::std::byte> copied_value{};
                                 if(!read(address,static_cast<::std::size_t>(value.byte_size),copied_value)) { return limited ? outcome::limit_exceeded : outcome::unavailable; }
                                 auto const before{tree.size()}; ++elements;
                                 if(!append(tree,target,copied_value,"*",depth)) { return limited ? outcome::limit_exceeded : outcome::unavailable; }
@@ -1416,7 +1417,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                             if(engaged == 0u) { summary(tree[0u],profile->name,"none"); return outcome::formatted; }
                             auto const extent{types[b.type].byte_size};
                             if(b.offset > bytes.size() || extent > bytes.size()-b.offset) { return outcome::unavailable; }
-                            ::std::string text{"engaged"};
+                            ::uwvm2::utils::container::std_string text{"engaged"};
                             if(elements < cap.max_elements)
                             {
                                 auto const first{static_cast<::std::size_t>(b.offset)}; auto const count{static_cast<::std::size_t>(extent)};
@@ -1480,12 +1481,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     auto const byte_count{static_cast<::std::size_t>(shown*unit)};
                     for(::std::size_t i{}; i != byte_count; ++i)
                     { if(!known.empty() && known[start+i] != ::std::byte{0xffu}) { return outcome::unavailable; } }
-                    ::std::string text{"string length="}; number(text,length); text += " \"";
+                    ::uwvm2::utils::container::std_string text{"string length="}; number(text,length); text += " \"";
                     if(unit == 1u)
                     {
                         tree[0u].display_text.clear();
                         if(byte_count != 0u) { tree[0u].display_text.assign(reinterpret_cast<char const*>(bytes.data()+start),byte_count); }
-                        tree[0u].display_text_available=true; tree[0u].display_text_truncated=shown<length; text += ::fast_io::concat_std(dwarf::escaped_metadata_text{tree[0u].display_text});
+                        tree[0u].display_text_available=true; tree[0u].display_text_truncated=shown<length; text += ::uwvm2::utils::container::concat(dwarf::escaped_metadata_text{tree[0u].display_text});
                     }
                     else
                     {
@@ -1531,7 +1532,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     if(!choose(a,{"_M_payload._M_engaged","__engaged_"}) || !integer(types,a,1u)) { return outcome::unavailable; }
                     ::std::uint64_t engaged{};
                     if(!bits(types,a,bytes,known,engaged) || engaged > 1u) { return outcome::unavailable; }
-                    ::std::string text{engaged ? "engaged" : "nullopt"};
+                    ::uwvm2::utils::container::std_string text{engaged ? "engaged" : "nullopt"};
                     if(engaged && choose(b,{"_M_payload._M_payload._M_value","__val_"}))
                     { for(auto const& n : tree) { if(n.type == b.type && n.byte_offset >= tree[0u].byte_offset &&
                         n.byte_offset-tree[0u].byte_offset == b.offset) { text += " = "; scalar_text(n,text); break; } } }
@@ -1541,7 +1542,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 {
                     if(!choose(a,{"_M_index","__impl_.__index"}) || !integer(types,a)) { return outcome::unavailable; }
                     ::std::uint64_t index{}; if(!bits(types,a,bytes,known,index)) { return outcome::unavailable; }
-                    ::std::string text{"index="}; number(text,index);
+                    ::uwvm2::utils::container::std_string text{"index="}; number(text,index);
                     if(index == dwarf::numeric_mask(types[a.type].byte_count)) { text = "valueless_by_exception"; }
                     summary(tree[0u],"C++ variant",::std::move(text)); return outcome::formatted;
                 }
@@ -1560,7 +1561,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                     else if(!choose(a,{"_M_ptr","__ptr_"}) || !pointer(types,a,width) || type.template_types.empty() ||
                         types[a.type].referenced_type != type.template_types[0u]) { return outcome::unavailable; }
                     ::std::uint64_t address{}; if(!bits(types,a,bytes,pointer_known.empty() ? known : pointer_known,address)) { return outcome::unavailable; }
-                    ::std::string text{address == 0u ? "empty" : unique ? "stored pointer" : "stored pointer (ownership/liveness unknown)"};
+                    ::uwvm2::utils::container::std_string text{address == 0u ? "empty" : unique ? "stored pointer" : "stored pointer (ownership/liveness unknown)"};
                     // Weak pointers must never follow a potentially expired
                     // pointee; shared counts need their own proven ABI profile.
                     if(address != 0u && unique)
@@ -1568,7 +1569,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                         auto const target{types[a.type].referenced_type}; auto const& t{types[target]};
                         if(t.size_known && t.byte_size != 0u && t.byte_size <= cap.max_bytes && elements < cap.max_elements)
                         {
-                            ::std::vector<::std::byte> object{};
+                            ::uwvm2::utils::container::std_vector<::std::byte> object{};
                             if(read(address,static_cast<::std::size_t>(t.byte_size),object))
                             { ++elements; auto const before{tree.size()}; if(append(tree,target,object,"*",depth)) { text += " = "; scalar_text(tree[before],text); } }
                         }
@@ -1577,7 +1578,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
                 }
                 if(family(type,"array") || family(type,"pair") || family(type,"tuple") || type.kind == dwarf::type_kind::array)
                 {
-                    ::std::string text{family(type,"pair") ? "pair" : family(type,"tuple") ? "tuple" : "array"};
+                    ::uwvm2::utils::container::std_string text{family(type,"pair") ? "pair" : family(type,"tuple") ? "tuple" : "array"};
                     text += " {"; ::std::size_t shown{};bool incomplete{tree[0u].omitted_children != 0u};
                     for(::std::size_t i{1u}; i != tree.size(); ++i)
                     {
@@ -1608,7 +1609,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
     [[nodiscard]] inline outcome format(::std::span<dwarf::type_record const> types, ::std::size_t root,
         ::std::span<::std::byte const> bytes, ::std::span<::std::byte const> known,
         ::std::span<::std::byte const> pointer_known, ::std::uint8_t address_bytes, Reader&& read,
-        ::std::vector<dwarf::object_node>& tree, limits const& cap = {}) noexcept
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree, limits const& cap = {}) noexcept
     {
         if(root >= types.size() || tree.empty() || (address_bytes != 4u && address_bytes != 8u) || bytes.size() > 65536u ||
            (!known.empty() && known.size() != bytes.size()) || (!pointer_known.empty() && pointer_known.size() != bytes.size()) ||
@@ -1622,7 +1623,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer
 #endif
             // Commit a complete result only; read failures and exhausted budgets
             // leave the original raw object and existing summaries untouched.
-            ::std::vector<::std::byte> qualified{};
+            ::uwvm2::utils::container::std_vector<::std::byte> qualified{};
             if(!pointer_known.empty() && !known.empty())
             {
                 qualified.resize(known.size());

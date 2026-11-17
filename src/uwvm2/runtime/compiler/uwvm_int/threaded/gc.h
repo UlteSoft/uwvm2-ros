@@ -10,7 +10,48 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         auto const base=value_top_-ins.parameters;
         if(ins.results>values_.size()-base || ins.parameters>gc_scratch_.size()) { return fail(status::resource_limit); }
         value result{};
-        if(sub>=28u)
+        if(sub>=20u && sub<=25u)
+        {
+            auto const raw=values_[base];
+            auto const heap=::std::bit_cast<::std::int64_t>(ins.immediate);
+            bool matches{};
+            if(heap==static_cast<::std::int64_t>(core::abstract_heap_type::exn)||
+               heap==static_cast<::std::int64_t>(core::abstract_heap_type::noexn))
+            {
+                reference ref{};::std::memcpy(&ref,&raw,sizeof(ref));
+                bool const null=ref.kind==::uwvm2::object::global::wasm_ref_kind::wasm_null||
+                    (ref.kind==::uwvm2::object::global::wasm_ref_kind::wasm_exn&&!ref.storage.ptr);
+                if(!null&&!exception_token(ref))return fail(status::invariant_failure);
+                matches=null?ins.alternate!=0u:heap==static_cast<::std::int64_t>(core::abstract_heap_type::exn);
+            }
+            else
+            {
+                auto const* store=world_->module(frame.module)->gc_store.get();
+                if(!store || !store->valid())return fail(status::invariant_failure);
+                reference ref{};::std::memcpy(&ref,&raw,sizeof(ref));
+                matches=store->reference_type_matches(ref,{core::value_kind::reference,{heap},ins.alternate!=0u});
+            }
+            if(sub<=21u){value_top_=base;return push(static_cast<::std::uint32_t>(matches));}
+            if(sub<=23u)return matches||fail(status::trap_cast);
+            // Both branch edges preserve the original full reference. The
+            // common branch operation moves the complete validated label tuple.
+            return (matches==(sub==24u))?branch(ins.target):true;
+        }
+        else if(sub==26u || sub==27u)
+        {
+            auto const* store=world_->module(frame.module)->gc_store.get();
+            if(!store || !store->valid())return fail(status::invariant_failure);
+            reference input{},output{};::std::memcpy(&input,&values_[base],sizeof(input));
+            auto const outcome=sub==26u?store->any_convert_extern(input,output):store->extern_convert_any(input,output);
+            if(outcome!=storage::gc_object_status::ok)
+            {
+                if(outcome==storage::gc_object_status::out_of_memory||outcome==storage::gc_object_status::size_overflow)
+                    return fail(status::resource_limit);
+                return fail(status::invariant_failure);
+            }
+            result=value::reference(output);
+        }
+        else if(sub>=28u)
         {
             if(sub==28u) { result=value::reference(::uwvm2::object::global::make_wasm_i31_reference(static_cast<::std::int32_t>(values_[base].low))); }
             else

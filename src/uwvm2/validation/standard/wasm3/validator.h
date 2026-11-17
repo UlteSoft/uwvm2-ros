@@ -23,6 +23,9 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -127,7 +130,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     };
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
-    using operand_stack_type = ::uwvm2::utils::container::vector<operand_stack_storage_t<Fs...>>;
+    using operand_stack_type = ::uwvm2::utils::container::vector<operand_stack_storage_t<Fs...>, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>>;
 
     template <typename T>
     struct fast_io_native_typed_global_allocator_guard
@@ -565,7 +568,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
 
         // control-flow stack
         using curr_block_type = block_t<Fs...>;
-        ::uwvm2::utils::container::vector<curr_block_type> control_flow_stack{};
+        ::uwvm2::utils::container::vector<curr_block_type, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>> control_flow_stack{};
 
         // operand stack
         using curr_operand_stack_value_type = operand_stack_value_type<Fs...>;
@@ -6926,15 +6929,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                                 ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
                                 ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
                         }
-                        auto const memory_index{details::read_leb128<
-                            ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(
-                                code_curr, code_end, op_begin, err, u8"memtag.memoryidx")};
-                        if(wasm1p1_para.disable_multi_memory && memory_index != 0u) [[unlikely]]
-                        {
-                            details::fail_feature_required(op_begin, err, subopcode,
-                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::multi_memory,
-                                ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
-                        }
+                        // Use the same bounded index decoder as both full compilers.
+                        // With multi-memory disabled, only the reserved single zero byte
+                        // is admitted; a padded zero requires the multi-memory grammar.
+                        auto const memory_index{::uwvm2::validation::standard::wasm3::read_memory_index(
+                            code_curr, code_end, op_begin, !wasm1p1_para.disable_multi_memory, err)};
                         check_memory_index(op_begin, memory_index, u8"memtag");
                         auto const address_type{memory_operand_type(memory_index)};
                         if(!is_polymorphic && concrete_operand_count() < memtag->operand_count) [[unlikely]]
@@ -8181,7 +8180,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         validate_code_to_sink(wasm3_code_version{}, module, function_index, begin, end, error, features, builder);
         if(!builder.terminal_ || error.err_code != ::uwvm2::validation::error::code_validation_error_code::ok) { return {}; }
         builder.plan_.sealed_ = true;
-        return retained_integer_function_plan::owner{new retained_integer_function_plan{::std::move(builder.plan_)}};
+        return retained_integer_function_plan::owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<retained_integer_function_plan>([&](retained_integer_function_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) retained_integer_function_plan{::std::move(builder.plan_)}; }))};
     }
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>

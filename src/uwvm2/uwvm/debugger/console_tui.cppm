@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/uwvm/debugger/console_stdio.h>
 #include <uwvm2/uwvm/debugger/console_layout.h>
 #include <vector>

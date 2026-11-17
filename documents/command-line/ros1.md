@@ -1,15 +1,38 @@
-# ROS 1 command line
+# ROS 1 command line — deprecated VM interface
 
-Build this category with `xmake f --import-ros1=y --use-cxx-module=n`. The Linux runtime host uses the full interpreter (`-Rint`) and does not link ROS libraries. The independent Gateway links roscpp from Noetic.
+**Deprecated:** this entire legacy ROS VM interface family, including its
+client module and all `--ros1-*` options. Bug fixes may change faulty unreleased
+semantics. New deployments should use [`uwvm_ros_v2` and `--ros-scene-*`](ros-scene.md)
+after checking the [implemented provider coverage](../runtime/ros-scene-provider-contracts.md).
+See the [deprecation scope and migration rules](../runtime/ros-host-interfaces.md#names-and-compatibility).
+
+Explicit enablement emits `deprecated-ros` by default. The normal
+`--disable-warning`, `--enable-warning` and `--warning-as-error` controls apply;
+promotion refuses enablement before changing target authority. See
+[warning ordering and suppression](logging.md#legacy-ros-and-native-preload-boundaries).
+
+Message reception uses `uwvm_ros1_v1.message_poll`. Unified event streams use
+`uwvm_ros1_v1.event_stream_watch`, `uwvm_ros1_v1.event_stream_poll` and
+`uwvm_ros1_v1.event_stream_ready`. These names also identify the functions in
+host diagnostics, debugger traces and IDE views. The previous names are not
+registered as aliases; rebuild guests and update configuration that names an
+interface. See [message and event-stream APIs](../runtime/ros-event-streams.md).
+
+This category is compiled out by default. Restore its retained implementation with
+`xmake f --import-u2rosv1-ros1=y --use-cxx-module=n`; ROSv2 remains independently
+selected by `--import-u2rosv2=y`. The Linux runtime host uses the full interpreter (`-Rint`) and does not link ROS libraries. The independent Gateway links roscpp from Noetic.
 
 No permissions are implied. Enabled Targets with resource grants require their explicit connection identities, and grants require their resource/type/behavior fields. Quotas are optional and default to unlimited. Duplicate assignments, unknown fields, unresolved module bindings and unsupported active operations reject startup.
 
 ROS1 is disabled by default, even in a ROS1-enabled build. Its initial Global Target and each newly created Single/Group Target are disabled with empty connection and capability maps. The Global, Single and Group `enable` options only enable the selected Target; they grant no operation. Their `grant` and `set` options configure explicit resource permission without enabling that Target. An enabled Target with no grants still denies every Guest resource operation, and a disabled Target cannot use its stored grants. ROS2 configuration does not enable ROS1 or grant ROS1 authority.
 
-Interface visibility starts empty. `--ros1-single-enable <module>` exposes
-this ROS version's complete registered namespace family to that explicitly
-created module target. The Group and Global enable options do the same for
-their explicitly bound modules. There is no per-function exposure setting.
+Interface visibility starts empty. `--ros1-single-enable <module>` enables
+this ROS namespace family for the explicitly created module target. Each
+function also needs an interface rule with state `hidden`, `deny` or `allow`.
+For example, `--ros1-single-interface app uwvm_ros1_v1.message_poll allow`
+exposes message reception to `app`; event-stream operations each use their
+full registered names. Group and Global interface rules use the corresponding
+`--ros1-group-interface` and `--ros1-global-interface` options.
 A module without an explicit Single/Group binding selects Global. Global
 starts disabled with hidden interfaces. `--ros1-global-add-module <module>`
 is an optional membership declaration; it is not required for default selection.

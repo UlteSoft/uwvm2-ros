@@ -4,6 +4,10 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/control/host_diagnostics.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
@@ -20,6 +24,8 @@
 #include <cmath>
 #include "../common/debug.h"
 #include "../ipc/action_control.h"
+#include "../common/checkpoint.h"
+#include <set>
 
 namespace uwvm2::imported::ros
 {
@@ -98,7 +104,7 @@ namespace uwvm2::imported::ros
             long double &token_fraction,&creation_fraction;
             bool &limited_rate,&limited_bytes,&limited_log;
             ::std::chrono::steady_clock::time_point& updated;
-            explicit alias_state(::std::shared_ptr<alias_account> value=::std::make_shared<alias_account>())
+            explicit alias_state(::std::shared_ptr<alias_account> value=::uwvm2::utils::container::make_shared<alias_account>())
                 : accounting{::std::move(value)},audit{accounting->audit},open_count{accounting->open_count},rate{accounting->rate},
                   burst{accounting->burst},bandwidth{accounting->bandwidth},tokens{accounting->tokens},creation_tokens{accounting->creation_tokens},
                   byte_tokens{accounting->byte_tokens},byte_fraction{accounting->byte_fraction},log_bandwidth{accounting->log_bandwidth},
@@ -109,7 +115,7 @@ namespace uwvm2::imported::ros
         struct handle_entry
         {
             ::std::uint32_t generation{1};
-            ::std::string alias{};
+            ::uwvm2::utils::container::std_string alias{};
             bool active{}, retired{};
         };
         struct backend_state
@@ -119,16 +125,16 @@ namespace uwvm2::imported::ros
             bool alive{true};
             bool shared_environment{};
             target_policy policy{};
-            ::std::string module{};
+            ::uwvm2::utils::container::std_string module{};
             ::std::uint64_t instance_id{};
-            ::std::map<::std::string, alias_state, ::std::less<>> aliases{};
-            ::std::map<::std::uint32_t, handle_entry> handles{};
+            ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string, alias_state, ::std::less<>> aliases{};
+            ::uwvm2::utils::container::std_map<::std::uint32_t, handle_entry> handles{};
         };
         struct instance_state
         {
-            ::std::string module{};
+            ::uwvm2::utils::container::std_string module{};
             ::std::atomic<bool> retired{};
-            ::std::shared_ptr<backend_state> ros1{::std::make_shared<backend_state>()}, ros2{::std::make_shared<backend_state>()};
+            ::std::shared_ptr<backend_state> ros1{::uwvm2::utils::container::make_shared<backend_state>()}, ros2{::uwvm2::utils::container::make_shared<backend_state>()};
         };
         using identity = ::std::pair<void const*, ::std::uint64_t>;
         struct identity_less
@@ -141,11 +147,11 @@ namespace uwvm2::imported::ros
             }
         };
         ::std::mutex registry_mutex{};
-        ::std::map<identity, ::std::shared_ptr<instance_state>, identity_less> instances{};
-        using environment_key=::std::tuple<version,scope,::std::string>;
-        ::std::map<environment_key,::std::shared_ptr<backend_state>> environments{};
-        using accounting_key=::std::tuple<version,scope,::std::string,::std::string>;
-        ::std::map<accounting_key,::std::shared_ptr<alias_account>> accounts{};
+        ::uwvm2::utils::container::std_map<identity, ::std::shared_ptr<instance_state>, identity_less> instances{};
+        using environment_key=::std::tuple<version,scope,::uwvm2::utils::container::std_string>;
+        ::uwvm2::utils::container::std_map<environment_key,::std::shared_ptr<backend_state>> environments{};
+        using accounting_key=::std::tuple<version,scope,::uwvm2::utils::container::std_string,::uwvm2::utils::container::std_string>;
+        ::uwvm2::utils::container::std_map<accounting_key,::std::shared_ptr<alias_account>> accounts{};
         static bool same_account_policy(capability_spec const& a,capability_spec const& b) noexcept
         { return a.alias==b.alias && a.operation==b.operation && a.resource==b.resource && a.type==b.type &&
             a.type_identity==b.type_identity && a.limits==b.limits; }
@@ -264,7 +270,7 @@ namespace uwvm2::imported::ros
             ::std::unique_lock<::std::recursive_mutex> owned_quota{};
             if(!existing_quota) { owned_quota=::std::unique_lock{state.accounting->mutex}; }
             auto& quota{existing_quota?*existing_quota:owned_quota};
-            ::std::unique_ptr<synchronous_quota_wait> fallback;
+            ::uwvm2::utils::container::std_unique_ptr<synchronous_quota_wait> fallback;
             synchronous_quota_wait* waiter{};
             for(;;)
             {
@@ -335,7 +341,7 @@ namespace uwvm2::imported::ros
                 if(!waiter)
                 {
                     if(synchronous_wait_context::present()) { waiter=synchronous_wait_context::waiter(); }
-                    else { fallback.reset(new(::std::nothrow) synchronous_quota_wait{});waiter=fallback.get(); }
+                    else { fallback.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<synchronous_quota_wait>([&](synchronous_quota_wait* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) synchronous_quota_wait{}; }));waiter=fallback.get(); }
                     if(!waiter) { return {errc::out_of_memory,"cannot allocate native quota waiter"}; }
                 }
                 if(!waiter->select_exit(wait_on_exit)) { return {errc::cancelled,"process exit cancels quota wait"}; }
@@ -389,7 +395,7 @@ namespace uwvm2::imported::ros
             {
 #endif
             auto timestamp{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch()).count()};
-            cap.audit.record(::fast_io::concat_std("{\"time_unix_ns\":",::fast_io::mnp::dec(timestamp),
+            cap.audit.record(::uwvm2::utils::container::concat("{\"time_unix_ns\":",::fast_io::mnp::dec(timestamp),
                 ",\"ros_version\":",json_quoted{to_string(state.policy.ros_version)},",\"module\":",json_quoted{state.module},
                 ",\"instance\":",::fast_io::mnp::dec(state.instance_id),",\"event\":",json_quoted{event},
                 ",\"operation\":",json_quoted{cap.cap.operation},",\"resource\":",json_quoted{cap.cap.resource},
@@ -517,11 +523,13 @@ namespace uwvm2::imported::ros
             return true;
         }
 
+#include "checkpoint_rebinding.h"
+#include "checkpoint_capture.h"
         result register_instance(void const* object, ::std::uint64_t generation, ::std::string_view module,
                                  target_policy const* ros1, target_policy const* ros2)
         {
             if(!object || !valid_module_name(module)) { return {errc::invalid_argument, "runtime identity and validated module name required"}; }
-            auto state{::std::make_shared<instance_state>()}; state->module = module;
+            auto state{::uwvm2::utils::container::make_shared<instance_state>()}; state->module = module;
             state->ros1->module = state->ros2->module = module;
             state->ros2->policy.ros_version = version::ros2;
             if(ros1) { if(ros1->ros_version != version::ros1) { return {errc::invalid_argument, "ROS1 target version mismatch"}; } state->ros1->policy = *ros1; }
@@ -558,7 +566,7 @@ namespace uwvm2::imported::ros
             {
                 auto& selected_backend{v==version::ros1?state->ros1:state->ros2};
                 auto& bound{*selected_backend};
-                auto key=environment_key{v,bound.policy.target_scope,bound.policy.target_scope==scope::global?::std::string{}:bound.policy.name};
+                auto key=environment_key{v,bound.policy.target_scope,bound.policy.target_scope==scope::global?::uwvm2::utils::container::std_string{}:bound.policy.name};
                 if(bound.shared_environment)
                 {
                     auto found=environments.find(key);
@@ -582,7 +590,7 @@ namespace uwvm2::imported::ros
                 decltype(bound.aliases) resolved;
                 for(auto const& [alias,candidate]:bound.aliases)
                 {
-                    auto name=bound.policy.target_scope==scope::global?::std::string{}:
+                    auto name=bound.policy.target_scope==scope::global?::uwvm2::utils::container::std_string{}:
                         bound.policy.target_scope==scope::single?state->module:bound.policy.name;
                     accounting_key key{v,bound.policy.target_scope,::std::move(name),alias};
                     auto const found{accounts.find(key)};
@@ -943,7 +951,7 @@ namespace uwvm2::imported::ros
             audit_decision(bound, cap->second, event, error); return {};
         }
         result drain_audit(void const* object, ::std::uint64_t generation, version v, ::std::string_view alias,
-                           ::std::vector<::std::string>& records, ::std::uint64_t& dropped)
+                           ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& records, ::std::uint64_t& dropped)
         {
             if(!object || !valid_version(v)) { return {errc::permission_denied, "invalid trusted identity"}; }
             auto instance{find_instance(object, generation)}; if(!instance) { return {errc::permission_denied, "unregistered instance"}; }

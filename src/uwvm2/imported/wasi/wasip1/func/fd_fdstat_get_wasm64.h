@@ -248,6 +248,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             put_word(2u,curr_fd.wasi_fd.ptr->socket_nonblock?4u:0u,2u);
             put_word(8u,static_cast<::std::uint64_t>(curr_fd.rights_base),8u);
             put_word(16u,static_cast<::std::uint64_t>(curr_fd.rights_inherit),8u);
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
             [[maybe_unused]] auto guard=::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory);
             if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
                 memory,stat_ptrsz,encoded,sizeof(encoded),true))
@@ -615,6 +616,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         put_word(2u,static_cast<::std::uint64_t>(fs_flags),2u);
         put_word(8u,static_cast<::std::uint64_t>(fs_rights_base),8u);
         put_word(16u,static_cast<::std::uint64_t>(fs_rights_inheriting),8u);
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
         [[maybe_unused]] auto guard=::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory);
         if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
             memory,stat_ptrsz,encoded_fdstat,sizeof(encoded_fdstat),true))

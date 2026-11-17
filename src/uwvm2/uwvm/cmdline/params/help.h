@@ -72,6 +72,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 #if defined(UWVM_IMPORT_ROS2)
                                                                     u8"|ros2"
 #endif
+#if defined(UWVM_IMPORT_ROSV2)
+                                                                    u8"|rosv2"
+#endif
                                                                     u8"])"},
                                                              .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::help_alias), 1uz}},
                                                              .handle{::std::addressof(details::help_callback)},

@@ -1,6 +1,7 @@
 // Private native storage ownership only; no debug/restore/PC capability.
 // Real generated returns, tails and EH cleanup retire the exact LIFO buffer.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -17,13 +18,13 @@ namespace uwvm2::runtime::lib::details
     {
         struct buffer_record
         {
-            ::std::vector<::std::byte> bytes{};
+            ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
             ::std::size_t prefix{};
             // Physical constructed byte storage may outlive a frame. Only
             // this exact active extent is visible to any current borrow.
             ::std::size_t extent{};
         };
-        ::std::vector<buffer_record> buffers_{};
+        ::uwvm2::utils::container::std_vector<buffer_record> buffers_{};
         ::std::size_t active_{};
         // Retain storage, never a live frame or initialized value. A fixed
         // 32 * 16 KiB ceiling prevents a deep/large guest call from retaining
@@ -118,7 +119,7 @@ namespace uwvm2::runtime::lib::details
             // Reuse this depth directly; no vector swap or record destruction
             // on a repeated leaf call. Inactive records carry no live extent.
             if(buffer.capacity() > recycled_limit)
-            { ::std::vector<::std::byte>{}.swap(buffer); }
+            { ::uwvm2::utils::container::std_vector<::std::byte>{}.swap(buffer); }
             record.prefix = record.extent = 0u;
             --active_;
             if(buffers_.size()-active_ > retained_records) { buffers_.pop_back(); }

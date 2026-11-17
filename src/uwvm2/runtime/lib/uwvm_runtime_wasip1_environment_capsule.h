@@ -1,6 +1,9 @@
 // Private native-lifetime producer; included inside the runtime namespace
 // after the original WASIp1 environment resolver and cold debug adapter.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++"
 {
@@ -8,6 +11,7 @@ extern "C++"
     {
         friend class runtime_checkpoint_coherent_manager;
         friend class runtime_checkpoint_world_transaction;
+        friend class runtime_threaded_profile_bridge;
         friend auto ::uwvm2::runtime::lib::llvm_jit_checkpoint_copy_wasip1_capsule_data_host_api(
             llvm_jit_wasip1_environment_capsule_owner const&) noexcept -> llvm_jit_wasip1_environment_capsule_data_result;
         using status = llvm_jit_wasip1_environment_capsule_status;
@@ -22,16 +26,18 @@ extern "C++"
             friend class runtime_checkpoint_coherent_manager;
             native_capture_key()=default;
         };
-        static constexpr ::std::size_t registry_limit{16u}, descriptor_limit{65536u}, text_limit{1048576u};
+        static constexpr ::std::size_t registry_limit{SIZE_MAX/sizeof(owner)}, descriptor_limit{65536u}, text_limit{1048576u};
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::weak_ptr<llvm_jit_wasip1_environment_capsule const> registry_[registry_limit]{};
+        // Live captures have no fixed slot ceiling. Expired weak slots are
+        // reused; allocation failure remains an explicit capture failure.
+        inline static ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_wasip1_environment_capsule const>> registry_{};
         inline static ::std::uint64_t next_serial_{1u};
         llvm_jit_wasip1_environment_capsule_data data_{};
         void const* environment_identity_{}; // comparison only, never dereferenced or serialized
         ::std::size_t opens_size_{};
-        ::std::vector<::std::size_t> closed_order_{};
-        struct empty_binding { ::std::uint64_t number{},base{},inheriting{}; bool null_resource{}; };
-        ::std::vector<empty_binding> reserved_empty_{}; // non-allocatable placeholders, including debugger fd0
+        ::uwvm2::utils::container::std_vector<::std::size_t> closed_order_{};
+        struct empty_binding { ::std::uint64_t number{},base{},inheriting{}; bool null_resource{}, protected_slot{}; };
+        ::uwvm2::utils::container::std_vector<empty_binding> reserved_empty_{}; // non-allocatable placeholders, including debugger fd0
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
         using fd = ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_t;
         using fd_ref = ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_ref_t;
@@ -64,18 +70,18 @@ extern "C++"
             ::std::uint64_t managed_identity{};
             ::fast_io::intfpos_t managed_offset{};
             int managed_flags{};
-            ::std::vector<::std::byte> managed_content{};
+            ::uwvm2::utils::container::std_vector<::std::byte> managed_content{};
             ::fast_io::native_file owned_observer_duplicate{};
 #if defined(_WIN32) && !defined(__CYGWIN__)
             ::fast_io::win32_socket_file owned_socket_observer_duplicate{};
 #endif
-            ::std::vector<directory_pin> directories{};
+            ::uwvm2::utils::container::std_vector<directory_pin> directories{};
             // Genuine refs retain owned FastIO RAII resources without an old
             // module, source, engine, host gate or VM generation owner.
         };
         struct descriptor_binding { ::std::uint64_t guest_number{}; ::std::size_t resource{}; };
-        ::std::vector<resource_pin> resources_{};
-        ::std::vector<descriptor_binding> bindings_{};
+        ::uwvm2::utils::container::std_vector<resource_pin> resources_{};
+        ::uwvm2::utils::container::std_vector<descriptor_binding> bindings_{};
         [[nodiscard]] static fd* find_actual_descriptor(
             ::uwvm2::imported::wasi::wasip1::fd_manager::wasm_fd_storage_t& table, ::std::uint64_t number) noexcept
         { return runtime_wasip1_debug_environment::find_descriptor(table,number); }
@@ -188,7 +194,7 @@ extern "C++"
         ::std::size_t owned_text_bytes_{};
         [[nodiscard]] bool copy_actual_text(runtime_wasip1_debug_environment::strings const& backing,
             runtime_wasip1_debug_environment::string_views const& views,
-            ::std::vector<::uwvm2::uwvm::debugger::wasip1_state::text>& output, request const& selected)
+            ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::debugger::wasip1_state::text>& output, request const& selected)
         {
             if(!runtime_wasip1_debug_environment::bound_text(backing,views)) { return false; }
             output.reserve(backing.size());
@@ -206,13 +212,13 @@ extern "C++"
             // Exact original lock order, nested ONLY under manager's actual
             // closed-host/cohort/N/publication scope. No provider callback.
             ::uwvm2::utils::mutex::rw_fair_shared_guard_t table_lock{table.fds_rwlock};
-            if(table.opens.size()>descriptor_limit || table.renumber_map.size()>descriptor_limit-table.opens.size())
+            if(table.opens.size()>selected.maximum_descriptors || table.renumber_map.size()>selected.maximum_descriptors-table.opens.size())
             { return status::resource_limit; }
             if(table.closes.size()>table.opens.size()) { return status::unavailable_environment; }
             if(!table.fits_occupied_slot_limit(selected.maximum_descriptors)) { return status::resource_limit; }
             opens_size_=table.opens.size();
             closed_order_.assign(table.closes.begin(),table.closes.end());
-            ::std::vector<::std::uint64_t> numbers{};numbers.reserve(table.opens.size()+table.renumber_map.size());
+            ::uwvm2::utils::container::std_vector<::std::uint64_t> numbers{};numbers.reserve(table.opens.size()+table.renumber_map.size());
             for(::std::size_t n{};n!=table.opens.size();++n) { numbers.push_back(n); }
             for(auto const& [number,ignored]:table.renumber_map)
             {
@@ -232,7 +238,24 @@ extern "C++"
                 auto const actual{find_actual_descriptor(table,number)};
                 if(actual==nullptr) { reserved_empty_.push_back({number});continue; }
                 ::uwvm2::utils::mutex::mutex_guard_t fd_lock{actual->fd_mutex};
-                if(actual->close_pos!=SIZE_MAX) { continue; }
+                if(actual->close_pos==SIZE_MAX-1u)
+                {
+                    // Zero-authority stdio slots are permanent reservations,
+                    // not free-list entries. Omitting them would make a later
+                    // restored open reuse a forbidden standard descriptor.
+                    if((actual->wasi_fd.ptr!=nullptr && actual->wasi_fd.ptr->wasi_fd_storage.type!=fd_kind::null) ||
+                       actual->rights_base!=decltype(actual->rights_base){} || actual->rights_inherit!=decltype(actual->rights_inherit){})
+                    { return status::unavailable_environment; }
+                    reserved_empty_.push_back({number,0u,0u,actual->wasi_fd.ptr!=nullptr,true});continue;
+                }
+                if(actual->close_pos!=SIZE_MAX)
+                {
+                    // A provisional/inconsistent slot cannot be serialized as
+                    // closed state even though host admission is already shut.
+                    if(actual->close_pos>=table.closes.size() || table.closes.index_unchecked(actual->close_pos)!=number)
+                    { return status::unavailable_environment; }
+                    continue;
+                }
                 if(actual->wasi_fd.ptr==nullptr || actual->wasi_fd.ptr->wasi_fd_storage.type==fd_kind::null)
                 { reserved_empty_.push_back({number,static_cast<::std::uint64_t>(actual->rights_base),
                     static_cast<::std::uint64_t>(actual->rights_inherit),actual->wasi_fd.ptr!=nullptr});continue; }
@@ -247,10 +270,64 @@ extern "C++"
             }
             data_.distinct_native_bindings=resources_.size();return status::captured;
         }
+#include "uwvm_runtime_wasip1_environment_archive.h"
 #endif
 #include "uwvm_runtime_wasip1_environment_restore.h"
+#include "uwvm_runtime_wasip1_recorded_environment.h"
 #include "uwvm_runtime_wasip1_portable_environment.h"
         explicit llvm_jit_wasip1_environment_capsule(native_capture_key const&) noexcept {}
+        struct history_data_only_tag {};
+        explicit llvm_jit_wasip1_environment_capsule(history_data_only_tag) noexcept {}
+        // Read-only private-thread producer. The actual bridge calls this only
+        // before launch, after physical join, or under its authentic all-stop
+        // with no unresolved host operation. It emits DATA, never a registered
+        // capsule, restoration key, descriptor binding, or execution authority.
+        [[nodiscard]] static auto capture_threaded_history_data(
+            ::uwvm2::uwvm::runtime::full::full_source_instance::owner const& source,
+            ::std::size_t id, ::std::array<::std::byte,16u> const& label)
+            -> ::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment const>
+        {
+#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
+            namespace source_ns=::uwvm2::uwvm::runtime::full;
+            if(!source_ns::full_source_instance::has_canonical_owner(source) || id>=g_runtime.modules.size() ||
+               !is_wasip1_import_visible_for_runtime_module_id_slow(id))return {};
+            auto const& record=g_runtime.modules.index_unchecked(id);
+            auto const epoch=current_runtime_generation();
+            auto const* file=source->actual_validated_file(id,epoch,record.runtime_module);
+            if(!file || !file->has_owned_source_image())return {};
+            llvm_jit_wasip1_environment_capsule candidate{history_data_only_tag{}};
+            candidate.data_.recording_label=label;candidate.data_.observed_runtime_epoch=epoch;candidate.data_.module=id;
+            auto const* bytes=reinterpret_cast<::std::byte const*>(file->source_cbegin());
+            ::fast_io::sha256_context hash{};hash.update(bytes,bytes+file->source_size());hash.do_final();
+            hash.digest_to_byte_ptr(candidate.data_.original_wasm.data());
+            for(::std::size_t m{};m<g_runtime.modules.size();++m)
+            {
+                auto const* member=g_runtime.modules.index_unchecked(m).runtime_module;
+                if(!member || !source->actual_validated_file(m,epoch,member))return {};
+                for(::std::size_t f{};f<member->imported_function_vec_storage.size();++f)
+                {
+                    source_ns::builtin_wasip1_function_data witness{};
+                    if(source->actual_builtin_wasip1_function(m,epoch,member,f,witness))
+                        candidate.data_.builtin_interface=witness.interface_sha256;
+                }
+            }
+            auto& environment=resolve_wasip1_env_for_runtime_module_id(id);
+            candidate.environment_identity_=::std::addressof(environment);
+            runtime_wasip1_debug_environment::strings *arguments{},*variables{};
+            if(!runtime_wasip1_debug_environment::resolve_text_owners(id,environment,arguments,variables))return {};
+            request selected{};selected.module=id;selected.recording_label=label;
+            selected.maximum_descriptors=static_cast<::std::size_t>(INT32_MAX)+1u;
+            selected.maximum_directory_entries=selected.maximum_owned_text_bytes=SIZE_MAX;
+            selected.maximum_managed_file_bytes=selected.maximum_managed_total_bytes=SIZE_MAX;
+            if(!candidate.copy_actual_text(*arguments,environment.argv,candidate.data_.arguments,selected) ||
+               !candidate.copy_actual_text(*variables,environment.envs,candidate.data_.environment,selected) ||
+               candidate.copy_actual_descriptors(environment,selected)!=status::captured ||
+               candidate.detach_archive_environment(environment)!=status::captured)return {};
+            return candidate.data_.archive_environment;
+#else
+            (void)source;(void)id;(void)label;return {};
+#endif
+        }
         [[nodiscard]] static owner canonical(owner const& supplied) noexcept
         {
             if(!supplied) { return {}; }
@@ -293,7 +370,7 @@ extern "C++"
             { return {status::unavailable_environment,{}}; }
             auto const& source{code->source};auto const* file{source->actual_validated_file(id,epoch,module)};
             if(file==nullptr || !file->has_owned_source_image() ||
-               !source->actual_no_unadapted_native_memory_provider(id,epoch,module))
+               !source->actual_checkpoint_builtin_provider_census(id,epoch,module))
             { return {status::unavailable_environment,{}}; }
             auto const member{source->registry().find(record.module_name)};
             if(member==source->registry().end() || ::std::addressof(member->second)!=module) { return {status::unavailable_environment,{}}; }
@@ -320,7 +397,7 @@ extern "C++"
                 }
             }
             if(!builtin) { return {status::unavailable_environment,{}}; }
-            ::std::shared_ptr<llvm_jit_wasip1_environment_capsule> result{new llvm_jit_wasip1_environment_capsule{actual_key}};
+            ::std::shared_ptr<llvm_jit_wasip1_environment_capsule> result{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_wasip1_environment_capsule>([&](llvm_jit_wasip1_environment_capsule* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_wasip1_environment_capsule{actual_key}; }))};
             result->data_.recording_label=selected.recording_label;result->data_.observed_runtime_epoch=epoch;result->data_.module=selected.module;
             result->data_.builtin_interface=witness.interface_sha256;
             if(file->source_cbegin()==nullptr || file->source_size()==0u ||
@@ -336,14 +413,10 @@ extern "C++"
             auto& environment{resolve_wasip1_env_for_runtime_module_id(id)};
             result->environment_identity_=::std::addressof(environment);
             if(!capture_resources) { return {status::captured,::std::move(result)}; }
-            auto const* arguments{::std::addressof(storage::wasip1_argument_storage)};
-            auto const* variables{::std::addressof(storage::wasip1_environment_storage)};
-            if(::std::addressof(environment)!=::std::addressof(storage::default_wasip1_env))
-            {
-                auto const group{find_wasip1_override_for_runtime_module_id_slow(id)};
-                if(group==nullptr || ::std::addressof(group->env)!=::std::addressof(environment)) { return {status::unavailable_owned_text,{}}; }
-                arguments=::std::addressof(group->argument_storage);variables=::std::addressof(group->environment_storage);
-            }
+            runtime_wasip1_debug_environment::strings* arguments{};
+            runtime_wasip1_debug_environment::strings* variables{};
+            if(!runtime_wasip1_debug_environment::resolve_text_owners(id,environment,arguments,variables))
+            { return {status::unavailable_owned_text,{}}; }
             if(!result->copy_actual_text(*arguments,environment.argv,result->data_.arguments,selected) ||
                !result->copy_actual_text(*variables,environment.envs,result->data_.environment,selected)) { return {status::unavailable_owned_text,{}}; }
             ::std::size_t aliases{};
@@ -351,6 +424,7 @@ extern "C++"
             { if(is_wasip1_import_visible_for_runtime_module_id_slow(n) && ::std::addressof(resolve_wasip1_env_for_runtime_module_id(n))==::std::addressof(environment)) { ++aliases; } }
             result->data_.shared_environment=aliases>1u;
             auto const pinned{result->copy_actual_descriptors(environment,selected)};if(pinned!=status::captured) { return {pinned,{}}; }
+            auto const detached=result->detach_archive_environment(environment);if(detached!=status::captured) { return {detached,{}}; }
             // Publish only a complete immutable native capsule. Registry owns
             // weak refs only; releasing final trusted owner closes its duplicates.
             // No native/source/engine/domain pointers are serialized as DATA.
@@ -365,7 +439,10 @@ extern "C++"
                     weak=result;return {status::captured,::std::move(result)};
                 }
             }
-            return {status::registry_exhausted,{}};
+            registry_.push_back(result);
+            result->data_.issuer_serial=next_serial_;
+            next_serial_=next_serial_==UINT64_MAX ? 0u : next_serial_+1u;
+            return {status::captured,::std::move(result)};
 #else
             (void)actual_key;(void)epoch;(void)actual_profile;return {status::unavailable_environment,{}};
 #endif

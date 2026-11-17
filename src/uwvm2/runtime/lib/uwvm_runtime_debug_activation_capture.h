@@ -41,7 +41,7 @@
         llvm_jit_debug_native_code_site native_code_site_{}; // private authentic true-endpoint cooperative code origin
         ::std::shared_ptr<details::debug_activation::ledger const> native_ledger_owner_{}; // actual dynamic ledger control block; never a code/stack pin
         details::debug_native_stack::owner native_stack_owner_{}; // actual worker scope; no public stack permission
-        ::std::vector<void const*> code_owners_{}; // comparison-only actual full/retained code-owner borrows
+        ::uwvm2::utils::container::std_vector<void const*> code_owners_{}; // comparison-only actual full/retained code-owner borrows
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_capture_activation_host_api(
             ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept -> llvm_jit_debug_activation_capture_owner;
         friend auto ::uwvm2::runtime::lib::llvm_jit_debug_query_native_activation_host_api(

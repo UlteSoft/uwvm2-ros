@@ -1,5 +1,5 @@
 // Original runtime anonymous namespace, after registry/target/source helpers.
-inline ::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_publication>
+inline ::uwvm2::utils::container::std_unique_ptr<owned_native_eh_private_leaf_publication>
     owned_native_eh_private_leaf_publication::prepare_actual_record(compiled_module_record& rec) noexcept
 {
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1 && \
@@ -39,7 +39,7 @@ inline ::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_
         if(ir == nullptr || stage->clones() > 256uz || stage->clones() == 0uz) { return {}; }
         ::llvm::WriteBitcodeToFile(*ir, stream);
         compiler::llvm_jit_module_storage_t candidate{};
-        candidate.llvm_context_holder = ::uwvm2::utils::container::make_delete_owned<::llvm::LLVMContext>();
+        candidate.llvm_context_holder = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_context();
         // [actual staged IR-owned serialized bytes][checked complete size] end
         // [safe] The new candidate context/module own all parsed nodes. Original
         // public IR/context remain untouched and retained for every failure.
@@ -49,8 +49,8 @@ inline ::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_
         candidate.llvm_module.reset(parsed->release());
         if(::llvm::verifyModule(*candidate.llvm_module)) { return {}; }
         candidate.emitted = true;
-        auto owner{::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_publication>{
-            new owned_native_eh_private_leaf_publication{selected_source, stage, id, generation}}};
+        auto owner{::uwvm2::utils::container::std_unique_ptr<owned_native_eh_private_leaf_publication>{
+            ::uwvm2::utils::allocator::fast_io_strict::object<owned_native_eh_private_leaf_publication>([&](owned_native_eh_private_leaf_publication* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_native_eh_private_leaf_publication{selected_source, stage, id, generation}; })}};
         // [real record owns original full IR][separate verified private IR]
         // [safe] Administrative publication lock excludes every entry reader.
         // Only this original private factory moves these native owners.
@@ -99,7 +99,7 @@ inline bool owned_native_eh_private_leaf_publication::verify_actual_selected_cal
         auto const staged{stage_->ir_for_cold_inspection()};
         auto const total{stage_->selected_edges()};
         if(staged == nullptr || total == 0uz || total > 4'096uz || rec.llvm_jit_compiled.local_funcs.size() > 256uz) { return false; }
-        ::std::vector<private_ir::call_identity> seen{};
+        ::uwvm2::utils::container::std_vector<private_ir::call_identity> seen{};
         seen.reserve(total);
         for(::std::size_t target{}; target != rec.llvm_jit_compiled.local_funcs.size(); ++target)
         {

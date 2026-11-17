@@ -30,11 +30,13 @@ def parse_help(text):
         raise ValueError("incomplete or empty CLI help")
     return entries
 
-def render(entries):
+def render(entries, prefix=None):
     output = [
-        "# Complete advertised CLI catalog", "",
+        "# " + ("ROSv2 advertised CLI catalog" if prefix == "--ros-scene-" else
+                  "Advertised CLI catalog: " + prefix if prefix else "Complete advertised CLI catalog"), "",
         "Generated from an actual Linux integration binary's §--help all§.",
-        "This catalog contains every advertised primary command, its aliases in",
+        ("This catalog contains every advertised primary command matching §" + prefix + "§," if prefix else
+         "This catalog contains every advertised primary command,") + " its aliases in",
         "the usage line, and the binary's own description. Availability and",
         "supported transports still follow the ROS product policy. A registered",
         "platform-specific option is not proof that its backend is available.", "",
@@ -42,7 +44,8 @@ def render(entries):
         "debugging, update boundaries and exit status, and the",
         "[topic references](README.md) for semantic details and subcommands.", "",
         "Regenerate with §tools/documentation/generate_cli_reference.py --vm",
-        "/absolute/path/to/uwvm2-ros --output documents/command-line/cli-catalog.md§.",
+        "/absolute/path/to/uwvm2-ros " + ("--prefix=" + prefix + " " if prefix else "") +
+        "--output documents/command-line/" + ("ros-scene-cli-catalog.md" if prefix == "--ros-scene-" else "cli-catalog.md") + "§.",
         "An existing exact help capture can instead be supplied with §--help-file§.",
         "The generator does not run a Guest or confer any permissions.", "",
         "Advertised primary commands: **" + str(len(entries)) + "**.", ""
@@ -57,6 +60,7 @@ def main():
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--vm", type=pathlib.Path)
     source.add_argument("--help-file", type=pathlib.Path)
+    parser.add_argument("--prefix", help="Include only advertised primary commands with this exact prefix")
     parser.add_argument("--output", type=pathlib.Path, required=True)
     args = parser.parse_args()
     if args.vm:
@@ -66,7 +70,16 @@ def main():
     else:
         text = args.help_file.read_text(encoding="utf-8")
     entries = parse_help(text)
-    args.output.write_text(render(entries), encoding="utf-8")
+    if args.prefix is not None:
+        if not re.fullmatch(r"--[a-z0-9-]+", args.prefix):
+            parser.error("--prefix must be a literal long-option prefix")
+        # The ROSv2 child-module dispatcher is the exact parent option. Keep it
+        # in the scene family alongside the older hyphenated configuration forms.
+        entries = [entry for entry in entries if entry["name"].startswith(args.prefix) or
+                   (args.prefix == "--ros-scene-" and entry["name"] == "--ros-scene")]
+        if not entries:
+            parser.error("no advertised commands match --prefix")
+    args.output.write_text(render(entries, args.prefix), encoding="utf-8")
     print(f"Rendered {len(entries)} commands to {args.output}")
 
 if __name__ == "__main__":

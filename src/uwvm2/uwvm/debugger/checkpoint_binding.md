@@ -1,3 +1,5 @@
+> Current executable state schema: **10** (`UWCPSTA` / `UWCPSTEA`). Native continuation ABI remains 2; the complete cache identity includes schema 10.
+
 # Private checkpoint identity binding proposal, revision 2
 
 This is a mandatory future admission contract, not a production restore feature.
@@ -251,16 +253,16 @@ are specified in `test/0036.checkpoint_binding/README.state-identity.md`.
 ## Historical schema7 migration notes (v5 cache baseline)
 
 State schema7 retains the empty table descriptor and revises the canonical state wire
-markers (`UWCPST7\0`, `UWCPSTE7`). Binding identity revision2, envelope4,
+markers (`UWCPSTA\0`, `UWCPSTEA`). Binding identity revision2, envelope4,
 cache format5 remain unchanged. The actual native compilation profile records
-state schema7 in tuple field2 and the genuine native continuation ABI in field3; all old state6/5/4/3
+state schema7 in tuple field2 and the genuine native continuation ABI in field3; all old state9/8/7/6/5/4/3
 profile/cache manifests are incompatible. Empty descriptor carrier bits and file
 IDs remain DATA, never runtime source ownership or checkpoint authority.
 
 
 State schema7 additionally binds preserved exception diagnostic origin/name
 payloads and the explicit unknown instruction/generation markers. Inner state
-magic and commit are `UWCPST7\0` / `UWCPSTE7`; state6/5/4/3 are never silently
+magic and commit are `UWCPSTA\0` / `UWCPSTEA`; state9/8/7/6/5/4/3 are never silently
 migrated. Envelope4, cache format5 and identity2 remain unchanged. The complete ten-field
 actual compilation profile records schema7 and separately the genuine native ABI;
 profile policy versions are independently preserved, not reset by this bump.

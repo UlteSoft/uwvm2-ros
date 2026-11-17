@@ -7,6 +7,27 @@ function register(vscode,context,sessions) {
   const api=vscode.debug;
   if(!api?.onDidChangeBreakpoints || !api.addBreakpoints || !api.removeBreakpoints || !vscode.SourceBreakpoint)return;
   const states=new Map();let mirroring=0;
+  function removeRetiredDocuments(owner) {
+    const retiredUri=uri=>{
+      if(uri?.scheme!=="uwvm-wasm")return false;
+      const id=new URLSearchParams(uri.query).get("session");
+      return !!id && (owner ? id===owner : !sessions.has(id) && api.activeDebugSession?.id!==id);
+    };
+    const retired=api.breakpoints.filter(point=>{
+      return point instanceof vscode.SourceBreakpoint && retiredUri(point.location.uri);
+    });
+    if(retired.length){mirroring++;try{api.removeBreakpoints(retired);}finally{mirroring--;}}
+    // These read-only documents cannot outlive their adapter's capabilities.
+    // Keeping a restored tab produces a permanent editor-load error after a
+    // reload. Close only expired private tabs, never user files or live VMs.
+    const groups=vscode.window?.tabGroups;
+    const tabs=groups?.all?.flatMap(group=>group.tabs).filter(tab=>!tab.isDirty && retiredUri(tab.input?.uri))||[];
+    if(tabs.length && groups.close)void Promise.resolve(groups.close(tabs,true)).catch(()=>{});
+  }
+  // Private instruction documents are scoped to one authenticated adapter
+  // session. Persisted points from a closed/reloaded session cannot be rebound
+  // to a fresh module merely because its function/line numbers happen to match.
+  removeRetiredDocuments();
   const state=session=>{if(!states.has(session.id))states.set(session.id,{session,paths:new Map(),registered:new Set(),permission:undefined,bound:new Set(),queue:Promise.resolve(),pushing:0,echo:new Map(),runtime:new Map(),scheduled:new Map(),flushQueued:false});return states.get(session.id);};
   const uriFor=path=>path.startsWith("uwvm-wasm:")?vscode.Uri.parse(path):vscode.Uri.file(path);
   const keyFor=path=>uriFor(path).toString();
@@ -129,7 +150,7 @@ function register(vscode,context,sessions) {
       schedulePublish(s,entry);
     }
   }));
-  context.subscriptions.push(api.onDidTerminateDebugSession(session=>states.delete(session.id)));
+  context.subscriptions.push(api.onDidTerminateDebugSession(session=>{states.delete(session.id);removeRetiredDocuments(session.id);}));
   if(api.registerDebugAdapterTrackerFactory)context.subscriptions.push(api.registerDebugAdapterTrackerFactory("uwvm-llvm-full",{
     createDebugAdapterTracker(session) {const s=state(session);return {
       onWillReceiveMessage(packet) {

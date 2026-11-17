@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <algorithm>
 # include <array>
@@ -56,7 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_path
     struct stop_key
     {
         ::std::uint64_t stop{}, runtime_epoch{};
-        ::std::vector<cohort_member> cohort{};
+        ::uwvm2::utils::container::std_vector<cohort_member> cohort{};
         friend bool operator==(stop_key const&,stop_key const&) noexcept = default;
     };
     [[nodiscard]] inline bool valid(stop_key const& key) noexcept
@@ -83,11 +84,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_path
     };
     class ledger
     {
-        struct entry { ::std::uint64_t handle{}; wasm_state::request root{}; ::std::vector<::std::uint64_t> path{}; };
+        struct entry { ::std::uint64_t handle{}; wasm_state::request root{}; ::uwvm2::utils::container::std_vector<::std::uint64_t> path{}; };
         inline static ::std::atomic<::std::uint64_t> next_session_{1u};
         ::std::uint64_t session_{}, next_handle_{1u};
         stop_key key_{};
-        ::std::vector<entry> entries_{};
+        ::uwvm2::utils::container::std_vector<entry> entries_{};
         ::std::size_t indices_{};
         [[nodiscard]] static ::std::uint64_t issue_session() noexcept
         {
@@ -121,7 +122,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_path
             if(requested.action!=operation::create && previous==nullptr)
             { out.result=wasm_state::status::stale_stop_or_generation;return out; }
             out.query=previous==nullptr ? requested.root : previous->root;
-            out.query.long_path=previous==nullptr ? ::std::vector<::std::uint64_t>{} : previous->path;
+            out.query.long_path=previous==nullptr ? ::uwvm2::utils::container::std_vector<::std::uint64_t>{} : previous->path;
             if(requested.suffix_size>wasm_state::maximum_long_path-out.query.long_path.size())
             { out.result=wasm_state::status::resource_limit;return out; }
             // [actual bounded suffix0..<=16] [owned original-index path<=4096]

@@ -73,7 +73,7 @@
     // [safe                                                      ] The only
     // tuple-loading edge follows status::ok, never no_match or an error.
     builder.SetInsertPoint(selected);
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
     values.reserve(count);
     ::std::size_t offset{};
     for(::std::size_t index{}; index != count; ++index)

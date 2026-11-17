@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <chrono>
@@ -39,6 +41,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         friend constexpr bool operator==(cooperative_pause_location, cooperative_pause_location) noexcept = default;
     };
     enum class cooperative_pause_result : unsigned { paused, timeout, stale_ticket, closed };
+    enum class retained_host_return_result : unsigned { returned, paused, stale, closed };
 
     class cooperative_pause_domain
     {
@@ -56,6 +59,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // as parked again. Neither state is set by ordinary Wasm polling.
             bool release_once{};
             bool externally_parked{};
+            // A retained native operation has relinquished EVERY guest-memory
+            // access. It may finish native I/O, but must pass return_from_host
+            // before reading/writing guest state or delivering its result.
+            // This is never a materialized/cooperatively parked Wasm frame.
+            bool retained_host{};
         };
         mutable ::std::mutex mutex_{};
         ::std::condition_variable changed_{};
@@ -65,9 +73,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         // Acquire pairs with the controller's request; recheck under the mutex
         // handles resume/re-pause races without trusting a stale fast-path read.
         ::std::atomic_bool requested_{};
-        ::std::vector<slot> slots_;
+        ::uwvm2::utils::container::std_vector<slot> slots_;
         bool growable_{}; // Default debugger domain; sized constructors remain explicit quotas.
-        ::std::shared_ptr<void const> identity_{::std::make_shared<unsigned char>()};
+        ::std::shared_ptr<void const> identity_{::uwvm2::utils::container::make_shared<unsigned char>()};
         ::std::size_t active_{}, parked_{}, admission_waiters_{};
         ::std::uint_least64_t serial_{}, next_participant_{1};
         ::std::atomic_bool closed_{};
@@ -91,38 +99,38 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         void poll(::std::size_t index, cooperative_pause_location location, BeforePark&& before_park) noexcept
         {
             if(!requested_.load(::std::memory_order_acquire)) { return; }
-            // This cold callback runs on the live participant BEFORE acquiring
-            // mutex_: it may copy its native stack without reversing the host
-            // controller/domain lock order. Every actual park crosses this hook.
-            // Resume during capture merely cancels this attempt; re-pause still
-            // parks at the same live location. It must not wait, re-enter or throw.
-            ::std::forward<BeforePark>(before_park)();
             ::std::unique_lock lock{mutex_};
-            if(!requested_.load(::std::memory_order_relaxed) || closed_) { return; }
-            // [slots_: owned stable indices] index names the live leased slot.
-            // [safe] no reference crosses the wait's mutex release; admission
-            // may grow storage after resume, so each wake reacquires by index.
-            slots_[index].location = location;
-            slots_[index].parked = true;
-            slots_[index].externally_parked = false;
-            ++parked_;
-            changed_.notify_all();
-            // A closed domain must not wake a saved native cohort before the
-            // retained transition owner finishes arming retirement. This check
-            // is only in the cold parked wait; the running acquire fast path is
-            // unchanged. Reset releases the hold and publishes its prior setup.
-            changed_.wait(lock, [&]
+            for(;;)
             {
-                return !transition_held_ && (!requested_.load(::std::memory_order_relaxed) || closed_ || slots_[index].release_once);
-            });
-            // A host-selected native step already decremented parked_ before
-            // waking this one participant. Resume can race that wakeup, so
-            // inspect the actual slot instead of decrementing a second time.
-            auto& resumed{slots_[index]};
-            if(resumed.parked) { resumed.parked = false; --parked_; }
-            resumed.release_once = false;
-            // Releasing mutex_ publishes resumed state. A new request made before
-            // this waiter reacquires it simply keeps this participant parked.
+                if(!requested_.load(::std::memory_order_relaxed) || closed_) { return; }
+                auto const episode{serial_};
+                // Never hold the domain mutex while copying the native stack.
+                // A new ticket requires a fresh callback even if resume/re-pause
+                // happened before this old waiter could leave its native frame.
+                lock.unlock();
+                ::std::forward<BeforePark>(before_park)();
+                lock.lock();
+                if(!requested_.load(::std::memory_order_relaxed) || closed_) { return; }
+                if(serial_ != episode) { continue; }
+                // Stable index, no slot reference crosses an unlock or wait.
+                slots_[index].location = location;
+                slots_[index].parked = true;
+                slots_[index].externally_parked = false;
+                ++parked_;
+                changed_.notify_all();
+                changed_.wait(lock, [&]
+                {
+                    return !transition_held_ && (!requested_.load(::std::memory_order_relaxed) ||
+                        closed_ || slots_[index].release_once || serial_ != episode);
+                });
+                // A native step or a new pause may already have removed this
+                // old park from the count. Never decrement it a second time.
+                if(slots_[index].parked) { slots_[index].parked = false; --parked_; }
+                slots_[index].release_once = false;
+                if(closed_ || !requested_.load(::std::memory_order_relaxed) || serial_ == episode) { return; }
+                // Re-capture at the SAME live guest location, without executing
+                // an instruction between two host pause requests.
+            }
         }
 
         void release_transition(::std::uint_least64_t serial) noexcept
@@ -137,6 +145,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // closed domain this release lets already parked guests retire;
             // the owner must arm retirement before dropping its retained hold.
             changed_.notify_all();
+        }
+
+        [[nodiscard]] bool retain_host(::std::size_t index, cooperative_pause_location location) noexcept
+        {
+            ::std::lock_guard lock{mutex_};
+            auto& entry=slots_[index];
+            if(closed_ || !entry.id || entry.parked || entry.retained_host || entry.release_once || entry.externally_parked)
+                return false;
+            entry.location=location;entry.retained_host=true;
+            if(requested_.load(::std::memory_order_relaxed)){entry.parked=true;++parked_;}
+            changed_.notify_all();return true;
+        }
+        [[nodiscard]] bool return_from_host(::std::size_t index) noexcept
+        {
+            ::std::unique_lock lock{mutex_};
+            if(!slots_[index].retained_host) return false;
+            changed_.wait(lock,[&]{return !transition_held_ && (!requested_.load(::std::memory_order_relaxed) || closed_);});
+            auto& entry=slots_[index];
+            if(entry.parked){entry.parked=false;--parked_;}
+            entry.retained_host=false;changed_.notify_all();return !closed_;
+        }
+        [[nodiscard]] retained_host_return_result try_return_from_host(::std::size_t index) noexcept
+        {
+            ::std::lock_guard lock{mutex_};
+            if(closed_)return retained_host_return_result::closed;
+            auto& entry=slots_[index];
+            if(!entry.retained_host)return retained_host_return_result::stale;
+            if(transition_held_ || requested_.load(::std::memory_order_relaxed))
+                return retained_host_return_result::paused;
+            if(entry.parked){entry.parked=false;--parked_;}
+            entry.retained_host=false;changed_.notify_all();return retained_host_return_result::returned;
         }
 
     public:
@@ -346,6 +385,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             template<typename BeforePark>
             void poll(cooperative_pause_location location, BeforePark&& before_park) const noexcept
             { if(owner_ != nullptr) { owner_->poll(index_, location, ::std::forward<BeforePark>(before_park)); } }
+            // Only an audited detached-memory import adapter may use this pair.
+            // In particular an ordinary native syscall with guest buffers is
+            // NOT eligible. The participant and its native worker stay alive.
+            [[nodiscard]] bool retain_host_operation(cooperative_pause_location location) const noexcept
+            {return owner_ && owner_->retain_host(index_,location);}
+            [[nodiscard]] bool return_from_host_operation() const noexcept
+            {return owner_ && owner_->return_from_host(index_);}
+            // A deterministic scheduler must not hold the next guest turn
+            // while this original native operation waits for global resume.
+            // On paused, retain the same native owner and relinquish that turn;
+            // another genuinely released guest worker may still single-step.
+            [[nodiscard]] retained_host_return_result try_return_from_host_operation() const noexcept
+            {return owner_?owner_->try_return_from_host(index_):retained_host_return_result::stale;}
             // Register BEFORE acquiring an external wait-shard lock, destroy
             // AFTER releasing it. Actual pause requests take domain -> shard;
             // polling never takes shard -> domain. Result is wake DATA only.
@@ -367,11 +419,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         {
             ::std::uint_least64_t id{};
             cooperative_pause_location location{};
+            bool retained_host{};
         };
         struct snapshot
         {
             cooperative_pause_result result{cooperative_pause_result::stale_ticket};
-            ::std::vector<stopped_participant> participants{};
+            ::uwvm2::utils::container::std_vector<stopped_participant> participants{};
         };
 
     private:
@@ -456,7 +509,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             if(closed_ || requested_.load(::std::memory_order_relaxed) ||
                serial_ == ::std::numeric_limits<::std::uint_least64_t>::max()) { return {}; }
             ++serial_;
+            // Resumed cooperative waiters need not have observed the previous
+            // wake yet. Their old captures belong to the old ticket, so exclude
+            // them until poll re-runs before_park for this new episode.
+            for(auto& entry : slots_)
+            {
+                if(entry.retained_host)
+                {if(!entry.parked){entry.parked=true;++parked_;}continue;}
+                if(!entry.parked) { continue; }
+                entry.parked = false;
+                --parked_;
+            }
             requested_.store(true, ::std::memory_order_release);
+            changed_.notify_all();
             wake_registered_waiters(); // Cold real request, ordinary poll adds no read.
             return pause_ticket{identity_, serial_};
         }
@@ -470,6 +535,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             if(!current(ticket)) { return cooperative_pause_result::stale_ticket; }
             return cooperative_pause_result::paused;
         }
+        // Read-only observation of a genuinely stopped cohort, including
+        // retained native calls. Unlike the executable-cohort operation below,
+        // this grants no transition/mutation or frame-materialization proof.
+        [[nodiscard]] bool copy_stopped_observation(pause_ticket const& ticket,
+            ::std::span<stopped_participant> output,::std::size_t& needed) noexcept
+        {
+            needed=0u;::std::lock_guard lock{mutex_};
+            if(closed_||transition_held_||!current(ticket)||parked_!=active_||!active_)return false;
+            for(auto const& entry:slots_)if(entry.id)
+            {
+                if(!entry.parked||entry.externally_parked||entry.release_once)return false;
+                ++needed;
+            }
+            if(needed!=active_||output.size()<needed)return false;
+            ::std::size_t n{};for(auto const& entry:slots_)if(entry.id)output[n++]={entry.id,entry.location,entry.retained_host};
+            return true;
+        }
         [[nodiscard]] snapshot capture(pause_ticket const& ticket)
         {
             ::std::lock_guard lock{mutex_};
@@ -479,20 +561,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             snapshot result{cooperative_pause_result::paused, {}};
             result.participants.reserve(active_);
             for(auto const& entry : slots_)
-            { if(entry.id != 0) { result.participants.push_back({entry.id, entry.location}); } }
+            { if(entry.id != 0) { result.participants.push_back({entry.id, entry.location,entry.retained_host}); } }
             return result;
+        }
+        [[nodiscard]] bool same_current_pause(pause_ticket const& a,pause_ticket const& b) const noexcept
+        {
+            ::std::lock_guard lock{mutex_};return !closed_ && current(a) && current(b) && parked_==active_;
         }
         // Host-only native-step transfer. The caller must first authenticate
         // the selected JIT return PC and native thread. Only one participant
         // leaves the cooperative wait; every other guest remains stopped.
         [[nodiscard]] bool release_one_for_native_step(pause_ticket const& ticket, ::std::uint_least64_t id)
+        { return release_one_to_next_poll(ticket, id); }
+        // A deterministic scheduler releases one genuinely parked participant
+        // and waits for its NEXT cooperative poll. This issues no native-PC
+        // permission and does not manufacture an external/signal-handler park.
+        // The owning execution adapter must validate that next stop before it
+        // reuses any previously issued stopped-cohort observation.
+        [[nodiscard]] bool release_one_to_next_poll(pause_ticket const& ticket, ::std::uint_least64_t id)
         {
             ::std::lock_guard lock{mutex_};
             if(closed_ || transition_held_ || !current(ticket) || parked_ != active_ || id == 0u) { return false; }
             for(auto& entry : slots_)
             {
                 if(entry.id != id) { continue; }
-                if(!entry.parked || entry.externally_parked || entry.release_once) { return false; }
+                if(!entry.parked || entry.externally_parked || entry.retained_host || entry.release_once) { return false; }
                 entry.parked = false;
                 entry.release_once = true;
                 --parked_;
@@ -511,7 +604,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             for(auto& entry : slots_)
             {
                 if(entry.id != id) { continue; }
-                if(entry.parked || entry.externally_parked || entry.release_once) { return false; }
+                if(entry.parked || entry.externally_parked || entry.retained_host || entry.release_once) { return false; }
                 entry.location = location;
                 entry.parked = entry.externally_parked = true;
                 ++parked_;
@@ -545,6 +638,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         {
             ::std::lock_guard lock{mutex_};
             if(closed_ || transition_held_ || !current(ticket) || parked_ != active_) { return false; }
+            for(auto const& entry:slots_)if(entry.retained_host)return false;
             ::std::forward<Commit>(commit)();
             return true;
         }
@@ -561,7 +655,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             for(auto const& entry : slots_)
             {
                 if(entry.id != id) { continue; }
-                if(!entry.parked || entry.externally_parked || entry.release_once) { return false; }
+                if(!entry.parked || entry.externally_parked || entry.retained_host || entry.release_once) { return false; }
                 // [domain-owned fixed participant slots] end
                 // [safe                                ] entry remains parked
                 //  ^^ copy only this authenticated location while the lock lives.
@@ -598,7 +692,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             for(auto const& entry : slots_)
             {
                 if(entry.id == 0u) { continue; }
-                if(!entry.parked || entry.externally_parked || entry.release_once || observed == active_)
+                if(!entry.parked || entry.externally_parked || entry.retained_host || entry.release_once || observed == active_)
                 { return false; }
                 ++observed; // observed<=active_; an extra slot declines before overflow.
             }
@@ -682,7 +776,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // frames; management mutators were blocked throughout the transfer.
             for(auto const& entry : slots_)
             {
-                if(entry.id != 0u && (!entry.parked || entry.externally_parked || entry.release_once)) { return false; }
+                if(entry.id != 0u && (!entry.parked || entry.externally_parked || entry.retained_host || entry.release_once)) { return false; }
             }
             // [live domain-owned management lease] no guest/native pointer
             // [safe] clear its borrowing owner BEFORE publishing resumed state.
@@ -737,7 +831,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             for(auto const& entry : slots_)
             {
                 if(entry.id != id) { continue; }
-                if(!entry.parked || entry.release_once) { return false; }
+                if(!entry.parked || entry.retained_host || entry.release_once) { return false; }
                 // [domain-owned fixed participant slots] end
                 // [safe                                ] actual slot stays parked;
                 //  ^^ copy location/park kind, never a requested native address.

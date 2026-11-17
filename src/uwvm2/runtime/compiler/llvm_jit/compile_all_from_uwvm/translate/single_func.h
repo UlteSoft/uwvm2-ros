@@ -79,10 +79,10 @@ struct llvm_jit_module_storage_t
     bool emitted{};
 
     // LLVM context must outlive the module, functions, and all LLVM types/values owned by the module.
-    ::uwvm2::utils::container::delete_owned_ptr<::llvm::LLVMContext> llvm_context_holder{};
+    ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::context_owner llvm_context_holder{};
 
     // LLVM IR module for a full compile or a per-task fragment.
-    ::uwvm2::utils::container::delete_owned_ptr<::llvm::Module> llvm_module{};
+    ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_owner llvm_module{};
 
     // Declarations borrow this module, never host pointer slots. The qualified
     // TargetMachine is supplied before emission; runtime binds actual ABI symbols
@@ -348,7 +348,7 @@ namespace details
         runtime_virtual_register_id virtual_register_id{invalid_runtime_virtual_register_id};
     };
 
-    using runtime_operand_stack_type = ::uwvm2::utils::container::deque<runtime_operand_stack_storage_t>;
+    using runtime_operand_stack_type = ::uwvm2::utils::container::validation_deque<runtime_operand_stack_storage_t>;
 
     // Stable virtual-register assignment for one Wasm local slot.
     struct runtime_local_virtual_register_t
@@ -361,7 +361,7 @@ namespace details
         runtime_virtual_register_id virtual_register_id{invalid_runtime_virtual_register_id};
     };
 
-    using runtime_local_virtual_register_table_t = ::uwvm2::utils::container::deque<runtime_local_virtual_register_t>;
+    using runtime_local_virtual_register_table_t = ::uwvm2::utils::container::validation_deque<runtime_local_virtual_register_t>;
 
     // Runtime block tuple represented as a pointer pair into parser/runtime type storage or static inline-result arrays.
     struct runtime_block_result_type
@@ -574,7 +574,7 @@ namespace details
                                     ::uwvm2::runtime::exception::pending_experiment::numeric_entry::compile_plan const* pending_numeric_plan = nullptr,
                                     ::std::uint64_t debug_compiled_function_generation = 1u,
                                     ::uwvm2::runtime::checkpoint::function_plan* checkpoint_plan = nullptr,
-                                    ::std::vector<::uwvm2::validation::standard::wasm3::validated_call_dependency>* lazy_call_dependencies = nullptr,
+                                    ::uwvm2::utils::container::std_vector<::uwvm2::validation::standard::wasm3::validated_call_dependency>* lazy_call_dependencies = nullptr,
                                     bool* lazy_call_dependencies_overflow = nullptr,
                                     bool execute_memtag = true) UWVM_THROWS
     {
@@ -715,7 +715,7 @@ namespace details
         // Structured-control stack.  The initial frame is the implicit function block and is popped only after the final
         // `end` instruction validates the function result.
         using curr_block_type = runtime_block_t;
-        ::uwvm2::utils::container::vector<curr_block_type> control_flow_stack{};
+        ::uwvm2::utils::container::validation_vector<curr_block_type> control_flow_stack{};
 
         // Operand stack / virtual register machine.
         //
@@ -917,7 +917,15 @@ namespace details
 
         auto const operand_stack_pop_n{[&](::std::size_t n) constexpr noexcept
                                        {
-                                           while(n-- != 0uz && !operand_stack.empty()) { static_cast<void>(operand_stack_pop_unchecked()); }
+                                           // A polymorphic pop supplies missing operands only at the CURRENT
+                                           // control frame's base. Outer-frame values remain live across an
+                                           // unreachable call, including indirect and reference calls.
+                                           auto const base{control_flow_stack.empty() ? 0uz :
+                                               control_flow_stack.back_unchecked().operand_stack_base};
+                                           if(operand_stack.size() < base) [[unlikely]] { runtime_storage_bug(); }
+                                           auto const available{operand_stack.size() - base};
+                                           auto remaining{n < available ? n : available};
+                                           while(remaining-- != 0uz) { static_cast<void>(operand_stack_pop_unchecked()); }
                                        }};
 
         auto const operand_stack_truncate_to{[&](::std::size_t new_size) constexpr noexcept
@@ -2493,7 +2501,7 @@ namespace details
                                                                            ::std::size_t local_function_idx,
                                                                            ::uwvm2::validation::error::code_validation_error_impl& err,
                                                                            llvm_jit_module_storage_t* emitted_llvm_jit_ir_storage = nullptr,
-                                                                           ::std::vector<::uwvm2::validation::standard::wasm3::validated_call_dependency>* lazy_call_dependencies = nullptr,
+                                                                           ::uwvm2::utils::container::std_vector<::uwvm2::validation::standard::wasm3::validated_call_dependency>* lazy_call_dependencies = nullptr,
                                                                            bool* lazy_call_dependencies_overflow = nullptr) UWVM_THROWS
     {
         if(threaded_host_emission_scope::selected() &&

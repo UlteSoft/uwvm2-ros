@@ -105,6 +105,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::cmdline
         wasi,
 #endif
         secure,
+        ros_scene,
+        wasithread,
     };
 
     /// @brief Execution charset EBCDIC not supported

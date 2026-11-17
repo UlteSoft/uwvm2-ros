@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #include <cstddef>

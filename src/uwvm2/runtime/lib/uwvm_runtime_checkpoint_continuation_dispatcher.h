@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Actual host-only logical thread execution slice. Native entries and real
 // returned-child events remain private; resource rollback/new-epoch publication
 // require the separate complete-instance transaction and are not supplied here.
@@ -8,6 +9,7 @@ extern "C++"
 {
     class runtime_checkpoint_continuation_dispatcher final
     {
+        friend class runtime_checkpoint_world_transaction;
         template<typename Owner>
         [[nodiscard]] static bool same_owner(Owner const& a, Owner const& b) noexcept
         { return a && b && a.get() == b.get() && !a.owner_before(b) && !b.owner_before(a); }
@@ -17,16 +19,16 @@ extern "C++"
             ::uwvm2::runtime::checkpoint::caller_return_projection::owner child_projection{};
             ::std::uintptr_t address{};
             ::std::uint64_t landing{};
-            ::std::vector<::std::byte> payload{}, output{};
-            ::std::vector<::std::uint8_t> flags{};
-            ::std::vector<::std::size_t> result_offsets{}, result_widths{};
-            ::std::vector<::uwvm2::runtime::checkpoint::native_value> returned{};
+            ::uwvm2::utils::container::std_vector<::std::byte> payload{}, output{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> flags{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> result_offsets{}, result_widths{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::checkpoint::native_value> returned{};
             ::uwvm2::utils::container::u8string module_name{};
             ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store> declared_store{};
-            ::std::vector<::uwvm2::runtime::gc::root_reference> result_roots{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::gc::root_reference> result_roots{};
             ::uwvm2::runtime::gc::root_frame result_root_frame{};
             ::std::size_t reference_results{};
-            bool result_roots_live{}, result_escapes_host{}, entry_bound{};
+            bool result_roots_live{}, result_escapes_host{}, entry_bound{}, ros_cross_module_ancestry{};
         };
         [[nodiscard]] static bool installed(
             ::uwvm2::runtime::checkpoint::sealed_function_plan::owner const& plan, ::std::uint64_t site) noexcept
@@ -41,16 +43,37 @@ extern "C++"
         // Private cleanup-only failure must leave the host output untouched;
         // it is not a VM trap, Wasm exception tag, or resume permission.
         class unsupported_child_result final {};
+        [[nodiscard]] static bool completed_native_entry(
+            ::uwvm2::runtime::gc::root_frame const* baseline) noexcept
+        {
+            // Native execution and recording completeness are different facts.
+            // A permitted host effect poisons replay history before provider
+            // entry; its obsolete cells then stop following generated leaves.
+            // Only an actual normal return, with clean activation/host-island
+            // state and the exact native root baseline, may discard those cells.
+            // Failure remains sticky and cannot authorize another capture.
+            if(!g_debug_activation_ledger || !g_debug_activation_ledger->ready_for_root_entry() ||
+               !g_checkpoint_shadow_ledger || ::uwvm2::runtime::gc::current_root_frames()!=baseline)
+                return false;
+            if(g_checkpoint_shadow_ledger->failure()!=::uwvm2::runtime::checkpoint::status::ok &&
+               !g_checkpoint_shadow_ledger->discard_failed_recording())return false;
+            return g_checkpoint_shadow_ledger->size()==0u;
+        }
         using native_entry = void(*)(::std::uint64_t, void const*, ::std::uintptr_t, void const*,
             ::std::uintptr_t, ::std::uintptr_t, ::std::uintptr_t);
         struct actual_resume_context final
         {
-            ::std::vector<prepared_frame>& frames;
-            runtime_checkpoint_thread_capture::owner const& capture;
+            ::uwvm2::utils::container::std_vector<prepared_frame>& frames;
+            ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> const control;
+            ::uwvm2::runtime::checkpoint::compilation_profile::owner const profile;
             ::std::uint64_t epoch;
             ::std::size_t active{};
-            actual_resume_context(::std::vector<prepared_frame>& f, runtime_checkpoint_thread_capture::owner const& c,
-                ::std::uint64_t e) noexcept : frames{f}, capture{c}, epoch{e} {}
+            actual_resume_context(::uwvm2::utils::container::std_vector<prepared_frame>& f, runtime_checkpoint_thread_capture::owner const& c,
+                ::std::uint64_t e) noexcept : frames{f}, control{c->control_}, profile{c->profile_}, epoch{e} {}
+            actual_resume_context(::uwvm2::utils::container::std_vector<prepared_frame>& f,
+                ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> d,
+                ::uwvm2::runtime::checkpoint::compilation_profile::owner p, ::std::uint64_t e) noexcept
+                : frames{f}, control{::std::move(d)}, profile{::std::move(p)}, epoch{e} {}
             actual_resume_context(actual_resume_context const&) = delete;
             actual_resume_context& operator=(actual_resume_context const&) = delete;
         };
@@ -194,6 +217,26 @@ extern "C++"
             }
             return true;
         }
+        [[nodiscard]] static bool checked_live_values(prepared_frame const& owner,
+            ::uwvm2::runtime::checkpoint::logical_frame const& frame) noexcept
+        {
+            using capture = runtime_checkpoint_thread_capture;
+            if(capture::check_owned_values(frame,capture::value_use::live_observation) !=
+                checkpoint_thread_capture_status::captured) { return false; }
+            for(auto const& value : frame.values)
+            {
+                if(!value.declaration.initialized ||
+                   value.declaration.type.kind != ::uwvm2::runtime::checkpoint::types::value_kind::reference ||
+                   capture::check_scalar_reference(value) == checkpoint_thread_capture_status::captured) { continue; }
+                ::uwvm2::runtime::checkpoint::native_reference reference{};
+                ::fast_io::freestanding::my_memcpy(::std::addressof(reference),value.bits.data(),sizeof(reference));
+                if(!owner.declared_store || reference.storage.ptr == nullptr ||
+                   !owner.declared_store->reference_type_matches(reference,value.declaration.type)) { return false; }
+            }
+            return true;
+        }
+        [[nodiscard]] static llvm_jit_checkpoint_continuation_status execute_restored_world(
+            runtime_checkpoint_world_transaction&, ::std::size_t) noexcept;
         friend void details::llvm_jit_checkpoint_bind_resume_entry_abi_bridge(
             ::std::uintptr_t,::std::uintptr_t,::std::uint64_t,::std::uint64_t,void const*,::std::uintptr_t,
             void const*,::std::uintptr_t,::std::uintptr_t,::std::uintptr_t) noexcept;
@@ -203,12 +246,12 @@ extern "C++"
         {
             auto const actual{actual_resume_};
             if(actual == nullptr || actual->epoch != current_runtime_generation() ||
-               actual->active >= actual->frames.size() || !actual->capture ||
+               actual->active >= actual->frames.size() || (!actual->control || !actual->profile) ||
                get_runtime_execution_entry_depth() != 1u || get_llvm_jit_generated_bridge_scope_depth() == 0u ||
                g_debug_observer_active || g_debug_pause_participant == nullptr ||
                runtime_execution_entry_scope::checkpoint_actual_gc_admission() == nullptr ||
-               !same_owner(actual->capture->control_,g_runtime.debug_pause_control) ||
-               !same_owner(actual->capture->profile_,g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
+               !same_owner(actual->control,g_runtime.debug_pause_control) ||
+               !same_owner(actual->profile,g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
             auto const index{actual->active};
             // [canonical ALL-prepared frame owners0 ... active ... N] end
             // [safe] active<N BEFORE selecting the privately constructed owner.
@@ -230,6 +273,16 @@ extern "C++"
             // actual dispatcher-owned range/result owner. No supplied pointer
             // is dereferenced; a serialized label or matching byte count alone
             // grants no input, output, source or continuation capability.
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+            if(module >= (SIZE_MAX >> 1u)) { ::fast_io::fast_terminate(); }
+            auto const own{(module + 1u) << 1u};
+            auto& provenance{get_call_stack().ros_native_provenance};
+            // Rebase the module identity to the actual NEW compiled owner.
+            // Saved ancestry can only restrict: it cannot clear a live caller's
+            // crossing bit or change the real module selected by this binding.
+            provenance=own | static_cast<::std::uintptr_t>(entry.ros_cross_module_ancestry ||
+                (provenance!=0u && provenance!=own));
+#endif
             entry.entry_bound = true;
         }
         friend ::std::uint64_t details::llvm_jit_checkpoint_resume_input_abi_bridge(
@@ -240,13 +293,13 @@ extern "C++"
             static_assert(sizeof(::std::uintptr_t) <= sizeof(::std::uint64_t));
             auto const actual{actual_resume_};
             if(actual == nullptr || component >= 5u || actual->epoch != current_runtime_generation() ||
-               actual->active >= actual->frames.size() || !actual->capture ||
+               actual->active >= actual->frames.size() || (!actual->control || !actual->profile) ||
                get_runtime_execution_entry_depth() != 1u || get_llvm_jit_generated_bridge_scope_depth() == 0u ||
                g_debug_observer_active || g_debug_pause_participant == nullptr ||
                runtime_execution_entry_scope::checkpoint_actual_gc_admission() == nullptr ||
                ::uwvm2::runtime::gc::current_root_frames() == nullptr ||
-               !same_owner(actual->capture->control_,g_runtime.debug_pause_control) ||
-               !same_owner(actual->capture->profile_,g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
+               !same_owner(actual->control,g_runtime.debug_pause_control) ||
+               !same_owner(actual->profile,g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
             auto const index{actual->active};
             // [private canonical prepared frame owners0 ... active ... N] end
             // [safe] active<N BEFORE selecting input owner; N<=profile frame
@@ -255,7 +308,7 @@ extern "C++"
             checkpoint::activation_identity identity{};checkpoint::sealed_function_plan::owner plan{};
             auto const shadow{g_checkpoint_shadow_ledger};auto const activations{g_debug_activation_ledger};
             if(!entry.entry_bound || !checkpoint_actual_frame(incarnation,identity,plan) ||
-               !same_owner(plan,entry.logical.plan) || !same_owner(plan->get().profile,actual->capture->profile_) ||
+               !same_owner(plan,entry.logical.plan) || !same_owner(plan->get().profile,actual->profile) ||
                plan->get().resume_abi_revision != 2u || !installed(plan,entry.landing) ||
                shadow == nullptr || shadow->failure() != checkpoint::status::ok || activations == nullptr ||
                !activations->complete() || activations->count() != index+1u || shadow->size() != index+1u)
@@ -295,8 +348,8 @@ extern "C++"
                g_debug_observer_active || g_debug_pause_participant == nullptr ||
                runtime_execution_entry_scope::checkpoint_actual_gc_admission() == nullptr ||
                ::uwvm2::runtime::gc::current_root_frames() == nullptr ||
-               !same_owner(context->capture->control_, g_runtime.debug_pause_control) ||
-               !same_owner(context->capture->profile_, g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
+               !same_owner(context->control, g_runtime.debug_pause_control) ||
+               !same_owner(context->profile, g_runtime.checkpoint_profile)) { ::fast_io::fast_terminate(); }
             auto const index{context->active};
             // [private actual prepared parent | immediately following child] end
             // [safe] index+1<N BEFORE either selection. All typed packet/result
@@ -318,7 +371,7 @@ extern "C++"
             // [safe] complete owner/size proof BEFORE selecting the last slot.
             if(actual.size() != index+1u || actual[index].identity != identity || !actual[index].materialized ||
                !same_owner(actual[index].plan, plan) || actual[index].site != site ||
-               runtime_checkpoint_thread_capture::check_owned_values(actual[index]) != checkpoint_thread_capture_status::captured ||
+               !checked_live_values(parent,actual[index]) ||
                site == 0u || site > plan->get().sites.size() ||
                plan->get().sites[static_cast<::std::size_t>(site-1u)].phase != checkpoint::frame_phase::awaiting_call_return)
             { ::fast_io::fast_terminate(); }
@@ -412,11 +465,11 @@ extern "C++"
             if(!capture->profile_ || capture->profile_->purpose() != checkpoint::compilation_purpose::resumable)
             { return outcome::unavailable_compiled_continuation; }
             auto const count{capture->frames_.size()};
-            if(count == 0u || !capture->profile_ || count > capture->profile_->limits().frames ||
+            if(count == 0u || !capture->profile_ || (capture->profile_->limits().frames != 0u && count > capture->profile_->limits().frames) ||
                (!allow_call_dispatch && count != 1u)) { return outcome::requires_complete_call_dispatch; }
             try
             {
-                ::std::vector<prepared_frame> prepared{}; prepared.resize(count);
+                ::uwvm2::utils::container::std_vector<prepared_frame> prepared{}; prepared.resize(count);
                 // One genuine execution-generation lease pins EVERY engine
                 // across all resumed entries and their returned-child edges.
                 runtime_execution_entry_scope entry_scope{};
@@ -487,7 +540,7 @@ extern "C++"
                             auto const results{after.operand_count-stopped.operand_count};
                             if(prefix > after.slots.size() || results > after.slots.size()-prefix)
                             { return outcome::invalid_typed_packet; }
-                            ::std::vector<checkpoint::types::core_value_type> expected{}; expected.reserve(results);
+                            ::uwvm2::utils::container::std_vector<checkpoint::types::core_value_type> expected{}; expected.reserve(results);
                             for(::std::size_t n{}; n != results; ++n)
                             {
                                 // [bounded post-call prefix | result tuple | saved params] end
@@ -510,6 +563,7 @@ extern "C++"
                         auto const& result_types{stopped.controls.front().declared_results};
                         if(result_types.size() != abi.result_count) { return outcome::invalid_typed_packet; }
                         next.logical=frame; next.landing=landing_id; next.address=resolved.address;
+                        next.ros_cross_module_ancestry=saved.activation.ros_cross_module_ancestry;
                         next.payload.resize(landing.slots.size()*checkpoint::native_slot_bytes);
                         next.flags.resize(landing.local_count); next.output.resize(abi.result_bytes);
                         next.returned.resize(abi.result_count); next.result_offsets.reserve(abi.result_count); next.result_widths.reserve(abi.result_count);
@@ -650,8 +704,7 @@ extern "C++"
                         ::uwvm2::utils::container::u8string_view{root.module_name.data(),root.module_name.size()},
                         capture->frames_.front().activation.function,caught);
                 }
-                if(!decode_actual_results(root) || g_debug_activation_ledger->count() != 0u ||
-                   g_checkpoint_shadow_ledger->size() != 0u || ::uwvm2::runtime::gc::current_root_frames() != nullptr)
+                if(!decode_actual_results(root) || !completed_native_entry(nullptr))
                 { return outcome::invalid_typed_packet; }
                 if(result_bytes != 0u)
                 {

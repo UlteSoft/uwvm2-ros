@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <algorithm>
 # include <array>
@@ -187,8 +189,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         {
             if constexpr(::std::is_constructible_v<Context, ::llvm::Triple const&, ::llvm::MCAsmInfo const&,
                 ::llvm::MCRegisterInfo const&, ::llvm::MCSubtargetInfo const&>)
-            { return ::std::make_unique<Context>(triple, assembly, registers, subtarget); }
-            else { return ::std::make_unique<Context>(triple, ::std::addressof(assembly), ::std::addressof(registers), ::std::addressof(subtarget)); }
+            { return ::uwvm2::utils::container::make_unique<Context>(triple, assembly, registers, subtarget); }
+            else { return ::uwvm2::utils::container::make_unique<Context>(triple, ::std::addressof(assembly), ::std::addressof(registers), ::std::addressof(subtarget)); }
         }
         template<typename Registry = ::llvm::TargetRegistry>
         [[nodiscard]] inline auto lookup_target(::llvm::Triple const& triple, ::std::string& error)
@@ -703,7 +705,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
         ::llvm::MCTargetOptions assembly_options_{};
         ::std::unique_ptr<::llvm::MCAsmInfo> assembly_{};
         ::std::unique_ptr<::llvm::MCSubtargetInfo> subtarget_{};
-        ::std::unique_ptr<::llvm::MCContext> context_{};
+        ::uwvm2::utils::container::std_unique_ptr<::llvm::MCContext> context_{};
         ::std::unique_ptr<::llvm::MCDisassembler> disassembler_{};
         // All possibly allocating initialization stays inside these helpers.
         // In particular Triple/native strings and std::make_unique<MCContext>
@@ -717,7 +719,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
 # if defined(__APPLE__) && defined(__aarch64__)
             maximum_ = 4u; alignment_ = 4u;
 # endif
-            ::std::string error{};
+            ::std::string error{}; // LLVM output parameter: its public ABI owns allocation.
             auto const* target{details::lookup_target(triple_, error)};
             if(target == nullptr) { return; }
             instructions_.reset(target->createMCInstrInfo());
@@ -742,7 +744,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_owned_instruction_sem
             if(!native_target_metadata::valid(description) || !native_disassembly::details::initialize_native()) { return; }
             // Both inputs are OWNED descriptions, not a requested target capability.
             triple_ = ::llvm::Triple{::llvm::StringRef{description.triple.data(), description.triple_size}};
-            ::std::string error{};
+            ::std::string error{}; // LLVM output parameter: its public ABI owns allocation.
             auto const* target{details::lookup_target(triple_, error)};
             if(target == nullptr) { return; }
             instructions_.reset(target->createMCInstrInfo());

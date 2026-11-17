@@ -63,15 +63,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if constexpr(descriptor.kind!=kind::load) { input=pop<value_type>(stack); }
                 if constexpr(descriptor.kind==kind::compare_exchange) { expected=pop<value_type>(stack); }
                 auto const pointer{pop<Address>(stack)};
-                bool unaligned{};
+                // Match untagged atomics and LLVM: reject natural misalignment
+                // before consulting bounds or tags. High pointer tags do not
+                // affect these low bits; no host address or memory is touched.
+                if(((static_cast<::std::uint64_t>(pointer)+offset)&(bytes-1u))!=0u)
+                { details::atomic_unaligned_terminate(); }
                 auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                     memory,pointer,offset,bytes,[&](::std::span<::std::byte> data) noexcept
                     {
-                        // Granule tags occupy high bits, so the address's low
-                        // alignment bits are unchanged; no wrapped host pointer
-                        // or guest address is used before the full range proof.
-                        unaligned=((static_cast<::std::uint64_t>(pointer)+offset)&(bytes-1u))!=0u;
-                        if(unaligned) { return; }
                         if constexpr(descriptor.kind==kind::load)
                         { value=static_cast<value_type>(operations::atomic_load_le<bytes>(data.data())); }
                         else if constexpr(descriptor.kind==kind::store)
@@ -84,7 +83,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                         }
                     })};
                 if(!checked) { access_failed(memory,pointer,offset,bytes,checked); }
-                if(unaligned) { details::atomic_unaligned_terminate(); }
                 if constexpr(descriptor.has_result) { push(stack,value); }
             }
         }

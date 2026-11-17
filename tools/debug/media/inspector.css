@@ -1,0 +1,215 @@
+/* Inspector-specific layout on top of media/ui.css. VS Code semantics:
+   an editor-tab toolbar, an optional section list, one scrolling body,
+   a resizable detail pane and a one-line status bar. */
+.titlebar { background: var(--vscode-editorGroupHeader-tabsBackground, transparent); }
+.titlebar .crumbs .title { font-weight: 600; }
+.body { flex: 1; min-height: 0; }
+.split > .second { border-left: 1px solid var(--border); background: var(--vscode-sideBar-background, var(--vscode-editor-background)); }
+.split.vertical > .second { border-left: none; border-top: 1px solid var(--border); }
+
+/* ---------------------------------------------------------------- memory */
+/* Virtual hex grid: rows are positioned inside one tall spacer so the native
+   scrollbar spans the whole memory and scrolling is smooth. */
+.hexview { flex: 1; min-height: 0; overflow: auto; position: relative; outline: none; overscroll-behavior: contain;
+  font-family: var(--code-font); font-size: var(--code-size); font-weight: var(--code-weight); letter-spacing: var(--code-spacing);
+  line-height: var(--uwvm-code-line-height, 20px); }
+.hexview:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.hhead { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; height: 24px; width: max-content; min-width: 100%;
+  color: var(--muted); background: var(--vscode-editor-background); border-bottom: 1px solid var(--border); user-select: none; }
+.hhead .byte.colhead { cursor: default; }
+.hspace { position: relative; width: max-content; min-width: 100%; }
+.hrows { position: absolute; inset: 0; }
+.hrow { position: absolute; left: 0; display: flex; align-items: center; height: var(--uwvm-code-line-height, 20px); width: max-content; min-width: 100%; white-space: pre; }
+.hrow:hover { background: var(--vscode-editor-lineHighlightBackground, transparent); }
+.haddr { position: sticky; left: 0; z-index: 2; flex: none; padding: 0 1.2ch 0 1ch; box-sizing: content-box;
+  width: calc(var(--addr-digits, 10) * (1ch + var(--code-spacing, 0px)));
+  color: var(--vscode-editorLineNumber-foreground, var(--muted)); background: var(--vscode-editor-background); user-select: none; }
+
+.hbytes { display: inline-flex; flex: none; padding-right: 1.6ch; }
+.htext { flex: none; padding-right: 1.6ch; color: var(--vscode-editor-foreground); letter-spacing: .5px; user-select: none; }
+.htags { flex: none; padding-right: 1ch; }
+/* Column headings stay distinct from address, byte and character data. */
+.hhead .haddr, .hhead .byte.colhead, .hhead .htext, .hhead .htags { color: #fff; }
+.byte { position: relative; display: inline-block; width: 2.6ch; text-align: center; cursor: default;
+  color: var(--vscode-editor-foreground); border-radius: 2px; user-select: none; }
+.byte.zero { color: var(--vscode-editorLineNumber-foreground, var(--muted)); }
+.byte.missing { color: var(--vscode-editorLineNumber-foreground, var(--muted)); opacity: .5; }
+.hrow .byte:not(.selected):hover { background: var(--vscode-editor-hoverHighlightBackground, rgba(90,120,180,.25)); }
+.byte.selected { background: var(--vscode-editor-selectionBackground, rgba(60,110,180,.45)); color: var(--vscode-editor-selectionForeground, inherit); }
+.hexview:focus .byte.focus { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
+.byte.changed { animation: uwvm-changed 1.6s ease-out both; }
+/* A change marker must not override the selection background. In particular,
+   animation-fill-mode: both otherwise leaves changed selected bytes transparent. */
+@keyframes uwvm-changed { from { box-shadow: inset 0 -2px var(--vscode-debugView-valueChangedHighlight, rgba(86,156,214,.55)); } to { box-shadow: inset 0 -2px transparent; } }
+@media (prefers-reduced-motion: reduce) { .byte.changed { animation: none; text-decoration: underline; } }
+.byte.pending { font-style: italic; color: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-editorWarning-foreground)); }
+.byte.tagged::before { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 2px; border-radius: 1px; background: var(--tag-colour); }
+.byte-gap { display: inline-block; width: .9ch; }
+.byte.editing { padding: 0; }
+.byte.editing input { width: 2.6ch; min-width: 2.6ch; height: calc(var(--uwvm-code-line-height, 20px) - 2px); padding: 0; text-align: center;
+  font: inherit; border-radius: 2px; border: 1px solid var(--vscode-focusBorder); background: var(--vscode-input-background); color: var(--vscode-input-foreground); }
+.hexview.stale .hrows { opacity: .6; transition: opacity .3s; }
+.tag-chip { display: inline-flex; align-items: center; height: 16px; padding: 0 4px; margin-right: 3px; border-radius: 3px; font-size: 10px;
+  font-family: var(--code-font); color: var(--vscode-editor-background); background: var(--tag-colour); }
+.memory-legend { flex: none; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 12px; border-top: 1px solid var(--border); color: var(--muted); }
+.memory-legend .swatch { display: inline-flex; align-items: center; gap: 4px; }
+.memory-legend .swatch i { width: 10px; height: 10px; border-radius: 2px; background: var(--tag-colour); display: inline-block; }
+.chars .q { color: var(--vscode-descriptionForeground); }
+.chars .ctl { color: var(--vscode-debugTokenExpression-boolean, #4e94ce); }
+
+/* value interpretation panel */
+.values { padding: 8px 12px 14px; }
+.values h3 { margin: 0 0 2px; font-size: 12px; font-weight: 600; }
+.values .range { color: var(--muted); font-family: var(--code-font); font-size: var(--code-size); margin-bottom: 8px; }
+.values table { width: 100%; border-collapse: collapse; }
+.values td { padding: 1px 0; vertical-align: top; }
+.values td.name { width: 34%; padding-right: 12px; color: var(--vscode-debugTokenExpression-name); font-family: var(--code-font); font-size: var(--code-size); white-space: nowrap; }
+.values td.val { font-family: var(--code-font); font-size: var(--code-size); overflow-wrap: anywhere; }
+.values-controls { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-bottom: 10px; }
+.values-controls select, .values-controls input { height: 22px; font-size: 12px; }
+.values-controls input#value-digits { width: 56px; }
+.write-box { display: grid; gap: 6px; padding: 8px 12px 12px; border-top: 1px solid var(--border); }
+.write-box textarea { width: 100%; min-height: 44px; }
+.write-box .row { display: flex; gap: 6px; align-items: center; }
+.write-box .row input { flex: 1; }
+
+/* ------------------------------------------------------- call/policy rows */
+.ros-backends { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.ros-api-label { font-size: 12px; font-weight: 600; }
+.call-row { cursor: pointer; }
+.call-row td { vertical-align: middle; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--vscode-testing-iconPassed, #388a34); }
+.status-dot.bad { background: var(--vscode-errorForeground); }
+.status-dot.unknown { background: var(--muted); }
+.policy-key { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.policy-key .k { font-family: var(--code-font); font-size: var(--code-size); overflow-wrap: anywhere; }
+.policy-row td { vertical-align: top; }
+.detail-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 16px; }
+.detail-grid dt { color: var(--muted); font-family: var(--code-font); font-size: var(--code-size); }
+.detail-grid dd { margin: 0; overflow-wrap: anywhere; font-family: var(--code-font); font-size: var(--code-size); }
+
+/* --------------------------------------------------------------- misc */
+.toolbar-inline { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.section-card { border: 1px solid var(--border); border-radius: 4px; margin: 0 0 14px; }
+.section-card > header { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.section-card > header .grow { flex: 1; }
+.section-card > .content { padding: 10px; }
+.copy-json { float: right; }
+.pager { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid var(--border); color: var(--muted); }
+.pager .spacer { flex: 1; }
+.session-details { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 0 12px 8px; color: var(--muted); }
+.session-details .kv-mini { display: inline-flex; gap: 5px; }
+.session-details .kv-mini b { font-weight: 600; color: var(--foreground, var(--vscode-foreground)); }
+.kind-pill { display: inline-flex; align-items: center; gap: 4px; height: 18px; padding: 0 6px; border-radius: 9px; font-size: 11px;
+  background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+.wide-only { display: none; }
+@media (min-width: 900px) { .wide-only { display: inline-flex; } }
+
+/* Toolrows wrap gracefully in narrow editors. */
+.toolrow .field { flex-wrap: nowrap; }
+.toolrow input.mono { min-width: 12ch; }
+.split.vertical > .second .values { padding-top: 6px; }
+
+/* Recording state has a stable, visible colour, independent of the theme's badge. */
+.recording-state.off { color: var(--vscode-editorInfo-foreground, #3794ff); background: transparent; }
+.recording-state.on { color: var(--vscode-debugIcon-breakpointForeground, #e51400); background: transparent; }
+
+/* ---------------------------------------------------------- diagnostics */
+/* One task at a time, with readable forms and local disclosure of details.
+   Theme colours belong to VS Code; spacing and hierarchy belong to this view. */
+.diagnostic-tabs { flex: none; display: flex; gap: 6px; padding: 10px 20px 0; overflow-x: auto;
+  border-bottom: 1px solid var(--border); background: var(--vscode-editor-background); }
+.diagnostic-tab { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 38px; padding: 0 13px; border: none; border-bottom: 2px solid transparent; background: transparent;
+  color: var(--muted); cursor: pointer; white-space: nowrap; }
+.diagnostic-tab:hover { color: var(--vscode-foreground); background: var(--vscode-toolbar-hoverBackground); }
+.diagnostic-tab[aria-selected=true] { color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
+  border-bottom-color: var(--vscode-tab-activeBorderTop, var(--vscode-focusBorder)); }
+.diagnostic-tab:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -3px; }
+.diagnostic-tab .codicon { width: 15px; height: 15px; }
+.diagnostics-pane { overscroll-behavior: contain; scrollbar-gutter: stable; }
+.diagnostics-layout { width: 100%; max-width: 1220px; box-sizing: border-box; margin: 0 auto; padding: 24px 28px 36px; }
+.diagnostic-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px;
+  margin: 0 0 24px; padding: 0 0 20px; border-bottom: 1px solid var(--border); }
+.diagnostic-overview > div { min-width: 0; }
+.diagnostic-overview dt { margin: 0 0 6px; color: var(--muted); font-size: 11px; }
+.diagnostic-overview dd { margin: 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.diagnostic-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.diagnostic-stack { display: grid; gap: 20px; }
+.diagnostic-card { min-width: 0; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--vscode-editor-background); overflow: hidden; }
+.diagnostic-card-head { display: flex; align-items: flex-start; gap: 10px; padding: 18px 20px 0; }
+.diagnostic-card-head > .codicon { flex: none; width: 17px; height: 17px; margin-top: 1px; color: var(--vscode-icon-foreground); }
+.diagnostic-card-head > div { min-width: 0; }
+.diagnostic-card h2 { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.45; }
+.diagnostic-card-head p { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.diagnostic-card-body { padding: 18px 20px 20px; }
+.diagnostic-card-body > :first-child { margin-top: 0; }
+.diagnostic-card-body > :last-child { margin-bottom: 0; }
+.diagnostic-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; }
+.diagnostic-field { display: flex; min-width: 0; flex-direction: column; align-items: stretch; gap: 7px; font-size: 12px; }
+.diagnostic-field > span { font-weight: 600; }
+.diagnostic-field > input, .diagnostic-field > select, .diagnostic-field > textarea { box-sizing: border-box; width: 100%; min-width: 0;
+  max-width: 100%; min-height: 30px; padding: 5px 8px; line-height: 1.5; }
+.diagnostic-field > select { padding-right: 24px; }
+.diagnostic-field > textarea { resize: vertical; }
+.diagnostic-field > small { color: var(--muted); line-height: 1.5; font-size: 11px; font-weight: normal; }
+.diagnostic-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
+.diagnostic-actions .btn { min-height: 29px; height: auto; padding: 5px 11px; line-height: 1.4; white-space: normal; text-align: left; }
+.diagnostic-actions .btn .codicon { flex: none; }
+.secondary-actions { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--border); }
+.diagnostic-policy { display: flex; align-items: center; gap: 7px; margin: 0 0 18px; padding: 9px 11px; border-radius: 3px;
+  background: var(--vscode-textBlockQuote-background, var(--vscode-editorWidget-background)); color: var(--muted); line-height: 1.5; }
+.diagnostic-policy .codicon { flex: none; width: 14px; height: 14px; }
+.diagnostic-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.diagnostic-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px 22px; margin: 0 0 18px; }
+.diagnostic-facts > div { min-width: 0; }
+.diagnostic-facts dt { margin: 0 0 5px; color: var(--muted); font-size: 11px; }
+.diagnostic-facts dd { margin: 0; font-family: var(--code-font); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.diagnostic-form + .diagnostic-facts { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+.diagnostic-fold { margin: 12px 0 0; border-top: 1px solid var(--border); }
+.diagnostic-fold > summary { padding: 12px 0; cursor: pointer; line-height: 1.5; font-size: 12px; font-weight: 500; }
+.diagnostic-fold > summary::marker { color: var(--muted); }
+.diagnostic-fold > summary > span:first-child { margin-left: 5px; }
+.diagnostic-fold > summary .count-badge { margin-left: 9px; font-weight: normal; }
+.diagnostic-fold > summary:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px; }
+.diagnostic-fold-body { padding: 4px 0 14px 15px; min-width: 0; }
+.diagnostic-fold-body > .tree { max-height: 420px; overflow: auto; scrollbar-gutter: stable; }
+.diagnostic-fold .tree-row .key { margin-right: 6px; }
+.diagnostic-output { padding: 12px 14px; margin: 0; max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+  line-height: 1.7; font-size: 12px; border-radius: 3px; background: var(--vscode-textCodeBlock-background, var(--vscode-editorWidget-background)); }
+.diagnostic-table { max-width: 100%; max-height: 400px; overflow: auto; }
+.diagnostic-table .grid { font-size: 12px; }
+.diagnostic-table .grid th, .diagnostic-table .grid td { height: 28px; padding: 3px 10px; }
+.diagnostic-boundaries { padding-left: 18px; margin: 0; color: var(--muted); line-height: 1.65; font-size: 12px; }
+.diagnostic-boundaries li + li { margin-top: 14px; }
+.history-families { display: flex; flex-wrap: wrap; gap: 20px 36px; padding: 2px 0 6px; }
+.history-family { min-width: 0; }
+.history-family > h3, .diagnostic-subhead > h3 { display: flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; margin: 0 0 11px; }
+.history-family > h3 > .codicon { width: 14px; height: 14px; color: var(--muted); }
+.history-family > .diagnostic-actions { padding-left: 20px; border-left: 1px solid var(--border); }
+.diagnostic-subhead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 18px; }
+.diagnostic-subhead > h3 { margin: 0; }
+.diagnostic-muted, .path-separator { color: var(--muted); font-size: 12px; font-weight: normal; }
+.historical-environment > .diagnostic-facts { margin-top: 20px; }
+.historical-group { margin-top: 12px; padding: 0 12px; background: var(--vscode-textBlockQuote-background, var(--vscode-editorWidget-background)); border-radius: 4px; }
+.historical-group > .diagnostic-fold { border-top: 0; margin: 0; }
+.preload-library { padding: 18px 0 6px; border-top: 1px solid var(--border); }
+.preload-library .diagnostic-facts { margin-top: 18px; }
+.preload-library .diagnostic-fold-body { overflow-wrap: anywhere; }
+@media (min-width: 1100px) {
+  .diagnostic-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .history-form { grid-template-columns: minmax(0, 1fr) 210px; }
+  .history-form > .diagnostic-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .diagnostic-tabs { padding-left: 10px; gap: 0; }
+  .diagnostic-tab { padding: 0 10px; }
+  .diagnostic-tab > .codicon { display: none; }
+  .diagnostics-layout { padding: 18px 12px 24px; }
+  .diagnostic-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .diagnostic-card-head { padding: 15px 14px 0; }
+  .diagnostic-card-body { padding: 15px 14px; }
+}
+body.vscode-high-contrast .diagnostic-card, body.vscode-high-contrast-light .diagnostic-card { border-color: var(--vscode-contrastBorder, var(--border)); }

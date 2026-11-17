@@ -4,6 +4,7 @@
  * borrowing the one owned URMI+canonical record; it is not a new permission.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "rmw_metadata.h"
 #include <new>
 #include <vector>
@@ -109,13 +110,13 @@ namespace uwvm2::imported::ros::ipc::rmw_subscription
      * cancel that reservation on failure and retain both error observations.
      */
     inline std::uint32_t pack_delivery(control const& reply,std::uint8_t const* record,std::size_t n,
-        std::vector<std::uint8_t>& output) noexcept
+        ::uwvm2::utils::container::std_vector<std::uint8_t>& output) noexcept
     {
         std::array<std::uint8_t,header_bytes> head{};metadata::header h{};
         if(!encode(reply,true,head)||!associated_record(reply,record,n,h)){return 22;}
         try
         {
-            std::vector<std::uint8_t> next(header_bytes+n);
+            ::uwvm2::utils::container::std_vector<std::uint8_t> next(header_bytes+n);
             std::copy(head.begin(),head.end(),next.begin());std::copy(record,record+n,next.begin()+header_bytes);
             output=std::move(next);return 0;
         }

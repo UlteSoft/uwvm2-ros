@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 
 // std
 #include <cstddef>

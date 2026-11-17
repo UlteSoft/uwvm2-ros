@@ -1,5 +1,6 @@
 // Portable WASIp1 metadata. These bytes never grant host resource authority.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <array>
 #include <algorithm>
@@ -42,15 +43,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
         ::std::array<::std::byte,16u> recording_label{};
         ::std::array<::std::byte,32u> original_wasm{},builtin_interface{};
         ::std::uint32_t opens_size{};
-        ::std::vector<text> arguments{},environment{};
-        ::std::vector<resource> resources{};
-        ::std::vector<binding> bindings{};
-        ::std::vector<empty_binding> reserved{};
-        ::std::vector<::std::uint32_t> closed{};
+        ::uwvm2::utils::container::std_vector<text> arguments{},environment{};
+        ::uwvm2::utils::container::std_vector<resource> resources{};
+        ::uwvm2::utils::container::std_vector<binding> bindings{};
+        ::uwvm2::utils::container::std_vector<empty_binding> reserved{};
+        ::uwvm2::utils::container::std_vector<::std::uint32_t> closed{};
     };
-    [[nodiscard]] inline bool parse_rebindings(text_view text,::std::vector<rebind>& out)
+    [[nodiscard]] inline bool parse_rebindings(text_view text,::uwvm2::utils::container::std_vector<rebind>& out)
     {
-        ::std::vector<rebind> candidate{};
+        ::uwvm2::utils::container::std_vector<rebind> candidate{};
         if(!::uwvm2::uwvm::debugger::wasip1_state::details::scan_rebindings(text,
             [&](::std::uint32_t resource,::std::uint32_t descriptor) { candidate.push_back({resource,descriptor}); })) { return false; }
         out.swap(candidate);return true;
@@ -107,8 +108,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
                 }
             }
         }
-        ::std::vector<::std::uint32_t> numbers{};numbers.reserve(s.bindings.size()+s.reserved.size()+s.closed.size());
-        ::std::vector<bool> used(s.resources.size());
+        ::uwvm2::utils::container::std_vector<::std::uint32_t> numbers{};numbers.reserve(s.bindings.size()+s.reserved.size()+s.closed.size());
+        ::uwvm2::utils::container::std_vector<bool> used(s.resources.size());
         for(auto const& b:s.bindings)
         {
             if(b.descriptor>INT32_MAX || b.resource_index>=s.resources.size() || ((b.base|b.inheriting)&~::std::uint64_t{0x3fffffffu})!=0u) { return false; }
@@ -127,7 +128,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
     {
         struct writer
         {
-            ::std::vector<::std::byte> bytes{};
+            ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
             template<unsigned Bits,typename T> void put(T value)
             {
                 ::std::array<unsigned char,Bits/8u> a{};
@@ -162,7 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
             hash.update(b.data(),b.data()+b.size());hash.do_final();hash.digest_to_byte_ptr(result.data());return result;
         }
     }
-    [[nodiscard]] inline bool encode(snapshot const& s,::std::vector<::std::byte>& output)
+    [[nodiscard]] inline bool encode(snapshot const& s,::uwvm2::utils::container::std_vector<::std::byte>& output)
     {
         if(!valid(s)) { return false; } detail::writer w{};
         w.put<64u>(::std::uint64_t{0x0031504953505755u}); // UWPSIP1\0
@@ -287,7 +288,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
     inline bool save_file(snapshot const& s,text_view path)
     {
         if(!valid_file_path(path)) { return false; }
-        ::std::vector<::std::byte> bytes{};if(!encode(s,bytes)) { return false; }
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes{};if(!encode(s,bytes)) { return false; }
         text owned_path{path};write_exclusive_file(owned_path,bytes);return true;
     }
     inline bool load_file(text_view path,snapshot& out)
@@ -301,7 +302,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
 #endif
         ::fast_io::native_file file{owned_path,mode};auto stat=::fast_io::status(file);
         if(stat.type!=::fast_io::file_type::regular || stat.size<156u || stat.size>max_bytes) { return false; }
-        ::std::vector<::std::byte> bytes(static_cast<::std::size_t>(stat.size));
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes(static_cast<::std::size_t>(stat.size));
         ::fast_io::operations::read_all_bytes(file,bytes.data(),bytes.data()+bytes.size());
         ::std::byte tail{};if(::fast_io::operations::read_some_bytes(file,&tail,&tail+1u)!=&tail) { return false; }
         // Finish fallible native I/O before publishing decoded output.
@@ -311,7 +312,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
     // Ordered, detached WASIp1 metadata only. Target modules and mount roots
     // are selected afresh on import; no source host identities are persisted.
     inline constexpr ::std::size_t max_environments{16u}, max_group_bytes{16777216u};
-    struct group_snapshot { ::std::vector<snapshot> environments{}; };
+    struct group_snapshot { ::uwvm2::utils::container::std_vector<snapshot> environments{}; };
     [[nodiscard]] inline bool valid_group(group_snapshot const& group)
     {
         if(group.environments.empty() || group.environments.size()>max_environments) { return false; }
@@ -328,14 +329,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
         }
         return true;
     }
-    [[nodiscard]] inline bool encode_group(group_snapshot const& group,::std::vector<::std::byte>& output)
+    [[nodiscard]] inline bool encode_group(group_snapshot const& group,::uwvm2::utils::container::std_vector<::std::byte>& output)
     {
         if(!valid_group(group)) { return false; }detail::writer w{};
         w.put<64u>(::std::uint64_t{0x0031504753575755u}); // UWWSGP1\0
         w.put<32u>(1u);w.put<32u>(0u);w.put<32u>(group.environments.size());
         for(auto const& s:group.environments)
         {
-            ::std::vector<::std::byte> bytes{};if(!encode(s,bytes) || bytes.size()+4u>max_group_bytes-32u-w.bytes.size()) { return false; }
+            ::uwvm2::utils::container::std_vector<::std::byte> bytes{};if(!encode(s,bytes) || bytes.size()+4u>max_group_bytes-32u-w.bytes.size()) { return false; }
             w.put<32u>(bytes.size());w.raw(bytes);
         }
         w.raw(detail::digest(w.bytes));output.swap(w.bytes);return true;
@@ -363,7 +364,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
     }
     inline bool save_group_file(group_snapshot const& group,text_view path)
     {
-        if(!valid_file_path(path)) { return false; }::std::vector<::std::byte> bytes{};if(!encode_group(group,bytes)) { return false; }
+        if(!valid_file_path(path)) { return false; }::uwvm2::utils::container::std_vector<::std::byte> bytes{};if(!encode_group(group,bytes)) { return false; }
         text owned_path{path};write_exclusive_file(owned_path,bytes);return true;
     }
     inline bool load_group_file(text_view path,group_snapshot& out)
@@ -374,7 +375,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasip1_portable
 #endif
         ::fast_io::native_file file{owned_path,mode};auto stat=::fast_io::status(file);
         if(stat.type!=::fast_io::file_type::regular || stat.size<212u || stat.size>max_group_bytes) { return false; }
-        ::std::vector<::std::byte> bytes(static_cast<::std::size_t>(stat.size));::fast_io::operations::read_all_bytes(file,bytes.data(),bytes.data()+bytes.size());
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes(static_cast<::std::size_t>(stat.size));::fast_io::operations::read_all_bytes(file,bytes.data(),bytes.data()+bytes.size());
         ::std::byte tail{};if(::fast_io::operations::read_some_bytes(file,&tail,&tail+1u)!=&tail) { return false; }
         file.close();return decode_group(bytes,out);
     }

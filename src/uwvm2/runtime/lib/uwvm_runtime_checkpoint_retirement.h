@@ -2,6 +2,7 @@
 // after the host gate declaration and before full entry. No guest interface,
 // wire token, signal injection, native-PC write or native-stack image exists.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 namespace { class runtime_checkpoint_thread_capture; }
 extern "C++"
@@ -30,7 +31,7 @@ extern "C++"
             ::std::shared_ptr<domain> const control;
             ::uwvm2::runtime::checkpoint::compilation_profile::owner const profile;
             ::std::uint_least64_t const epoch;
-            ::std::vector<member> members{};
+            ::uwvm2::utils::container::std_vector<member> members{};
             gate::closed_admission closed{};
             request_phase phase{request_phase::prepared}; // guarded by the real request mutex
             request(runtime_checkpoint_host_bridge::owner state, ::std::shared_ptr<domain> actual_control,
@@ -47,8 +48,9 @@ extern "C++"
         inline static ::std::mutex mutex_{};
         inline static owner actual_request_{};
         inline static ::std::atomic<bool> management_blocked_{};
-        // Only selected resumable generated functions poll this bit. Ordinary
-        // and observation-only engines emit no retirement call/probe/Invoke.
+        // Resumable generated functions poll this bit. Observer retirement
+        // reuses its existing shutdown byte and verified cleanup edges; normal
+        // execution receives no extra retirement call/probe/Invoke.
         inline static ::std::atomic<bool> requested_{};
         template<typename A, typename B>
         [[nodiscard]] static bool same_owner(A const& a, B const& b) noexcept

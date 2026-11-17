@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <chrono>
 # include <cstddef>
@@ -214,7 +215,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             return gate.actual_->drain_until(deadline);
         }
         explicit execution_domain(::std::size_t max_concurrent)
-            : capacity{max_concurrent}, current{::std::make_shared<execution_lifetime>(max_concurrent)} {}
+            : capacity{max_concurrent}, current{::uwvm2::utils::container::make_shared<execution_lifetime>(max_concurrent)} {}
         execution_domain(execution_domain const&) = delete;
         execution_domain& operator=(execution_domain const&) = delete;
         ~execution_domain() { stop_and_drain(); }
@@ -343,7 +344,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             auto generation{close_admission_for_stop()};
             generation->request_stop(); generation->drain();
             ::std::forward<ResetResources>(reset_resources)();
-            auto next{::std::make_shared<execution_lifetime>(capacity)};
+            auto next{::uwvm2::utils::container::make_shared<execution_lifetime>(capacity)};
             {
                 ::std::lock_guard admission{admission_mutex};
                 current = ::std::move(next); accepting = true;
@@ -415,7 +416,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // ALL potentially throwing next-lifetime allocation precedes the
             // resource publication callback. Old actual resources remain live
             // and untouched on failure. No new participant can enter this owner.
-            prepared.replacement_=::std::make_shared<execution_lifetime>(capacity);
+            prepared.replacement_=::uwvm2::utils::container::make_shared<execution_lifetime>(capacity);
             prepared.owner_=this;prepared.phase_=prepared_generation::phase::prepared;return prepared;
         }
         enum class prepared_drain_status : unsigned char { invalid_owner, pending_execution, drained };
@@ -543,7 +544,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             ::std::forward<ResetResources>(reset_resources)();
             // If cleanup or allocation throws, admission remains closed. Never
             // publish a partially reset set of resources to a new caller.
-            auto next{::std::make_shared<execution_lifetime>(capacity)};
+            auto next{::uwvm2::utils::container::make_shared<execution_lifetime>(capacity)};
             {
                 ::std::lock_guard lock{admission_mutex};
                 current = ::std::move(next);

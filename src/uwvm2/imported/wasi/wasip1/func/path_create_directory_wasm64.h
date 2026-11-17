@@ -287,6 +287,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         {
             // Full locking is required during reading.
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{false};
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
             if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64_unlocked(memory, path_ptrsz, path_len))

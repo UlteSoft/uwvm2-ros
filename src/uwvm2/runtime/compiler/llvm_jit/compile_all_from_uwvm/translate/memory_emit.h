@@ -66,6 +66,10 @@ enum class llvm_jit_memory_protection
     return true;
 }
 
+// Guest atomics are observable even when their returned value is dropped.
+// In particular, a neutral RMW may still fault in the mmap guard. LLVM may
+// otherwise reduce it to an unused atomic load and then remove that load.
+// Keep the access itself volatile, while retaining the required SC ordering.
 // pointer borrows the result of the complete address/bounds and dynamic
 // alignment proofs. These helpers never form a host pointer from Wasm bits.
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_atomic_load(::llvm::IRBuilder<>& b, ::llvm::Value* pointer,
@@ -75,6 +79,7 @@ enum class llvm_jit_memory_protection
        (result_type->getBitWidth() != 32u && result_type->getBitWidth() != 64u) || bytes * 8uz > result_type->getBitWidth()) { return nullptr; }
     auto const loaded{b.CreateLoad(b.getIntNTy(static_cast<unsigned>(bytes * 8uz)), pointer, "atomic.load")};
     loaded->setAtomic(::llvm::AtomicOrdering::SequentiallyConsistent);
+    loaded->setVolatile(true);
     loaded->setAlignment(::llvm::Align{bytes});
     ::llvm::Value* value{loaded}; // borrows the newly created, function-owned IR node
     if(bytes != 1uz && b.GetInsertBlock()->getModule()->getDataLayout().isBigEndian())
@@ -95,6 +100,7 @@ enum class llvm_jit_memory_protection
     // value now borrows the endian-adjusted operand; pointer retains both proofs.
     auto const stored{b.CreateStore(value, pointer)};
     stored->setAtomic(::llvm::AtomicOrdering::SequentiallyConsistent);
+    stored->setVolatile(true);
     stored->setAlignment(::llvm::Align{bytes});
     return true;
 }
@@ -125,6 +131,7 @@ enum class llvm_jit_memory_protection
         auto const exchanged{b.CreateAtomicCmpXchg(pointer, endian(expected), endian(operand), ::llvm::Align{bytes},
             ::llvm::AtomicOrdering::SequentiallyConsistent, ::llvm::AtomicOrdering::SequentiallyConsistent)};
         exchanged->setWeak(false);
+        exchanged->setVolatile(true);
         old = b.CreateExtractValue(exchanged, 0u);
         // old is the checked atomic instruction's first result, owned by this IR function.
     }
@@ -135,6 +142,7 @@ enum class llvm_jit_memory_protection
         // Retry a strong CAS, recomputing guest arithmetic from the observed value.
         auto const initial{b.CreateLoad(access_type, pointer, "atomic.rmw.initial")};
         initial->setAtomic(::llvm::AtomicOrdering::SequentiallyConsistent);
+        initial->setVolatile(true);
         initial->setAlignment(::llvm::Align{bytes});
         auto const entry{b.GetInsertBlock()};
         auto const function{entry->getParent()};
@@ -150,6 +158,7 @@ enum class llvm_jit_memory_protection
         auto const exchanged{b.CreateAtomicCmpXchg(pointer, observed, endian(next), ::llvm::Align{bytes},
             ::llvm::AtomicOrdering::SequentiallyConsistent, ::llvm::AtomicOrdering::SequentiallyConsistent)};
         exchanged->setWeak(false);
+        exchanged->setVolatile(true);
         old = b.CreateExtractValue(exchanged, 0u);
         // old borrows this iteration's observed native bit pattern.
         observed->addIncoming(old, loop);
@@ -169,7 +178,10 @@ enum class llvm_jit_memory_protection
             case atomic_rmw_operation::exchange: native_operation = ::llvm::AtomicRMWInst::Xchg; break;
             default: return nullptr;
         }
-        old = b.CreateAtomicRMW(native_operation, pointer, endian(operand), ::llvm::Align{bytes}, ::llvm::AtomicOrdering::SequentiallyConsistent);
+        auto const updated{b.CreateAtomicRMW(native_operation, pointer, endian(operand), ::llvm::Align{bytes},
+            ::llvm::AtomicOrdering::SequentiallyConsistent)};
+        updated->setVolatile(true);
+        old = updated;
         // old is the new atomic IR instruction's original-memory result.
     }
     return b.CreateZExtOrTrunc(endian(old), result_type);

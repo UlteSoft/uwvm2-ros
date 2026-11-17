@@ -6,6 +6,7 @@
 #include <uwvm2/runtime/compiler/shared/mmap_fault_landing_feature.h>
 #if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
 #include <atomic>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -50,9 +51,10 @@ namespace uwvm2::runtime::lib::memory_guard_landing
         if(active.load(::std::memory_order_acquire) == value) { return; }
         ::uwvm2::runtime::lib::posix_abi::munmap_noexcept(value, value->mapping_bytes);
     }
-    [[nodiscard]] inline record* allocate() noexcept
+    [[nodiscard]] inline record* allocate(int* system_error = nullptr) noexcept
     {
         namespace posix = ::uwvm2::runtime::lib::posix_abi;
+        if(system_error != nullptr) { *system_error = 0; }
         auto const raw_page{posix::sysconf_noexcept(_SC_PAGESIZE)};
         if(raw_page <= 0) { return nullptr; }
         auto const page{static_cast<::std::size_t>(raw_page)};
@@ -60,11 +62,16 @@ namespace uwvm2::runtime::lib::memory_guard_landing
         { return nullptr; }
         auto const bytes{stack_bytes + page * 3u};
         auto* mapping{posix::mmap_noexcept(nullptr, bytes, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)};
-        if(mapping == MAP_FAILED) { return nullptr; }
+        if(mapping == MAP_FAILED)
+        { if(system_error != nullptr) { *system_error = errno; } return nullptr; }
         auto* body{static_cast<::std::byte*>(mapping) + page * 2u};
         if(posix::mprotect_noexcept(mapping, page, PROT_READ | PROT_WRITE) != 0 ||
            posix::mprotect_noexcept(body, stack_bytes, PROT_READ | PROT_WRITE) != 0)
-        { posix::munmap_noexcept(mapping, bytes); return nullptr; }
+        {
+            // Cleanup must not replace the failure that the caller classifies.
+            auto const error{errno};posix::munmap_noexcept(mapping, bytes);
+            if(system_error != nullptr) { *system_error = error; }return nullptr;
+        }
         // Metadata | guard | crash stack | guard. No heap allocation is needed
         // on signal delivery, and neither stack shares bytes with guest memory.
         auto* value{::new(mapping) record{}};
@@ -76,10 +83,13 @@ namespace uwvm2::runtime::lib::memory_guard_landing
     {
         record* value_{};
         bool owner_{}, uncached_{};
+        int setup_error_{};
     public:
         scope() noexcept = default;
         scope(scope const&) = delete;
         scope& operator=(scope const&) = delete;
+        [[nodiscard]] bool resource_exhausted() const noexcept
+        { return setup_error_ == ENOMEM || setup_error_ == EAGAIN; }
         [[nodiscard]] bool enter(callback deliver) noexcept
         {
             if(value_ != nullptr) { return true; }
@@ -88,7 +98,7 @@ namespace uwvm2::runtime::lib::memory_guard_landing
             value_ = cached;
             if(value_ == nullptr)
             {
-                value_ = allocate();
+                value_ = allocate(&setup_error_);
                 if(value_ == nullptr) { return false; }
                 static bool const have_key{::uwvm2::runtime::lib::posix_abi::pthread_key_create_noexcept(cache_key_address(), release) == 0};
                 if(!retired && have_key && ::uwvm2::runtime::lib::posix_abi::pthread_setspecific_noexcept(cache_key, value_) == 0)

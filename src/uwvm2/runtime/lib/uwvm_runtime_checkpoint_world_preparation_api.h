@@ -1,6 +1,7 @@
 // Private preparation bridge. Include after manager/world inside runtime::lib.
 // No guest import, saved-file proof, execution token or native address.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
 extern "C++"
 {
@@ -8,7 +9,8 @@ extern "C++"
         ::std::shared_ptr<runtime_checkpoint_world_transaction> const& actual) noexcept
     {
         return actual && actual->preflight_private_full_publication_records() &&
-            actual->private_closed_workers_ && actual->private_closed_workers_->held_actual_cohort();
+            actual->private_closed_workers_ && (actual->private_closed_workers_->held_actual_cohort() ||
+                actual->private_closed_workers_->joined_actual_cohort());
     }
     bool runtime_checkpoint_coherent_manager::cancel_actual_candidate_workers(
         ::std::shared_ptr<runtime_checkpoint_world_transaction> const& actual) noexcept
@@ -28,6 +30,38 @@ extern "C++"
         out.status=llvm_jit_checkpoint_prepare_status::resource_preparation_declined;
         try
         {
+            // Native callers can supply a typed graph without the archive
+            // reader. The same no-silent-replay rule must hold at this actual
+            // execution boundary before any environment/candidate preparation.
+            if(saved.replay_event_cursor!=0u)
+            {out.data_error=::uwvm2::uwvm::debugger::checkpoint::error::non_replayable_import;return;}
+            for(auto const& object:saved.objects)
+                if(object.kind==::uwvm2::uwvm::debugger::checkpoint::object_kind::event)
+                {out.data_error=::uwvm2::uwvm::debugger::checkpoint::error::non_replayable_import;return;}
+            ::std::shared_ptr<runtime_checkpoint_replay_session> replay{};
+            if(request.replay_graph)
+            {
+                namespace cp=::uwvm2::uwvm::debugger::checkpoint;
+                cp::execution_replay::decoded journal{};
+                out.data_error=cp::execution_replay::decode(*request.replay_graph,journal,request.graph_budget);
+                if(out.data_error!=cp::error::none || journal.origin!=saved || !request.pause_after_restore)
+                {out.data_error=cp::error::replay_diverged;return;}
+                // A log-only import interval must not silently weaken the
+                // current host's crash-on-MTE policy. Refuse before preparing or
+                // retiring any native worker; never switch policy from file DATA.
+                if(!::uwvm2::extension::memtag::logging_requested())
+                    for(auto const& event:journal.events)
+                        if(event.flags==cp::execution_replay::import_memtag_report_kind)
+                        {out.data_error=cp::error::unavailable_capability;return;}
+                replay=::uwvm2::utils::container::make_shared<runtime_checkpoint_replay_session>();
+                replay->origin=::std::move(journal.origin);replay->events=::std::move(journal.events);
+                replay->thread=journal.logical_thread;replay->mode=3u;replay->times=::std::move(journal.times);
+                replay->participants.resize(journal.thread_count);replay->exited.resize(journal.thread_count);
+                replay->pending_origin.resize(journal.thread_count);
+                for(auto const& item:replay->origin.objects)if(item.kind==cp::object_kind::thread)
+                    replay->pending_origin[item.words[0]-1u]=item.flags==2u;
+                replay->initialize_waits();
+            }
             // Private candidates live THROUGH Wasm resource/engine preparation.
             // A later failure destroys all FD clones/text/tables before the
             // same actual closed-host/N/publication scope is released. No swap.
@@ -37,7 +71,14 @@ extern "C++"
             {
                 out.wasip1_status=llvm_jit_wasip1_environment_capsule::prepare_group_current(
                     llvm_jit_wasip1_environment_capsule::native_capture_key{},environments,
-                    request.require_managed_wasip1_resources,epoch,current_profile,wasip1);
+                    request.require_managed_wasip1_resources,epoch,current_profile,wasip1,
+                    request.environment_source!=llvm_jit_checkpoint_environment_source::captured);
+                if(out.wasip1_status!=llvm_jit_wasip1_environment_capsule_status::captured)
+                { out.status=llvm_jit_checkpoint_prepare_status::wasip1_preparation_declined;return; }
+            }
+            if(request.environment_source==llvm_jit_checkpoint_environment_source::recorded)
+            {
+                out.wasip1_status=llvm_jit_wasip1_environment_capsule::prepare_recorded_group(environments,request,wasip1);
                 if(out.wasip1_status!=llvm_jit_wasip1_environment_capsule_status::captured)
                 { out.status=llvm_jit_checkpoint_prepare_status::wasip1_preparation_declined;return; }
             }
@@ -52,6 +93,45 @@ extern "C++"
             out.status=llvm_jit_checkpoint_prepare_status::source_initializer_binding_preparation_declined;
             if(!prepared->prepare_private_source_initializer_bindings(source,epoch,request.maximum_private_source_initializer_modules,out))
             { out.native_payload_bytes=prepared->native_bytes_;out.resource_diagnostic=static_cast<unsigned>(prepared->phase_);return; }
+            if(replay)
+            {
+                namespace cp=::uwvm2::uwvm::debugger::checkpoint;
+                namespace ex=cp::execution_replay;
+                // A provider can gain audited memory phases without changing
+                // its public WASI signature. Reject an incompatible interval
+                // BEFORE retiring the current world, rather than discovering
+                // the old transaction shape on its first restored import.
+                for(auto const& event:replay->events)
+                {
+                    if(event.flags!=ex::import_kind && event.flags!=ex::import_begin_kind &&
+                       event.flags!=ex::import_finish_kind)continue;
+                    auto const logical=event.words[3]>>32u;
+                    auto const function=event.words[3]&UINT32_MAX;
+                    if(logical>=prepared->modules_.size())
+                    {out.data_error=cp::error::non_replayable_import;return;}
+                    auto const actual=prepared->modules_[logical].old_actual_id;
+                    if(actual>=g_import_call_cache.size() || function>=g_import_call_cache.index_unchecked(actual).size())
+                    {out.data_error=cp::error::non_replayable_import;return;}
+                    auto const& target=g_import_call_cache.index_unchecked(actual).index_unchecked(function);
+                    ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data builtin{};
+                    if(target.origin_module_id!=actual || target.frame.function_index!=function ||
+                       checkpoint_effect_actual_cached_leaf(target,true,::std::addressof(builtin))!=checkpoint_resolved_effect::checkpoint_builtin_host)
+                    {out.data_error=cp::error::non_replayable_import;return;}
+                    bool const phased=builtin.phased_memory || (builtin.ros_family>=1u && builtin.ros_family<=4u);
+                    if(phased!=(event.flags!=ex::import_kind))
+                    {out.data_error=cp::error::non_replayable_import;return;}
+                    auto const parameters=event.flags==ex::import_finish_kind?0u:builtin.parameter_count;
+                    auto const results=event.flags==ex::import_begin_kind?0u:builtin.result_count;
+                    if(event.words[4]!=parameters || event.words[5]!=results || event.values.size()!=parameters+results)
+                    {out.data_error=cp::error::incompatible_type;return;}
+                    for(unsigned index{};index<parameters+results;++index)
+                    {
+                        auto const type=index<parameters?builtin.parameters[index]:builtin.results[index-parameters];
+                        if(event.values[index].type.kind!=static_cast<cp::value_kind>(0x80u-type))
+                        {out.data_error=cp::error::incompatible_type;return;}
+                    }
+                }
+            }
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
             if(request.include_wasip1 && !environments.empty())
             {
@@ -64,8 +144,9 @@ extern "C++"
             }
 #endif
             out.status=llvm_jit_checkpoint_prepare_status::engine_preparation_declined;
-            // No silent conversion of unlimited observation budgets into resume
-            // budgets. Every actual schema/ABI/slot/budget field stays identical.
+            // Preserve the caller's frame-quota semantics, including zero
+            // (unlimited). Preparation still enforces explicit graph/native
+            // budgets before allocation; it never invents a finite frame cap.
             auto profile{checkpoint::compilation_profile::create_for_trusted_manager(
                 current_profile->limits(),checkpoint::compilation_purpose::resumable)};
             auto const policy{runtime_llvm_jit_unwind_call_stack_requested()};
@@ -90,6 +171,8 @@ extern "C++"
             { out.native_payload_bytes=prepared->native_bytes_;out.resource_diagnostic=static_cast<unsigned>(prepared->phase_);return; }
             out.status=llvm_jit_checkpoint_prepare_status::indirect_binding_preparation_declined;
             if(!prepared->prepare_world_indirect_bindings(request.maximum_private_indirect_bindings,out))
+            { out.native_payload_bytes=prepared->native_bytes_;out.resource_diagnostic=static_cast<unsigned>(prepared->phase_);return; }
+            if(!prepared->prepare_current_ros_handoff(request))
             { out.native_payload_bytes=prepared->native_bytes_;out.resource_diagnostic=static_cast<unsigned>(prepared->phase_);return; }
             out.status=llvm_jit_checkpoint_prepare_status::full_publication_record_preparation_declined;
             if(!prepared->prepare_private_full_publication_records(request.maximum_private_full_publication_functions,out))
@@ -123,6 +206,16 @@ extern "C++"
 #endif
             if(retained)
             {
+                prepared->pause_after_restore_=request.pause_after_restore;
+                if(replay)
+                {
+                    replay->actual_modules.reserve(prepared->modules_.size());
+                    for(auto const& module:prepared->modules_)replay->actual_modules.push_back(module.new_actual_id);
+                    prepared->publication_replay_=::std::move(replay);
+                }
+
+                if(!prepared->prepare_world_publication() || !prepared->publication_ready())
+                { out.status=llvm_jit_checkpoint_prepare_status::full_code_owner_handoff_declined;return; }
                 // All OS creation, packet/ledger allocation and root/TLS
                 // installation happens BEFORE old retirement. This real cohort
                 // remains held; it has no execution lease or LIVE code authority.
@@ -131,7 +224,9 @@ extern "C++"
                 // Control block allocation is also fallible before retirement.
                 if(!prepared->charge_native(1u,sizeof(::std::shared_ptr<world>)+2u*sizeof(::std::atomic<::std::size_t>)))
                 { out.status=llvm_jit_checkpoint_prepare_status::resource_preparation_declined;return; }
-                *retained=::std::shared_ptr<world>{::std::move(prepared)};
+                auto candidate=::uwvm2::utils::container::adopt_shared(prepared.release());
+                if(!candidate->prepare_restored_workers(candidate)) { return; }
+                *retained=::std::move(candidate);
                 out.native_payload_bytes=(*retained)->native_bytes_;
                 out.status=llvm_jit_checkpoint_prepare_status::prepared_and_retained;
             }

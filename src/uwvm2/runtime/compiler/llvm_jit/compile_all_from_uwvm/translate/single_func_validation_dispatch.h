@@ -69,7 +69,16 @@ for(;;)
         // memory operations revoke it before MTE/host/linear-memory handling.
         bool const preserves=op==0xfbu || op==0xfdu || (op>=0x20u && op<=0x22u) || op==0x1au ||
             (op>=0x41u && op<=0xc4u);
-        if(!preserves) { llvm_jit_emit_state.clear_gc_local_access(); }
+        if(!preserves)
+        {
+            // Revoke native object/lock evidence BEFORE every call. For a
+            // direct call, retain only logical SSA identities until its root
+            // snapshot; operand preparation clears them before emitting the
+            // actual call. No object pointer or value proof crosses the call.
+            if(op==0x10u && llvm_jit_emit_state.gc_local_value_keys_enabled())
+            { llvm_jit_emit_state.gc_local_access={}; }
+            else { llvm_jit_emit_state.clear_gc_local_access(); }
+        }
     }
 
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
@@ -258,6 +267,7 @@ for(;;)
             if(!llvm_jit_emit_state.gc_private_gc_opcode_observed)
             {
                 llvm_jit_emit_state.gc_private_function_safe=false;
+                llvm_jit_emit_state.gc_private_call_graph_safe=false;
                 llvm_jit_emit_state.gc_no_safepoint_leaf=false;
             }
             llvm_jit_emit_state.gc_private_gc_opcode_observed=false;
@@ -271,6 +281,7 @@ for(;;)
                 op==0x1au || op==0x1bu || op==0x1cu || (op>=0x20u&&op<=0x22u) ||
                 (op>=0x28u&&op<=0xc4u) || (op>=0xd0u&&op<=0xd6u) || op==0xfdu;
             if(!local) { llvm_jit_emit_state.gc_private_function_safe=false; }
+            if(!local && op!=0x10u) { llvm_jit_emit_state.gc_private_call_graph_safe=false; }
             // Deliberately narrower than "cannot publish": no loops, calls,
             // globals/tables, linear memory, EH, atomics or unknown proposals.
             // Pure SIMD is admitted only by its authoritative typed event.

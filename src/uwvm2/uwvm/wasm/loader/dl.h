@@ -201,25 +201,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                     u8"[warn]  ",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                    u8"A native driver runs with host process authority. The deployer owns trust and dependency policy. Use --wasm-driver-verify to enable secondary signature verification before constructors run. ",
+                    u8"A preloaded native library is not isolated from the VM and may contain untrusted code that can read, corrupt or compromise its process. "
+                    u8"Prefer qualified process-isolated uwvm_ros_v2 component/device/model providers where implemented. "
+                    u8"--wasm-driver-verify checks signatures before constructors run; signature verification does not provide isolation. ",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
                     u8"(untrusted-dl)\n",
                     ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
 
-                if(::uwvm2::uwvm::io::untrusted_dl_warning_fatal) [[unlikely]]
-                {
-                    ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                        u8"uwvm: ",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
-                                        u8"[fatal] ",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                        u8"Convert warnings to fatal errors. ",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
-                                        u8"(untrusted-dl)\n\n",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                    ::std::_Exit(126); // Explicit launch refusal, not a native invariant fault.
-                }
+            }
+            if(::uwvm2::uwvm::io::untrusted_dl_warning_fatal) [[unlikely]]
+            {
+                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                    u8"uwvm: ",
+                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
+                                    u8"[fatal] ",
+                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                                    u8"Convert warnings to fatal errors. ",
+                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_ORANGE),
+                                    u8"(untrusted-dl)\n\n",
+                                    ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+                ::std::_Exit(126); // Explicit launch refusal, not a native invariant fault.
             }
         }
 

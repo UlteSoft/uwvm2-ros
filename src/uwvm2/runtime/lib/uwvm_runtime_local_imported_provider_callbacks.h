@@ -5,6 +5,7 @@
  *************************************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -26,8 +27,8 @@ namespace uwvm2::runtime::lib::details
     {
         // Own normalized Wasm value-type bytes. No provider-owned pointer is allowed to escape the guarded metadata
         // callback, even though the built-in type-erasure adapter currently sources them from constexpr arrays.
-        ::std::vector<::std::uint_least8_t> parameter_types{};
-        ::std::vector<::std::uint_least8_t> result_types{};
+        ::uwvm2::utils::container::std_vector<::std::uint_least8_t> parameter_types{};
+        ::uwvm2::utils::container::std_vector<::std::uint_least8_t> result_types{};
     };
 
     // A local-imported provider is native extension code, even when the operation looks like an ordinary metadata,

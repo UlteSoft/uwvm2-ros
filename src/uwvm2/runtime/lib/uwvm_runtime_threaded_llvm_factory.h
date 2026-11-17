@@ -19,6 +19,45 @@
             }
             return true;
         }
+        [[nodiscard]] bool build_reference_type_ids()
+        {
+            if(!reference_dispatch_)return true;
+            if(!account_retained_storage())return false;
+            auto const remaining=storage_limit_-storage_bytes_;
+            auto const modules=world_->module_count();
+            if(modules>remaining/sizeof(decltype(reference_type_ids_)::value_type))return false;
+            auto bytes=modules*sizeof(decltype(reference_type_ids_)::value_type);
+            for(::std::size_t m{};m<modules;++m)
+            {
+                auto const& peer=*world_->module(m);
+                auto const count=peer.imported_function_vec_storage.size()+peer.local_defined_function_vec_storage.size();
+                if(count>(remaining-bytes)/sizeof(::std::uint_least32_t))return false;
+                bytes+=count*sizeof(::std::uint_least32_t);
+            }
+            reference_type_ids_.resize(modules);
+            for(::std::size_t m{};m<modules;++m)
+            {
+                auto const& peer=*world_->module(m);
+                reference_type_ids_[m].resize(peer.imported_function_vec_storage.size()+peer.local_defined_function_vec_storage.size());
+            }
+            compiled_module_record record{};record.runtime_module=module_;
+            record.type_canon_index=build_type_canon_index(*module_);
+            if(reference_type_ids_.size()!=world_->module_count())return false;
+            for(::std::size_t m{};m<reference_type_ids_.size();++m)
+            {
+                auto const& module=*world_->module(m);auto const imported=module.imported_function_vec_storage.size();
+                if(reference_type_ids_[m].size()!=imported+module.local_defined_function_vec_storage.size())return false;
+                for(::std::size_t f{};f<reference_type_ids_[m].size();++f)
+                {
+                    auto const* type=f<imported?module.imported_function_vec_storage.index_unchecked(f).import_type_ptr->imports.storage.function:
+                        module.local_defined_function_vec_storage.index_unchecked(f-imported).function_type_ptr;
+                    // Project into THIS caller's forest. Another module's
+                    // preorder is not an interchangeable signature identifier.
+                    reference_type_ids_[m][f]=find_canonical_type_id_for_type_uncached(record,module,type);
+                }
+            }
+            return true;
+        }
         [[nodiscard]] ::std::size_t actual_table_local(
             ::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t const* function) const noexcept
         {
@@ -28,50 +67,15 @@
         }
         [[nodiscard]] bool validate_table_targets_noalloc() const noexcept
         {
-            namespace st=::uwvm2::uwvm::runtime::storage;
-            if(module_==nullptr||!module_->imported_table_vec_storage.empty()||
-               table_targets_.size()!=module_->local_defined_table_vec_storage.size()||
-               table_views_.size()!=table_targets_.size()||local_type_ids_.size()!=entries_.size())return false;
-            for(::std::size_t t{};t<table_targets_.size();++t)
-            {
-                auto const& table=module_->local_defined_table_vec_storage.index_unchecked(t);
-                if(table_targets_[t].size()!=table.elems.size()||table.owner_module_rt_ptr!=module_||
-                   table.table_type_ptr==nullptr||st::runtime_table_family(table)!=st::runtime_table_reference_family::function)return false;
-                for(auto const& element:table.elems)
-                {
-                    if(element.type==st::local_defined_table_elem_storage_type_t::func_ref_imported&&element.storage.imported_ptr==nullptr)continue;
-                    if(element.type!=st::local_defined_table_elem_storage_type_t::func_ref_defined)return false;
-                    if(element.storage.defined_ptr==nullptr)continue;
-                    auto const local=actual_table_local(element.storage.defined_ptr);
-                    if(local==SIZE_MAX||entries_[local].raw==0u||entries_[local].typed==0u||
-                       local_type_ids_[local]==invalid_llvm_jit_encoded_type_id())return false;
-                }
-            }
+            if(!module_)return false;
+            for(::std::size_t t{};t<module_->imported_table_vec_storage.size()+module_->local_defined_table_vec_storage.size();++t)
+                if(!world_->table(module_index_,t))return false;
             return true;
         }
         [[nodiscard]] bool refresh_table_targets_noalloc() noexcept
-        {
-            namespace st=::uwvm2::uwvm::runtime::storage;
-            if(!validate_table_targets_noalloc())return false;
-            for(::std::size_t t{};t<table_targets_.size();++t)
-            {
-                auto const& table=module_->local_defined_table_vec_storage.index_unchecked(t);
-                auto& targets=table_targets_[t];
-                for(::std::size_t slot{};slot<targets.size();++slot)
-                {
-                    auto const& element=table.elems.index_unchecked(slot);auto& target=targets[slot];
-                    target={};target.encoded_type_id=invalid_llvm_jit_encoded_type_id();
-                    if(element.type==st::local_defined_table_elem_storage_type_t::func_ref_imported||element.storage.defined_ptr==nullptr)continue;
-                    auto const local=actual_table_local(element.storage.defined_ptr);
-                    target.entry_address=entries_[local].raw;target.typed_entry_address=entries_[local].typed;
-                    target.encoded_type_id=local_type_ids_[local];
-                }
-                table_views_[t]={targets.empty()?0u:reinterpret_cast<::std::uintptr_t>(targets.data()),targets.size()};
-            }
-            bound_tables_=true;return true;
-        }
+        {bound_tables_=validate_table_targets_noalloc();return bound_tables_;}
         [[nodiscard]] bool check_object(::llvm::object::ObjectFile const& object,::std::size_t& charge,
-            ::std::vector<::std::string>& definitions)
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions)
         {
             // A finite, deliberately conservative native ELF loader charge:
             // real section bytes, max alignment per section, relocation stub/GOT
@@ -111,7 +115,7 @@
 #if defined(__linux__) && (defined(__i386__) || defined(__arm__))
                         // Only the existing finite compiler-runtime arithmetic
                         // allowlist. No dynamic lookup or Guest import binding.
-                        else pointer=::uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins::find(name->str());
+                        else pointer=::uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins::find(::uwvm2::utils::container::copy_string(*name));
 #endif
 #if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
     defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
@@ -122,12 +126,12 @@
                         else if(*name=="__aeabi_unwind_cpp_pr2")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2);
 #endif
                         if(pointer==0u||externals_.size()>=256u)return false;
-                        externals_.push_back({name->str(),pointer});
+                        externals_.push_back({::uwvm2::utils::container::copy_string(*name),pointer});
                     }
                 }
                 else if(!name->empty())
                 {
-                    definitions.push_back(name->str());
+                    definitions.push_back(::uwvm2::utils::container::copy_string(*name));
                     auto type=symbol.getType();if(!type){::llvm::consumeError(type.takeError());return false;}
                 }
             }
@@ -153,7 +157,7 @@
 #else
             try
             {
-                auto data=::std::unique_ptr<ThreadedLlvmChild>{new ThreadedLlvmChild{::std::move(world)}};
+                auto data=::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>{::uwvm2::utils::allocator::fast_io_strict::object<ThreadedLlvmChild>([&](ThreadedLlvmChild* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ThreadedLlvmChild{::std::move(world)}; })};
                 data->module_index_=module_index;data->module_=data->world_->module(module_index);auto const& module=*data->module_;
                 auto const& limits=data->world_->admission().limits();
                 data->call_limit_=limits.max_call_frames;data->code_limit_=limits.max_child_code_bytes;
@@ -172,20 +176,15 @@
                 if(count>65536u||data->imports_>65536u||count>SIZE_MAX-data->imports_||
                    (module_index==0u && (count==0u||data->start_<data->imports_||
                     data->start_-data->imports_>=count)))return {{},status::unsupported_shape};
-                if(module.table_declarations_require_gc||
-                   module.global_declarations_require_gc||module.element_declarations_require_gc||
-                   module.table_declarations_require_exceptions||module.global_declarations_require_exceptions||
-                   module.element_declarations_require_exceptions||module.memory_declarations_require_memory64||
-                   module.table_declarations_require_table64||!module.imported_table_vec_storage.empty())return {{},status::unsupported_shape};
                 // Real imported-memory aliases must have been normalized to a
                 // canonical source-owned defined native memory by World factory.
                 using memory_link=::uwvm2::uwvm::runtime::storage::imported_memory_storage_t::imported_memory_link_kind;
                 for(auto const& imported:module.imported_memory_vec_storage)
                     if(imported.link_kind!=memory_link::defined||imported.target.defined_ptr==nullptr)return {{},status::unsupported_shape};
                 auto const memory_count=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size();
-                if(memory_count>16u)return {{},status::budget};
+                if(memory_count>backend_storage_budget/(sizeof(memory_type*)+2u*sizeof(emit::threaded_forbidden_memory_span)))return {{},status::budget};
                 data->memories_.reserve(memory_count);
-                ::std::array<emit::threaded_forbidden_memory_span,32u> forbidden_memtag_spans{};
+                ::uwvm2::utils::container::std_vector<emit::threaded_forbidden_memory_span> forbidden_memtag_spans(memory_count*2u);
                 ::std::size_t forbidden_memtag_count{};
                 bool requires_shared_memtag_lease{};
                 auto forbid_memtag_span=[&](::std::uintptr_t begin,::std::size_t bytes) noexcept
@@ -197,15 +196,15 @@
                 for(::std::size_t i{};i<memory_count;++i)
                 {
                     auto const info=emit::resolve_runtime_memory_access_info(module,static_cast<::std::uint32_t>(i));
-                    if(info.memory_p==nullptr||!::uwvm2::runtime::wasm_threads::is_shared(*info.memory_p)||
+                    if(info.memory_p==nullptr||info.memory_p!=data->world_->native_memory(module_index,i)||
                        info.local_imported_module_ptr!=nullptr||info.stable_memory_begin==nullptr||
                        info.stable_memory_length_p==nullptr||info.custom_page_size_log2!=16u)return {{},status::unsupported_shape};
                     data->memories_.push_back(info.memory_p);
                     auto const& tags=info.memory_p->memtag_shadow;
-                    if(tags.enabled())
+                    if(tags.enabled()&&tags.shared())
                     {
-                        if(!tags.shared()||!tags.shared_tag_lease_ready())return {{},status::unsupported_shape};
-                        requires_shared_memtag_lease=true;
+                        if(tags.shared()&&!tags.shared_tag_lease_ready())return {{},status::unsupported_shape};
+                        requires_shared_memtag_lease|=tags.shared();
                         auto const count=tags.maximum_memory_bytes()/16u+(tags.maximum_memory_bytes()%16u!=0u);
                         if(count>SIZE_MAX/sizeof(::std::atomic<::std::uint8_t>)||
                            !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),info.stable_memory_reserved_span_bytes)||
@@ -247,7 +246,12 @@
                 // use old request counts or assume zero allocator overhead/RSS.
                 bool const observing=data->world_->admission().debug_observation()==::uwvm2::runtime::wasm_threads::threaded_debug_observation::readonly_metadata;
                 auto const per_debug_function=observing?2u*sizeof(::uwvm2::runtime::wasm_threads::debug_function_row):0u;
-                auto const fixed_debug=observing?sizeof(::uwvm2::runtime::wasm_threads::code_debug_image)+4096u*sizeof(::uwvm2::runtime::wasm_threads::debug_cfi_row):0u;
+                bool const instruction_control=data->world_->admission().instruction_control();
+                if(instruction_control&&!observing)return {{},status::invalid_world};
+                auto const instruction_capacity=instruction_control?bodies:0u;
+                if(instruction_capacity>remaining/sizeof(::uwvm2::runtime::wasm_threads::debug_logical_pc_row))return {{},status::budget};
+                auto const instruction_charge=instruction_capacity*sizeof(::uwvm2::runtime::wasm_threads::debug_logical_pc_row);
+                auto const fixed_debug=(observing?sizeof(::uwvm2::runtime::wasm_threads::code_debug_image)+4096u*sizeof(::uwvm2::runtime::wasm_threads::debug_cfi_row):0u)+instruction_charge;
                 ::std::size_t const fixed_charge=sizeof(ThreadedLlvmChild)+sizeof(native_arena)+8192u*64u+
                     256u*(sizeof(external)+512u+sizeof(native_frame_record)+256u)+
                     fixed_debug+native_arena::unwind_storage_precharge(count);
@@ -255,8 +259,9 @@
                     return {{},status::budget};
                 if(observing)
                 {
-                    data->debug_.reset(new ::uwvm2::runtime::wasm_threads::code_debug_image{data->world_,::uwvm2::runtime::wasm_threads::debug_backend::llvm});
+                    data->debug_.reset(::uwvm2::utils::allocator::fast_io_strict::object<::uwvm2::runtime::wasm_threads::code_debug_image>([&](::uwvm2::runtime::wasm_threads::code_debug_image* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ::uwvm2::runtime::wasm_threads::code_debug_image{data->world_,::uwvm2::runtime::wasm_threads::debug_backend::llvm,data->world_->source_module_id()}; }));
                     data->debug_->functions_.resize(count*2u);data->debug_->cfi_.reserve(4096u);
+                    data->debug_->instruction_control_=instruction_control;data->debug_->logical_.reserve(instruction_capacity);
                     if(data->debug_->allocated_bytes()>count*per_debug_function+fixed_debug-sizeof(::uwvm2::runtime::wasm_threads::code_debug_image))return {{},status::budget};
                 }
                 data->locals_.resize(count);data->entries_.resize(count);data->local_type_ids_.resize(count);data->native_frames_.reserve(count*2u+256u);data->emitted_bridges_.reserve(256u);data->externals_.reserve(256u);
@@ -275,7 +280,7 @@
                     if(elements>limits.max_table_elements||n>limits.max_table_elements-elements)return {{},status::budget};
                     elements+=n;
                     if(elements>(remaining-table_shape_charge)/sizeof(target_type))return {{},status::budget};
-                    data->table_targets_[i].resize(n);
+                    // Dynamic indirect targets are copied under the actual private instance lease.
                 }
                 if(elements>(SIZE_MAX-table_shape_charge)/sizeof(target_type)||
                    !data->prepare_exception_schemas(table_shape_charge+elements*sizeof(target_type)))return {{},status::budget};
@@ -288,9 +293,9 @@
                     // validate its tables, but do not manufacture a native entry
                     // or send an empty object through the executable loader.
                     if(!data->build_local_type_ids()||!data->refresh_table_targets_noalloc())return {{},status::unsupported_shape};
-                    ::std::vector<native_bridge>{}.swap(data->emitted_bridges_);
-                    ::std::vector<external>{}.swap(data->externals_);
-                    ::std::vector<native_frame_record>{}.swap(data->native_frames_);
+                    ::uwvm2::utils::container::std_vector<native_bridge>{}.swap(data->emitted_bridges_);
+                    ::uwvm2::utils::container::std_vector<external>{}.swap(data->externals_);
+                    ::uwvm2::utils::container::std_vector<native_frame_record>{}.swap(data->native_frames_);
                     if(!data->account_retained_storage())return {{},status::budget};
                     return {::std::move(data),status::ok};
                 }
@@ -319,18 +324,27 @@
                     emit::threaded_host_emission_scope owner{*data->world_,module,*ir.llvm_module,data->emitted_bridges_,
                         reinterpret_cast<::std::uintptr_t>(module.llvm_jit_call_indirect_table_views.data()),
                         reinterpret_cast<::std::uintptr_t>(data->table_views_.data()),
-                        forbidden_memtag_spans.data(),forbidden_memtag_count};
+                        forbidden_memtag_spans.data(),forbidden_memtag_count,
+                        instruction_control?address(&instruction_point):0u,instruction_control?data.get():nullptr,
+                        instruction_control?&append_instruction_site:nullptr};
                     for(::std::size_t i{};i<count;++i)
                     {
                         if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
+                        if(instruction_control)
+                        {
+                            auto& row=data->debug_->functions_[i*2u];row.logical_begin=data->debug_->logical_.size();
+                            row.wasm_begin=reinterpret_cast<::std::uintptr_t>(module.local_defined_function_vec_storage.index_unchecked(i).wasm_code_ptr->body.expr_begin)-base;
+                        }
                         data->locals_[i]=emit::compile_all_from_uwvm_local_func(module,validation,options,i,error,::std::addressof(ir));
+                        if(instruction_control)data->debug_->functions_[i*2u].logical_count=
+                            data->debug_->logical_.size()-data->debug_->functions_[i*2u].logical_begin;
                         data->locals_[i].compiler_registry=nullptr;
                         if(ir.llvm_module==nullptr||ir.llvm_context_holder==nullptr||ir.first_decline.available())return {{},status::invalid_body};
                         auto const typed=get_runtime_llvm_jit_wasm_function_name(module,data->imports_+i);
                         auto const raw=get_runtime_llvm_jit_wasm_raw_function_name(module,data->imports_+i);
                         if(typed.size()>128u||raw.size()>128u)return {{},status::budget};
-                    data->entries_[i].typed_name=emit::get_llvm_string_ref(typed).str();
-                        data->entries_[i].raw_name=emit::get_llvm_string_ref(raw).str();
+                    data->entries_[i].typed_name=::uwvm2::utils::container::copy_string(emit::get_llvm_string_ref(typed));
+                        data->entries_[i].raw_name=::uwvm2::utils::container::copy_string(emit::get_llvm_string_ref(raw));
                     }
                     if(!owner.valid()||!emit::finalize_runtime_llvm_jit_module_storage(ir,true))return {{},status::invalid_body};
                     if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
@@ -404,7 +418,7 @@
                 if(!buffer)return {{},status::native_failure};
                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());
                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
-                ::std::vector<::std::string> definitions;
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> definitions;
                 if(!data->check_object(**parsed,data->native_bytes_,definitions))return {{},status::budget};
                 for(auto const& entry:data->entries_)
                 {
@@ -414,12 +428,12 @@
                 // Native object is complete and checked BEFORE an empty loader
                 // engine is created. The original IR never gets compiled twice.
                 ir.llvm_module.reset();data->emitted_bridges_.clear();
-                ::std::vector<::std::string>{}.swap(data->native_call_names_);
-                ::std::vector<native_call_edge>{}.swap(data->native_call_edges_);
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>{}.swap(data->native_call_names_);
+                ::uwvm2::utils::container::std_vector<native_call_edge>{}.swap(data->native_call_edges_);
                 ir.llvm_context_holder.reset();
-                ir.llvm_context_holder=::uwvm2::utils::container::make_delete_owned<::llvm::LLVMContext>();
+                ir.llvm_context_holder=::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_context();
                 if(!ir.llvm_context_holder)return {{},status::native_failure};
-                auto empty=::uwvm2::utils::container::make_delete_owned<::llvm::Module>("uwvm.threaded.child.loader",*ir.llvm_context_holder);
+                auto empty=::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_module("uwvm.threaded.child.loader",*ir.llvm_context_holder);
                 if(!empty)return {{},status::native_failure};
                 set_llvm_module_target_triple_from_machine(*empty,*target);empty->setDataLayout(target->createDataLayout());
                 ir.llvm_module.reset();
@@ -429,28 +443,28 @@
                 if(data->native_bytes_>SIZE_MAX-65535u)return {{},status::budget};
                 auto const reservation=(data->native_bytes_+65535u)&~::std::size_t{65535u};
                 if(reservation>data->code_limit_)return {{},status::budget};
-                data->native_arena_=::std::make_unique<native_arena>(reservation,data->externals_,data->native_frames_.size());
+                data->native_arena_=::uwvm2::utils::container::make_unique<native_arena>(reservation,data->externals_,data->native_frames_.size());
                 if(!data->native_arena_||!data->native_arena_->valid())return {{},status::native_failure};
                 auto* memory_observer=data->native_arena_.get();
                 data->native_bytes_=memory_observer->owned_bytes();
-                auto memory=::uwvm2::utils::container::make_delete_owned<loader_memory_adapter>(*memory_observer);
+                auto memory=::uwvm2::utils::container::make_unique<loader_memory_adapter>(*memory_observer);
                 if(!memory)return {{},status::native_failure};
                 auto* engine=::llvm::EngineBuilder(llvm_module_owner_t{empty.release()}).setEngineKind(::llvm::EngineKind::JIT)
                     .setOptLevel(policy.codegen_opt_level).setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(refs)
                     .setMCJITMemoryManager(llvm_jit_memory_manager_owner_t{memory.release()}).create(target.release());
                 if(engine==nullptr)return {{},status::native_failure};
                 data->context_=::std::move(ir.llvm_context_holder);data->engine_.reset(engine);engine->DisableSymbolSearching();
-                for(auto const& mapping:data->externals_)engine->addGlobalMapping(mapping.name,mapping.address);
-                data->ranges_=::uwvm2::utils::container::make_delete_owned<details::pending_llvm_jit_code_ranges>(*engine,true);
+                for(auto const& mapping:data->externals_)engine->addGlobalMapping(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(mapping.name),mapping.address);
+                data->ranges_=::uwvm2::utils::container::make_unique<details::pending_llvm_jit_code_ranges>(*engine,true);
                 if(!data->ranges_)return {{},status::native_failure};data->ranges_->configure_debug_full_capture(false); // Stage A has only its explicitly charged bounded maps.
                 engine->addObjectFile(::llvm::object::OwningBinary<::llvm::object::ObjectFile>{::std::move(*parsed),::std::move(buffer)});
                 engine->finalizeObject();
                 if(engine->hasError()||memory_observer->has_finalization_failure()||data->ranges_->has_observation_failure())return {{},status::native_failure};
-                auto resolve=[&](::std::string const& name)->::std::uintptr_t
+                auto resolve=[&](::uwvm2::utils::container::std_string const& name)->::std::uintptr_t
                 {
                     // Definitions were proved in THIS object, global searching
                     // is disabled, and this listener must own the exact entry.
-                    auto const pointer=engine->getFunctionAddress(name);
+                    auto const pointer=::uwvm2::runtime::compiler::llvm_jit::fast_io_support::function_address(*engine,name);
                     if(pointer==0u)return 0u;
                     auto const code=details::native_function_code_address(static_cast<::std::uintptr_t>(pointer));
                     return data->ranges_->owns_pending_loaded_function_entry(code)?static_cast<::std::uintptr_t>(pointer):0u;
@@ -473,7 +487,9 @@
                         auto const extent=data->ranges_->threaded_debug_loaded_extent(address);
                         if(!extent)return {{},status::native_failure};
                         auto& row=data->debug_->functions_[i*2u+adapter];
-                        row={module_index,data->imports_+i,begin,end,address,extent,0u,0u,0u,adapter!=0u,false};
+                        auto const logical_begin=adapter?0u:row.logical_begin;
+                        auto const logical_count=adapter?0u:row.logical_count;
+                        row={module_index,data->imports_+i,begin,end,address,extent,logical_begin,logical_count,0u,adapter!=0u,false};
                         auto const& name=adapter?entry.raw_name:entry.typed_name;
                         for(auto const& frame:data->native_frames_)if(frame.name==name)
                         {row.fixed_native_frame_bytes=frame.object_bytes;row.fixed_native_frame_available=true;break;}
@@ -488,12 +504,12 @@
                 // resource: detach observer, drop loader, context and compiler
                 // packets BEFORE final actual retained-request accounting.
                 data->ranges_.reset();data->engine_.reset();data->context_.reset();
-                ::std::vector<local_type>{}.swap(data->locals_);
-                ::std::vector<native_bridge>{}.swap(data->emitted_bridges_);
+                ::uwvm2::utils::container::std_vector<local_type>{}.swap(data->locals_);
+                ::uwvm2::utils::container::std_vector<native_bridge>{}.swap(data->emitted_bridges_);
                 for(auto& entry:data->entries_)
-                {::std::string{}.swap(entry.typed_name);::std::string{}.swap(entry.raw_name);}
-                ::std::vector<external>{}.swap(data->externals_);
-                if(!data->account_retained_storage())return {{},status::budget};
+                {::uwvm2::utils::container::std_string{}.swap(entry.typed_name);::uwvm2::utils::container::std_string{}.swap(entry.raw_name);}
+                ::uwvm2::utils::container::std_vector<external>{}.swap(data->externals_);
+                if(!data->build_reference_type_ids()||!data->account_retained_storage())return {{},status::budget};
                 return {::std::move(data),status::ok};
             }
             catch(::fast_io::error const&){return {{},status::invalid_body};}

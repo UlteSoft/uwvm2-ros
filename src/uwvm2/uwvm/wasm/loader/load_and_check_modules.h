@@ -21,6 +21,9 @@
  ****************************************/
 
 #pragma once
+#if !defined(UWVM_MODULE) && defined(UWVM_IMPORT_ROSV2)
+#include <uwvm2/uwvm/imported/scene/storage.h>
+#endif
 #include <uwvm2/uwvm/io/host_diagnostics.h>
 
 #ifndef UWVM_MODULE
@@ -49,6 +52,7 @@
 # include <uwvm2/parser/wasm/standard/impl.h>
 # include <uwvm2/parser/wasm/binfmt/base/impl.h>
 # include <uwvm2/uwvm/io/impl.h>
+# include <uwvm2/utils/control/wasithread_diagnostics.h>
 # include <uwvm2/uwvm/utils/depend/impl.h>
 # include <uwvm2/uwvm/utils/ansies/impl.h>
 # include <uwvm2/uwvm/utils/memory/impl.h>
@@ -450,6 +454,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     }
                                 }
 
+                                // The scene namespace has independent exposure and bindings.
+#if defined(UWVM_IMPORT_ROSV2)
+                                if(import_module_name==u8"uwvm_ros_v2" &&
+                                   ::uwvm2::uwvm::imported::scene::configuration.visible(
+                                       {reinterpret_cast<char const*>(curr_module_name.data()),curr_module_name.size()},
+                                       {reinterpret_cast<char const*>(import_extern_name.data()),import_extern_name.size()})==
+                                       ::uwvm2::imported::ros::scene::exposure::hidden)
+                                {
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] ROS scene interface is hidden; configure an exact --ros-scene-interface and --ros-scene-bind.");
+                                    return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
+                                }
+#endif
                                 // Check dependencies
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
                                 if(!::uwvm2::uwvm::imported::ros::host_import_visible(curr_module_name, import_module_name, import_extern_name))
@@ -468,11 +484,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #endif
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
-                                if((import_module_name == u8"wasi_snapshot_preview1"
-#  if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                                    || (import_module_name == u8"wasi" && import_extern_name == u8"thread-spawn")
-#  endif
-                                    ) &&
+                                if(import_module_name == u8"wasi_snapshot_preview1" &&
                                    !wasip1_import_visible_for_module(curr_module.second.type, curr_module_name, import_extern_name)) [[unlikely]]
                                 {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -512,6 +524,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 }
 # endif
 #endif
+                                if(import_module_name==u8"wasi"&&import_extern_name==u8"thread-spawn")
+                                {
+                                    namespace i1t=::uwvm2::utils::control::wasithread;
+                                    ::std::u8string_view identity{curr_module_name.data(),curr_module_name.size()};
+                                    if(!i1t::runtime_policy().visible(identity))
+                                    {
+                                        namespace diagnostic=::uwvm2::utils::control::host_diagnostics;
+                                        namespace api=::uwvm2::utils::control::host_interfaces;
+                                        auto state=i1t::runtime_policy().effective(identity);
+                                        diagnostic::missing(api::find(import_module_name,import_extern_name),api::family::wasithread,
+                                            state.exists?i1t::name(state.kind):"single",diagnostic::view(state.exists?state.target:identity),
+                                            state.exists,state.enabled,"wasi","thread-spawn");
+                                        return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
+                                    }
+                                }
                                 auto const import_module{world.declarations().find(import_module_name)};
                                 if(import_module == world.declarations().end()) [[unlikely]]
                                 {

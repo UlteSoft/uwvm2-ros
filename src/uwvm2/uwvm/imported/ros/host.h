@@ -2,6 +2,10 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/uwvm/io/host_diagnostics.h>
 #include <uwvm2/utils/debug/host_calls.h>
 #ifndef UWVM_MODULE
@@ -126,7 +130,7 @@ namespace uwvm2::uwvm::imported::ros
             void const* object{};
             ::std::uint64_t generation{};
             core::version version{};
-            ::std::string alias{};
+            ::uwvm2::utils::container::std_string alias{};
             core::debug::call_result result{};
             ::std::string_view function{};
             ::std::uint32_t finish(::std::uint32_t value) noexcept { return result.finish(value); }
@@ -158,7 +162,7 @@ namespace uwvm2::uwvm::imported::ros
             for(unsigned i{}; i != 8; ++i) { encoded[i] = static_cast<::std::uint8_t>(value >> (8*i)); }
             return observed_write(memory,offset,encoded.data(),encoded.size());
         }
-        inline bool read_bytes(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length, ::std::vector<::std::uint8_t>& bytes)
+        inline bool read_bytes(::std::uint32_t memory, ::std::uint64_t offset, ::std::uint64_t length, ::uwvm2::utils::container::std_vector<::std::uint8_t>& bytes)
         {
             if(length > core::ipc::max_payload_bytes || !memory_range(memory,offset,length)) { return false; }
             bytes.resize(static_cast<::std::size_t>(length));
@@ -171,7 +175,7 @@ namespace uwvm2::uwvm::imported::ros
             ::std::uint64_t source_handle{},correlation{},instance{},native_session{},native_sequence{},delivered{};
             bool retired{};
             ::std::shared_ptr<core::ipc::event_stream> local;
-            ::std::set<::std::uint64_t> requests;
+            ::uwvm2::utils::container::std_set<::std::uint64_t> requests;
         };
         struct session
         {
@@ -182,7 +186,7 @@ namespace uwvm2::uwvm::imported::ros
             core::ipc::client connection{};
             bool connected{};
             ::std::uint32_t timeout{};
-            ::std::map<::std::uint64_t,watched_event> observations;
+            ::uwvm2::utils::container::std_map<::std::uint64_t,watched_event> observations;
             ::std::uint64_t next_service_request{1};
             core::service_availability_history availability_history;
             core::rmw_endpoint_history rmw_endpoints;
@@ -191,7 +195,7 @@ namespace uwvm2::uwvm::imported::ros
             // native registry and MUST NOT share this same-client query table.
             core::rmw_service_bindings rmw_service_pairs{};
             core::service_availability_history rmw_service_queries;
-            ::std::map<::std::uint64_t,rmw_service_journal> rmw_service_journals;
+            ::uwvm2::utils::container::std_map<::std::uint64_t,rmw_service_journal> rmw_service_journals;
             void retire_service_session(::std::uint64_t old_session,::std::uint32_t reason) noexcept
             {
                 for(auto const& item:rmw_service_pairs.rows())
@@ -278,14 +282,14 @@ namespace uwvm2::uwvm::imported::ros
         {
             ::std::uint64_t generation{};
             bool retired{}; // Protected by the Host registry mutex; never reset.
-            ::std::array<::std::shared_ptr<session>,2> backends{::std::make_shared<session>(),::std::make_shared<session>()};
+            ::std::array<::std::shared_ptr<session>,2> backends{::uwvm2::utils::container::make_shared<session>(),::uwvm2::utils::container::make_shared<session>()};
         };
         inline ::std::mutex mutex{};
         inline core::capability_manager capabilities{};
-        inline ::std::map<void const*, ::std::shared_ptr<instance>, ::std::less<>> instances{};
+        inline ::uwvm2::utils::container::std_map<void const*, ::std::shared_ptr<instance>, ::std::less<>> instances{};
         // Policy-owned ROS state, like the WASI environment/FD vector. A
         // replacement retires its module membership, not its peers' resources.
-        inline ::std::map<core::target_policy const*,::std::shared_ptr<session>,::std::less<>> shared_sessions{};
+        inline ::uwvm2::utils::container::std_map<core::target_policy const*,::std::shared_ptr<session>,::std::less<>> shared_sessions{};
         inline core::debug::trace_store debug_trace{};
 
         inline void write_audit_record(::std::string_view record) noexcept
@@ -320,7 +324,7 @@ namespace uwvm2::uwvm::imported::ros
                 auto recorded{capabilities.record_result(object,generation,version,alias,result.error ? "gateway-error" : "gateway-result",static_cast<core::errc>(result.error))};
                 if(!recorded && result.error) { audit_denial(version,result.error); }
             }
-            ::std::vector<::std::string> records{}; ::std::uint64_t dropped{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> records{}; ::std::uint64_t dropped{};
             if(capabilities.drain_audit(object,generation,version,alias,records,dropped))
             { for(auto const& record : records) { write_audit_record(record); } }
         }
@@ -338,8 +342,8 @@ namespace uwvm2::uwvm::imported::ros
         };
         inline ::std::mutex denial_mutex{};
         // Denial-audit quotas follow the effective policy, including epochs.
-        using denial_identity = ::std::tuple<core::version,core::scope,::std::string>;
-        inline ::std::map<denial_identity,::std::shared_ptr<denial_sink>> denials{};
+        using denial_identity = ::std::tuple<core::version,core::scope,::uwvm2::utils::container::std_string>;
+        inline ::uwvm2::utils::container::std_map<denial_identity,::std::shared_ptr<denial_sink>> denials{};
         inline ::std::uint64_t next_denial_instance{1};
         inline ::std::uint32_t audit_denial(core::version version, ::std::uint32_t error) noexcept
 
@@ -368,17 +372,17 @@ namespace uwvm2::uwvm::imported::ros
             ::std::shared_ptr<denial_sink> sink{};
             {
                 ::std::lock_guard<::std::mutex> registry_lock{denial_mutex};
-                auto key=denial_identity{version,target->target_scope,target->target_scope==core::scope::global?::std::string{}:
-                    target->target_scope==core::scope::single?::std::string{name}:target->name};
+                auto key=denial_identity{version,target->target_scope,target->target_scope==core::scope::global?::uwvm2::utils::container::std_string{}:
+                    target->target_scope==core::scope::single?::uwvm2::utils::container::std_string{name}:target->name};
                 auto found{denials.find(key)};
                 if(found == denials.end())
                 {
-                    auto item{::std::make_shared<denial_sink>()}; core::capability_spec explicit_budget{};
+                    auto item{::uwvm2::utils::container::make_shared<denial_sink>()}; core::capability_spec explicit_budget{};
                     for(auto suffix : {"max-rate-hz","burst","max-records","max-bytes"})
                     {
-                        auto field{target->connection.find(::fast_io::concat_std("audit-deny-",::std::string_view{suffix}))};
+                        auto field{target->connection.find(::uwvm2::utils::container::concat("audit-deny-",::std::string_view{suffix}))};
                         if(field == target->connection.end()) { continue; }
-                        explicit_budget.limits.emplace(::fast_io::concat_std("audit-",::std::string_view{suffix}),field->second);
+                        explicit_budget.limits.emplace(::uwvm2::utils::container::concat("audit-",::std::string_view{suffix}),field->second);
                     }
                     if(!item->audit.configure(explicit_budget) || next_denial_instance == UINT64_MAX) { return error; }
                     item->instance_id=next_denial_instance++;
@@ -386,11 +390,11 @@ namespace uwvm2::uwvm::imported::ros
                 }
                 sink=found->second;
             }
-            ::std::vector<::std::string> records{}; ::std::uint64_t dropped{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> records{}; ::std::uint64_t dropped{};
             {
                 ::std::lock_guard<::std::mutex> sink_lock{sink->mutex};
                 auto wall{::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch()).count()};
-                sink->audit.record(::fast_io::concat_std("{\"wall_ns\":",::fast_io::mnp::dec(wall),
+                sink->audit.record(::uwvm2::utils::container::concat("{\"wall_ns\":",::fast_io::mnp::dec(wall),
                     ",\"ros\":",core::json_quoted{core::to_string(version)},",\"module\":",core::json_quoted{name},
                     ",\"runtime_generation\":",::fast_io::mnp::dec(observed.generation),
                     ",\"observation_instance\":",::fast_io::mnp::dec(sink->instance_id),
@@ -415,7 +419,7 @@ namespace uwvm2::uwvm::imported::ros
                 if(!target->enabled || target->capabilities.empty()) { continue; }
                 session probe{}; probe.target=target;
                 auto error{probe.connect(target->ros_version)};
-                if(error) { return {static_cast<core::errc>(error),::fast_io::concat_std("gateway preflight failed for ",core::to_string(target->ros_version),"/",core::to_string(target->target_scope),"/",target->name)}; }
+                if(error) { return {static_cast<core::errc>(error),::uwvm2::utils::container::concat("gateway preflight failed for ",core::to_string(target->ros_version),"/",core::to_string(target->target_scope),"/",target->name)}; }
             }
             return {};
         }
@@ -520,7 +524,7 @@ namespace uwvm2::uwvm::imported::ros
             }
             if(it == instances.end())
             {
-                auto next{::std::make_shared<instance>()};
+                auto next{::uwvm2::utils::container::make_shared<instance>()};
                 next->generation = caller.generation;
                 ::std::string_view name{reinterpret_cast<char const*>(caller.module_name.data()), caller.module_name.size()};
                 decltype(shared_sessions) pending_sessions;
@@ -567,9 +571,9 @@ namespace uwvm2::uwvm::imported::ros
             runtime::ros_caller_identity caller{}; ::std::shared_ptr<instance> state{};
             if(auto error{identify(Version,caller,state)}) { return audit_denial(Version,error); }
             if(!alias_length || alias_length > 255 || !memory_range(memory,alias_offset,alias_length) || !memory_range(memory,out_offset,8)) { return audit_denial(Version,22); }
-            ::std::vector<::std::uint8_t> alias_bytes{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> alias_bytes{};
             if(!read_bytes(memory,alias_offset,alias_length,alias_bytes)) { return audit_denial(Version,22); }
-            ::std::string alias{reinterpret_cast<char const*>(alias_bytes.data()),alias_bytes.size()};
+            ::uwvm2::utils::container::std_string alias{reinterpret_cast<char const*>(alias_bytes.data()),alias_bytes.size()};
             if(!core::valid_identifier(alias)) { return audit_denial(Version,22); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,alias};
             audit.function="capability_open";
@@ -600,7 +604,7 @@ namespace uwvm2::uwvm::imported::ros
                     observation.retired=true;observation.requests.clear();observation.local->seal(reason,true);
                     if(backend.connected)
                     {
-                        ::std::vector<::std::uint8_t> data;core::ipc::put(data,reason,4);
+                        ::uwvm2::utils::container::std_vector<::std::uint8_t> data;core::ipc::put(data,reason,4);
                         auto response{backend.connection.call("event.retire",observation.observer.alias,::std::move(data),backend.timeout)};
                         if(response.error==107||response.error==110) { backend.connected=false;backend.retire_observations(response.error); }
                     }
@@ -771,7 +775,7 @@ namespace uwvm2::uwvm::imported::ros
             core::buffer_audit::transfer observed{};
             // Preserve an opted-in, bounded copy before moving the IPC request.
             // Default-off execution allocates no observation payload storage.
-            ::std::unique_ptr<::std::uint8_t[]> observed_input{};
+            ::uwvm2::utils::container::std_unique_ptr<::std::uint8_t[]> observed_input{};
             core::ipc::call_result result{};
             bool const observing{core::buffer_audit::journal.enabled()};
             if(observing)
@@ -802,13 +806,13 @@ namespace uwvm2::uwvm::imported::ros
             auto const control{core::ipc::action_control::parse(op)};
             bool const action_control{control!=core::ipc::action_control::command::none};
             if(action_control&&Version!=core::version::ros2) { return finish(13); }
-            auto const actual_op{action_control?core::ipc::action_control::capability(control):op == "event.poll" ? ::std::string_view{spec.operation} : op};
-            if(op == "event.poll" && actual_op != "topic.subscribe" && actual_op != "service.advertise" && actual_op != "param.subscribe-events" && actual_op != "action.advertise") { return finish(13); }
+            auto const actual_op{action_control?core::ipc::action_control::capability(control):op == "message.poll" ? ::std::string_view{spec.operation} : op};
+            if(op == "message.poll" && actual_op != "topic.subscribe" && actual_op != "service.advertise" && actual_op != "param.subscribe-events" && actual_op != "action.advertise") { return finish(13); }
             if(spec.operation != actual_op) { return finish(13); }
             if(!core::ipc::request_data_fits(op,spec.alias,length)) { return finish(90); }
             if(output && (!memory_range(memory,out_offset,capacity) || !memory_range(memory,length_offset,8))) { return finish(22); }
             if(action_control&&output&&core::ipc::event_output_overlaps_length(out_offset,capacity,length_offset)) { return finish(22); }
-            ::std::vector<::std::uint8_t> payload{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> payload{};
             if(length && !read_bytes(memory,offset,length,payload)) { return finish(22); }
             if(observing&&length)
             {
@@ -816,7 +820,7 @@ namespace uwvm2::uwvm::imported::ros
                 if(payload.size()>core::buffer_audit::journal.payload_capacity()) {observed.payload_over_limit=true;}
                 else
                 {
-                    observed_input.reset(new(::std::nothrow) ::std::uint8_t[payload.size()]);
+                    observed_input.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<::std::uint8_t>(payload.size(), false));
                     if(!observed_input){observed.input_snapshot_failed=true;}
                     else
                     {
@@ -841,7 +845,7 @@ namespace uwvm2::uwvm::imported::ros
             core::authorization ticket{};
             auto payload_view{::std::as_bytes(::std::span{payload})};
             if(action_control) { r=capabilities.authorize_action_control(caller.runtime_instance,caller.generation,Version,handle,op,payload_view,ticket); }
-            else if(op != "event.poll" && op != "topic.subscribe" && op != "service.advertise" && op != "param.subscribe-events") { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,payload_view,ticket); }
+            else if(op != "message.poll" && op != "topic.subscribe" && op != "service.advertise" && op != "param.subscribe-events") { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,payload_view,ticket); }
             else { r=capabilities.authorize(caller.runtime_instance,caller.generation,Version,handle,actual_op,{},ticket,false,false); }
             if(!r) { return finish(code(r)); }
             if(auto error{backend.connect(Version)}) { return finish(error); }
@@ -867,7 +871,7 @@ namespace uwvm2::uwvm::imported::ros
             { return finish(13); }
             if(output)
             {
-                if(op == "event.poll")
+                if(op == "message.poll")
                 {
                     // Recheck message structure, quota and revocation at delivery. The admission ticket
                     // pins the original authority; Gateway revocation also drains queued messages.
@@ -904,7 +908,7 @@ namespace uwvm2::uwvm::imported::ros
         // authority is borrowed only under a live trusted Instance/backend lease.
         // No native callback retains a guest address or enters guest code.
         template <core::version Version>
-        inline ::std::uint32_t event_watch(::std::uint64_t observer_handle,::std::uint64_t source_handle,::std::uint64_t correlation) noexcept
+        inline ::std::uint32_t event_stream_watch(::std::uint64_t observer_handle,::std::uint64_t source_handle,::std::uint64_t correlation) noexcept
 
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
@@ -916,7 +920,7 @@ namespace uwvm2::uwvm::imported::ros
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             auto const& cap{*observer.capability()};audit_result audit{caller.runtime_instance,caller.generation,Version,cap.alias};
-            audit.function="event_watch";
+            audit.function="event_stream_watch";
             if(backend.observations.contains(observer_handle)) { return audit.finish(17); }
             granted=capabilities.describe(caller.runtime_instance,caller.generation,Version,source_handle,source);
             if(!granted) { return audit.finish(code(granted)); }
@@ -949,9 +953,9 @@ namespace uwvm2::uwvm::imported::ros
             auto number=[&](char const* name) { return core::quota_value(cap,name); };
             core::ipc::event_stream_settings settings{number("max-event-queue-depth"),number("max-event-queue-bytes"),number("max-event-bytes"),overflow==core::ipc::event_overflow::backpressure?number("max-pending-events"):0,overflow==core::ipc::event_overflow::backpressure?number("max-pending-event-bytes"):0,overflow};
             core::ipc::event_header binding{};binding.backend=static_cast<::std::uint8_t>(Version);binding.source_handle=source_handle;binding.instance=source.instance_number();binding.session=backend.connection.session_id();
-            auto local{::std::make_shared<core::ipc::event_stream>(settings,binding,mask)};if(!local->configured()) { return audit.finish(22); }
-            ::std::vector<::std::uint8_t> data;data.reserve(24);core::ipc::put(data,source_handle,8);core::ipc::put(data,binding.instance,8);core::ipc::put(data,correlation,8);
-            auto result{backend.connection.call("event.watch",cap.alias,::std::move(data),backend.timeout)};
+            auto local{::uwvm2::utils::container::make_shared<core::ipc::event_stream>(settings,binding,mask)};if(!local->configured()) { return audit.finish(22); }
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> data;data.reserve(24);core::ipc::put(data,source_handle,8);core::ipc::put(data,binding.instance,8);core::ipc::put(data,correlation,8);
+            auto result{backend.connection.call("event.stream.watch",cap.alias,::std::move(data),backend.timeout)};
             if(!result.payload.empty()) {backend.connection.close();backend.connected=false;backend.retire_observations(13);return audit.finish(13);}
             if(result.error) { if(!backend.connection.session_id()||result.error==110) {backend.connection.close();backend.connected=false;backend.retire_observations(result.error);}return audit.finish(result.error); }
             backend.observations.emplace(observer_handle,watched_event{cap,selected,source_handle,correlation,binding.instance,binding.session,0,0,false,::std::move(local),{}});
@@ -962,7 +966,7 @@ namespace uwvm2::uwvm::imported::ros
         catch(::std::length_error const&) { return extent_failure(); }
 #endif
         template <core::version Version>
-        inline ::std::uint32_t event_poll_v1(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out,::std::uint64_t capacity,::std::uint64_t length_out) noexcept
+        inline ::std::uint32_t event_stream_poll(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out,::std::uint64_t capacity,::std::uint64_t length_out) noexcept
 
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
@@ -974,7 +978,7 @@ namespace uwvm2::uwvm::imported::ros
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,observer.capability()->alias};
-            audit.function="event_poll_v1";
+            audit.function="event_stream_poll";
             if(capacity>core::ipc::max_payload_bytes) { return audit.finish(90); }
             if(!memory_range(memory,out,capacity)||!memory_range(memory,length_out,8)) { return audit.finish(22); }
             if(core::ipc::event_output_overlaps_length(out,capacity,length_out)) {return audit.finish(22);}
@@ -989,8 +993,8 @@ namespace uwvm2::uwvm::imported::ros
             if(from_local) { result=watched.local->peek(capacity); }
             else
             {
-                ::std::vector<::std::uint8_t> argument;core::ipc::put(argument,capacity,8);
-                result=backend.connection.call("event.peek-v1",watched.observer.alias,::std::move(argument),backend.timeout);
+                ::uwvm2::utils::container::std_vector<::std::uint8_t> argument;core::ipc::put(argument,capacity,8);
+                result=backend.connection.call("event.stream.peek",watched.observer.alias,::std::move(argument),backend.timeout);
                 if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107);from_local=true;result=watched.local->peek(capacity); }
             }
             if(result.error==90)
@@ -1020,7 +1024,7 @@ namespace uwvm2::uwvm::imported::ros
             if(!observed_write(memory,out,result.payload.data(),result.payload.size())) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
             core::ipc::call_result committed;
             if(from_local) {committed.error=watched.local->commit(native_sequence);}
-            else {::std::vector<::std::uint8_t> argument;core::ipc::put(argument,native_sequence,8);committed=backend.connection.call("event.commit",watched.observer.alias,::std::move(argument),backend.timeout);}
+            else {::uwvm2::utils::container::std_vector<::std::uint8_t> argument;core::ipc::put(argument,native_sequence,8);committed=backend.connection.call("event.stream.commit",watched.observer.alias,::std::move(argument),backend.timeout);}
             if(committed.error||!committed.payload.empty()) {backend.connection.close();backend.connected=false;backend.retire_observations(committed.error?committed.error:13);return audit.finish(committed.error?committed.error:13);}
             if(!from_local) {watched.native_sequence=native_sequence;}
             if(!write_u64(memory,length_out,result.payload.size())) {backend.connection.close();backend.connected=false;backend.retire_observations(22);return audit.finish(22);}
@@ -1031,7 +1035,7 @@ namespace uwvm2::uwvm::imported::ros
         catch(::std::length_error const&) { return extent_failure(); }
 #endif
         template <core::version Version>
-        inline ::std::uint32_t event_ready(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out) noexcept
+        inline ::std::uint32_t event_stream_ready(::std::uint64_t observer_handle,::std::uint32_t memory,::std::uint64_t out) noexcept
 
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
@@ -1043,8 +1047,8 @@ namespace uwvm2::uwvm::imported::ros
             core::authorization observer,source;auto granted{capabilities.authorize(caller.runtime_instance,caller.generation,Version,observer_handle,"event.observe",{},observer,false,true)};
             if(!granted) { return audit_denial(Version,code(granted)); }
             audit_result audit{caller.runtime_instance,caller.generation,Version,observer.capability()->alias};
-            audit.function="event_ready";
-            if(!memory_range(memory,out,core::ipc::event_ready_bytes)) { return audit.finish(22); }
+            audit.function="event_stream_ready";
+            if(!memory_range(memory,out,core::ipc::event_stream_ready_bytes)) { return audit.finish(22); }
             auto found{backend.observations.find(observer_handle)};if(found==backend.observations.end()) { return audit.finish(9); }
             auto& watched{found->second};core::ipc::call_result result;
             if(!watched.retired)
@@ -1055,11 +1059,11 @@ namespace uwvm2::uwvm::imported::ros
             if(watched.retired) { auto ready=core::ipc::encode_event_readiness(watched.local->readiness());result.payload.assign(ready.begin(),ready.end()); }
             else
             {
-                result=backend.connection.call("event.ready",watched.observer.alias,{},backend.timeout);
+                result=backend.connection.call("event.stream.ready",watched.observer.alias,{},backend.timeout);
                 if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107);auto ready=core::ipc::encode_event_readiness(watched.local->readiness());result={0,{ready.begin(),ready.end()}}; }
             }
             if(result.error) { return audit.finish(result.error); }
-            if(result.payload.size()!=core::ipc::event_ready_bytes) {backend.connection.close();backend.connected=false;backend.retire_observations(13);return audit.finish(13);}
+            if(result.payload.size()!=core::ipc::event_stream_ready_bytes) {backend.connection.close();backend.connected=false;backend.retire_observations(13);return audit.finish(13);}
             if(!watched.retired&&watched.local->readiness().ready_events)
             { auto ready{watched.local->readiness()};auto native{core::ipc::get(result.payload.data(),8)};core::ipc::event_put(result.payload.data(),native>UINT64_MAX-ready.ready_events?UINT64_MAX:native+ready.ready_events,8);core::ipc::event_put(result.payload.data()+8,ready.next_event_bytes,8); }
             granted=capabilities.charge_observation(caller.runtime_instance,caller.generation,Version,observer_handle,result.payload.size(),observer);if(!granted) { return audit.finish(code(granted)); }
@@ -1092,14 +1096,14 @@ namespace uwvm2::uwvm::imported::ros
             if(length>request_limit||length>core::ipc::max_payload_bytes-8u||
                !core::ipc::request_data_fits("service.submit",watched.observer.alias,length+8u)) { return audit.finish(90); }
             if(!memory_range(memory,input,length)||!memory_range(memory,request_out,8)) { return audit.finish(22); }
-            ::std::vector<::std::uint8_t> bytes;if(!read_bytes(memory,input,length,bytes)) { return audit.finish(22); }
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> bytes;if(!read_bytes(memory,input,length,bytes)) { return audit.finish(22); }
             granted=capabilities.authorize(caller.runtime_instance,caller.generation,Version,source_handle,"service.call",::std::as_bytes(::std::span{bytes}),source,true,true);
             if(!granted) { return audit.finish(code(granted)); }
             ::std::uint64_t maximum{};if(!core::read_quota(watched.source,"max-inflight",maximum)) { return audit.finish(22); }
             if(watched.requests.size()>=maximum) { return audit.finish(11); }
             if(backend.next_service_request==UINT64_MAX) { return audit.finish(90); }auto id{backend.next_service_request++};
             watched.requests.insert(id);
-            ::std::vector<::std::uint8_t> data;data.reserve(8+bytes.size());core::ipc::put(data,id,8);data.insert(data.end(),bytes.begin(),bytes.end());
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> data;data.reserve(8+bytes.size());core::ipc::put(data,id,8);data.insert(data.end(),bytes.begin(),bytes.end());
             auto result{backend.connection.call("service.submit",watched.observer.alias,::std::move(data),backend.timeout)};
             if(!backend.connection.session_id()) { backend.connected=false;backend.retire_observations(result.error?result.error:107); }
             if(!result.payload.empty()) {backend.connection.close();backend.connected=false;backend.retire_observations(13);watched.requests.erase(id);return audit.finish(13);}
@@ -1217,8 +1221,8 @@ namespace uwvm2::uwvm::imported::ros
         { return operation<V>("topic.publish",h,m,o,l,false,0,0,0); }
         template <core::version V> inline ::std::uint32_t topic_subscribe(::std::uint64_t h) noexcept
         { return operation<V>("topic.subscribe",h,0,0,0,false,0,0,0); }
-        template <core::version V> inline ::std::uint32_t event_poll(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t c,::std::uint64_t l) noexcept
-        { return operation<V>("event.poll",h,m,0,0,true,o,c,l); }
+        template <core::version V> inline ::std::uint32_t message_poll(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t c,::std::uint64_t l) noexcept
+        { return operation<V>("message.poll",h,m,0,0,true,o,c,l); }
         template <core::version V> inline ::std::uint32_t service_call(::std::uint64_t h,::std::uint32_t m,::std::uint64_t o,::std::uint64_t l,::std::uint64_t r,::std::uint64_t c,::std::uint64_t n) noexcept
         { return operation<V>("service.call",h,m,o,l,true,r,c,n); }
         template <core::version V> inline ::std::uint32_t service_advertise(::std::uint64_t h) noexcept
@@ -1405,10 +1409,10 @@ namespace uwvm2::uwvm::imported::ros
         inline constexpr char8_t capability_revoke_name[]=u8"capability_revoke";
         inline constexpr char8_t topic_publish_name[]=u8"topic_publish";
         inline constexpr char8_t topic_subscribe_name[]=u8"topic_subscribe";
-        inline constexpr char8_t event_poll_name[]=u8"event_poll";
-        inline constexpr char8_t event_watch_name[]=u8"event_watch";
-        inline constexpr char8_t event_poll_v1_name[]=u8"event_poll_v1";
-        inline constexpr char8_t event_ready_name[]=u8"event_ready";
+        inline constexpr char8_t message_poll_name[]=u8"message_poll";
+        inline constexpr char8_t event_stream_watch_name[]=u8"event_stream_watch";
+        inline constexpr char8_t event_stream_poll_name[]=u8"event_stream_poll";
+        inline constexpr char8_t event_stream_ready_name[]=u8"event_stream_ready";
         inline constexpr char8_t service_submit_name[]=u8"service_submit";
         inline constexpr char8_t service_call_name[]=u8"service_call";
         inline constexpr char8_t service_advertise_name[]=u8"service_advertise";
@@ -1454,6 +1458,10 @@ namespace uwvm2::uwvm::imported::ros
         inline constexpr char8_t log_write_name[]=u8"log_write";
     }
 #if defined(UWVM_IMPORT_ROS1)
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros1_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros1_v1"};
@@ -1464,10 +1472,10 @@ namespace uwvm2::uwvm::imported::ros
             wrapper::native_function<&host::capability_revoke<core::version::ros1>,wrapper::capability_revoke_name,module_name>,
             wrapper::native_function<&host::topic_publish<core::version::ros1>,wrapper::topic_publish_name,module_name>,
             wrapper::native_function<&host::topic_subscribe<core::version::ros1>,wrapper::topic_subscribe_name,module_name>,
-            wrapper::native_function<&host::event_poll<core::version::ros1>,wrapper::event_poll_name,module_name>,
-            wrapper::native_function<&host::event_watch<core::version::ros1>,wrapper::event_watch_name,module_name>,
-            wrapper::native_function<&host::event_poll_v1<core::version::ros1>,wrapper::event_poll_v1_name,module_name>,
-            wrapper::native_function<&host::event_ready<core::version::ros1>,wrapper::event_ready_name,module_name>,
+            wrapper::native_function<&host::message_poll<core::version::ros1>,wrapper::message_poll_name,module_name>,
+            wrapper::native_function<&host::event_stream_watch<core::version::ros1>,wrapper::event_stream_watch_name,module_name>,
+            wrapper::native_function<&host::event_stream_poll<core::version::ros1>,wrapper::event_stream_poll_name,module_name>,
+            wrapper::native_function<&host::event_stream_ready<core::version::ros1>,wrapper::event_stream_ready_name,module_name>,
             wrapper::native_function<&host::service_submit<core::version::ros1>,wrapper::service_submit_name,module_name>,
             wrapper::native_function<&host::service_call<core::version::ros1>,wrapper::service_call_name,module_name>,
             wrapper::native_function<&host::service_advertise<core::version::ros1>,wrapper::service_advertise_name,module_name>,
@@ -1499,6 +1507,10 @@ namespace uwvm2::uwvm::imported::ros
         >;
     };
     inline constexpr ros1_local_imported_module_t ros1_local_imported_module{};
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros1_client_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros1_client_v1"};
@@ -1514,6 +1526,10 @@ namespace uwvm2::uwvm::imported::ros
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros1_local_imported_module_t>);
 #endif
 #if defined(UWVM_IMPORT_ROS2)
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros2_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_v1"};
@@ -1524,10 +1540,10 @@ namespace uwvm2::uwvm::imported::ros
             wrapper::native_function<&host::capability_revoke<core::version::ros2>,wrapper::capability_revoke_name,module_name>,
             wrapper::native_function<&host::topic_publish<core::version::ros2>,wrapper::topic_publish_name,module_name>,
             wrapper::native_function<&host::topic_subscribe<core::version::ros2>,wrapper::topic_subscribe_name,module_name>,
-            wrapper::native_function<&host::event_poll<core::version::ros2>,wrapper::event_poll_name,module_name>,
-            wrapper::native_function<&host::event_watch<core::version::ros2>,wrapper::event_watch_name,module_name>,
-            wrapper::native_function<&host::event_poll_v1<core::version::ros2>,wrapper::event_poll_v1_name,module_name>,
-            wrapper::native_function<&host::event_ready<core::version::ros2>,wrapper::event_ready_name,module_name>,
+            wrapper::native_function<&host::message_poll<core::version::ros2>,wrapper::message_poll_name,module_name>,
+            wrapper::native_function<&host::event_stream_watch<core::version::ros2>,wrapper::event_stream_watch_name,module_name>,
+            wrapper::native_function<&host::event_stream_poll<core::version::ros2>,wrapper::event_stream_poll_name,module_name>,
+            wrapper::native_function<&host::event_stream_ready<core::version::ros2>,wrapper::event_stream_ready_name,module_name>,
             wrapper::native_function<&host::service_submit<core::version::ros2>,wrapper::service_submit_name,module_name>,
             wrapper::native_function<&host::service_call<core::version::ros2>,wrapper::service_call_name,module_name>,
             wrapper::native_function<&host::service_advertise<core::version::ros2>,wrapper::service_advertise_name,module_name>,
@@ -1570,6 +1586,10 @@ namespace uwvm2::uwvm::imported::ros
         >;
     };
     inline constexpr ros2_local_imported_module_t ros2_local_imported_module{};
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros2_rmw_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_v1"};
@@ -1583,6 +1603,10 @@ namespace uwvm2::uwvm::imported::ros
     inline constexpr ros2_rmw_local_imported_module_t ros2_rmw_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros2_rmw_local_imported_module_t>);
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros2_rmw_subscription_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_sub_v1"};
@@ -1598,6 +1622,10 @@ namespace uwvm2::uwvm::imported::ros
     inline constexpr ros2_rmw_subscription_local_imported_module_t ros2_rmw_subscription_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_subscription_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros2_rmw_subscription_local_imported_module_t>);
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros2_rmw_service_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_rmw_srv_v1"};
@@ -1618,6 +1646,10 @@ namespace uwvm2::uwvm::imported::ros
     inline constexpr ros2_rmw_service_local_imported_module_t ros2_rmw_service_local_imported_module{};
     static_assert(::uwvm2::uwvm::wasm::type::is_local_imported_module<ros2_rmw_service_local_imported_module_t>);
     static_assert(::uwvm2::uwvm::wasm::type::has_local_function_tuple<ros2_rmw_service_local_imported_module_t>);
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct ros2_client_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_ros2_client_v1"};
@@ -1636,6 +1668,10 @@ namespace uwvm2::uwvm::imported::ros
         inline constexpr char8_t open[]=u8"open",describe[]=u8"describe",read_state[]=u8"read_state",
             submit[]=u8"submit",wait[]=u8"wait",close[]=u8"close";
     }
+    /** @deprecated Legacy ROS VM ABI; migrate supported operations to uwvm_ros_v2.
+     * @details Retained ABI and authority rules are unchanged. No automatic
+     * aliasing, grant transfer or claim of complete ROSv2 provider coverage.
+     */
     struct portable_robot_local_imported_module_t
     {
         inline static constexpr ::uwvm2::utils::container::u8string_view module_name{u8"uwvm_portable_robot_v1"};
@@ -1706,6 +1742,9 @@ namespace uwvm2::uwvm::imported::ros
     }
 
 }
+#include "checkpoint_handoff.h"
+#include "checkpoint_capture.h"
+#include "checkpoint_recorded.h"
 #include "debug_bridge.h"
 #include "rmw_publisher_host.h"
 #include "rmw_subscription_host.h"

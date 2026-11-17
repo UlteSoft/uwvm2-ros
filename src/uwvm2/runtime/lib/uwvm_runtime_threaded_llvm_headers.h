@@ -7,7 +7,7 @@
 #include <span>
 #include <memory>
 #include <atomic>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/object/memory/linear/threaded_grow_types.h>
 #endif

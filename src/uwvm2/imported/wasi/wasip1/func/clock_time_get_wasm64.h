@@ -22,6 +22,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -199,6 +200,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         }
 # endif
 
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64(memory, time_ptrsz, ts_integral);
 
         return ::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t::esuccess;

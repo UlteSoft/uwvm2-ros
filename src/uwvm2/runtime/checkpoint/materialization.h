@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -16,6 +19,7 @@
 # include <fast_io.h>
 # include <uwvm2/parser/wasm/standard/wasm3/type/recursive_type.h>
 # include <uwvm2/object/global/ref.h>
+# include "feature_policy_schema.h"
 #endif
 #include "observation_probe_hints.h"
 #ifndef UWVM_MODULE_EXPORT
@@ -23,7 +27,7 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
 {
-    inline constexpr ::std::uint32_t state_schema_revision{7u};
+    inline constexpr ::std::uint32_t state_schema_revision{10u};
     namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
     inline constexpr ::std::size_t native_slot_bytes{16u};
     // Actual runtime/compiler continuation protocol, shared by both selected
@@ -86,11 +90,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     // record is not a parser budget, compilation owner or restore credential.
     struct module_feature_policy
     {
-        inline static constexpr ::std::uint64_t revision{3u};
-        inline static constexpr ::std::uint64_t disable_mask{(::std::uint64_t{1u} << 20u) - 1u};
+        inline static constexpr ::std::uint64_t revision{feature_policy_schema::revision};
+        inline static constexpr ::std::uint64_t disable_mask{feature_policy_schema::disable_mask};
         ::std::uint64_t cli_mode{}, disabled{}, controlled{};
         [[nodiscard]] constexpr bool valid() const noexcept
-        { return cli_mode <= 5u && (disabled & ~disable_mask) == 0u && controlled <= 3u; }
+        { return feature_policy_schema::valid(cli_mode, disabled, controlled); }
         template<typename Parameter>
         [[nodiscard]] static constexpr module_feature_policy from_actual_parameter(Parameter const& p) noexcept
         {
@@ -122,7 +126,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             add(1u, 1u); add(7u, 2u); add(10u, 3u); add(4u, 4u);
             add(6u, 6u); add(5u, 7u); add(12u, 8u); add(13u, 9u);
             add(11u, 10u); add(14u, 11u); add(16u, 12u); add(15u, 13u);
-            add(17u, 14u); add(8u, 15u); add(18u, 16u); add(17u, 17u);
+            add(17u, 14u); add(8u, 15u); add(18u, 16u); add(17u, 17u); add(19u, 18u);
             return result;
         }
         using identity = ::std::array<::std::uint64_t, 4u>;
@@ -149,7 +153,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         ::std::size_t frames{4096u}, slots_per_frame{1048576u}, controls_per_frame{65536u}, handlers_per_frame{65536u};
         friend bool operator==(budgets const&, budgets const&) = default;
     };
-// Zero physical frames means unlimited observation; resumable budgets stay finite.
+// Zero physical frames means no caller-selected frame quota for either purpose.
     [[nodiscard]] inline constexpr budgets default_observation_budgets() noexcept
     { budgets result{}; result.frames = 0u; return result; }
     enum class compilation_purpose : unsigned { observe_values, resumable };
@@ -167,10 +171,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             compilation_purpose purpose = compilation_purpose::resumable)
         {
             if((purpose != compilation_purpose::observe_values && purpose != compilation_purpose::resumable) ||
-               (cap.frames == 0u && purpose != compilation_purpose::observe_values) || cap.slots_per_frame == 0u || cap.controls_per_frame == 0u || cap.handlers_per_frame == 0u ||
+               cap.slots_per_frame == 0u || cap.controls_per_frame == 0u || cap.handlers_per_frame == 0u ||
                cap.slots_per_frame > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / native_slot_bytes)
             { return {}; }
-            return owner{new compilation_profile{cap, purpose}};
+            return owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<compilation_profile>([&](compilation_profile* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) compilation_profile{cap, purpose}; }))};
         }
         [[nodiscard]] static owner create_for_trusted_observer(budgets cap = default_observation_budgets())
         { return create_for_trusted_manager(cap, compilation_purpose::observe_values); }
@@ -180,6 +184,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         // A global flag, a borrowed address or a mutable runtime bool cannot
         // distinguish ordinary, observation-only and restorable generated IR.
         using cache_identity_type = ::std::array<::std::uint64_t, 10u>;
+        inline static constexpr ::std::uint64_t resumable_policy_revision{18u};
         [[nodiscard]] cache_identity_type cache_identity() const noexcept
         {
             // Explicit codegen policy versions distinguish identical caps:
@@ -214,7 +219,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             // Observation v59 applies non-CFG scalar cleanup after the admitted
             // numeric-local SSA pass. Every side-effecting observation and
             // exception cleanup remains; old generated cache entries expire.
-            auto const policy{purpose_ == compilation_purpose::observe_values ? 65u : 17u};
+            // Resumable v18 includes the ROS hidden provenance operand in the
+            // exact typed continuation ABI and seeds it through the live runtime.
+            auto const policy{purpose_ == compilation_purpose::observe_values ? 65u : resumable_policy_revision};
             return {0x554357504c4f4731u, policy, state_schema_revision, native_resume_abi_revision, native_slot_bytes, cap_.frames, cap_.slots_per_frame, cap_.controls_per_frame, cap_.handlers_per_frame, native_workspace_limit};
         }
         // One canonical serializer visits the ENTIRE declared tuple, including
@@ -250,14 +257,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     {
         control_kind kind{};
         ::std::size_t entry_offset{}, end_offset{}, outer_operand_height{}, first_saved_parameter{}, saved_parameter_count{};
-        ::std::vector<types::core_value_type> declared_parameters{}, declared_results{};
+        ::uwvm2::utils::container::std_vector<types::core_value_type> declared_parameters{}, declared_results{};
         friend bool operator==(control_layout const&, control_layout const&) = default;
     };
     struct handler_layout
     {
         bool catch_all{}, with_reference{};
         ::std::size_t tag_index{}, target_control{}, target_offset{};
-        ::std::vector<types::core_value_type> parameters{};
+        ::uwvm2::utils::container::std_vector<types::core_value_type> parameters{};
         friend bool operator==(handler_layout const&, handler_layout const&) = default;
     };
     struct safepoint_layout
@@ -267,9 +274,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         frame_phase phase{};
         // Locals, actual operand SSA values, then saved if/else entry params.
         // Exact types come from fused validation BEFORE this edge consumes them.
-        ::std::vector<typed_slot> slots{};
-        ::std::vector<control_layout> controls{};
-        ::std::vector<handler_layout> handlers{};
+        ::uwvm2::utils::container::std_vector<typed_slot> slots{};
+        ::uwvm2::utils::container::std_vector<control_layout> controls{};
+        ::uwvm2::utils::container::std_vector<handler_layout> handlers{};
         friend bool operator==(safepoint_layout const&, safepoint_layout const&) = default;
     };
     struct function_plan
@@ -277,17 +284,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         compilation_profile::owner profile{};
         ::std::size_t module{}, function{}, expression_bytes{};
         ::std::uint64_t function_generation{};
-        ::std::vector<safepoint_layout> sites{};
+        ::uwvm2::utils::container::std_vector<safepoint_layout> sites{};
         status compiler_failure{status::ok}; // real malformed producer metadata/emission
         status producer_availability{status::ok}; // quota decline never rejects legal guest code
         // Exact compiled logical landings, sealed after real LLVM verifier
         // succeeds. DATA alone never authenticates a native resume entry.
-        ::std::vector<::std::uint64_t> resume_sites{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> resume_sites{};
         ::std::uint64_t resume_abi_revision{};
         // Only this fused compiler may record actual cleanup Invoke sites.
         // These immutable IDs are DATA until the sole current-cohort manager
         // authenticates original live captures, code owners and host closure.
-        ::std::vector<::std::uint64_t> retirement_sites{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> retirement_sites{};
         ::std::uint64_t retirement_abi_revision{};
         // Source plans are DATA, never executable resume authorization. An
         // actual LLVM dispatcher plus every PHI/call/EH/tail edge proof must
@@ -445,12 +452,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         };
         struct compiler_packet_shape
         {
-            ::std::vector<compiler_reference_slot> reference_slots{};
+            ::uwvm2::utils::container::std_vector<compiler_reference_slot> reference_slots{};
             bool all_locals_required{true};
         };
     private:
-        ::std::vector<compiler_packet_shape> packet_shapes_{};
-        ::std::vector<::std::uint8_t> initialized_flags_{};
+        ::uwvm2::utils::container::std_vector<compiler_packet_shape> packet_shapes_{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> initialized_flags_{};
         bool invariant_local_types_{true};
         // Immutable owned DATA size, capped once at sealing. Only bounded
         // observer metadata may occupy an inactive runtime cache; no state,
@@ -530,7 +537,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     public:
         using owner = ::std::shared_ptr<sealed_function_plan const>;
         [[nodiscard]] static owner seal_compiler_metadata(function_plan plan)
-        { if(validate_plan(plan) != status::ok) { return {}; } return owner{new sealed_function_plan{::std::move(plan)}}; }
+        { if(validate_plan(plan) != status::ok) { return {}; } return owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<sealed_function_plan>([&](sealed_function_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) sealed_function_plan{::std::move(plan)}; }))}; }
         [[nodiscard]] function_plan const& get() const noexcept { return plan_; }
         [[nodiscard]] compiler_packet_shape const& packet_shape(::std::size_t index) const noexcept
         { return packet_shapes_[index]; } // Caller checked index against the same immutable site's extent.

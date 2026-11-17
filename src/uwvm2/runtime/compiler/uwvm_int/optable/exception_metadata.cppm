@@ -1,4 +1,7 @@
 module;
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #include <cstddef>
 #include <cstring>
 #include <limits>

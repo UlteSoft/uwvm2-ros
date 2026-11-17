@@ -7,6 +7,9 @@
 // all global checkpoint/initializer definitions. The real coherent manager is
 // the sole constructor; preparation is not execution/publication permission.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
 namespace checkpoint_world_data
 {
@@ -20,6 +23,11 @@ extern "C++"
     class runtime_checkpoint_world_transaction final
     {
         friend class runtime_checkpoint_coherent_manager;
+        friend class runtime_checkpoint_guest_worker_bridge;
+        friend class runtime_checkpoint_continuation_dispatcher;
+        friend class runtime_wasip1_debug_environment;
+        friend void checkpoint_join_published_workers_after_drain(
+            ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
         using source_type = ::uwvm2::uwvm::runtime::full::full_source_instance;
         using source_owner = source_type::owner;
         using module_type = checkpoint_world_data::st::wasm_module_storage_t;
@@ -59,18 +67,19 @@ extern "C++"
         ::uwvm2::runtime::checkpoint::compilation_profile::cache_identity_type observed_profile_{};
         source_type::mutable_owner prepared_source_{};
         staging_type staged_gc_{};
-        ::std::unique_ptr<context_type> context_{};
+        ::uwvm2::utils::container::std_unique_ptr<context_type> context_{};
 #include "uwvm_runtime_checkpoint_world_wasip1.h"
-        ::std::vector<module_binding> modules_{};
-        ::std::vector<native_object> objects_{};
-        ::std::vector<::std::size_t> actual_dense_module_owners_{};
+        ::uwvm2::utils::container::std_vector<module_binding> modules_{};
+#include "uwvm_runtime_checkpoint_world_ros.h"
+        ::uwvm2::utils::container::std_vector<native_object> objects_{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> actual_dense_module_owners_{};
         // Fixed compressed index of genuine memory/table chunk records. Bound
         // target IDs BEFORE id-1. Prefix offsets are monotonic owned DATA,
         // and each flat record index is rechecked before reading saved state.
-        ::std::vector<::std::size_t> chunk_offsets_{};
-        ::std::vector<::std::size_t> chunk_records_{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> chunk_offsets_{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> chunk_records_{};
         using engine_type=runtime_checkpoint_staged_llvm_full_engine;
-        ::std::vector<::std::unique_ptr<engine_type>> engines_{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<engine_type>> engines_{};
         ::uwvm2::runtime::checkpoint::compilation_profile::owner actual_prepared_profile_{};
         ::std::uint64_t native_bytes_{}, maximum_native_bytes_{};
         preparation_status phase_{preparation_status::empty};
@@ -155,7 +164,7 @@ extern "C++"
             { return fail(preparation_status::source_mismatch); }
             struct actual_member
             { ::std::uint64_t id{}; module_type const* module{}; file_type const* old_file{}; file_type const* new_file{}; bool main{}; };
-            ::std::vector<actual_member> actual{};
+            ::uwvm2::utils::container::std_vector<actual_member> actual{};
             if(original->registry_.size() > actual.max_size() || original->registry_.size() >
                static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/sizeof(actual_member))
             { return fail(preparation_status::quota_exceeded); }
@@ -178,7 +187,7 @@ extern "C++"
             ::std::sort(actual.begin(), actual.end(), [](auto const& a, auto const& b) noexcept { return a.id < b.id; });
             if(saved_.root_instances.size() != actual.size())
             { return fail(preparation_status::source_mismatch); }
-            ::std::vector<object_id> module_ids{}; module_ids.reserve(actual.size());
+            ::uwvm2::utils::container::std_vector<object_id> module_ids{}; module_ids.reserve(actual.size());
             for(::std::size_t n{}; n != saved_.objects.size(); ++n)
             {
                 if(saved_.objects[n].kind == cp::object_kind::module)
@@ -222,19 +231,20 @@ extern "C++"
                 if(instance == 0u) { return fail(preparation_status::source_mismatch); }
                 modules_.push_back({member.id, SIZE_MAX, ::std::addressof(found->second), member.new_file, module_ids[n], instance});
             }
-            // Actual unpublished dense registry DATA is constructed in the SAME
-            // source-map order as ordinary runtime modules. It is not an epoch
-            // or permission and is published only with this exact world later.
+            // Preserve the source-bound dense module IDs. The temporary
+            // initializer registry may iterate in another order (notably with
+            // preloads); using that order would retarget logical breakpoints,
+            // misbind environment module selectors and make the same saved
+            // graph fail its second restore. IDs are DATA, but their mapping
+            // must remain exactly the one authenticated above.
             actual_dense_module_owners_.reserve(modules_.size());
-            for(auto const& [name,module] : prepared_source_->registry_)
+            for(::std::size_t owner{};owner<modules_.size();++owner)
             {
-                static_cast<void>(name);::std::size_t owner{SIZE_MAX};
-                for(::std::size_t m{};m<modules_.size();++m)
-                { if(modules_[m].actual==::std::addressof(module)) { owner=m;break; } }
-                if(owner>=modules_.size() || modules_[owner].new_actual_id!=SIZE_MAX) { return fail(preparation_status::source_mismatch); }
-                modules_[owner].new_actual_id=actual_dense_module_owners_.size();actual_dense_module_owners_.push_back(owner);
+                auto& module=modules_[owner];
+                if(module.old_actual_id!=owner || module.new_actual_id!=SIZE_MAX)
+                    return fail(preparation_status::source_mismatch);
+                module.new_actual_id=owner;actual_dense_module_owners_.push_back(owner);
             }
-            if(actual_dense_module_owners_.size()!=modules_.size()) { return fail(preparation_status::source_mismatch); }
             phase_ = preparation_status::modules_bound; return true;
         }
         [[nodiscard]] bool decode_type(checkpoint_world_data::cp::value_type const& value, ::std::size_t fallback_owner,
@@ -511,8 +521,12 @@ extern "C++"
                     auto const id{instance->links[first+index]};auto const* relocated{native(id)};
                     if constexpr(Resource==0u)
                     {
-                        if(builtin && !bind_builtin_wasip1_function(original,epoch,owner,local,id))
-                        { return fail(preparation_status::unavailable_adapter); }
+                        if(builtin)
+                        {
+                            if(!bind_builtin_wasip1_function(original,epoch,declaring,index,owner,local,id))
+                            { return fail(preparation_status::unavailable_adapter); }
+                            owner=declaring;local=index;
+                        }
                     }
                     if(relocated==nullptr || relocated->owner!=owner || relocated->local!=local) { return fail(preparation_status::source_mismatch); }
                     if constexpr(Resource==0u)
@@ -630,7 +644,7 @@ extern "C++"
             if(trace==nullptr || trace->kind!=cp::object_kind::exception_trace || trace->words[0u]!=1u ||
                trace->links.size()!=trace->values.size() || !cp::state_details::valid_trace_payload(saved_,*trace) ||
                !charge_native(trace->links.size(),sizeof(ex::diagnostic_frame))) { return fail(preparation_status::malformed); }
-            ::std::vector<ex::diagnostic_frame> frames{};
+            ::uwvm2::utils::container::std_vector<ex::diagnostic_frame> frames{};
             if(trace->links.size()>frames.max_size()) { return fail(preparation_status::quota_exceeded); }
             frames.reserve(trace->links.size());::std::size_t offset{};
             for(::std::size_t n{};n<trace->links.size();++n)
@@ -696,7 +710,7 @@ extern "C++"
             if(signature.type_index!=type || !signature.results.empty() || signature.parameters.size()!=object.values.size() ||
                !tag.exception_identity || !charge_native(object.values.size(),sizeof(ex::payload_field)))
             { return fail(preparation_status::type_mismatch); }
-            ::std::vector<ex::payload_field> fields{};if(object.values.size()>fields.max_size()) { return fail(preparation_status::quota_exceeded); }
+            ::uwvm2::utils::container::std_vector<ex::payload_field> fields{};if(object.values.size()>fields.max_size()) { return fail(preparation_status::quota_exceeded); }
             fields.reserve(object.values.size());
             for(::std::size_t n{};n<object.values.size();++n)
             {
@@ -755,8 +769,8 @@ extern "C++"
                 }
             }
             if(exception_count==0u) { return true; }
-            ::std::vector<::std::size_t> pending{}, heads{}, ready{};
-            ::std::vector<dependency_edge> edges{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> pending{}, heads{}, ready{};
+            ::uwvm2::utils::container::std_vector<dependency_edge> edges{};
             if(count>pending.max_size() || count>heads.max_size() || exception_count>ready.max_size() ||
                dependency_count>edges.max_size() || !charge_native(count,sizeof(::std::size_t)*2u) ||
                !charge_native(exception_count,sizeof(::std::size_t)) || !charge_native(dependency_count,sizeof(dependency_edge)))
@@ -840,7 +854,7 @@ extern "C++"
                !charge_native(chunk_count,sizeof(::std::size_t)) || !charge_native(count,sizeof(::std::size_t)))
             { return fail(preparation_status::quota_exceeded); }
             chunk_records_.resize(chunk_count);
-            ::std::vector<::std::size_t> next{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> next{};
             if(count>next.max_size()) { return fail(preparation_status::quota_exceeded); }
             next.resize(count);
             for(::std::size_t n{};n<count;++n) { next[n]=chunk_offsets_[n]; }
@@ -868,7 +882,7 @@ extern "C++"
                 auto const& relocated{objects_[n]};
                 if(relocated.owner>=modules_.size() || relocated.shell==SIZE_MAX) { return fail(preparation_status::type_mismatch); }
                 auto const& store{modules_[relocated.owner].actual->gc_store};auto const type{static_cast<::std::uint_least32_t>(object.words[0u])};
-                ::std::vector<native_value> values{};if(object.values.size()>values.max_size()) { return fail(preparation_status::quota_exceeded); }
+                ::uwvm2::utils::container::std_vector<native_value> values{};if(object.values.size()>values.max_size()) { return fail(preparation_status::quota_exceeded); }
                 values.resize(object.values.size());
                 for(::std::size_t field{};field<object.values.size();++field)
                 {
@@ -888,7 +902,7 @@ extern "C++"
             if(saved==nullptr || saved->kind!=cp::object_kind::memory || target==nullptr || target->owner>=modules_.size() ||
                target->local>=records<2u,false>(*modules_[target->owner].actual).size()) { return fail(preparation_status::source_mismatch); }
             auto* actual{::std::addressof(records<2u,false>(*modules_[target->owner].actual).index_unchecked(target->local))};
-            ::std::vector<context_type::saved_memory_chunk> chunks{};
+            ::uwvm2::utils::container::std_vector<context_type::saved_memory_chunk> chunks{};
             if(id==0u || id>saved_.objects.size() || chunk_offsets_.size()!=saved_.objects.size()+1u) { return fail(preparation_status::malformed); }
             auto const first{chunk_offsets_[static_cast<::std::size_t>(id-1u)]},last{chunk_offsets_[static_cast<::std::size_t>(id)]};
             if(last<first || last>chunk_records_.size() || last-first>chunks.max_size() ||
@@ -930,13 +944,13 @@ extern "C++"
                 native_value relocated{};if(!relocate_value(saved->values[0u],owner,relocated)) { return fail(preparation_status::type_mismatch); }
                 default_value=relocated.template as<reference>();
             }
-            ::std::vector<::std::vector<reference>> owned{};::std::vector<context_type::saved_table_chunk> chunks{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<reference>> owned{};::uwvm2::utils::container::std_vector<context_type::saved_table_chunk> chunks{};
             if(id==0u || id>saved_.objects.size() || chunk_offsets_.size()!=saved_.objects.size()+1u) { return fail(preparation_status::malformed); }
             auto const first{chunk_offsets_[static_cast<::std::size_t>(id-1u)]},last{chunk_offsets_[static_cast<::std::size_t>(id)]};
             if(last<first || last>chunk_records_.size()) { return fail(preparation_status::malformed); }
             auto const count{last-first};
             if(count>owned.max_size() || count>chunks.max_size() ||
-               !charge_native(count,sizeof(::std::vector<reference>)+sizeof(context_type::saved_table_chunk))) { return fail(preparation_status::quota_exceeded); }
+               !charge_native(count,sizeof(::uwvm2::utils::container::std_vector<reference>)+sizeof(context_type::saved_table_chunk))) { return fail(preparation_status::quota_exceeded); }
             owned.resize(count);chunks.reserve(count);::std::size_t cursor{};
             for(auto position{first};position<last;++position)
             {
@@ -1001,7 +1015,7 @@ extern "C++"
             if(actual->element_type_ptr==nullptr) { return fail(preparation_status::type_mismatch); }
             core_type expected{};
             if(!context_type::saved_reference_declaration(actual->element_type_ptr->storage.segment,expected)) { return fail(preparation_status::type_mismatch); }
-            ::std::vector<reference> values{};
+            ::uwvm2::utils::container::std_vector<reference> values{};
             if(saved->values.size()>values.max_size() || !charge_native(saved->values.size(),sizeof(reference))) { return fail(preparation_status::quota_exceeded); }
             values.resize(saved->values.size());
             for(::std::size_t n{};n<saved->values.size();++n)
@@ -1086,7 +1100,7 @@ extern "C++"
         // closed cohort/host/N/publication lifetime. Persisted build/provider
         // binding, root installation, old-reader drain, epoch/joint publication
         // are independent requirements of future complete-world restoration.
-        [[nodiscard]] static ::std::unique_ptr<runtime_checkpoint_world_transaction> prepare_actual_resources(
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_world_transaction> prepare_actual_resources(
             state_type const& saved,::uwvm2::runtime::checkpoint::compilation_profile::owner const& current_profile,
             source_owner const& original,::std::uint_least64_t actual_epoch,
             ::std::uint64_t maximum_native_bytes,::std::size_t maximum_original_source_bytes,
@@ -1101,7 +1115,7 @@ extern "C++"
                 // malformed/oversized/OOM request cannot terminate noexcept.
                 auto integrity{cp::state_identity::derive(saved,cap)};
                 if(integrity.observation!=cp::state_identity::status::derived_data) { return {}; }
-                auto result{::std::unique_ptr<runtime_checkpoint_world_transaction>{new runtime_checkpoint_world_transaction{}}};
+                auto result{::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_world_transaction>{::uwvm2::utils::allocator::fast_io_strict::object<runtime_checkpoint_world_transaction>([&](runtime_checkpoint_world_transaction* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) runtime_checkpoint_world_transaction{}; })}};
                 struct report_scope
                 {
                     runtime_checkpoint_world_transaction& actual;llvm_jit_checkpoint_prepare_result& diagnostic;
@@ -1121,7 +1135,7 @@ extern "C++"
                 if(!result->charge_native(result->prepared_source_->file_.source_size(),1u)) { return {}; }
                 for(auto const& file:result->prepared_source_->preload_files_)
                 { if(!result->charge_native(file.source_size(),1u)) { return {}; } }
-                result->context_.reset(new context_type{result->prepared_source_,result->staged_gc_});
+                result->context_.reset(::uwvm2::utils::allocator::fast_io_strict::object<context_type>([&](context_type* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) context_type{result->prepared_source_,result->staged_gc_}; }));
                 if(result->context_->build_resource_skeleton()!=context_type::skeleton_result::built ||
                    !result->bind_actual_modules(original,actual_epoch) || !result->bind_all_native_resources(original,actual_epoch) ||
                    !result->reserve_all_gc_shells() || !result->build_pending_bridges() || !result->build_all_exceptions() ||
@@ -1145,20 +1159,14 @@ extern "C++"
                actual_profile->purpose()!=checkpoint::compilation_purpose::resumable ||
                checkpoint::native_resume_abi_revision!=2u || !engines_.empty() || actual_dense_module_owners_.size()!=modules_.size()) { return false; }
             auto const new_profile{actual_profile->cache_identity()};
-            if(new_profile[1u]!=17u || (observed_profile_[1u]!=13u && observed_profile_[1u]!=17u))
+            auto const observer_profile=checkpoint::compilation_profile::create_for_trusted_observer(actual_profile->limits());
+            if(observed_profile_!=new_profile && (!observer_profile || observed_profile_!=observer_profile->cache_identity()))
             { return fail(preparation_status::source_mismatch); }
-            for(::std::size_t field{};field<new_profile.size();++field)
-            {
-                // Compilation DATA may upgrade the actual observation emitter
-                // v13 to resumable v17 ONLY with the identical complete schema,
-                // ABI2, native slot width and every budget/workspace field.
-                // It is not a plan/frame permission: each saved Wasm site/slot/
-                // control/EH shape must separately match the freshly sealed plan
-                // before the sole issuer constructs any new executable frame.
-                if(field!=1u && observed_profile_[field]!=new_profile[field])
-                { return fail(preparation_status::source_mismatch); }
-            }
-            if(modules_.size()>engines_.max_size() || !charge_native(modules_.size(),sizeof(::std::unique_ptr<engine_type>)))
+            // Accept only this build's complete observer or resumable identity.
+            // Policy revisions are owned by compilation_profile; duplicating an
+            // old emitter revision here rejects valid current captures. Every
+            // saved frame is still matched against the fresh sealed code plan.
+            if(modules_.size()>engines_.max_size() || !charge_native(modules_.size(),sizeof(::uwvm2::utils::container::std_unique_ptr<engine_type>)))
             { return fail(preparation_status::quota_exceeded); }
             engines_.resize(modules_.size());
             for(auto const owner:actual_dense_module_owners_)
@@ -1177,7 +1185,7 @@ extern "C++"
                 static_cast<void>(maximum_endpoint_functions);
 #endif
                 auto const* instance{lookup(modules_[owner].instance)};
-                ::std::vector<engine_type::effective_function_body> bodies{};
+                ::uwvm2::utils::container::std_vector<engine_type::effective_function_body> bodies{};
                 if(locals>bodies.max_size() || !charge_native(locals,sizeof(engine_type::effective_function_body)))
                 { return fail(preparation_status::quota_exceeded); }
                 bodies.resize(locals);
@@ -1234,10 +1242,14 @@ extern "C++"
 # include "uwvm_runtime_checkpoint_world_full_code_handoff.h"
 # include "uwvm_runtime_checkpoint_world_roots.h"
 # include "uwvm_runtime_checkpoint_world_root_workers.h"
+# include "uwvm_runtime_checkpoint_world_publication.h"
+# include "uwvm_runtime_checkpoint_world_execution.h"
     public:
         runtime_checkpoint_world_transaction(runtime_checkpoint_world_transaction const&)=delete;
         runtime_checkpoint_world_transaction& operator=(runtime_checkpoint_world_transaction const&)=delete;
-        ~runtime_checkpoint_world_transaction()=default;
+        ~runtime_checkpoint_world_transaction() { cancel_unpublished_workers(); }
+        friend llvm_jit_checkpoint_restored_join_result llvm_jit_checkpoint_join_restored_instance_host_api(
+            ::std::uint_least64_t, ::std::chrono::steady_clock::time_point) noexcept;
     };
 }
 #endif

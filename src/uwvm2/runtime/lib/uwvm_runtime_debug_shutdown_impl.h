@@ -1,4 +1,6 @@
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 // Include only after ACTUAL runtime/execution/publication/host-entry definitions.
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++" ::std::uint_least32_t runtime_debug_shutdown_terminal_cleanup_abi_host_api() noexcept
@@ -61,7 +63,7 @@ llvm_jit_debug_shutdown_start runtime_debug_shutdown_bridge::begin(
     if(!admission && !fault_stopped) { return {result::busy, {}}; }
     try
     {
-        auto prepared{::std::shared_ptr<llvm_jit_debug_shutdown_request>{new llvm_jit_debug_shutdown_request{::std::move(transition)}}};
+        auto prepared{::std::shared_ptr<llvm_jit_debug_shutdown_request>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_shutdown_request>([&](llvm_jit_debug_shutdown_request* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_shutdown_request{::std::move(transition)}; }))}};
         {
             runtime_state_publication_guard publication{};
             if(!same_owner(supplied, g_runtime.debug_pause_control) || !g_runtime.debug_pause_control ||
@@ -185,6 +187,21 @@ bool runtime_debug_shutdown_bridge::release(owner const& supplied) noexcept
     retired->maintenance_ = {}; // cold real lock release; no source/code reset
     retired.reset(); return true;
 }
+bool runtime_debug_shutdown_bridge::select_checkpoint_retirement_gate(bool enabled) noexcept
+{
+    ::std::lock_guard lock{mutex_};
+    if(actual_request_ || checkpoint_retirement_gate_ == enabled ||
+       requested_.load(::std::memory_order_relaxed) != checkpoint_retirement_gate_) { return false; }
+    if(enabled)
+    {
+        // The exact old cohort is already parked with complete captured values.
+        // Keep later selective-demand changes from hiding its cleanup poll.
+        ::uwvm2::runtime::checkpoint::observation_probe_hints::force_collection_until_configured();
+    }
+    checkpoint_retirement_gate_ = enabled;
+    requested_.store(enabled, ::std::memory_order_release);
+    return true;
+}
 bool runtime_debug_shutdown_bridge::skip_cancelled_entry() noexcept
 {
     if(!requested_.load(::std::memory_order_acquire) || !runtime_execution_stop_requested_host_api()) { return false; }
@@ -203,6 +220,14 @@ void runtime_debug_shutdown_bridge::poll_after_safe_point(::std::uint64_t incarn
     // unwind through it; its actual lease stays pending until it cooperates.
     if(!catchable_full_entry_ || get_runtime_execution_entry_depth() != 1u ||
        !runtime_execution_stop_requested_host_api()) { return; }
+    // Only the genuine retirement manager can enable this existing byte.
+    // The retirement bridge independently authenticates every native frame and
+    // throws its private signal through the already verified cleanup edges.
+    if(runtime_checkpoint_retirement_bridge::management_blocked())
+    {
+        runtime_checkpoint_retirement_bridge::poll_current_after_park(incarnation,module,function,opcode_offset);
+        return;
+    }
     owner actual{};
     { ::std::lock_guard lock{mutex_}; actual = actual_request_; }
     auto const participant{g_debug_pause_participant}; auto const ledger{g_debug_activation_ledger};
@@ -310,6 +335,11 @@ namespace details
         auto const& leaf{ledger->data()[ledger->count() - 1u]};
         if(leaf.module != point.location.code_unit || leaf.function != point.location.function ||
            leaf.runtime_epoch != point.location.code_generation) { return; }
+        // Snapshot retirement uses its own authenticated request, independently
+        // of debugger shutdown. Queue cancellation must unwind at the captured
+        // wait opcode before a result is delivered or the operand state advances.
+        runtime_checkpoint_retirement_bridge::poll_current_after_park(leaf.incarnation,leaf.module,
+            leaf.function,point.location.offset);
         runtime_debug_shutdown_bridge::poll_after_safe_point(leaf.incarnation, leaf.module,
             leaf.function, point.location.offset);
         // Returning grants no cancellation authority. The caller retains the

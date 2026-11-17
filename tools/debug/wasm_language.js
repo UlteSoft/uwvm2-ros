@@ -5,6 +5,7 @@
 // address dereference in this provider.
 const {URLSearchParams}=require("url");
 const {createHash}=require("crypto");
+const path=require("path");
 const OPCODES=require("./wasm_opcodes.json");
 const LANGUAGE="uwvm-wasm-disassembly";
 const SESSION=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
@@ -110,12 +111,31 @@ function register(vscode,context,sessions) {
   const disabledBreakpoints=new Map();
   const add=value=>context.subscriptions.push(value);
   const epoch=id=>epochs.get(id)||0;
-  const pc=vscode.window.createTextEditorDecorationType({
-    isWholeLine:true, backgroundColor:new vscode.ThemeColor("debugger.stackFrameHighlightBackground"),
-    overviewRulerColor:new vscode.ThemeColor("debugIcon.startForeground"),
-    rangeBehavior:vscode.DecorationRangeBehavior.ClosedClosed
-  });
-  add(pc);
+  const icon=name=>vscode.Uri&&typeof vscode.Uri.file==="function"?
+    vscode.Uri.file(path.join(context.extensionPath,"icons",name)):undefined;
+  const exactOptions={
+    isWholeLine:true, backgroundColor:new vscode.ThemeColor("editor.stackFrameHighlightBackground"),
+    overviewRulerColor:new vscode.ThemeColor("editor.stackFrameHighlightBackground"),
+    overviewRulerLane:vscode.OverviewRulerLane&&vscode.OverviewRulerLane.Full,
+    rangeBehavior:vscode.DecorationRangeBehavior&&vscode.DecorationRangeBehavior.ClosedClosed,
+    light:{gutterIconPath:icon("pointer-exact-light.svg")},
+    dark:{gutterIconPath:icon("pointer-exact-dark.svg")},gutterIconSize:"contain"
+  };
+  const nextOptions={
+    isWholeLine:true, backgroundColor:new vscode.ThemeColor("editor.focusedStackFrameHighlightBackground"),
+    overviewRulerColor:new vscode.ThemeColor("editor.focusedStackFrameHighlightBackground"),
+    overviewRulerLane:vscode.OverviewRulerLane&&vscode.OverviewRulerLane.Full,
+    rangeBehavior:vscode.DecorationRangeBehavior&&vscode.DecorationRangeBehavior.ClosedClosed,
+    light:{gutterIconPath:icon("pointer-next-light.svg")},
+    dark:{gutterIconPath:icon("pointer-next-dark.svg")},gutterIconSize:"contain"
+  };
+  // The virtual Wasm document has its own authenticated exact/next markers.
+  // VS Code's ordinary current-frame decoration is intentionally not reused:
+  // it may be green when a source frame is focused, which loses the distinction
+  // between an exact Wasm stop and a native stop inside that instruction.
+  const exactPc=vscode.window.createTextEditorDecorationType(exactOptions);
+  const nextPc=vscode.window.createTextEditorDecorationType(nextOptions);
+  add(exactPc);add(nextPc);
   // VS Code merges the current-PC arrow and breakpoint glyph in one gutter
   // cell. Its disabled glyph can then be visually covered by that arrow.
   // Keep native gutter ownership; annotate only a confirmed disabled point at
@@ -169,7 +189,10 @@ function register(vscode,context,sessions) {
   }
   function retire(session) {
     epochs.set(session.id,epoch(session.id)+1);
-    for(const [editor,owner] of decorations)if(owner===session.id) {editor.setDecorations(pc,[]);editor.setDecorations(disabledAtPC,[]);decorations.delete(editor);}
+    for(const [editor,owner] of decorations)if(owner===session.id) {
+      editor.setDecorations(exactPc,[]);editor.setDecorations(nextPc,[]);
+      editor.setDecorations(disabledAtPC,[]);decorations.delete(editor);
+    }
   }
   function live(document,id,session,stamp,version,cancel) {
     if(document.isClosed || document.version!==version || sessions.get(id.session)!==session ||
@@ -253,17 +276,48 @@ function register(vscode,context,sessions) {
     if(!editor || !identity(editor.document.uri))return;
     const request=Symbol();decorationRequests.set(editor,request);
     try {
-      const id=await authenticate(editor.document);
+      const id=identity(editor.document.uri),session=sessions.get(id.session);
+      if(!session)throw new Error("debug session ended");
+      let exactLine, nextLine, stopId;
+      // Positions are the single cross-level source of truth.  In particular,
+      // a native stop is allowed to mark this document only when the runtime
+      // authenticated its LLVM-JIT owner and Wasm byte offset.
+      let position;
+      try { position=await session.customRequest("uwvm/positions",{}); } catch(_) { position=undefined; }
+      if(position?.state==="stopped" && position.wasm &&
+         String(position.wasm.module)===id.module && String(position.wasm.function)===id.function &&
+         String(position.wasm.epoch||id.epoch)===id.epoch && String(position.wasm.generation||id.generation)===id.generation &&
+         (!position.native || position.wasm.provenance==="exact")) {
+        const wanted=String(position.wasm.offset);
+        for(let line=1;line<editor.document.lineCount;line++) {
+          const row=instructionLine(editor.document.lineAt(line).text);
+          if(row&&row.offset===wanted) { if(position.wasm.exact===true)exactLine=line; else nextLine=line; break; }
+        }
+        stopId=position.stopId;
+      }
+      // Cooperative Wasm stops are also accepted through the strict document
+      // authentication path. This keeps the language provider usable with an
+      // older adapter that has not implemented uwvm/positions yet.
+      // An authenticated native stop without an exact Wasm provenance must
+      // leave the Wasm document unmarked.  Falling back to the document's
+      // own initial stop marker here would fabricate a Wasm position and make
+      // an unrelated native instruction look executable.
+      if(exactLine===undefined && nextLine===undefined &&
+         (!position || position.state!="stopped" || !position.native)) {
+        const authenticated=await authenticate(editor.document);
+        if(decorationRequests.get(editor)!==request)return;
+        exactLine=authenticated.line-1;stopId=authenticated.stop;
+      }
       if(decorationRequests.get(editor)!==request)return;
-      const at=id.line-1;
-      const row=instructionLine(editor.document.lineAt(at).text);
-      if(!row)return;
-      // The IDE's own DAP stopped arrow and breakpoint gutter retain their
-      // normal ownership. This highlight does not replace either.
-      editor.setDecorations(pc,[{range:new vscode.Range(at,0,at,editor.document.lineAt(at).text.length)}]);
-      annotateDisabledAtPC(editor,id);
+      const list=line=>line===undefined?[]:[{range:new vscode.Range(line,0,line,editor.document.lineAt(line).text.length),hoverMessage:
+        line===exactLine?"Exact Wasm instruction position (yellow).":"Execution is inside this Wasm instruction (green); this marker cannot be moved."}];
+      editor.setDecorations(exactPc,list(exactLine));
+      editor.setDecorations(nextPc,list(nextLine));
+      if(exactLine!==undefined)annotateDisabledAtPC(editor,{...id,line:exactLine+1,stop:stopId});
+      else if(nextLine!==undefined)annotateDisabledAtPC(editor,{...id,line:nextLine+1,stop:stopId});
+      else editor.setDecorations(disabledAtPC,[]);
       decorations.set(editor,id.session);
-    } catch(_) {if(decorationRequests.get(editor)===request){editor.setDecorations(pc,[]);editor.setDecorations(disabledAtPC,[]);decorations.delete(editor);}}
+    } catch(_) {if(decorationRequests.get(editor)===request){editor.setDecorations(exactPc,[]);editor.setDecorations(nextPc,[]);editor.setDecorations(disabledAtPC,[]);decorations.delete(editor);}}
   }
   async function opened(document) {
     if(!identity(document.uri))return;
@@ -290,7 +344,12 @@ function register(vscode,context,sessions) {
       },
       onDidSendMessage(packet) {
         if(packet.type==="event" && packet.event==="uwvm/breakpoints")breakpointInventory(session,packet.body);
-        if(packet.type==="event" && ["stopped","continued","invalidated","terminated","exited","memory"].includes(packet.event))retire(session);
+        if(packet.type==="event" && ["stopped","continued","invalidated","terminated","exited","memory"].includes(packet.event)) {
+          retire(session);
+          if(packet.event==="stopped")setTimeout(()=>{for(const editor of vscode.window.visibleTextEditors||[]) {
+            const id=identity(editor.document.uri);if(id&&id.session===session.id)void decorate(editor);
+          }},0);
+        }
         if(packet.type==="response" && packet.command==="stackTrace" && packet.success)
           for(const editor of vscode.window.visibleTextEditors||[]) {
             const id=identity(editor.document.uri);if(id && id.session===session.id)void decorate(editor);

@@ -34,14 +34,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         ::std::uint64_t expected, ::std::int64_t timeout_ns) noexcept
     {
         static_assert(Operation<=2u);
-        deferred::poll(true);
+        if(!deferred::poll(true))return {.wait={.status=::uwvm2::runtime::wasm_threads::wait_status::cancelled}};
         namespace waiting=::uwvm2::runtime::wasm_threads;
         constexpr ::std::size_t bytes{Operation==2u ? 8u : 4u};
         wait_execution_result result{};
+        // Use the same alignment-first admission as other tagged atomics.
+        // Unsigned low-bit arithmetic is valid even for a 65-bit effective sum;
+        // check_access below still proves its complete range before any access.
+        if(((static_cast<::std::uint64_t>(pointer)+offset)&(bytes-1u))!=0u)
+        { result.wait.status=waiting::wait_status::unaligned;return result; }
         auto const checked{check_access<Address,Shared>(memory,pointer,offset,bytes)};
         result.access=checked;
         if(!checked) { return result; }
-        if((checked.address&(bytes-1u))!=0u) { result.wait.status=waiting::wait_status::unaligned;return result; }
         if constexpr(Operation==0u)
         {
             result.wait=waiting::memory_notify(memory,checked.address,static_cast<::std::uint32_t>(expected));
@@ -63,6 +67,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                 });
             return static_cast<bool>(result.access)&&equal;
         }};
+        waiting::wait_journal_phase<bytes> journal;
+        if(!journal.begin(checked.address,expected,timeout_ns,[&](auto& comparison) noexcept
+        {
+            result.access=with_checked_access<Address,Shared>(memory,pointer,offset,bytes,
+                [&](::std::span<::std::byte> data) noexcept
+                {
+                    auto const loaded=::uwvm2::runtime::compiler::shared::wasm_threads::atomic_load_le<bytes>(data.data());
+                    for(::std::size_t i{};i<bytes;++i)comparison[i]=static_cast<::std::byte>(loaded>>(8u*i));
+                });
+            return static_cast<bool>(result.access);
+        })) { result.wait=journal.interrupted();return result; }
+        if(journal.replaying()) { result.wait=journal.finish(result.wait);return result; }
         auto const outcome{[&]
         {
             if(execution->pause!=nullptr)
@@ -84,6 +100,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             case outcome_type::cancelled:case outcome_type::closed:result.wait.status=waiting::wait_status::cancelled;break;
             case outcome_type::too_many_waiters:result.wait.status=waiting::wait_status::too_many_waiters;break;
         }
+        result.wait=journal.finish(result.wait);
 #else
         result.wait.status=waiting::wait_status::unavailable;
 #endif

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 module;
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -11,10 +12,11 @@ module;
 #include <utility>
 #include <uwvm2/utils/macro/push_macros.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-# include <stop_token>
+# include <uwvm2/utils/thread/stop_token.h>
 #endif
 export module uwvm2.runtime.wasm_threads:wait;
 import uwvm2.utils.thread;
+import :execution_journal;
 import uwvm2.object.memory.linear;
 import uwvm2.runtime.compiler.shared.wasm_threads;
 #define UWVM_MODULE

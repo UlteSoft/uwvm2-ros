@@ -33,10 +33,20 @@ On an authenticated debugger channel:
 ```text
 permissions
 status
-dump wasm STOP_ID /private/path/fault.wasm
+dump policy
+dump wasm [diagnostic|full] STOP_ID /private/path/fault.uwsnap
 ```
 
-The dump command requires the exact current, complete cooperative stop and leaves it paused. Output is created exclusively with mode `0600`; existing files and symlinks are refused. Full/read-only dumps preserve capture-completeness metadata: unavailable owner state is not fabricated. A `limited` dump omits Guest memory, locals, globals, source, paths, tag values, payloads and native addresses, and records its redaction in `uwvm.core.diagnostic`. It is a diagnostic artifact, not an executable restore image. A read-only or limited dump never grants restore authority.
+The dump command requires the exact current, complete cooperative stop and leaves it paused. Output is created exclusively with mode `0600`; existing files and symlinks are refused. Full/read-only dumps preserve capture-completeness metadata: unavailable owner state is not fabricated. A diagnostic dump includes original static Wasm (including embedded static debug information), committed replacement bodies and logical fault locations. It physically excludes dynamic memory, locals, globals, GC contents, tag values, WASI environment/resource bindings, ROS payloads and native addresses. It is a diagnostic artifact, not an executable restore image. A read-only or limited dump never grants restore authority.
+
+`--debug-dump-max diagnostic|full` sets a launch-only disclosure ceiling, default
+`full`; an export may request less. Alternatively `--debug-dump-force
+none|diagnostic|full` fixes every export to that level, including disabling dump.
+The two options are mutually exclusive. Debugger permissions still apply; a
+forced level above them is a launch error. An omitted per-export selection uses
+the effective launch default. The policy cannot be changed after startup.
+See [unified snapshots](../runtime/unified-snapshot.md) for binary metadata,
+offline inspection and the distinction between disclosure and resumable state.
 
 The separate `--diagnostic-control-fd` service remains a bounded non-sensitive metadata service; provision the debugger endpoint when a cooperative fault dump is required. Changing permissions after launch is deliberately unsupported.
 
@@ -46,7 +56,7 @@ The shared `tools/debug/import_ide.py` profile accepts `debugPermissions` with t
 
 The adapter queries `permissions` from the authenticated VM before attachment. A configured expected level must match; the IDE cannot elevate it. DAP initially advertises conservative capabilities, then sends a `capabilities` event for the actual level. VM command admission remains the security boundary, including REPL and status-wrapped requests.
 
-Custom DAP requests are `uwvm/permissions`, `uwvm/diagnostics`, and `uwvm/dump` (`stopId` plus an absolute `path` on the VM host). Source/Wasm/assembly views and sensitive WASI/ROS views are available only with full or read-only inspection permission and the corresponding genuine stopped-state evidence. Limited stacks contain actual numeric Wasm module/function/offset coordinates; unavailable offsets are labeled explicitly. They contain no source names, paths, memory references, values or native addresses. Remote configurations use the same permissions and authenticated transport; paths for dump output refer to the VM host.
+Custom DAP requests include `uwvm/permissions`, `uwvm/diagnostics`, `uwvm/dumpPolicy`, and `uwvm/dump` (`stopId`, absolute `path` on the VM host, and optional `disclosure`). Source/Wasm/assembly views and sensitive WASI/ROS views are available only with full or read-only inspection permission and the corresponding genuine stopped-state evidence. Limited stacks contain actual numeric Wasm module/function/offset coordinates; unavailable offsets are labeled explicitly. They contain no source names, paths, memory references, values or native addresses. Remote configurations use the same permissions and authenticated transport; paths for dump output refer to the VM host.
 
 The Code/Cursor extension provides separate Memory, Registers, Memory Tags,
 WASIp1 and ROS windows. The memory window pins writes to its displayed stop;

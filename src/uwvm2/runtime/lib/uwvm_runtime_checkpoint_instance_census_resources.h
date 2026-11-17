@@ -2,6 +2,7 @@
 // inside runtime_checkpoint_gc_state_borrow's private class section. No manager
 // admission or portable-file DATA is converted into runtime ownership here.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 using census_file_type = ::uwvm2::uwvm::wasm::type::wasm_file_t;
 // Function/table/memory/global/tag index spaces; imports alias actual providers.
 template<unsigned Resource, bool Imported>
@@ -127,8 +128,8 @@ template<unsigned Resource>
                     // current source/validation epoch and known original ABI.
                     // Never call an arbitrary native vtable or guess by name.
                     auto const& pin{state.actual.modules[owner]};
-                    ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data binding{};
-                    if(!pin.source->actual_builtin_wasip1_function(static_cast<::std::size_t>(pin.id),epoch,
+                    ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data binding{};
+                    if(!pin.source->actual_checkpoint_builtin_function(static_cast<::std::size_t>(pin.id),epoch,
                         pin.module,record,binding)) { return state.fail(census_error::unavailable_capability); }
                     terminal_import = record; local = 0u; return true;
                 }
@@ -180,20 +181,21 @@ template<unsigned Resource>
             {
                 if(terminal_import != SIZE_MAX)
                 {
-                    // Exact terminal receiving instance/ordinal, not the known
-                    // builtin index/signature, is this function's identity.
-                    // Different terminal imports never share function objects;
-                    // real Wasm alias chains reuse ONLY that actual terminal.
+                    // The runtime binds builtin memory/policy to the declared
+                    // import's receiver, including when a re-export supplied
+                    // the final native leaf. Collapsing that wrapper to the
+                    // terminal import would redirect indirect-call writes to
+                    // the provider module after restoration.
                     if(owner >= maps.size() || terminal_import >= maps[owner].size())
                     { return state.fail(census_error::invalid_reference); }
-                    auto wire{maps[owner][terminal_import]};
+                    auto wire{maps[declaring][index]};
                     if(wire == 0u)
                     {
-                        wire = census_allocate_builtin_function(state,owner,terminal_import,epoch);
+                        wire = census_allocate_builtin_function(state,declaring,index,epoch,owner,terminal_import);
                         if(wire == 0u) { return false; }
-                        maps[owner][terminal_import] = wire; // checked complete actual terminal map.
+                        maps[declaring][index] = wire;
                     }
-                    maps[declaring][index] = wire; continue;
+                    continue;
                 }
             }
             auto const provider_imports{census_records<Resource, true>(*state.actual.modules[owner].module).size()};
@@ -321,16 +323,18 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
     return true;
 }
 [[nodiscard]] static census_object_id census_allocate_builtin_function(complete_census_work& state,
-    ::std::size_t owner, ::std::size_t imported_index, ::std::uint_least64_t epoch)
+    ::std::size_t owner, ::std::size_t imported_index, ::std::uint_least64_t epoch,
+    ::std::size_t provider_owner, ::std::size_t provider_index)
 {
     namespace cp = ::uwvm2::uwvm::debugger::checkpoint;
-    if(owner >= state.actual.modules.size() || owner >= state.instance_ids.size())
+    if(owner >= state.actual.modules.size() || owner >= state.instance_ids.size() || provider_owner >= state.actual.modules.size())
     { (void)state.fail(census_error::invalid_reference); return 0u; }
     auto const& pin{state.actual.modules[owner]}; auto const& imports{pin.module->imported_function_vec_storage};
     if(imported_index >= imports.size()) { (void)state.fail(census_error::invalid_reference); return 0u; }
     auto const& actual{imports.index_unchecked(imported_index)};
-    ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data binding{};
-    if(!pin.source->actual_builtin_wasip1_function(static_cast<::std::size_t>(pin.id),epoch,pin.module,imported_index,binding) ||
+    auto const& provider{state.actual.modules[provider_owner]};
+    ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data binding{};
+    if(!provider.source->actual_checkpoint_builtin_function(static_cast<::std::size_t>(provider.id),epoch,provider.module,provider_index,binding) ||
         binding.function_index >= 128u || binding.parameter_count > 16u || binding.result_count > 16u ||
         actual.import_type_ptr == nullptr)
     { (void)state.fail(census_error::unavailable_capability); return 0u; }
@@ -364,13 +368,14 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
     // [fixed private108-byte owner] end
     // [safe] exact owner extent BEFORE one-past; output never outlives owner.
     ::fast_io::basic_obuffer_view<unsigned char> output{bytes.data(),bytes.data()+bytes.size()};
-    constexpr unsigned char magic[]{'U','W','V','M','W','A','S','I','P','1','B','1'};
+    auto const magic=binding.ros_family?::std::array<unsigned char,12u>{'U','W','V','M','R','O','S','V','1','B','0','1'}:
+        ::std::array<unsigned char,12u>{'U','W','V','M','W','A','S','I','P','1','B','1'};
     // [owned12-byte magic] end
     // [safe] exact array extent BEFORE one-past; the bounded byte stream keeps
     // its unsigned-character type, and no text transcoding changes this format.
-    ::fast_io::operations::write_all(output,magic,magic+sizeof(magic));
+    ::fast_io::operations::write_all(output,magic.data(),magic.data()+magic.size());
     ::fast_io::io::print(output,::fast_io::mnp::le_put<64u>(binding.function_index),
-        ::fast_io::mnp::le_put<64u>(::std::uint64_t{1u}));
+        ::fast_io::mnp::le_put<64u>(::std::uint64_t{binding.ros_family?binding.ros_family:1u}));
     // Header is12+8+8=28bytes; actual knowninterface hash is fixed32bytes.
     // [owned108 ... committed28][32 digest bytes] end
     // [safe] exact fixed extents BEFORE deriving endpoints/copying/advancing.
@@ -389,7 +394,8 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
     if(resource == 0u || function == 0u) { return 0u; }
     // Reacquire after BOTH allocations: no object reference survives growth.
     auto* adapter{state.object(resource)}; adapter->flags=3u;
-    adapter->words={cp::builtin_wasip1_binding_kind,1u,binding.function_index+1u,0u,0u,0u,0u,0u};
+    adapter->words={binding.ros_family?cp::builtin_ros_v1_binding_kind:cp::builtin_wasip1_binding_kind,
+        binding.ros_family?binding.ros_family:1u,binding.function_index+1u,0u,0u,0u,0u,0u};
     adapter->bytes.resize(bytes.size());
     ::fast_io::freestanding::my_memcpy(adapter->bytes.data(),bytes.data(),bytes.size());
     if(!cp::state_details::valid_builtin_binding(*adapter)) { (void)state.fail(census_error::invalid_shape); return 0u; }
@@ -634,7 +640,7 @@ template<typename Memory>
         return copy_complete_native(state, owner, type, native.bits.data(), true, value);
     };
     if(!copy_slot(0u, default_value) || !state.append_value(wire, default_value)) { return false; }
-    ::std::vector<census_value> run{}; ::std::size_t first{};
+    ::uwvm2::utils::container::std_vector<census_value> run{}; ::std::size_t first{};
     auto flush = [&]()
     {
         if(run.empty()) { return true; }
@@ -788,7 +794,7 @@ template<typename Memory>
     if(!complete_modules(state.actual, profile_, epoch_))
     { return state.fail(census_error::unavailable_capability); }
     auto const count{state.actual.modules.size()};
-    ::std::vector<census_file_type const*> files{}; files.reserve(count);
+    ::uwvm2::utils::container::std_vector<census_file_type const*> files{}; files.reserve(count);
     // Check ALL actual source/type/resource origins BEFORE copying any bytes.
     for(::std::size_t owner{}; owner != count; ++owner)
     {
@@ -853,7 +859,7 @@ template<typename Memory>
     {
         auto const instance{state.instance_ids[owner]};
         if(!state.append_link(instance, state.module_ids[owner])) { return false; }
-        ::std::array<::std::vector<census_object_id> const*, 7u> maps{::std::addressof(state.function_ids[owner]),
+        ::std::array<::uwvm2::utils::container::std_vector<census_object_id> const*, 7u> maps{::std::addressof(state.function_ids[owner]),
             ::std::addressof(state.table_ids[owner]), ::std::addressof(state.memory_ids[owner]), ::std::addressof(state.global_ids[owner]),
             ::std::addressof(state.tag_ids[owner]), ::std::addressof(state.data_ids[owner]), ::std::addressof(state.element_ids[owner])};
         for(::std::size_t space{}; space != maps.size(); ++space)

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_query.h"
 # include "source_type_declarators.h"
@@ -30,7 +31,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     struct numeric_variable
     {
         die_key identity{};
-        ::std::string name{}, type_name{};
+        ::uwvm2::utils::container::std_string name{}, type_name{};
         bool parameter{};
         numeric_kind kind{numeric_kind::unavailable};
         numeric_unavailable_reason reason{numeric_unavailable_reason::no_location};
@@ -244,7 +245,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         ::std::span<variable_record const> variables_;
         ::std::size_t strings_{}, locations_{};
         bool valid_{};
-        ::std::vector<scoped_variable> candidates_{};
+        ::uwvm2::utils::container::std_vector<scoped_variable> candidates_{};
         bool candidates_ready_{};
         // Index immutable lexical ancestry only. Every actual PC/range, stop,
         // location, scalar value and result budget is still checked per query.
@@ -256,8 +257,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             try
             {
 #endif
-                ::std::vector<::std::size_t> physical(scopes_.size(), no_record);
-                ::std::vector<scoped_variable> pending{};
+                ::uwvm2::utils::container::std_vector<::std::size_t> physical(scopes_.size(), no_record);
+                ::uwvm2::utils::container::std_vector<scoped_variable> pending{};
                 pending.reserve(variables_.size());
                 for(::std::size_t i{}; i != scopes_.size(); ++i)
                 {
@@ -335,7 +336,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     [[nodiscard]] inline inline_query_error query_numeric_variables(::std::span<scope_record const> scopes,
         ::std::span<type_record const> types, ::std::span<variable_record const> variables, ::std::uint64_t pc,
         ::std::span<copied_numeric_local const> locals, ::std::size_t total_count,
-        ::std::vector<numeric_variable>& out, numeric_query_limits const& cap = {}, owned_scope_paths const* scope_owner = nullptr,
+        ::uwvm2::utils::container::std_vector<numeric_variable>& out, numeric_query_limits const& cap = {}, owned_scope_paths const* scope_owner = nullptr,
         owned_numeric_validation const* schema_owner = nullptr, ::std::size_t* selected_physical = nullptr) noexcept
     {
         out.clear();
@@ -347,7 +348,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             if(types.size() > cap.max_types || variables.size() > cap.max_variables ||
                locals.size() > cap.max_captured_locals) { return inline_query_error::limit_exceeded; }
             if(locals.size() > total_count) { return inline_query_error::malformed; }
-            ::std::vector<inline_frame> chain{};
+            ::uwvm2::utils::container::std_vector<inline_frame> chain{};
             ::std::size_t physical{no_record};
             auto const proven{query_inline_frames(scopes, pc, chain, cap.inline_limits, scope_owner, &physical)};
             if(proven != inline_query_error::none) { return proven; }
@@ -382,7 +383,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 }
                 return false;
             }};
-            ::std::vector<numeric_variable> pending{};
+            ::uwvm2::utils::container::std_vector<numeric_variable> pending{};
             ::std::size_t result_strings{};
             auto const candidates{schema_owner == nullptr ?
                 ::std::optional<::std::span<owned_numeric_validation::scoped_variable const>>{} :
@@ -413,8 +414,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 }
                 if(!budget::charge(spelling.size(), cap.max_result_string_bytes, result_strings))
                 { return inline_query_error::limit_exceeded; }
-                numeric_variable saved{variable.identity, ::fast_io::concat_std(::std::string_view{variable.name}),
-                    ::fast_io::concat_std(spelling), variable.parameter};
+                numeric_variable saved{variable.identity, ::uwvm2::utils::container::concat(::std::string_view{variable.name}),
+                    ::uwvm2::utils::container::concat(spelling), variable.parameter};
                 location_plan const* selected{}; location_plan const* fallback{};
                 for(auto const& location : variable.locations)
                 {

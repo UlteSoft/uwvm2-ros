@@ -60,6 +60,7 @@
 # include <uwvm2/imported/wasi/wasip1/memory/impl.h>
 # include <uwvm2/imported/wasi/wasip1/environment/impl.h>
 # include "base.h"
+# include "checkpoint_io.h"
 # include "posix.h"
 #endif
 
@@ -255,6 +256,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             if(!reservation) { return reservation.template error<::uwvm2::imported::wasi::wasip1::abi::errno_wasm64_t>(); }
 #endif
             // If the length of iovs is 0, the system call returns successfully with nwritten=0.
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
             ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64(
                 memory,
                 nwritten,
@@ -316,7 +318,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         {
             // Full locking is required during writing.
-            [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
+            [[maybe_unused]] auto memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+            checkpoint_scatter_io<true> replay_io{memory,memory_locker_guard};
 
             // get scatter base
             auto iovs_curr{iovs};
@@ -395,6 +399,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 }
 
                 curr_tmp_scatter_base.len = static_cast<::std::size_t>(wasm_len);
+                if(!replay_io.remember(wasm_base,curr_tmp_scatter_base.len))
+                { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enomem; }
 
 # if CHAR_BIT != 8
 #  if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
@@ -409,6 +415,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             if(env.debug_io_observed!=nullptr) { env.debug_io_observed(static_cast<::std::uint64_t>(length_counter),0u,false); }
+            if(auto const replay_result=replay_io.detach(memory,scatter_base,scatter_length);
+                replay_result!=::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess)return replay_result;
 
             // If ptr is null, it indicates an attempt to open a closed file. However, the preceding check for close pos already prevents such closed files from
             // being processed, making this a virtual machine implementation error.
@@ -816,6 +824,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
             // Verified: fposoffadd_scatters cannot produce negative values; it undergoes saturation handling during overflow.
             [[assume(total_bytes_write >= 0)]];
+            if(auto const replay_result=replay_io.commit(memory,static_cast<::std::uint64_t>(total_bytes_write),nwritten,8u);
+                replay_result!=::uwvm2::imported::wasi::wasip1::abi::errno_t::esuccess)return replay_result;
 
             // Since the total size was previously checked to be less than or equal to wasi_size_wasm64_t max, it must also be less than here.
             constexpr auto max_val{::std::numeric_limits<::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t>::max()};

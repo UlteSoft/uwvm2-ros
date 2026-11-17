@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 // Included after wasm_module_storage_t is complete. Standalone includes also work.
 #ifndef UWVM_MODULE
@@ -164,14 +165,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
         [[nodiscard]] inline gc_object_status materialize_elements(wasm_module_storage_t const* module,
             element_window const& window, ::std::size_t offset, ::std::size_t length,
-            ::std::unique_ptr<gc_reference[]>& result) noexcept
+            ::uwvm2::utils::allocator::resource::owned_array<gc_reference>& result) noexcept
         {
             if(offset > window.size || length > window.size - offset)
             { return gc_object_status::element_segment_out_of_bounds; }
             if(length == 0uz) { return gc_object_status::ok; }
             if(length > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(gc_reference))
             { return gc_object_status::size_overflow; }
-            result.reset(new(::std::nothrow) gc_reference[length]{});
+            result = ::uwvm2::utils::allocator::resource::try_array<gc_reference>(length);
             if(!result) { return gc_object_status::out_of_memory; }
             for(::std::size_t i{}; i != length; ++i)
             {
@@ -203,7 +204,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         gc_segment_details::element_window element{};
         auto const status{gc_segment_details::element_at(module, element_index, element)};
         if(status != gc_object_status::ok) { return status; }
-        ::std::unique_ptr<gc_reference[]> refs{};
+        ::uwvm2::utils::allocator::resource::owned_array<gc_reference> refs{};
         auto const materialized{gc_segment_details::materialize_elements(module, element, source_offset, length, refs)};
         if(materialized != gc_object_status::ok) { return materialized; }
         return store->array_new_elements(type_index, refs.get(), length, *result);
@@ -244,7 +245,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         gc_segment_details::element_window element{};
         auto const status{gc_segment_details::element_at(module, element_index, element)};
         if(status != gc_object_status::ok) { return status; }
-        ::std::unique_ptr<gc_reference[]> refs{};
+        ::uwvm2::utils::allocator::resource::owned_array<gc_reference> refs{};
         auto const materialized{gc_segment_details::materialize_elements(module, element, source_offset, length, refs)};
         if(materialized != gc_object_status::ok) { return materialized; }
         return store->array_init_elements(type_index, *array, destination_offset, refs.get(), length);

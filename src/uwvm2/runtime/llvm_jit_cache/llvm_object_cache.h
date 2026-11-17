@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -44,6 +45,7 @@
 #  include <llvm/Bitcode/BitcodeWriter.h>
 #  include <llvm/ExecutionEngine/ObjectCache.h>
 #  include <llvm/IR/Module.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
 #  include <llvm/Support/MemoryBuffer.h>
 #  include <llvm/Support/raw_ostream.h>
 # endif
@@ -84,8 +86,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 
         [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string module_bitcode_hash(llvm::Module const& module) UWVM_THROWS
         {
-            ::std::string bitcode{};
-            ::llvm::raw_string_ostream os{bitcode};
+            ::uwvm2::utils::container::std_string bitcode{};
+            ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::string_stream os{bitcode};
             // Bitcode hashing keys the cache by module contents, not by unstable names or source file paths.
             ::llvm::WriteBitcodeToFile(module, os);
             os.flush();

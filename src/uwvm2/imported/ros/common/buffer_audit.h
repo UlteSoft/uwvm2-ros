@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -98,7 +100,7 @@ namespace uwvm2::imported::ros::buffer_audit
         // Allocated once at configuration, bounded by maximum_record_bytes.
         // No storage grows with the number of operations or the disk quota.
         static constexpr ::std::uint64_t maximum_record_bytes=33554432;
-        ::std::unique_ptr<char[]> buffer_{};
+        ::uwvm2::utils::container::std_unique_ptr<char[]> buffer_{};
         ::std::uint64_t attempted_{},emitted_{},source_suppressed_{},payload_suppressed_{},count_suppressed_{},record_dropped_{},byte_dropped_{},io_dropped_{},capture_dropped_{};
         static constexpr ::std::uint64_t footer_reserve=4096;
         static void increment(::std::uint64_t& value) noexcept {if(value!=UINT64_MAX){++value;}}
@@ -148,7 +150,7 @@ namespace uwvm2::imported::ros::buffer_audit
             ::std::lock_guard guard{mutex_};
             if(configured_||run.empty()||run.size()>128||descriptor<3||descriptor>1048575) {return false;}
             for(auto c:run) {if(!((c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='.'||c=='_'||c=='-')){return false;}}
-            auto buffer=::std::unique_ptr<char[]>{new(::std::nothrow) char[static_cast<::std::size_t>(limits_.record_bytes)]};
+            auto buffer=::uwvm2::utils::container::std_unique_ptr<char[]>{::uwvm2::utils::allocator::fast_io_strict::try_array<char>(static_cast<::std::size_t>(limits_.record_bytes), false)};
             if(!buffer){return false;}
             int copy{::fcntl(static_cast<int>(descriptor),F_DUPFD_CLOEXEC,3)};if(copy<0){return false;}
             struct stat info{};int flags{::fcntl(copy,F_GETFL)};

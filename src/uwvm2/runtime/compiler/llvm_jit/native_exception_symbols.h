@@ -253,7 +253,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::native_exceptio
             // [module-owned external declaration] has no guest-readable allocation or initializer.
             // [safe                            ] only its symbol address is used in EH metadata.
             // ^^ type_info: ownership transfers immediately to module, borrowed until module teardown.
-            type_info = new ::llvm::GlobalVariable(module, ::llvm::Type::getInt8Ty(context), true,
+            type_info = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(module, ::llvm::Type::getInt8Ty(context), true,
                 ::llvm::GlobalValue::ExternalLinkage, nullptr, type_info_symbol);
         }
 #if defined(UWVM_RUNTIME_LLVM_JIT_LOCAL_PERSONALITY)

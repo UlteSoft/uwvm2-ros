@@ -10,3 +10,7 @@ current-stack-frame theme colour. This icon is licensed under
 The complete licence is included in CODICONS-LICENSE.txt.
 
 The other icons in this directory are not covered by this attribution.
+
+The `pointer-exact-*.svg` and `pointer-next-*.svg` gutter icons reuse the same
+unmodified debug-stackframe geometry, coloured with VS Code's default
+current-frame (yellow) and focused-frame (green) theme colours.

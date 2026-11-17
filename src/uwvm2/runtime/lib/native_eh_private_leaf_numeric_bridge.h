@@ -20,7 +20,7 @@ extern "C++" [[noreturn]] void details::llvm_jit_throw_numeric_private_leaf_no_t
     // integer pointer is admitted by a public VM interface. This conversion
     // changes representation only; the complete checked extent is unchanged.
     ::std::span<::std::byte const> tuple{reinterpret_cast<::std::byte const*>(buffer_address), bytes};
-    ::std::vector<::uwvm2::runtime::exception::payload_field> fields{};
+    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
     fields.reserve(count);
     ::std::size_t offset{};
     for(::std::size_t index{}; index != count; ++index)

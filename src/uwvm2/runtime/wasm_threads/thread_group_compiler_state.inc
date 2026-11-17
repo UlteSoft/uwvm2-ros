@@ -9,7 +9,7 @@
             bool abandoned{};
             bool ticket_live{};
             SpawnReservation reservation;
-            ::std::unique_ptr<CompilerWork> work;
+            ::uwvm2::utils::container::std_unique_ptr<CompilerWork> work;
             compiler_result result{};
             launch_result actual_launch{};
         };

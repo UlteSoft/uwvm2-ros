@@ -1,5 +1,6 @@
 // Bounded canonical checkpoint DATA integrity; never a capture/restore issuer.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <algorithm>
 # include <array>
@@ -29,7 +30,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::state_identity
     {
         status observation{status::invalid_graph};
         error graph_error{error::none};
-        ::std::vector<binding::sha256> functions{};
+        ::uwvm2::utils::container::std_vector<binding::sha256> functions{};
         binding::sha256 events{};
         [[nodiscard]] constexpr bool grants_restore_authority() const noexcept { return false; }
     };
@@ -124,9 +125,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::state_identity
             // Every field/byte borrow below is now graph-valid and aggregate
             // bounded BEFORE allocation, indexing, reinterpretation or advance.
             auto constexpr absent{(::std::numeric_limits<::std::size_t>::max)()};
-            ::std::vector<::std::size_t> module_ordinals(count, absent), module_objects{};
-            ::std::vector<::std::size_t> instance_ordinals(count, absent), instances_per_module{};
-            ::std::vector<details::function_key> functions{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> module_ordinals(count, absent), module_objects{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> instance_ordinals(count, absent), instances_per_module{};
+            ::uwvm2::utils::container::std_vector<details::function_key> functions{};
             ::std::size_t event_count{};
             for(::std::size_t i{}; i != count; ++i)
             {
@@ -248,6 +249,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::state_identity
 #if defined(__cpp_exceptions) || defined(__EXCEPTIONS) || defined(_CPPUNWIND)
         catch(...) { return {status::allocation_failed}; }
 #endif
+    }
+    // Compare a supplied saved image with a freshly captured, coherent live
+    // instance BEFORE any native retirement. Only mutable Wasm state may go
+    // backwards: effective code generations and the resolved syntax policy may
+    // not. In particular, restore cannot undo an independently committed update.
+    // Both arguments are DATA; the caller still needs its actual stop/source,
+    // host admission and current target capability checks.
+    [[nodiscard]] inline error compatible_restore_code(state const& saved, state const& current,
+        limits const& cap = {}, binding::limits const& identity_cap = {}) noexcept
+    {
+        auto old_code = derive(saved, cap, identity_cap);
+        if(old_code.observation != status::derived_data)
+        { return old_code.graph_error != error::none ? old_code.graph_error : error::invalid_shape; }
+        auto live_code = derive(current, cap, identity_cap);
+        if(live_code.observation != status::derived_data)
+        { return live_code.graph_error != error::none ? live_code.graph_error : error::invalid_shape; }
+        if(saved.required_features != current.required_features || old_code.functions != live_code.functions)
+        { return error::stale_generation; }
+        ::std::size_t live{};
+        for(auto const& module : saved.objects)
+        {
+            if(module.kind != object_kind::module) { continue; }
+            while(live < current.objects.size() && current.objects[live].kind != object_kind::module) { ++live; }
+            if(live == current.objects.size()) { return error::stale_generation; }
+            auto const& actual = current.objects[live++];
+            if(module.flags != actual.flags || module.words != actual.words || module.bytes != actual.bytes)
+            { return error::stale_generation; }
+        }
+        return error::none;
     }
     [[nodiscard]] inline result compare(state const& saved, binding::manifest const& identity,
         limits const& cap = {}, binding::limits const& identity_cap = {}) noexcept

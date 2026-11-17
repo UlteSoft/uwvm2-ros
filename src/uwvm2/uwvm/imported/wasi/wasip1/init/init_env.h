@@ -939,8 +939,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
 
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             auto label=ps.sock_family==::uwvm2::imported::wasi::wasip1::environment::sock_family_t::local ?
-                ::fast_io::u8concat(u8"unix:",ps.local_unix_path) : ::fast_io::u8concat(ps.ip);
-            label=::fast_io::u8concat(static_cast<unsigned>(ps.sock_family),u8":",static_cast<unsigned>(ps.sock_type),u8":",
+                ::uwvm2::utils::container::u8concat(u8"unix:",ps.local_unix_path) : ::uwvm2::utils::container::u8concat(ps.ip);
+            label=::uwvm2::utils::container::u8concat(static_cast<unsigned>(ps.sock_family),u8":",static_cast<unsigned>(ps.sock_type),u8":",
                 static_cast<unsigned>(ps.handle_type),u8":",label);
             env.policy_resources.emplace_back(::uwvm2::imported::wasi::wasip1::environment::policy_resource_binding{
                 5u,static_cast<::std::uint64_t>(ps.fd),static_cast<::std::uint64_t>(reinterpret_cast<::std::uintptr_t>(new_sock_fd.fd_p->wasi_fd.ptr)),

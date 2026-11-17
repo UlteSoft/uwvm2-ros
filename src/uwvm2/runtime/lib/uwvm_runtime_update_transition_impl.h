@@ -1,6 +1,7 @@
 // Private production_update_detail fragment: held native ownership and actual
 // policy/state publication helpers. Never imported into guest address space.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Only called after the signed coordinator has drained every old execution
 // lease. Staging may fail; publication later has no allocation or entropy step.
 [[nodiscard]] inline bool prepare_memory_tags(session& s)
@@ -102,8 +103,8 @@
         if(source.tagged!=destination.tagged || ((source.tagged || destination.tagged) &&
            ((row.source_offset|row.destination_offset|row.length)&15u)!=0u)) { return update::status::unsupported; }
     }
-    ::std::vector<::std::vector<unsigned char>> copies(s.module_plan->memories.size());
-    ::std::vector<::std::span<unsigned char const>> source_memories; source_memories.reserve(copies.size());
+    ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<unsigned char>> copies(s.module_plan->memories.size());
+    ::uwvm2::utils::container::std_vector<::std::span<unsigned char const>> source_memories; source_memories.reserve(copies.size());
     for(auto const& memory : s.module_plan->memories)
     {
         auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(memory.index).memory};
@@ -179,7 +180,7 @@
 [[nodiscard]] inline bool projected_policy_fingerprint(session::policy_plan_type const& plan, update::digest& fingerprint)
 {
     auto const* configured{active_policy_binding()}; if(!configured) { return false; }
-    ::std::vector<unsigned char> material;
+    ::uwvm2::utils::container::std_vector<unsigned char> material;
     append_execution_safety_policy(material);
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     update::append_u64(material, file.module_name.size()); for(auto c : file.module_name) { material.push_back(static_cast<unsigned char>(c)); }

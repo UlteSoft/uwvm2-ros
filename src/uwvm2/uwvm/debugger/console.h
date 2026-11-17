@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -40,6 +42,9 @@
 # include "wasm_mutation.h"
 # include "wasip1_state.h"
 # include "ros_state.h"
+# include "scene_state.h"
+# include "wasithread_state.h"
+# include "host_interfaces.h"
 # include <uwvm2/runtime/lib/uwvm_runtime.h>
 # endif
 #endif
@@ -56,11 +61,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     struct console_restart_request
     {
         bool pending{}, resume_new_launch{}, background{}, killed{};
-        ::std::unique_ptr<console_tui::screen> screen{};
-        ::std::unique_ptr<console_editing::editor> editor{};
+        ::uwvm2::utils::container::std_unique_ptr<console_tui::screen> screen{};
+        ::uwvm2::utils::container::std_unique_ptr<console_editing::editor> editor{};
         console_launch_action action{console_launch_action::run};
         ::fast_io::string program_name{}; // Owned host display label, never guest/launch authority.
-        ::std::vector<breakpoint> breakpoints{}; // Cold settings, revalidated in the new instance.
+        ::uwvm2::utils::container::std_vector<breakpoint> breakpoints{}; // Cold settings, revalidated in the new instance.
         console_print_preferences source_print{}; // HOST presentation preferences survive a fresh guest launch.
     };
     struct console_io
@@ -180,9 +185,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     {
         inline constexpr ::std::size_t maximum_formatted_reply_bytes{65536u};
         inline constexpr ::std::size_t reply_trailer_reserve{256u};
-        inline void add_name(::std::string& text, ::std::u8string const& name)
+        inline void add_name(::uwvm2::utils::container::std_string& text, ::uwvm2::utils::container::std_u8string const& name)
         {
-            ::fast_io::ostring_ref_std output{__builtin_addressof(text)};
+            ::uwvm2::utils::container::ostring_ref output{__builtin_addressof(text)};
             for(auto const byte : name)
             {
                 auto const c{static_cast<unsigned char>(byte)};
@@ -192,9 +197,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 else { ::fast_io::io::print(output, ::fast_io::mnp::chvw(static_cast<char>(c))); }
             }
         }
-        inline void add_source_path(::std::string& text, ::std::string_view path)
+        inline void add_source_path(::uwvm2::utils::container::std_string& text, ::std::string_view path)
         {
-            ::fast_io::ostring_ref_std output{__builtin_addressof(text)};
+            ::uwvm2::utils::container::ostring_ref output{__builtin_addressof(text)};
             for(auto const byte : path)
             {
                 auto const c{static_cast<unsigned char>(byte)};
@@ -224,41 +229,85 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 default: return "actual stopped code owner or qualified native backend is unavailable";
             }
         }
-        [[nodiscard]] inline ::std::string format_reply(controller_reply const& reply, console_command const& command)
+        [[nodiscard]] inline ::uwvm2::utils::container::std_string format_reply(controller_reply const& reply, console_command const& command)
         {
+            if(reply.retained_host_query_denied)
+                return "error: live WASI/ROS environment is held by a pending native operation; use dump history for recorded observations or continue the original operation\n";
+            if(command.kind==console_command_kind::snapshot_record && (command.recording_action==4u || command.recording_action==5u || command.recording_action==7u))
+                return reply.status==::uwvm2::utils::control::error::none?reply.historical_environment:
+                    ::uwvm2::utils::container::std_string{"error: historical environment unavailable or permission denied; live environment unchanged\n"};
+            if(command.kind==console_command_kind::snapshot_record)
+                return ::uwvm2::utils::container::concat(::fast_io::mnp::os_c_str(reply.status==::uwvm2::utils::control::error::none?"snapshot-record":"error: snapshot-record rejected"),
+                    " mode=",reply.replay.mode," instructions=",reply.replay.instructions," events=",reply.replay.events,
+                    " cursor=",reply.replay.cursor," state-error=",reply.restore_state_error," journal-error=",static_cast<unsigned>(reply.replay.error),
+                    " saved=",static_cast<unsigned>(reply.dump_published),
+                    ::fast_io::mnp::os_c_str(reply.retained_snapshot?" retained=1":""),"; ",
+                    ::fast_io::mnp::os_c_str(reply.execution==execution_status::stopped?"guest stopped":
+                        reply.execution==execution_status::running?"guest running":
+                        reply.execution==execution_status::stopping?"pause incomplete":
+                        reply.execution==execution_status::exited?"guest exited":"debug domain closed"),"\n");
+            if(command.kind==console_command_kind::snapshot_restore)
+            {
+                if(reply.restore_reattached && reply.restore_applied && reply.status==::uwvm2::utils::control::error::none)
+                    return ::uwvm2::utils::container::concat("snapshot-reattached stop=",reply.stop_identifier," epoch=",reply.restore_epoch,
+                        "; original native operation retained; guest paused; no external operation repeated\n");
+                if(reply.restore_applied && !reply.restore_pending && reply.restore_epoch)
+                    return ::uwvm2::utils::container::concat("snapshot-restored stop=",reply.stop_identifier," epoch=",reply.restore_epoch,
+                        " source=",::fast_io::mnp::os_c_str(reply.status==::uwvm2::utils::control::error::none?"ready":"unavailable"),
+                        "; guest paused; external effects are not rewound\n");
+                return ::uwvm2::utils::container::concat(::fast_io::mnp::os_c_str(reply.restore_pending?"snapshot-restore pending":"error: snapshot-restore rejected"),
+                    " phase=",reply.restore_phase," detail=",reply.restore_detail," preparation=",reply.restore_preparation,
+                    " state-error=",reply.restore_state_error," applied=",static_cast<unsigned>(reply.restore_applied),
+                    " retained=",static_cast<unsigned>(reply.restore_original_retained),
+                    ::fast_io::mnp::os_c_str(reply.restore_pending?"; use dump restore continue; guest execution remains closed\n":
+                    reply.restore_original_retained?"; original stopped world retained; inspect status before further management\n":
+                    "; restore outcome requires host inspection; execution access remains closed\n"));
+            }
             if(command.kind==console_command_kind::wasm_dump)
             {
+                namespace policy=::uwvm2::utils::control::dump_permissions;
+                if(command.dump_policy_query && reply.status==::uwvm2::utils::control::error::none)
+                    return ::uwvm2::utils::container::concat("dump-policy ",::fast_io::mnp::os_c_str(reply.dump_policy.kind==policy::constraint::forced?"force":"max"),
+                        "=",::fast_io::mnp::os_c_str(policy::name(reply.dump_policy.level))," effective=",
+                        ::fast_io::mnp::os_c_str(policy::name(static_cast<policy::disclosure>(reply.dump_disclosure))),"\n");
+                if(reply.dump_denial!=policy::denial::none)
+                    return ::uwvm2::utils::container::concat("error: wasm-dump rejected: ",::fast_io::mnp::os_c_str(policy::message(reply.dump_denial)),
+                        "; launch policy cannot be changed in the debugger; no output was created\n");
                 if(reply.status==::uwvm2::utils::control::error::none && reply.dump_published)
-                    return ::fast_io::concat_std("wasm-dump saved stop=",reply.stop_identifier,"; current stop retained; inspect capture completeness metadata\n");
-                return ::fast_io::concat_std("error: wasm-dump rejected status=",reply.dump_status,
-                    "; requires an exact current cooperative stop and a new writable output path; current stop retained\n");
+                    return ::uwvm2::utils::container::concat("wasm-dump saved stop=",reply.stop_identifier," disclosure=",::fast_io::mnp::os_c_str(reply.dump_disclosure==1u?"diagnostic":"full"),"; current stop retained; inspect capture completeness metadata\n");
+                return ::uwvm2::utils::container::concat("error: wasm-dump rejected status=",reply.dump_status,
+                    "; requires an exact current cooperative stop and a new writable output path; ",
+                    ::fast_io::mnp::os_c_str(reply.execution==execution_status::stopped?"guest stopped":
+                        reply.execution==execution_status::running?"guest running":
+                        reply.execution==execution_status::stopping?"pause incomplete":
+                        reply.execution==execution_status::exited?"guest exited":"debug domain closed"),"\n");
             }
-            ::std::string text;
-            ::fast_io::ostring_ref_std output{__builtin_addressof(text)};
+            ::uwvm2::utils::container::std_string text;
+            ::uwvm2::utils::container::ostring_ref output{__builtin_addressof(text)};
             if(command.kind==console_command_kind::execution_relocate)
             {
                 using result=::uwvm2::runtime::lib::llvm_jit_debug_relocation_status;
                 if(reply.relocation_status==result::moved)
-                { return ::fast_io::concat_std("Execution moved to ",::fast_io::mnp::hex0x(reply.native_step_to),"; still stopped.\n"); }
+                { return ::uwvm2::utils::container::concat("Execution moved to ",::fast_io::mnp::hex0x(reply.native_step_to),"; still stopped.\n"); }
                 auto reason{reply.relocation_status==result::invalid_target ? "target is outside the current JIT function or is not an instruction boundary" :
                     reply.relocation_status==result::incompatible_frame ? "target crosses a call, branch or incompatible native frame state" :
                     reply.relocation_status==result::restore_state_unavailable ? "target requires captured operand/control stacks and a resumable JIT landing" :
                     reply.relocation_status==result::current_stop_required ? "requires an exact => stop at the requested level; N> cannot be moved" : "native context relocation is unavailable"};
-                return ::fast_io::concat_std("error: jump unavailable: ",::fast_io::mnp::os_c_str(reason),"; current stop retained\n");
+                return ::uwvm2::utils::container::concat("error: jump unavailable: ",::fast_io::mnp::os_c_str(reason),"; current stop retained\n");
             }
             if(reply.source_frame_out_of_range)
-            { return ::fast_io::concat_std("error: frame ordinal is outside the current authenticated frame list; selection unchanged\n"); }
+            { return ::uwvm2::utils::container::concat("error: frame ordinal is outside the current authenticated frame list; selection unchanged\n"); }
             if(reply.source_frame_caller_unavailable)
-            { return ::fast_io::concat_std("error: source variables unavailable: selected caller has no authenticated captured locals or caller source PC\n"); }
+            { return ::uwvm2::utils::container::concat("error: source variables unavailable: selected caller has no authenticated captured locals or caller source PC\n"); }
             if(reply.source_frame_step_unavailable)
-            { return ::fast_io::concat_std("error: selected outer-frame source stepping unavailable; select frame 0 before source step; current stop retained\n"); }
+            { return ::uwvm2::utils::container::concat("error: selected outer-frame source stepping unavailable; select frame 0 before source step; current stop retained\n"); }
             if(command.kind == console_command_kind::source_frame &&
                (reply.status == ::uwvm2::utils::control::error::source_debug_info_unavailable ||
                 reply.status == ::uwvm2::utils::control::error::source_debug_info_invalid ||
                 reply.status == ::uwvm2::utils::control::error::source_location_unmapped))
-            { return ::fast_io::concat_std("error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"); }
+            { return ::uwvm2::utils::container::concat("error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"); }
             if(reply.status != ::uwvm2::utils::control::error::none && !reply.watchpoint_error.empty())
-            { return ::fast_io::concat_std("error: watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
+            { return ::uwvm2::utils::container::concat("error: watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
             if(reply.status != ::uwvm2::utils::control::error::none)
             {
                 ::fast_io::io::print(output, "error: ");
@@ -313,7 +362,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(!reply.source_frames_available || reply.source_stop_identifier == 0u || reply.source_frame_thread == 0u ||
                    reply.source_frames.size() > 128u || reply.source_frame_total == 0u || reply.selected_source_frame >= reply.source_frame_total ||
                    reply.source_frame_first > reply.source_frame_total || reply.source_frames.size() > reply.source_frame_total - reply.source_frame_first)
-                { return ::fast_io::concat_std("error: current source frame unavailable\n"); }
+                { return ::uwvm2::utils::container::concat("error: current source frame unavailable\n"); }
                 ::fast_io::io::print(output, command.wasm_frames ? ::fast_io::string_view{"wasm-frames stop="} : ::fast_io::string_view{"source-frames stop="}, ::fast_io::mnp::dec(reply.source_stop_identifier),
                     " thread=", ::fast_io::mnp::dec(reply.source_frame_thread), " selected=", ::fast_io::mnp::dec(reply.selected_source_frame),
                     " count=", ::fast_io::mnp::dec(reply.source_frames.size()));
@@ -346,14 +395,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(command.kind == console_command_kind::wasm_script)
             {
                 if(reply.script_replies.size() != reply.script_commands.size() || reply.script_replies.size() > 16u)
-                { return ::fast_io::concat_std("error: invalid bounded script reply\n"); }
+                { return ::uwvm2::utils::container::concat("error: invalid bounded script reply\n"); }
                 ::std::size_t shown{};
                 for(::std::size_t i{}; i != reply.script_replies.size(); ++i)
                 {
                     if(reply.script_commands[i].kind == console_command_kind::wasm_script)
-                    { return ::fast_io::concat_std("error: recursive script reply is forbidden\n"); }
+                    { return ::uwvm2::utils::container::concat("error: recursive script reply is forbidden\n"); }
                     auto const child{format_reply(reply.script_replies[i], reply.script_commands[i])};
-                    auto const heading{::fast_io::concat_std("wasm-script command ", ::fast_io::mnp::dec(i + 1u), "\n")};
+                    auto const heading{::uwvm2::utils::container::concat("wasm-script command ", ::fast_io::mnp::dec(i + 1u), "\n")};
                     if(text.size() > maximum_formatted_reply_bytes - reply_trailer_reserve ||
                        heading.size() > maximum_formatted_reply_bytes - reply_trailer_reserve - text.size() ||
                        child.size() > maximum_formatted_reply_bytes - reply_trailer_reserve - text.size() - heading.size())
@@ -379,7 +428,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(reply.wasm_trace_page_available)
                 {
                     if(reply.wasm_trace.size() > wasm_events::maximum_trace_page_records)
-                    { return ::fast_io::concat_std("error: invalid bounded Wasm trace page\n"); }
+                    { return ::uwvm2::utils::container::concat("error: invalid bounded Wasm trace page\n"); }
                     ::fast_io::io::print(output, "wasm-trace page oldest=", ::fast_io::mnp::dec(reply.wasm_trace_oldest_sequence),
                         " newest=", ::fast_io::mnp::dec(reply.wasm_trace_newest_sequence),
                         " next-after=", ::fast_io::mnp::dec(reply.wasm_trace_next_sequence),
@@ -387,7 +436,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         " cursor-gap=", ::fast_io::mnp::dec(static_cast<unsigned>(reply.wasm_trace_cursor_gap)), "\n");
                 }
                 if(reply.wasm_trace.size() > wasm_events::maximum_trace_page_records || reply.wasm_catchpoints.size() > 256u)
-                { return ::fast_io::concat_std("error: invalid bounded Wasm event response\n"); }
+                { return ::uwvm2::utils::container::concat("error: invalid bounded Wasm event response\n"); }
                 if(command.wasm_request.command == wasm_events::command_kind::catch_set)
                 { ::fast_io::io::print(output, "wasm-catchpoint ", ::fast_io::mnp::dec(reply.wasm_catchpoint_identifier), ::fast_io::mnp::os_c_str(command.wasm_request.event == wasm_events::category::uncaught ? " after-throw; before-unwind\n" : command.wasm_request.event == wasm_events::category::trap ? " after-failure\n" : " before-instruction\n")); }
                 for(auto const& point : reply.wasm_catchpoints)
@@ -421,7 +470,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                    (reply.registers.word_bits != 32u && reply.registers.word_bits != 64u) ||
                    (command.requested_step_thread != 0u && reply.disassembly_code.participant != command.requested_step_thread) ||
                    reply.registers.pc() != reply.disassembly_code.pc)
-                { return ::fast_io::concat_std("error: current native frame-zero registers unavailable\n"); }
+                { return ::uwvm2::utils::container::concat("error: current native frame-zero registers unavailable\n"); }
                 char const* architecture_label{"unavailable"};
                 switch(reply.registers.machine)
                 {
@@ -447,7 +496,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 bool all_registers{};
                 if(command.register_name_size != 0u)
                 {
-                    if(command.register_name_size > command.register_name.size()) { return ::fast_io::concat_std("error: invalid register name\n"); }
+                    if(command.register_name_size > command.register_name.size()) { return ::uwvm2::utils::container::concat("error: invalid register name\n"); }
                     // [owned bounded register token ...] end
                     // [safe                            ] metadata name comparison;
                     //  ^^ no expression or numeric native address is evaluated.
@@ -467,19 +516,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         selected_fp = native_registers::fp_index_of(reply.registers.machine,
                             ::std::u8string_view{token.data(), command.register_name_size});
                         if(selected_fp == native_registers::max_fp_registers)
-                        { return ::fast_io::concat_std("error: register is unavailable on the current architecture\n"); }
+                        { return ::uwvm2::utils::container::concat("error: register is unavailable on the current architecture\n"); }
                     }
                 }
                 for(::std::size_t i{}; i != reply.registers.size(); ++i)
                 {
                     if(command.register_name_size != 0u && !all_registers && i != selected) { continue; }
                     auto const* name{native_registers::name(reply.registers.machine, i)};
-                    if(name == nullptr) { return ::fast_io::concat_std("error: invalid native register snapshot\n"); }
+                    if(name == nullptr) { return ::uwvm2::utils::container::concat("error: invalid native register snapshot\n"); }
                     ::fast_io::io::print(output, "  ", ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(name)), "=");
                     auto const bits{reply.registers.known_bits[i]};
                     if(bits == 0u) { ::fast_io::io::print(output, "unavailable\n"); continue; }
                     if((bits != 32u && bits != 64u) || bits > reply.registers.word_bits)
-                    { return ::fast_io::concat_std("error: invalid numeric register width\n"); }
+                    { return ::uwvm2::utils::container::concat("error: invalid numeric register width\n"); }
                     ::fast_io::io::print(output, "0x");
                     for(::std::size_t byte{reply.registers.word_bits / 8u}; byte != 0u; --byte)
                     {
@@ -502,7 +551,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         if(name == nullptr && value.width == 0u) { continue; }
                         if(name == nullptr || width == 0u || width > value.bytes.size() || value.width > width ||
                            (value.width != 0u && ((reply.registers.machine == native_registers::architecture::x86_64 && i >= 16u) || (value.width != 4u && value.width != 8u && value.width != 16u))))
-                        { return ::fast_io::concat_std("error: invalid native floating register snapshot\n"); }
+                        { return ::uwvm2::utils::container::concat("error: invalid native floating register snapshot\n"); }
                         ::fast_io::io::print(output, "  ", ::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(name)), "=");
                         if(value.width == 0u) { ::fast_io::io::print(output, "unavailable\n"); continue; }
                         ::fast_io::io::print(output, "0x");
@@ -525,9 +574,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             {
                 if((!reply.source_object_type_available && !reply.source_object_value_available) || reply.source_stop_identifier == 0u ||
                    reply.source_object_type.size() > 1024u)
-                { return ::fast_io::concat_std("error: current scoped source type unavailable\n"); }
+                { return ::uwvm2::utils::container::concat("error: current scoped source type unavailable\n"); }
                 ::fast_io::io::print(output, ::fast_io::mnp::os_c_str(command.kind == console_command_kind::source_value ? "source-value stop=" : "source-type stop="), ::fast_io::mnp::dec(reply.source_stop_identifier), " name=");
-                if(command.source_variable_name_size > command.source_variable_name.size()) { return ::fast_io::concat_std("error: invalid source name\n"); }
+                if(command.source_variable_name_size > command.source_variable_name.size()) { return ::uwvm2::utils::container::concat("error: invalid source name\n"); }
                 add_source_path(text, {command.source_variable_name.data(), command.source_variable_name_size}); ::fast_io::io::print(output, ::fast_io::mnp::chvw('\n'));
                 // Validate the entire owned tree even when its display later
                 // needs truncation; a bad omitted row is still a malformed reply.
@@ -535,14 +584,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 {
                     auto const& node{reply.source_object_type[i]};
                     if(node.depth > 32u || (node.parent != source_dwarf::no_record && node.parent >= i))
-                    { return ::fast_io::concat_std("error: invalid source object tree\n"); }
+                    { return ::uwvm2::utils::container::concat("error: invalid source object tree\n"); }
                 }
                 ::std::size_t shown{};
                 for(::std::size_t i{}; i != reply.source_object_type.size(); ++i)
                 {
                     auto const& node{reply.source_object_type[i]};
-                    ::std::string row;
-                    ::fast_io::ostring_ref_std row_output{__builtin_addressof(row)};
+                    ::uwvm2::utils::container::std_string row;
+                    ::uwvm2::utils::container::ostring_ref row_output{__builtin_addressof(row)};
                     if(command.kind == console_command_kind::source_value)
                     { ::fast_io::io::print(row_output, source_dwarf::object_details_of(node), "\n"); }
                     else
@@ -587,7 +636,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                    code.pc < reply.disassembly_owner_begin || code.pc >= reply.disassembly_owner_end ||
                    reply.disassembly_function_name_size > reply.disassembly_function_name.size() ||
                    (!command.disassembly_resolve_symbols && reply.disassembly_function_name_size != 0u))
-                { return ::fast_io::concat_std("error: native disassembly range is unavailable\n"); }
+                { return ::uwvm2::utils::container::concat("error: native disassembly range is unavailable\n"); }
                 native_owned_instruction_semantics::cached_decoder public_decoder{code.target};
                 for(::std::size_t index{}; index != reply.disassembly_count; ++index)
                 {
@@ -601,7 +650,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                          instruction.pc >= reply.disassembly_owner_end || instruction.size > instruction.bytes.size() ||
                          instruction.size > reply.disassembly_owner_end - instruction.pc ||
                          ::std::memchr(instruction.text.data(), '\0', instruction.text.size()) == nullptr)))
-                    { return ::fast_io::concat_std("error: native disassembly range is invalid\n"); }
+                    { return ::uwvm2::utils::container::concat("error: native disassembly range is invalid\n"); }
                 }
                 ::fast_io::io::print(output, "native-disassembly-range stop=", ::fast_io::mnp::dec(reply.disassembly_stop_identifier),
                     " thread=", ::fast_io::mnp::dec(code.participant), " module=", ::fast_io::mnp::dec(code.module),
@@ -653,7 +702,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(reply.disassembly_stop_identifier == 0u || reply.disassembly_count == 0u ||
                    reply.disassembly_count > reply.disassembly.size() || code.participant == 0u ||
                    code.pc == 0u || code.function_generation == 0u || code.runtime_epoch == 0u)
-                { return ::fast_io::concat_std("error: native disassembly result is unavailable\n"); }
+                { return ::uwvm2::utils::container::concat("error: native disassembly result is unavailable\n"); }
                 native_owned_instruction_semantics::cached_decoder public_decoder{code.target};
                 for(::std::size_t index{}; index != reply.disassembly_count; ++index)
                 {
@@ -663,7 +712,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                            reply.disassembly_owner_begin, reply.disassembly_owner_end, true) ||
                        instruction.pc == 0u || instruction.size > instruction.bytes.size() ||
                        (instruction && ::std::memchr(instruction.text.data(), '\0', instruction.text.size()) == nullptr))
-                    { return ::fast_io::concat_std("error: native disassembly result is invalid\n"); }
+                    { return ::uwvm2::utils::container::concat("error: native disassembly result is invalid\n"); }
                 }
                 ::fast_io::io::print(output, "native-disassembly stop=", ::fast_io::mnp::dec(reply.disassembly_stop_identifier),
                     " thread=", ::fast_io::mnp::dec(code.participant), " module=", ::fast_io::mnp::dec(code.module),
@@ -744,9 +793,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                reply.execution == execution_status::stopped && reply.native_step_from != 0u && reply.native_instruction)
             {
                 if(reply.native_instruction.size > reply.native_instruction.bytes.size())
-                { return ::fast_io::concat_std("error: invalid native instruction extent\n"); }
+                { return ::uwvm2::utils::container::concat("error: invalid native instruction extent\n"); }
                 auto const text_end{::std::find(reply.native_instruction.text.begin(), reply.native_instruction.text.end(), '\0')};
-                if(text_end == reply.native_instruction.text.end()) { return ::fast_io::concat_std("error: invalid native instruction text\n"); }
+                if(text_end == reply.native_instruction.text.end()) { return ::uwvm2::utils::container::concat("error: invalid native instruction text\n"); }
                 ::fast_io::io::print(output, "native instruction 0x", ::fast_io::mnp::hex<false, true>(reply.native_step_from),
                     " bytes=");
                 for(::std::size_t index{}; index != reply.native_instruction.size; ++index)
@@ -814,17 +863,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 return text;
             }
             if(command.operation == ::uwvm2::utils::control::operation::breakpoint_clear)
-            { return ::fast_io::concat_std("breakpoint deleted\n"); }
+            { return ::uwvm2::utils::container::concat("breakpoint deleted\n"); }
             if(command.kind == console_command_kind::breakpoint_control)
-            { return ::fast_io::concat_std("breakpoint policy updated\n"); }
+            { return ::uwvm2::utils::container::concat("breakpoint policy updated\n"); }
             if(command.operation == ::uwvm2::utils::control::operation::breakpoint_list)
             {
-                if(reply.breakpoints.empty()) { return ::fast_io::concat_std("no breakpoints\n"); }
+                if(reply.breakpoints.empty()) { return ::uwvm2::utils::container::concat("no breakpoints\n"); }
                 for(auto const& point : reply.breakpoints)
                 {
                     ::fast_io::io::print(output, "breakpoint ", ::fast_io::mnp::dec(point.identifier),
                                         " module=", ::fast_io::mnp::dec(point.module), " function=", ::fast_io::mnp::dec(point.function),
-                                        " kind=", ::fast_io::mnp::cond(point.assembly, "asm", "wasm"),
+                                        " kind=", ::fast_io::mnp::os_c_str(point.assembly ? "asm" : point.source_level ? "source" : "wasm"),
                                         " byte-offset=", ::fast_io::mnp::dec(point.offset),
                                         " temporary=", ::fast_io::mnp::os_c_str(point.temporary ? "yes" : "no"),
                                         " enabled=", ::fast_io::mnp::os_c_str(point.enabled ? "yes" : "no"), " hits=", ::fast_io::mnp::dec(point.hits),
@@ -863,14 +912,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 // by escaped_metadata_text's 4096-byte input cap, not metadata size.
                 constexpr ::std::size_t source_reply_cap{63u * 1024u};
                 ::std::size_t source_string_bytes{};
-                if(reply.source_locals.size() > 1024u) { return ::fast_io::concat_std("error: source variable result exceeds bounded capacity\n"); }
+                if(reply.source_locals.size() > 1024u) { return ::uwvm2::utils::container::concat("error: source variable result exceeds bounded capacity\n"); }
                 for(auto const& value : reply.source_locals)
                 {
                     if(!source_dwarf::budget::charge(value.name.size(), 16384u, source_string_bytes) ||
                        !source_dwarf::budget::charge(value.type_name.size(), 16384u, source_string_bytes))
-                    { return ::fast_io::concat_std("error: source variable labels exceed bounded capacity\n"); }
+                    { return ::uwvm2::utils::container::concat("error: source variable labels exceed bounded capacity\n"); }
                 }
-                ::std::string origin{}; ::fast_io::ostring_ref_std origin_output{__builtin_addressof(origin)};
+                ::uwvm2::utils::container::std_string origin{}; ::uwvm2::utils::container::ostring_ref origin_output{__builtin_addressof(origin)};
                 if(command.kind == console_command_kind::source_value && reply.source_constant.available)
                 {
                     auto const& receipt{reply.source_constant};
@@ -883,11 +932,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 }
                 if(text.size() > source_reply_cap || origin.size() > 512u ||
                    origin.size() > source_reply_cap - text.size() || reply_trailer_reserve > source_reply_cap - text.size() - origin.size())
-                { return ::fast_io::concat_std("error: source variable reply header exceeds bounded capacity\n"); }
+                { return ::uwvm2::utils::container::concat("error: source variable reply header exceeds bounded capacity\n"); }
                 ::std::size_t shown{};
                 for(auto const& value : reply.source_locals)
                 {
-                    ::std::string row{}; ::fast_io::ostring_ref_std row_output{__builtin_addressof(row)};
+                    ::uwvm2::utils::container::std_string row{}; ::uwvm2::utils::container::ostring_ref row_output{__builtin_addressof(row)};
                     ::fast_io::io::print(row_output, ::fast_io::mnp::os_c_str(value.parameter ? "source parameter " : "source local "));
                     ::fast_io::io::print(row_output, source_dwarf::escaped_metadata_text{::std::string_view{value.name}},
                         " type=", source_dwarf::escaped_metadata_text{::std::string_view{value.type_name}}, " = ");
@@ -922,15 +971,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 return text;
             }
             if(command.kind==console_command_kind::host_trace) {return reply.host_trace_values;}
+            if(command.kind==console_command_kind::wasithread_state)
+            {
+                ::uwvm2::utils::container::std_string text;auto output{::uwvm2::utils::container::ostring_ref{::std::addressof(text)}};
+                wasithread_state::print(output,reply.wasithread_state_values,reply.stop_identifier);return text;
+            }
+            if(command.kind==console_command_kind::scene_state)
+            {
+                ::uwvm2::utils::container::std_string text;auto output{::uwvm2::utils::container::ostring_ref{::std::addressof(text)}};
+                scene_state::print(output,reply.scene_state_values,reply.stop_identifier);return text;
+            }
             if(command.kind==console_command_kind::ros_state)
             {
-                ::std::string text;auto output{::fast_io::ostring_ref_std{::std::addressof(text)}};
+                ::uwvm2::utils::container::std_string text;auto output{::uwvm2::utils::container::ostring_ref{::std::addressof(text)}};
                 ros_state::print(output,reply.ros_state_values,reply.stop_identifier);return text;
             }
             if(command.kind == console_command_kind::wasip1_state)
             {
-                ::std::string text;
-                auto output{::fast_io::ostring_ref_std{::std::addressof(text)}};
+                ::uwvm2::utils::container::std_string text;
+                auto output{::uwvm2::utils::container::ostring_ref{::std::addressof(text)}};
                 ::fast_io::io::print(output, "wasip1-stop ", ::fast_io::mnp::dec(reply.stop_identifier), "\n");
                 if(wasip1_calls::is_trace(command.wasip1_state_request.operation)) { wasip1_calls::print(output, reply.wasip1_trace_values); }
                 else
@@ -944,19 +1003,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             {
                 auto const& path{reply.wasm_path_values};
                 if(path.result!=wasm_state::status::available)
-                { return ::fast_io::concat_std("Wasm path unavailable: ",wasm_state::status_text(path.result),"\n"); }
-                if(path.cleared) { return ::fast_io::concat_std("Wasm paths cleared\n"); }
-                return ::fast_io::concat_std("wasm-stop ",::fast_io::mnp::dec(reply.stop_identifier),"\n",
+                { return ::uwvm2::utils::container::concat("Wasm path unavailable: ",wasm_state::status_text(path.result),"\n"); }
+                if(path.cleared) { return ::uwvm2::utils::container::concat("Wasm paths cleared\n"); }
+                return ::uwvm2::utils::container::concat("wasm-stop ",::fast_io::mnp::dec(reply.stop_identifier),"\n",
                     "Wasm path session=",::fast_io::mnp::dec(path.session)," handle=",::fast_io::mnp::dec(path.handle),
                     " depth=",::fast_io::mnp::dec(path.depth)," view=",::fast_io::mnp::dec(wasm_path::bound_view_version),
                     " protocol=",::fast_io::mnp::dec(wasm_path::protocol_version),"\n",
-                    command.wasm_path_request.action==wasm_path::operation::members ? wasm_state::format(reply.wasm_state_values) : ::std::string{});
+                    command.wasm_path_request.action==wasm_path::operation::members ? wasm_state::format(reply.wasm_state_values) : ::uwvm2::utils::container::std_string{});
             }
             if(command.kind==console_command_kind::wasm_mutation)
-            { return ::fast_io::concat_std("wasm-stop ",::fast_io::mnp::dec(reply.stop_identifier),"\n",
+            { return ::uwvm2::utils::container::concat("wasm-stop ",::fast_io::mnp::dec(reply.stop_identifier),"\n",
                 wasm_mutation::format(reply.wasm_mutation_value)); }
             if(command.kind == console_command_kind::wasm_state)
-            { return ::fast_io::concat_std("wasm-stop ", ::fast_io::mnp::dec(reply.stop_identifier),
+            { return ::uwvm2::utils::container::concat("wasm-stop ", ::fast_io::mnp::dec(reply.stop_identifier),
                 ::fast_io::mnp::chvw('\n'),
                 reply.reason == stop_reason::wasm_uncaught && command.wasm_state_request.participant == reply.wasm_terminal_participant && command.wasm_state_request.selected == wasm_state::selection::operands ?
                     ::fast_io::string_view{"Note: Uncaught Wasm snapshot; stack has not unwound.\n"} :
@@ -965,8 +1024,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 wasm_state::format(reply.wasm_state_values)); }
             if(command.operation == ::uwvm2::utils::control::operation::locals)
             {
-                if(!reply.locals_available) { return ::fast_io::concat_std("locals unavailable for this stop\n"); }
-                if(reply.total_local_count == 0u) { return ::fast_io::concat_std("no locals\n"); }
+                if(!reply.locals_available) { return ::uwvm2::utils::container::concat("locals unavailable for this stop\n"); }
+                if(reply.total_local_count == 0u) { return ::uwvm2::utils::container::concat("no locals\n"); }
                 for(::std::size_t index{}; index != reply.locals.size(); ++index)
                 {
                     auto const& local{reply.locals[index]};
@@ -1034,6 +1093,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         reply.reason == stop_reason::wasm_entry ? "stopped: first Wasm instruction\n" :
                         reply.reason == stop_reason::execution_relocated ? "stopped: execution relocated\n" :
                         reply.reason == stop_reason::native_entry ? "stopped: first Wasm instruction JIT entry\n" :
+                        reply.reason == stop_reason::requested && ::std::any_of(reply.threads.begin(),reply.threads.end(),[](auto const& row){return row.native_pc.has_value();}) ? "stopped: native inspection\n" :
                         reply.reason == stop_reason::native_step ? "stopped: native instruction step\n" :
                         reply.reason == stop_reason::wasm_uncaught ? "stopped: Uncaught Wasm exception before unwind; continue propagates\n" :
                         reply.reason == stop_reason::wasm_trap ? "stopped: Wasm trap after failure; pre-trap operands; continue terminates\n" :
@@ -1055,6 +1115,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     if(!reply.watchpoint_error.empty()) { ::fast_io::io::print(output,"watchpoint unavailable: ",::std::string_view{reply.watchpoint_error},"\n"); }
                     if(reply.native_breakpoint_hit != 0u)
                     { ::fast_io::io::print(output, "native-breakpoint ", ::fast_io::mnp::dec(reply.native_breakpoint_hit), "\n"); }
+                    if(reply.reason == stop_reason::breakpoint && reply.breakpoint_hit_participant != 0u && reply.breakpoint_hit_levels != 0u &&
+                       ::std::any_of(reply.threads.begin(), reply.threads.end(), [&](auto const& row) { return row.identifier == reply.breakpoint_hit_participant; }))
+                    {
+                        ::fast_io::io::print(output, "breakpoint-hit thread=", ::fast_io::mnp::dec(reply.breakpoint_hit_participant), " levels=",
+                            ::fast_io::mnp::os_c_str(reply.breakpoint_hit_levels == 1u ? "source" : reply.breakpoint_hit_levels == 2u ? "wasm" : "source,wasm"), "\n");
+                    }
                     if(reply.stop_identifier != 0u)
                     { ::fast_io::io::print(output, "stop-id ", ::fast_io::mnp::dec(reply.stop_identifier), "\n"); }
                     if(reply.breakpoint_condition_error != ::uwvm2::utils::control::error::none)
@@ -1076,6 +1142,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                     " function=", ::fast_io::mnp::dec(thread.location.function),
                                     " byte-offset=", ::fast_io::mnp::dec(thread.location.offset),
                                     " generation=", ::fast_io::mnp::dec(thread.location.code_generation), "\n");
+                if(thread.retained_host)
+                    ::fast_io::io::print(output,"  native-operation=pending; Wasm call retained; native stack and assembly unavailable\n");
                 if(thread.native_pc)
                 {
                     ::fast_io::io::print(output, "  native-pc=0x", ::fast_io::mnp::hex<false, true>(*thread.native_pc), "\n");
@@ -1084,14 +1152,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     if(command.operation == ::uwvm2::utils::control::operation::backtrace && reply.native_caller_stop_identifier != 0u)
                     {
                         if(reply.native_caller_stop_identifier != reply.stop_identifier)
-                        { return ::fast_io::concat_std("error: stale physical Wasm caller view\n"); }
+                        { return ::uwvm2::utils::container::concat("error: stale physical Wasm caller view\n"); }
                         if(reply.native_backtrace)
                         {
                             auto const& trace{*reply.native_backtrace};
                             if(trace.count == 0u || trace.count > trace.frames.size() || !reply.native_caller ||
                                reply.native_caller->incarnation != trace.frames[0u].incarnation ||
                                reply.native_caller->current_incarnation != trace.frames[0u].current_incarnation)
-                            { return ::fast_io::concat_std("error: invalid physical Wasm backtrace view\n"); }
+                            { return ::uwvm2::utils::container::concat("error: invalid physical Wasm backtrace view\n"); }
                             for(::std::size_t i{}; i != trace.count; ++i)
                             {
                                 auto const& frame{trace.frames[i]};
@@ -1099,7 +1167,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                    frame.incarnation == 0u || frame.current_incarnation == 0u || frame.incarnation == frame.current_incarnation ||
                                    (i != 0u && (frame.current_incarnation != trace.frames[i - 1u].incarnation ||
                                     frame.runtime_epoch != trace.frames[i - 1u].runtime_epoch)))
-                                { return ::fast_io::concat_std("error: invalid physical Wasm backtrace chain\n"); }
+                                { return ::uwvm2::utils::container::concat("error: invalid physical Wasm backtrace chain\n"); }
                                 ::fast_io::io::print(output, "  physical Wasm caller module=", ::fast_io::mnp::dec(frame.module),
                                     " function=", ::fast_io::mnp::dec(frame.function), " function-generation=", ::fast_io::mnp::dec(frame.function_generation),
                                     " runtime-epoch=", ::fast_io::mnp::dec(frame.runtime_epoch), " incarnation=", ::fast_io::mnp::dec(frame.incarnation),
@@ -1114,7 +1182,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                             auto const& caller{*reply.native_caller};
                             if(!caller.valid || caller.function_generation == 0u || caller.runtime_epoch == 0u ||
                                caller.incarnation == 0u || caller.current_incarnation == 0u || caller.incarnation == caller.current_incarnation)
-                            { return ::fast_io::concat_std("error: invalid physical Wasm caller view\n"); }
+                            { return ::uwvm2::utils::container::concat("error: invalid physical Wasm caller view\n"); }
                             ::fast_io::io::print(output, "  physical Wasm caller module=", ::fast_io::mnp::dec(caller.module),
                                 " function=", ::fast_io::mnp::dec(caller.function), " function-generation=", ::fast_io::mnp::dec(caller.function_generation),
                                 " runtime-epoch=", ::fast_io::mnp::dec(caller.runtime_epoch), " incarnation=", ::fast_io::mnp::dec(caller.incarnation),
@@ -1128,7 +1196,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         if(mapped.pc != *thread.native_pc || mapped.participant != thread.identifier || mapped.owner_begin == 0u ||
                            mapped.owner_end <= mapped.owner_begin || mapped.pc < mapped.owner_begin || mapped.pc >= mapped.owner_end ||
                            mapped.function_generation == 0u || mapped.runtime_epoch == 0u)
-                        { return ::fast_io::concat_std("error: invalid native provenance identity\n"); }
+                        { return ::uwvm2::utils::container::concat("error: invalid native provenance identity\n"); }
                         ::fast_io::io::print(output, "  native-wasm provenance=");
                         using provenance = ::uwvm2::runtime::lib::llvm_jit_debug_native_position_status;
                         switch(mapped.status)
@@ -1139,13 +1207,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                             case provenance::exact:
                                 if(mapped.row_begin < mapped.owner_begin || mapped.row_end > mapped.owner_end ||
                                    mapped.row_end <= mapped.row_begin || mapped.pc < mapped.row_begin || mapped.pc >= mapped.row_end)
-                                { return ::fast_io::concat_std("error: invalid native provenance row\n"); }
+                                { return ::uwvm2::utils::container::concat("error: invalid native provenance row\n"); }
                                 ::fast_io::io::print(output, "exact module=", ::fast_io::mnp::dec(mapped.module),
                                     " function=", ::fast_io::mnp::dec(mapped.function), " byte-offset=", ::fast_io::mnp::dec(mapped.wasm_offset),
                                     " function-generation=", ::fast_io::mnp::dec(mapped.function_generation),
                                     " runtime-epoch=", ::fast_io::mnp::dec(mapped.runtime_epoch), "\n");
+                                ::fast_io::io::print(output, "  native-wasm-start=", ::fast_io::mnp::os_c_str(mapped.pc == mapped.row_begin ? "yes" : "no"), "\n");
                                 break;
-                            default: return ::fast_io::concat_std("error: invalid native provenance status\n");
+                            default: return ::uwvm2::utils::container::concat("error: invalid native provenance status\n");
                         }
                     }
                 }
@@ -1157,6 +1226,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     add_source_path(text, thread.source->file);
                     ::fast_io::io::print(output, ":", ::fast_io::mnp::dec(thread.source->line),
                         ":", ::fast_io::mnp::dec(thread.source->column), "\n");
+                    bool const exact{!thread.retained_host && thread.source->statement_start && (!thread.native_pc ||
+                        (thread.native_wasm_position && thread.native_wasm_position->status ==
+                         ::uwvm2::runtime::lib::llvm_jit_debug_native_position_status::exact &&
+                         thread.native_wasm_position->pc == thread.native_wasm_position->row_begin))};
+                    ::fast_io::io::print(output, "  source-position=", ::fast_io::mnp::os_c_str(exact ? "exact" : "next"), "\n");
                 }
                 if(command.operation != ::uwvm2::utils::control::operation::backtrace) { continue; }
                 if(thread.source_inline_available)
@@ -1212,45 +1286,45 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         // and bounded module metadata here. Neither is a Runtime operation;
         // the parsed opcode deliberately stays zero. All other commands keep
         // the existing controller validation and machine-readable formatter.
-        [[nodiscard]] inline ::std::string execute_control_command(controller& control, console_command const& command)
+        [[nodiscard]] inline ::uwvm2::utils::container::std_string execute_control_command(controller& control, console_command const& command)
         {
             if(!command_permission_allowed(command))return "error: debugger permission denies this operation\n";
             if(!::uwvm2::utils::control::debug_permissions::inspection_allowed())
             {
                 auto r=control.execute(command);
+                if(command.kind==console_command_kind::wasm_dump || command.kind==console_command_kind::snapshot_record)return format_reply(r,command);
                 if(r.status!=::uwvm2::utils::control::error::none)return "error: limited diagnostic operation refused\n";
-                if(command.kind==console_command_kind::wasm_dump)
-                    return r.dump_published ? "wasm-dump saved; limited, sensitive state omitted\n" : "error: dump unavailable\n";
                 if(command.basic_threads)
                 {
-                    ::std::string text{::fast_io::concat_std("limited threads stop-id ",r.stop_identifier,"\n")};
-                    for(auto const& thread:r.threads) { text+=::fast_io::concat_std("participant=",thread.identifier,"\n"); }
+                    ::uwvm2::utils::container::std_string text{::uwvm2::utils::container::concat("limited threads stop-id ",r.stop_identifier,"\n")};
+                    for(auto const& thread:r.threads) { text+=::uwvm2::utils::container::concat("participant=",thread.identifier,"\n"); }
                     return text;
                 }
                 if(command.operation==::uwvm2::utils::control::operation::backtrace)
                 {
-                    ::std::string text{"limited Wasm backtrace (numeric coordinates only)\n"};
+                    ::uwvm2::utils::container::std_string text{"limited Wasm backtrace (numeric coordinates only)\n"};
                     ::std::size_t ordinal{};
                     for(auto const& frame:r.basic_frames)
                     {
-                        text+=::fast_io::concat_std("  #",ordinal++," participant=",frame.participant,
+                        text+=::uwvm2::utils::container::concat("  #",ordinal++," participant=",frame.participant,
                             " module=",frame.module," function=",frame.function," wasm-offset=");
-                        text+=frame.offset==UINT64_MAX ? "unavailable\n" : ::std::to_string(frame.offset)+"\n";
+                        text+=frame.offset==UINT64_MAX ? "unavailable\n" : ::uwvm2::utils::container::to_string(frame.offset)+"\n";
                     }
                     if(r.basic_frames_truncated)text+="  backtrace truncated\n";
                     return text;
                 }
-                return ::fast_io::concat_std("limited status=",::fast_io::mnp::dec(static_cast<unsigned>(r.execution)),
+                return ::uwvm2::utils::container::concat("limited status=",::fast_io::mnp::dec(static_cast<unsigned>(r.execution)),
                     " stop-id ",::fast_io::mnp::dec(r.stop_identifier)," participants=",::fast_io::mnp::dec(r.threads.size()),
                     " reason=",::fast_io::mnp::dec(static_cast<unsigned>(r.reason))," exit-status=",::fast_io::mnp::dec(r.guest_exit_code),"\n");
             }
+            if(command.kind == console_command_kind::host_interfaces) { return host_interfaces::inventory(command.module_help_page); }
             if(command.kind == console_command_kind::source_print_options || command.kind == console_command_kind::source_printer_config)
             { return control.configure_transport_source_print(command); }
             if(command.kind == console_command_kind::wasm_disassemble) { return control.wasm_code_page(command); }
             if(command.kind == console_command_kind::module_list)
             {
                 auto const text{console_module_help::format(control.source_module_page(command.module_help_page), false, 80u)};
-                return ::std::string{text.data(), text.size()};
+                return ::uwvm2::utils::container::std_string{text.data(), text.size()};
             }
             // Preserve the existing execution and machine-readable formatter
             // for every other command admitted by the platform server.
@@ -1315,6 +1389,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 (command.kind == console_command_kind::wasm_state && reply.wasm_state_values.result != wasm_state::status::available) ||
                 (command.kind == console_command_kind::wasm_mutation && !reply.wasm_mutation_value.applied) ||
                 (command.kind==console_command_kind::ros_state&&reply.ros_state_values.result!=ros_state::status::ok) ||
+                (command.kind==console_command_kind::scene_state&&reply.scene_state_values.result!=scene_state::status::ok) ||
+                (command.kind==console_command_kind::wasithread_state&&reply.wasithread_state_values.result!=wasithread_state::status::ok) ||
                 (command.kind == console_command_kind::wasip1_state && reply.wasip1_state_values.result != wasip1_state::status::ok &&
                  !(command.wasip1_state_request.operation >= wasip1_state::action::trace_enable &&
                    command.wasip1_state_request.operation <= wasip1_state::action::trace_read))};
@@ -1338,7 +1414,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         [[nodiscard]] inline register_value register_preview(native_registers::display_snapshot const& state,::fast_io::string_view name)
         {
             if(name.starts_with("$")) { name=name.subview(1u); }if(name.empty() || name.size()>31u) { return {}; }
-            ::std::u8string token{};for(unsigned char c:name) { if(c>=128u) { return {}; }token.push_back(static_cast<char8_t>(c)); }
+            ::uwvm2::utils::container::std_u8string token{};for(unsigned char c:name) { if(c>=128u) { return {}; }token.push_back(static_cast<char8_t>(c)); }
             unsigned requested{};
             if(state.machine==native_registers::architecture::aarch64)
             {
@@ -1534,7 +1610,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             { ::std::uint32_t bits{};if(wasm_state::details::read_numeric<32u>(value,bits)) { return ::fast_io::concat_fast_io(::std::bit_cast<float>(bits)); } }
             if(value.type.kind==wasm_state::value_kind::f64)
             { ::std::uint64_t bits{};if(wasm_state::details::read_numeric<64u>(value,bits)) { return ::fast_io::concat_fast_io(::std::bit_cast<double>(bits)); } }
-            ::std::string row{};wasm_state::details::print_value(::fast_io::ostring_ref_std{::std::addressof(row)},value);
+            ::uwvm2::utils::container::std_string row{};wasm_state::details::print_value(::uwvm2::utils::container::ostring_ref{::std::addressof(row)},value);
             auto separator{row.find(" = ")};return ::fast_io::concat_fast_io(::std::string_view{row}.substr(separator==row.npos?0u:separator+3u));
         }
         void wasm_values_panel(console_tui::layout pane,::std::uint64_t thread,bool native)
@@ -1549,8 +1625,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(native) { text.append("Snapshot at last Wasm boundary\n"); }
                 for(auto const& row:values.rows)
                 {
-                    auto name{::fast_io::concat_fast_io("[",row.index,"]")};::std::string type{};
-                    wasm_state::details::print_type(::fast_io::ostring_ref_std{::std::addressof(type)},row.data.type);
+                    auto name{::fast_io::concat_fast_io("[",row.index,"]")};::uwvm2::utils::container::std_string type{};
+                    wasm_state::details::print_type(::uwvm2::utils::container::ostring_ref{::std::addressof(type)},row.data.type);
                     auto value{wasm_value_text(row.data)};
                     text.append(inspection_line(name.subview(0u),::fast_io::string_view{type.data(),type.size()},value.subview(0u),row.data.available));
                 }
@@ -1627,7 +1703,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 auto const& values{reply.wasm_state_values};auto name{::fast_io::concat_fast_io(part.word,"[",part.tail,"]")};
                 if(!wasm_state::valid(values) || values.result!=wasm_state::status::available || values.rows.size()!=1u)
                 { return line(name.subview(0u),{},"unavailable at this stop",false); }
-                auto const& value{values.rows.front().data};::std::string type{};auto out{::fast_io::ostring_ref_std{::std::addressof(type)}};wasm_state::details::print_type(out,value.type);
+                auto const& value{values.rows.front().data};::uwvm2::utils::container::std_string type{};auto out{::uwvm2::utils::container::ostring_ref{::std::addressof(type)}};wasm_state::details::print_type(out,value.type);
                 ::fast_io::string formatted{};
                 if(!value.available) { formatted=::fast_io::concat_fast_io("unavailable"); }
                 else if(value.type.kind==wasm_state::value_kind::i32 || value.type.kind==wasm_state::value_kind::f32)
@@ -1637,7 +1713,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 { ::std::uint64_t bits{};if(!wasm_state::details::read_numeric<64u>(value,bits)) { return line(name.subview(0u),{},"unavailable",false); }
                   formatted=scalar_text(value.type.kind==wasm_state::value_kind::i64 ? source_dwarf::numeric_kind::signed_integer : source_dwarf::numeric_kind::f64_bits,bits,8u); }
                 else
-                { ::std::string row{};wasm_state::details::print_value(::fast_io::ostring_ref_std{::std::addressof(row)},value);
+                { ::uwvm2::utils::container::std_string row{};wasm_state::details::print_value(::uwvm2::utils::container::ostring_ref{::std::addressof(row)},value);
                   auto separator{row.find(" = ")};formatted=::fast_io::concat_fast_io(::std::string_view{row}.substr(separator==row.npos ? 0u : separator+3u)); }
                 return line(name.subview(0u),::fast_io::string_view{type.data(),type.size()},formatted.subview(0u),value.available);
             }
@@ -2002,7 +2078,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // Closing this observer leaves all Guest execution owners intact.
             if(!::uwvm2::utils::control::debug_permissions::diagnostics_allowed())
                 return console_exit::observation_detached;
-            auto editor{::std::make_unique<console_editing::editor>()};
+            auto editor{::uwvm2::utils::container::make_unique<console_editing::editor>()};
             io.write(io.context,::fast_io::string_view{"UWVM observation console; execution control requires full permission.\n"});
             for(;;)
             {
@@ -2015,7 +2091,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 auto const input{::fast_io::string_view{line.bytes.data(),line.size}};
                 if(input=="permissions")
                 {
-                    auto const reply{::fast_io::concat_std("permissions ",
+                    auto const reply{::uwvm2::utils::container::concat("permissions ",
                         ::fast_io::mnp::os_c_str(::uwvm2::utils::control::debug_permissions::name()),"\n")};
                     io.write(io.context,::fast_io::string_view{reply.data(),reply.size()});continue;
                 }
@@ -2042,12 +2118,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         // The bounded history/kill/undo buffers outlive each command. Keep
         // their owner off the management thread stack: at -O0 the editor plus
         // execute() exceeded the ordinary 1 MiB Windows thread stack.
-        ::std::unique_ptr<console_editing::editor> local_editor{};
-        ::std::unique_ptr<console_tui::screen> local_screen{};
+        ::uwvm2::utils::container::std_unique_ptr<console_editing::editor> local_editor{};
+        ::uwvm2::utils::container::std_unique_ptr<console_tui::screen> local_screen{};
         auto& editor_owner{restart == nullptr ? local_editor : restart->editor};
         auto& screen_owner{restart == nullptr ? local_screen : restart->screen};
-        if(!editor_owner) { editor_owner=::std::make_unique<console_editing::editor>(); }
-        if(!screen_owner) { screen_owner=::std::make_unique<console_tui::screen>(io.context,io.write,io.interactive); }
+        if(!editor_owner) { editor_owner=::uwvm2::utils::container::make_unique<console_editing::editor>(); }
+        if(!screen_owner) { screen_owner=::uwvm2::utils::container::make_unique<console_tui::screen>(io.context,io.write,io.interactive); }
         auto& editor{*editor_owner};
         console_print_preferences local_print{};
         auto& source_print{restart == nullptr ? local_print : restart->source_print};
@@ -2498,6 +2574,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             {
                 case console_command_kind::wasm_disassemble:
                     { auto text{control.wasm_code_page(command)}; output(::fast_io::string_view{text.data(),text.size()}); continue; }
+                case console_command_kind::host_interfaces:
+                {
+                    auto const text{details::execute_control_command(control,command)};
+                    output(::fast_io::string_view{text.data(),text.size()});continue;
+                }
                 case console_command_kind::module_list:
                 {
                     auto const size{console_tui::terminal_dimensions()};
@@ -2546,6 +2627,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case console_command_kind::wasip1_state:
                 case console_command_kind::host_trace:
                 case console_command_kind::ros_state:
+                case console_command_kind::wasithread_state:
+                case console_command_kind::scene_state:
                 case console_command_kind::wasm_event:
                 case console_command_kind::wasm_script:
                 case console_command_kind::source_type:
@@ -2553,7 +2636,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 case console_command_kind::source_frame:
                 case console_command_kind::watchpoint:
                 case console_command_kind::breakpoint_commands:
-                case console_command_kind::wasm_dump:
+                case console_command_kind::snapshot_record:
+                case console_command_kind::snapshot_restore:
+                    case console_command_kind::wasm_dump:
                 case console_command_kind::callback_echo:
                 case console_command_kind::breakpoint_control:
                 case console_command_kind::replacement_file:

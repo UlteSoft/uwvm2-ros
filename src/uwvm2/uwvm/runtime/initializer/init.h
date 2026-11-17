@@ -26,6 +26,8 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/control/wasithread.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -155,7 +157,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 #endif
         }
 
-        // Runtime import resolution repeats the WASI Preview 1 visibility check
+        // Runtime import resolution repeats independent WASIp1/I1T visibility checks
         // used by the pre-runtime dependency pass. The dependency pass provides
         // the user-facing error in normal executable mode, while this runtime
         // guard keeps the linker defensive when runtime initialization is called
@@ -166,12 +168,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                                                      ::uwvm2::utils::container::u8string_view import_module_name,
             [[maybe_unused]] ::uwvm2::utils::container::u8string_view function_name = {}) noexcept
         {
+            // I1T is independent of Preview 1 at every linker entry, including
+            // cold/child initialization. Never look up thread-spawn in a WASIp1
+            // interface mask or let a WASIp1 grant substitute for I1T authority.
+            if(import_module_name==u8"wasi"&&function_name==u8"thread-spawn")
+                return ::uwvm2::utils::control::wasithread::runtime_policy().visible(
+                    {consumer_module_name.data(),consumer_module_name.size()});
 #if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
-            if(import_module_name != u8"wasi_snapshot_preview1"
-# if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-               && !(import_module_name == u8"wasi" && function_name == u8"thread-spawn")
-# endif
-            ) [[likely]] { return true; }
+            if(import_module_name != u8"wasi_snapshot_preview1") [[likely]] { return true; }
 
             auto const consumer_module_it{world.declarations().find(consumer_module_name)};
             if(consumer_module_it == world.declarations().end()) [[unlikely]] { return true; }
@@ -2525,7 +2529,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                 crash::report(crash::category::execution,
                                     status == gc_status::size_overflow ?
                                         "GC constant-expression allocation size overflow" :
-                                        "GC constant-expression allocation failed: out of memory",
+                                        "GC constant-expression allocation failed: host resource budget or out of memory",
                                     0u, found ? module_index : UINT64_MAX);
                                 crash::pause_process();
                                 crash::finish_unhandled_fault();
@@ -5683,12 +5687,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 if constexpr(Purpose == initialization_purpose::threaded_child)
                 { out.gc_lease_roots = world.make_lease_owner(); }
-                else { out.gc_lease_roots = ::std::make_shared<::uwvm2::uwvm::runtime::storage::gc_lease_owner>(); }
+                else { out.gc_lease_roots = ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_lease_owner>(); }
                 if(!out.gc_lease_roots) [[unlikely]] { ::fast_io::fast_terminate(); }
                 out.gc_store = world.make_store(typesec.core3_recursive_types, out.gc_lease_roots,
                     linked_gc_function_reference_type_matches);
                 // ^^ constructor binds trusted immutable code before publication;
                 // typed funcref fields during later constexpr evaluation can use it.
+                if(out.gc_store && out.gc_store->allocation_failed())
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [error] initializer: GC metadata allocation refused; check --wasm-set-resource-limit runtime auxiliary-single-bytes/auxiliary-live-bytes and available host memory.");
+                    ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
+                }
                 if(!out.gc_store || !out.gc_store->valid()) [[unlikely]] { ::fast_io::fast_terminate(); }
             }
             out.table_declarations_require_function_references = tablesec.requires_function_references;
@@ -5737,7 +5747,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 out.local_defined_tag_vec_storage.push_back({::std::addressof(type), index,
                     [&] {
                         if constexpr(Purpose == initialization_purpose::threaded_child) { return world.make_tag_identity(); }
-                        else { return ::std::make_shared<::uwvm2::uwvm::runtime::storage::tag_instance_identity const>(); }
+                        else { return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::tag_instance_identity const>(); }
                     }()});
             }
 
@@ -6489,7 +6499,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     }
                     if constexpr(Purpose == initialization_purpose::threaded_child) { world.prepare_table(rec, table_idx); }
                     if constexpr(Purpose != initialization_purpose::unpublished_restore)
-                    { rec.elems.resize(static_cast<::std::size_t>(table_type.limits.min)); }
+                    {
+                        auto const bytes{static_cast<::std::size_t>(table_type.limits.min) * sizeof(::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t)};
+                        if(bytes > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes || !rec.allocation_charge.resize(bytes))
+                        {
+                            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                                u8"uwvm: [error] initializer: table allocation exceeds the configured byte budget. Use --wasm-set-resource-limit to configure initializer/table limits.\n");
+                            ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
+                        }
+                        rec.elems.resize(static_cast<::std::size_t>(table_type.limits.min));
+                    }
                     // Restored extent is installed once from the checked saved state;
                     // empty private metadata is never a published non-null table filler.
                     if(table_type.reftype == ::uwvm2::parser::wasm::standard::wasm1p1::type::reference_type::externref)
@@ -6607,7 +6626,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                    effective_limits,
                                                    default_linear_memory_page_size_bytes());
 
-                    out.local_defined_memory_vec_storage.emplace_back();
+                    if constexpr(Purpose == initialization_purpose::threaded_child)
+                    { out.local_defined_memory_vec_storage.push_back({.memory=world.make_memory()}); }
+                    else { out.local_defined_memory_vec_storage.emplace_back(); }
                     auto& rec{out.local_defined_memory_vec_storage.back()};
                     rec.memory_type_ptr = ::std::addressof(memory_type);
                     rec.effective_limits = effective_limits;
@@ -6626,7 +6647,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     emit_local_memory_init_verbose_in_context(world, u8"init_by_page_count begin", memory_idx, memory_type.limits, rec.effective_limits, runtime_page_size_bytes);
                     // Memory ownership includes imported memories. Native mmap instances use this
                     // index for fault diagnostics; 32-bit reservations also honor the effective maximum.
-                    if constexpr(Purpose != initialization_purpose::unpublished_restore)
+                    if constexpr(Purpose == initialization_purpose::threaded_child)
+                    { world.prepare_memory(rec,memory_idx); }
+                    else if constexpr(Purpose != initialization_purpose::unpublished_restore)
                     {
                     initialize_native_memory(rec.memory, rec.effective_limits, out.imported_memory_vec_storage.size() + memory_idx,
                                              wasm_memory_is_shared(memory_type), wasm_memory_is_address64(memory_type));
@@ -7438,12 +7461,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 #endif
         }
 
-        enum class active_segment_result { ok, data_out_of_bounds, table_out_of_bounds };
+        enum class active_segment_result { ok, data_out_of_bounds, table_out_of_bounds, memtag_initialization_failed };
 
         template <initialization_purpose Purpose>
         [[nodiscard]] inline constexpr active_segment_result apply_wasm1_active_element_and_data_segments_for_module_in_context(initialization_context<Purpose>& world,
             ::uwvm2::utils::container::u8string_view curr_module_name,
-            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt,
+            bool defer_imported_data = false) noexcept
         {
             ::uwvm2::runtime::gc::scoped_gc_root_graph_administration gc_administration{};
             curr_rt.gc_collection_phase.publish_active_segments(false);
@@ -7789,6 +7813,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 {
                     auto& data{data_seg.data};
                     if(data.kind != ::uwvm2::uwvm::runtime::storage::wasm_data_segment_kind::active || ::uwvm2::uwvm::runtime::storage::wasm_data_segment_is_dropped(data)) { continue; }
+                    // A private child is compiled before its native worker is
+                    // admitted. Shared writes belong to that worker's actual
+                    // instantiation turn, not to the cold compiler job.
+                    if(defer_imported_data && data.memory_idx < curr_rt.imported_memory_vec_storage.size()) { continue; }
                     ++data_active_applied;
 
                     if(data_seg.data_type_ptr != nullptr)

@@ -1,3 +1,5 @@
+> Current executable state schema: **10** (`UWCPSTA` / `UWCPSTEA`). Native continuation ABI remains 2; the complete cache identity includes schema 10.
+
 # UWCPDB4 identity-bound file DATA (private source proposal)
 
 The envelope adds strong typed identity DATA to the existing canonical Core 3
@@ -126,7 +128,7 @@ comparison internally; it never requires the target's current mutable state to
 equal the old saved body. Two different verified saved bodies under one unchanged
 environment are accepted as DATA. They still do not grant executable restore.
 
-An unbound current state7 file (`UWCPST7\0`) or old state3 file (`UWCPDB3\0`)
+An unbound current state10 file (`UWCPSTA\0`) or old state3 file (`UWCPDB3\0`)
 receives `legacy_unbound_state_data` at this entry and never becomes identity-bound.
 The current structural `decode_database` supports explicit state7 DATA inspection
 only, after its own bounds/hash/graph checks; state3 is unsupported and is not
@@ -173,7 +175,7 @@ UWCPDB4 is this project's explicit file contract, not a WebAssembly wire standar
 The precise revision2 function/event preimages and pending corruption regressions
 are specified in `test/0036.checkpoint_binding/README.state-identity.md`.
 
-The inner state7 magic/commit are `UWCPST7\0` / `UWCPSTE7`, distinct from
+The inner state10 magic/commit are `UWCPSTA\0` / `UWCPSTEA`, distinct from
 the outer envelope4 `UWCPDB4\0` / `UWCPEND4`. The inner header remains128,
 outer160. A zero-length table has only its exact declared reference type in a
 canonical flag-one, zero-carrier descriptor; it is not an initialized null,
@@ -185,7 +187,7 @@ rules are checked by the state graph validator before output publication.
 
 State schema7 additionally binds preserved exception diagnostic origin/name
 payloads and the explicit unknown instruction/generation markers. Inner state
-magic and commit are `UWCPST7\0` / `UWCPSTE7`; state6/5/4/3 are never silently
+magic and commit are `UWCPSTA\0` / `UWCPSTEA`; state9/8/7/6/5/4/3 are never silently
 migrated. Envelope4, cache format5 and identity2 remain unchanged. The complete ten-field
 actual compilation profile records schema7 and separately the genuine native ABI;
 profile policy versions are independently preserved, not reset by this bump.

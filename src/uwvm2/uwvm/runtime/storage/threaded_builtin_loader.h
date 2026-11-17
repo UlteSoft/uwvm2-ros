@@ -13,6 +13,10 @@
 #include <uwvm2/uwvm/wasm/type/impl.h>
 #endif
 
+#if !defined(UWVM_MODULE) || !defined(UWVM_IMPORT_ROSV2)
+namespace uwvm2::uwvm::imported::scene { struct local_imported_module_t; }
+#endif
+
 #ifndef UWVM_MODULE
 namespace uwvm2::uwvm::imported::wasi::threads { struct local_imported_module_t; }
 namespace uwvm2::uwvm::imported::ros
@@ -61,6 +65,7 @@ namespace uwvm2::uwvm::runtime::full
             ::uwvm2::uwvm::imported::wasi::threads::local_imported_module_t>;
         template<typename T>
         static constexpr bool is_ros =
+            ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::scene::local_imported_module_t> ||
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros1_local_imported_module_t> ||
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros1_client_local_imported_module_t> ||
             ::std::same_as<::std::remove_cvref_t<T>, ::uwvm2::uwvm::imported::ros::ros2_local_imported_module_t> ||

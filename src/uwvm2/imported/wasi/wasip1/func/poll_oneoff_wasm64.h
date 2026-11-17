@@ -22,6 +22,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
+#include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 #endif
 
 #ifndef UWVM_MODULE
@@ -313,6 +314,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         subscriptions.reserve(nsubscriptions);
 
         {
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{false};
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
             for(::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t i{}; i != nsubscriptions; ++i)
@@ -652,6 +654,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 ::uwvm2::imported::wasi::wasip1::func::wasi_event_wasm64_t evt{};
@@ -1172,6 +1175,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -1251,6 +1255,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 ::uwvm2::imported::wasi::wasip1::func::wasi_event_wasm64_t evt{};
@@ -1569,6 +1574,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -1620,6 +1626,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 auto out_curr{out};
@@ -2332,6 +2339,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -2406,6 +2414,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 ::uwvm2::imported::wasi::wasip1::func::wasi_event_wasm64_t evt{};
@@ -3056,6 +3065,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced_nt{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -3252,6 +3262,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             }
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 auto out_curr{out};
@@ -3485,6 +3496,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -3533,6 +3545,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 ::uwvm2::imported::wasi::wasip1::func::wasi_event_wasm64_t evt{};
@@ -4023,6 +4036,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                     [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                     auto out_curr{out};
@@ -4086,6 +4100,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t produced{};
 
             {
+                ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
                 [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
 
                 ::uwvm2::imported::wasi::wasip1::func::wasi_event_wasm64_t evt{};

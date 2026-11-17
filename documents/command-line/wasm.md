@@ -193,6 +193,13 @@ uwvm2-ros --wasm-preload-library lib.wasm lib.math --run app.wasm
 
 ## `--wasm-register-dl`
 
+This legacy native path is compiled out by default. Rebuild with
+`--enable-preload-dl=y` to expose it and `--wasm-driver-verify`. It executes
+native constructors and functions inside the VM, even when signature checking
+succeeds. ROSv2 scene deployment rejects this path before constructors run.
+Use an [isolated external native host](../runtime/ros-native-driver-isolation.md)
+for ROSv2 drivers. `--wasm-preload-library` loads Wasm and is independent.
+
 Syntax:
 
 ```bash
@@ -211,6 +218,14 @@ Behavior:
 
 Security and verification:
 
+- Preloaded native code is not isolated from the VM. It may read or corrupt VM
+  state and can compromise the process. Use qualified process-isolated ROSv2
+  component, device or model providers when their required operations are
+  implemented; a provider's presence does not imply complete robot coverage.
+- The default `untrusted-dl` advisory can be suppressed, re-enabled or promoted
+  through the [warning policy](logging.md#legacy-ros-and-native-preload-boundaries).
+  The advisory is printed once, but promotion is checked on every load before
+  constructors run, including loads after an earlier successful registration.
 - Native drivers execute with host process authority. They are trusted host extensions.
 - Registration remains available with secondary signature verification disabled by default.
 - `--wasm-driver-verify <trusted-signer.pem>` enables secondary verification for every registered DL, regardless of option order.

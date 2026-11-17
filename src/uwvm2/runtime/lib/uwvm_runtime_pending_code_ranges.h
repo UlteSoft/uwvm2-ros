@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -30,14 +31,14 @@ namespace uwvm2::runtime::lib::details
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
         struct range { ::std::uintptr_t begin{}, size{}; };
         ::llvm::ExecutionEngine const* private_handoff_engine_{};
-        ::std::vector<range> pending{};
-        ::std::vector<range> pending_functions{};
+        ::uwvm2::utils::container::std_vector<range> pending{};
+        ::uwvm2::utils::container::std_vector<range> pending_functions{};
         native_loaded_provenance::image debug_native_rows_{};
         bool debug_full_capture_{}, committed_{}, observation_failed_{};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
         // Explicit ELF st_size only. Ordinary diagnostic ranges may instead
         // use computeSymbolSizes' COFF/Mach-O next-symbol estimates.
-        ::std::vector<range> private_explicit_elf_functions_{};
+        ::uwvm2::utils::container::std_vector<range> private_explicit_elf_functions_{};
         bool private_explicit_elf_enabled_{}, private_explicit_elf_valid_{};
         void observe_private_explicit_elf_symbols(::llvm::object::ObjectFile const& object,
             ::llvm::RuntimeDyld::LoadedObjectInfo const& loaded) noexcept

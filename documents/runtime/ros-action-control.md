@@ -1,5 +1,10 @@
 # Asynchronous ROS2 Action control
 
+**Deprecated VM ABI:** all imports on this page belong to the deprecated
+legacy ROS family. Existing behavior is retained. New implementations should use
+the [ROSv2 design and migration guidance](ros-host-interfaces.md#names-and-compatibility)
+and check each provider's implementation status before migrating.
+
 Six additive `uwvm_ros2_v1` imports preserve the existing exact source grants.
 They use `(handle:i64, memory_index:i32, input_offset:i64, input_bytes:i64,
 output_offset:i64, output_capacity:i64, required_bytes_offset:i64) -> errno:i32`.

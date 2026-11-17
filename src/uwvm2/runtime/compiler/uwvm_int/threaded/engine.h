@@ -1,4 +1,7 @@
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/runtime/diagnostic/crash_policy.h>
 #include "program.h"
@@ -22,20 +25,20 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
 {
     namespace threads = ::uwvm2::runtime::wasm_threads;
     class engine;
-    struct compile_result { execution_result outcome{}; ::std::unique_ptr<engine> code{}; };
+    struct compile_result { execution_result outcome{}; ::uwvm2::utils::container::std_unique_ptr<engine> code{}; };
     class engine final
     {
         using memory_type = ::uwvm2::object::memory::linear::native_memory_t;
         using global_type = ::uwvm2::object::global::wasm_global_storage_t;
         struct target { ::std::size_t module{}, function{}; bool host{}; signature const* type{}; };
+        struct bound_memory {memory_type* memory{};::std::size_t maximum{};};
         struct bound_module
         {
             module_program program{};
-            memory_type* memory{};
-            ::std::size_t maximum_memory_bytes{};
-            ::std::vector<target> targets{};
-            ::std::vector<global_type*> globals{};
-            ::std::vector<storage::local_defined_tag_storage_t const*> tags{};
+            ::uwvm2::utils::container::std_vector<bound_memory> memories{};
+            ::uwvm2::utils::container::std_vector<target> targets{};
+            ::uwvm2::utils::container::std_vector<global_type*> globals{};
+            ::uwvm2::utils::container::std_vector<storage::local_defined_tag_storage_t const*> tags{};
         };
         struct activation
         {
@@ -47,22 +50,22 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             bool loop{};
             instruction const* handlers{};
         };
-        struct exception_record { storage::local_defined_tag_storage_t const* tag{}; ::std::size_t offset{},count{}; };
+        struct exception_record { storage::local_defined_tag_storage_t const* tag{}; ::std::size_t offset{},count{},module{}; bool escaped{}; storage::gc_reference reference{}; };
         child_world::owner world_;
         decltype(::std::declval<child_world const&>().validated_code()) validated_code_;
         limits limits_;
         bool const execute_memtag_{true};
-        ::std::unique_ptr<threads::code_debug_image> debug_;
-        ::std::vector<bound_module> modules_{};
+        ::uwvm2::utils::container::std_unique_ptr<threads::code_debug_image> debug_;
+        ::uwvm2::utils::container::std_vector<bound_module> modules_{};
         // These fixed-size arrays are allocated before a native child is minted.
         // Guest recursion consumes explicit slots, not recursive C++ frames.
-        ::std::vector<stack_value> values_{};
-        ::std::vector<storage::gc_object_value> gc_scratch_{};
-        ::std::vector<activation> calls_{};
-        ::std::vector<control> controls_{};
-        ::std::vector<::std::byte> host_parameters_{},host_results_{};
-        ::std::vector<exception_record> exceptions_{};
-        ::std::vector<stack_value> exception_values_{};
+        ::uwvm2::utils::container::std_vector<stack_value> values_{};
+        ::uwvm2::utils::container::std_vector<storage::gc_object_value> gc_scratch_{};
+        ::uwvm2::utils::container::std_vector<activation> calls_{};
+        ::uwvm2::utils::container::std_vector<control> controls_{};
+        ::uwvm2::utils::container::std_vector<::std::byte> host_parameters_{},host_results_{};
+        ::uwvm2::utils::container::std_vector<exception_record> exceptions_{};
+        ::uwvm2::utils::container::std_vector<stack_value> exception_values_{};
         ::std::size_t exception_top_{},exception_value_top_{};
         ::std::size_t value_top_{}, call_top_{}, control_top_{};
         ::std::atomic_flag entered_{};
@@ -122,6 +125,40 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             }
             return false; // In particular, never execute a parent guest pointer.
         }
+        [[nodiscard]] static ::std::size_t type_index(storage::wasm_module_storage_t const& module,signature const* type) noexcept
+        {
+            auto const begin=reinterpret_cast<::std::uintptr_t>(module.type_section_storage.type_section_begin);
+            auto const address=reinterpret_cast<::std::uintptr_t>(type);
+            if(!begin||!type||address<begin||(address-begin)%sizeof(signature))return SIZE_MAX;
+            auto const index=(address-begin)/sizeof(signature);
+            return index<module.type_section_storage.type_section_count?index:SIZE_MAX;
+        }
+        [[nodiscard]] bool type_matches(::std::size_t expected_module,signature const* expected,target const& actual) const noexcept
+        {
+            auto const* e=world_->module(expected_module);auto const* a=world_->module(actual.module);
+            if(!e||!a)return false;
+            auto const ei=type_index(*e,expected),ai=type_index(*a,actual.type);
+            if(ei>UINT32_MAX||ai>UINT32_MAX)return false;
+            // Heap identity and declared function subtyping matter even when
+            // the flattened ABI happens to be equal. Never compare just the
+            // reference carrier bytes or module-local type indices.
+            return storage::gc_object_store::canonical_function_type_matches(
+                a->gc_store.get(),static_cast<::std::uint32_t>(ai),e->gc_store.get(),static_cast<::std::uint32_t>(ei));
+        }
+        [[nodiscard]] bool reference_target(storage::gc_reference const& reference,target& out) const noexcept
+        {
+            using kind=::uwvm2::object::global::wasm_ref_kind;
+            if(reference.kind==kind::wasm_func_defined)
+                return defined_target(static_cast<storage::local_defined_function_storage_t const*>(reference.storage.ptr),out);
+            if(reference.kind!=kind::wasm_func_imported)return false;
+            for(::std::size_t m{};m<modules_.size();++m)
+            {
+                ::std::size_t f{};
+                if(member_index(world_->module(m)->imported_function_vec_storage,
+                    static_cast<storage::imported_function_storage_t const*>(reference.storage.ptr),f))return resolve_target(m,f,out);
+            }
+            return false;
+        }
         [[nodiscard]] bool resolve_target(::std::size_t m, ::std::size_t f, target& out) const noexcept
         {
             auto const* module{world_->module(m)};auto const count{module->imported_function_vec_storage.size()};
@@ -139,36 +176,26 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 using kind=storage::imported_function_link_kind;
                 if(record->link_kind==kind::imported) { record=record->target.imported_ptr;continue; }
                 if(record->link_kind==kind::defined)
-                { return defined_target(record->target.defined_ptr,out) && detail::equal_signature(type,out.type); }
+                { return defined_target(record->target.defined_ptr,out) && type_matches(m,type,out); }
                 if(record->link_kind==kind::local_imported)
                 { out={m,f,true,type};return record->target.local_imported.module_ptr!=nullptr; }
                 return false; // DL/weak/unknown host cancellation is not admitted.
             }
             return false;
         }
-        [[nodiscard]] static memory_type* shared_memory(storage::wasm_module_storage_t const& module) noexcept
+        [[nodiscard]] static bool memory64(memory_type const& memory) noexcept
+        { return memory.status==decltype(memory.status)::wasm64; }
+        [[nodiscard]] static ::std::uint64_t memory_address(memory_type const& memory,::std::uint64_t bits) noexcept
+        { return memory64(memory)?bits:static_cast<::std::uint32_t>(bits); }
+        template<typename Function>
+        static auto memory_geometry(memory_type const& memory,Function&& function) noexcept
         {
-            if(module.memory_declarations_require_memory64 ||
-                module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size()!=1uz) { return nullptr; }
-            if(module.imported_memory_vec_storage.empty())
-            {
-                auto* memory{const_cast<memory_type*>(::std::addressof(module.local_defined_memory_vec_storage.index_unchecked(0).memory))};
-                return threads::is_shared(*memory) && memory->custom_page_size_log2==16u ? memory : nullptr;
-            }
-            auto const* record{::std::addressof(module.imported_memory_vec_storage.index_unchecked(0))};
-            for(::std::size_t i{};i!=4096uz && record;++i)
-            {
-                using kind=storage::imported_memory_storage_t::imported_memory_link_kind;
-                if(record->link_kind==kind::imported) { record=record->target.imported_ptr;continue; }
-                if(record->link_kind==kind::defined && record->target.defined_ptr)
-                {
-                    auto* memory{::std::addressof(record->target.defined_ptr->memory)};
-                    return threads::is_shared(*memory) && memory->custom_page_size_log2==16u ? memory : nullptr;
-                }
-                return nullptr;
-            }
-            return nullptr;
+            if(memory64(memory))return threads::is_shared(memory)?function.template operator()<::std::uint64_t,true>():
+                function.template operator()<::std::uint64_t,false>();
+            return threads::is_shared(memory)?function.template operator()<::std::uint32_t,true>():
+                function.template operator()<::std::uint32_t,false>();
         }
+
         [[nodiscard]] static global_type* resolve_global(storage::wasm_module_storage_t const& module, ::std::size_t index) noexcept
         {
             auto const count{module.imported_global_vec_storage.size()};
@@ -287,7 +314,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::uwvm2::runtime::lib::details::scoped_llvm_wasm_host_fp_environment_restore host_fp{true};
             if(!host_fp.ready()) { return fail(status::host_failure); }
             auto const result{threads::dispatch_import(lease,*world_,caller.module,caller.function,target.function,
-                {host_results_.data(),out},{host_parameters_.data(),in},caller.cross_module)};
+                {host_results_.data(),out},{host_parameters_.data(),in},caller.cross_module||caller.module!=target.module,target.module)};
             if(result==threads::host_dispatch_status::group_stopped) { return fail(status::cancelled); }
             if(result!=threads::host_dispatch_status::returned) { return fail(status::host_denied); }
             if(lease.cancellation().stop_requested()) { return fail(status::cancelled); }
@@ -312,19 +339,20 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             return fail(proof.error==e::out_of_bounds?status::trap_memory:status::invariant_failure);
         }
         template<typename Function>
-        [[nodiscard]] bool memory_span(memory_type& memory,::std::uint32_t pointer,::std::uint64_t offset,
+        [[nodiscard]] bool memory_span(memory_type& memory,::std::uint64_t pointer,::std::uint64_t offset,
                                        ::std::size_t bytes,Function&& function) noexcept
         {
             // The snapshot and tag proof cover the complete range before callback
             // entry. Do not trap or retain a native pointer inside the callback.
             if(memory.memtag_shadow.enabled())
             {
-                auto const proof{::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
-                    memory,pointer,offset,bytes,::std::forward<Function>(function))};
+                auto const proof=memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
+                {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
+                    memory,static_cast<Address>(pointer),offset,bytes,::std::forward<Function>(function));});
                 return proof || access_failure(proof,pointer);
             }
             ::std::size_t length{};
-            auto const address{static_cast<::std::uint64_t>(pointer)};
+            auto const address{memory_address(memory,pointer)};
             if(offset>UINT64_MAX-address) { return fail(status::trap_memory); }
             auto const okay{threads::details::access(memory,address+offset,bytes,length,[&](::std::byte* data) noexcept
             { function(::std::span<::std::byte>{data,bytes}); })};
@@ -332,7 +360,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         }
         [[nodiscard]] bool memtag_operation(instruction const& ins) noexcept;
         template<::std::size_t Bytes>
-        [[nodiscard]] bool access(memory_type& memory, ::std::uint32_t address, ::std::uint64_t offset, bool write, ::std::uint64_t& value) noexcept
+        [[nodiscard]] bool access(memory_type& memory, ::std::uint64_t address, ::std::uint64_t offset, bool write, ::std::uint64_t& value) noexcept
         {
             bool const ok{memory_span(memory,address,offset,Bytes,[&](::std::span<::std::byte> data) noexcept
             {
@@ -358,8 +386,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             auto const offset{ins.immediate};
             unsigned width{(op==0x28u||op==0x2au||op==0x36u||op==0x38u||op==0x34u||op==0x35u||op==0x3eu)?4u:
                 (op==0x29u||op==0x2bu||op==0x37u||op==0x39u)?8u:(op==0x2cu||op==0x2du||op==0x30u||op==0x31u||op==0x3au||op==0x3cu)?1u:2u};
-            bool ok{};switch(width) { case 1:ok=access<1>(memory,static_cast<::std::uint32_t>(address),offset,store,value);break;case 2:ok=access<2>(memory,static_cast<::std::uint32_t>(address),offset,store,value);break;
-                case 4:ok=access<4>(memory,static_cast<::std::uint32_t>(address),offset,store,value);break;default:ok=access<8>(memory,static_cast<::std::uint32_t>(address),offset,store,value); }
+            bool ok{};switch(width) { case 1:ok=access<1>(memory,memory_address(memory,address),offset,store,value);break;case 2:ok=access<2>(memory,memory_address(memory,address),offset,store,value);break;
+                case 4:ok=access<4>(memory,memory_address(memory,address),offset,store,value);break;default:ok=access<8>(memory,memory_address(memory,address),offset,store,value); }
             if(!ok||store) { return ok; }
             bool const sign{op==0x2cu||op==0x2eu||op==0x30u||op==0x32u||op==0x34u};
             if(sign && width<8u && (value&(::std::uint64_t{1}<<(width*8u-1u)))) { value|=(~::std::uint64_t{})<<(width*8u); }
@@ -367,7 +395,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             return push(value);
         }
         template<::std::size_t Bytes>
-        [[nodiscard]] bool atomic_access(memory_type& memory, unsigned operation, ::std::uint32_t address, ::std::uint64_t offset,
+        [[nodiscard]] bool atomic_access(memory_type& memory, unsigned operation, ::std::uint64_t address, ::std::uint64_t offset,
                                          ::std::uint64_t& value, ::std::uint64_t expected) noexcept
         {
             if((static_cast<::std::uint64_t>(address)+offset)&(Bytes-1uz)) { return fail(status::trap_unaligned); }
@@ -406,19 +434,25 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(memory.memtag_shadow.enabled())
                 {
                     ::uwvm2::runtime::memtag::wait_execution_result checked{};
-                    auto const pointer{static_cast<::std::uint32_t>(address)};
-                    if(sub==0u) { checked=::uwvm2::runtime::memtag::wait_notify<0u,::std::uint32_t,true>(memory,pointer,offset,expected,0); }
-                    else if(sub==1u) { checked=::uwvm2::runtime::memtag::wait_notify<1u,::std::uint32_t,true>(memory,pointer,offset,expected,::std::bit_cast<::std::int64_t>(timeout)); }
-                    else { checked=::uwvm2::runtime::memtag::wait_notify<2u,::std::uint32_t,true>(memory,pointer,offset,expected,::std::bit_cast<::std::int64_t>(timeout)); }
+                    auto const pointer=memory_address(memory,address);
+                    checked=memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
+                    {
+                        auto const p=static_cast<Address>(pointer);
+                        if(sub==0u)return ::uwvm2::runtime::memtag::wait_notify<0u,Address,Shared>(memory,p,offset,expected,0);
+                        if(sub==1u)return ::uwvm2::runtime::memtag::wait_notify<1u,Address,Shared>(memory,p,offset,expected,::std::bit_cast<::std::int64_t>(timeout));
+                        return ::uwvm2::runtime::memtag::wait_notify<2u,Address,Shared>(memory,p,offset,expected,::std::bit_cast<::std::int64_t>(timeout));
+                    });
                     if(!checked.access) { return access_failure(checked.access,pointer); }
                     result=checked.wait;
                 }
                 else
                 {
-                    auto const effective{static_cast<::std::uint64_t>(static_cast<::std::uint32_t>(address))+offset};
+                    auto const pointer=memory_address(memory,address);
+                    if(offset>UINT64_MAX-pointer)return fail(status::trap_memory);
+                    auto const effective=pointer+offset;
                     if(sub==0u) { result=threads::memory_notify(memory,effective,static_cast<::std::uint32_t>(expected)); }
-                    else if(sub==1u) { result=threads::memory_wait<4>(memory,true,effective,expected,::std::bit_cast<::std::int64_t>(timeout)); }
-                    else { result=threads::memory_wait<8>(memory,true,effective,expected,::std::bit_cast<::std::int64_t>(timeout)); }
+                    else if(sub==1u) { result=threads::memory_wait<4>(memory,threads::is_shared(memory),effective,expected,::std::bit_cast<::std::int64_t>(timeout)); }
+                    else { result=threads::memory_wait<8>(memory,threads::is_shared(memory),effective,expected,::std::bit_cast<::std::int64_t>(timeout)); }
                 }
                 if(result.status==threads::wait_status::cancelled) { return fail(status::cancelled); }
                 if(result.status==threads::wait_status::unaligned) { return fail(status::trap_unaligned); }
@@ -433,10 +467,10 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             auto const offset{ins.immediate};
             unsigned const widths[7]{4,8,1,2,1,2,4};bool ok{};
             switch(widths[slot])
-            { case 1:ok=atomic_access<1>(memory,operation,static_cast<::std::uint32_t>(address),offset,value,expected);break;
-              case 2:ok=atomic_access<2>(memory,operation,static_cast<::std::uint32_t>(address),offset,value,expected);break;
-              case 4:ok=atomic_access<4>(memory,operation,static_cast<::std::uint32_t>(address),offset,value,expected);break;
-              default:ok=atomic_access<8>(memory,operation,static_cast<::std::uint32_t>(address),offset,value,expected); }
+            { case 1:ok=atomic_access<1>(memory,operation,memory_address(memory,address),offset,value,expected);break;
+              case 2:ok=atomic_access<2>(memory,operation,memory_address(memory,address),offset,value,expected);break;
+              case 4:ok=atomic_access<4>(memory,operation,memory_address(memory,address),offset,value,expected);break;
+              default:ok=atomic_access<8>(memory,operation,memory_address(memory,address),offset,value,expected); }
             if(!ok||operation==1u) { return ok; }
             return push(slot==0u||slot==2u||slot==3u?static_cast<::std::uint32_t>(value):value);
 #ifdef UWVM_CPP_EXCEPTIONS
@@ -444,6 +478,13 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             catch(::std::bad_alloc const&) { return fail(status::resource_limit); }
             catch(...) { return fail(status::host_failure); }
 #endif
+        }
+        [[nodiscard]] ::std::uint64_t exception_token(storage::gc_reference const& ref) const noexcept
+        {
+            if(ref.kind!=::uwvm2::object::global::wasm_ref_kind::wasm_exn||!ref.storage.ptr)return 0u;
+            for(::std::size_t i{};i<exception_top_;++i)
+                if(exceptions_[i].escaped&&exceptions_[i].reference.storage.ptr==ref.storage.ptr)return i+1u;
+            return 0u;
         }
         [[nodiscard]] bool bulk_memory(threads::ThreadedGroup::ChildLease& lease,instruction const& ins) noexcept;
         template<typename Memory>
@@ -477,7 +518,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 { result.outcome.code=status::unsupported_profile;return result; }
                 if(!world || !budget.values || !budget.controls || !budget.calls || !budget.functions || !budget.host_bytes ||
                     !budget.storage_bytes || !budget.source_bytes || !budget.instruction_bytes || !budget.exception_objects || !budget.exception_values) { result.outcome.code=status::invalid_world;return result; }
-                auto owned{::std::unique_ptr<engine>{new engine{::std::move(world),budget,execute_memtag}}};
+                auto owned{::uwvm2::utils::container::std_unique_ptr<engine>{::uwvm2::utils::allocator::fast_io_strict::object<engine>([&](engine* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) engine{::std::move(world),budget,execute_memtag}; })}};
                 result.outcome.code=owned->prepare(error);
                 if(result.outcome.normal()) { result.code=::std::move(owned); }
             }
@@ -506,7 +547,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             add(values_.capacity(),sizeof(stack_value));add(calls_.capacity(),sizeof(activation));add(controls_.capacity(),sizeof(control));
             add(host_parameters_.capacity(),1);add(host_results_.capacity(),1);add(modules_.capacity(),sizeof(bound_module));
             add(exceptions_.capacity(),sizeof(exception_record));add(exception_values_.capacity(),sizeof(stack_value));
-            for(auto const& m:modules_) { add(m.globals.capacity(),sizeof(global_type*));add(m.tags.capacity(),sizeof(storage::local_defined_tag_storage_t*)); }
+            for(auto const& m:modules_) { add(m.memories.capacity(),sizeof(bound_memory));add(m.globals.capacity(),sizeof(global_type*));add(m.tags.capacity(),sizeof(storage::local_defined_tag_storage_t*)); }
             return total;
         }
         [[nodiscard]] ::std::size_t owned_code_bytes() const noexcept
@@ -523,10 +564,11 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         }
         [[nodiscard]] auto const& last_memory_grow() const noexcept { return last_grow_; }
         [[nodiscard]] execution_result run_entry(threads::ThreadedGroup::ChildLease& lease,
-            ::std::size_t function, ::std::span<::std::byte> results, ::std::span<::std::byte const> params) noexcept
+            ::std::size_t function, ::std::span<::std::byte> results, ::std::span<::std::byte const> params,
+            ::std::size_t selected_module=SIZE_MAX) noexcept
         {
             if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return {status::invalid_world}; }
-            auto const module{world_->entry_module_index()};
+            auto const module{selected_module==SIZE_MAX?world_->entry_module_index():selected_module};
             if(::std::addressof(lease.world())!=world_.get() || !lease.owns_current_native_thread() ||
                 ::std::addressof(lease.admission())!=::std::addressof(world_->admission()) ||
                 module>=modules_.size() || function>=modules_[module].targets.size() || modules_[module].targets[function].host)
@@ -536,9 +578,10 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             // for every scalar/SIMD/atomic/bulk access, including tag-zero callers.
             for(auto const& bound:modules_)
             {
-                if(bound.memory!=nullptr && bound.memory->memtag_shadow.enabled() &&
-                   !::uwvm2::runtime::memtag::details::configured<::std::uint32_t,true>(*bound.memory))
-                { return {status::invalid_world}; }
+                for(auto const& owned:bound.memories)
+                    if(owned.memory->memtag_shadow.enabled()&&!memory_geometry(*owned.memory,[&]<typename Address,bool Shared>() noexcept
+                        {return ::uwvm2::runtime::memtag::details::configured<Address,Shared>(*owned.memory);}))
+                        return {status::invalid_world};
             }
             auto const* type{function_type(module,function)};::std::size_t input_bytes{},output_bytes{};
             for(auto i{type->parameter.begin};i!=type->parameter.end;++i) { if(!detail::numeric_type(*i)) { return {status::trap_signature}; } input_bytes+=detail::abi_bytes(*i); }
@@ -581,6 +624,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     if(!step(lease,ins)) { break; }
                 }
             }
+            memtag_delivery.finish();
             if(result_.code!=status::ok && result_.code!=status::cancelled)
             {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -595,6 +639,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 case status::trap_integer_overflow:reason="integer overflow";break;
                 case status::trap_invalid_conversion:reason="invalid conversion to integer";break;
                 case status::trap_uncaught_exception:reason="uncaught Wasm exception";break;
+                case status::trap_cast:reason="reference cast failed";break;
+                case status::resource_limit:reason="threaded execution storage capacity exhausted";break;
                 case status::invariant_failure:case status::host_failure:category=crash::category::internal;reason="threaded runtime failure";break;
                 default:break;
                 }
@@ -613,7 +659,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 crash::pause_process();
                 if(category==crash::category::internal) { ::fast_io::fast_terminate(); }
 #endif
-                lease.request_trap(static_cast<::std::uint32_t>(result_.code),result_.module,result_.function,result_.wasm_offset);
+                auto const journal_category=result_.code==status::trap_unreachable?threads::journal_fault::unreachable:
+                    result_.code==status::trap_memtag?threads::journal_fault::memtag:threads::journal_fault::execution;
+                lease.request_trap(static_cast<::std::uint32_t>(result_.code),result_.module,result_.function,result_.wasm_offset,journal_category);
             }
             auto const outcome{lease.read_outcome()};
             if(outcome.kind==threads::termination_kind::proc_exit) { result_.code=status::proc_exit;result_.exit_code=outcome.code; }

@@ -37,8 +37,7 @@
 # include <uwvm2/utils/cmdline/impl.h>
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/uwvm/utils/ansies/impl.h>
-# include <uwvm2/uwvm/cmdline/impl.h>
-# include <uwvm2/uwvm/cmdline/params/impl.h>
+# include <uwvm2/uwvm/cmdline/params/log_enable_warning.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -94,9 +93,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         {
             ::uwvm2::uwvm::io::show_parser_warning = true;
             ::uwvm2::uwvm::io::show_wasip1_warning = true;
+            ::uwvm2::uwvm::io::show_untrusted_dl_warning = true;
+            ::uwvm2::uwvm::io::show_deprecated_ros_warning = true;
+            ::uwvm2::uwvm::io::show_retained_ros_input_warning = true;
         }
         else if(currp1_str == u8"parser") { ::uwvm2::uwvm::io::show_parser_warning = true; }
         else if(currp1_str == u8"wasip1") { ::uwvm2::uwvm::io::show_wasip1_warning = true; }
+        else if(currp1_str == u8"untrusted-dl") { ::uwvm2::uwvm::io::show_untrusted_dl_warning = true; }
+        else if(currp1_str == u8"deprecated-ros") { ::uwvm2::uwvm::io::show_deprecated_ros_warning = true; }
+        else if(currp1_str == u8"retained-ros-input") { ::uwvm2::uwvm::io::show_retained_ros_input_warning = true; }
         else
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,

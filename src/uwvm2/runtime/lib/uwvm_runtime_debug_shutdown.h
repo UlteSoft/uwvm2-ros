@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Private process-local managed CLI stop contract. Include INSIDE runtime::lib
 // before full native entry. No guest import, saved state or public constructor.
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
@@ -21,7 +22,7 @@ class llvm_jit_debug_shutdown_request final
     ::std::shared_ptr<domain> control_{};
     llvm_jit_debug_observer observer_{};
     ::std::uint_least64_t epoch_{}, issuer_{}; // actual cold native-thread incarnation, never reused
-    ::std::vector<module_pin> modules_{};
+    ::uwvm2::utils::container::std_vector<module_pin> modules_{};
     explicit llvm_jit_debug_shutdown_request(
         ::uwvm2::utils::thread::execution_domain::maintenance_transition owned) noexcept
         : maintenance_{::std::move(owned)} {}
@@ -32,6 +33,11 @@ public:
 };
 class runtime_debug_shutdown_bridge final
 {
+    friend class runtime_checkpoint_retirement_bridge;
+    // Reuse the generated shutdown byte for observer-world retirement. This
+    // changes only cold management; ordinary generated polls are unchanged.
+    inline static bool checkpoint_retirement_gate_{}; // protected by mutex_
+    [[nodiscard]] static bool select_checkpoint_retirement_gate(bool) noexcept;
     using owner = llvm_jit_debug_shutdown_request_owner;
     using result = llvm_jit_debug_shutdown_status;
     inline static ::std::mutex mutex_{};

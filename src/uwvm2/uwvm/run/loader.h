@@ -59,6 +59,9 @@
 # if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #  include <uwvm2/uwvm/imported/ros/host.h>
 # endif
+# if defined(UWVM_IMPORT_ROSV2)
+#  include <uwvm2/uwvm/imported/scene/host.h>
+# endif
 # include "retval.h"
 #endif
 
@@ -195,7 +198,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         return static_cast<int>(::uwvm2::uwvm::run::retval::ok);
     }
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
     namespace details
     {
         /// @brief Test whether a parsed Wasm file needs a built-in namespace.
@@ -244,15 +246,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             return false;
         }
     }
-#endif
 
     inline constexpr int load_local_modules(bool preserve_host_state = false, [[maybe_unused]] bool initialize_host_resources = true) noexcept
     {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // An atomic host policy snapshot chooses namespace construction only.
-        // Actual Group/ChildLease/source checks still decide every spawn.
+        // Exposure also works without a private execution profile. In that
+        // case the concrete ordinary entry diagnoses refusal and creates no
+        // thread. Actual Group/ChildLease/source checks decide every real spawn.
         bool const threaded_requested{::uwvm2::runtime::lib::runtime_threaded_profile_builtin_requested_host_api()};
-        if(threaded_requested && !::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
+        if((threaded_requested || details::loaded_wasm_imports_namespace(u8"wasi")) &&
+           !::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(
             ::uwvm2::uwvm::imported::wasi::threads::local_imported_module))
         { return static_cast<int>(::uwvm2::uwvm::run::retval::load_local_modules_error); }
 #endif
@@ -275,6 +279,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             { return static_cast<int>(retval::load_local_modules_error); }
 #endif
         }
+#if defined(UWVM_IMPORT_ROSV2)
+        if(details::loaded_wasm_imports_namespace(::uwvm2::uwvm::imported::scene::local_imported_module.module_name))
+        {
+            // Scene inspection stays inert even in builds without legacy
+            // zero-host defaults. A metadata-only loader request cannot pin,
+            // read or seal any deployment source, regardless of input validity.
+            bool const scene_initialize{initialize_host_resources &&
+                ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::validation &&
+                ::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::section_details};
+            if(preserve_host_state || ::uwvm2::uwvm::imported::scene::prepare(scene_initialize)!=::uwvm2::imported::ros::scene::error::success)
+            { return static_cast<int>(retval::load_local_modules_error); }
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+            if(threaded_requested)
+            {
+                if(!::uwvm2::uwvm::runtime::full::threaded_builtin_loader::append(::uwvm2::uwvm::imported::scene::local_imported_module))
+                { return static_cast<int>(retval::load_local_modules_error); }
+            }
+            else
+#endif
+            if(!::uwvm2::uwvm::imported::scene::sealed_loader_factory::append())
+            { return static_cast<int>(retval::load_local_modules_error); }
+        }
+#endif
         // Register only namespaces referenced by a loaded Wasm import. A
         // dependency and runtime gates independently check target enable.
 #if defined(UWVM_IMPORT_ROS1)

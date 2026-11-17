@@ -1,4 +1,7 @@
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <atomic>
@@ -79,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
               source_modules_{identity}, record_budget_{limits} {}
         template<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
         [[nodiscard]] static ::std::shared_ptr<parsed_integer_source_plan const> finish_typed_seal(
-            ::std::unique_ptr<parsed_integer_source_plan> pending,
+            ::uwvm2::utils::container::std_unique_ptr<parsed_integer_source_plan> pending,
             ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& parsed,
             ::uwvm2::validation::error::code_validation_error_impl& error)
         {
@@ -136,13 +139,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             if(error.err_code != ::uwvm2::validation::error::code_validation_error_code::ok ||
                pending->validated_functions_ != codes.size() || !pending->matches_selected_source() || pending->source_->initialized_from_actual_state() ||
                !pending->source_->registry().empty()) { return {}; }
-            return ::std::shared_ptr<parsed_integer_source_plan const>{pending.release()};
+            return ::uwvm2::utils::container::adopt_shared(pending.release());
         }
     public:
         using owner = ::std::shared_ptr<parsed_integer_source_plan const>;
         parsed_integer_source_plan(parsed_integer_source_plan const&) = delete;
         parsed_integer_source_plan& operator=(parsed_integer_source_plan const&) = delete;
-        [[nodiscard]] static owner load_validate_after_drain(::std::u8string file_name, ::std::u8string rename,
+        [[nodiscard]] static owner load_validate_after_drain(::uwvm2::utils::container::std_u8string file_name, ::uwvm2::utils::container::std_u8string rename,
             ::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_feature_parameter_storage_t const& features,
             ::uwvm2::validation::error::code_validation_error_impl& error,
             ::uwvm2::validation::standard::wasm3::retained_plan_limits limits = {},
@@ -202,7 +205,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             identity.binfmt_version = source->file().binfmt_ver;
             auto const& policy{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(features)};
             if(!validation::uses_core3_validation_policy(policy)) { return {}; }
-            ::std::unique_ptr<parsed_integer_source_plan> pending{new parsed_integer_source_plan{::std::move(source), generation, limits, identity}};
+            ::uwvm2::utils::container::std_unique_ptr<parsed_integer_source_plan> pending{::uwvm2::utils::allocator::fast_io_strict::object<parsed_integer_source_plan>([&](parsed_integer_source_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) parsed_integer_source_plan{::std::move(source), generation, limits, identity}; })};
             auto const& parsed{pending->source_->file().wasm_module_storage.wasm_binfmt_ver1_storage};
             validation::validate_module_declarations_with_runtime_policy(parsed, error, pending->features_);
             return finish_typed_seal(::std::move(pending), parsed, error);

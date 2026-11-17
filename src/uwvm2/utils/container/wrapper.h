@@ -21,6 +21,8 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -46,6 +48,7 @@
 # include <boost/unordered/concurrent_node_set.hpp>
 // import
 # include <fast_io.h>
+# include <uwvm2/utils/allocator/resource_limit.h>
 # include <fast_io_dsal/tuple.h>
 # include <fast_io_dsal/array.h>
 # include <fast_io_dsal/string_view.h>
@@ -143,6 +146,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         template <::std::movable T, typename Alloc = ::fast_io::native_thread_local_allocator>
         using vector = ::uwvm2::utils::container::vector<T, Alloc>;
     }
+
+    // Compiler/validator scratch, charged only when backing storage grows.
+    template <::std::movable T>
+    using validation_vector = vector<T, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>>;
+    template <typename T>
+    using validation_deque = ::bizwen::deque<T, ::uwvm2::utils::allocator::resource::std_allocator<T, ::uwvm2::utils::allocator::resource::pool::validation>>;
 
     /// @brief deque
     template <typename T, typename Alloc = ::uwvm2::utils::container::fast_io_global_std_allocator<T>>
@@ -283,9 +292,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         return ::uwvm2::utils::container::owned_ptr<T>{ptr};
     }
 
-    template <typename T, typename... Args>
-    [[nodiscard]] inline constexpr auto make_delete_owned(Args && ... args) -> ::uwvm2::utils::container::delete_owned_ptr<T>
-    { return ::uwvm2::utils::container::delete_owned_ptr<T>{new T(::std::forward<Args>(args)...)}; }
 
     /// @brief ordered
     template <typename Key, typename Compare = ::std::less<Key>, typename Alloc = ::uwvm2::utils::container::fast_io_global_std_allocator<Key>>

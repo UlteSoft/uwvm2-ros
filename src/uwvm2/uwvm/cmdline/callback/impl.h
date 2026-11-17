@@ -42,6 +42,7 @@
 # include "wasm_set_memory_limit.h"
 # include "wasm_set_parser_limit.h"
 # include "wasm_set_initializer_limit.h"
+# include "wasm_set_resource_limit.h"
 # include "wasm_feature.h"
 
 // runtime

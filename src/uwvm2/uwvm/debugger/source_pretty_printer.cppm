@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #include <algorithm>
 #include <bit>

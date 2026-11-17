@@ -100,7 +100,7 @@
             auto const imports{rec.runtime_module->imported_function_vec_storage.size()};
             if(functions.size() != rec.llvm_jit_debug_full_entry_generations.size() ||
                functions.size() != rec.llvm_jit_debug_full_safe_points.size()) { return {}; }
-            ::std::shared_ptr<llvm_jit_debug_source_binding> candidate{new llvm_jit_debug_source_binding};
+            ::std::shared_ptr<llvm_jit_debug_source_binding> candidate{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_source_binding>([&](llvm_jit_debug_source_binding* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_source_binding; }))};
             // [canonical source owner][live unique code publication] owner_end
             // [safe                 ][safe                       ] the genuine
             //  ^^ lease/publication lock retains the comparison-only borrow;

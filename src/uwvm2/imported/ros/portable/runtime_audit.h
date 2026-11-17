@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -102,7 +103,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
             while(!attempts_.compare_exchange_weak(count,count+1,::std::memory_order_relaxed));
             return true;
         }
-        static error observe_file(::std::string const& path,digest& output)
+        static error observe_file(::uwvm2::utils::container::std_string const& path,digest& output)
         {
 #if defined(__linux__)
             // Bounded metadata snapshots only. This deliberately cannot select
@@ -113,7 +114,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
             struct close_fd { int fd;~close_fd(){::close(fd);} } guard{fd};
             struct stat before{},after{};
             if(::fstat(fd,&before)!=0||!S_ISREG(before.st_mode)||before.st_size<=0||before.st_size>32768) { return error::malformed; }
-            ::std::string bytes(static_cast<::std::size_t>(before.st_size),'\0');::std::size_t at{};
+            ::uwvm2::utils::container::std_string bytes(static_cast<::std::size_t>(before.st_size),'\0');::std::size_t at{};
             while(at!=bytes.size())
             {
                 auto count{::pread(fd,bytes.data()+at,bytes.size()-at,static_cast<off_t>(at))};
@@ -155,7 +156,7 @@ namespace uwvm2::imported::ros::portable::runtime_audit
         }
         // Trusted pre-execution setup only. Even a valid grant read here remains
         // an observation input; only the existing --portable-robot path enables it.
-        [[nodiscard]] error configure_inputs(::std::string const& adapter,::std::string const& policy)
+        [[nodiscard]] error configure_inputs(::uwvm2::utils::container::std_string const& adapter,::uwvm2::utils::container::std_string const& policy)
         {
             if(inputs_configured_) { return error::denied; }
             digest a{},p{};

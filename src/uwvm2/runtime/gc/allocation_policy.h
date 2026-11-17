@@ -48,7 +48,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
         auto const callback{managed_allocation_poll_callback.load(::std::memory_order_acquire)};
         if(callback != nullptr) { callback(module_address); }
     }
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
     using managed_array_allocation_poll_function = void(*)(::std::uintptr_t, ::std::size_t) noexcept;
     inline ::std::atomic<managed_array_allocation_poll_function> managed_array_allocation_poll_callback{};
     inline void poll_before_managed_array_allocation(::std::uintptr_t module_address,
@@ -63,6 +62,5 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
         }
         poll_before_managed_aggregate_allocation(module_address);
     }
-#endif
 
 }

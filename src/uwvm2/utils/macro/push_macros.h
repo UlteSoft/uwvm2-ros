@@ -568,16 +568,24 @@
 
 #pragma push_macro("UWVM_SUPPORT_PRELOAD_DL")
 #undef UWVM_SUPPORT_PRELOAD_DL
-#if (defined(_WIN32) || defined(__CYGWIN__)) && (!defined(__CYGWIN__) && !defined(__WINE__)) ||                                                                \
-    ((!defined(_WIN32) || defined(__WINE__)) && (__has_include(<dlfcn.h>) && (defined(__CYGWIN__) || (!defined(__NEWLIB__) && !defined(__wasi__)))))
-# define UWVM_SUPPORT_PRELOAD_DL
+/// @brief Compile the legacy, unisolated native loader only on explicit opt-in.
+/// @details UWVM_ENABLE_PRELOAD_DL=1 is a build choice, not permission to load
+/// a library. Platform support, runtime policy and warnings still apply. The
+/// derived macro cannot be forced on by a caller's UWVM_SUPPORT_PRELOAD_DL.
+#if defined(UWVM_ENABLE_PRELOAD_DL) && UWVM_ENABLE_PRELOAD_DL
+# if (defined(_WIN32) || defined(__CYGWIN__)) && (!defined(__CYGWIN__) && !defined(__WINE__)) ||                                                               \
+     ((!defined(_WIN32) || defined(__WINE__)) && (__has_include(<dlfcn.h>) && (defined(__CYGWIN__) || (!defined(__NEWLIB__) && !defined(__wasi__)))))
+#  define UWVM_SUPPORT_PRELOAD_DL
+# else
+#  error "UWVM_ENABLE_PRELOAD_DL requested, but native dynamic loading is unavailable on this platform"
+# endif
 #endif
 
 /// @brief        Determine whether the operating system supports mmap
 /// @note         support: win9x, winnt, posix.
-///               When AddressSanitizer is enabled, disable mmap-backed linear memory because the mmap backend
-///               reserves very large VMAs (e.g. wasm32 full-protection) which can cause excessive ASan shadow
-///               memory usage and OOM in fuzzing/CI environments.
+///               Linux ASan uses sparse native reservations and prepares shadow
+///               only for committed bytes. Other ASan platforms retain their
+///               allocator backend until the equivalent mapping path is qualified.
 #pragma push_macro("UWVM_SUPPORT_MMAP")
 #undef UWVM_SUPPORT_MMAP
 #if defined(UWVM_FORCE_USE_MMAP) && defined(UWVM_FORCE_DISABLE_MMAP)
@@ -586,14 +594,14 @@
 #if !defined(UWVM_FORCE_DISABLE_MMAP) &&                                                                                                                       \
     (((defined(_WIN32) || defined(__CYGWIN__)) ||                                                                                                              \
       (!defined(__NEWLIB__) && !(defined(__MSDOS__) || defined(__DJGPP__)) && (!defined(__wasm__) || (defined(__wasi__) && defined(_WASI_EMULATED_MMAN))) &&   \
-       __has_include(<sys/mman.h>)))) && !(UWVM_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__))
+       __has_include(<sys/mman.h>)))) && (defined(__linux__) || !(UWVM_HAS_FEATURE(address_sanitizer) || defined(__SANITIZE_ADDRESS__)))
 # define UWVM_SUPPORT_MMAP
 #elif defined(UWVM_FORCE_USE_MMAP)
 # error "UWVM_FORCE_USE_MMAP requested, but mmap-backed linear memory is unavailable on this platform/toolchain"
 #endif
 
 // Legacy native weak-provider discovery is removed in the ROS product.
-// Explicit, policy-controlled --wasm-register-dl is the trusted-driver path.
+// Explicit --wasm-register-dl is an unsafe legacy opt-in, never ROSv2 isolation.
 #if defined(UWVM_SUPPORT_WEAK_SYMBOL)
 # error "Native weak-symbol providers have been removed from uwvm2-ros"
 #endif

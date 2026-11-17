@@ -15,7 +15,23 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **312**.
+Advertised primary commands: **290**.
+
+## `--debug-dump-force`
+
+```text
+[--debug-dump-force] <none|diagnostic|full>
+```
+
+Force every dump to this disclosure level; none disables all dumps. Cannot be changed by a debug session. Mutually exclusive with --debug-dump-max; never grants debugger or restore authority.
+
+## `--debug-dump-max`
+
+```text
+[--debug-dump-max] <diagnostic|full>
+```
+
+Launch-only dump disclosure ceiling (default: full); each export may select less. Diagnostic includes static Wasm and fault locations, not dynamic sensitive state. Mutually exclusive with --debug-dump-force; debugger permissions still apply.
 
 ## `--debug-fault-action`
 
@@ -49,6 +65,14 @@ Windows only: opt in to LLVM-full late debugger commands from a direct-parent in
 
 Debugger launch permissions only: full (inspect/modify/control execution), read-only (inspect/full dump; no execution control), limited (non-sensitive diagnostics/dump only; default), none (no debugger or dump). -Rdbg and -m debug default to full; other modes default to limited; explicit selection wins. Does not grant imports, drivers or updates.
 
+## `--debug-thread-history`
+
+```text
+[--debug-thread-history] <record|replay> <path> <control-storage-bytes>
+```
+
+Record a complete private WASI Threads execution to a unified snapshot, or replay it without real WASI/ROS I/O. Requires full debug and full dump permissions. Original source must match. Control storage is an explicit native resource budget; history has no implicit quota.
+
 ## `--diagnostic-control-fd`
 
 ```text
@@ -60,7 +84,7 @@ Non-sensitive read-only diagnostics on a separate authenticated Unix seqpacket s
 ## `--disable-warning`
 
 ```text
-[--disable-warning] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|untrusted-dl|dl|depend|runtime|runtime-compile-threads]
+[--disable-warning] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|untrusted-dl|deprecated-ros|retained-ros-input|depend|runtime|runtime-compile-threads]
 ```
 
 Disable selected warning categories.
@@ -68,15 +92,15 @@ Disable selected warning categories.
 ## `--enable-warning`
 
 ```text
-[--enable-warning] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|parser|wasip1]
+[--enable-warning] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|parser|wasip1|untrusted-dl|deprecated-ros|retained-ros-input]
 ```
 
-Enable warnings; host quota diagnostics default off. Select all_host_calls[_wasip1|_ros1|_ros2], all_host_denied/all_host_limited, or host_denied_FAMILY.API / host_limited_FAMILY.API.
+Enable warnings; host quota diagnostics default off. Select all_host_calls[_wasip1|_wasithread|_ros1|_ros2], all_host_denied/all_host_limited, or host_denied_FAMILY.API / host_limited_FAMILY.API.
 
 ## `--help`
 
 ```text
-[--help|-h] ([all|global|debug|update|wasm|secure|log|runtime|wasi|ros1|ros2])
+[--help|-h] ([all|global|debug|update|wasm|secure|log|runtime|wasi|rosv2])
 ```
 
 Show help information.
@@ -113,1069 +137,701 @@ Enable verbose logging.
 
 Select the operation mode. Default: run.
 
-## `--portable-robot`
+## `--ros-scene`
 
 ```text
-[--portable-robot] <adapter:absolute-path> <adapter:sha256> <policy:absolute-path> <policy:sha256>
+[--ros-scene] <environment:str> <platform_extension|platform_extension.bind|permission.report> <module-or-function:str> <enable|disable|device-alias|deny>
 ```
 
-Select exact portable adapter bytes and a separate explicit deployment grant.
+Configure a ROSv2 child or reduce read-only permission reports; platform enablement grants no authority.
 
-## `--portable-robot-audit-inputs`
+## `--ros-scene-bind`
 
 ```text
-[--portable-robot-audit-inputs] <adapter:absolute-path> <policy:absolute-path>
+[--ros-scene-bind] <environment:str> <module:str>
 ```
 
-Observe exact bounded adapter/policy bytes for denied-call diagnostics; grants no permission and does not enable audit.
+Bind one exact module; no fallback to any other host policy.
 
-## `--portable-robot-audit-run`
+## `--ros-scene-bridge-budget`
 
 ```text
-[--portable-robot-audit-run] <run-id:32-lowercase-hex>
+[--ros-scene-bridge-budget] <environment:str> <bindings:u64> <storage-bytes:u64> <supervisor-stack-bytes:u64> <poll-ns:u64>
 ```
 
-Opt in to at most eight process-correlated portable operation records on stdout; disabled by default.
+Reserve finite directed topic bridge providers; creates no input, output or egress authority.
 
-## `--ros1-check-policy`
+## `--ros-scene-bridge-definition`
 
 ```text
-[--ros1-check-policy]
+[--ros-scene-bridge-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Validate explicit ROS policy; no Guest execution.
+Read a bounded authenticated bridge definition; never loads codec libraries.
 
-## `--ros1-dump-effective-policy`
+## `--ros-scene-bridge-definition-hex`
 
 ```text
-[--ros1-dump-effective-policy]
+[--ros-scene-bridge-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Validate explicit ROS policy; no Guest execution.
+Supply a canonical authenticated directed topic bridge definition without file access.
 
-## `--ros1-global-add-module`
+## `--ros-scene-bridge-limit`
 
 ```text
-[--ros1-global-add-module] <module:str>
+[--ros-scene-bridge-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Bind one exact loaded module to the explicit Global contract; unbound modules stay denied.
+Assign one mandatory bridge capacity; optional rates remain separate.
 
-## `--ros1-global-advertise-host`
+## `--ros-scene-bridge-profile`
 
 ```text
-[--ros1-global-advertise-host] <value:str>
+[--ros-scene-bridge-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-Explicit ROS1 global advertise-host configuration; default deny.
+Select an exact digest-bound directed topic bridge definition under an existing bridge grant.
 
-## `--ros1-global-audit-deny-burst`
+## `--ros-scene-buffer`
 
 ```text
-[--ros1-global-audit-deny-burst] <value:str>
+[--ros-scene-buffer] <environment:str> <alias:str> <schema:str> <sha256:hex> <bytes:u64> <objects:u64> <object-bytes:u64> <transfer:u64> <workspace:u64> <leases:u64> <rank:u64> <elements:u64> <dtype-mask:u64> <order-mask:u64> <color-mask:u64>
 ```
 
-Explicit ROS1 global audit-deny-burst configuration; default deny.
+Bind an exact buffer schema, finite capacities and closed layout masks; allocates no payload.
 
-## `--ros1-global-audit-deny-max-bytes`
+## `--ros-scene-buffer-budget`
 
 ```text
-[--ros1-global-audit-deny-max-bytes] <value:str>
+[--ros-scene-buffer-budget] <environment:str> <bytes:u64> <objects:u64> <workspace:u64> <leases:u64>
 ```
 
-Explicit ROS1 global audit-deny-max-bytes configuration; default deny.
+Reserve aggregate buffer bytes, object slots, read workspace and sealed leases; defaults are zero.
 
-## `--ros1-global-audit-deny-max-rate-hz`
+## `--ros-scene-call`
 
 ```text
-[--ros1-global-audit-deny-max-rate-hz] <value:str>
+[--ros-scene-call] <environment:str> <route:str> <caller:str> <callee:str> <operation:str> <request-schema:str> <response-schema:str> <request-bytes:u64> <response-bytes:u64> <slots:u64> <deadline-ns:u64>
 ```
 
-Explicit ROS1 global audit-deny-max-rate-hz configuration; default deny.
+Register an exact caller, callee and bounded message contract; no arbitrary export invocation.
 
-## `--ros1-global-audit-deny-max-records`
+## `--ros-scene-call-budget`
 
 ```text
-[--ros1-global-audit-deny-max-records] <value:str>
+[--ros-scene-call-budget] <environment:str> <bytes:u64> <routes:u64>
 ```
 
-Explicit ROS1 global audit-deny-max-records configuration; default deny.
+Reserve cross-Wasm message storage; creates no authority.
 
-## `--ros1-global-connect-timeout-ms`
+## `--ros-scene-call-clear-input`
 
 ```text
-[--ros1-global-connect-timeout-ms] <value:str>
+[--ros-scene-call-clear-input] <environment:str> <route:str> <clear-after-copy:bool>
 ```
 
-Explicit ROS1 global connect-timeout-ms configuration; default deny.
+Set copied-input erasure for one registered route (default true); false risks retained sender data.
 
-## `--ros1-global-connect-timeout-ms.on-proc-exit`
+## `--ros-scene-check`
 
 ```text
-[--ros1-global-connect-timeout-ms.on-proc-exit] <cancel|wait>
+[--ros-scene-check]
 ```
 
-ROS1 global connection wait on proc_exit: cancel (default) or wait.
+Validate and freeze scene policy without executing guests or activating native providers.
 
-## `--ros1-global-disable`
+## `--ros-scene-communication-bind`
 
 ```text
-[--ros1-global-disable]
+[--ros-scene-communication-bind] <environment:str> <alias:str> <worker:str> <profile:str>
 ```
 
-Explicit ROS1 global disable configuration; default deny.
+Select one exact worker profile for an existing native-communication grant.
 
-## `--ros1-global-enable`
+## `--ros-scene-communication-budget`
 
 ```text
-[--ros1-global-enable]
+[--ros-scene-communication-budget] <environment:str> <name:str> <value:u64>
 ```
 
-Enable the ROS1 namespace; exact interfaces remain hidden until explicitly configured.
+Reserve finite communication registries, carriers, worker images and pair supervisor resources; every named field is explicit.
 
-## `--ros1-global-gateway-socket`
+## `--ros-scene-communication-channel`
 
 ```text
-[--ros1-global-gateway-socket] <value:str>
+[--ros-scene-communication-channel] <environment:str> <worker:str> <control-fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <request-write:u32> <response-read:u32> <diagnostic-read:u32> <discovery-write:u32> <discovery-read:u32> <user-write:u32> <user-read:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <startup-ns:u64> <session-until-ns:u64> <stderr-bytes:u64>
 ```
 
-Explicit ROS1 global gateway-socket configuration; default deny.
+Attach a deployment-owned ROS provider through authenticated control and seven directional pipes; no native lifecycle control.
 
-## `--ros1-global-gateway-uid`
+## `--ros-scene-communication-pair`
 
 ```text
-[--ros1-global-gateway-uid] <value:str>
+[--ros-scene-communication-pair] <environment:str> <pair:str> <left-worker:str> <right-worker:str> <retirement-ns:u64>
 ```
 
-Explicit ROS1 global gateway-uid configuration; default deny.
+Bind two isolated workers to one explicit transport and cleanup failure domain.
 
-## `--ros1-global-grant`
+## `--ros-scene-communication-worker`
 
 ```text
-[--ros1-global-grant] <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
+[--ros-scene-communication-worker] <environment:str> <worker:str> <profile:str> <ros-prefix:str> <absolute-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS1 global grant configuration; default deny.
+Authenticate a bounded startup definition; grants no capability and starts no native code.
 
-## `--ros1-global-interface`
+## `--ros-scene-communication-worker-limit`
 
 ```text
-[--ros1-global-interface] <namespace.function:str> <hidden|deny|allow>
+[--ros-scene-communication-worker-limit] <environment:str> <worker:str> <name:str> <value:u64>
 ```
 
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
+Set a mandatory local RPC or adapter reservation; explicit zero never becomes unlimited.
 
-## `--ros1-global-master-uri`
+## `--ros-scene-control-definition`
 
 ```text
-[--ros1-global-master-uri] <value:str>
+[--ros-scene-control-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS1 global master-uri configuration; default deny.
+Read a bounded authenticated control definition; performs no native device I/O.
 
-## `--ros1-global-namespace`
+## `--ros-scene-control-definition-hex`
 
 ```text
-[--ros1-global-namespace] <value:str>
+[--ros-scene-control-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS1 global namespace configuration; default deny.
+Supply a canonical authenticated closed scalar control definition without file access.
 
-## `--ros1-global-node-name`
+## `--ros-scene-control-limit`
 
 ```text
-[--ros1-global-node-name] <value:str>
+[--ros-scene-control-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 global node-name configuration; default deny.
+Assign one mandatory control capacity; optional rates remain separate.
 
-## `--ros1-global-set`
+## `--ros-scene-control-profile`
 
 ```text
-[--ros1-global-set] <capability:str> <key:str> <value:str>
+[--ros-scene-control-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-Explicit ROS1 global set configuration; default deny.
+Select an exact digest-bound closed scalar control definition under an existing control grant.
 
-## `--ros1-global-transport`
+## `--ros-scene-create`
 
 ```text
-[--ros1-global-transport] <value:str>
+[--ros-scene-create] <environment:str>
 ```
 
-Explicit ROS1 global transport configuration; default deny.
+Create an empty independent environment; grants no interfaces or resources.
 
-## `--ros1-group-add-module`
+## `--ros-scene-device-budget`
 
 ```text
-[--ros1-group-add-module] <group:str> <module:str>
+[--ros-scene-device-budget] <environment:str> <devices:u64> <controllers:u64> <retained-bytes:u64> <supervisor-stack-bytes:u64> <poll-ns:u64> <shutdown-ns:u64>
 ```
 
-Explicit ROS1 group add-module configuration; default deny.
+Reserve device/control records, an inherited-placement supervisor and bounded shutdown; grants remain separate.
 
-## `--ros1-group-advertise-host`
+## `--ros-scene-device-definition`
 
 ```text
-[--ros1-group-advertise-host] <group:str> <value:str>
+[--ros-scene-device-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS1 group advertise-host configuration; default deny.
+Read a bounded authenticated device definition; performs no native device I/O.
 
-## `--ros1-group-audit-deny-burst`
+## `--ros-scene-device-definition-hex`
 
 ```text
-[--ros1-group-audit-deny-burst] <group:str> <value:str>
+[--ros-scene-device-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS1 group audit-deny-burst configuration; default deny.
+Supply a canonical authenticated closed scalar device definition without file access.
 
-## `--ros1-group-audit-deny-max-bytes`
+## `--ros-scene-device-endpoints`
 
 ```text
-[--ros1-group-audit-deny-max-bytes] <group:str> <value:str>
+[--ros-scene-device-endpoints] <environment:str> <alias:str> <command-tx:u64> <command-ack-rx:u64> <stop-tx:u64> <stop-ack-rx:u64>
 ```
 
-Explicit ROS1 group audit-deny-max-bytes configuration; default deny.
+Bind explicit directional command and independent stop channels; raw mode and channel identity are checked only on activation.
 
-## `--ros1-group-audit-deny-max-rate-hz`
+## `--ros-scene-device-limit`
 
 ```text
-[--ros1-group-audit-deny-max-rate-hz] <group:str> <value:str>
+[--ros-scene-device-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 group audit-deny-max-rate-hz configuration; default deny.
+Assign one mandatory device capacity; optional rates remain separate.
 
-## `--ros1-group-audit-deny-max-records`
+## `--ros-scene-device-profile`
 
 ```text
-[--ros1-group-audit-deny-max-records] <group:str> <value:str>
+[--ros-scene-device-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-Explicit ROS1 group audit-deny-max-records configuration; default deny.
+Select an exact digest-bound closed scalar device definition under an existing device grant.
 
-## `--ros1-group-connect-timeout-ms`
+## `--ros-scene-diagnostic-limit`
 
 ```text
-[--ros1-group-connect-timeout-ms] <group:str> <value:str>
+[--ros-scene-diagnostic-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 group connect-timeout-ms configuration; default deny.
+Set one mandatory scope, field mask, capacity or lifetime for cached diagnostic pages.
 
-## `--ros1-group-connect-timeout-ms.on-proc-exit`
+## `--ros-scene-diagnostic-source`
 
 ```text
-[--ros1-group-connect-timeout-ms.on-proc-exit] <group:str> <cancel|wait>
+[--ros-scene-diagnostic-source] <environment:str> <alias:str> <source-alias:str>
 ```
 
-ROS1 group connection wait on proc_exit: cancel (default) or wait.
+Select one exact private-log source; every read also needs that source's resource.observe capability.
 
-## `--ros1-group-create`
+## `--ros-scene-driver-budget`
 
 ```text
-[--ros1-group-create] <group:str>
+[--ros-scene-driver-budget] <environment:str> <bindings:u64> <bytes:u64>
 ```
 
-Explicit ROS1 group create configuration; default deny.
+Reserve external-driver bindings and retained bytes; no process authority.
 
-## `--ros1-group-disable`
+## `--ros-scene-driver-channel`
 
 ```text
-[--ros1-group-disable] <group:str>
+[--ros-scene-driver-channel] <environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32>
 ```
 
-Explicit ROS1 group disable configuration; default deny.
+Require pinned mutual TLS 1.3 on a provisioned driver channel. Read the secret only from a sealed identity descriptor.
 
-## `--ros1-group-enable`
+## `--ros-scene-driver-schema`
 
 ```text
-[--ros1-group-enable] <group:str>
+[--ros-scene-driver-schema] <environment:str> <alias:str> <operation:str> <nodes:u64> <elements:u64> <depth:u64>
 ```
 
-Enable the ROS1 namespace; exact interfaces remain hidden until explicitly configured.
+Require a compiled canonical operation shape for both driver request and reply.
 
-## `--ros1-group-gateway-socket`
+## `--ros-scene-event-stream`
 
 ```text
-[--ros1-group-gateway-socket] <group:str> <value:str>
+[--ros-scene-event-stream] <environment:str> <alias:str> <domain:str> <profile:str> <sha256:str> <streams:u64> <sources:u64> <events:u64> <bytes:u64> <workspace:u64> <deadline_ns:u64> <fields:u64>
 ```
 
-Explicit ROS1 group gateway-socket configuration; default deny.
+Bind a bounded host-local readiness stream; its source capabilities remain independently granted.
 
-## `--ros1-group-gateway-uid`
+## `--ros-scene-grant`
 
 ```text
-[--ros1-group-gateway-uid] <group:str> <value:str>
+[--ros-scene-grant] <environment:str> <alias:str> <purpose:str> <resource:str> <binding:str> <actions:csv>
 ```
 
-Explicit ROS1 group gateway-uid configuration; default deny.
+Grant exact purpose, resource, trusted binding and action set. Opening an alias never elevates it.
 
-## `--ros1-group-grant`
+## `--ros-scene-input`
 
 ```text
-[--ros1-group-grant] <group:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
+[--ros-scene-input] <environment:str> <alias:str> <absolute-path:str> <sha256:str> <generation:u64> <bytes:u64> <transfer:u64>
 ```
 
-Explicit ROS1 group grant configuration; default deny.
+Pin an existing sealed-input grant to an exact SHA256 generation and length; activation occurs only before launch.
 
-## `--ros1-group-interface`
+## `--ros-scene-input-budget`
 
 ```text
-[--ros1-group-interface] <group:str> <namespace.function:str> <hidden|deny|allow>
+[--ros-scene-input-budget] <environment:str> <bytes:u64> <objects:u64>
 ```
 
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
+Reserve finite retained immutable-input bytes and objects; both default to zero.
 
-## `--ros1-group-master-uri`
+## `--ros-scene-interface`
 
 ```text
-[--ros1-group-master-uri] <group:str> <value:str>
+[--ros-scene-interface] <environment:str> <function:str> <hidden|deny|allow>
 ```
 
-Explicit ROS1 group master-uri configuration; default deny.
+Configure an exact uwvm_ros_v2 function; exposure and resource authority are independent.
 
-## `--ros1-group-namespace`
+## `--ros-scene-lifecycle`
 
 ```text
-[--ros1-group-namespace] <group:str> <value:str>
+[--ros-scene-lifecycle] <environment:str> <alias:str> <handles:u64> <deadline-ns:u64> <transition-mask:u64> <role-mask:u64>
 ```
 
-Explicit ROS1 group namespace configuration; default deny.
+Bind a finite local lifecycle graph; no native node or device authority.
 
-## `--ros1-group-node-name`
+## `--ros-scene-limit`
 
 ```text
-[--ros1-group-node-name] <group:str> <value:str>
+[--ros-scene-limit] <environment:str> <alias:str> <field:str> <value:str>
 ```
 
-Explicit ROS1 group node-name configuration; default deny.
+Set a capacity or explicit attenuation field; finite window budgets require delivery=may-reject.
 
-## `--ros1-group-set`
+## `--ros-scene-log-diagnostic-budget`
 
 ```text
-[--ros1-group-set] <group:str> <capability:str> <key:str> <value:str>
+[--ros-scene-log-diagnostic-budget] <environment:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 group set configuration; default deny.
+Set one mandatory finite reservation for private logs and cached diagnostic pages.
 
-## `--ros1-group-transport`
+## `--ros-scene-log-limit`
 
 ```text
-[--ros1-group-transport] <group:str> <value:str>
+[--ros-scene-log-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 group transport configuration; default deny.
+Set one mandatory record, byte or closed severity bound for an existing private-log grant.
 
-## `--ros1-single-advertise-host`
+## `--ros-scene-log-logger`
 
 ```text
-[--ros1-single-advertise-host] <module:str> <value:str>
+[--ros-scene-log-logger] <environment:str> <alias:str> <logger:str>
 ```
 
-Explicit ROS1 single advertise-host configuration; default deny.
+Allow one exact logger identity; no console, filesystem or network appender is selected.
 
-## `--ros1-single-audit-deny-burst`
+## `--ros-scene-log-loss`
 
 ```text
-[--ros1-single-audit-deny-burst] <module:str> <value:str>
+[--ros-scene-log-loss] <environment:str> <alias:str> <mode:str>
 ```
 
-Explicit ROS1 single audit-deny-burst configuration; default deny.
+Explicitly choose reject or drop-oldest behavior when the finite log is full.
 
-## `--ros1-single-audit-deny-max-bytes`
+## `--ros-scene-media-budget`
 
 ```text
-[--ros1-single-audit-deny-max-bytes] <module:str> <value:str>
+[--ros-scene-media-budget] <environment:str> <bindings:u64> <storage-bytes:u64>
 ```
 
-Explicit ROS1 single audit-deny-max-bytes configuration; default deny.
+Reserve finite immutable-buffer media providers; creates no input, output or egress authority.
 
-## `--ros1-single-audit-deny-max-rate-hz`
+## `--ros-scene-media-definition`
 
 ```text
-[--ros1-single-audit-deny-max-rate-hz] <module:str> <value:str>
+[--ros-scene-media-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS1 single audit-deny-max-rate-hz configuration; default deny.
+Read a bounded authenticated media definition; never loads codec libraries.
 
-## `--ros1-single-audit-deny-max-records`
+## `--ros-scene-media-definition-hex`
 
 ```text
-[--ros1-single-audit-deny-max-records] <module:str> <value:str>
+[--ros-scene-media-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS1 single audit-deny-max-records configuration; default deny.
+Supply a canonical authenticated raw media definition without file access.
 
-## `--ros1-single-call-boundary`
+## `--ros-scene-media-limit`
 
 ```text
-[--ros1-single-call-boundary] <module:str> <boundary:str>
+[--ros-scene-media-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Select same-module or explicit module-exports ROS delegation for one Single target.
+Assign one mandatory media capacity; optional rates remain separate.
 
-## `--ros1-single-connect-timeout-ms`
+## `--ros-scene-media-profile`
 
 ```text
-[--ros1-single-connect-timeout-ms] <module:str> <value:str>
+[--ros-scene-media-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-Explicit ROS1 single connect-timeout-ms configuration; default deny.
+Select an exact digest-bound raw media definition under an existing media grant.
 
-## `--ros1-single-connect-timeout-ms.on-proc-exit`
+## `--ros-scene-model`
 
 ```text
-[--ros1-single-connect-timeout-ms.on-proc-exit] <module:str> <cancel|wait>
+[--ros-scene-model] <environment:str> <alias:str> <model:str> <model-sha256:hex> <task:str> <task-sha256:hex> <parameter-type:str> <output-type:str> <text.utf8|bytes> <stream|terminal>
 ```
 
-ROS1 single connection wait on proc_exit: cancel (default) or wait.
+Bind immutable model/task profiles and transport codec; native worker preparation is independently required.
 
-## `--ros1-single-create`
+## `--ros-scene-model-budget`
 
 ```text
-[--ros1-single-create] <module:str>
+[--ros-scene-model-budget] <environment:str> <sessions:u64> <requests:u64> <input-bytes:u64> <output-bytes:u64> <output-items:u64> <workspace:u64>
 ```
 
-Explicit ROS1 single create configuration; default deny.
+Reserve aggregate model sessions, requests, pinned inputs, outputs and workspace; all default to zero.
 
-## `--ros1-single-disable`
+## `--ros-scene-model-capacity`
 
 ```text
-[--ros1-single-disable] <module:str>
+[--ros-scene-model-capacity] <environment:str> <alias:str> <sessions:u64> <requests:u64> <input-bytes:u64> <input-count:u64> <parameter-bytes:u64> <output-bytes:u64> <output-items:u64> <workspace:u64> <deadline-ns:u64>
 ```
 
-Explicit ROS1 single disable configuration; default deny.
+Set one model binding's finite reservations and deadline; independent of optional rate attenuation.
 
-## `--ros1-single-enable`
+## `--ros-scene-model-channel`
 
 ```text
-[--ros1-single-enable] <module:str>
+[--ros-scene-model-channel] <environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64> <identity-fd:u32>
 ```
 
-Enable the ROS1 namespace; exact interfaces remain hidden until explicitly configured.
+Require pinned mutual TLS 1.3 on a provisioned model channel. Read the secret only from a sealed identity descriptor.
 
-## `--ros1-single-gateway-socket`
+## `--ros-scene-output`
 
 ```text
-[--ros1-single-gateway-socket] <module:str> <value:str>
+[--ros-scene-output] <environment:str> <alias:str> <bytes:u64> <objects:u64> <object-bytes:u64> <transfer:u64>
 ```
 
-Explicit ROS1 single gateway-socket configuration; default deny.
+Configure an explicit cache grant as a bounded session-local output; no durable storage or host path.
 
-## `--ros1-single-gateway-uid`
+## `--ros-scene-output-budget`
 
 ```text
-[--ros1-single-gateway-uid] <module:str> <value:str>
+[--ros-scene-output-budget] <environment:str> <bytes:u64> <objects:u64> <receipt-bytes:u64>
 ```
 
-Explicit ROS1 single gateway-uid configuration; default deny.
+Reserve finite volatile output bytes, objects and last-request recovery bytes; defaults are zero.
 
-## `--ros1-single-grant`
+## `--ros-scene-parameter-budget`
 
 ```text
-[--ros1-single-grant] <module:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
+[--ros-scene-parameter-budget] <environment:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 single grant configuration; default deny.
+Set one mandatory finite aggregate parameter reservation; grants no node or parameter key.
 
-## `--ros1-single-interface`
+## `--ros-scene-parameter-definition`
 
 ```text
-[--ros1-single-interface] <single:str> <namespace.function:str> <hidden|deny|allow>
+[--ros-scene-parameter-definition] <environment:str> <alias:str> <path:path> <bytes:u64> <sha256:hex>
 ```
 
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
+Read an exact bounded authenticated regular parameter definition file without starting native work.
 
-## `--ros1-single-master-uri`
+## `--ros-scene-parameter-definition-hex`
 
 ```text
-[--ros1-single-master-uri] <module:str> <value:str>
+[--ros-scene-parameter-definition-hex] <environment:str> <alias:str> <definition:hex>
 ```
 
-Explicit ROS1 single master-uri configuration; default deny.
+Parse one bounded canonical parameter definition after explicit profile and capacity configuration.
 
-## `--ros1-single-namespace`
+## `--ros-scene-parameter-limit`
 
 ```text
-[--ros1-single-namespace] <module:str> <value:str>
+[--ros-scene-parameter-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS1 single namespace configuration; default deny.
+Set one explicit parameter storage, parser, cursor or validation bound; zero is literal.
 
-## `--ros1-single-node-name`
+## `--ros-scene-parameter-profile`
 
 ```text
-[--ros1-single-node-name] <module:str> <value:str>
+[--ros-scene-parameter-profile] <environment:str> <alias:str> <node-alias:str> <profile:str> <sha256:hex> <node-profile:str> <node-sha256:hex> <algebra:ros1|ros2>
 ```
 
-Explicit ROS1 single node-name configuration; default deny.
+Bind local parameter semantics to one exact node grant and immutable profiles.
 
-## `--ros1-single-set`
+## `--ros-scene-proposal-arbiter`
 
 ```text
-[--ros1-single-set] <module:str> <capability:str> <key:str> <value:str>
+[--ros-scene-proposal-arbiter] <environment:str> <alias:str> <proposal-alias:str> <target-alias:str> <tool-mask:u64>
 ```
 
-Explicit ROS1 single set configuration; default deny.
+Bind one existing arbiter grant to exact proposal and target aliases plus a finite tool mask; acceptance never executes.
 
-## `--ros1-single-transport`
+## `--ros-scene-proposal-budget`
 
 ```text
-[--ros1-single-transport] <module:str> <value:str>
+[--ros-scene-proposal-budget] <environment:str> <providers:u64> <arbiters:u64> <producer-sessions:u64> <capture-handles:u64> <retained-bytes:u64>
 ```
 
-Explicit ROS1 single transport configuration; default deny.
+Reserve exact finite proposal/arbiter bindings and producer/capture recovery tables; zero remains zero.
 
-## `--ros2-buffer-audit`
+## `--ros-scene-proposal-definition`
 
 ```text
-[--ros2-buffer-audit] <run-id:ASCII> <inherited-fd:uint>
+[--ros-scene-proposal-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Opt-in bounded host-only buffer/checked-IPC journal; consumes an empty private write-only regular-file FD. Grants no authority.
+Load one bounded exact-hash source/tool definition; current target adapters accept local nonphysical lifecycle only.
 
-## `--ros2-buffer-audit-limits`
+## `--ros-scene-proposal-definition-hex`
 
 ```text
-[--ros2-buffer-audit-limits] <payload-bytes:uint> <operation-records:uint> <total-file-bytes:uint> <record-bytes:uint> <profile:sha256>
+[--ros-scene-proposal-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit process-global journal quotas/profile reference; must immediately precede --ros2-buffer-audit. Grants no authority.
+Supply canonical proposal definition bytes as bounded lowercase hex.
 
-## `--ros2-check-policy`
+## `--ros-scene-proposal-limit`
 
 ```text
-[--ros2-check-policy]
+[--ros-scene-proposal-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Validate explicit ROS policy; no Guest execution.
+Set one mandatory finite proposal capacity; capture, publish, read and accept rights remain independent.
 
-## `--ros2-dump-effective-policy`
+## `--ros-scene-proposal-profile`
 
 ```text
-[--ros2-dump-effective-policy]
+[--ros-scene-proposal-profile] <environment:str> <alias:str> <identity:str> <sha256:hex> <model-alias:str>
 ```
 
-Validate explicit ROS policy; no Guest execution.
+Select exact proposal semantics and an already configured model/task pair; no implicit source, model or target permission.
 
-## `--ros2-global-add-module`
+## `--ros-scene-publication`
 
 ```text
-[--ros2-global-add-module] <module:str>
+[--ros-scene-publication] <environment:str> <alias:str> <scratch-bytes:u64> <scratch-calls:u64>
 ```
 
-Bind one exact loaded module to the explicit Global contract; unbound modules stay denied.
+Bind finite publication scratch to an existing output plan; does not grant any action.
 
-## `--ros2-global-audit-deny-burst`
+## `--ros-scene-publication-budget`
 
 ```text
-[--ros2-global-audit-deny-burst] <value:str>
+[--ros-scene-publication-budget] <environment:str> <bytes:u64> <calls:u64>
 ```
 
-Explicit ROS2 global audit-deny-burst configuration; default deny.
+Reserve aggregate complete-publication carrier bytes and in-flight calls; defaults are zero.
 
-## `--ros2-global-audit-deny-max-bytes`
+## `--ros-scene-recording-budget`
 
 ```text
-[--ros2-global-audit-deny-max-bytes] <value:str>
+[--ros-scene-recording-budget] <environment:str> <name:str> <value:u64>
 ```
 
-Explicit ROS2 global audit-deny-max-bytes configuration; default deny.
+Set one mandatory finite reservation for private recordings and immutable replay cursors.
 
-## `--ros2-global-audit-deny-max-rate-hz`
+## `--ros-scene-recording-definition`
 
 ```text
-[--ros2-global-audit-deny-max-rate-hz] <value:str>
+[--ros-scene-recording-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS2 global audit-deny-max-rate-hz configuration; default deny.
+Read one bounded authenticated regular configuration file after grant and capacity checks; grants no guest filesystem access.
 
-## `--ros2-global-audit-deny-max-records`
+## `--ros-scene-recording-definition-hex`
 
 ```text
-[--ros2-global-audit-deny-max-records] <value:str>
+[--ros-scene-recording-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS2 global audit-deny-max-records configuration; default deny.
+Decode bounded lowercase canonical channel bytes using the compiled schema registry and configured logical digest.
 
-## `--ros2-global-connect-timeout-ms`
+## `--ros-scene-recording-limit`
 
 ```text
-[--ros2-global-connect-timeout-ms] <value:str>
+[--ros-scene-recording-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS2 global connect-timeout-ms configuration; default deny.
+Set one mandatory finite recording storage, message or definition capacity; zero remains zero.
 
-## `--ros2-global-connect-timeout-ms.on-proc-exit`
+## `--ros-scene-recording-profile`
 
 ```text
-[--ros2-global-connect-timeout-ms.on-proc-exit] <cancel|wait>
+[--ros-scene-recording-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-ROS2 global connection wait on proc_exit: cancel (default) or wait.
+Select an exact hashed ROS channel definition under an existing private-recording grant.
 
-## `--ros2-global-disable`
+## `--ros-scene-replay`
 
 ```text
-[--ros2-global-disable]
+[--ros-scene-replay] <environment:str> <alias:str> <source-alias:str> <identity:str> <sha256:hex> <handles:u64>
 ```
 
-Explicit ROS2 global disable configuration; default deny.
+Bind immutable replay to one exact recording source, profile and finite handle count; no paths or native ROS transport.
 
-## `--ros2-global-domain-id`
+## `--ros-scene-sensor-budget`
 
 ```text
-[--ros2-global-domain-id] <value:str>
+[--ros-scene-sensor-budget] <environment:str> <bindings:u64> <storage-bytes:u64>
 ```
 
-Explicit ROS2 global domain-id configuration; default deny.
+Reserve finite receive-only sensor bindings and native retained storage; grants no read authority.
 
-## `--ros2-global-enable`
+## `--ros-scene-sensor-definition`
 
 ```text
-[--ros2-global-enable]
+[--ros-scene-sensor-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured.
+Load one bounded exact-hash sensor definition; no native sensor access during configuration.
 
-## `--ros2-global-enclave`
+## `--ros-scene-sensor-definition-hex`
 
 ```text
-[--ros2-global-enclave] <value:str>
+[--ros-scene-sensor-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS2 global enclave configuration; default deny.
+Supply authenticated sensor definition bytes as lowercase hex without reading a configuration file.
 
-## `--ros2-global-gateway-socket`
+## `--ros-scene-sensor-fd`
 
 ```text
-[--ros2-global-gateway-socket] <value:str>
+[--ros-scene-sensor-fd] <environment:str> <alias:str> <descriptor:u64>
 ```
 
-Explicit ROS2 global gateway-socket configuration; default deny.
+Select a trusted inherited descriptor; activation requires a nonblocking read-only pipe or raw terminal, and check never probes it.
 
-## `--ros2-global-gateway-uid`
+## `--ros-scene-sensor-limit`
 
 ```text
-[--ros2-global-gateway-uid] <value:str>
+[--ros-scene-sensor-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS2 global gateway-uid configuration; default deny.
+Set one mandatory finite sensor capacity after its definition; does not add rate attenuation.
 
-## `--ros2-global-grant`
+## `--ros-scene-sensor-profile`
 
 ```text
-[--ros2-global-grant] <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
+[--ros-scene-sensor-profile] <environment:str> <alias:str> <identity:str> <sha256:hex> <schema:str>
 ```
 
-Explicit ROS2 global grant configuration; default deny.
+Select an authenticated sensor definition and fixed compiled schema octets; no validator address or guest endpoint.
 
-## `--ros2-global-interface`
+## `--ros-scene-transform-budget`
 
 ```text
-[--ros2-global-interface] <namespace.function:str> <hidden|deny|allow>
+[--ros-scene-transform-budget] <environment:str> <sessions:u64> <queries:u64> <data-bytes:u64> <workspace-bytes:u64> <query-bytes:u64> <carrier-bytes:u64>
 ```
 
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
+Reserve aggregate transform sessions, queries, data, scratch, query records and carrier copies; no implicit capacity.
 
-## `--ros2-global-keystore`
+## `--ros-scene-transform-definition`
 
 ```text
-[--ros2-global-keystore] <value:str>
+[--ros-scene-transform-definition] <environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>
 ```
 
-Explicit ROS2 global keystore configuration; default deny.
+Read one bounded regular host configuration file and verify its SHA256 before freezing policy; no guest file authority.
 
-## `--ros2-global-namespace`
+## `--ros-scene-transform-definition-hex`
 
 ```text
-[--ros2-global-namespace] <value:str>
+[--ros-scene-transform-definition-hex] <environment:str> <alias:str> <canonical-bytes:hex>
 ```
 
-Explicit ROS2 global namespace configuration; default deny.
+Supply an owned canonical frame definition without filesystem access; same digest and schema checks.
 
-## `--ros2-global-node-name`
+## `--ros-scene-transform-limit`
 
 ```text
-[--ros2-global-node-name] <value:str>
+[--ros-scene-transform-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Explicit ROS2 global node-name configuration; default deny.
+Set one mandatory finite transform bound by semantic name; zero is literal.
 
-## `--ros2-global-rmw-implementation`
+## `--ros-scene-transform-profile`
 
 ```text
-[--ros2-global-rmw-implementation] <value:str>
+[--ros-scene-transform-profile] <environment:str> <alias:str> <identity:str> <sha256:hex>
 ```
 
-Explicit ROS2 global rmw-implementation configuration; default deny.
-
-## `--ros2-global-security-mode`
-
-```text
-[--ros2-global-security-mode] <value:str>
-```
-
-Explicit ROS2 global security-mode configuration; default deny.
-
-## `--ros2-global-set`
-
-```text
-[--ros2-global-set] <capability:str> <key:str> <value:str>
-```
-
-Explicit ROS2 global set configuration; default deny.
-
-## `--ros2-group-add-module`
-
-```text
-[--ros2-group-add-module] <group:str> <module:str>
-```
-
-Explicit ROS2 group add-module configuration; default deny.
-
-## `--ros2-group-audit-deny-burst`
-
-```text
-[--ros2-group-audit-deny-burst] <group:str> <value:str>
-```
-
-Explicit ROS2 group audit-deny-burst configuration; default deny.
-
-## `--ros2-group-audit-deny-max-bytes`
-
-```text
-[--ros2-group-audit-deny-max-bytes] <group:str> <value:str>
-```
-
-Explicit ROS2 group audit-deny-max-bytes configuration; default deny.
-
-## `--ros2-group-audit-deny-max-rate-hz`
-
-```text
-[--ros2-group-audit-deny-max-rate-hz] <group:str> <value:str>
-```
-
-Explicit ROS2 group audit-deny-max-rate-hz configuration; default deny.
-
-## `--ros2-group-audit-deny-max-records`
-
-```text
-[--ros2-group-audit-deny-max-records] <group:str> <value:str>
-```
-
-Explicit ROS2 group audit-deny-max-records configuration; default deny.
-
-## `--ros2-group-connect-timeout-ms`
-
-```text
-[--ros2-group-connect-timeout-ms] <group:str> <value:str>
-```
-
-Explicit ROS2 group connect-timeout-ms configuration; default deny.
-
-## `--ros2-group-connect-timeout-ms.on-proc-exit`
-
-```text
-[--ros2-group-connect-timeout-ms.on-proc-exit] <group:str> <cancel|wait>
-```
-
-ROS2 group connection wait on proc_exit: cancel (default) or wait.
-
-## `--ros2-group-create`
-
-```text
-[--ros2-group-create] <group:str>
-```
-
-Explicit ROS2 group create configuration; default deny.
-
-## `--ros2-group-disable`
-
-```text
-[--ros2-group-disable] <group:str>
-```
-
-Explicit ROS2 group disable configuration; default deny.
-
-## `--ros2-group-domain-id`
-
-```text
-[--ros2-group-domain-id] <group:str> <value:str>
-```
-
-Explicit ROS2 group domain-id configuration; default deny.
-
-## `--ros2-group-enable`
-
-```text
-[--ros2-group-enable] <group:str>
-```
-
-Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured.
-
-## `--ros2-group-enclave`
-
-```text
-[--ros2-group-enclave] <group:str> <value:str>
-```
-
-Explicit ROS2 group enclave configuration; default deny.
-
-## `--ros2-group-gateway-socket`
-
-```text
-[--ros2-group-gateway-socket] <group:str> <value:str>
-```
-
-Explicit ROS2 group gateway-socket configuration; default deny.
-
-## `--ros2-group-gateway-uid`
-
-```text
-[--ros2-group-gateway-uid] <group:str> <value:str>
-```
-
-Explicit ROS2 group gateway-uid configuration; default deny.
-
-## `--ros2-group-grant`
-
-```text
-[--ros2-group-grant] <group:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
-```
-
-Explicit ROS2 group grant configuration; default deny.
-
-## `--ros2-group-interface`
-
-```text
-[--ros2-group-interface] <group:str> <namespace.function:str> <hidden|deny|allow>
-```
-
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
-
-## `--ros2-group-keystore`
-
-```text
-[--ros2-group-keystore] <group:str> <value:str>
-```
-
-Explicit ROS2 group keystore configuration; default deny.
-
-## `--ros2-group-namespace`
-
-```text
-[--ros2-group-namespace] <group:str> <value:str>
-```
-
-Explicit ROS2 group namespace configuration; default deny.
-
-## `--ros2-group-node-name`
-
-```text
-[--ros2-group-node-name] <group:str> <value:str>
-```
-
-Explicit ROS2 group node-name configuration; default deny.
-
-## `--ros2-group-rmw-implementation`
-
-```text
-[--ros2-group-rmw-implementation] <group:str> <value:str>
-```
-
-Explicit ROS2 group rmw-implementation configuration; default deny.
-
-## `--ros2-group-security-mode`
-
-```text
-[--ros2-group-security-mode] <group:str> <value:str>
-```
-
-Explicit ROS2 group security-mode configuration; default deny.
-
-## `--ros2-group-set`
-
-```text
-[--ros2-group-set] <group:str> <capability:str> <key:str> <value:str>
-```
-
-Explicit ROS2 group set configuration; default deny.
-
-## `--ros2-single-audit-deny-burst`
-
-```text
-[--ros2-single-audit-deny-burst] <module:str> <value:str>
-```
-
-Explicit ROS2 single audit-deny-burst configuration; default deny.
-
-## `--ros2-single-audit-deny-max-bytes`
-
-```text
-[--ros2-single-audit-deny-max-bytes] <module:str> <value:str>
-```
-
-Explicit ROS2 single audit-deny-max-bytes configuration; default deny.
-
-## `--ros2-single-audit-deny-max-rate-hz`
-
-```text
-[--ros2-single-audit-deny-max-rate-hz] <module:str> <value:str>
-```
-
-Explicit ROS2 single audit-deny-max-rate-hz configuration; default deny.
-
-## `--ros2-single-audit-deny-max-records`
-
-```text
-[--ros2-single-audit-deny-max-records] <module:str> <value:str>
-```
-
-Explicit ROS2 single audit-deny-max-records configuration; default deny.
-
-## `--ros2-single-call-boundary`
-
-```text
-[--ros2-single-call-boundary] <module:str> <boundary:str>
-```
-
-Select same-module or explicit module-exports ROS delegation for one Single target.
-
-## `--ros2-single-connect-timeout-ms`
-
-```text
-[--ros2-single-connect-timeout-ms] <module:str> <value:str>
-```
-
-Explicit ROS2 single connect-timeout-ms configuration; default deny.
-
-## `--ros2-single-connect-timeout-ms.on-proc-exit`
-
-```text
-[--ros2-single-connect-timeout-ms.on-proc-exit] <module:str> <cancel|wait>
-```
-
-ROS2 single connection wait on proc_exit: cancel (default) or wait.
-
-## `--ros2-single-create`
-
-```text
-[--ros2-single-create] <module:str>
-```
-
-Explicit ROS2 single create configuration; default deny.
-
-## `--ros2-single-disable`
-
-```text
-[--ros2-single-disable] <module:str>
-```
-
-Explicit ROS2 single disable configuration; default deny.
-
-## `--ros2-single-domain-id`
-
-```text
-[--ros2-single-domain-id] <module:str> <value:str>
-```
-
-Explicit ROS2 single domain-id configuration; default deny.
-
-## `--ros2-single-enable`
-
-```text
-[--ros2-single-enable] <module:str>
-```
-
-Enable the ROS2 namespace; exact interfaces remain hidden until explicitly configured.
-
-## `--ros2-single-enclave`
-
-```text
-[--ros2-single-enclave] <module:str> <value:str>
-```
-
-Explicit ROS2 single enclave configuration; default deny.
-
-## `--ros2-single-gateway-socket`
-
-```text
-[--ros2-single-gateway-socket] <module:str> <value:str>
-```
-
-Explicit ROS2 single gateway-socket configuration; default deny.
-
-## `--ros2-single-gateway-uid`
-
-```text
-[--ros2-single-gateway-uid] <module:str> <value:str>
-```
-
-Explicit ROS2 single gateway-uid configuration; default deny.
-
-## `--ros2-single-grant`
-
-```text
-[--ros2-single-grant] <module:str> <capability:str> <operation:str> <resource:str> <type:str> <type-identity:str>
-```
-
-Explicit ROS2 single grant configuration; default deny.
-
-## `--ros2-single-interface`
-
-```text
-[--ros2-single-interface] <single:str> <namespace.function:str> <hidden|deny|allow>
-```
-
-Configure exact namespace.function: hidden fails linking; deny exposes but rejects; allow retains capability checks. Default hidden.
-
-## `--ros2-single-keystore`
-
-```text
-[--ros2-single-keystore] <module:str> <value:str>
-```
-
-Explicit ROS2 single keystore configuration; default deny.
-
-## `--ros2-single-namespace`
-
-```text
-[--ros2-single-namespace] <module:str> <value:str>
-```
-
-Explicit ROS2 single namespace configuration; default deny.
-
-## `--ros2-single-node-name`
-
-```text
-[--ros2-single-node-name] <module:str> <value:str>
-```
-
-Explicit ROS2 single node-name configuration; default deny.
-
-## `--ros2-single-rmw-implementation`
-
-```text
-[--ros2-single-rmw-implementation] <module:str> <value:str>
-```
-
-Explicit ROS2 single rmw-implementation configuration; default deny.
-
-## `--ros2-single-security-mode`
-
-```text
-[--ros2-single-security-mode] <module:str> <value:str>
-```
-
-Explicit ROS2 single security-mode configuration; default deny.
-
-## `--ros2-single-set`
-
-```text
-[--ros2-single-set] <module:str> <capability:str> <key:str> <value:str>
-```
-
-Explicit ROS2 single set configuration; default deny.
+Select one exact canonical frame definition under a local-transform grant.
 
 ## `--run`
 
@@ -1404,7 +1060,7 @@ Show version information.
 ## `--warning-as-error`
 
 ```text
-[--warning-as-error] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|parser|untrusted-dl|dl|depend|wasip1|runtime|runtime-compile-threads]
+[--warning-as-error] [all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|parser|untrusted-dl|deprecated-ros|retained-ros-input|depend|wasip1|runtime|runtime-compile-threads]
 ```
 
 Treat selected warnings as fatal errors.
@@ -2081,6 +1737,174 @@ Connect a WASI Preview 1 UDP socket for one single module.
 
 Choose the immutable wasm32 sock_accept ABI for this process: standard (default, 3 arguments) or wasix (4 arguments, peer address). Grants no interfaces or socket rights.
 
+## `--wasithread-global-disable`
+
+```text
+[--wasithread-global-disable|-I1Tdisable]
+```
+
+Hide this scope; no new thread creation is authorized.
+
+## `--wasithread-global-enable`
+
+```text
+[--wasithread-global-enable|-I1Tenable]
+```
+
+Enable this explicit scope; interfaces remain separately controlled.
+
+## `--wasithread-global-inspect`
+
+```text
+[--wasithread-global-inspect|-I1Tinspect]
+```
+
+Read I1T policy and reservation counters without changing authority.
+
+## `--wasithread-global-interface`
+
+```text
+[--wasithread-global-interface|-I1Tinterface] thread-spawn <hidden|deny|allow>
+```
+
+Set thread-spawn hidden, deny or allow; independent of WASIp1.
+
+## `--wasithread-global-limit`
+
+```text
+[--wasithread-global-limit|-I1Tlimit] <max-extra-threads|max-threads|max-spawns> <uint|unlimited>
+```
+
+Attenuate admitted thread counts. Zero is a real zero; Global caps also cover Single and Group.
+
+## `--wasithread-global-limit-ratio`
+
+```text
+[--wasithread-global-limit-ratio|-I1Tlimit-ratio] <max-extra-threads|max-threads> <ratio:f32>
+```
+
+Floor a finite f32 ratio in [0,1] of the observable system thread ceiling. No authority is granted.
+
+## `--wasithread-group-add-module`
+
+```text
+[--wasithread-group-add-module|-I1TGadd-module] <group> <module>
+```
+
+Bind an exact module to this Group once; unspecified modules use Global.
+
+## `--wasithread-group-create`
+
+```text
+[--wasithread-group-create|-I1TGcreate] <group>
+```
+
+Create a denied scope; Single also binds its exact module name.
+
+## `--wasithread-group-disable`
+
+```text
+[--wasithread-group-disable|-I1TGdisable] <group>
+```
+
+Hide this scope; no new thread creation is authorized.
+
+## `--wasithread-group-enable`
+
+```text
+[--wasithread-group-enable|-I1TGenable] <group>
+```
+
+Enable this explicit scope; interfaces remain separately controlled.
+
+## `--wasithread-group-inspect`
+
+```text
+[--wasithread-group-inspect|-I1TGinspect] <group>
+```
+
+Read I1T policy and reservation counters without changing authority.
+
+## `--wasithread-group-interface`
+
+```text
+[--wasithread-group-interface|-I1TGinterface] <group> thread-spawn <hidden|deny|allow>
+```
+
+Set thread-spawn hidden, deny or allow; independent of WASIp1.
+
+## `--wasithread-group-limit`
+
+```text
+[--wasithread-group-limit|-I1TGlimit] <group> <max-extra-threads|max-threads|max-spawns> <uint|unlimited>
+```
+
+Attenuate admitted thread counts. Zero is a real zero; Global caps also cover Single and Group.
+
+## `--wasithread-group-limit-ratio`
+
+```text
+[--wasithread-group-limit-ratio|-I1TGlimit-ratio] <group> <max-extra-threads|max-threads> <ratio:f32>
+```
+
+Floor a finite f32 ratio in [0,1] of the observable system thread ceiling. No authority is granted.
+
+## `--wasithread-single-create`
+
+```text
+[--wasithread-single-create|-I1TScreate] <module>
+```
+
+Create a denied scope; Single also binds its exact module name.
+
+## `--wasithread-single-disable`
+
+```text
+[--wasithread-single-disable|-I1TSdisable] <module>
+```
+
+Hide this scope; no new thread creation is authorized.
+
+## `--wasithread-single-enable`
+
+```text
+[--wasithread-single-enable|-I1TSenable] <module>
+```
+
+Enable this explicit scope; interfaces remain separately controlled.
+
+## `--wasithread-single-inspect`
+
+```text
+[--wasithread-single-inspect|-I1TSinspect] <module>
+```
+
+Read I1T policy and reservation counters without changing authority.
+
+## `--wasithread-single-interface`
+
+```text
+[--wasithread-single-interface|-I1TSinterface] <module> thread-spawn <hidden|deny|allow>
+```
+
+Set thread-spawn hidden, deny or allow; independent of WASIp1.
+
+## `--wasithread-single-limit`
+
+```text
+[--wasithread-single-limit|-I1TSlimit] <module> <max-extra-threads|max-threads|max-spawns> <uint|unlimited>
+```
+
+Attenuate admitted thread counts. Zero is a real zero; Global caps also cover Single and Group.
+
+## `--wasithread-single-limit-ratio`
+
+```text
+[--wasithread-single-limit-ratio|-I1TSlimit-ratio] <module> <max-extra-threads|max-threads> <ratio:f32>
+```
+
+Floor a finite f32 ratio in [0,1] of the observable system thread ceiling. No authority is granted.
+
 ## `--wasm-depend-recursion-limit`
 
 ```text
@@ -2088,14 +1912,6 @@ Choose the immutable wasm32 sock_accept ABI for this process: standard (default,
 ```
 
 Set the dependency-check recursion limit (0 = unlimited).
-
-## `--wasm-driver-verify`
-
-```text
-[--wasm-driver-verify] <trusted-signer.pem>
-```
-
-Opt in to secondary native-driver signature verification with a host-pinned PEM signer certificate. Accept Linux sign-file appended CMS signatures; verify sealed payloads before dlopen. Default is off. External deployment retains full PKI and dependency policy.
 
 ## `--wasm-feature-disable-bulk-memory`
 
@@ -2457,14 +2273,6 @@ Report recoverable host allocation/commit failures from `memory.grow` as -1; Was
 
 Preload a Wasm module as a dynamic library; an optional rename sets its module name.
 
-## `--wasm-register-dl`
-
-```text
-[--wasm-register-dl|-Wdl] <dl:path> (<rename:str>)
-```
-
-Register a native dynamic library as a Wasm module; an optional rename sets its module name.
-
 ## `--wasm-reset-import`
 
 ```text
@@ -2512,6 +2320,14 @@ Override a parser limit for Wasm modules.
 ```
 
 Set a preload module's memory access mode; omit <memory_index:list> to apply it to all memories.
+
+## `--wasm-set-resource-limit`
+
+```text
+[--wasm-set-resource-limit] <stage:str> <resource:str> <bytes:size_t>
+```
+
+Set host allocation budgets before loading: parser (input-bytes, type-metadata-bytes, function-body-bytes, module-code-bytes), validation (single-bytes, live-bytes), initializer (allocation-bytes), runtime (gc/table/memory/memtag/auxiliary/threads-single-bytes or -live-bytes). Bytes; 0 refuses new allocation. Shared by actual process backings, independent of import permissions.
 
 ## `--wasm-set-start-func`
 

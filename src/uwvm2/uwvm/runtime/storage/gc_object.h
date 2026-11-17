@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 # include <array>
@@ -56,7 +59,7 @@
 
 namespace uwvm2::runtime::lib
 {
-    extern "C++" { class runtime_checkpoint_gc_state_borrow; class runtime_checkpoint_world_transaction; }
+    extern "C++" { class runtime_checkpoint_gc_state_borrow; class runtime_checkpoint_world_transaction; class runtime_threaded_profile_bridge; }
 }
 
 // These are the FIRST declarations seen by the storage/initializer module
@@ -184,6 +187,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     {
         struct lease_node
         {
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> allocation_charge{};
             ::std::shared_ptr<gc_object_store const> store{};
             lease_node* next{};
         };
@@ -206,9 +210,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(curr->store.get() == source.get())
                 { lock_.clear(::std::memory_order_release); return true; }
             }
-            auto* fresh{new(::std::nothrow) lease_node{::std::move(source), leases_}};
+            auto* fresh{::uwvm2::utils::allocator::resource::try_charged_object<lease_node>()};
             if(fresh == nullptr)
             { lock_.clear(::std::memory_order_release); return false; }
+            fresh->store=::std::move(source); fresh->next=leases_;
             // [fresh initialized][old leases_ chain]
             // ^^ publish one owning lease before releasing lock_.
             leases_ = fresh;
@@ -255,7 +260,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [detached owning lease chain] no lease lock is held here.
                 // ^^ save the initialized successor before releasing its owner.
                 auto* next{retired->next};
-                delete retired;
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(retired);
                 // [remaining private chain] next was read before deletion.
                 // ^^ advance only to another owned node or null.
                 retired = next;
@@ -269,7 +274,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             while(curr != nullptr)
             {
                 auto* next{curr->next};
-                delete curr;
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(curr);
                 // [remaining live lease chain] next was read before deletion.
                 // ^^ curr advances only to an owned node or null.
                 curr = next;
@@ -282,6 +287,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     class gc_object_store : public ::std::enable_shared_from_this<gc_object_store>
     {
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_gc_state_borrow;
+        // Cold journal-origin census under the private generation gate, before
+        // any native Guest starts. Observation never creates recipient leases.
+        friend class ::uwvm2::runtime::lib::runtime_threaded_profile_bridge;
         friend class checkpoint_gc_staging;
         friend class ::uwvm2::uwvm::runtime::initializer::restoration_context;
         friend class ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld;
@@ -296,7 +304,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         {
             gc_type::composite_kind kind{};
             ::std::uint_least32_t parent{(::std::numeric_limits<::std::uint_least32_t>::max)()};
-            ::std::unique_ptr<gc_type::field_type[]> fields{};
+            ::uwvm2::utils::container::std_unique_ptr<gc_type::field_type[]> fields{};
             ::std::size_t field_count{};
             // Immutable classification of copied fields; no guest object address is cached.
             bool has_reference_fields{};
@@ -342,8 +350,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 pointer = original_array_tail;
             }
         };
-        static_assert(sizeof(object_values_view) == sizeof(::std::unique_ptr<gc_object_value[]>));
-        static_assert(alignof(object_values_view) == alignof(::std::unique_ptr<gc_object_value[]>));
+        static_assert(sizeof(object_values_view) == sizeof(::uwvm2::utils::container::std_unique_ptr<gc_object_value[]>));
+        static_assert(alignof(object_values_view) == alignof(::uwvm2::utils::container::std_unique_ptr<gc_object_value[]>));
         static_assert(::std::is_trivially_destructible_v<gc_object_value>);
         static_assert(::std::is_nothrow_default_constructible_v<gc_object_value>);
 
@@ -778,7 +786,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
 #endif
 
-        ::std::unique_ptr<type_layout[]> layouts_{};
+        ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> metadata_charge_{};
+        [[nodiscard]] bool charge_metadata(::std::size_t count, ::std::size_t width) noexcept
+        {
+            ::std::size_t bytes{};
+            if(!::uwvm2::utils::allocator::resource::checked_bytes(count,width,bytes) ||
+                bytes > SIZE_MAX-metadata_charge_.bytes()) { allocation_failed_=true; return false; }
+            if(!metadata_charge_.resize(metadata_charge_.bytes()+bytes)) { allocation_failed_=true; return false; }
+            return true;
+        }
+        ::uwvm2::utils::container::std_unique_ptr<type_layout[]> layouts_{};
         ::std::size_t layout_count_{};
         ::std::atomic<object*> objects_{};
         ::std::weak_ptr<gc_lease_owner> lease_owner_{};
@@ -800,17 +817,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // removed only after all guest threads drain at module teardown.
         // A forged token is compared as an integer key, never dereferenced.
         inline static constexpr ::std::size_t bucket_count{1uz << 16u};
-        ::std::unique_ptr<::std::atomic<object*>[]> membership_buckets_{};
+        ::uwvm2::utils::container::std_unique_ptr<::std::atomic<object*>[]> membership_buckets_{};
         // Canonical IDs are cold metadata. Keep membership_buckets_ on the
         // first store cache line for every local GC read/write.
-        ::std::unique_ptr<::std::size_t[]> canonical_ids_{};
+        ::uwvm2::utils::container::std_unique_ptr<::std::size_t[]> canonical_ids_{};
 #if defined(UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH) && UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH == 1
         struct local_subtype_interval
         {
             ::std::uint32_t begin{}, end{};
         };
         // Immutable after validated construction; no guest token/object is cached.
-        ::std::unique_ptr<local_subtype_interval[]> local_subtype_intervals_{};
+        ::uwvm2::utils::allocator::resource::owned_array<local_subtype_interval> local_subtype_intervals_{};
 #endif
         // Only a failed local membership probe enters this process-wide slow
         // path. A bucket stripe proves membership and pins the foreign owner
@@ -831,6 +848,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // live module unwrap the same token without trusting its payload.
         struct extern_bridge
         {
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> allocation_charge{};
             gc_object_store const* owner{};
             gc_reference inner{};
             // A bridge may outlive the module that supplied a foreign inner
@@ -853,6 +871,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // immutable value_ref while at least one module roots its token.
         struct exn_token_entry
         {
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> allocation_charge{};
 #if defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) && UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES == 1
             ::uwvm2::runtime::exception::immutable_record_ref value{};
 #else
@@ -878,6 +897,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         };
         struct exn_root_node
         {
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> allocation_charge{};
             exn_token_entry* entry{};
             exn_root_node* next{};
             exn_root_node* bucket_next{};
@@ -895,11 +915,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         using exn_root_bucket_array = ::std::array<exn_root_node*, exn_bucket_count>;
         // Most modules never handle an exnref. Allocate the 8 KiB membership
         // index only on first use so ordinary module startup stays unchanged.
-        mutable ::std::unique_ptr<exn_root_bucket_array> exn_root_buckets_{};
+        mutable ::uwvm2::utils::container::std_unique_ptr<exn_root_bucket_array> exn_root_buckets_{};
 #if defined(UWVM_EXPERIMENTAL_EXCEPTION_GC_GRAPH) && UWVM_EXPERIMENTAL_EXCEPTION_GC_GRAPH == 1
 # include "gc_exception_graph.h"
 #endif
         bool valid_{};
+        bool allocation_failed_{};
         // Cold admission metadata, including valid stores with no aggregates.
         // An empty module can still own a global/table incoming edge; object
         // token indexes alone therefore cannot prove a closed store cohort.
@@ -1077,7 +1098,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             chunk.~slab_chunk();
             // [original array-new pointer] never reconstruct the cookie/base.
             // ^^ matching array delete, after every nested lifetime has ended.
-            delete[] backing;
+            ::uwvm2::utils::allocator::resource::free_gc_bytes(backing);
         }
         static inline void remove_available_chunk(gc_object_store& store, slab_chunk& chunk) noexcept
         {
@@ -1298,7 +1319,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 envelope->~allocation_header();
                 // [saved original fallback byte-array pointer]
                 // ^^ matching delete[] after all nested lifetimes have ended.
-                delete[] backing;
+                ::uwvm2::utils::allocator::resource::free_gc_bytes(backing);
                 return;
             }
             auto& store{*chunk->owner};
@@ -1447,11 +1468,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             }
             // The common table.get/local path already owns this token. Allocate
             // only for the first transfer into this module's root set.
-            ::std::unique_ptr<exn_root_node> fresh{new(::std::nothrow) exn_root_node{}};
+            ::uwvm2::utils::container::std_unique_ptr<exn_root_node> fresh{::uwvm2::utils::allocator::resource::try_charged_object<exn_root_node>()};
             if(!fresh) { return gc_object_status::out_of_memory; }
             if(!exn_root_buckets_)
             {
-                exn_root_buckets_.reset(new(::std::nothrow) exn_root_bucket_array{});
+                exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<exn_root_bucket_array>([&](exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exn_root_bucket_array{}; }));
                 if(!exn_root_buckets_) { return gc_object_status::out_of_memory; }
             }
             auto origin{entry->owner.lock()};
@@ -1593,11 +1614,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(layout_count_ > none || layout_count_ >
                 (::std::numeric_limits<::std::size_t>::max)() / sizeof(::std::uint32_t) / 2uz)
             { return false; }
-            ::std::unique_ptr<local_subtype_interval[]> intervals{
-                new(::std::nothrow) local_subtype_interval[layout_count_]{}};
-            ::std::unique_ptr<::std::uint32_t[]> links{
-                new(::std::nothrow) ::std::uint32_t[layout_count_ * 2uz]};
-            if(!intervals || !links) { return false; }
+            ::uwvm2::utils::allocator::resource::owned_array<local_subtype_interval> intervals{
+                ::uwvm2::utils::allocator::resource::try_array<local_subtype_interval>(layout_count_)};
+            ::uwvm2::utils::allocator::resource::owned_array<::std::uint32_t> links{
+                ::uwvm2::utils::allocator::resource::try_array<::std::uint32_t>(layout_count_ * 2uz)};
+            if(!intervals || !links) { allocation_failed_=true; return false; }
             // [links, links + 2 * layout_count_) is one owned temporary array.
             auto* first_child{links.get()};
             auto* next_sibling{links.get() + layout_count_};
@@ -2462,11 +2483,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #ifndef UWVM_MODULE
             if(threaded_account_)
             {
-                using request=::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array;
-                return new(request{::std::addressof(threaded_account_.get())}) ::std::byte[bytes];
+                constexpr auto overhead{sizeof(::uwvm2::utils::allocator::resource::byte_header)};
+                if(bytes > SIZE_MAX-overhead || !threaded_account_.get().charge(bytes+overhead)) { return nullptr; }
             }
 #endif
-            return new(::std::nothrow) ::std::byte[bytes];
+            return ::uwvm2::utils::allocator::resource::try_gc_bytes(bytes);
         }
         [[nodiscard]] inline gc_object_status allocate(::std::uint_least32_t type_index,
                                                         gc_type::composite_kind kind,
@@ -2483,6 +2504,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(length > (maximum_bytes - object_value_offset) / element_bytes)
             { return gc_object_status::size_overflow; }
             auto const bytes{object_value_offset + length * element_bytes};
+            // Reject guest-controlled lengths before reserving a slab, allocating,
+            // initializing payload bytes or publishing a reference.
+            if(bytes > ::uwvm2::utils::allocator::resource::policies[
+                static_cast<unsigned>(::uwvm2::utils::allocator::resource::pool::gc)].single)
+            { return gc_object_status::out_of_memory; }
 #if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1 && !defined(UWVM2TEST_GC_NUMERIC_SLAB_RESERVED_PROBE)
             auto const payload_bytes{bytes - object_value_offset};
             if(general_slab_eligible(type_index,kind,length,payload_bytes))
@@ -2896,16 +2922,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             }
             if(has_aggregate_type)
             {
-                membership_buckets_.reset(new(::std::nothrow) ::std::atomic<object*>[bucket_count]{});
-                if(!membership_buckets_) { return; }
+                if(!charge_metadata(bucket_count,sizeof(::std::atomic<object*>))) { return; }
+                membership_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<::std::atomic<object*>>(bucket_count, true));
+                if(!membership_buckets_) { allocation_failed_=true; return; }
             }
             if(section.type_count > static_cast<::std::uint_least64_t>((::std::numeric_limits<::std::size_t>::max)()) /
                                      sizeof(type_layout)) { return; }
             layout_count_ = static_cast<::std::size_t>(section.type_count);
             if(layout_count_ != 0uz)
             {
-                layouts_.reset(new(::std::nothrow) type_layout[layout_count_]{});
-                if(!layouts_) { layout_count_ = 0uz; return; }
+                if(!charge_metadata(layout_count_,sizeof(type_layout))) { layout_count_=0uz; return; }
+                layouts_.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<type_layout>(layout_count_, true));
+                if(!layouts_) { allocation_failed_=true; layout_count_ = 0uz; return; }
             }
             ::std::size_t index{};
             for(auto const& group : section.groups)
@@ -2924,8 +2952,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                                             sizeof(gc_type::field_type)) { return; }
                     if(layout.field_count != 0uz)
                     {
-                        layout.fields.reset(new(::std::nothrow) gc_type::field_type[layout.field_count]{});
-                        if(!layout.fields) { return; }
+                        if(!charge_metadata(layout.field_count,sizeof(gc_type::field_type))) { return; }
+                        layout.fields.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<gc_type::field_type>(layout.field_count, true));
+                        if(!layout.fields) { allocation_failed_=true; return; }
                         for(::std::size_t field{}; field != layout.field_count; ++field)
                         {
                             // [0, field_count) both arrays contain this field; the copy owns no parser pointer.
@@ -2958,8 +2987,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 { valid_ = false; return; }
             }
             if(ids.size() != layout_count_) { valid_ = false; return; }
-            canonical_ids_.reset(new(::std::nothrow) ::std::size_t[layout_count_]);
-            if(!canonical_ids_) { valid_ = false; return; }
+            if(!charge_metadata(layout_count_,sizeof(::std::size_t))) { valid_=false; return; }
+            canonical_ids_.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<::std::size_t>(layout_count_, false));
+            if(!canonical_ids_) { allocation_failed_=true; valid_ = false; return; }
             for(::std::size_t type{}; type != layout_count_; ++type)
             {
                 // [0, layout_count_) both immutable canonical maps are complete.
@@ -2976,9 +3006,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // heap/value declarations BEFORE trace metadata is accepted.
                 // [safe                                  ] type < layout_count_.
                 auto& layout{layouts_[type]};
-                if(layout.trace.build(layout.kind, layout.fields.get(), layout.field_count) !=
-                   gc_trace_metadata_status::ok)
-                { valid_ = false; return; }
+                auto const trace_status{layout.trace.build(layout.kind, layout.fields.get(), layout.field_count)};
+                if(trace_status != gc_trace_metadata_status::ok)
+                { allocation_failed_=trace_status==gc_trace_metadata_status::out_of_memory; valid_ = false; return; }
             }
 #endif
         }
@@ -2998,18 +3028,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(count != 0uz && (!source.layouts_ || !source.canonical_ids_)) { return; }
             if(count > (PTRDIFF_MAX - 64uz) / sizeof(type_layout) ||
                count > (PTRDIFF_MAX - 64uz) / sizeof(::std::size_t)) { return; }
-            using request = ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array;
             if(source.membership_buckets_)
             {
-                membership_buckets_.reset(new(request{&account}) ::std::atomic<object*>[bucket_count]{});
-                if(!membership_buckets_) { return; }
+                if(!charge_metadata(bucket_count,sizeof(::std::atomic<object*>))) { return; }
+                membership_buckets_.reset(account.try_array<::std::atomic<object*>>(bucket_count));
+                if(!membership_buckets_) { allocation_failed_=true; return; }
             }
             if(count != 0uz)
             {
-                layouts_.reset(new(request{&account}) type_layout[count]{});
-                if(!layouts_) { return; }
-                canonical_ids_.reset(new(request{&account}) ::std::size_t[count]{});
-                if(!canonical_ids_) { return; }
+                if(!charge_metadata(count,sizeof(type_layout)+sizeof(::std::size_t))) { return; }
+                layouts_.reset(account.try_array<type_layout>(count));
+                if(!layouts_) { allocation_failed_=true; return; }
+                canonical_ids_.reset(account.try_array<::std::size_t>(count));
+                if(!canonical_ids_) { allocation_failed_=true; return; }
                 for(::std::size_t i{}; i != count; ++i)
                 {
                     auto const& from{source.layouts_[i]}; auto& to{layouts_[i]};
@@ -3020,8 +3051,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     if(from.field_count != 0uz)
                     {
                         if(!from.fields || from.field_count > (PTRDIFF_MAX - 64uz) / sizeof(gc_type::field_type)) { return; }
-                        to.fields.reset(new(request{&account}) gc_type::field_type[from.field_count]{});
-                        if(!to.fields) { return; }
+                        if(!charge_metadata(from.field_count,sizeof(gc_type::field_type))) { return; }
+                        to.fields.reset(account.try_array<gc_type::field_type>(from.field_count));
+                        if(!to.fields) { allocation_failed_=true; return; }
                         for(::std::size_t f{};f != from.field_count;++f) { to.fields[f]=from.fields[f]; }
                     }
                     canonical_ids_[i]=source.canonical_ids_[i];
@@ -3142,7 +3174,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [private detached bridge chain] no registry lock is held here.
                 // ^^ save the next owned node before releasing the foreign store lease.
                 auto* next{retired_bridges->token_next};
-                delete retired_bridges;
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(retired_bridges);
                 // [remaining detached chain] next was read before deletion; recursive
                 // store teardown cannot touch these unregistered private nodes.
                 // ^^ advance only to a still-owned node or null.
@@ -3199,8 +3231,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                         retired = entry;
                     }
                 }
-                delete roots;
-                delete retired;
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(roots);
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(retired);
                 // [detached module root chain] next was read before deletion.
                 // ^^ roots advances only to its next owned node or null.
                 roots = next;
@@ -3209,6 +3241,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         gc_object_store(gc_object_store const&) = delete;
         gc_object_store& operator=(gc_object_store const&) = delete;
         [[nodiscard]] inline bool valid() const noexcept { return valid_; }
+        [[nodiscard]] inline bool allocation_failed() const noexcept { return allocation_failed_; }
         // Experimental stop-the-world aggregate collector. The caller owns
         // canonical strong pins for EVERY admitted store (including empty
         // stores), a complete precise root snapshot and an admission closure
@@ -3467,7 +3500,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
             auto visit_fields{[&](auto const& view, auto&& visitor) noexcept
             {
-#if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1
                 // Collector-only idempotent callbacks; closed cohort stays
                 // stopped for this WHOLE traversal. Original shape checks and
                 // every field read still run. Remember only the last successful
@@ -3491,9 +3523,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     }
                     return true;
                 });
-#else
-                return visit_fields_uncached(view, visitor);
-#endif
             }};
             ::std::size_t total_live_count{};
             constexpr auto max_live{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(object*)};
@@ -3564,10 +3593,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // At most one work entry per proved live object. Work storage is
             // collection-only, bounded by current live headers, and freed after
             // this pass; no per-issued-token bitmap/index accumulates forever.
-            ::std::unique_ptr<object*[]> work{};
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> work_charge{};
+            ::uwvm2::utils::container::std_unique_ptr<object*[]> work{};
             if(object_count != 0uz)
             {
-                work.reset(new(::std::nothrow) object*[object_count]);
+                constexpr auto work_prefix{::uwvm2::utils::allocator::fast_io_strict::array_prefix<object*>};
+                if(object_count <= (SIZE_MAX-work_prefix)/sizeof(object*) &&
+                   work_charge.resize(work_prefix+object_count*sizeof(object*)))
+                { work.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<object*>(object_count, false)); }
                 if(!work)
                 {
                     // Preserve the old invalid-root-before-work-OOM ordering.
@@ -3964,7 +3997,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
             auto visit_fields{[&](auto const& view, auto&& visitor) noexcept
             {
-#if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1
                 // Collector-only idempotent callbacks; closed cohort stays
                 // stopped for this WHOLE traversal. Original shape checks and
                 // every field read still run. Remember only the last successful
@@ -3988,9 +4020,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     }
                     return true;
                 });
-#else
-                return visit_fields_uncached(view, visitor);
-#endif
             }};
             ::std::size_t object_count{};
             auto constexpr max_work{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(object*)};
@@ -4017,10 +4046,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // At most one work entry per proved live object. Work storage is
             // collection-only, bounded by current live headers, and freed after
             // this pass; no per-issued-token bitmap/index accumulates forever.
-            ::std::unique_ptr<object*[]> work{};
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> work_charge{};
+            ::uwvm2::utils::container::std_unique_ptr<object*[]> work{};
             if(object_count != 0uz)
             {
-                work.reset(new(::std::nothrow) object*[object_count]);
+                constexpr auto work_prefix{::uwvm2::utils::allocator::fast_io_strict::array_prefix<object*>};
+                if(object_count <= (SIZE_MAX-work_prefix)/sizeof(object*) &&
+                   work_charge.resize(work_prefix+object_count*sizeof(object*)))
+                { work.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<object*>(object_count, false)); }
                 if(!work)
                 {
                     // Preserve the old invalid-root-before-work-OOM ordering.
@@ -4210,13 +4243,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
             auto owner{weak_from_this()};
             if(owner.expired()) { return gc_object_status::invalid_store; }
+#ifndef UWVM_MODULE
+            // Escaped private-thread exceptions share their actual worker's
+            // allocation account. Charge before publishing either registry node.
+            if(threaded_account_ && !threaded_account_.get().charge(sizeof(exn_token_entry)+sizeof(exn_root_node)+
+                (exn_root_buckets_?0u:sizeof(exn_root_bucket_array))))return gc_object_status::out_of_memory;
+#endif
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             // The value's real external block still pins this lifetime through
             // capture; generic internal records produce no source authority.
             auto provenance{::uwvm2::runtime::exception::external_exception_handle::source_native_provenance(value)};
 #endif
-            ::std::unique_ptr<exn_token_entry> entry{new(::std::nothrow) exn_token_entry{}};
-            ::std::unique_ptr<exn_root_node> root{new(::std::nothrow) exn_root_node{}};
+            ::uwvm2::utils::container::std_unique_ptr<exn_token_entry> entry{::uwvm2::utils::allocator::resource::try_charged_object<exn_token_entry>()};
+            ::uwvm2::utils::container::std_unique_ptr<exn_root_node> root{::uwvm2::utils::allocator::resource::try_charged_object<exn_root_node>()};
             if(!entry || !root) { return gc_object_status::out_of_memory; }
 #if defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) && UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES == 1
             entry->value = ::std::move(record);
@@ -4233,7 +4272,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             exn_roots_guard roots_guard{*this};
             if(!exn_root_buckets_)
             {
-                exn_root_buckets_.reset(new(::std::nothrow) exn_root_bucket_array{});
+                exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<exn_root_bucket_array>([&](exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exn_root_bucket_array{}; }));
                 if(!exn_root_buckets_) { return gc_object_status::out_of_memory; }
             }
             auto const identity{exn_token_prefix | next_exn_id_++};
@@ -4787,7 +4826,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // The candidate owns a foreign store lease. Keep its RAII owner
             // outside the guard scope so every failed/racing publication drops
             // that lease only after bridge_lock_ has been released.
-            ::std::unique_ptr<extern_bridge> fresh{new(::std::nothrow) extern_bridge{}};
+            ::uwvm2::utils::container::std_unique_ptr<extern_bridge> fresh{::uwvm2::utils::allocator::resource::try_charged_object<extern_bridge>()};
             if(!fresh) { return gc_object_status::out_of_memory; }
             fresh->owner = this;
             fresh->inner = source;
@@ -4875,7 +4914,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // The candidate owns a foreign store lease. Keep its RAII owner
             // outside the guard scope so every failed/racing publication drops
             // that lease only after bridge_lock_ has been released.
-            ::std::unique_ptr<extern_bridge> fresh{new(::std::nothrow) extern_bridge{}};
+            ::uwvm2::utils::container::std_unique_ptr<extern_bridge> fresh{::uwvm2::utils::allocator::resource::try_charged_object<extern_bridge>()};
             if(!fresh) { return gc_object_status::out_of_memory; }
             fresh->owner = this;
             fresh->inner = source;
@@ -5021,19 +5060,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return true;
         }
 
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
         [[nodiscard]] inline ::std::size_t managed_wide_numeric_array_pressure_length(
             ::std::uint_least32_t type_index, ::std::size_t length) const noexcept
         {
             // A native scheduling hint from this store's immutable schema.
             // Wide numeric arrays retain their existing scheduling policy.
-            // The separately selected extension also charges large packed
+            // This path also charges large packed
             // narrow and reference arrays; its small-array count path is intact.
             if(length < 256uz) { return 0uz; }
             auto const* layout{checked_type(type_index, gc_type::composite_kind::array)};
             auto const width{numeric_array_width(layout)};
             if(width >= 8uz) { return length; }
-# if defined(UWVM_EXPERIMENTAL_ALL_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_ALL_ARRAY_BYTE_PRESSURE == 1
             // Only immutable checked schema contributes to this scheduling hint.
             // Actual constructor validation, roots, lease and collection gates
             // remain in the original bridge. A charge never proves liveness,
@@ -5052,11 +5089,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 case 4uz: return length / 4uz + (length % 4uz != 0uz);
                 default: return 0uz;
             }
-# else
-            return 0uz;
-# endif
+
         }
-#endif
 
         [[nodiscard]] inline bool field_count(::std::uint_least32_t type_index,
                                                ::std::size_t& result) const noexcept

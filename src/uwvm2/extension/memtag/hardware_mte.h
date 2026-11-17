@@ -122,6 +122,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     // Signal-time ownership is a plain per-thread sig_atomic_t, never a heap
     // pointer or a Guest value. ASYNC has no address with which to find an owner.
     inline thread_local volatile ::std::sig_atomic_t asynchronous_execution_armed{};
+    // Only a native recording scope may retain an asynchronous notification.
+    // The signal handler writes plain TLS flags; no allocation, mutex, journal
+    // access or stack unwinding occurs there. Delivery happens at a safe poll.
+    inline thread_local volatile ::std::sig_atomic_t asynchronous_capture_armed{};
+    inline thread_local volatile ::std::sig_atomic_t asynchronous_fault_observed{};
 #endif
     inline void arm_asynchronous_execution() noexcept
     {

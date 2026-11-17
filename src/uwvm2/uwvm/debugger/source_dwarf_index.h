@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_variants.h"
 # include "source_dwarf_constants.h"
@@ -63,13 +66,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         ::std::uint8_t address_bytes_{}; // validated immutable producer ABI; no memory read grant.
         ::llvm::StringMap<::std::unique_ptr<::llvm::MemoryBuffer>> buffers_{};
         ::std::unique_ptr<::llvm::DWARFContext> context_{};
-        ::std::vector<line_directory_record> line_directories_{};
-        ::std::vector<scope_record> scopes_{};
-        ::std::unique_ptr<owned_scope_paths> scope_paths_{};
-        ::std::vector<type_record> types_{};
-        ::std::unique_ptr<owned_object_validation> object_validation_{};
-        ::std::unique_ptr<owned_numeric_validation> numeric_validation_{};
-        ::std::vector<variable_record> variables_{};
+        ::uwvm2::utils::container::std_vector<line_directory_record> line_directories_{};
+        ::uwvm2::utils::container::std_vector<scope_record> scopes_{};
+        ::uwvm2::utils::container::std_unique_ptr<owned_scope_paths> scope_paths_{};
+        ::uwvm2::utils::container::std_vector<type_record> types_{};
+        ::uwvm2::utils::container::std_unique_ptr<owned_object_validation> object_validation_{};
+        ::uwvm2::utils::container::std_unique_ptr<owned_numeric_validation> numeric_validation_{};
+        ::uwvm2::utils::container::std_vector<variable_record> variables_{};
         explicit index() = default;
         void consume_diagnostic(::llvm::Error issue, ::std::uint8_t kind) noexcept
         {
@@ -96,7 +99,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         [[nodiscard]] owned_object_validation const* object_validation() const noexcept { return object_validation_.get(); }
         [[nodiscard]] owned_numeric_validation const* numeric_validation() const noexcept { return numeric_validation_.get(); }
         [[nodiscard]] ::std::span<variable_record const> variables() const noexcept { return variables_; }
-        [[nodiscard]] static error parse(image_input input, ::std::unique_ptr<index>& out, limits const& cap = {}) noexcept;
+        [[nodiscard]] static error parse(image_input input, ::uwvm2::utils::container::std_unique_ptr<index>& out, limits const& cap = {}) noexcept;
     };
     static_assert(!::std::is_move_constructible_v<index> && !::std::is_copy_constructible_v<index>);
 
@@ -108,15 +111,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             image_input input;
             limits const& cap;
             budget used{};
-            ::std::map<::std::uint64_t,producer_language> producer_units{};
+            ::uwvm2::utils::container::std_map<::std::uint64_t,producer_language> producer_units{};
             error failure{};
-            ::std::vector<::llvm::DWARFUnit*> units{};
-            ::std::set< ::std::pair<::std::uint64_t, ::std::uint64_t>> visited{};
+            ::uwvm2::utils::container::std_vector<::llvm::DWARFUnit*> units{};
+            ::uwvm2::utils::container::std_set< ::std::pair<::std::uint64_t, ::std::uint64_t>> visited{};
             // Attribute proof belongs to this immutable context only. Charge every
             // attribute once even when semantic helpers revisit a referenced DIE.
-            ::std::set< ::std::pair<::std::uint64_t, ::std::uint64_t>> inspected_attributes{};
-            ::std::set<::std::uint64_t> counted_line_tables{};
-            ::std::map<::std::pair<::std::uint64_t, ::std::uint64_t>, ::std::size_t> type_indices{};
+            ::uwvm2::utils::container::std_set< ::std::pair<::std::uint64_t, ::std::uint64_t>> inspected_attributes{};
+            ::uwvm2::utils::container::std_set<::std::uint64_t> counted_line_tables{};
+            ::uwvm2::utils::container::std_map<::std::pair<::std::uint64_t, ::std::uint64_t>, ::std::size_t> type_indices{};
 
             [[nodiscard]] bool fail(error why) noexcept { if(failure == error::none) { failure = why; } return false; }
             [[nodiscard]] bool charge(::std::size_t amount, ::std::size_t limit, ::std::size_t& counter) noexcept
@@ -137,7 +140,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             {
                 if(input.address_bytes != 4u && input.address_bytes != 8u) { return fail(error::unsupported_dwarf); }
                 if(input.sections.size() > cap.max_sections) { return fail(error::limit_exceeded); }
-                ::std::vector<::std::string_view> seen{};
+                ::uwvm2::utils::container::std_vector<::std::string_view> seen{};
                 for(auto const& entry : input.sections)
                 {
                     if(entry.name.size() > cap.max_string_bytes || entry.payload.size() > cap.max_section_bytes ||
@@ -248,7 +251,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                             // in this owner; copy the span before the local borrow ends.
                             if constexpr(::std::is_same_v<String, ::fast_io::string>)
                             { destination = ::fast_io::concat_fast_io(::std::string_view{bytes.data() + start, length}); }
-                            else { destination = ::fast_io::concat_std(::std::string_view{bytes.data() + start, length}); }
+                            else { destination = ::uwvm2::utils::container::concat(::std::string_view{bytes.data() + start, length}); }
                             return true;
                         }
                         if(length == cap.max_string_bytes) { return fail(error::limit_exceeded); }
@@ -291,8 +294,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             [[nodiscard]] bool inherited(::llvm::DWARFDie start, ::llvm::dwarf::Attribute name,
                 ::std::optional<::llvm::DWARFFormValue>& destination)
             {
-                struct item { ::llvm::DWARFDie die; ::std::vector<die_key> ancestors; };
-                ::std::vector<item> pending{{start, {}}};
+                struct item { ::llvm::DWARFDie die; ::uwvm2::utils::container::std_vector<die_key> ancestors; };
+                ::uwvm2::utils::container::std_vector<item> pending{{start, {}}};
                 ::std::size_t hops{};
                 destination.reset();
                 while(!pending.empty())
@@ -350,7 +353,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     record.language = *language;
                 }
                 if(!cu_producer(unit,record)) { return false; }
-                ::std::vector<::llvm::DWARFDie> pending{die}; ::std::vector<die_key> visited{};
+                ::uwvm2::utils::container::std_vector<::llvm::DWARFDie> pending{die}; ::uwvm2::utils::container::std_vector<die_key> visited{};
                 while(!pending.empty())
                 {
                     auto const current{pending.back()}; pending.pop_back(); auto const identity{key(current)};
@@ -371,13 +374,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 }
                 return true;
             }
-            [[nodiscard]] bool name(::llvm::DWARFDie die, ::std::string& destination)
+            [[nodiscard]] bool name(::llvm::DWARFDie die, ::uwvm2::utils::container::std_string& destination)
             {
                 ::std::optional<::llvm::DWARFFormValue> attribute{};
                 if(!inherited(die, ::llvm::dwarf::DW_AT_name, attribute)) { return false; }
                 return !attribute || copy_string(*attribute, destination);
             }
-            [[nodiscard]] bool file(::llvm::DWARFFormValue const& attribute, ::std::string& destination)
+            [[nodiscard]] bool file(::llvm::DWARFFormValue const& attribute, ::uwvm2::utils::container::std_string& destination)
             {
                 auto const file_index{attribute.getAsUnsignedConstant()};
                 auto* const unit{const_cast<::llvm::DWARFUnit*>(attribute.getUnit())};
@@ -404,7 +407,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 // Copy its raw filename, without filesystem/path resolution.
                 return copy_string((*table)->Prologue.getFileNameEntry(*file_index).Name, destination);
             }
-            [[nodiscard]] bool ranges(::llvm::DWARFDie die, ::std::vector<code_range>& destination)
+            [[nodiscard]] bool ranges(::llvm::DWARFDie die, ::uwvm2::utils::container::std_vector<code_range>& destination)
             {
                 auto source{die.getAddressRanges()};
                 if(!source) { ::llvm::consumeError(source.takeError()); return fail(error::malformed); }
@@ -446,14 +449,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 destination.resize(count); return true;
             }
             [[nodiscard]] bool locations(::llvm::DWARFDie die, ::llvm::dwarf::Attribute attribute,
-                ::std::vector<location_record>& destination, position_role role = position_role::variable)
+                ::uwvm2::utils::container::std_vector<location_record>& destination, position_role role = position_role::variable)
             {
                 if(!die.find(attribute)) { return true; }
                 auto source{die.getLocations(attribute)};
                 if(!source) { ::llvm::consumeError(source.takeError()); return fail(error::malformed); }
                 if(!charge(source->size(), cap.max_locations, used.locations)) { return false; }
                 bool default_seen{}, quarantined{};
-                ::std::vector<code_range> selected{};
+                ::uwvm2::utils::container::std_vector<code_range> selected{};
                 for(auto const& entry : *source)
                 {
                     location_record record{};
@@ -835,7 +838,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         {
                             if(!charge(1u, cap.max_type_edges, used.type_edges)) { return false; }
                             member_record item{}; if(!member(payload, item, false, depth + 1u)) { return false; }
-                            if(variant.name.empty() && !item.name.empty()) { variant.name = ::fast_io::concat_std(::std::string_view{item.name}); }
+                            if(variant.name.empty() && !item.name.empty()) { variant.name = ::uwvm2::utils::container::concat(::std::string_view{item.name}); }
                             variant.members.push_back(::std::move(item));
                         }
                         else if(payload.getTag() == ::llvm::dwarf::DW_TAG_variant_part)
@@ -849,7 +852,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             {
                 if(!cxx_language(record.language) || record.tinygo_producer || record.zig_producer ||
                    (record.kind!=type_kind::class_type && record.kind!=type_kind::structure)) { return true; }
-                ::std::string canonical{};
+                ::uwvm2::utils::container::std_string canonical{};
                 if(!name(die,canonical)) { return false; }
                 // This finite libc++ control-block profile has out-of-line key
                 // functions: Clang may emit a declaration in the producer CU
@@ -868,12 +871,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     if(!n || !linkage || !external || !declared) { continue; }
                     auto ex{external->getAsUnsignedConstant()},decl{declared->getAsUnsignedConstant()};
                     if(!ex || !decl || *ex!=1u || *decl!=1u) { continue; }
-                    ::std::string method{};
+                    ::uwvm2::utils::container::std_string method{};
                     if(!copy_string(*n,method)) { return false; }
                     for(::std::size_t i{};i!=methods.size();++i)
                     {
                         if(method!=methods[i]) { continue; }
-                        ::std::string copied{};if(!copy_string(*linkage,copied)) { return false; }
+                        ::uwvm2::utils::container::std_string copied{};if(!copy_string(*linkage,copied)) { return false; }
                         if(!record.completion_anchors[i].empty() && record.completion_anchors[i]!=copied) { ambiguous=true; }
                         else { record.completion_anchors[i]=::std::move(copied); }
                     }
@@ -889,7 +892,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                    (record.kind!=type_kind::structure && record.kind!=type_kind::class_type) ||
                    (!spelling.ends_with(".coro_frame_ty") && !spelling.starts_with("coroutine_handle<"))) { return true; }
                 auto producer{die.getDwarfUnit()->getUnitDIE(false).find(::llvm::dwarf::DW_AT_producer)};
-                if(!producer) { return true; }::std::string text{};
+                if(!producer) { return true; }::uwvm2::utils::container::std_string text{};
                 if(!copy_string(*producer,text)) { return false; }
                 bool const legacy{text=="clang version 18.1.2-wasi-sdk (https://github.com/llvm/llvm-project 26a1d6601d727a96f4301d0d8647b5a42760ae0c)"};
                 bool const current{text=="clang version 23.1.0-wasi-sdk (https://github.com/llvm/llvm-project 895aa2c896ada719451be2e3673c83da8ddf1141)"};
@@ -905,13 +908,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     {
                         if(child.getTag()!=::llvm::dwarf::DW_TAG_subprogram) {continue;}
                         auto n{child.find(::llvm::dwarf::DW_AT_name)};if(!n) {continue;}
-                        ::std::string method{};if(!copy_string(*n,method)) {return false;}
+                        ::uwvm2::utils::container::std_string method{};if(!copy_string(*n,method)) {return false;}
                         unsigned const bit{method=="address" ? 1u : method=="done" ? 2u : 0u};if(!bit) {continue;}
                         auto l{child.find(::llvm::dwarf::DW_AT_linkage_name)};
                         auto ex{child.find(::llvm::dwarf::DW_AT_external)},decl{child.find(::llvm::dwarf::DW_AT_declaration)};
                         auto external{ex ? ex->getAsUnsignedConstant() : ::std::optional<::std::uint64_t>{}};
                         auto declared{decl ? decl->getAsUnsignedConstant() : ::std::optional<::std::uint64_t>{}};
-                        ::std::string linkage{};
+                        ::uwvm2::utils::container::std_string linkage{};
                         if(!l || !external || !declared || *external!=1u || *declared!=1u) {ambiguous=true;continue;}
                         if(!copy_string(*l,linkage)) {return false;}
                         if((methods&bit)!=0u || !::std::string_view{linkage}.starts_with("_ZNKSt3__216coroutine_handleI") ||
@@ -929,7 +932,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 {
                     if(child.getTag()!=::llvm::dwarf::DW_TAG_member) { continue; }
                     auto n{child.find(::llvm::dwarf::DW_AT_name)};if(!n) { continue; }
-                    ::std::string name{};if(!copy_string(*n,name)) { return false; }
+                    ::uwvm2::utils::container::std_string name{};if(!copy_string(*n,name)) { return false; }
                     for(unsigned i{};i!=names.size();++i)if(name==names[i])
                     {
                         auto artificial{child.find(::llvm::dwarf::DW_AT_artificial)};
@@ -945,10 +948,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             {
                 if(!cxx_language(record.language) || record.tinygo_producer || record.zig_producer || record.atomic_scalar ||
                    (record.kind!=type_kind::class_type && record.kind!=type_kind::structure)) { return true; }
-                ::std::string canonical{};
+                ::uwvm2::utils::container::std_string canonical{};
                 if(!name(die,canonical)) { return false; }
                 if(!::std::string_view{canonical}.starts_with("deque<")) { return true; }
-                ::std::string qualified{};
+                ::uwvm2::utils::container::std_string qualified{};
                 if(!qualified_name(die,canonical,qualified)) { return false; }
                 ::std::string_view prefix{};
                 if(::std::string_view{qualified}.starts_with("std::__1::deque<")) { prefix="St3__15dequeI"; }
@@ -968,7 +971,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     if(child.getTag()!=::llvm::dwarf::DW_TAG_subprogram) { continue; }
                     auto n{child.find(::llvm::dwarf::DW_AT_name)};
                     if(!n) { continue; }
-                    ::std::string method{};if(!copy_string(*n,method)) { return false; }
+                    ::uwvm2::utils::container::std_string method{};if(!copy_string(*n,method)) { return false; }
                     for(::std::size_t i{};i!=methods.size();++i)
                     {
                         if(method!=methods[i]) { continue; }
@@ -978,7 +981,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         if(!linkage || !external || !declared) { conflict=true;continue; }
                         auto ex{external->getAsUnsignedConstant()},decl{declared->getAsUnsignedConstant()};
                         if(!ex || !decl || *ex!=1u || *decl!=1u) { conflict=true;continue; }
-                        ::std::string copied{};if(!copy_string(*linkage,copied)) { return false; }
+                        ::uwvm2::utils::container::std_string copied{};if(!copy_string(*linkage,copied)) { return false; }
                         ::std::string_view symbol{copied};
                         if(symbol.starts_with("_ZNK")) { symbol.remove_prefix(4u); }
                         else if(symbol.starts_with("_ZN")) { symbol.remove_prefix(3u); }
@@ -1021,7 +1024,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     record.language = *value;
                 }
                 if(!cu_producer(die.getDwarfUnit(),record)) { return false; }
-                ::std::vector<die_key> visited_types{}; die_key chosen_name{};
+                ::uwvm2::utils::container::std_vector<die_key> visited_types{}; die_key chosen_name{};
                 for(::std::size_t hop{}; hop < cap.max_reference_hops; ++hop)
                 {
                     auto const identity{key(die)};
@@ -1064,7 +1067,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                                 {
                                     // Reuse the already bounded direct base name;
                                     // a typedef/wrapper name is never substituted.
-                                    ::std::string base_name{};
+                                    ::uwvm2::utils::container::std_string base_name{};
                                     if(chosen_name != identity && !copy_string(*attribute,base_name)) { return false; }
                                     auto const actual_name{chosen_name == identity ? ::std::string_view{record.name} : ::std::string_view{base_name}};
                                     record.narrow_builtin = cxx_narrow_from_base(record.language,false,actual_name,record.encoding,record.byte_count);
@@ -1081,7 +1084,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         {
                             auto const builtin_name{die.find(::llvm::dwarf::DW_AT_name)};
                             auto const builtin_encoding{die.find(::llvm::dwarf::DW_AT_encoding)};
-                            ::std::string spelling{};
+                            ::uwvm2::utils::container::std_string spelling{};
                             if(builtin_name && builtin_encoding)
                             {
                                 auto const encoding{builtin_encoding->getAsUnsignedConstant()};
@@ -1357,7 +1360,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                        !die.find(::llvm::dwarf::DW_AT_type) && !die.find(::llvm::dwarf::DW_AT_byte_size) &&
                        !die.find(::llvm::dwarf::DW_AT_declaration))
                     {
-                        ::std::string canonical{};
+                        ::uwvm2::utils::container::std_string canonical{};
                         if(!name(die,canonical)) { return false; }
                         record.void_type=canonical=="void";
                     }
@@ -1392,12 +1395,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             }
             [[nodiscard]] bool type(::llvm::DWARFDie variable, ::std::size_t& destination)
             { return type_reference(variable, destination, 0u); }
-            [[nodiscard]] bool qualified_name(::llvm::DWARFDie die, ::std::string_view leaf, ::std::string& destination)
+            [[nodiscard]] bool qualified_name(::llvm::DWARFDie die, ::std::string_view leaf, ::uwvm2::utils::container::std_string& destination)
             {
                 // A C++ out-of-class static definition inherits its lexical
                 // name from the specification DIE. Only metadata naming follows
                 // that reference; actual scope/location authority stays on die.
-                ::std::vector<die_key> seen{};
+                ::uwvm2::utils::container::std_vector<die_key> seen{};
                 for(::std::size_t hop{}; ; ++hop)
                 {
                     if(hop >= cap.max_reference_hops) { return fail(error::limit_exceeded); }
@@ -1409,7 +1412,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     ::llvm::DWARFDie declaration{}; if(!referenced(*specification, declaration)) { return false; }
                     die = declaration; // owned immutable metadata handle; not value/location inheritance.
                 }
-                ::std::vector<::std::string> parts{};
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> parts{};
                 auto parent{die.getParent()};
                 for(::std::size_t depth{}; parent && parent.getTag() != ::llvm::dwarf::DW_TAG_compile_unit; ++depth)
                 {
@@ -1417,10 +1420,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     auto const tag{parent.getTag()};
                     if(tag == ::llvm::dwarf::DW_TAG_namespace || tag == ::llvm::dwarf::DW_TAG_class_type ||
                        tag == ::llvm::dwarf::DW_TAG_structure_type || tag == ::llvm::dwarf::DW_TAG_union_type || tag == ::llvm::dwarf::DW_TAG_subprogram)
-                    { ::std::string part{}; if(!name(parent, part)) { return false; } if(!part.empty()) { parts.push_back(::std::move(part)); } }
+                    { ::uwvm2::utils::container::std_string part{}; if(!name(parent, part)) { return false; } if(!part.empty()) { parts.push_back(::std::move(part)); } }
                     parent = parent.getParent(); // bounded immutable DIE handle, not a runtime/source pointer.
                 }
-                ::std::string pending{};
+                ::uwvm2::utils::container::std_string pending{};
                 for(auto i{parts.size()}; i != 0u; --i)
                 {
                     // [owned namespace parts ... i-1 ... end]
@@ -1429,18 +1432,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     if(part.size() > cap.max_string_bytes || pending.size() > cap.max_string_bytes - part.size()) { return fail(error::limit_exceeded); }
                     auto const length{pending.size() + part.size()};
                     if(cap.max_string_bytes < 2u || length > cap.max_string_bytes - 2u) { return fail(error::limit_exceeded); }
-                    pending = ::fast_io::concat_std(::std::string_view{pending}, ::std::string_view{part}, "::");
+                    pending = ::uwvm2::utils::container::concat(::std::string_view{pending}, ::std::string_view{part}, "::");
                 }
                 if(leaf.size() > cap.max_string_bytes || pending.size() > cap.max_string_bytes - leaf.size() ||
                    !charge(pending.size() + leaf.size(), cap.max_total_string_bytes, used.strings)) { return fail(error::limit_exceeded); }
-                destination = ::fast_io::concat_std(::std::string_view{pending}, leaf); return true;
+                destination = ::uwvm2::utils::container::concat(::std::string_view{pending}, leaf); return true;
             }
             [[nodiscard]] bool inspect_attributes(::llvm::DWARFDie die)
             {
                 if(!die || die.isNULL()) { return fail(error::malformed); }
                 auto const identity{key(die)};
                 if(inspected_attributes.contains({identity.unit, identity.offset})) { return true; }
-                ::std::set<::llvm::dwarf::Attribute> names{};
+                ::uwvm2::utils::container::std_set<::llvm::dwarf::Attribute> names{};
                 for(auto const& attribute : die.attributes())
                 {
                     if(!charge(1u, cap.max_attributes, used.attributes)) { return false; }
@@ -1477,13 +1480,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             [[nodiscard]] bool preflight_attributes()
             {
                 struct item { ::llvm::DWARFDie die; ::std::size_t depth; };
-                ::std::set< ::std::pair<::std::uint64_t, ::std::uint64_t>> seen{};
+                ::uwvm2::utils::container::std_set< ::std::pair<::std::uint64_t, ::std::uint64_t>> seen{};
                 for(auto* unit : units)
                 {
                     // [immutable context-owned CU] DIE_end
                     // [safe                     ] handles only; no guest pointer,
                     //  ^^ parse the entire bounded CU before following references.
-                    ::std::vector<item> pending{{unit->getUnitDIE(false), 0u}};
+                    ::uwvm2::utils::container::std_vector<item> pending{{unit->getUnitDIE(false), 0u}};
                     while(!pending.empty())
                     {
                         auto const current{pending.back()}; pending.pop_back();
@@ -1515,7 +1518,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 struct item { ::llvm::DWARFDie die; ::std::size_t depth, scope; bool physical, inside_function, discarded; };
                 // [safe] unit is retained by the same nonmoving context; only
                 // getUnitDIE is used, never getNonSkeletonUnitDIE/parseDWO.
-                ::std::vector<item> pending{{unit->getUnitDIE(false), 0u, no_record, false, false, false}};
+                ::uwvm2::utils::container::std_vector<item> pending{{unit->getUnitDIE(false), 0u, no_record, false, false, false}};
                 while(!pending.empty())
                 {
                     auto current{pending.back()}; pending.pop_back();
@@ -1534,7 +1537,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     // referencing that library CU's complete class DIE.
                     if(tag==::llvm::dwarf::DW_TAG_class_type || tag==::llvm::dwarf::DW_TAG_structure_type)
                     {
-                        ::std::string copied{};
+                        ::uwvm2::utils::container::std_string copied{};
                         if(auto n=current.die.find(::llvm::dwarf::DW_AT_name))
                         {
                             if(!copy_string(*n,copied)) { return false; }
@@ -1708,7 +1711,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 // a live variable. Preserve their DIE identity, never merge by
                 // a spelling that may name a different ABI in the same CU.
                 struct item { ::llvm::DWARFDie die; ::std::size_t depth; };
-                ::std::vector<item> pending{{unit->getUnitDIE(false),0u}};
+                ::uwvm2::utils::container::std_vector<item> pending{{unit->getUnitDIE(false),0u}};
                 while(!pending.empty())
                 {
                     auto current{pending.back()}; pending.pop_back();
@@ -1792,14 +1795,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         };
     }
 
-    inline error index::parse(image_input input, ::std::unique_ptr<index>& out, limits const& cap) noexcept
+    inline error index::parse(image_input input, ::uwvm2::utils::container::std_unique_ptr<index>& out, limits const& cap) noexcept
     {
         out.reset(); // old metadata is never kept after a failed new parse.
 #if defined(__cpp_exceptions)
         try
         {
 #endif
-            ::std::unique_ptr<index> candidate{new (::std::nothrow) index{}};
+            ::uwvm2::utils::container::std_unique_ptr<index> candidate{::uwvm2::utils::allocator::fast_io_strict::try_object<index>([&](index* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) index{}; })};
             if(!candidate) { return error::allocation_failure; }
             details::index_builder builder{*candidate, input, cap};
             if(!builder.build()) { return builder.failure == error::none ? error::malformed : builder.failure; }
@@ -1810,13 +1813,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             { static_cast<void>(normalize_clang18_wasm32_coroutine(candidate->types_,i));
               static_cast<void>(validate_clang23_wasm32_coroutine(candidate->types_,i)); }
 #if defined(UWVM_USE_THREAD_LOCAL)
-            candidate->object_validation_.reset(new (::std::nothrow) owned_object_validation{candidate->types_});
+            candidate->object_validation_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<owned_object_validation>([&](owned_object_validation* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_object_validation{candidate->types_}; }));
 #endif
             // Optional bounded independent metadata owner. Copy failure retains
             // fully checked raw queries; source/pause/read authentication is unchanged.
             static_cast<void>(owned_scope_paths::copy(candidate->scopes_,candidate->scope_paths_));
-            candidate->numeric_validation_.reset(new (::std::nothrow) owned_numeric_validation{
-                candidate->scopes(),candidate->types_,candidate->variables_});
+            candidate->numeric_validation_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<owned_numeric_validation>([&](owned_numeric_validation* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_numeric_validation{
+                candidate->scopes(),candidate->types_,candidate->variables_}; }));
             out = ::std::move(candidate);
             return error::none;
 #if defined(__cpp_exceptions)

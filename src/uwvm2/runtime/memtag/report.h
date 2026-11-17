@@ -14,6 +14,22 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::report
 {
+    // Native-only borrowed observer for an authenticated recorded import. The
+    // successful access path never touches it. The callback receives copied
+    // diagnostic numbers, never a memory owner, pointer to Guest bytes or an I/O
+    // capability. Asynchronous Guest report workers do not inherit this TLS.
+    struct observation
+    {
+        ::uwvm2::extension::memtag::access_result access{};
+        ::std::uint64_t raw{},memory{},module{UINT64_MAX},function{UINT64_MAX},offset{UINT64_MAX};
+        bool asynchronous{};
+    };
+    struct observer
+    {
+        void* context{};
+        void (*detected)(void*,observation const&) noexcept{};
+    };
+    inline thread_local observer const* current_observer{};
     inline ::std::mutex output_mutex{};
     inline ::std::uint64_t next_sequence{};
     [[nodiscard]] inline bool write(char const* bytes,::std::size_t count) noexcept
@@ -52,6 +68,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::report
         bool asynchronous=false) noexcept
     {
         namespace crash=::uwvm2::runtime::diagnostic::crash;
+        if(auto const actual=current_observer)
+            actual->detected(actual->context,{access,raw,memory,module,function,offset,asynchronous});
         ::std::lock_guard lock{output_mutex};
         // No unused stack bytes leave this sink: append/number/optional write
         // the entire [0,size) prefix; write() receives that prefix only.

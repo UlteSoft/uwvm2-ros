@@ -173,7 +173,7 @@
         // pointers, references, iterators and spans have all retired.
         [[nodiscard]] static exception_value try_publish_owned(
             ::std::uintptr_t module_id, ::std::uintptr_t tag_index,
-            ::std::vector<::uwvm2::runtime::exception::payload_field>&& fields,
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field>&& fields,
             ::uwvm2::runtime::exception::diagnostic_trace_ref const& trace)
         {
             auto* entry{actual_entry()};

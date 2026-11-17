@@ -22,6 +22,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 // std
 # include <array>
 # include <cstddef>
@@ -92,6 +93,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     {
         using error_type = ::uwvm2::imported::wasi::wasip1::abi::errno_t;
         {
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_input_phase{false};
             [[maybe_unused]] auto const pin{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
             if(!::uwvm2::imported::wasi::wasip1::memory::with_checked_guest_bytes_unlocked(
                 memory,raw,bytes,[](::std::byte*,::std::size_t) noexcept {}))
@@ -134,6 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                 // entropy acquisition. Recheck once; never repeat native input
                 // after a stale output pointer fails.
                 {
+                    ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
                     [[maybe_unused]] auto const pin{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
                     if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
                         memory,raw+completed,owned.data(),available,true))
@@ -194,7 +197,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
-        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.shared())
+        // A recording provider releases its instruction turn while obtaining
+        // entropy. Use detached batches even on an untagged/nonshared owner.
+        if(::uwvm2::runtime::checkpoint::host_memory_phase::current ||
+           (memory.memtag_shadow.enabled() && memory.memtag_shadow.shared()))
         { return random_get_shared_tagged(memory,buf,buf_len); }
 
 

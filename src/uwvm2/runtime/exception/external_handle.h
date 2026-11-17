@@ -2,6 +2,8 @@
  * Experimental actual immutable-record / public alias ownership split.
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #if defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) && UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES == 1
 #if !defined(UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS) || UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS != 1
 # error "external exception handles require homogeneous native exception roots"
@@ -87,7 +89,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
             // [safe] only this immutable callback receives the detached node;
             // the whole block still owns its census lease and native pins.
             auto* owner{static_cast<external_exception_handle*>(node)};
-            delete owner;
+            ::uwvm2::utils::allocator::fast_io_strict::destroy_object(owner);
             // [ended complete object lifetime] node AND owner are now invalid.
             // [safe] return without reading either borrow after native callbacks.
         }
@@ -201,8 +203,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
             // control-block allocation may queue this unpublished rooted block,
             // preserving source/record until the actual native safe boundary.
             ::std::shared_ptr<external_exception_handle> owner{
-                new external_exception_handle{construction_key{},::std::move(domain),
-                    ::std::move(record),::std::move(lifetime)},final_deleter{}};
+                ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<external_exception_handle>([&](external_exception_handle* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) external_exception_handle{construction_key{},::std::move(domain),
+                    ::std::move(record),::std::move(lifetime)}; }),final_deleter{})};
             if(!owner->lease_) { return {}; }
             // [actual new block][complete internal record owned by its lease]
             // [safe] alias remains valid through the SAME owning control block.
@@ -297,8 +299,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
             // If control-block allocation throws, that same deleter retains the
             // live block until the real safe boundary; candidate remains intact.
             ::std::shared_ptr<external_exception_handle> owner{
-                new external_exception_handle{construction_key{}, ::std::move(domain), ::std::move(record)},
-                final_deleter{}};
+                ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<external_exception_handle>([&](external_exception_handle* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) external_exception_handle{construction_key{}, ::std::move(domain), ::std::move(record)}; }),
+                final_deleter{})};
             if(!owner->lease_) { return {}; } // New attach still rejects closed.
             // [lease-owned complete immutable value][actual external block]
             // [safe] alias value pointer ONLY while this same control block owns
@@ -330,9 +332,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
             // Constructor/control-block failure still uses the real complete
             // deferred block. No leaf key is installed on a failed publication.
             ::std::shared_ptr<external_exception_handle> owner{
-                new external_exception_handle{typename external_exception_handle::construction_key{},
-                    ::std::move(domain),::std::move(record),::std::move(lifetime)},
-                typename external_exception_handle::final_deleter{}};
+                ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<external_exception_handle>([&](external_exception_handle* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) external_exception_handle{typename external_exception_handle::construction_key{},
+                    ::std::move(domain),::std::move(record),::std::move(lifetime)}; }),
+                typename external_exception_handle::final_deleter{})};
             if(!owner->lease_) { return {}; }
             // [complete private block][this Producer's stable native key]
             // [safe] issue only after successful root attachment, before any

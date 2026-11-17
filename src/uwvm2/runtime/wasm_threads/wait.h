@@ -12,7 +12,8 @@
 # include <utility>
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-#  include <stop_token>
+#  include <uwvm2/utils/thread/stop_token.h>
+#  include "execution_journal.h"
 # endif
 # include <uwvm2/utils/thread/impl.h>
 # include <uwvm2/object/memory/linear/impl.h>
@@ -43,6 +44,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
         ::uwvm2::utils::thread::cooperative_pause_domain& control;
         ::uwvm2::utils::thread::cooperative_pause_domain::participant const& participant;
         bool (*on_suspend)(::uwvm2::utils::thread::keyed_wait_set::suspension_borrow const&) noexcept;
+        void (*on_linked)() noexcept{};
+        void (*on_completed)(::std::uint64_t,::uwvm2::utils::thread::keyed_wait_result) noexcept{};
+        void linked() const noexcept
+        {
+            if(auto* current=current_thread_journal;current&&current->waiting)current->journal->release(*current);
+            if(on_linked)on_linked();
+        }
+        void completed(::uwvm2::utils::thread::keyed_wait_result result) const noexcept
+        {if(on_completed)on_completed(participant.identifier(),result);}
         [[nodiscard]] auto register_waker(void* context, void (*wake)(void*) noexcept) const noexcept
         { return participant.register_pause_waker(context, wake); }
         [[nodiscard]] bool requested() const noexcept { return control.wait_interrupt_requested(); }
@@ -52,7 +62,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
     struct execution_context
     {
         wait_domain& domain;
-        ::std::stop_token cancellation;
+        ::uwvm2::utils::thread::stop_token cancellation;
         wait_pause_policy* pause{};
     };
     inline constinit thread_local execution_context* current_execution{};
@@ -64,7 +74,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
         execution_context context;
         execution_context* previous;
     public:
-        execution_scope(wait_domain& domain, ::std::stop_token cancellation, wait_pause_policy* pause=nullptr) noexcept
+        execution_scope(wait_domain& domain, ::uwvm2::utils::thread::stop_token cancellation, wait_pause_policy* pause=nullptr) noexcept
             : context{domain, ::std::move(cancellation),pause}, previous{current_execution}
         {
             // [live scope.context] remains alive through the entire host entry.
@@ -125,6 +135,82 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
         }
     }
 
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    // A terminal trap/exit closes the journal while other real workers may
+    // still be inside wait/notify. This is cancellation, not a broken wait
+    // service: reporting unavailable here would turn a handled Guest fault
+    // into a second, internal VM crash in a different worker.
+    [[nodiscard]] inline wait_result interrupted_journal_wait(thread_journal_context const& context) noexcept
+    {
+        if(context.cancellation.stop_requested())return {wait_status::cancelled};
+        // Another worker may have published refusal but still be delivering
+        // the native stop callback. Do not promote that window to a VM fault.
+        if(context.journal)
+        {
+            auto const status=context.journal->observe().status;
+            if(status==journal_status::diverged||status==journal_status::cancelled||status==journal_status::allocation_failure)
+                return {wait_status::cancelled};
+        }
+        return {wait_status::unavailable};
+    }
+
+    // Shared by ordinary and tagged atomic waits. In particular, a tagged
+    // infinite wait must release its execution turn AFTER its genuine native
+    // wait node is linked, just like an untagged wait. Replay consumes the same
+    // checked comparison and completion without sleeping on a new native node.
+    template<::std::size_t Bytes>
+    class wait_journal_phase final
+    {
+        thread_journal_context* context_{current_thread_journal};
+        bool replay_{context_&&context_->journal->replaying()};
+    public:
+        [[nodiscard]] bool active() const noexcept { return context_!=nullptr; }
+        [[nodiscard]] bool replaying() const noexcept { return replay_; }
+        [[nodiscard]] wait_result interrupted() const noexcept
+        {return context_?interrupted_journal_wait(*context_):wait_result{wait_status::unavailable};}
+        template<typename Read>
+        [[nodiscard]] bool begin(::std::uint64_t offset,::std::uint64_t expected,
+            ::std::int64_t timeout_ns,Read&& read) noexcept
+        {
+            if(!context_)return true;
+            try
+            {
+                auto event=journal_at(journal_kind::wait_begin);event.a=Bytes;event.b=offset;event.c=expected;
+                for(unsigned n{};n<8u;++n)event.input.push_back(static_cast<::std::byte>(static_cast<::std::uint64_t>(timeout_ns)>>(n*8u)));
+                if(!context_->journal->select(*context_,::std::move(event),false))return false;
+                ::std::array<::std::byte,Bytes> comparison{};
+                if(!::std::forward<Read>(read)(comparison)||!context_->journal->verify(*context_,comparison))
+                {if(!context_->cancellation.stop_requested())context_->journal->refuse();return false;}
+                context_->waiting=true;return true;
+            }
+            catch(...){context_->journal->refuse();return false;}
+        }
+        [[nodiscard]] wait_result finish(wait_result value) noexcept
+        {
+            if(!context_)return value;
+            if(replay_)context_->journal->release(*context_);
+            auto event=journal_at(journal_kind::wait_end);
+            if(!context_->journal->select(*context_,::std::move(event)))return interrupted();
+            ::std::array<::std::byte,16> bytes{};
+            auto put=[&](unsigned at,::std::uint64_t v){for(unsigned n{};n<8u;++n)bytes[at+n]=static_cast<::std::byte>(v>>(8u*n));};
+            put(0u,static_cast<unsigned>(value.status));put(8u,value.memory_length);
+            if(!context_->journal->value(*context_,bytes))return interrupted();
+            if(replay_)
+            {
+                auto get=[&](unsigned at){::std::uint64_t v{};for(unsigned n{};n<8u;++n)v|=::std::to_integer<::std::uint64_t>(bytes[at+n])<<(8u*n);return v;};
+                auto status=get(0u),length=get(8u);
+                if(status>static_cast<unsigned>(wait_status::too_many_waiters)||length>SIZE_MAX)
+                {context_->journal->refuse();return {wait_status::unavailable};}
+                value.status=static_cast<wait_status>(status);value.memory_length=static_cast<::std::size_t>(length);
+            }
+            return value;
+        }
+        wait_journal_phase()=default;
+        wait_journal_phase(wait_journal_phase const&)=delete;
+        ~wait_journal_phase(){if(context_)context_->waiting=false;}
+    };
+#endif
+
     template<::std::size_t Bytes, typename Memory>
         requires(Bytes == 4uz || Bytes == 8uz)
     [[nodiscard]] inline wait_result memory_wait(Memory const& memory, bool shared, ::std::uint_least64_t offset,
@@ -148,6 +234,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
             if(!bounded) { result.status = wait_status::out_of_bounds; }
             return bounded && matches;
         }};
+        wait_journal_phase<Bytes> journal;
+        // Preserve the standard bounds trap before opening a wait event.
+        if(journal.active()&&!details::access(memory,offset,Bytes,result.memory_length,[](::std::byte*) noexcept{}))
+            return {wait_status::out_of_bounds,result.memory_length};
+        if(!journal.begin(offset,expected,timeout_ns,[&](auto& comparison) noexcept
+        {
+            return details::access(memory,offset,Bytes,result.memory_length,[&](::std::byte* p) noexcept
+            {
+                auto const loaded=::uwvm2::runtime::compiler::shared::wasm_threads::atomic_load_le<Bytes>(p);
+                for(::std::size_t i{};i<Bytes;++i)comparison[i]=static_cast<::std::byte>(loaded>>(8u*i));
+            });
+        }))return journal.interrupted();
+        if(journal.replaying())return journal.finish(result);
         auto const outcome{[&]
         {
             if(execution->pause != nullptr)
@@ -173,7 +272,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
 #else
         result.status=wait_status::unavailable;
 #endif
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        return journal.finish(result);
+#else
         return result;
+#endif
     }
 
     template<typename Memory>
@@ -189,7 +292,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         auto const execution{current_execution};
         if(execution == nullptr) { return {wait_status::unavailable}; }
-        result.notified = static_cast<::std::uint_least32_t>(execution->domain.waiters.notify({::std::addressof(memory), offset}, count));
+        auto* const recording=current_thread_journal;
+        bool const replay=recording&&recording->journal->replaying();
+        if(recording)
+        {
+            auto event=journal_at(journal_kind::notify);event.a=offset;event.b=count;
+            if(!recording->journal->select(*recording,::std::move(event),false))return interrupted_journal_wait(*recording);
+        }
+        if(!replay)result.notified=static_cast<::std::uint_least32_t>(execution->domain.waiters.notify({::std::addressof(memory),offset},count));
+        if(recording)
+        {
+            ::std::array<::std::byte,4> value{};
+            for(unsigned n{};n<4u;++n)value[n]=static_cast<::std::byte>(result.notified>>(8u*n));
+            if(!recording->journal->value(*recording,value))return interrupted_journal_wait(*recording);
+            if(replay)
+            {
+                result.notified=0u;for(unsigned n{};n<4u;++n)result.notified|=::std::to_integer<::std::uint32_t>(value[n])<<(8u*n);
+                if(result.notified>count){recording->journal->refuse();return {wait_status::unavailable};}
+            }
+        }
 #endif
         return result;
     }

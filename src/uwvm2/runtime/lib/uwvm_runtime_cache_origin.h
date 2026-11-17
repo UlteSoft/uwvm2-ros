@@ -110,7 +110,7 @@ extern "C++"
                 ::uwvm2::runtime::llvm_jit_cache::details::runtime_cache_log_line(u8"origin-admission-refused stage=generation-lease");
                 return {};
             }
-            try { return ::std::shared_ptr<state>{new state{::std::move(generation), ::std::move(original), current_runtime_generation()}}; }
+            try { return ::std::shared_ptr<state>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<state>([&](state* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) state{::std::move(generation), ::std::move(original), current_runtime_generation()}; }))}; }
             catch(...) { return {}; }
         }
     public:

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <fast_io.h>
 # include <fast_io_unit/string.h>
@@ -32,9 +33,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
     };
     struct image
     {
-        ::std::vector<::fast_io::string> sources{};
+        ::uwvm2::utils::container::std_vector<::fast_io::string> sources{};
         ::fast_io::string source_root{};
-        ::std::vector<row> rows{};
+        ::uwvm2::utils::container::std_vector<row> rows{};
     };
     inline ::std::string_view view(::fast_io::string const& value) noexcept
     { return {value.data(),value.size()}; }
@@ -141,7 +142,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
                 // Parse unknown JSON values with an input-sized explicit stack.
                 // Nesting cannot exhaust the native call stack, and every loop
                 // consumes an actual token or retires one owned stack entry.
-                ::std::vector<char> ends{};
+                ::uwvm2::utils::container::std_vector<char> ends{};
                 for(;;)
                 {
                     space(); if(at==text.size()) { return false; }
@@ -176,7 +177,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
                     }
                 }
             }
-            bool strings(::std::vector<::fast_io::string>& out,::std::size_t& total)
+            bool strings(::uwvm2::utils::container::std_vector<::fast_io::string>& out,::std::size_t& total)
             {
                 if(!take('[')) { return false; }if(take(']')) { return true; }
                 do
@@ -226,7 +227,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_map_v3
         ::std::uint64_t code_size,::std::uint64_t file_size,image& output)
     {
         if(code_file_begin>file_size || code_size>file_size-code_file_begin) { return error::malformed; }
-        image candidate{};::fast_io::string mappings{};::std::vector<::fast_io::string> names{},keys{};
+        image candidate{};::fast_io::string mappings{};::uwvm2::utils::container::std_vector<::fast_io::string> names{},keys{};
         detail::json_reader input{text};bool version{},sources{},mapped{};::std::size_t total{};
         if(!input.take('{') || input.take('}')) { return error::malformed; }
         do

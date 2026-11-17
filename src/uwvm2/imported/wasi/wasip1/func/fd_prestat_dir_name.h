@@ -263,6 +263,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 
         if(path_len < preloaded_dir_name.size()) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::enametoolong; }
 
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_wasm32(memory,
                                                                             path,
                                                                             reinterpret_cast<::std::byte const*>(preloaded_dir_name.cbegin()),

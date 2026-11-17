@@ -14,7 +14,7 @@
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #  include <condition_variable>
 #  include <mutex>
-#  include <stop_token>
+#  include <uwvm2/utils/thread/stop_token.h>
 # endif
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -55,7 +55,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         ::std::mutex mutex{};
         ::std::condition_variable idle{};
         ::std::atomic_bool stopping{};
-        ::std::stop_source cancellation{};
+        ::uwvm2::utils::thread::stop_source cancellation{};
         ::std::size_t active{};
         ::std::size_t const capacity;
         void leave()
@@ -98,8 +98,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 }
             }
             [[nodiscard]] explicit operator bool() const noexcept { return owner != nullptr; }
-            [[nodiscard]] ::std::stop_token cancellation_token() const noexcept
-            { return owner == nullptr ? ::std::stop_token{} : owner->cancellation.get_token(); }
+            [[nodiscard]] ::uwvm2::utils::thread::stop_token cancellation_token() const noexcept
+            { return owner == nullptr ? ::uwvm2::utils::thread::stop_token{} : owner->cancellation.get_token(); }
             [[nodiscard]] bool stop_requested() const noexcept
             { return owner == nullptr || owner->stop_requested(); }
         };

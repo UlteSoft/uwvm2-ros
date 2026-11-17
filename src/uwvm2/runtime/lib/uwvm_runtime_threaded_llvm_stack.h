@@ -56,7 +56,7 @@
 #endif
         struct native_frame_record
         {
-            ::std::string name;
+            ::uwvm2::utils::container::std_string name;
             ::std::uint64_t section{UINT64_MAX},offset{UINT64_MAX},bytes{},object_bytes{UINT64_MAX},alignment_slack{};
         };
         struct native_call_edge {::std::size_t caller{},callee{};};
@@ -69,7 +69,7 @@
             ::std::span<::std::size_t const> costs,::std::span<native_call_edge const> edges)
         {
             if(costs.empty()||costs.size()==SIZE_MAX)return {};
-            ::std::vector<::std::size_t> outgoing(costs.size()),offsets(costs.size()+1u),pending;
+            ::uwvm2::utils::container::std_vector<::std::size_t> outgoing(costs.size()),offsets(costs.size()+1u),pending;
             for(auto const& edge:edges)
             {
                 if(edge.caller>=costs.size()||edge.callee>=costs.size()||
@@ -78,7 +78,7 @@
             }
             for(::std::size_t i{1u};i<offsets.size();++i)
             {if(offsets[i]>SIZE_MAX-offsets[i-1u])return {};offsets[i]+=offsets[i-1u];}
-            ::std::vector<::std::size_t> parents(edges.size()),positions(offsets),bounds(costs.begin(),costs.end());
+            ::uwvm2::utils::container::std_vector<::std::size_t> parents(edges.size()),positions(offsets),bounds(costs.begin(),costs.end());
             for(auto const& edge:edges)parents[positions[edge.callee]++]=edge.caller;
             for(::std::size_t i{};i<costs.size();++i)if(outgoing[i]==0u)pending.push_back(i);
             ::std::size_t consumed{},maximum{};
@@ -96,8 +96,8 @@
             }
             return {true,consumed==costs.size(),maximum};
         }
-        ::std::vector<::std::string> native_call_names_{};
-        ::std::vector<native_call_edge> native_call_edges_{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> native_call_names_{};
+        ::uwvm2::utils::container::std_vector<native_call_edge> native_call_edges_{};
         bool native_call_graph_known_{};
         [[nodiscard]] bool record_native_call_graph(::llvm::Module const& module)
         {
@@ -107,7 +107,7 @@
             {
                 auto const index=native_call_names_.size();
                 if(!indices.try_emplace(::std::addressof(function),index).second)return false;
-                native_call_names_.push_back(function.getName().str());
+                native_call_names_.push_back(::uwvm2::utils::container::copy_string(function.getName()));
             }
             if(native_call_names_.empty())return false;
             ::std::size_t caller{};
@@ -129,7 +129,7 @@
             }
             return caller==native_call_names_.size();
         }
-        ::std::vector<native_frame_record> native_frames_{};
+        ::uwvm2::utils::container::std_vector<native_frame_record> native_frames_{};
         ::std::size_t maximum_fixed_frame_{},guest_fixed_stack_charge_{};
         ::std::size_t guest_native_stack_usable_bytes_{},compiler_native_stack_usable_bytes_{};
         bool machine_stack_valid_{true};
@@ -138,6 +138,11 @@
         // frames; it neither changes ordinary pipelines nor estimates from IR.
         class machine_stack_observer final:public ::llvm::MachineFunctionPass
         {
+        public:
+            static void operator delete(void* raw) noexcept
+            { ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<machine_stack_observer>::deallocate(static_cast<machine_stack_observer*>(raw)); }
+        private:
+
             ThreadedLlvmChild& owner_;
             inline static char pass_id_{};
         public:
@@ -164,7 +169,7 @@
                 {owner.machine_stack_valid_=false;return false;}
                 for(auto const& old:owner.native_frames_)if(old.name==name)
                 {owner.machine_stack_valid_=false;return false;}
-                owner.native_frames_.push_back({name.str(),UINT64_MAX,UINT64_MAX,frame.getStackSize(),UINT64_MAX,
+                owner.native_frames_.push_back({::uwvm2::utils::container::copy_string(name),UINT64_MAX,UINT64_MAX,frame.getStackSize(),UINT64_MAX,
                     registers->hasStackRealignment(function)?frame.getMaxAlign().value()-1u:0u});
                 return false;
             }
@@ -181,7 +186,7 @@
                 // or external callback authority. An unknown/renamed pipeline
                 // fails coverage; no metadata-only success is manufactured.
                 if(pass->getPassName()==::llvm::StringRef{native_printer.data(),native_printer.size()})
-                {++printers_;::llvm::legacy::PassManager::add(new machine_stack_observer{owner_});}
+                {++printers_;::llvm::legacy::PassManager::add(::uwvm2::utils::allocator::fast_io_strict::object<machine_stack_observer>([&](machine_stack_observer* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) machine_stack_observer{owner_}; }));}
                 ::llvm::legacy::PassManager::add(pass);
             }
             [[nodiscard]] bool valid() const noexcept
@@ -242,7 +247,7 @@
                 if(*name!=".stack_sizes")continue;
                 auto data=section.getContents();if(!data){::llvm::consumeError(data.takeError());return false;}
                 struct raw_record{::std::uint64_t offset{},bytes{},implicit_addend{};bool relocated{};};
-                ::std::vector<raw_record> parsed;
+                ::uwvm2::utils::container::std_vector<raw_record> parsed;
                 ::std::size_t at{};
                 while(at<data->size())
                 {
@@ -330,14 +335,14 @@
                 SIZE_MAX:frame_charge*(call_limit_+1u);
             if(native_call_graph_known_&&native_call_names_.size()==native_frames_.size())
             {
-                ::std::vector<::std::size_t> costs(native_call_names_.size());
-                ::std::vector<bool> seen(native_call_names_.size());
+                ::uwvm2::utils::container::std_vector<::std::size_t> costs(native_call_names_.size());
+                ::uwvm2::utils::container::std_vector<bool> seen(native_call_names_.size());
                 ::llvm::StringMap<::std::size_t> indices;
                 for(::std::size_t i{};i<native_call_names_.size();++i)
-                    if(!indices.try_emplace(native_call_names_[i],i).second)return false;
+                    if(!indices.try_emplace(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(native_call_names_[i]),i).second)return false;
                 for(auto const& frame:native_frames_)
                 {
-                    auto const found=indices.find(frame.name);
+                    auto const found=indices.find(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(frame.name));
                     if(found==indices.end()||seen[found->second])return false;
                     if(frame.bytes>SIZE_MAX-frame.alignment_slack||
                        frame.bytes+frame.alignment_slack>SIZE_MAX-return_address)return false;

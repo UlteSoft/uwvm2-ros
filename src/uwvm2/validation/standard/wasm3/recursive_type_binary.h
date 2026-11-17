@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -22,12 +23,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     enum class recursive_type_binary_error : unsigned
     {
         ok, truncated, invalid_integer, invalid_heap_type, invalid_value_type,
-        invalid_composite_type, invalid_mutability, impossible_count, trailing_bytes
+        invalid_composite_type, invalid_mutability, impossible_count, trailing_bytes, resource_limit
     };
     struct recursive_type_binary_result
     {
         recursive_type_binary_error error{};
         ::std::size_t error_offset{};
+        ::std::size_t requested{}, limit{};
+        bool type_count_limit{};
     };
     namespace recursive_binary_details
     {
@@ -38,6 +41,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             ::std::span<::std::byte const> input{};
             ::std::size_t position{};
             recursive_type_binary_result status{};
+            ::std::size_t maximum_types{262144uz};
+            ::std::size_t maximum_metadata_bytes{512uz << 20u};
+            ::std::size_t allocated_metadata_bytes{};
+            ::std::size_t allocated_types{};
+            template<typename T> inline constexpr bool admit(::std::size_t count) noexcept
+            {
+                if(count > (maximum_metadata_bytes-allocated_metadata_bytes)/sizeof(T))
+                {
+                    fail(recursive_type_binary_error::resource_limit);
+                    status.limit=maximum_metadata_bytes;
+                    status.requested=count > (SIZE_MAX-allocated_metadata_bytes)/sizeof(T) ? SIZE_MAX : allocated_metadata_bytes+count*sizeof(T);
+                    return false;
+                }
+                if constexpr(::std::is_same_v<T, types::sub_type>)
+                {
+                    if(count > maximum_types-allocated_types)
+                    { fail(recursive_type_binary_error::resource_limit); status.type_count_limit=true;
+                      status.limit=maximum_types; status.requested=count > SIZE_MAX-allocated_types ? SIZE_MAX : allocated_types+count; return false; }
+                    allocated_types += count;
+                }
+                if constexpr(::std::is_same_v<T, types::recursive_group>)
+                { if(count > maximum_types) { fail(recursive_type_binary_error::resource_limit);
+                    status.type_count_limit=true; status.limit=maximum_types; status.requested=count; return false; } }
+                allocated_metadata_bytes += count*sizeof(T);
+                return true;
+            }
             inline constexpr bool fail(recursive_type_binary_error error) noexcept
             {
                 if(status.error == recursive_type_binary_error::ok) { status = {error, position}; }
@@ -192,6 +221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 if(count > (input.size() - position) / minimum_bytes ||
                    count > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(T))
                 { return fail(recursive_type_binary_error::impossible_count); }
+                if(!admit<T>(static_cast<::std::size_t>(count))) { return false; }
                 values.reserve(static_cast<::std::size_t>(count));
                 for(::std::uint_least32_t index{}; index != count; ++index)
                 {
@@ -243,6 +273,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     if(!byte(ignored)) { return false; }
                     return list(result.types, 2uz, [&](auto& type) constexpr noexcept { return subtype(type); });
                 }
+                if(!admit<types::sub_type>(1uz)) { return false; }
                 types::sub_type item{};
                 if(!subtype(item)) { return false; }
                 result.types.push_back(::std::move(item));
@@ -253,12 +284,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     // Syntax decoder only: reference context, declared-supertype validity and feature policy belong to type validation.
     [[nodiscard]] inline constexpr recursive_type_binary_result scan_core3_type_section(
         ::std::byte const*& cursor, ::std::byte const* end,
-        ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section& output) noexcept
+        ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section& output,
+        ::std::size_t maximum_types = 262144uz,
+        ::std::size_t maximum_metadata_bytes = 512uz << 20u) noexcept
     {
         namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
         // [cursor ... end) is the caller-proven section allocation; equal endpoints may both be null.
         // [safe         ] borrow the range without dereferencing either endpoint.
         recursive_binary_details::reader input{{cursor, cursor == end ? 0uz : static_cast<::std::size_t>(end - cursor)}};
+        input.maximum_types = maximum_types;
+        input.maximum_metadata_bytes = maximum_metadata_bytes;
         types::recursive_type_section temporary{};
         if(!input.list(temporary.groups, 2uz, [&](types::recursive_group& group) constexpr noexcept
         {

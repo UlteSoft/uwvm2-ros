@@ -3,6 +3,8 @@
  * Private disabled persistent numeric descriptor foundation.
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <atomic>
@@ -89,7 +91,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         ::std::atomic_flag publish_lock_ = ATOMIC_FLAG_INIT;
         // pending_node_ contains no descriptor pin until it is released into
         // the global registry. registered_node_ is a lock-protected native borrow.
-        ::std::unique_ptr<registry_node> pending_node_{};
+        ::uwvm2::utils::container::std_unique_ptr<registry_node> pending_node_{};
         registry_node* registered_node_{};
         // Store-owned segment chain, not a per-object list. The registry pins
         // descriptors, while every descriptor holds only a weak store owner.
@@ -124,21 +126,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(!compact_numeric_payload::has_raw_four_byte_layout)
             { return compact_numeric_status::unsupported_layout; }
 #if defined(__cpp_exceptions)
-            auto* raw{new(::std::nothrow) compact_numeric_descriptor{
-                canonical, type_index, canonical_type_id, kind, capacity}};
+            auto* raw{::uwvm2::utils::allocator::fast_io_strict::try_object<compact_numeric_descriptor>([&](compact_numeric_descriptor* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) compact_numeric_descriptor{
+                canonical, type_index, canonical_type_id, kind, capacity}; })};
             if(raw == nullptr) { return compact_numeric_status::out_of_memory; }
             ::std::shared_ptr<compact_numeric_descriptor> fresh{};
             try
             {
                 // If control-block allocation throws, this exact constructor
                 // deletes raw; do not retain another unique_ptr and double-delete.
-                fresh = ::std::shared_ptr<compact_numeric_descriptor>{raw};
+                fresh = ::uwvm2::utils::container::adopt_shared(raw);
             }
             catch(...) { return compact_numeric_status::out_of_memory; }
             auto const storage{fresh->payload_.replace(capacity)};
             if(storage != compact_numeric_status::ok) { return storage; }
             // [one owned empty registration node] allocate before reserving IDs.
-            fresh->pending_node_.reset(new(::std::nothrow) registry_node{});
+            fresh->pending_node_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<registry_node>([&](registry_node* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) registry_node{}; }));
             if(!fresh->pending_node_) { return compact_numeric_status::out_of_memory; }
             fresh->canonical_self_ = fresh;
             // [complete unpublished descriptor] only success replaces result.
@@ -342,7 +344,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             auto keep_alive{canonical_self_.lock()};
             if(!keep_alive || keep_alive.get() != this) { return compact_numeric_status::invalid_store; }
             publication_guard publication{*this};
-            ::std::unique_ptr<registry_node> retired{};
+            ::uwvm2::utils::container::std_unique_ptr<registry_node> retired{};
             {
                 registry_guard guard{};
                 auto current_phase{phase_.load(::std::memory_order_acquire)};

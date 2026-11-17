@@ -2,6 +2,9 @@
 // Merely including this file emits no ordinary guest IR, memory guard or TLS probe.
 // This is a host-operation gate, NEVER a source/world-stop/registry/restore credential.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 extern "C++"
 {
@@ -13,6 +16,7 @@ extern "C++"
     {
         friend class ::uwvm2::runtime::lib::runtime_crash_dump_collector;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_coherent_manager;
+        friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_retirement_bridge;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_guest_worker_bridge;
         using gate_type = ::uwvm2::utils::thread::checkpoint_host_admission;
@@ -20,16 +24,17 @@ extern "C++"
         {
             friend class runtime_checkpoint_host_bridge;
             friend class ::uwvm2::runtime::lib::runtime_checkpoint_coherent_manager;
+        friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
             friend class ::uwvm2::runtime::lib::runtime_checkpoint_retirement_bridge;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_guest_worker_bridge;
         private:
             ::uwvm2::runtime::checkpoint::compilation_profile::owner const profile_;
             ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> const control_;
             ::std::uint_least64_t const epoch_;
-            ::std::unique_ptr<gate_type> const gate_;
+            ::uwvm2::utils::container::std_unique_ptr<gate_type> const gate_;
             retained_state(::uwvm2::runtime::checkpoint::compilation_profile::owner profile,
                 ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> control,
-                ::std::uint_least64_t epoch, ::std::unique_ptr<gate_type> gate) noexcept
+                ::std::uint_least64_t epoch, ::uwvm2::utils::container::std_unique_ptr<gate_type> gate) noexcept
                 : profile_{::std::move(profile)}, control_{::std::move(control)}, epoch_{epoch}, gate_{::std::move(gate)} {}
         public:
             // shared_ptr owns destruction; only the actual runtime bridge may construct.
@@ -88,6 +93,21 @@ extern "C++"
         // actual participant. Preparing code without a guest retains setup_ to exit.
         static void actual_participant_admitted(entry_scope&) noexcept;
     private:
+        // Private construction of candidate DATA. Its future tuple is unusable
+        // until the coherent world publisher installs it under closed admission.
+        [[nodiscard]] static owner prepare_world_state(
+            ::uwvm2::runtime::checkpoint::compilation_profile::owner profile,
+            ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> control,
+            ::std::uint_least64_t epoch)
+        {
+            auto gate{::uwvm2::utils::container::std_unique_ptr<gate_type>{
+                ::uwvm2::utils::allocator::fast_io_strict::object<gate_type>([](gate_type* storage) {
+                    return ::new(static_cast<void*>(storage)) gate_type{};
+                })}};
+            return owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<retained_state>([&](retained_state* storage) {
+                return ::new(static_cast<void*>(storage)) retained_state{::std::move(profile),::std::move(control),epoch,::std::move(gate)};
+            }))};
+        }
         // Factory owns the genuine startup lease; derived installed state only.
         [[nodiscard]] static status begin_registered_worker_startup(owner const&, gate_type::host_operation&) noexcept;
         inline static constinit thread_local entry_scope* actual_entry_{};

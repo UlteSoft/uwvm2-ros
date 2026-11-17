@@ -2,6 +2,7 @@
 // Sole named-module owner; import issues no authority or native effects.
 module;
 #include <cstdint>
+#include <uwvm2/runtime/lib/uwvm_runtime_threaded_spawn_diagnostic.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
 

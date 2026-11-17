@@ -4,6 +4,10 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # include <atomic>
@@ -69,8 +73,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
         ::std::uint_least64_t initializer_serial_{};
         ::std::atomic_bool cohort_ready_{};
         ::std::mutex prepare_mutex_;
-        ::std::unique_ptr<::std::shared_ptr<store_type>[]> stores_;
-        ::std::unique_ptr<module_type const*[]> modules_;
+        ::uwvm2::utils::allocator::resource::owned_array<::std::shared_ptr<store_type>> stores_;
+        ::uwvm2::utils::allocator::resource::owned_array<module_type const*> modules_;
         ::std::size_t store_count_{};
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
         ::std::optional<managed_exception_cohort> exception_cohort_;
@@ -82,9 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
         static constexpr ::std::size_t allocation_interval{4096uz};
         struct native_pressure_counter
         { managed_collection_state* owner; ::std::uint_least64_t serial; ::std::size_t allocations;
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
           ::std::size_t large_array_charge;
-#endif
           // Statistics flushing and the collection interval are independent.
           // Keep scheduling progress across short owned guest entries; this
           // prefix was already added to allocations_ and must not be added twice.
@@ -104,7 +106,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             if(forbidden_initializer_serial_.load(::std::memory_order_acquire) == serial)
             { disable(managed_gc_rejection::native_roots_unknown); return true; }
 #ifdef UWVM_CPP_EXCEPTIONS
-            try { pause_ = ::std::make_shared<::uwvm2::utils::thread::collection_pause_domain>(1uz); }
+            try { pause_ = ::uwvm2::utils::container::make_shared<::uwvm2::utils::thread::collection_pause_domain>(1uz); }
             catch(...) { disable(managed_gc_rejection::out_of_memory); return true; }
 #else
             disable(managed_gc_rejection::unsupported_mode); return true;
@@ -178,8 +180,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             if(count == 0uz || count > max_count / sizeof(::std::shared_ptr<store_type>) ||
                count > max_count / sizeof(module_type const*))
             { disable(managed_gc_rejection::incomplete_cohort); return false; }
-            ::std::unique_ptr<::std::shared_ptr<store_type>[]> stores{new(::std::nothrow) ::std::shared_ptr<store_type>[count]};
-            ::std::unique_ptr<module_type const*[]> modules{new(::std::nothrow) module_type const*[count]};
+            ::uwvm2::utils::allocator::resource::owned_array<::std::shared_ptr<store_type>> stores{::uwvm2::utils::allocator::resource::try_array<::std::shared_ptr<store_type>>(count)};
+            ::uwvm2::utils::allocator::resource::owned_array<module_type const*> modules{::uwvm2::utils::allocator::resource::try_array<module_type const*>(count)};
             if(!stores || !modules) { disable(managed_gc_rejection::out_of_memory); return false; }
             for(::std::size_t index{}; index != count; ++index)
             {
@@ -312,7 +314,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             return {usable ? allocation_interval - 1uz - pressure_.allocations : 0uz, true, usable};
         }
 #endif
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
         void allocation_poll_large_array(::std::uintptr_t module_address, ::std::size_t length
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             , managed_exception_cohort const* actual_exception_entry = nullptr,
@@ -324,9 +325,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             if(pressure_.owner != this || pressure_.serial != initializer_serial_)
             { flush_current_thread_pressure(); pressure_ = native_pressure_counter{
                 this, initializer_serial_, 0uz,
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 {},
-#endif
                 {}
             }; }
             // Conservative carrier charge: 1 MiB / sizeof(gc_object_value).
@@ -343,41 +342,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
 #endif
                 , force);
         }
-#endif
         void allocation_poll(::std::uintptr_t module_address
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             , managed_exception_cohort const* actual_exception_entry = nullptr,
               bool* native_retirement_queued = nullptr
 #endif
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
             , bool force_large_array = false
-#endif
             ) noexcept
         {
             if(!roots_requested() || disabled()) { return; }
             if(pressure_.owner != this || pressure_.serial != initializer_serial_)
             { flush_current_thread_pressure(); pressure_ = native_pressure_counter{
                 this, initializer_serial_, 0uz,
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 {},
-#endif
                 {}
             }; }
             if(++pressure_.allocations != allocation_interval
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 && !force_large_array
-#endif
                 ) { return; }
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
             pressure_.large_array_charge = 0uz;
-#endif
             allocations_.fetch_add(pressure_.allocations - pressure_.accounted_in_interval,
                                    ::std::memory_order_relaxed);
             pressure_.allocations = 0uz;
             pressure_.accounted_in_interval = 0uz;
             attempts_.fetch_add(1u, ::std::memory_order_relaxed);
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
-            ::std::unique_ptr<managed_exception_retirement> retirement;
+            ::uwvm2::utils::container::std_unique_ptr<managed_exception_retirement> retirement;
             if(exception_cohort_)
             {
                 // Authority comes from the real outer scope's live generation,
@@ -387,7 +377,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
                    !exception_cohort_->same_authority(*actual_exception_entry) ||
                    !::uwvm2::utils::thread::deferred_native_owner_queue::active_on_current_thread())
                 { note_native_escape(); rejected_policy_.fetch_add(1u,::std::memory_order_relaxed); return; }
-                retirement.reset(new(::std::nothrow) managed_exception_retirement{*exception_cohort_});
+                retirement.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<managed_exception_retirement>([&](managed_exception_retirement* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) managed_exception_retirement{*exception_cohort_}; }));
                 if(!retirement)
                 { disable(managed_gc_rejection::out_of_memory); rejected_policy_.fetch_add(1u,::std::memory_order_relaxed); return; }
             }

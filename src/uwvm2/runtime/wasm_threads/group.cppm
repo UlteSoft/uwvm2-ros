@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Canonical named-module owner. No policy, grant, worker or Source is created by import.
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -22,7 +23,7 @@ module;
 #include <new>
 #include <optional>
 #include <span>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -44,6 +45,7 @@ import uwvm2.utils.thread;
 export import uwvm2.uwvm.runtime.initializer.limits;
 import uwvm2.uwvm.runtime.storage;
 import :wait;
+import :execution_journal;
 #ifndef UWVM_MODULE
 #define UWVM_MODULE
 #endif

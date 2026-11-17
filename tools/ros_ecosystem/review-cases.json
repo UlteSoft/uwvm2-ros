@@ -1,0 +1,569 @@
+{
+  "schema": "ros-source-review-evidence",
+  "scope": "Limited source-path semantic review only; neither whole-package audit nor portability certification.",
+  "review_date": "2026-11-17",
+  "source_ref_warning": "Refs can be mutable. Archive/file SHA256 identify reviewed bytes; no resolved commit is asserted.",
+  "cases": [
+    {
+      "id": "sensor-datagram-ingress",
+      "source_id": "4313d243d097ba8faa86a1f6",
+      "evidence": [
+        {
+          "path": "velodyne-ros2/velodyne_driver/src/lib/input.cpp",
+          "line_start": 104,
+          "line_end": 245,
+          "sha256": "a7f7b4f26a5c13ed4e5d6a99802da04ea43890e1d23301d68139595f6e2731e0"
+        }
+      ],
+      "reviewed_scope": "InputSocket construction and receive: UDP bind, poll/recvfrom, packet length and optional source-IP validation.",
+      "design_requirements": [
+        "Receive-only binding with approved peer policy, packet codec, frame and queue bounds.",
+        "Host-owned transport is not a descriptor or send capability."
+      ],
+      "required_acceptance_checks": [
+        "Reject foreign senders and malformed packets before delivery.",
+        "Report drops, discontinuities and timestamps; revocation wakes receive."
+      ],
+      "source_url": "https://github.com/ros-drivers/velodyne.git",
+      "source_ref": "ros2",
+      "archive_sha256": "c88d91c330083322d7b7ca4f861e0362cfdba3a03c409a9382d1d8f3e2d9d4fd",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "can-command-envelope",
+      "source_id": "cb740e876c0464201498a384",
+      "evidence": [
+        {
+          "path": "ros2_socketcan-main/ros2_socketcan/src/socket_can_common.cpp",
+          "line_start": 40,
+          "line_end": 150,
+          "sha256": "75d111f8dd1f9c0392c95b1fa2946f3252bb56f2ecf84504c779b6c18d6897ba"
+        },
+        {
+          "path": "ros2_socketcan-main/ros2_socketcan/src/socket_can_sender.cpp",
+          "line_start": 60,
+          "line_end": 176,
+          "sha256": "c998c3318ed4feae2c069b751bdff42194f7322d60f080077ce8b7268fd80c5b"
+        }
+      ],
+      "reviewed_scope": "CAN binding and sender: CAN/CAN-FD, identifier, length validation and timeout.",
+      "design_requirements": [
+        "Bind approved bus, identifier mask, frame kind and payload schema; direction alone cannot constrain actuator effects.",
+        "Keep ioctl, socket options and interface provisioning inside the trusted provider."
+      ],
+      "required_acceptance_checks": [
+        "Reject forbidden IDs, formats, DLC and command values before transmission.",
+        "Separate receive, regular command and emergency stop grants."
+      ],
+      "source_url": "https://github.com/autowarefoundation/ros2_socketcan.git",
+      "source_ref": "main",
+      "archive_sha256": "77a35d06d66c61df9658ccca74ed45a21ef3c63fd376143a57473cb828695f60",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "recording-total-space",
+      "source_id": "b8f9a9ab85a75018dba3c445",
+      "evidence": [
+        {
+          "path": "rosbag2-humble/rosbag2_cpp/src/rosbag2_cpp/writers/sequential_writer.cpp",
+          "line_start": 90,
+          "line_end": 140,
+          "sha256": "4dbd9c9f3f06fa8d3e5846b57cab89b093de74894e67c9244294b90c90033ebc"
+        },
+        {
+          "path": "rosbag2-humble/rosbag2_cpp/src/rosbag2_cpp/writers/sequential_writer.cpp",
+          "line_start": 332,
+          "line_end": 433,
+          "sha256": "4dbd9c9f3f06fa8d3e5846b57cab89b093de74894e67c9244294b90c90033ebc"
+        },
+        {
+          "path": "rosbag2-humble/rosbag2_storage_default_plugins/src/rosbag2_storage_default_plugins/sqlite/sqlite_storage.cpp",
+          "line_start": 65,
+          "line_end": 180,
+          "sha256": "98422bdec452d9aa26e516ab4965cec976b782e621dee364dbca2e9744cf2b97"
+        }
+      ],
+      "reviewed_scope": "Writer opening, append, splitting and SQLite configuration. Bag-size thresholds rotate output and do not cap cumulative storage.",
+      "design_requirements": [
+        "Bound total live/reserved storage across rotation, metadata, journal/WAL, staging, cache and compression output.",
+        "Reserve worst-case write envelope before admission; approved backend profiles replace guest PRAGMA strings."
+      ],
+      "required_acceptance_checks": [
+        "Rotation, metadata and concurrent writers cannot exceed total reservation.",
+        "Exhaustion exposes chosen stop/reject/wait/loss behavior without false success.",
+        "Account for failed append cleanup and commit."
+      ],
+      "source_url": "https://github.com/ros2/rosbag2.git",
+      "source_ref": "humble",
+      "archive_sha256": "4b719163ed99d03969b29137dd0300a518ef2efa554ed6b9693691ec42c765ae",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "map-generation-bundle",
+      "source_id": "72ba564fa692bd135ca2bc3c",
+      "evidence": [
+        {
+          "path": "navigation2-humble/nav2_map_server/src/map_io.cpp",
+          "line_start": 145,
+          "line_end": 170,
+          "sha256": "7f4e12d8c60891c64689bd0dab443a93800cdd280e9447e538d4458b1f68a57e"
+        },
+        {
+          "path": "navigation2-humble/nav2_map_server/src/map_io.cpp",
+          "line_start": 465,
+          "line_end": 587,
+          "sha256": "7f4e12d8c60891c64689bd0dab443a93800cdd280e9447e538d4458b1f68a57e"
+        }
+      ],
+      "reviewed_scope": "YAML image references and image/YAML output through separate native writes.",
+      "design_requirements": [
+        "Immutable dependency bundle with approved codecs and bounded decoding.",
+        "Reserve and commit all map members as one generation; relative paths confer no recursive directory access."
+      ],
+      "required_acceptance_checks": [
+        "Reject references, symlinks and traversal outside the bundle.",
+        "Second-write failure never publishes mixed generations.",
+        "Bound decoded dimensions and encoded buffers."
+      ],
+      "source_url": "https://github.com/ros-planning/navigation2.git",
+      "source_ref": "humble",
+      "archive_sha256": "660569741816d6af18b09b0211c6089ebd8a301c45f2a775ac3446df24d7026f",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "model-provider-data-egress",
+      "source_id": "2bd5faec0eee60f066c735ec",
+      "evidence": [
+        {
+          "path": "robosoft_openai-humble/src/openai_server.cpp",
+          "line_start": 1,
+          "line_end": 182,
+          "sha256": "74028d73da03bdd28f1469618dcfb886fb900ad3c4d319136b786e9289094e2c"
+        }
+      ],
+      "reviewed_scope": "Provider configuration, prompt/image serialization, curl response accumulation, logging and conversion of text to boolean.",
+      "design_requirements": [
+        "Host owns endpoint/credentials; source-data egress and provider authorization are separate.",
+        "Bound encoded images, request/response bytes, tokens, concurrency and deadlines; diagnostics are private.",
+        "Parsed model output remains data/proposal with independent control authorization."
+      ],
+      "required_acceptance_checks": [
+        "Model output cannot grant authority, execute shell or select arbitrary paths.",
+        "Oversized responses stay within reservation; revoked/cancelled jobs cannot publish stale output.",
+        "Default inspection excludes credentials, prompts and images."
+      ],
+      "source_url": "https://github.com/robosoft-ai/robosoft_openai.git",
+      "source_ref": "humble",
+      "archive_sha256": "de82d1a295bf5a832c7a656825d7b386a4c0b8f33428f5a2b26c983c1249f4c3",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "bridge-bilateral-authorization",
+      "source_id": "83a87bf8d08893e0fbdfc218",
+      "evidence": [
+        {
+          "path": "rosbridge_suite-ros2/rosbridge_library/src/rosbridge_library/capabilities/advertise.py",
+          "line_start": 126,
+          "line_end": 173,
+          "sha256": "ac4c1de8e7532e47a3301a8beb7913320739fe7e631e4f4a6a741caf678e06ee"
+        },
+        {
+          "path": "rosbridge_suite-ros2/rosbridge_library/src/rosbridge_library/capabilities/call_service.py",
+          "line_start": 75,
+          "line_end": 133,
+          "sha256": "b22b9fdb02fb4aa260e74045aa2850e6918a098d41bd2a04995ed1641ca3ce5a"
+        },
+        {
+          "path": "rosbridge_suite-ros2/rosbridge_library/src/rosbridge_library/capabilities/subscribe.py",
+          "line_start": 272,
+          "line_end": 325,
+          "sha256": "aea7c592be04132da2124cac05a84d7ea4a06ad841ad00a926f850a03377adc3"
+        }
+      ],
+      "reviewed_scope": "Client-selected topic/type/QoS, service calls, optional topic glob checks and throttle/queue inputs.",
+      "design_requirements": [
+        "Authorize resolved source/destination names, types and directions independently.",
+        "Connections confer no graph-wide access; correlation, cancellation and deadlines are explicit."
+      ],
+      "required_acceptance_checks": [
+        "Remapping cannot bypass either endpoint grant.",
+        "Bound echo, replay and expired correlation.",
+        "Sampling explicitly weakens delivery guarantees."
+      ],
+      "source_url": "https://github.com/RobotWebTools/rosbridge_suite.git",
+      "source_ref": "ros2",
+      "archive_sha256": "65661badf752e40797987930196967e6f6f4d2486accd6acf2b74dfee9a02799",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "camera-media-egress",
+      "source_id": "cf29ef50dcfa893eda63a0fd",
+      "evidence": [
+        {
+          "path": "web_video_server-ros2/src/web_video_server.cpp",
+          "line_start": 70,
+          "line_end": 146,
+          "sha256": "a035a3f588c33d4b02cabaf03a8494a6dc7e1acdaa5373919db5b9d16a54ed67"
+        },
+        {
+          "path": "web_video_server-ros2/src/web_video_server.cpp",
+          "line_start": 210,
+          "line_end": 325,
+          "sha256": "a035a3f588c33d4b02cabaf03a8494a6dc7e1acdaa5373919db5b9d16a54ed67"
+        }
+      ],
+      "reviewed_scope": "HTTP listener/routes, streamer selection, topic queries and shutdown selection.",
+      "design_requirements": [
+        "Separate listener provisioning, camera reads and per-viewer egress.",
+        "Bind topic/codec/resolution/budget and stop-session ownership."
+      ],
+      "required_acceptance_checks": [
+        "Image read cannot create a public listener or authorize another viewer.",
+        "Reject another session's stop ID.",
+        "Bound decoded/encoded frames, viewers and backpressure."
+      ],
+      "source_url": "https://github.com/RobotWebTools/web_video_server.git",
+      "source_ref": "ros2",
+      "archive_sha256": "e5bf9800daa400a561cf0336c5d846ff67bdf2ef4125db3844d0357ff9710c99",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "ros-transport-negotiation",
+      "source_id": "aee5c2091c7fba64492cb933",
+      "evidence": [
+        {
+          "path": "ros_comm-groovy-devel/clients/roscpp/src/libros/transport/transport_tcp.cpp",
+          "line_start": 196,
+          "line_end": 379,
+          "sha256": "e6b4035594a989e542507cc35b5298710120064c2e547ee8ae2dde15e6961639"
+        },
+        {
+          "path": "ros_comm-groovy-devel/clients/roscpp/src/libros/transport/transport_tcp.cpp",
+          "line_start": 593,
+          "line_end": 619,
+          "sha256": "e6b4035594a989e542507cc35b5298710120064c2e547ee8ae2dde15e6961639"
+        }
+      ],
+      "reviewed_scope": "TCPROS connect/listen/accept: purpose-specific transport still uses negotiated host/port values.",
+      "design_requirements": [
+        "Trusted ROS provider negotiates under deployment-domain and peer policy.",
+        "Guest sees topic/service/action semantics without a general socket fallback."
+      ],
+      "required_acceptance_checks": [
+        "A topic grant cannot contact unrelated destinations.",
+        "Check peer policy and revoked route generations during negotiation."
+      ],
+      "source_url": "https://github.com/ros/ros_comm.git",
+      "source_ref": "groovy-devel",
+      "archive_sha256": "41589f08f40e70fad2ad577a73c76af498048209f6b5d7827cded29b31905b81",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "vehicle-link-profile",
+      "source_id": "7227fddbf0438090f535e744",
+      "evidence": [
+        {
+          "path": "mavros-ros2/libmavconn/src/interface.cpp",
+          "line_start": 294,
+          "line_end": 562,
+          "sha256": "6f1de0e6a70f0c38991507ac83b6152b37501601286168ad06a621784b030a58"
+        }
+      ],
+      "reviewed_scope": "URL selection/parsing: serial, UDP bind/remote/broadcast, TCP client/server and protocol IDs. Underlying transport implementations excluded.",
+      "design_requirements": [
+        "Approved vehicle-link profiles bind host-owned device/peer and protocol identity.",
+        "Message/command schema authorization is independent of transport admission."
+      ],
+      "required_acceptance_checks": [
+        "Guest cannot replace a serial profile with a listener/broadcast URL.",
+        "Check system/component ID, message ID and command envelope before forwarding."
+      ],
+      "source_url": "https://github.com/mavlink/mavros.git",
+      "source_ref": "ros2",
+      "archive_sha256": "71d72009e7d383634a9c931a9649926f8427e30fd146c8806bd11afea7b4eb07",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "approved-image-codecs",
+      "source_id": "1905f25f3035a23cd1385567",
+      "evidence": [
+        {
+          "path": "image_common-humble/image_transport/src/subscriber.cpp",
+          "line_start": 90,
+          "line_end": 138,
+          "sha256": "f603ddfd191d200556fdfc05910a45a23ca890778813c020e05935c71c8f6e7d"
+        },
+        {
+          "path": "image_common-humble/image_transport/src/publisher.cpp",
+          "line_start": 100,
+          "line_end": 156,
+          "sha256": "524c4573396e3b93f9bf92248ce54d12ef11dee640b6717105a265aa7f318abd"
+        }
+      ],
+      "reviewed_scope": "Plugin selection/loading and publisher plugin enumeration. Individual codec implementations excluded.",
+      "design_requirements": [
+        "Immutable approved codec/plugin IDs with capability/dependency closure.",
+        "No guest native-library path or plugin discovery authority."
+      ],
+      "required_acceptance_checks": [
+        "Unknown IDs or undeclared effects fail closed.",
+        "Bound decoded dimensions and expansion before allocation."
+      ],
+      "source_url": "https://github.com/ros-perception/image_common.git",
+      "source_ref": "humble",
+      "archive_sha256": "0ac54e1af96e02f0fc61246ba32d2ce78b01509b68a052956f17956d9bbf1987",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "stable-control-cycle",
+      "source_id": "80af25935629bcafd1d579be",
+      "evidence": [
+        {
+          "path": "ros2_control-humble/controller_manager/src/ros2_control_node.cpp",
+          "line_start": 30,
+          "line_end": 148,
+          "sha256": "ca6192e765b4ad433e9cd9053ca8209982f6367e301afd7f99620baa3c4eed92"
+        }
+      ],
+      "reviewed_scope": "Memory lock/affinity/priority and measured-period read/update/write with simulation/wall-clock scheduling.",
+      "design_requirements": [
+        "Admit continuous cycles with reserved capacity and explicit watchdog/safe stop.",
+        "Deployment owns scheduling; attenuation explicitly changes timing/completeness guarantees."
+      ],
+      "required_acceptance_checks": [
+        "Rate limits cannot silently skip an admitted phase.",
+        "Revocation/deadline failure invokes safe stop.",
+        "Distinguish simulation-time jumps and wall-clock timeout."
+      ],
+      "source_url": "https://github.com/ros-controls/ros2_control.git",
+      "source_ref": "humble",
+      "archive_sha256": "7ac8e5530888b912c5de0f639797666a02ac87405fa40f8feaa09afcaa6f5f45",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "deployment-graph",
+      "source_id": "72ba564fa692bd135ca2bc3c",
+      "evidence": [
+        {
+          "path": "navigation2-humble/nav2_bringup/launch/navigation_launch.py",
+          "line_start": 1,
+          "line_end": 160,
+          "sha256": "11438a4bc65def4a3d5805919e82bc52ff6008ee6d1fd7c5dd90a29c2f50f56f"
+        }
+      ],
+      "reviewed_scope": "Package resources, parameter rewrite, environment input, component/executable selection, remapping and respawn setup.",
+      "design_requirements": [
+        "Trusted immutable component/configuration manifest and explicit lifecycle replace ambient process authority.",
+        "Resolve remapping before authorization; no guest shell or inherited environment grant."
+      ],
+      "required_acceptance_checks": [
+        "Respawn cannot restore a revoked generation or change an approved binary.",
+        "Configuration rewriting is a bounded private transaction.",
+        "Substitution/remapping cannot escape deployment scope."
+      ],
+      "source_url": "https://github.com/ros-planning/navigation2.git",
+      "source_ref": "humble",
+      "archive_sha256": "660569741816d6af18b09b0211c6089ebd8a301c45f2a775ac3446df24d7026f",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "vendor-ur-effectful-configuration",
+      "source_id": "7dca9df486e471df7a8c6dfb",
+      "reviewed_scope": "Original plugin declaration and hardware configuration: peer and reverse/script/trajectory endpoints, sealed script and recipe dependencies, headless program transmission, calibration/model checks and an asynchronous worker. Configuration already constructs the connected driver before on_activate.",
+      "design_requirements": [
+        "Load the unchanged vendor plugin only inside its matching external ROS/pluginlib host and sealed dependency closure; platform metadata never embeds its driver.",
+        "Treat configure/connect as potentially effectful: deny the actuation-capable network route until an explicit current control epoch and independent stop are admitted. A no-op on_activate cannot define the security boundary.",
+        "Pin each directed peer/listener and script/recipe artifact, including reverse/trajectory/script-command roles, and reserve background thread/CPU/NUMA resources.",
+        "Configured model/firmware/calibration mismatch policy must be explicit; a logged warning is not proof that activation is safe."
+      ],
+      "required_acceptance_checks": [
+        "With zero authority, construct neither a connected original driver nor a script-enabled network route.",
+        "Exercise original binary/pluginlib initialization, background thread failure, stale reverse connections and process-tree termination in the target simulator and hardware.",
+        "Verify that headless/script transmission requires separate semantics from telemetry; late old-epoch traffic cannot reactivate motion."
+      ],
+      "evidence": [
+        {
+          "path": "Universal_Robots_ROS2_Driver-humble/ur_robot_driver/hardware_interface_plugin.xml",
+          "line_start": 1,
+          "line_end": 9,
+          "sha256": "341b6f6e4f8389c3c2d137bdd6fb4f93915676077f85c70b126c7be3a659c4f5"
+        },
+        {
+          "path": "Universal_Robots_ROS2_Driver-humble/ur_robot_driver/src/hardware_interface.cpp",
+          "line_start": 607,
+          "line_end": 665,
+          "sha256": "1f651038a4d270f8c24aa44cfafb85388ec5a5b63a8aa423102e7679e935dff9"
+        },
+        {
+          "path": "Universal_Robots_ROS2_Driver-humble/ur_robot_driver/src/hardware_interface.cpp",
+          "line_start": 751,
+          "line_end": 878,
+          "sha256": "1f651038a4d270f8c24aa44cfafb85388ec5a5b63a8aa423102e7679e935dff9"
+        }
+      ],
+      "review_date": "2026-11-17",
+      "source_url": "https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git",
+      "source_ref": "humble",
+      "archive_sha256": "5a4815cc073e9bb2f97bb1bfbadc3ec5fd4222abf17726a75c0e24b54beb2004",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "vendor-franka-recovery-is-effectful",
+      "source_id": "b295c418c412d1a3ad9a57d0",
+      "reviewed_scope": "Original plugin ABI, connection/model creation, real-time configuration fallback, active-control initialization with automatic recovery, stop and executor teardown. Does not review libfranka transport implementation or physical braking.",
+      "design_requirements": [
+        "Require a matching external host for the original native plugin; Wasm receives bounded typed state/command messages and no Model or hardware pointers.",
+        "A control startup may internally clear a fault and retry. Separate recovery/rearm authority from start/observe, with enforcement at an independently trusted command gate if the unchanged binary cannot suppress that behavior.",
+        "A stable real-time profile cannot silently accept the vendor fallback that ignores real-time enforcement; admit a qualified scheduling profile or refuse before activation.",
+        "Driver stop/reset/destructor and process exit are not independent stopped-state evidence; old command epochs remain fenced after automatic recovery."
+      ],
+      "required_acceptance_checks": [
+        "Inject ControlException and verify missing recovery authority prevents any fresh effect even when the original library retries internally.",
+        "Qualify normal and non-real-time kernels independently and reject missing stable reservations before control admission.",
+        "Verify isolated executor/service teardown, native crash/hang, and independent receiver stop feedback with actual vendor ABI and hardware."
+      ],
+      "evidence": [
+        {
+          "path": "franka_ros2-humble/franka_hardware/franka_hardware.xml",
+          "line_start": 1,
+          "line_end": 10,
+          "sha256": "b73162a98a987d1072d55323234f37e712a950850be2649264a6ec121d718f2a"
+        },
+        {
+          "path": "franka_ros2-humble/franka_hardware/src/robot.cpp",
+          "line_start": 34,
+          "line_end": 77,
+          "sha256": "502a3b30c9e72a9f7c55978530b2da2bfa264d6a054ffad97b9f5b29fd5bb4aa"
+        },
+        {
+          "path": "franka_ros2-humble/franka_hardware/src/robot.cpp",
+          "line_start": 288,
+          "line_end": 356,
+          "sha256": "502a3b30c9e72a9f7c55978530b2da2bfa264d6a054ffad97b9f5b29fd5bb4aa"
+        },
+        {
+          "path": "franka_ros2-humble/franka_hardware/src/franka_hardware_interface.cpp",
+          "line_start": 166,
+          "line_end": 202,
+          "sha256": "e092c8de00619422e354ab52119e2753a6e75caa36bdfee14b968e237f784d33"
+        }
+      ],
+      "review_date": "2026-11-17",
+      "source_url": "https://github.com/frankaemika/franka_ros2.git",
+      "source_ref": "humble",
+      "archive_sha256": "93572510b9d00b65a099b377cdb610e4dd3525b97bd847a43667582f6e227192",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "launch-process-recovery-boundary",
+      "source_id": "a0b7cfb20245f20cf0d66af3",
+      "reviewed_scope": "Launch subprocess creation, shell/environment selection, signal escalation and respawn loop. Respawn can repeat without a finite retry ceiling and does not establish fresh robot control authority.",
+      "design_requirements": [
+        "Exact immutable executable, configuration, dependencies and permitted environment; no guest-selected shell or native path.",
+        "Process restart and device activation require separate authorization and fresh incarnation/receiver epoch; launch respawn must never restore motion automatically.",
+        "Retain first failure and unknown effects across stop, close, retry and restart admission; launcher exit alone is not process-tree or hardware-stop proof."
+      ],
+      "required_acceptance_checks": [
+        "Deny restart before independent cleanup and rearm evidence; stale requests cannot resurrect old authority.",
+        "Inject launcher, namespace-identity, IPC and descendant failures before and after readiness.",
+        "Verify finite restart/log/process reservations and explicit behavior on exhaustion."
+      ],
+      "evidence": [
+        {
+          "path": "launch-jazzy/launch/launch/actions/execute_local.py",
+          "line_start": 82,
+          "line_end": 100,
+          "sha256": "9f06793bbdf400bdedda011f45125404321aa032d01b11e9a8e63e850f8793f5"
+        },
+        {
+          "path": "launch-jazzy/launch/launch/actions/execute_local.py",
+          "line_start": 152,
+          "line_end": 186,
+          "sha256": "9f06793bbdf400bdedda011f45125404321aa032d01b11e9a8e63e850f8793f5"
+        },
+        {
+          "path": "launch-jazzy/launch/launch/actions/execute_local.py",
+          "line_start": 451,
+          "line_end": 499,
+          "sha256": "9f06793bbdf400bdedda011f45125404321aa032d01b11e9a8e63e850f8793f5"
+        },
+        {
+          "path": "launch-jazzy/launch/launch/actions/execute_local.py",
+          "line_start": 544,
+          "line_end": 623,
+          "sha256": "9f06793bbdf400bdedda011f45125404321aa032d01b11e9a8e63e850f8793f5"
+        }
+      ],
+      "source_url": "https://github.com/ros2/launch.git",
+      "source_ref": "jazzy",
+      "archive_sha256": "34d9a3857c18303c61a1d28fa7e3495ba118b36aea541c5a3afd022a1c723e7c",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    },
+    {
+      "id": "pluginlib-immutable-external-host",
+      "source_id": "1b937adf0c080d995e6f46ea",
+      "reviewed_scope": "Managed/unmanaged instance creation loads libraries on demand; package-prefix and library-name variants determine candidate native paths. A closed ROSv2 message backend is not pluginlib ABI compatibility.",
+      "design_requirements": [
+        "Resolve ABI-specific plugin metadata and exact dependency closure before launch; seal each executable/library and forbid mutable fallback paths.",
+        "Load every native plugin, constructor and vendor dependency only inside the independently confined external host.",
+        "Update/rollback creates a new external incarnation; old C++ objects, symbols, handles and grants are never revived."
+      ],
+      "required_acceptance_checks": [
+        "Qualify actual pluginlib/vendor ABI hosts separately from the closed message fixture.",
+        "Reject changed package prefixes, dependency substitution, unavailable ABI and late native-code mappings outside the selected profile.",
+        "Exercise plugin constructors/destructors, unmanaged lifetimes, crash and teardown using real original vendor binaries."
+      ],
+      "evidence": [
+        {
+          "path": "pluginlib-jazzy/pluginlib/include/pluginlib/class_loader_imp.hpp",
+          "line_start": 147,
+          "line_end": 218,
+          "sha256": "27a469826d6afb385be1a88cda6ec292ffc8597b42837193e9c3fc0a1b1e201a"
+        },
+        {
+          "path": "pluginlib-jazzy/pluginlib/include/pluginlib/class_loader_imp.hpp",
+          "line_start": 333,
+          "line_end": 427,
+          "sha256": "27a469826d6afb385be1a88cda6ec292ffc8597b42837193e9c3fc0a1b1e201a"
+        }
+      ],
+      "source_url": "https://github.com/ros/pluginlib.git",
+      "source_ref": "jazzy",
+      "archive_sha256": "1de9ded54376fc2f294fa4c408b6447becc0084362b5ddaabba3387c69fdcaf3",
+      "status": "LIMITED_SOURCE_PATH_SEMANTIC_REVIEW",
+      "acceptance_status": "NOT_EXECUTED_FOR_UPSTREAM_PACKAGE",
+      "package_qualification": "NOT_ESTABLISHED"
+    }
+  ],
+  "rosdistro_revision": "7baf55e18e949de7cb02310865538416d48479d2"
+}

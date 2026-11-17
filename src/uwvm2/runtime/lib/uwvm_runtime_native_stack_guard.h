@@ -32,6 +32,26 @@
 
 namespace uwvm2::runtime::lib::native_stack
 {
+    // ASan may place address-taken locals (including scope itself) on its fake
+    // stack. That allocation is not a pthread stack and must never expand the
+    // native guard range. Query an actual frame only in sanitizer builds;
+    // ordinary entry retains its existing address and instruction path.
+    [[nodiscard]] inline ::std::uintptr_t probe_address(::std::uintptr_t ordinary) noexcept
+    {
+#if defined(__SANITIZE_ADDRESS__)
+        static_cast<void>(ordinary);
+        return reinterpret_cast<::std::uintptr_t>(__builtin_frame_address(0));
+#elif defined(__has_feature)
+# if __has_feature(address_sanitizer)
+        static_cast<void>(ordinary);
+        return reinterpret_cast<::std::uintptr_t>(__builtin_frame_address(0));
+# else
+        return ordinary;
+# endif
+#else
+        return ordinary;
+#endif
+    }
     // An exact guard-page hit may be a probe ahead of SP. A large C/C++ frame
     // can also skip the first guard page before touching memory; accept that
     // lower fault only once SP itself is below the known stack and the fault
@@ -393,7 +413,7 @@ namespace uwvm2::runtime::lib::native_stack
         {
             // A signal path must not fall back to libatomic's internal locks.
             if constexpr(!decltype(active_bounds)::is_always_lock_free) { return; }
-            auto const here{reinterpret_cast<::std::uintptr_t>(this)};
+            auto const here{probe_address(reinterpret_cast<::std::uintptr_t>(this))};
             auto const* active{active_bounds.load(::std::memory_order_acquire)};
             if(active != nullptr && here >= active->low && here < active->high)
             {

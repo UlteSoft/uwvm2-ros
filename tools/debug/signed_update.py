@@ -12,6 +12,8 @@ import hmac
 import json
 import os
 from pathlib import Path
+
+from private_unix_socket import bind_private, connect_private
 import secrets
 import socket
 import stat
@@ -115,7 +117,7 @@ def submit(directory, frame):
         if len(token) != 32: raise RuntimeError("invalid update capability size")
     finally: os.close(descriptor)
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as channel:
-        channel.settimeout(10); channel.connect(str(directory/SOCKET_NAME))
+        channel.settimeout(10); connect_private(channel, directory/SOCKET_NAME)
         channel.sendall(token)
         if receive(channel, 6) != b"ready\n": raise RuntimeError("update authorization refused")
         # Compilation is not bounded by an IDE timeout. There is exactly one
@@ -132,7 +134,6 @@ class Relay:
         self.path = self.directory/SOCKET_NAME; self.cap_path = self.directory/CAPABILITY_NAME
         self.listener = self.vm = self.child_endpoint = self.thread = self.guest = None
         self.bound = self.owned_cap = False; self.stopping = threading.Event(); self.error = None
-        if len(os.fsencode(self.path)) >= 108: raise RuntimeError("update socket exceeds sockaddr_un")
         try:
             self.capability = secrets.token_bytes(32)
             fd = os.open(self.cap_path, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW|os.O_CLOEXEC, 0o600)
@@ -141,7 +142,7 @@ class Relay:
             finally: os.close(fd)
             self.listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
-            self.listener.bind(str(self.path)); self.bound = True
+            bind_private(self.listener, self.path); self.bound = True
             os.chmod(self.path, 0o600); self.listener.listen(2); self.listener.settimeout(.25)
             self.vm, self.child_endpoint = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
             self.vm.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)

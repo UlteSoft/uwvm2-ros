@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include "strict_float_bits.h"
 #include <exception>
@@ -404,10 +405,11 @@ namespace uwvm2::runtime::compiler::shared::strict_float_jit
                 // Apply consistently to typed definitions, declarations, raw wrappers and
                 // indirect callers. Native runtime bridges already use an integer/byte ABI.
                 auto attribute{function.getFnAttribute("target-features")};
-                auto value{attribute.isStringAttribute() ? attribute.getValueAsString().str() : ::std::string{}};
+                auto const features{attribute.isStringAttribute() ? attribute.getValueAsString() : ::llvm::StringRef{}};
+                ::uwvm2::utils::container::std_string value{features.data(),features.size()};
                 if(!value.empty()) { value += ','; }
                 value += "-x87";
-                function.addFnAttr("target-features", value);
+                function.addFnAttr("target-features", ::llvm::StringRef{value.data(),value.size()});
             }
             for(auto& block: function)
             {

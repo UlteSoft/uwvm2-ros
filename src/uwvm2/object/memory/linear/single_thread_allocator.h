@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -78,6 +79,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
         // Optional owner-bound shadow; all pre-existing hot-field offsets stay unchanged.
         ::uwvm2::extension::memtag::shadow_storage memtag_shadow{};
+        ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memory> allocation_charge{};
 
         // constexpr data
         inline static constexpr bool can_mmap{false};
@@ -127,6 +129,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                 this->diagnostic_owner_memory_index = memory_index;
                 // UB will never appear; it has been preemptively checked.
                 this->memory_length = init_page_count << this->custom_page_size_log2;
+                if(this->memory_length > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes ||
+                    !this->allocation_charge.resize(this->memory_length))
+                { ::uwvm2::utils::allocator::resource::initializer_memory_limit(); }
 
                 // Ensure alignment. Typically, the maximum allowed alignment size for WASM memory operation instructions is 16 (v128). Here, align to the size
                 // of a cache line, which is usually 64.
@@ -182,6 +187,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
             // After realloc, write new_memory_length
             auto const new_memory_length{curr_memory_length + memory_grow_size};
+            ::uwvm2::utils::allocator::resource::resize_transaction<::uwvm2::utils::allocator::resource::pool::memory>
+                allocation_change{this->allocation_charge, new_memory_length};
+            if(!allocation_change) { return false; }
+            // A relocating allocator may hold old and replacement buffers at
+            // once. Reserve that peak before realloc/copy, even if a particular
+            // allocator happens to grow in place; release after old storage dies.
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memory> relocation_peak;
+            if(!relocation_peak.resize(this->memory_length)) { return false; }
 
             if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
@@ -222,6 +235,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
 
             this->memory_begin = ::std::assume_aligned<alignment>(temp_memory_begin);
+            allocation_change.commit();
             this->memory_length = new_memory_length;
 
             return true;
@@ -285,6 +299,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
             // After realloc, write new_memory_length
             auto const new_memory_length{curr_memory_length + memory_grow_size};
+            ::uwvm2::utils::allocator::resource::resize_transaction<::uwvm2::utils::allocator::resource::pool::memory>
+                allocation_change{this->allocation_charge, new_memory_length};
+            if(!allocation_change) { return false; }
+            // A relocating allocator may hold old and replacement buffers at
+            // once. Reserve that peak before realloc/copy, even if a particular
+            // allocator happens to grow in place; release after old storage dies.
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memory> relocation_peak;
+            if(!relocation_peak.resize(this->memory_length)) { return false; }
 
             if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
@@ -326,6 +348,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
 
             this->memory_begin = ::std::assume_aligned<alignment>(temp_memory_begin);
+            allocation_change.commit();
             this->memory_length = new_memory_length;
 
             return true;
@@ -344,6 +367,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->custom_page_size_log2 = other.custom_page_size_log2;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
             this->memtag_shadow = ::std::move(other.memtag_shadow);
+            this->allocation_charge = ::std::move(other.allocation_charge);
 
             // clear destroy other
             other.memory_begin = nullptr;
@@ -363,6 +387,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->custom_page_size_log2 = other.custom_page_size_log2;
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
             this->memtag_shadow = ::std::move(other.memtag_shadow);
+            this->allocation_charge = ::std::move(other.allocation_charge);
 
             // clear destroy other
             other.memory_begin = nullptr;
@@ -382,6 +407,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             Alloc::deallocate_aligned_n(this->memory_begin, alignment, this->memory_length);  // dealloc includes built-in nullptr checking
 
             this->memory_length = 0uz;
+            this->allocation_charge.reset();
             this->memory_begin = nullptr;
         }
 
@@ -394,6 +420,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             Alloc::deallocate_aligned_n(this->memory_begin, alignment, this->memory_length);  // dealloc includes built-in nullptr checking
 
             this->memory_length = 0uz;
+            this->allocation_charge.reset();
             this->memory_begin = nullptr;
             this->custom_page_size_log2 = 0u;
         }

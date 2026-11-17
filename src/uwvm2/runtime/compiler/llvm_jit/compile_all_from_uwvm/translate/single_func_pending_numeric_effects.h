@@ -22,11 +22,11 @@
     constexpr auto bound{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
     if(count == 0uz || count > bound / sizeof(::llvm::Function*) ||
        count > bound / sizeof(analysis::function)) { return false; }
-    ::std::vector<::llvm::Function*> bodies(count);
-    ::std::vector<analysis::function> functions(count);
-    ::std::vector<analysis::call> calls{};
+    ::uwvm2::utils::container::std_vector<::llvm::Function*> bodies(count);
+    ::uwvm2::utils::container::std_vector<analysis::function> functions(count);
+    ::uwvm2::utils::container::std_vector<analysis::call> calls{};
     struct presence_site { ::llvm::LoadInst* instruction; ::std::size_t target; };
-    ::std::vector<presence_site> presence{};
+    ::uwvm2::utils::container::std_vector<presence_site> presence{};
 
     // All function indices are assigned by actual validated emission, not
     // parsed from strings/custom sections or reconstructed from a byte scan.

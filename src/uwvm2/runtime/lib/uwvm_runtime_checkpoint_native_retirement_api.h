@@ -13,6 +13,11 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_re
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
     ::std::chrono::steady_clock::time_point deadline) noexcept
 {
+    if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+    {
+        llvm_jit_checkpoint_native_retirement_result denied{};
+        denied.status=llvm_jit_checkpoint_native_retirement_status::invalid_context;return denied;
+    }
     llvm_jit_checkpoint_native_retirement_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     if(!ticket || supplied.empty())
@@ -34,6 +39,11 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_co
     llvm_jit_checkpoint_native_retirement_owner const& supplied,
     ::std::chrono::steady_clock::time_point deadline) noexcept
 {
+    if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+    {
+        llvm_jit_checkpoint_native_retirement_result denied{};
+        denied.status=llvm_jit_checkpoint_native_retirement_status::invalid_context;return denied;
+    }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     return runtime_checkpoint_coherent_manager::continue_native_retirement(supplied, deadline);
 #else
@@ -46,6 +56,11 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_pr
     ::std::span<llvm_jit_checkpoint_thread_capture_owner const> supplied,
     llvm_jit_checkpoint_prepare_request const& request, ::std::chrono::steady_clock::time_point deadline) noexcept
 {
+    if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+    {
+        llvm_jit_checkpoint_native_retirement_result denied{};
+        denied.status=llvm_jit_checkpoint_native_retirement_status::invalid_context;return denied;
+    }
     llvm_jit_checkpoint_native_retirement_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     if(!ticket || supplied.empty())
@@ -66,6 +81,11 @@ extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_pr
 extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_discard_prepared_instance_host_api(
     llvm_jit_checkpoint_native_retirement_owner const& supplied, ::std::chrono::steady_clock::time_point deadline) noexcept
 {
+    if(!::uwvm2::utils::control::debug_permissions::full_allowed())
+    {
+        llvm_jit_checkpoint_native_retirement_result denied{};
+        denied.status=llvm_jit_checkpoint_native_retirement_status::invalid_context;return denied;
+    }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     return runtime_checkpoint_coherent_manager::discard_prepared_instance(supplied,deadline);
 #else

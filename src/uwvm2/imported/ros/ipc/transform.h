@@ -2,6 +2,7 @@
  * UWVM2 canonical TransformStamped IPC v1. APL-2.0.          *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 #include <array>
 #include <cmath>
@@ -13,11 +14,11 @@ namespace uwvm2::imported::ros::ipc
     struct transform_data
     {
         std::uint32_t sequence{}, seconds{}, nanoseconds{};
-        std::string parent{}, child{};
+        ::uwvm2::utils::container::std_string parent{}, child{};
         // translation x/y/z; quaternion x/y/z/w. No implicit normalization.
         std::array<double,7> values{{0,0,0,0,0,0,1}};
     };
-    inline bool valid_frame(std::string const& name) noexcept
+    inline bool valid_frame(::uwvm2::utils::container::std_string const& name) noexcept
     {
         if(name.empty()||name.size()>255||name.front()=='/'||name.back()=='/') { return false; }
         bool first{true};
@@ -38,9 +39,9 @@ namespace uwvm2::imported::ros::ipc
         for(unsigned i=3;i!=7;++i) { norm+=t.values[i]*t.values[i]; }
         return std::isfinite(norm)&&std::abs(norm-1.)<=0.001;
     }
-    inline std::vector<std::uint8_t> encode_transform(transform_data const& t)
+    inline ::uwvm2::utils::container::std_vector<std::uint8_t> encode_transform(transform_data const& t)
     {
-        std::vector<std::uint8_t> out;
+        ::uwvm2::utils::container::std_vector<std::uint8_t> out;
         put(out,t.sequence,4); put(out,t.seconds,4); put(out,t.nanoseconds,4);
         put(out,t.parent.size(),4); out.insert(out.end(),t.parent.begin(),t.parent.end());
         put(out,t.child.size(),4); out.insert(out.end(),t.child.begin(),t.child.end());
@@ -53,7 +54,7 @@ namespace uwvm2::imported::ros::ipc
     // validate the complete owned payload; length alone never admits a frame.
     inline constexpr bool valid_transform_extent(std::size_t size) noexcept
     { return size>=78&&size<=586; }
-    inline bool decode_transform(std::vector<std::uint8_t> const& in,transform_data& t)
+    inline bool decode_transform(::uwvm2::utils::container::std_vector<std::uint8_t> const& in,transform_data& t)
     {
         if(!valid_transform_extent(in.size())) { return false; }
         transform_data parsed;
@@ -61,7 +62,7 @@ namespace uwvm2::imported::ros::ipc
         parsed.seconds=static_cast<std::uint32_t>(get(in.data()+4,4));
         parsed.nanoseconds=static_cast<std::uint32_t>(get(in.data()+8,4));
         std::size_t offset{12};
-        auto string{[&](std::string& result)
+        auto string{[&](::uwvm2::utils::container::std_string& result)
         {
             if(in.size()-offset<4) { return false; }
             auto length{get(in.data()+offset,4)}; offset+=4;

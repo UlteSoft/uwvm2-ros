@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
 // Bootstrap in this module's own global fragment; imports cannot export macros.
 #include <uwvm2/utils/macro/push_macros.h>

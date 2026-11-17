@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_scope_path.h"
 # include <algorithm>
@@ -27,14 +28,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frames
         dwarf::die_key identity{};
         ::std::size_t scope_index{dwarf::no_record};
         dwarf::scope_kind kind{};
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
     };
     struct limits { dwarf::scope_path_limits path{}; ::std::size_t max_string_bytes{(::std::numeric_limits<::std::size_t>::max)()}; };
     // Frame 0 is innermost concrete inline instance, then enclosing inline
     // instances, then THIS physical function. Callers are deliberately absent:
     // an unwind label alone cannot authenticate that activation's local values.
     [[nodiscard]] inline error current_frames(::std::span<dwarf::scope_record const> scopes, ::std::uint64_t pc,
-        ::std::vector<frame>& out, limits const& cap = {}, dwarf::owned_scope_paths const* scope_owner = nullptr) noexcept
+        ::uwvm2::utils::container::std_vector<frame>& out, limits const& cap = {}, dwarf::owned_scope_paths const* scope_owner = nullptr) noexcept
     {
         out.clear();
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -55,7 +56,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frames
             }
             if(selected.record_indices.empty() || selected.record_indices.size() != selected.physical_and_inline.size())
             { return error::malformed; }
-            ::std::vector<frame> pending{}; ::std::size_t strings{};
+            ::uwvm2::utils::container::std_vector<frame> pending{}; ::std::size_t strings{};
             auto remaining{selected.record_indices.size()};
             while(remaining != 0u)
             {
@@ -73,7 +74,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frames
                    (remaining == 0u ? scope.kind != dwarf::scope_kind::subprogram : scope.kind != dwarf::scope_kind::inline_subprogram))
                 { return error::malformed; }
                 if(!dwarf::budget::charge(scope.name.size(), cap.max_string_bytes, strings)) { return error::limit_exceeded; }
-                pending.push_back({scope.identity, index, scope.kind, ::fast_io::concat_std(::std::string_view{scope.name})});
+                pending.push_back({scope.identity, index, scope.kind, ::uwvm2::utils::container::concat(::std::string_view{scope.name})});
             }
             out = ::std::move(pending); return error::none;
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -85,7 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frames
     [[nodiscard]] inline error current_language(::std::span<dwarf::scope_record const> scopes, ::std::uint64_t pc,
         ::std::size_t selected, language_context& out, limits const& cap = {}, dwarf::owned_scope_paths const* scope_owner = nullptr) noexcept
     {
-        out = {}; ::std::vector<frame> frames{};
+        out = {}; ::uwvm2::utils::container::std_vector<frame> frames{};
         auto const status{current_frames(scopes,pc,frames,cap,scope_owner)};
         if(status != error::none) { return status; }
         if(selected >= frames.size()) { return error::bounds; }
@@ -146,7 +147,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_frame_variables
 #endif
             if(name.empty() || name.size() > cap.max_name_bytes) { return error::unavailable; }
             if(variables.size() > cap.max_variables || type_count > cap.max_types) { return error::limit_exceeded; }
-            ::std::vector<frames::frame> path{};
+            ::uwvm2::utils::container::std_vector<frames::frame> path{};
             switch(frames::current_frames(scopes, pc, path, cap.frame_limits, scope_owner))
             {
                 case frames::error::none: break;

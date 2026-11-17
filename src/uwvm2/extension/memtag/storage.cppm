@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
+#include <uwvm2/utils/allocator/sanitizer_mapping.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #include <atomic>
 #include <concepts>

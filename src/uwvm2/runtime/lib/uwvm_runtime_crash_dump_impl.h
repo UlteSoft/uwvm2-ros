@@ -1,5 +1,6 @@
 // Licensed under APL-2.0 (see LICENSE).
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Included INSIDE runtime::lib after activation/source-memory/checkpoint helpers.
 // Cold host-only export. A pause ticket never grants access to arbitrary native
 // memory; every pointer below is resolved from the current sealed source registry.
@@ -16,6 +17,63 @@ extern "C++"
         using memory_view = ::uwvm2::runtime::diagnostic::wasm_coredump::memory_view;
         using region = ::uwvm2::runtime::diagnostic::wasm_coredump::region;
         using value = ::uwvm2::runtime::diagnostic::wasm_coredump::value;
+        using archive_record = ::uwvm2::runtime::diagnostic::snapshot_archive::stream_record;
+        struct static_image
+        {
+            ::std::span<::std::byte const> bytes{};
+            ::uwvm2::utils::container::std_vector<::std::byte> owned{};
+            static bool emit(void* opaque,void* output,
+                ::uwvm2::runtime::diagnostic::snapshot_archive::writer writer) noexcept
+            {
+                auto const& self=*static_cast<static_image const*>(opaque);
+                return writer(output,self.owned.empty() ? self.bytes : ::std::span<::std::byte const>{self.owned});
+            }
+        };
+        // Called only under the publication guard and the real paused-cohort
+        // transition. Original code is immutable owned source, not live memory.
+        [[nodiscard]] static bool static_images(::std::uint64_t epoch,::uwvm2::utils::container::std_vector<source_owner>& sources,
+            ::uwvm2::utils::container::std_vector<static_image>& images,::uwvm2::utils::container::std_vector<archive_record>& records)
+        {
+            namespace archive=::uwvm2::runtime::diagnostic::snapshot_archive;
+            auto const count=g_runtime.modules.size();sources.reserve(count);
+            for(::std::size_t m{};m<count;++m)
+            {
+                auto source=debug_source_memory_actual_owner_locked(m,false);
+                if(!source)return false;
+                auto const& actual=g_runtime.modules.index_unchecked(m);
+                auto const* file=source->actual_validated_file(m,epoch,actual.runtime_module);
+                if(!file || !file->has_owned_source_image() || !file->source_cbegin() || file->source_size()<8u)return false;
+                sources.push_back(::std::move(source));
+                images.push_back({{reinterpret_cast<::std::byte const*>(file->source_cbegin()),file->source_size()},{}});
+                records.push_back({archive::component::wasm_module,archive::completeness::complete,m,1u,file->source_size()});
+            }
+            ::std::uint64_t id{};
+            for(::std::size_t m{};m<count;++m)
+            {
+                auto const& actual=g_runtime.modules.index_unchecked(m);
+                for(auto const& retained:actual.llvm_jit_debug_full_retained_generations)
+                {
+                    if(!retained || !retained->committed || retained->module_id!=m ||
+                       retained->expected_runtime_epoch!=epoch || retained->expected_generation==UINT64_MAX)return false;
+                    auto const begin=reinterpret_cast<::std::uintptr_t>(retained->code.body.code_begin);
+                    auto const end=reinterpret_cast<::std::uintptr_t>(retained->code.body.code_end);
+                    auto const base=reinterpret_cast<::std::uintptr_t>(retained->section_bytes.data());
+                    if(begin<base || end<begin || end-base>retained->section_bytes.size() || end-begin>PTRDIFF_MAX-32u)return false;
+                    static_image image{};image.owned.resize(32u+static_cast<::std::size_t>(end-begin));
+                    archive::detail::put(image.owned,0,m,8);archive::detail::put(image.owned,8,retained->function_index,8);
+                    archive::detail::put(image.owned,16,retained->expected_generation+1u,8);
+                    archive::detail::put(image.owned,24,end-begin,8);
+                    ::std::memcpy(image.owned.data()+32u,retained->code.body.code_begin,static_cast<::std::size_t>(end-begin));
+                    records.push_back({archive::component::effective_code,archive::completeness::complete,id++,1u,image.owned.size()});
+                    images.push_back(::std::move(image));
+                }
+            }
+            // Bind after both vectors have their final capacity: callbacks must
+            // not borrow an element relocated by a later push_back.
+            for(::std::size_t i{};i<images.size();++i)
+            {records[i].context=::std::addressof(images[i]);records[i].emit=static_image::emit;}
+            return true;
+        }
         struct memory_context
         {
             native_memory_t const* owner{};
@@ -128,8 +186,8 @@ extern "C++"
             return false; // Cycle exceeds the actual complete import population.
         }
         template<bool Memory>
-        [[nodiscard]] static bool build_aliases(::std::vector<::std::vector<::std::uint32_t>>& maps,
-            ::std::vector<::std::size_t> const& starts,::std::size_t population)
+        [[nodiscard]] static bool build_aliases(::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<::std::uint32_t>>& maps,
+            ::uwvm2::utils::container::std_vector<::std::size_t> const& starts,::std::size_t population)
         {
             for(::std::size_t m{};m!=g_runtime.modules.size();++m)
             {
@@ -190,13 +248,38 @@ extern "C++"
     public:
         [[nodiscard]] static result collect(domain::pause_ticket const& ticket,::std::uint64_t epoch,
             ::std::string_view executable,::std::string_view reason,void* writer_context,
-            ::uwvm2::runtime::diagnostic::wasm_coredump::write_function writer) noexcept
+            ::uwvm2::runtime::diagnostic::wasm_coredump::write_function writer,unsigned requested,
+            ::std::uint64_t stop_identifier,unsigned stop_reason,
+            ::std::span<llvm_jit_checkpoint_thread_capture_owner const> typed_captures) noexcept
         {
             namespace core=::uwvm2::runtime::diagnostic::wasm_coredump;
-            if(!::uwvm2::utils::control::debug_permissions::inspection_allowed() || !ticket || writer==nullptr)
+            namespace policy=::uwvm2::utils::control::dump_permissions;
+            namespace archive=::uwvm2::runtime::diagnostic::snapshot_archive;
+            namespace diagnostic=::uwvm2::runtime::diagnostic::snapshot_diagnostic;
+            auto const access=policy::permit(static_cast<policy::disclosure>(requested));
+            if(requested>2u || access.status!=policy::denial::none || !stop_identifier || !ticket || writer==nullptr)
                 return {.status=error::capture_denied};
             try
             {
+                // Capture complete typed state while the manager owns one
+                // authentic cohort/host/GC transaction, before taking our
+                // separate output hold. Diagnostic exports never call this.
+                llvm_jit_checkpoint_instance_capture_result complete{};
+                ::uwvm2::runtime::diagnostic::snapshot_state::state_stream state_stream{};
+                ::uwvm2::utils::container::std_vector<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment_stream> environment_streams{};
+                ::uwvm2::utils::container::std_vector<::uwvm2::runtime::diagnostic::snapshot_ros::environment_stream> ros_streams{};
+                bool state_ready{};
+                if(access.level == policy::disclosure::full && !typed_captures.empty())
+                {
+                    ::std::array<::std::byte,16u> label{};
+                    archive::detail::put(label,0,epoch,8);archive::detail::put(label,8,stop_identifier,8);
+                    complete=llvm_jit_checkpoint_capture_instance_with_wasip1_host_api(ticket,typed_captures,label,{});
+                    if(complete.status==llvm_jit_checkpoint_instance_capture_status::captured && complete.graph)
+                    {
+                        state_ready=static_cast<bool>(state_stream.bind(complete.graph));
+                        if(!state_ready) { return {.status=error::inconsistent_capture}; }
+                    }
+                }
                 auto lease{g_runtime.execution_domain.try_enter()};
                 if(!lease || lease.stop_requested()) return {.status=error::capture_denied};
                 auto control{g_runtime.debug_pause_control};
@@ -204,13 +287,13 @@ extern "C++"
                 auto observed{control->capture(ticket)};
                 if(observed.result!=::uwvm2::utils::thread::cooperative_pause_result::paused || observed.participants.empty())
                     return {.status=error::capture_busy};
-                ::std::vector<llvm_jit_debug_activation_capture_owner> registered;
+                ::uwvm2::utils::container::std_vector<llvm_jit_debug_activation_capture_owner> registered;
                 {
                     ::std::lock_guard registry{g_debug_activation_capture_mutex};
                     registered.reserve(g_debug_activation_captures.size());
                     for(auto const& slot:g_debug_activation_captures) if(auto capture=slot.lock()) registered.push_back(::std::move(capture));
                 }
-                ::std::vector<llvm_jit_debug_activation_capture_owner> captures(observed.participants.size());
+                ::uwvm2::utils::container::std_vector<llvm_jit_debug_activation_capture_owner> captures(observed.participants.size());
                 domain::paused_transition transition{};
                 auto transferred{control->transfer_cooperatively_stopped_cohort(ticket,observed.participants,transition,
                     [&](::std::span<domain::stopped_participant const> slots,auto const& current_ticket)
@@ -230,25 +313,125 @@ extern "C++"
                         return true;
                     })};
                 if(!transferred) return {.status=error::stale_snapshot};
+                ::uwvm2::utils::container::std_vector<source_owner> static_sources;
+                ::uwvm2::utils::container::std_vector<static_image> static_payloads;
+                ::uwvm2::utils::container::std_vector<archive_record> static_records;
+                ::uwvm2::utils::container::std_vector<diagnostic::frame> fault_frames;
+                {
+                    runtime_state_publication_guard publication{};
+                    if(!live(::std::addressof(lease),control.get()) || current_runtime_generation()!=epoch ||
+                       !same_owner(control,g_runtime.debug_pause_control) || !static_images(epoch,static_sources,static_payloads,static_records))
+                        return {.status=error::stale_snapshot};
+                    for(::std::size_t t{};t<captures.size();++t)
+                    {
+                        auto const& slot=observed.participants[t];auto const& capture=captures[t];
+                        if(capture)
+                        {
+                            if(!capture->matches_publication_locked(slot.location))return {.status=error::stale_snapshot};
+                            auto const& frames=capture->snapshot_.frames;
+                            for(::std::size_t f{};f<frames.size();++f)
+                            {
+                                auto const& frame=frames[frames.size()-1u-f];
+                                fault_frames.push_back({slot.id,f,frame.module,frame.function,frame.function_generation,
+                                    f==0u?slot.location.offset:UINT64_MAX});
+                            }
+                        }
+                        if(!capture || capture->snapshot_.frames.empty())
+                            fault_frames.push_back({slot.id,0u,slot.location.code_unit,slot.location.function,
+                                0u,slot.location.offset});
+                    }
+                }
+                ::std::sort(fault_frames.begin(),fault_frames.end(),[](auto const& a,auto const& b)
+                    {return a.thread<b.thread || (a.thread==b.thread&&a.ordinal<b.ordinal);});
+                static_image diagnostic_payload{};
+                if(!diagnostic::encode({stop_identifier,observed.participants.size(),stop_reason,
+                    static_cast<::std::uint32_t>(::uwvm2::runtime::diagnostic::crash::exit_status()),fault_frames},diagnostic_payload.owned))
+                    return {.status=error::inconsistent_capture};
+                static_records.insert(static_records.begin(),{archive::component::diagnostic,archive::completeness::partial,
+                    0u,1u,diagnostic_payload.owned.size(),::std::addressof(diagnostic_payload),static_image::emit});
+                auto origin=archive::native_platform();
+#if defined(UWVM_VERSION_X) && defined(UWVM_VERSION_Y) && defined(UWVM_VERSION_Z) && defined(UWVM_VERSION_S)
+                origin.product_version={UWVM_VERSION_X,UWVM_VERSION_Y,UWVM_VERSION_Z,UWVM_VERSION_S};
+#else
+                origin.product_version={2u,0u,0u,0u};
+#endif
+                output_context output{::std::addressof(lease),control.get(),writer_context,writer};
+                auto emit_archive=[&](archive::visibility disclosure) noexcept -> result
+                {
+                    auto const emitted=archive::encode_stream(origin,static_records,::std::addressof(output),write,{},disclosure);
+                    return {emitted?error::none:emitted.status==archive::error::write_failed?error::write_failed:error::inconsistent_capture,
+                        emitted.bytes};
+                };
+                if(access.level==policy::disclosure::diagnostic)return emit_archive(archive::visibility::diagnostic);
+                if(state_ready)
+                {
+                    state_stream.describe(origin);
+                    static_records.insert(static_records.begin()+1u,state_stream.record());
+                    // The typed Wasm graph is complete. External resources still
+                    // need an explicit environment choice; a graph is not an
+                    // authorization to reopen host FDs or reconnect a robot.
+                    if(complete.wasip1_checkpoint_required)
+                    {
+                        if(!complete.wasip1_captured_together || complete.wasip1_environments.empty())
+                            return {.status=error::inconsistent_capture};
+                        // Pointees were detached in the SAME capture closure as
+                        // the Wasm graph. Export performs no later native I/O or
+                        // resource lookup and does not mint rebinding authority.
+                        environment_streams.resize(complete.wasip1_environments.size());
+                        for(::std::size_t n{};n<complete.wasip1_environments.size();++n)
+                        {
+                            auto data=llvm_jit_checkpoint_copy_wasip1_capsule_data_host_api(complete.wasip1_environments[n]);
+                            if(data.status!=llvm_jit_wasip1_environment_capsule_status::captured ||
+                               !data.data.archive_environment ||
+                               data.data.archive_environment->recording!=complete.graph->recording_id ||
+                               !environment_streams[n].bind(data.data.archive_environment))
+                                return {.status=error::inconsistent_capture};
+                            static_records.push_back(environment_streams[n].record());
+                        }
+                    }
+                    unsigned ros_required{};
+                    for(auto const& object:complete.graph->objects)
+                        if(object.kind==::uwvm2::uwvm::debugger::checkpoint::object_kind::host_resource && object.flags==3u &&
+                           object.words[0u]==::uwvm2::uwvm::debugger::checkpoint::builtin_ros_v1_binding_kind)
+                            ros_required|=object.words[1u]<=2u?1u:2u;
+                    unsigned ros_captured{};
+                    ros_streams.resize(complete.ros_environments.size());
+                    for(::std::size_t n{};n<complete.ros_environments.size();++n)
+                    {
+                        auto const& environment=complete.ros_environments[n];
+                        if(!environment || environment->recording!=complete.graph->recording_id || !ros_streams[n].bind(environment))
+                            return {.status=error::inconsistent_capture};
+                        auto bit=environment->backend==1?1u:2u;
+                        if(ros_captured&bit)return {.status=error::inconsistent_capture};
+                        ros_captured|=bit;static_records.push_back(ros_streams[n].record());
+                    }
+                    if(ros_captured!=ros_required)return {.status=error::inconsistent_capture};
+                    return emit_archive(archive::visibility::full);
+                }
+                // Preserve useful inspection when a terminal/native-only stop
+                // cannot materialize continuations. The missing executable
+                // state is explicit in the archive and cannot be restored.
+                static_records.insert(static_records.begin()+1u,{archive::component::wasm_state,
+                    archive::completeness::unavailable,0u,::uwvm2::uwvm::debugger::checkpoint::database_format_version,0u});
                 // The move-only transition now excludes resume/mutation without
                 // retaining the pause-domain mutex across allocations or output.
                 auto const configuration{g_runtime.checkpoint_host_state};
                 ::uwvm2::utils::thread::checkpoint_host_admission::closed_admission closed{};
                 bool const host_closed{runtime_checkpoint_host_bridge::try_close_coherent_state(configuration,closed)==
                     runtime_checkpoint_host_bridge::status::ok};
-                ::std::vector<source_owner> sources;
-                ::std::vector<core::module_view> modules;
-                ::std::vector<::std::string> names;
-                ::std::vector<core::instance_view> instances;
-                ::std::vector<::std::vector<::std::uint32_t>> memory_maps,global_maps;
-                ::std::vector<::std::size_t> memory_starts,global_starts;
-                ::std::vector<memory_context> contexts;
-                ::std::vector<memory_view> memories;
-                ::std::vector<core::global_view> globals;
-                ::std::vector<core::thread_view> threads(captures.size());
-                ::std::vector<::std::string> thread_names(captures.size());
-                ::std::vector<::std::vector<core::frame_view>> frames(captures.size());
-                ::std::vector<::std::vector<::std::vector<value>>> locals(captures.size());
+                ::uwvm2::utils::container::std_vector<source_owner> sources;
+                ::uwvm2::utils::container::std_vector<core::module_view> modules;
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> names;
+                ::uwvm2::utils::container::std_vector<core::instance_view> instances;
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<::std::uint32_t>> memory_maps,global_maps;
+                ::uwvm2::utils::container::std_vector<::std::size_t> memory_starts,global_starts;
+                ::uwvm2::utils::container::std_vector<memory_context> contexts;
+                ::uwvm2::utils::container::std_vector<memory_view> memories;
+                ::uwvm2::utils::container::std_vector<core::global_view> globals;
+                ::uwvm2::utils::container::std_vector<core::thread_view> threads(captures.size());
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> thread_names(captures.size());
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<core::frame_view>> frames(captures.size());
+                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<value>>> locals(captures.size());
                 bool readable{};
                 {
                     runtime_state_publication_guard publication{};
@@ -341,7 +524,7 @@ extern "C++"
                     for(::std::size_t m{};m!=count;++m) instances[m]={m,memory_maps[m],global_maps[m]};
                     for(::std::size_t t{};t!=captures.size();++t)
                     {
-                        thread_names[t]="wasm-thread-"+::std::to_string(observed.participants[t].id);
+                        thread_names[t]="wasm-thread-"+::uwvm2::utils::container::to_string(observed.participants[t].id);
                         threads[t].name=thread_names[t];
                         auto const& capture{captures[t]};
                         if(!capture) continue; // Explicitly unavailable, no guessed native stack.
@@ -365,8 +548,14 @@ extern "C++"
                 } // Release publication before the first writer callback.
                 if(!live(::std::addressof(lease),control.get())) return {.status=error::stale_snapshot};
                 core::dump_view dump{executable,reason,readable,modules,instances,memories,globals,threads};
-                output_context output{::std::addressof(lease),control.get(),writer_context,writer};
-                return core::encode(dump,::std::addressof(output),write);
+                auto const measured=core::measure(dump);if(!measured)return measured;
+                auto emit_core=[](void* context,void* out,archive::writer write) noexcept
+                    {return static_cast<bool>(core::encode(*static_cast<core::dump_view const*>(context),out,write));};
+                // Inspection data is explicitly PARTIAL, never mislabeled as a
+                // resumable checkpoint. Portable state has its own typed record.
+                static_records.push_back({archive::component::wasm_inspection,archive::completeness::partial,
+                    0u,1u,measured.bytes,::std::addressof(dump),emit_core});
+                return emit_archive(archive::visibility::full);
                 // Destruction: detached metadata -> host gate -> pause transition
                 // -> true generation lease. No resume is performed by exporting.
             }
@@ -379,12 +568,15 @@ extern "C++"
 extern "C++" ::uwvm2::runtime::diagnostic::wasm_coredump::result runtime_dump_stopped_guest_host_api(
     ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
     ::std::uint64_t epoch,::std::string_view executable,::std::string_view reason,void* context,
-    ::uwvm2::runtime::diagnostic::wasm_coredump::write_function writer) noexcept
+    ::uwvm2::runtime::diagnostic::wasm_coredump::write_function writer,unsigned disclosure,
+    ::std::uint64_t stop_identifier,unsigned stop_reason,
+            ::std::span<llvm_jit_checkpoint_thread_capture_owner const> typed_captures) noexcept
 {
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
-    return runtime_crash_dump_collector::collect(ticket,epoch,executable,reason,context,writer);
+    return runtime_crash_dump_collector::collect(ticket,epoch,executable,reason,context,writer,disclosure,stop_identifier,stop_reason,typed_captures);
 #else
     (void)ticket;(void)epoch;(void)executable;(void)reason;(void)context;(void)writer;
+    (void)disclosure;(void)stop_identifier;(void)stop_reason;(void)typed_captures;
     return {.status=::uwvm2::runtime::diagnostic::wasm_coredump::error::unsupported_snapshot};
 #endif
 }

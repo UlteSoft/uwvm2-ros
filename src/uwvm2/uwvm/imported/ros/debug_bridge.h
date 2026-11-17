@@ -82,6 +82,9 @@ namespace uwvm2::uwvm::imported::ros::host
         {
             core::debug::snapshot_hook.store(&debug_snapshot,std::memory_order_release);
             core::management::retirement_hook.store(&retire_authority,std::memory_order_release);
+            core::checkpoint::prepare_hook.store(&prepare_current_environment_handoff,std::memory_order_release);
+            core::checkpoint::prepare_recorded_hook.store(&prepare_recorded_environment_handoff,std::memory_order_release);
+            core::checkpoint::capture_hook.store(&capture_checkpoint_environment,std::memory_order_release);
         }
         ~debug_hook_registration()
         {
@@ -89,6 +92,12 @@ namespace uwvm2::uwvm::imported::ros::host
             core::debug::snapshot_hook.compare_exchange_strong(expected,nullptr,std::memory_order_acq_rel);
             auto expected_retirement{&retire_authority};
             core::management::retirement_hook.compare_exchange_strong(expected_retirement,nullptr,std::memory_order_acq_rel);
+            auto expected_capture{&capture_checkpoint_environment};
+            core::checkpoint::capture_hook.compare_exchange_strong(expected_capture,nullptr,std::memory_order_acq_rel);
+            auto expected_recorded{&prepare_recorded_environment_handoff};
+            core::checkpoint::prepare_recorded_hook.compare_exchange_strong(expected_recorded,nullptr,std::memory_order_acq_rel);
+            auto expected_checkpoint{&prepare_current_environment_handoff};
+            core::checkpoint::prepare_hook.compare_exchange_strong(expected_checkpoint,nullptr,std::memory_order_acq_rel);
         }
     };
     inline debug_hook_registration debug_hook{};

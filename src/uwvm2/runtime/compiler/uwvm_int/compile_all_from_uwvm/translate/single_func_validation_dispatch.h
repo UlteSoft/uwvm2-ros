@@ -567,8 +567,12 @@ auto const check_memory_index{[&](::std::byte const* op_begin, wasm_u32 memory_i
 
 auto const check_data_index{[&](::std::byte const* op_begin, wasm_u32 data_index) constexpr UWVM_THROWS
                             {
-                                auto const all_data_count{static_cast<wasm_u32>(curr_module.local_defined_data_vec_storage.size())};
-                                if(data_index >= all_data_count) [[unlikely]]
+                                // Data-index instructions require the explicit Data Count section,
+                                // even when the data segments have already been instantiated. Match
+                                // the standalone and LLVM validators, including unreachable code.
+                                auto const all_data_count{curr_module.data_count_section_present ? curr_module.data_count_section_count : 0u};
+                                if(!curr_module.data_count_section_present || data_index >= all_data_count ||
+                                   static_cast<::std::size_t>(data_index) >= curr_module.local_defined_data_vec_storage.size()) [[unlikely]]
                                 {
                                     // [caller-saved opcode/prefix] immediate bytes ... | code_end
                                     // [dispatch-proven byte, where present       ] | one-past is not dereferenced

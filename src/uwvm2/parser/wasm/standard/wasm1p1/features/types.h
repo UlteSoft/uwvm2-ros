@@ -311,6 +311,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         namespace base = ::uwvm2::parser::wasm::base;
         namespace t3 = ::uwvm2::parser::wasm::standard::wasm3::type;
         namespace v3 = ::uwvm2::validation::standard::wasm3;
+        ::std::size_t maximum_types{262144uz};
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        { maximum_types = ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit.max_type_sec_types; }
+        ::std::size_t maximum_metadata_bytes{512uz << 20u};
+        if !consteval { maximum_metadata_bytes=::uwvm2::utils::allocator::resource::parser_metadata_bytes; }
         auto const& options{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(parameters)};
         if(options.disable_gc)
         {
@@ -339,7 +344,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             // [safe                         ] unsafe (section_end is one-past)
             // ^^ disabled_probe starts at section_begin and is committed only on complete success.
             auto disabled_probe{section_begin};
-            if(v3::scan_core3_type_section(disabled_probe, section_end, disabled_definitions).error !=
+            if(v3::scan_core3_type_section(disabled_probe, section_end, disabled_definitions, maximum_types, maximum_metadata_bytes).error !=
                v3::recursive_type_binary_error::ok) { return false; }
             // [complete type section] section_end
             // [safe                ] unsafe (section_end is one-past)
@@ -393,7 +398,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // [safe                         ] unsafe (section_end is one-past)
         // ^^ probe borrows section_begin; the decoder commits only after all bounded reads.
         auto probe{section_begin};
-        auto const decoded{v3::scan_core3_type_section(probe, section_end, definitions)};
+        auto const decoded{v3::scan_core3_type_section(probe, section_end, definitions, maximum_types, maximum_metadata_bytes)};
         // [complete decoded section] section_end on success; probe remains section_begin on failure.
         // [safe                    ] unsafe (section_end is one-past)
         //                          ^^ probe: this local cursor is never dereferenced after the scan.
@@ -403,6 +408,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             // [safe                              ] unsafe (possibly section_end)
             //                    ^^ err_curr: decoder bounds error_offset by the section length.
             err.err_curr = section_begin == section_end ? section_begin : section_begin + decoded.error_offset;
+            if(decoded.error == v3::recursive_type_binary_error::resource_limit)
+            {
+                err.err_code = base::wasm_parse_error_code::exceed_the_max_parser_limit;
+                err.err_selectable.exceed_the_max_parser_limit.name = decoded.type_count_limit ? ::fast_io::u8string_view{u8"max_type_sec_types"} : ::fast_io::u8string_view{u8"type-metadata-bytes"};
+                err.err_selectable.exceed_the_max_parser_limit.value = decoded.requested;
+                err.err_selectable.exceed_the_max_parser_limit.maxval = decoded.limit;
+                base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
+            }
             err.err_code = decoded.error == v3::recursive_type_binary_error::impossible_count ?
                 base::wasm_parse_error_code::invalid_type_count :
                 decoded.error == v3::recursive_type_binary_error::invalid_value_type ||

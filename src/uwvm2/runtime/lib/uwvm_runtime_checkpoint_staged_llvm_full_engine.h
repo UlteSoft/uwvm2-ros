@@ -24,7 +24,7 @@ extern "C++"
             // (locals + instructions + end), never an erased native pointer.
             ::std::size_t public_function_index{};
             ::std::uint64_t generation{};
-            ::std::vector<::std::byte> body{};
+            ::uwvm2::utils::container::std_vector<::std::byte> body{};
         };
         enum class call_stack_policy : unsigned { unwind };
         enum class preparation_status : unsigned
@@ -38,22 +38,22 @@ extern "C++"
         ::std::size_t module_id_{};
         // Stable typed parser owners precede all borrowed descriptors. Their
         // original section bytes and local declarations survive native teardown.
-        ::std::vector<::std::unique_ptr<llvm_jit_debug_replace_transaction>> effective_bodies_{};
-        ::std::vector<::std::uint64_t> generations_{};
-        ::std::vector<local_storage> locals_{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> effective_bodies_{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> generations_{};
+        ::uwvm2::utils::container::std_vector<local_storage> locals_{};
         // The actual runtime record owns this SAME container type. A real
         // world commit moves its allocation; copying into a new buffer would
         // invalidate target addresses already embedded in the private LLVM IR.
         ::uwvm2::utils::container::vector<::std::uintptr_t> typed_targets_{};
-        ::std::vector<native_entries> entries_{};
+        ::uwvm2::utils::container::std_vector<native_entries> entries_{};
         unsigned debug_shutdown_abi_revision_{};
         // Borrowed from THIS engine-owned real memory manager until native teardown.
         ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager const* debug_cfi_manager_{};
         // Reverse member destruction detaches the pending listener first, then
         // destroys the engine/CFI allocations before context/types/body/source.
-        ::uwvm2::utils::container::delete_owned_ptr<::llvm::LLVMContext> context_{};
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::context_owner context_{};
         ::uwvm2::utils::container::delete_owned_ptr<::llvm::ExecutionEngine> engine_{};
-        ::uwvm2::utils::container::delete_owned_ptr<details::pending_llvm_jit_code_ranges> ranges_{};
+        ::uwvm2::utils::container::std_unique_ptr<details::pending_llvm_jit_code_ranges> ranges_{};
         // Comparison receipts minted only by the private world handoff.
         // The FINAL full-code record supplies ownership, never these pointers.
         ::llvm::ExecutionEngine const* handed_off_engine_{};
@@ -70,7 +70,7 @@ extern "C++"
         runtime_checkpoint_staged_llvm_full_engine& operator=(runtime_checkpoint_staged_llvm_full_engine&&) = delete;
         struct preparation_result
         {
-            ::std::unique_ptr<runtime_checkpoint_staged_llvm_full_engine> data{};
+            ::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_staged_llvm_full_engine> data{};
             preparation_status status{preparation_status::invalid_input};
         };
 
@@ -106,7 +106,7 @@ extern "C++"
 
         [[nodiscard]] static preparation_result prepare(module_owner const& actual_owner,
             ::std::size_t actual_module_id, profile_owner actual_profile,
-            ::std::vector<effective_function_body> const& effective,
+            ::uwvm2::utils::container::std_vector<effective_function_body> const& effective,
             call_stack_policy stack_policy,
             ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::llvm_jit_debug_safe_point_granularity granularity,
             void* native_budget_owner,native_budget_charge native_charge) noexcept
@@ -116,7 +116,7 @@ extern "C++"
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
             if(!actual_owner.matches_unpublished_file() || actual_module_id == SIZE_MAX || !actual_profile ||
                 actual_profile->purpose() != checkpoint::compilation_purpose::resumable ||
-                actual_profile->cache_identity()[1u] != 17u || checkpoint::native_resume_abi_revision != 2u ||
+                actual_profile->cache_identity()[1u] != checkpoint::compilation_profile::resumable_policy_revision || checkpoint::native_resume_abi_revision != 2u ||
                 stack_policy != call_stack_policy::unwind ||
                 (granularity != compile::llvm_jit_debug_safe_point_granularity::entry_loop &&
                  granularity != compile::llvm_jit_debug_safe_point_granularity::instruction))
@@ -140,8 +140,8 @@ extern "C++"
             { return {{}, preparation_status::unsupported_native}; }
             try
             {
-                auto data{::std::unique_ptr<runtime_checkpoint_staged_llvm_full_engine>{
-                    new runtime_checkpoint_staged_llvm_full_engine{actual_owner, ::std::move(actual_profile), actual_module_id}}};
+                auto data{::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_staged_llvm_full_engine>{
+                    ::uwvm2::utils::allocator::fast_io_strict::object<runtime_checkpoint_staged_llvm_full_engine>([&](runtime_checkpoint_staged_llvm_full_engine* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) runtime_checkpoint_staged_llvm_full_engine{actual_owner, ::std::move(actual_profile), actual_module_id}; })}};
                 data->native_budget_owner_=native_budget_owner;data->native_charge_=native_charge;
                 // [native context-minted source/module/FINAL file] end
                 // [safe] exact membership was rechecked BEFORE borrowing parser
@@ -188,7 +188,7 @@ extern "C++"
                     { return {}; }
                     if(body.generation != 1u)
                     {
-                        auto parsed{::std::make_unique<llvm_jit_debug_replace_transaction>()};
+                        auto parsed{::uwvm2::utils::container::make_unique<llvm_jit_debug_replace_transaction>()};
                         parsed->source = data->owner_.source(); parsed->local_index = index;
                         // The real feature-aware original code-section parser
                         // owns the complete saved body; no semantic/body prepass.
@@ -335,14 +335,14 @@ extern "C++"
                 }
                 else if(native_eh_requested) { return {{}, preparation_status::unsupported_native}; }
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-                ::std::vector<details::pending_actual_native_endpoints::expected_function> endpoint_declarations{};
+                ::uwvm2::utils::container::std_vector<details::pending_actual_native_endpoints::expected_function> endpoint_declarations{};
                 if(!data->prepare_native_endpoint_declarations(*module,*context,endpoint_declarations))
                 { return {{},preparation_status::native_endpoint_failure}; }
 #endif
                 // Stable host-function mappings are the same process ABI in
                 // both worlds; owned mutable objects use only private pointers.
                 ::uwvm2::runtime::compiler::shared::strict_float_jit::register_symbols();
-                auto memory{::uwvm2::utils::container::make_delete_owned<
+                auto memory{::uwvm2::utils::container::make_unique<
                     ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
                 if(memory == nullptr) { return {{}, preparation_status::exhausted}; }
                 auto* const memory_observer{memory.get()};
@@ -356,7 +356,7 @@ extern "C++"
                 if(imports.type_info != nullptr && !details::native_exception_host::bind<::uwvm2::runtime::exception::guest_exception>(
                     *data->engine_, imports, catches,
                     +[]() UWVM_THROWS { return ::uwvm2::runtime::exception::guest_exception{
-                        ::uwvm2::runtime::exception::value::make(::std::make_shared<unsigned char const>(0), {})}; }
+                        ::uwvm2::runtime::exception::value::make(::uwvm2::utils::container::make_shared<unsigned char const>(0), {})}; }
 #if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX) && defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && \
     UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
                     , &runtime_source_exception_end_catch
@@ -364,15 +364,15 @@ extern "C++"
                     )) { return {{}, preparation_status::native_failure}; }
                 // No object cache, old-code mapping, pending numeric plan,
                 // diagnostic/permission registration or future epoch exists.
-                data->ranges_ = ::uwvm2::utils::container::make_delete_owned<details::pending_llvm_jit_code_ranges>(*data->engine_, true);
+                data->ranges_ = ::uwvm2::utils::container::make_unique<details::pending_llvm_jit_code_ranges>(*data->engine_, true);
                 if(data->ranges_ == nullptr) { return {{}, preparation_status::exhausted}; }
                 data->ranges_->configure_debug_full_capture(true);
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
                 if(count!=0u)
                 {
-                    data->native_endpoints_.reset(new details::pending_actual_native_endpoints{
+                    data->native_endpoints_.reset(::uwvm2::utils::allocator::fast_io_strict::object<details::pending_actual_native_endpoints>([&](details::pending_actual_native_endpoints* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) details::pending_actual_native_endpoints{
                         *data->engine_,data.get(),data->owner_,data->profile_,actual_module_id,
-                        ::std::move(endpoint_declarations),native_budget_owner,native_charge});
+                        ::std::move(endpoint_declarations),native_budget_owner,native_charge}; }));
                     if(!data->native_endpoints_->valid_ || !data->native_endpoints_->attached_)
                     { return {{},preparation_status::native_endpoint_observer_failure}; }
                 }

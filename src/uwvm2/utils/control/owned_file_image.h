@@ -1,4 +1,7 @@
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <climits>
 # include <cstddef>
@@ -33,16 +36,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
     // No mutable bytes, fd, adopted caller span or ready boolean is exported.
     class owned_file_image final
     {
-        ::std::vector<::std::byte> bytes_{};
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes_{};
         ::fast_io::posix_file_status observed_status_{};
-        explicit owned_file_image(::std::vector<::std::byte> bytes, ::fast_io::posix_file_status observed) noexcept
+        explicit owned_file_image(::uwvm2::utils::container::std_vector<::std::byte> bytes, ::fast_io::posix_file_status observed) noexcept
             : bytes_{::std::move(bytes)}, observed_status_{observed} {}
         template<typename ActualFile, typename Status, typename Read, typename Close>
         [[nodiscard]] static owned_image_result read_owned_file(ActualFile& file, ::std::size_t limit,
                                                                 Status status, Read read, Close close);
-        [[nodiscard]] static owned_image_result read_actual_file(::std::u8string path, ::std::size_t limit);
+        [[nodiscard]] static owned_image_result read_actual_file(::uwvm2::utils::container::std_u8string path, ::std::size_t limit);
     public:
-        using owner = ::std::unique_ptr<owned_file_image const>;
+        using owner = ::uwvm2::utils::container::std_unique_ptr<owned_file_image const>;
         inline static constexpr ::std::size_t maximum_bytes{1uz << 30u};
         inline static constexpr ::std::size_t default_bytes{1uz << 28u};
         inline static constexpr ::std::size_t maximum_path_code_units{1uz << 20u};
@@ -51,7 +54,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         owned_file_image(owned_file_image&&) = delete;
         owned_file_image& operator=(owned_file_image&&) = delete;
         ~owned_file_image() = default;
-        [[nodiscard]] static owned_image_result read(::std::u8string path, ::std::size_t limit = default_bytes);
+        [[nodiscard]] static owned_image_result read(::uwvm2::utils::container::std_u8string path, ::std::size_t limit = default_bytes);
         // Copy an actual native byte extent BEFORE any parser borrows it. The
         // caller retains a valid, stable input span until this synchronous copy
         // returns; later input mutation/destruction cannot change the image.
@@ -112,7 +115,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         if(!before) { return {{}, owned_image_error::status_failed, owned_image_details::native_error(before.error)}; }
         if(before.value.type != ::fast_io::file_type::regular) { return {{}, owned_image_error::not_regular, {}}; }
         if(before.value.size == 0u) { return {{}, owned_image_error::empty_file, {}}; }
-        ::std::vector<::std::byte> pending{};
+        ::uwvm2::utils::container::std_vector<::std::byte> pending{};
         if(before.value.size > limit || before.value.size > static_cast<::std::uintmax_t>(pending.max_size()) ||
            before.value.size > static_cast<::std::uintmax_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))
         { return {{}, owned_image_error::quota_exceeded, {}}; }
@@ -151,16 +154,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         if(!closed) { return {{}, owned_image_error::close_failed, owned_image_details::native_error(closed.error)}; }
         // One checked close releases native ownership before publishing only
         // completely initialized const private bytes. Failure publishes nothing.
-        return {owner{new owned_file_image{::std::move(pending), before.value}}, owned_image_error::none, {}};
+        return {owner{::uwvm2::utils::allocator::fast_io_strict::object<owned_file_image>([&](owned_file_image* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_file_image{::std::move(pending), before.value}; })}, owned_image_error::none, {}};
     }
-    inline owned_image_result owned_file_image::read_actual_file(::std::u8string path, ::std::size_t limit)
+    inline owned_image_result owned_file_image::read_actual_file(::uwvm2::utils::container::std_u8string path, ::std::size_t limit)
     {
         if constexpr(CHAR_BIT != 8) { return {{}, owned_image_error::unsupported_character_width, {}}; }
-        if(path.empty() || path.size() > maximum_path_code_units || path.find(u8'\0') != ::std::u8string::npos)
+        if(path.empty() || path.size() > maximum_path_code_units || path.find(u8'\0') != ::uwvm2::utils::container::std_u8string::npos)
         { return {{}, owned_image_error::invalid_path, {}}; }
         if(limit == 0uz || limit > maximum_bytes) { return {{}, owned_image_error::quota_exceeded, {}}; }
 #if defined(__linux__) || (defined(__APPLE__) && defined(__MACH__)) || defined(__FreeBSD__)
-        auto const native_path{::fast_io::concat_std(::fast_io::mnp::code_cvt(
+        auto const native_path{::uwvm2::utils::container::concat(::fast_io::mnp::code_cvt(
             ::fast_io::mnp::os_c_str_with_known_size(path.data(), path.size())))};
         auto opened{::fast_io::posix_openat_nothrow(::fast_io::posix_at_entry{AT_FDCWD}, native_path.c_str(),
             O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)};
@@ -186,7 +189,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         return {{}, owned_image_error::unsupported_provider, {}};
 #endif
     }
-    inline owned_image_result owned_file_image::read(::std::u8string path, ::std::size_t limit)
+    inline owned_image_result owned_file_image::read(::uwvm2::utils::container::std_u8string path, ::std::size_t limit)
     {
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try { return read_actual_file(::std::move(path), limit); }
@@ -205,7 +208,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         if(limit == 0uz || limit > maximum_bytes) { return {{}, owned_image_error::quota_exceeded, {}}; }
         auto const extent{input.size()};
         if(extent == 0uz) { return {{}, owned_image_error::empty_file, {}}; }
-        ::std::vector<::std::byte> pending{};
+        ::uwvm2::utils::container::std_vector<::std::byte> pending{};
         if(extent > limit || extent > pending.max_size() ||
            extent > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))
         { return {{}, owned_image_error::quota_exceeded, {}}; }
@@ -225,7 +228,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
             // A copied byte image has NO observed host file. The zero status
             // retains file_type::none and is DATA, not a synthesized inode or
             // regular-file observation. Existing read/provider paths are intact.
-            return {owner{new owned_file_image{::std::move(pending), {}}}, owned_image_error::none, {}};
+            return {owner{::uwvm2::utils::allocator::fast_io_strict::object<owned_file_image>([&](owned_file_image* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_file_image{::std::move(pending), {}}; })}, owned_image_error::none, {}};
         }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         catch(::std::bad_alloc const&) { return {{}, owned_image_error::allocation_failed, {}}; }

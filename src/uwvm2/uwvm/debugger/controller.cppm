@@ -1,5 +1,10 @@
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/macro/push_macros.h>
+#include <uwvm2/runtime/lib/uwvm_runtime_threaded_profile_feature.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #include <fast_io.h>
 #include <algorithm>
@@ -48,9 +53,15 @@ import uwvm2.extension.memtag.encoding;
 import uwvm2.utils.control;
 import uwvm2.utils.thread;
 import uwvm2.runtime;
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+import uwvm2.runtime.wasm_threads;
+#endif
 import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.runtime.diagnostic.crash_file;
 import uwvm2.runtime.diagnostic.wasm_coredump;
+import uwvm2.runtime.diagnostic.snapshot_state;
+import uwvm2.uwvm.debugger.checkpoint_execution_replay;
+import uwvm2.uwvm.debugger.checkpoint_codec;
 import uwvm2.uwvm.io;
 import uwvm2.runtime.exception;
 import :command;
@@ -81,6 +92,8 @@ import uwvm2.uwvm.debugger.wasm_mutation;
 import uwvm2.uwvm.debugger.wasm_path;
 import uwvm2.uwvm.debugger.wasip1_state;
 import uwvm2.uwvm.debugger.ros_state;
+import uwvm2.uwvm.debugger.scene_state;
+import uwvm2.uwvm.debugger.wasithread_state;
 import uwvm2.uwvm.debugger.host_trace;
 import uwvm2.uwvm.debugger.wasip1_portable_checkpoint;
 import uwvm2.uwvm.debugger.wasip1_calls;

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "../ipc/service_availability.h"
 
 #include <bit>
@@ -203,7 +204,7 @@ namespace uwvm2::imported::ros
         // borrow payload fields here: the owned copy is still fully decoded.
         if(!ipc::valid_transform_extent(bytes.size()))
         { return {errc::invalid_argument, "invalid canonical TransformStamped"}; }
-        ::std::vector<::std::uint8_t> canonical{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> canonical{};
         canonical.reserve(bytes.size());
         for(auto byte : bytes) { canonical.push_back(::std::to_integer<::std::uint8_t>(byte)); }
         ipc::transform_data transform{};
@@ -312,7 +313,7 @@ namespace uwvm2::imported::ros
             ::std::uint64_t maximum{}; auto const quota_key{"max-parameter-bytes"};
             if(!read_quota(cap,quota_key,maximum)) { return {errc::invalid_argument, "explicit parameter-event byte quota required"}; }
             if(bytes.size() > maximum) { return quota_failure(errc::too_large,"parameter event exceeds explicit byte quota",quota_key,cap.alias); }
-            ::std::vector<::std::uint8_t> canonical{}; canonical.reserve(bytes.size());
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> canonical{}; canonical.reserve(bytes.size());
             for(auto byte : bytes) { canonical.push_back(::std::to_integer<::std::uint8_t>(byte)); }
             if(typed) { return {static_cast<errc>(ipc::validate_typed_parameter_event(v,cap,canonical)),"selected typed parameter event validation"}; }
             ipc::parameter_event event{};

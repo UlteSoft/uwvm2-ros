@@ -1,6 +1,7 @@
 // Host console output sink. The WASI environment retains only this callback;
 // guest threads never touch the terminal renderer or controller.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <fast_io.h>
 #include <fast_io_dsal/string_view.h>
 #include <atomic>
@@ -12,18 +13,18 @@ namespace uwvm2::uwvm::debugger::console_stdio
 {
     inline ::std::atomic_bool enabled{};
     inline ::std::mutex mutex{};
-    inline ::std::string pending{}, input{};
+    inline ::uwvm2::utils::container::std_string pending{}, input{};
     // All queue storage and this unread cursor are protected by mutex. Reads
     // advance the cursor; only an append needing space compacts a live suffix.
     inline ::std::size_t input_head{};
     inline constexpr ::std::size_t capacity{32768u};
-    [[nodiscard]] inline ::std::string timestamp() noexcept
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string timestamp() noexcept
     {
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
-        try { return ::fast_io::concat_std("[",::fast_io::local(::fast_io::posix_clock_gettime(::fast_io::posix_clock_id::realtime)),"] "); }
+        try { return ::uwvm2::utils::container::concat("[",::fast_io::local(::fast_io::posix_clock_gettime(::fast_io::posix_clock_id::realtime)),"] "); }
         catch(...) { return "[clock unavailable] "; }
 #else
-        return ::fast_io::concat_std("[",::fast_io::local(::fast_io::posix_clock_gettime(::fast_io::posix_clock_id::realtime)),"] ");
+        return ::uwvm2::utils::container::concat("[",::fast_io::local(::fast_io::posix_clock_gettime(::fast_io::posix_clock_id::realtime)),"] ");
 #endif
     }
     inline void clear() { ::std::lock_guard lock{mutex};pending.clear(); }
@@ -56,7 +57,7 @@ namespace uwvm2::uwvm::debugger::console_stdio
         {
             // Preserve even a native view into this string across compaction.
             // This temporary is bounded by the unchanged unread quota.
-            ::std::string appended{text.data(),text.size()};
+            ::uwvm2::utils::container::std_string appended{text.data(),text.size()};
             input.erase(0u,input_head);input_head=0u;
             input.append(appended);input.push_back('\n');return true;
         }
@@ -83,6 +84,6 @@ namespace uwvm2::uwvm::debugger::console_stdio
         if(input_head==input.size()) { input.clear();input_head=0u; }
         return true;
     }
-    [[nodiscard]] inline ::std::string take()
-    { ::std::lock_guard lock{mutex}; ::std::string text{}; text.swap(pending); return text; }
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string take()
+    { ::std::lock_guard lock{mutex}; ::uwvm2::utils::container::std_string text{}; text.swap(pending); return text; }
 }

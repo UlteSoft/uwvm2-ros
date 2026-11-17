@@ -4,7 +4,6 @@ const path=require("path");
 const crypto=require("crypto");
 const {spawn}=require("child_process");
 const filePicker=require("./file_picker");
-const {structure}=require("./inspection_model");
 const escape=value=>String(value===undefined?"":value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function absolute(value,label) {
@@ -34,30 +33,30 @@ function cli(python,args) {
 }
 function createController(vscode,context,sessions) {
   let model,nextPanelId=0;
+  const history=require("./navigation_history").get(sessions);
   function active(){const value=vscode.debug.activeDebugSession;return value && value.type==="uwvm-llvm-full" && sessions.get(value.id)===value?value:undefined;}
+  function view(model){
+    return {kind:"update",windowId:model.id,epoch:model.epoch,busy:!!model.busy,picking:!!model.picking,mode:model.mode,
+      fields:{pythonPath:model.pythonPath,socketDir:model.socketDir,profilePath:model.profilePath,framePath:model.framePath},
+      sessionName:(active()||{}).name,sessionHasUpdate:!!(active()&&active().configuration.updateSocketDir),
+      error:model.error||"",reply:model.reply,platform:process.platform};
+  }
   function render(target=model){
     if(!target || target.disposed)return;
-    const model=target;
-    const nonce=model.nonce||(model.nonce=crypto.randomBytes(18).toString("hex")),webview=model.panel.webview;
-    const epoch=model.epoch=(model.epoch||0)+1;
-    const style=webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath,"inspection.css")));
-    const script=webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath,"update_webview.js")));
-    const disabled=model.busy||model.picking;
-    const field=(name,label,value,modes)=>'<label data-transports="'+modes+'" '+(modes.split(" ").includes(model.mode)?'':'hidden')+'>'+label+'<span class="path-field"><input name="'+name+'" value="'+escape(value)+'" '+(disabled?'disabled':'')+'><button type="button" data-browse="'+name+'" aria-label="Choose '+label+'" '+(disabled?'disabled':'')+'>Browse…</button></span></label>';
-    model.html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
-      '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src '+escape(webview.cspSource)+'; script-src \'nonce-'+nonce+'\';">'+
-      '<link rel="stylesheet" href="'+escape(style)+'"></head><body data-window-id="'+escape(model.id)+'" data-window-kind="update" data-view-epoch="'+epoch+'"><header><h1>Hot Update</h1><div class="window-actions"><span class="badge" title="Authorized by the update coordinator, independently of debugger permissions">Independent</span><button type="button" data-action="new-window">New window</button></div></header>'+
-      '<section class="card"><h2>Signed request</h2><p class="muted">Submit an existing authorized frame. No automatic retry.</p>'+
-      '<form id="update-form"><label>Transport<select name="mode" '+(disabled?'disabled':'')+'>'+Object.entries({local:"Local host",profile:"Imported profile / SSH",session:"Active debug transport"}).map(([key,title])=>'<option value="'+key+'" '+(model.mode===key?'selected':'')+'>'+escape(title)+'</option>').join("")+'</select></label>'+
-      '<div class="toolbar">'+field("pythonPath","Python executable",model.pythonPath,"local profile")+field("socketDir","Update socket directory",model.socketDir,"local")+field("profilePath","Transport profile",model.profilePath,"profile")+field("framePath","Frame file on VM host",model.framePath,"local profile session")+'</div>'+
-      '<p class="muted">Paths refer to the selected VM host. Python and profile paths are local.</p>'+
-      '<button type="submit" '+(disabled?'disabled':'')+'>Submit once</button></form></section>'+
-      (model.busy?'<p class="notice" role="status">Awaiting coordinator response…</p>':"")+
-      (model.error?'<p class="error" role="alert">'+escape(model.error)+'</p>':"")+
-      (model.reply?'<section class="card"><h2>Response: '+escape(model.reply.status)+'</h2><p>Check the returned status and phase before the next deployment step.</p><div id="update-result">'+structure(model.reply,'update-result')+'</div></section>':"")+
-      '<script nonce="'+nonce+'" src="'+escape(script)+'"></script></body></html>';
-    if(!model.initialized){model.initialized=true;webview.html=model.html;}
-    else if(model.ready)void webview.postMessage({action:"render",html:model.html});
+    const model=target,webview=model.panel.webview;
+    model.epoch=(model.epoch||0)+1;
+    const state=view(model);
+    if(!model.initialized){
+      model.initialized=true;
+      const nonce=crypto.randomBytes(18).toString("hex");
+      const asset=(name,folder="media")=>webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath,folder,name))).toString();
+      webview.html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+        '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src '+escape(webview.cspSource)+'; script-src \'nonce-'+nonce+'\';">'+
+        '<link rel="stylesheet" href="'+escape(asset("ui.css"))+'"><link rel="stylesheet" href="'+escape(asset("inspector.css"))+'"></head>'+
+        '<body data-initial="'+escape(JSON.stringify(state))+'"><div id="app"></div>'+
+        '<script nonce="'+nonce+'" src="'+escape(asset("icons.js"))+'"></script><script nonce="'+nonce+'" src="'+escape(asset("ui.js"))+'"></script>'+
+        '<script nonce="'+nonce+'" src="'+escape(asset("update.js"))+'"></script></body></html>';
+    } else if(model.ready)void webview.postMessage({action:"view",view:state});
   }
   function readFields(fields,model) {
     if(!fields || typeof fields!=="object" || Array.isArray(fields) || !["local","profile","session"].includes(fields.mode))throw new Error("Select an update transport");
@@ -110,13 +109,27 @@ function createController(vscode,context,sessions) {
     {
       const config=vscode.workspace.getConfiguration("uwvm.update"),session=active();
       const id=++nextPanelId;
-      const panel=vscode.window.createWebviewPanel("uwvm.signedUpdate."+id,"UWVM · Hot Update "+id,vscode.ViewColumn.Active,{enableScripts:true,retainContextWhenHidden:true,localResourceRoots:[vscode.Uri.file(context.extensionPath)]});
+      const panel=vscode.window.createWebviewPanel("uwvm.signedUpdate."+id,"Hot Update"+(id>1?" ("+id+")":""),vscode.ViewColumn.Active,{enableScripts:true,retainContextWhenHidden:true,localResourceRoots:[vscode.Uri.file(path.join(context.extensionPath,"media"))]});
+      if(vscode.ThemeIcon)panel.iconPath=new vscode.ThemeIcon("cloud-upload");
       model={panel,id,mode:session&&session.configuration.updateSocketDir?"session":"local",pythonPath:config.get("pythonPath","") || (typeof session?.configuration.pythonPath==="string" && path.isAbsolute(session.configuration.pythonPath)?session.configuration.pythonPath:process.platform==="win32"?"":"/usr/bin/python3"),socketDir:config.get("socketDir",""),profilePath:config.get("transportProfile",""),framePath:"",busy:false};
       const owned=model;
+      if(history&&session) {
+        const navigation=history.register(session,async(_,valid)=>{
+          if(!valid())return;
+          if(owned.disposed){await open();return;}
+          owned.panel.reveal();
+        });
+        navigation.visit({});
+        context.subscriptions.push(history.subscribe(()=>{if(owned.ready&&!owned.disposed)void panel.webview.postMessage({action:"navigation",...history.state(session)});}),panel.onDidChangeViewState(()=>{if(panel.active)navigation.visit({});}));
+      }
       context.subscriptions.push(panel,panel.onDidDispose(()=>{owned.disposed=true;}),panel.webview.onDidReceiveMessage(async value=>{
         if(!value)return;
-        if(value.action==="ready"){owned.ready=true;if(owned.html)void panel.webview.postMessage({action:"render",html:owned.html});return;}
-        if(value.epoch!==owned.epoch){owned.error="This update view changed; review the current fields before submitting.";render(owned);return;}
+        if(value.action==="navigate-back"||value.action==="navigate-forward"){
+          try {await history?.move(value.action==="navigate-back"?-1:1,session);}
+          catch(error){owned.error=String(error.message||error);render(owned);}return;
+        }
+        if(value.action==="ready"){owned.ready=true;void panel.webview.postMessage({action:"navigation",...history?.state(session)});void panel.webview.postMessage({action:"view",view:view(owned)});return;}
+        if(value.action==="submit" && value.epoch!==owned.epoch){owned.error="This window changed while you were editing; review the fields and submit again.";render(owned);return;}
         if(value.action==="new-window"){await open();return;}
         try {
           if(value.action==="browse")await browse(value.field,value.fields,owned);

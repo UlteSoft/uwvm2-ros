@@ -4,12 +4,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="stylesheet" href="__CSS__"><title>Wasm instructions</title></head>
 <body>
-<header><div id="identity">Wasm instructions</div>
-<form id="jump"><label for="address">Offset</label><input id="address" placeholder="0x…" aria-label="Wasm byte offset"><button type="submit">Go</button></form></header>
+<header>
+  <button type="button" data-action="navigate-back" title="Back (Alt+Left)" aria-label="Back" disabled>←</button>
+  <button type="button" data-action="navigate-forward" title="Forward (Alt+Right)" aria-label="Forward" disabled>→</button>
+  <div id="identity">Wasm instructions</div>
+  <form id="jump"><label for="address">Offset</label><input id="address" placeholder="0x…" spellcheck="false" aria-label="Wasm byte offset in this function"><button type="submit">Go</button></form>
+</header>
 <div id="status" role="status">Waiting for the current stopped frame…</div>
 <div id="listing" role="region" aria-label="Wasm disassembly">
-<div id="rail" aria-label="Fixed instruction addresses"><div id="rail-rows"></div></div>
-<div id="code" tabindex="0" role="grid" aria-label="Wasm instruction list" aria-readonly="true"><div id="space"><div id="code-rows"></div></div></div>
+  <div id="rail" aria-label="Fixed instruction addresses"><div id="rail-rows"></div></div>
+  <div id="code" tabindex="0" role="grid" aria-label="Wasm instructions" aria-readonly="true"><div id="space"><div id="code-rows"></div></div></div>
 </div>
-<div id="notice" role="status"></div><div id="hover" role="tooltip" hidden></div>
+<div id="notice" role="status" hidden></div>
+<div id="hover" role="tooltip" hidden></div>
 <script nonce="__NONCE__" src="__SCRIPT__"></script></body></html>

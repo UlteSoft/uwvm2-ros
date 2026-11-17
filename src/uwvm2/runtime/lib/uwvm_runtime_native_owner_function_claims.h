@@ -1,6 +1,7 @@
 // Actual object/symbol claim DATA. Exact backend endpoints are necessary, but
 // neither this helper nor a table name issues executable read/step permission.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "uwvm_runtime_native_owner_table_object_graph.h"
 #include "uwvm_runtime_native_arm_mapping.h"
 #ifndef UWVM_MODULE
@@ -18,7 +19,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
     };
     struct claim
     {
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         ::std::uint64_t section{}, offset{}, section_size{}, explicit_size{};
         unsigned kind{}, flags{};
         bool defined{}, text{}, located{}, explicit_size_known{};
@@ -27,8 +28,8 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
     };
     struct image
     {
-        ::std::vector<graph::row> bodies{};
-        ::std::vector<claim> claims{};
+        ::uwvm2::utils::container::std_vector<graph::row> bodies{};
+        ::uwvm2::utils::container::std_vector<claim> claims{};
         unsigned blockers{};
         bool complete{};
         [[nodiscard]] bool endpoints_unambiguous() const noexcept
@@ -155,7 +156,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
         // overlaps. Probe only the adjacent bodies, avoiding quadratic work
         // when a target retains a temporary for every basic block.
         [[nodiscard]] inline ::std::span<graph::row const> adjacent_body(image const& candidate,
-            ::std::vector<::std::size_t> const& geometric,claim const& value,bool endpoint) noexcept
+            ::uwvm2::utils::container::std_vector<::std::size_t> const& geometric,claim const& value,bool endpoint) noexcept
         {
             if((candidate.blockers & static_cast<unsigned>(blocker::overlapping_body))!=0u) { return {}; }
             auto found{::std::upper_bound(geometric.begin(),geometric.end(),value,[&](auto const& point,auto index)
@@ -185,7 +186,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
         struct descriptor_index
         {
             ::llvm::object::SectionRef section{};
-            ::std::vector<descriptor_relocation> relocations{};
+            ::uwvm2::utils::container::std_vector<descriptor_relocation> relocations{};
             bool present{};
             [[nodiscard]] bool build(::llvm::object::ObjectFile const& object)
             {
@@ -308,13 +309,13 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
             if(ordinary_tables!=1u || dynamic_tables!=0u) { return false; }
         }
         if(!graph::collect(object,candidate.bodies)) { return false; }
-        ::std::vector<native_arm_mapping::data_range> arm_data{};
+        ::uwvm2::utils::container::std_vector<native_arm_mapping::data_range> arm_data{};
         if(!native_arm_mapping::collect(object,arm_data)) { return false; }
         detail::descriptor_index descriptors{};
         if(!descriptors.build(object)) { return false; }
-        ::std::vector<detail::named_body> names{};::std::vector<::std::size_t> geometric{};
-        ::std::vector<::std::string_view> original_names{};original_names.reserve(candidate.bodies.size());
-        ::std::vector<unsigned> entry_counts(candidate.bodies.size()),local_counts(candidate.bodies.size());
+        ::uwvm2::utils::container::std_vector<detail::named_body> names{};::uwvm2::utils::container::std_vector<::std::size_t> geometric{};
+        ::uwvm2::utils::container::std_vector<::std::string_view> original_names{};original_names.reserve(candidate.bodies.size());
+        ::uwvm2::utils::container::std_vector<unsigned> entry_counts(candidate.bodies.size()),local_counts(candidate.bodies.size());
         names.reserve(candidate.bodies.size()*2u);geometric.reserve(candidate.bodies.size());
         for(::std::size_t i{};i<candidate.bodies.size();++i)
         {
@@ -341,7 +342,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
             auto const& left{candidate.bodies[geometric[i-1u]]};auto const& right{candidate.bodies[geometric[i]]};
             if(left.section==right.section && left.end_offset>right.begin_offset) { detail::deny(candidate,blocker::overlapping_body); }
         }
-        ::std::vector<::std::uint64_t> section_anchors{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> section_anchors{};
         ::std::size_t total_name_bytes{};
         bool const elf{::llvm::isa<::llvm::object::ELFObjectFileBase>(object)};
         for(auto const& symbol:object.symbols())
@@ -354,7 +355,7 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
                name->size()>graph::detail::max_object_bytes-total_name_bytes) { return false; }
             total_name_bytes+=name->size();
             claim value{};value.kind=static_cast<unsigned>(*kind);value.flags=*flags;
-            if(!name->empty()) { value.name=::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{name->data(),name->size()}); }
+            if(!name->empty()) { value.name=::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{name->data(),name->size()}); }
             value.defined=(*flags & (::llvm::object::SymbolRef::SF_Undefined|::llvm::object::SymbolRef::SF_Absolute|::llvm::object::SymbolRef::SF_Common))==0u;
             auto selected{symbol.getSection()};if(!selected) { ::llvm::consumeError(selected.takeError());return false; }
             if(*selected!=object.section_end())
@@ -412,14 +413,33 @@ namespace uwvm2::runtime::lib::details::native_owner_function_claims
                 if(!accepted && inside.size()==1u && native_arm_mapping::kind(object,symbol,::llvm::StringRef{value.name})=='d')
                 {
                     // Literal data is not an alias or a new callable body.
-                    // Require the complete actual mapping interval to remain
-                    // inside this one proved body. Provenance separately masks
-                    // every one of its bytes, including conflicting DWARF rows.
+                    // ARM's $d interval ends at the next ISA marker, so a
+                    // trailing pool can also cover inter-function alignment.
+                    // Keep the proved body end unchanged and accept that gap
+                    // only if the data interval enters no other actual body.
+                    // Provenance masks the complete interval independently;
+                    // neither its padding nor its literals become code grants.
                     auto const& body{inside[0u]};
                     for(auto const& data:arm_data)
                     {
-                        if(data.section==value.section && data.begin==value.offset && data.section_size==value.section_size &&
-                           data.begin>=body.begin_offset && data.end<=body.end_offset) { accepted=true;break; }
+                        if(data.section!=value.section || data.begin!=value.offset || data.section_size!=value.section_size ||
+                           data.begin<body.begin_offset || data.begin>=body.end_offset) { continue; }
+                        accepted=data.end<=body.end_offset;
+                        if(!accepted)
+                        {
+                            auto const next{::std::lower_bound(geometric.begin(),geometric.end(),body.end_offset,
+                                [&](auto index,auto end)
+                                {
+                                    auto const& candidate_body{candidate.bodies[index]};
+                                    return candidate_body.section<body.section ||
+                                        (candidate_body.section==body.section && candidate_body.begin_offset<end);
+                                })};
+                            // geometric contains only indices collected from
+                            // this owned body vector; compare end before reading.
+                            accepted=next==geometric.end() || candidate.bodies[*next].section!=body.section ||
+                                data.end<=candidate.bodies[*next].begin_offset;
+                        }
+                        break;
                     }
                 }
                 if(!accepted)

@@ -2,6 +2,9 @@
 // actual runtime entries, publication guards and TLS accessors are defined.
 // Not exported as a management API. No closed token/census/restore issuer exists here.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 extern "C++"
 {
@@ -71,9 +74,9 @@ extern "C++"
         {
             // Private gate construction, only after the actual setter has acquired
             // execution-domain maintenance+admission quiescence and publication.
-            auto gate{::std::unique_ptr<gate_type>{new gate_type{}}};
-            return owner{new retained_state{profile, g_runtime.debug_pause_control,
-                current_runtime_generation(), ::std::move(gate)}};
+            auto gate{::uwvm2::utils::container::std_unique_ptr<gate_type>{::uwvm2::utils::allocator::fast_io_strict::object<gate_type>([&](gate_type* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) gate_type{}; })}};
+            return owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<retained_state>([&](retained_state* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) retained_state{profile, g_runtime.debug_pause_control,
+                current_runtime_generation(), ::std::move(gate)}; }))};
         }
 #ifdef UWVM_CPP_EXCEPTIONS
         catch(...) { return {}; } // Nothing installed; complete source stays unchanged.

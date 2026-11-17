@@ -23,6 +23,8 @@ import sys
 import tempfile
 import time
 
+from private_unix_socket import bind_private, connect_private
+
 MAX_COMMAND = 8448
 MAX_REPLY = 65536
 CAPABILITY_BYTES = 32
@@ -289,8 +291,6 @@ def serve(arguments):
         raise
     socket_path = directory / SOCKET_NAME
     capability_path = directory / CAPABILITY_NAME
-    if len(os.fsencode(socket_path)) >= 104:
-        raise RuntimeError('Unix socket path exceeds macOS sockaddr_un limit')
     capability = secrets.token_bytes(CAPABILITY_BYTES)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
     descriptor = os.open(capability_path, flags, 0o600)
@@ -305,7 +305,7 @@ def serve(arguments):
     detached = False
     bound = False
     try:
-        listener.bind(str(socket_path))
+        bind_private(listener, socket_path)
         bound = True
         os.chmod(socket_path, 0o600)
         listener.listen(2)
@@ -377,7 +377,7 @@ def connect(arguments):
         os.close(descriptor)
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as channel:
         channel.settimeout(8)
-        channel.connect(str(directory / SOCKET_NAME))
+        connect_private(channel, directory / SOCKET_NAME)
         send_frame(channel, capability, CAPABILITY_BYTES)
         if read_frame(channel, MAX_REPLY) != b'ready\n':
             raise RuntimeError('debugger authorization rejected')

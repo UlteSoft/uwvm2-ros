@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #if !(__cpp_pack_indexing >= 202311L)
 # error "UWVM requires at least C++26 standard compiler. See https://en.cppreference.com/w/cpp/feature_test#cpp_pack_indexing"
@@ -99,7 +100,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::concepts
 
             // Define the binfmt needed for the feature. Duplicates not eliminated.
             // use std vector for consteval environment
-            ::std::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_vers_uneliminated{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_vers_uneliminated{};
 
             // Get all required binfmt versions from the variant templates
             [&binfmt_vers_uneliminated]<::std::size_t... I>(::std::index_sequence<I...>) constexpr noexcept
@@ -110,7 +111,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::concepts
 
             // Constructing a version that eliminates duplicates.
             // use std vector for consteval environment
-            ::std::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_vers{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_vers{};
             for(::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 tmp{0u}; auto curr: binfmt_vers_uneliminated)
             {
                 if(curr == tmp) { continue; }
@@ -120,7 +121,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::concepts
 
             // Define the binfmt needed to process the feature.
             // use std vector for consteval environment
-            ::std::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_handlers{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> binfmt_handlers{};
 
             // Cannot define a parsing policy that differs from your wasm version.
             [&binfmt_handlers]<::std::size_t... I>(::std::index_sequence<I...>) constexpr noexcept

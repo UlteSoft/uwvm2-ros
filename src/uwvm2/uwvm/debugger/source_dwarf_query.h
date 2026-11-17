@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_scope_path.h"
 # include <algorithm>
@@ -21,7 +22,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     {
         // Owned display strings only. call_file/line/column are DWARF call-site
         // metadata, not a fabricated caller Wasm PC or the current source line.
-        ::std::string name{}, call_file{};
+        ::uwvm2::utils::container::std_string name{}, call_file{};
         ::std::uint64_t call_line{}, call_column{};
     };
     struct inline_query_limits
@@ -34,7 +35,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     // Only the current physical frame can be expanded. No LLVM API/expression,
     // source file, native pointer, caller PC, local or memory value is accessed.
     [[nodiscard]] inline inline_query_error query_inline_frames(::std::span<scope_record const> scopes,
-        ::std::uint64_t pc, ::std::vector<inline_frame>& out, inline_query_limits const& cap = {}, owned_scope_paths const* scope_owner = nullptr,
+        ::std::uint64_t pc, ::uwvm2::utils::container::std_vector<inline_frame>& out, inline_query_limits const& cap = {}, owned_scope_paths const* scope_owner = nullptr,
         ::std::size_t* physical_record_index = nullptr) noexcept
     {
         out.clear();
@@ -62,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 case scope_path_error::allocation_failure: return inline_query_error::allocation_failure;
                 default: return inline_query_error::malformed;
             }
-            ::std::vector<inline_frame> pending{};
+            ::uwvm2::utils::container::std_vector<inline_frame> pending{};
             ::std::size_t strings{};
             for(::std::size_t i{1u}; i < path.record_indices.size(); ++i)
             {
@@ -77,8 +78,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 if(!budget::charge(scope.name.size(), cap.max_string_bytes, strings) ||
                    !budget::charge(scope.call_file.size(), cap.max_string_bytes, strings))
                 { return inline_query_error::limit_exceeded; }
-                pending.push_back({::fast_io::concat_std(::std::string_view{scope.name}),
-                    ::fast_io::concat_std(::std::string_view{scope.call_file}), scope.call_line, scope.call_column});
+                pending.push_back({::uwvm2::utils::container::concat(::std::string_view{scope.name}),
+                    ::uwvm2::utils::container::concat(::std::string_view{scope.call_file}), scope.call_line, scope.call_column});
             }
             ::std::reverse(pending.begin(), pending.end());
             if(path.record_indices.empty()) { return inline_query_error::malformed; }

@@ -3,6 +3,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <algorithm>
 #include <array>
@@ -52,7 +55,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         };
     private:
         void const* module_{};
-        ::std::vector<slot> slots_{};
+        ::uwvm2::utils::container::std_vector<slot> slots_{};
         binding_owner() = default;
     public:
         binding_owner(binding_owner const&) = delete;
@@ -65,9 +68,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
                 [](slot const& item, ::std::uint64_t n) { return item.data.index < n; })};
             return found != slots_.end() && found->data.index == index ? ::std::addressof(*found) : nullptr;
         }
-        [[nodiscard]] ::std::vector<value> values() const
+        [[nodiscard]] ::uwvm2::utils::container::std_vector<value> values() const
         {
-            ::std::vector<value> out; out.reserve(slots_.size());
+            ::uwvm2::utils::container::std_vector<value> out; out.reserve(slots_.size());
             for(auto const& item : slots_) { out.push_back(item.data); }
             return out;
         }
@@ -75,7 +78,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         {
             static_assert(sizeof(float) == 4u && sizeof(double) == 8u);
             if(actual_module == nullptr || values.empty() || values.size() > 4096u) { return {}; }
-            ::std::shared_ptr<binding_owner> result{new binding_owner}; result->module_ = actual_module;
+            ::std::shared_ptr<binding_owner> result{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<binding_owner>([&](binding_owner* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) binding_owner; }))}; result->module_ = actual_module;
             result->slots_.reserve(values.size());
             for(auto const& v : values)
             {

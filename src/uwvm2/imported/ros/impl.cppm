@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Sole named-module owner; import issues no authority or native effects.
 module;
+// Header-owned container/allocator dependencies belong to the global module.
+// Importing fast_io does not carry their preprocessing guards into this TU.
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/thread/monotonic_clock.h>
+#include <uwvm2/utils/thread/process_exit.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -51,6 +58,7 @@ module;
 
 export module uwvm2.imported.ros;
 import fast_io;
+import fast_io_crypto;
 
 #ifndef UWVM_MODULE
 #define UWVM_MODULE
@@ -67,6 +75,7 @@ export {
 #include "common/audit_io.h"
 #include "common/buffer_audit.h"
 #include "common/management.h"
+#include "common/checkpoint_restore.h"
 #include "common/service_availability_history.h"
 #include "common/rmw_endpoint_history.h"
 #include "common/rmw_service_bindings.h"

@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/container/standard.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>

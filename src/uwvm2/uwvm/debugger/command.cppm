@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/standard.h>
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -17,6 +19,8 @@ import uwvm2.uwvm.debugger.wasm_mutation;
 import uwvm2.uwvm.debugger.wasm_path;
 import uwvm2.uwvm.debugger.wasip1_state;
 import uwvm2.uwvm.debugger.ros_state;
+import uwvm2.uwvm.debugger.scene_state;
+import uwvm2.uwvm.debugger.wasithread_state;
 import uwvm2.uwvm.debugger.host_trace;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export

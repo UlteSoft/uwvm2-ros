@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Canonical named-module owner. No policy, grant, worker or Source is created by import.
 module;
+#include <uwvm2/utils/container/standard.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -22,7 +23,7 @@ module;
 #include <new>
 #include <optional>
 #include <span>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -67,5 +68,4 @@ import uwvm2.uwvm.runtime.storage;
 #undef UWVM_MODULE_EXPORT
 #define UWVM_MODULE_EXPORT export
 #include "threaded_allocation.h"
-#include "threaded_once_init.h"
 #include "threaded_child_world.h"

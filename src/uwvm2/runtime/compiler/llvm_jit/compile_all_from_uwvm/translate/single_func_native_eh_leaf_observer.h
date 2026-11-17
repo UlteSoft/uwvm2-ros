@@ -69,7 +69,7 @@ namespace native_eh_leaf_observer
             {
                 auto domain{effect::observation_domain::create(module_id, module.local_defined_function_vec_storage.size())};
                 if(!domain) { return {}; }
-                owner result{new module_attempt{source, module, ::std::move(domain), budget}};
+                owner result{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<module_attempt>([&](module_attempt* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) module_attempt{source, module, ::std::move(domain), budget}; }))};
                 ::std::size_t expression_bytes{};
                 for(auto const& function: module.local_defined_function_vec_storage)
                 {
@@ -133,7 +133,7 @@ namespace native_eh_leaf_observer
     {
         module_attempt::owner attempt{};
         ::std::optional<effect::function_observation> observation{};
-        ::std::vector<call_witness> witnesses{};
+        ::uwvm2::utils::container::std_vector<call_witness> witnesses{};
         ::std::size_t instruction_count{};
         decline reason{decline::incomplete};
     };
@@ -151,7 +151,7 @@ namespace native_eh_leaf_observer
         ::std::size_t function_index_{}, expression_size_{}, current_begin_{}, count_{}, call_count_{};
         ::std::optional<effect::function_recorder> recorder_{};
         ::std::optional<effect::function_observation> sealed_{};
-        ::std::vector<call_witness> witnesses_{};
+        ::uwvm2::utils::container::std_vector<call_witness> witnesses_{};
         ::std::array<effect::handler_observation, 256uz> handlers_{};
         ::std::size_t handler_count_{}, target_{effect::unknown_function};
         effect::linked_tag_identity throw_tag_{};
@@ -237,7 +237,7 @@ namespace native_eh_leaf_observer
             auto const size{static_cast<::std::size_t>(local.code_end - local.code_begin)};
             if(size > 8uz * 1'024uz * 1'024uz) { return {}; }
 #ifdef UWVM_CPP_EXCEPTIONS
-            try { return ::std::shared_ptr<function_state>{new function_state{attempt, local.function_index, size}}; }
+            try { return ::std::shared_ptr<function_state>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<function_state>([&](function_state* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) function_state{attempt, local.function_index, size}; }))}; }
             catch(...) { return {}; }
 #else
             return {};
@@ -359,7 +359,7 @@ namespace native_eh_leaf_observer
 #ifdef UWVM_CPP_EXCEPTIONS
             try
             {
-                return ::std::make_shared<function_result>(function_result{
+                return ::uwvm2::utils::container::make_shared<function_result>(function_result{
                     attempt_, ::std::move(sealed_), ::std::move(witnesses_), count_, reason_});
             }
             catch(...) { stop(decline::allocation); return {}; }

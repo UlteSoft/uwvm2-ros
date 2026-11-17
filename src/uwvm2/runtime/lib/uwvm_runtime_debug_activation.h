@@ -3,6 +3,7 @@
 // generated entry/exit hooks feed this native ledger. Including this
 // LLVM-free component does not enable instrumentation or grant runtime authority.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -22,6 +23,9 @@ namespace uwvm2::runtime::lib::details::debug_activation
     {
         ::std::uint64_t incarnation{}, parent{}, continuation{};
         ::std::uint64_t module{}, function{}, function_generation{}, runtime_epoch{}, island{};
+        // Private compiler-observed call ancestry, including eliminated tail
+        // callers. It is neither a guest value nor a mutable debugger register.
+        bool ros_cross_module_ancestry{};
     };
     // Blocks never move. Only a genuine on-worker entry/host bridge may grow
     // the directory; a Wasm-owned kernel witness cannot interrupt that bridge.
@@ -51,8 +55,8 @@ namespace uwvm2::runtime::lib::details::debug_activation
         segmented_storage& operator=(segmented_storage const&) = delete;
         ~segmented_storage()
         {
-            for(::std::size_t i{}; i != size_; ++i) { delete[] blocks_[i]; }
-            delete[] blocks_;
+            for(::std::size_t i{}; i != size_; ++i) { ::uwvm2::utils::allocator::fast_io_strict::destroy_array(blocks_[i]); }
+            ::uwvm2::utils::allocator::fast_io_strict::destroy_array(blocks_);
         }
     private:
         [[nodiscard]] UWVM_NOINLINE failure grow(::std::size_t index, ::std::size_t& used, ::std::size_t budget) noexcept
@@ -69,14 +73,14 @@ namespace uwvm2::runtime::lib::details::debug_activation
             constexpr auto block_bytes{frames_per_block * sizeof(T)};
             if(used > budget || block_bytes > budget - used || directory_bytes > budget - used - block_bytes)
             { return failure::resource_exhausted; }
-            auto* block{new(::std::nothrow) T[frames_per_block]{}};
+            auto* block{::uwvm2::utils::allocator::fast_io_strict::try_array<T>(frames_per_block, true)};
             if(block == nullptr) { return failure::allocation_failed; }
             if(next_capacity != capacity_)
             {
-                auto* directory{new(::std::nothrow) T*[next_capacity]{}};
-                if(directory == nullptr) { delete[] block; return failure::allocation_failed; }
+                auto* directory{::uwvm2::utils::allocator::fast_io_strict::try_array<T*>(next_capacity, true)};
+                if(directory == nullptr) { ::uwvm2::utils::allocator::fast_io_strict::destroy_array(block); return failure::allocation_failed; }
                 for(::std::size_t i{}; i != size_; ++i) { directory[i] = blocks_[i]; }
-                delete[] blocks_; blocks_ = directory; capacity_ = next_capacity;
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_array(blocks_); blocks_ = directory; capacity_ = next_capacity;
             }
             blocks_[size_++] = block; used += block_bytes + directory_bytes;
             return failure::none;
@@ -244,7 +248,7 @@ namespace uwvm2::runtime::lib::details::debug_activation
             return pending_.continuation == 0u && pending_.parent == 0u && pending_.island == 0u && pending_.count == 0u;
         }
         [[nodiscard]] UWVM_ALWAYS_INLINE ::std::uint64_t enter(::std::uint64_t module, ::std::uint64_t function,
-            ::std::uint64_t generation, ::std::uint64_t epoch) noexcept
+            ::std::uint64_t generation, ::std::uint64_t epoch, bool ros_cross_module_ancestry = false) noexcept
         {
             if(poisoned_) { return 0u; }
             if(generation == 0u || epoch == 0u) { poison(); return 0u; }
@@ -259,7 +263,7 @@ namespace uwvm2::runtime::lib::details::debug_activation
                 { poison(); return 0u; }
                 continuation = pending_.continuation; pending_ = {};
             }
-            frames_[count_++] = {identity, parent, continuation, module, function, generation, epoch, island_};
+            frames_[count_++] = {identity, parent, continuation, module, function, generation, epoch, island_, ros_cross_module_ancestry};
             return identity;
         }
         UWVM_ALWAYS_INLINE void leave(::std::uint64_t identity, exit_kind kind) noexcept

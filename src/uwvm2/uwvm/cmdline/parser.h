@@ -354,6 +354,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             // Here, guard will perform destructors.
         }
 
+#if defined(UWVM_IMPORT_ROSV2) && defined(UWVM_SUPPORT_PRELOAD_DL)
+        // ROSv2 owns a fixed VM process boundary. Detect both option orders and
+        // aliases before any native constructor, signature check or callback.
+        // A signature, warning override or platform selection cannot make an
+        // in-process native driver compatible with that boundary.
+        bool scene_requested{}, native_library_requested{};
+        for(auto current{pr.begin()+1u};current!=end_pos;++current)
+        {
+            scene_requested|=current->para==::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_create);
+            native_library_requested|=current->para==::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_register_dl);
+        }
+        if(scene_requested&&native_library_requested)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] ROSv2 requires process-isolated native drivers; --wasm-register-dl cannot be combined with --ros-scene-create. "
+                u8"Use an explicitly confined external provider. (rosv2-native-isolation)");
+            return parsing_return_val::returnm1;
+        }
+#endif
+
         // Resolve the complete feature policy before ANY Wasm preload parses
         // declarations. Baselines and explicit overrides compose in either order;
         // a late disable must not leave an earlier preload admitted more broadly.
@@ -364,6 +384,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             { return parsing_return_val::returnm1; }
         }
 
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
         // Select driver verification before ANY preload constructor, regardless
         // of CLI option order. This never authorizes a Guest-controlled dlopen.
         for(auto current{pr.begin()+1u};current!=end_pos;++current)
@@ -385,6 +406,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             }
             certificate->type=kind::occupied_arg;
         }
+#endif
         // Register all explicitly selected secure modules before ANY preload
         // callback. Unselected modules retain their ordinary loading behavior.
         bool secure_status_requested{};

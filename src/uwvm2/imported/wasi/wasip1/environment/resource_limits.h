@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/control/host_diagnostics.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
@@ -58,7 +60,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
 #endif
         {
             constexpr ::std::string_view names[]{"random","stdin","stdout","stderr","realtime","monotonic","process","thread","poll","signal","yield","filesystem","socket-read","socket-write","socket-accept","socket-shutdown"};
-            ::std::string key{names[static_cast<unsigned>(kind)]};key+='.';key+=field;
+            ::uwvm2::utils::container::std_string key{names[static_cast<unsigned>(kind)]};key+='.';key+=field;
             ::uwvm2::utils::control::host_diagnostics::limited(key,wait);
         }
 #if defined(__cpp_exceptions)
@@ -200,7 +202,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         // group shares its environment; native world clones copy this handle.
         // It is deliberately excluded from policy wire encoding and snapshots
         // of consumed state: no Guest or restore can reset this ledger.
-        ::std::shared_ptr<budget_ledger> accounting{::std::make_shared<budget_ledger>()};
+        ::std::shared_ptr<budget_ledger> accounting{::uwvm2::utils::container::make_shared<budget_ledger>()};
         ::std::array<operation_limit, static_cast<unsigned>(budget_kind::count)> operations{};
         ::std::array<::std::uint64_t, 4u> clock_granularity_ns{1u, 1u, 1u, 1u};
         ::std::uint64_t max_poll_subscriptions{unlimited};

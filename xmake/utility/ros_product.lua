@@ -140,15 +140,16 @@ function uwvm_ros_product_check(get, host, host_arch, reject_configuration)
     -- Modern ROS threads, C++ EH, signed caches and the genuine AOT backend are
     -- product requirements. Legacy DOS/Win9x workarounds cannot silently alter them.
     for _, option in ipairs({"use-thread-local", "use-llvm-compiler", "enable-wsea", "linux-native-debug",
-        "enable-local-imported-wasip1-wasm64", "detailed-debug-check", "import-ros1", "import-ros2"}) do
+        "enable-local-imported-wasip1-wasm64", "detailed-debug-check", "import-u2rosv2"}) do
         if value(option, true) ~= true then reject("--" .. option .. "=false is not recommended or supported") end
     end
     for _, option in ipairs({"fno-exceptions", "disable-local-imported-wasip1",
         "macos-x64-native-step", "macos-4gib-test", "numeric-exception-fused", "enable-lto"}) do
         if value(option, false) ~= false then reject("--" .. option .. " is not supported by this product") end
     end
-    -- Every host interface is present in the ROS product. Exposure and grants
-    -- are immutable per-module runtime policy, never a build-time omission.
+    -- WASI and ROSv2 are product interfaces. Deprecated ROSv1 and unsafe native
+    -- preloading are separate, default-off build opt-ins. Enabling their code
+    -- grants no runtime exposure, calls or resources.
     -- Both socket ABIs are compiled; the process selects one before linking.
     if value("enable-local-imported-wasip1-socket", "wasip1") ~= "wasip1" then
         reject("--enable-local-imported-wasip1-socket must be wasip1; socket interfaces cannot be removed " ..

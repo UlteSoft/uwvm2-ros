@@ -30,8 +30,8 @@
     }
     else
     {
-        carrier = new ::llvm::GlobalVariable{*module, symbol->getType(), false,
-            ::llvm::GlobalValue::PrivateLinkage, symbol, name_ref};
+        carrier = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*module, symbol->getType(), false,
+            ::llvm::GlobalValue::PrivateLinkage, symbol, name_ref);
         carrier->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
     }
     ::llvm::Value* location{carrier};

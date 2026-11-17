@@ -15,7 +15,7 @@ template<auto Native>
 
 [[nodiscard]] inline bool threaded_eh_catch_values(runtime_local_func_llvm_jit_emit_state_t& state,
     llvm_jit_exception_handler_t const& handler,::llvm::Value* token,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t>& values) noexcept
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t>& values) noexcept
 {
     using abi=::uwvm2::runtime::lib::threaded_exception_bridge_api;
     auto& b=*state.ir_builder;auto word=b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT);
@@ -95,7 +95,7 @@ template<auto Native>
                 next=::llvm::BasicBlock::Create(b.getContext(),"threaded.eh.next",f);
                 b.CreateCondBr(b.CreateICmpNE(matched,::llvm::ConstantInt::get(word,0u)),selected,next);b.SetInsertPoint(selected);
             }
-            ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+            ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
             if(!threaded_eh_catch_values(state,handler,token,values))return false;
             auto consume_type=::llvm::FunctionType::get(b.getVoidTy(),{word},false);
             if(threaded_eh_call<&abi::consume>(state,consume_type,{token})==nullptr)return false;

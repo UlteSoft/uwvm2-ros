@@ -94,3 +94,25 @@ def validate_fault_action(arguments, error_type=ValueError):
     positions = [i for i, value in enumerate(options) if value == "--debug-fault-action"]
     if len(positions) > 1 or positions and (positions[0]+1 >= len(options) or options[positions[0]+1] not in ("crash", "pause", "exit")):
         raise error_type("--debug-fault-action accepts exactly one crash, pause or exit value; crash is the default")
+    validate_dump_policy(arguments, error_type)
+
+
+def validate_dump_policy(arguments, error_type=ValueError, permission=None):
+    options = host_options(arguments, error_type)
+    positions = [(i, value) for i, value in enumerate(options) if value in ("--debug-dump-max", "--debug-dump-force")]
+    if len(positions) > 1:
+        raise error_type("select exactly one --debug-dump-max or --debug-dump-force launch option")
+    if not positions:
+        return ("max", "full")
+    index, option = positions[0]
+    kind = "force" if option == "--debug-dump-force" else "max"
+    allowed = ("none", "diagnostic", "full") if kind == "force" else ("diagnostic", "full")
+    if index + 1 >= len(options) or options[index + 1] not in allowed:
+        raise error_type(option + " requires " + ", ".join(allowed))
+    level = options[index + 1]
+    permission = permission or _explicit_permissions(options, error_type) or _default_permissions(options)
+    ceiling = "none" if permission == "none" else "diagnostic" if permission == "limited" else "full"
+    rank = {"none": 0, "diagnostic": 1, "full": 2}
+    if kind == "force" and rank[level] > rank[ceiling]:
+        raise error_type("forced dump disclosure exceeds the debugger launch permission")
+    return kind, level

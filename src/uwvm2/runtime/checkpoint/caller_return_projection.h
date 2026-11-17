@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "shadow_ledger.h"
 # include <type_traits>
@@ -22,9 +25,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     {
         sealed_function_plan::owner plan_{};
         ::std::uint64_t waiting_site_{}, next_site_{};
-        ::std::vector<types::core_value_type> result_types_{};
+        ::uwvm2::utils::container::std_vector<types::core_value_type> result_types_{};
         caller_return_projection(sealed_function_plan::owner plan, ::std::uint64_t waiting,
-            ::std::uint64_t next, ::std::vector<types::core_value_type>&& results) :
+            ::std::uint64_t next, ::uwvm2::utils::container::std_vector<types::core_value_type>&& results) :
             plan_{::std::move(plan)}, waiting_site_{waiting}, next_site_{next}, result_types_{::std::move(results)} {}
         [[nodiscard]] static status scalar_value(native_value const& value, typed_slot expected) noexcept
         {
@@ -109,8 +112,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
                 // [safe] complete exact counts BEFORE either bounded index.
                 if(call.slots[prefix + i] != after.slots[prefix + declared_results.size() + i]) { return {}; }
             }
-            ::std::vector<types::core_value_type> results{declared_results.begin(), declared_results.end()};
-            return owner{new caller_return_projection{::std::move(plan), waiting, next, ::std::move(results)}};
+            ::uwvm2::utils::container::std_vector<types::core_value_type> results{declared_results.begin(), declared_results.end()};
+            return owner{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<caller_return_projection>([&](caller_return_projection* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) caller_return_projection{::std::move(plan), waiting, next, ::std::move(results)}; }))};
         }
         [[nodiscard]] sealed_function_plan::owner const& plan() const noexcept { return plan_; }
         [[nodiscard]] ::std::uint64_t waiting_site() const noexcept { return waiting_site_; }

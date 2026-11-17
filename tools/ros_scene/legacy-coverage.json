@@ -1,0 +1,1442 @@
+{
+  "format": "robot-scene-legacy-coverage",
+  "scope": "Exhaustive source inventory and reviewed semantic obligations; not proof of native observational equivalence or package portability.",
+  "legacy_source": "src/uwvm2/uwvm/imported/ros/host.h",
+  "policy_source": "src/uwvm2/utils/control/host_interfaces.h",
+  "catalogue": "interface-catalogue.json",
+  "contract": "../../documents/runtime/ros-legacy-coverage.md",
+  "profiles": {
+    "abi": {
+      "targets": [
+        "abi"
+      ],
+      "meaning": "Query only the ROSv2 ABI boundary; migration rebuilds the guest and replaces version-specific wire encodings.",
+      "authority": [
+        "No resource authority is implied by ABI visibility."
+      ],
+      "verification_obligations": [
+        "Validate every actual compiled legacy signature against the migration adapter."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "capability_open": {
+      "targets": [
+        "capability.open"
+      ],
+      "meaning": "Open only an exact explicit environment alias.",
+      "authority": [
+        "Actual caller/environment and independently exposed interface; no Global or WASI inheritance."
+      ],
+      "verification_obligations": [
+        "Missing grant, wrong environment and stale caller are denied."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "capability_close": {
+      "targets": [
+        "capability.close"
+      ],
+      "meaning": "Drop one owned capability handle without resetting budgets or permanently revoking its grant.",
+      "authority": [
+        "Exact owning environment/caller; closing one handle must not silently revoke siblings."
+      ],
+      "verification_obligations": [
+        "Duplicate close, remaining handles and later reopen preserve counters."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "capability_revoke": {
+      "targets": [
+        "capability.revoke"
+      ],
+      "meaning": "Permanently fence the exact grant and descendants; close is not a replacement for revoke.",
+      "authority": [
+        "Separate explicit revoke permission; no authority over unrelated grants."
+      ],
+      "verification_obligations": [
+        "Concurrent admissions, group sharing, failed output, pending native work and reopen after revoke."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "topic_publish": {
+      "targets": [
+        "context.open",
+        "node.open",
+        "topic.open",
+        "topic.publish",
+        "request.describe"
+      ],
+      "meaning": "Typed publication with owned receipt and exact native outcome.",
+      "authority": [
+        "Publisher-only endpoint; node/context/type origins; payload validation and destination grant."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 serialization, identity/QoS, retries, timeout with unknown native outcome."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "topic_subscribe": {
+      "targets": [
+        "context.open",
+        "node.open",
+        "topic.open",
+        "topic.take"
+      ],
+      "meaning": "Create a receive-only endpoint; receive grants never imply transmit.",
+      "authority": [
+        "Exact topic/type, receive role, native metadata visibility and bounded retention."
+      ],
+      "verification_obligations": [
+        "QoS/history, source identity, short-output preservation and caller retirement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "multiplex_receive": {
+      "targets": [
+        "topic.take",
+        "service.take",
+        "action.take",
+        "parameter.take",
+        "event.stream.open",
+        "event.stream.poll"
+      ],
+      "meaning": "Replace the legacy mixed receive queue with typed source-specific reads or an explicitly assembled event stream.",
+      "authority": [
+        "Each source is separately admitted; ungranted sources and metadata never enter the aggregate."
+      ],
+      "verification_obligations": [
+        "Ordering, loss markers, per-source correlation, malformed/short output and cancellation."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "event_watch": {
+      "targets": [
+        "event.stream.open"
+      ],
+      "meaning": "Observe only explicitly selected source fields and changes.",
+      "authority": [
+        "Observe authority on every source; bounded stream capacity and closed event kinds."
+      ],
+      "verification_obligations": [
+        "No payload or graph rights from observation; overflow and source retirement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "event_poll": {
+      "targets": [
+        "event.stream.poll"
+      ],
+      "meaning": "Read one retained typed event with nonconsuming failed delivery.",
+      "authority": [
+        "Exact stream owner and live origin grants."
+      ],
+      "verification_obligations": [
+        "Event order, source generation, overflow, no consumption on bad pointers."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "event_ready": {
+      "targets": [
+        "wait.create",
+        "wait.add",
+        "wait.poll",
+        "wait.acknowledge"
+      ],
+      "meaning": "Read readiness without consuming the watched source record.",
+      "authority": [
+        "Wait-set grant plus separate observation grant on each source."
+      ],
+      "verification_obligations": [
+        "Level/edge acknowledgement, no lost wakeup, timeout and source retirement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_submit": {
+      "targets": [
+        "service.open",
+        "service.submit",
+        "service.take",
+        "request.describe",
+        "request.release"
+      ],
+      "meaning": "Submit a correlated request with retained receipt and independently delivered response.",
+      "authority": [
+        "Exact client/service/type and complete origin grants."
+      ],
+      "verification_obligations": [
+        "Native response identity, late response, replay, response bounds and unknown effect."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_call": {
+      "targets": [
+        "service.open",
+        "service.submit",
+        "wait.create",
+        "wait.add",
+        "wait.poll",
+        "service.take",
+        "request.describe",
+        "request.release"
+      ],
+      "meaning": "Synchronous adaptation composes bounded submit/wait/take; no host wait retains guest pointers or authority locks.",
+      "authority": [
+        "Same exact service/request rights; wait adds no invocation authority."
+      ],
+      "verification_obligations": [
+        "Deadline, cancellation, late completion and no blind retry after timeout."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_server": {
+      "targets": [
+        "service.open",
+        "service.take",
+        "service.respond"
+      ],
+      "meaning": "A server binds the exact service and request/response schemas.",
+      "authority": [
+        "Server receive and response rights are independent of client submission."
+      ],
+      "verification_obligations": [
+        "Request metadata, correlation, abandoned clients and server replacement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_response": {
+      "targets": [
+        "service.respond"
+      ],
+      "meaning": "Respond only to a live admitted correlation with exact schema.",
+      "authority": [
+        "Response grant and original request identity; no new destination can be selected by bytes."
+      ],
+      "verification_obligations": [
+        "Duplicate response, wrong owner, stale generation, lost ACK and failed sink."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_available": {
+      "targets": [
+        "service.available"
+      ],
+      "meaning": "Observe actual availability for one selected native service.",
+      "authority": [
+        "Availability-only rights do not invoke the service or reveal unrelated discovery."
+      ],
+      "verification_obligations": [
+        "Unavailable versus unsupported/failed native probe; generation and retained observation."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "provider_features": {
+      "targets": [
+        "context.describe",
+        "service.available"
+      ],
+      "meaning": "Replace the old extension feature mask with closed provider-supported/attested states for the selected service context.",
+      "authority": [
+        "Explicit context/service observation; no environment-wide capability enumeration."
+      ],
+      "verification_obligations": [
+        "No positive feature inference from timeout, zero-filled replies or merely configured options."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "action_submit": {
+      "targets": [
+        "action.open",
+        "action.submit",
+        "action.take",
+        "request.describe"
+      ],
+      "meaning": "Submit one goal; asynchronous acceptance, feedback and terminal result remain distinct.",
+      "authority": [
+        "Exact action/type/client rights and per-goal ownership."
+      ],
+      "verification_obligations": [
+        "Rejected goals, accepted goal IDs, delayed response, result ordering and deadline."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "action_observe": {
+      "targets": [
+        "action.describe",
+        "action.take"
+      ],
+      "meaning": "Return separately tagged availability, goal response, status, cancel response, feedback and result.",
+      "authority": [
+        "Observation of exact endpoint/owned goal and only allowed fields; no foreign UUID discovery."
+      ],
+      "verification_obligations": [
+        "Check each legacy event kind and late/duplicate terminal delivery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "action_cancel_owned": {
+      "targets": [
+        "action.cancel",
+        "action.take",
+        "request.describe"
+      ],
+      "meaning": "Request cancellation of the exact owned goal; acceptance is not completion.",
+      "authority": [
+        "Independent cancel grant; no foreign-goal scope."
+      ],
+      "verification_obligations": [
+        "Owned goal fencing, cancel response, already terminal and lost native reply."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "action_cancel_set": {
+      "targets": [
+        "action.cancel.set",
+        "action.take",
+        "request.describe"
+      ],
+      "meaning": "Broader cancellation is a separately bounded selection with explicit permitted principals and selector forms.",
+      "authority": [
+        "A distinct immutable cancellation profile; own-goal rights never authorize cancel-all."
+      ],
+      "verification_obligations": [
+        "Foreign UUID, timestamp, empty-set selectors, partial response and unsupported atomic provider filtering."
+      ],
+      "differential_qualification": "not_qualified",
+      "implementation_gap": "The registered action.cancel.set carrier currently accepts only explicit owned goal handles. Foreign UUID/time/wildcard selectors and authenticated origin-principal filtering remain unimplemented; registration does not establish semantic equivalence."
+    },
+    "action_server": {
+      "targets": [
+        "action.open",
+        "action.take",
+        "action.respond"
+      ],
+      "meaning": "Preserve accept/reject/execute/feedback/succeed/abort/cancel-response semantics with tagged responses.",
+      "authority": [
+        "Server role and a distinct secondary grant for each response transition."
+      ],
+      "verification_obligations": [
+        "Every ROS goal transition, terminal idempotence, wrong role and callback loss."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "transform_lookup": {
+      "targets": [
+        "transform.open",
+        "transform.lookup",
+        "transform.submit",
+        "transform.take",
+        "transform.cancel"
+      ],
+      "meaning": "Qualified frames/timestamps and bounded waits preserve transform lookup; local history alone is not native TF bridging.",
+      "authority": [
+        "Frame-pair, clock, history and lookup grants."
+      ],
+      "verification_obligations": [
+        "Native TF differential lookup, interpolation/extrapolation, disconnected frames and timeout."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "transform_publish": {
+      "targets": [
+        "transform.open",
+        "transform.publish"
+      ],
+      "meaning": "Publish a validated frame relation through the explicitly chosen local or native binding.",
+      "authority": [
+        "Separate dynamic/static frame authority; cycle, frame and timestamp constraints."
+      ],
+      "verification_obligations": [
+        "Native broadcaster qualification; static replacement, revision and temporal bounds."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_get": {
+      "targets": [
+        "parameter.open",
+        "parameter.get"
+      ],
+      "meaning": "Read only resolved permitted keys, preserving ROS1/ROS2 value algebras and missing/uninitialized distinctions.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_set": {
+      "targets": [
+        "parameter.open",
+        "parameter.set",
+        "parameter.set.atomic"
+      ],
+      "meaning": "ROS1 atomic upsert/subtree replacement and ROS2 declared parameter mutation are separately advertised semantics.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_delete": {
+      "targets": [
+        "parameter.open",
+        "parameter.undeclare"
+      ],
+      "meaning": "Delete the admitted key or explicitly approved ROS1 subtree; this is distinct from assigning not-set.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_exists": {
+      "targets": [
+        "parameter.open",
+        "parameter.exists"
+      ],
+      "meaning": "Check exact key existence without granting value, descriptor or list access.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_search": {
+      "targets": [
+        "parameter.open",
+        "parameter.search"
+      ],
+      "meaning": "Perform bounded ROS1 ancestor resolution within the granted namespace chain.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_list": {
+      "targets": [
+        "parameter.open",
+        "parameter.list"
+      ],
+      "meaning": "List only permitted keys with bounded prefix/depth and stable cursor rules.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_describe": {
+      "targets": [
+        "parameter.open",
+        "parameter.describe"
+      ],
+      "meaning": "Read admitted parameter type/range/read-only descriptors without writing values.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "parameter_declare": {
+      "targets": [
+        "parameter.open",
+        "parameter.declare"
+      ],
+      "meaning": "Declare an exact allowed key with approved type/default/range; override semantics remain explicit.",
+      "authority": [
+        "Key/subtree/namespace permissions are separate for get, exists, search, list, declare, mutate and delete; node/context origins remain live."
+      ],
+      "verification_obligations": [
+        "ROS1/ROS2 native differential values; unauthorized ancestors; atomicity, revision, validation rejection and missing-key behavior."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "graph": {
+      "targets": [
+        "graph.snapshot",
+        "graph.watch"
+      ],
+      "meaning": "Snapshot/watch only the legacy operation's requested entity kinds, exact identities and visible metadata. Single-entity inspection must not require wider list disclosure.",
+      "authority": [
+        "Separate discovery profile for topic/node/service/action and fields; no communication authority."
+      ],
+      "verification_obligations": [
+        "Compare each legacy inspect/list operation; hidden identities, counts, pagination and concurrent changes."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "lifecycle_state": {
+      "targets": [
+        "lifecycle.open",
+        "lifecycle.state",
+        "lifecycle.transitions"
+      ],
+      "meaning": "Read the exact node lifecycle; local graph and native node bindings must be distinguished.",
+      "authority": [
+        "Node-bound state/transition observation only."
+      ],
+      "verification_obligations": [
+        "Native primary/transitional/error state and node replacement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "lifecycle_change": {
+      "targets": [
+        "lifecycle.open",
+        "lifecycle.submit",
+        "lifecycle.take",
+        "lifecycle.respond",
+        "request.describe"
+      ],
+      "meaning": "Request an explicitly permitted lifecycle transition with callback outcome and deadline.",
+      "authority": [
+        "Per-transition grant and lifecycle node provenance; no implicit actuator authority."
+      ],
+      "verification_obligations": [
+        "Native callback success/failure/error, replay, timeout and side-effect classification."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "clock_ros": {
+      "targets": [
+        "clock.create",
+        "clock.read"
+      ],
+      "meaning": "Read the ros clock with explicit clock domain and discontinuity behavior.",
+      "authority": [
+        "Only that clock binding; ROS clock updates/native source attachment require separate authority."
+      ],
+      "verification_obligations": [
+        "ROS simulated time activation/jumps, wall offset, monotonicity and units."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "clock_system": {
+      "targets": [
+        "clock.create",
+        "clock.read"
+      ],
+      "meaning": "Read the system clock with explicit clock domain and discontinuity behavior.",
+      "authority": [
+        "Only that clock binding; ROS clock updates/native source attachment require separate authority."
+      ],
+      "verification_obligations": [
+        "ROS simulated time activation/jumps, wall offset, monotonicity and units."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "clock_steady": {
+      "targets": [
+        "clock.create",
+        "clock.read"
+      ],
+      "meaning": "Read the steady clock with explicit clock domain and discontinuity behavior.",
+      "authority": [
+        "Only that clock binding; ROS clock updates/native source attachment require separate authority."
+      ],
+      "verification_obligations": [
+        "ROS simulated time activation/jumps, wall offset, monotonicity and units."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "logging": {
+      "targets": [
+        "log.emit"
+      ],
+      "meaning": "Emit a bounded approved record with severity, origin and redaction policy.",
+      "authority": [
+        "Exact log sink and level/field scope; no guest path or network endpoint."
+      ],
+      "verification_obligations": [
+        "Native log semantics, truncation/loss metadata, rate and reserved cleanup capacity."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "publisher_open": {
+      "targets": [
+        "topic.open"
+      ],
+      "meaning": "Create the exact typed publisher and observe actual activation separately from queue acceptance.",
+      "authority": [
+        "Publish-only binding; native QoS/identity cannot be fabricated."
+      ],
+      "verification_obligations": [
+        "Activation failure/unknown result, actual GID and replacement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "endpoint_inspect": {
+      "targets": [
+        "topic.describe",
+        "qos.describe"
+      ],
+      "meaning": "Inspect actual admitted endpoint/QoS/identity by role; no communication from inspect.",
+      "authority": [
+        "Exact endpoint observation and metadata field scope."
+      ],
+      "verification_obligations": [
+        "Native GID/sequence/timestamps are absent when unavailable, never synthesized."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "endpoint_retire": {
+      "targets": [
+        "resource.close"
+      ],
+      "meaning": "Retire the owned endpoint, fence pending operations and preserve cleanup/effect debt.",
+      "authority": [
+        "Exact resource ownership and close permission; no reopening from an old provider incarnation."
+      ],
+      "verification_obligations": [
+        "Retained borrows, in-flight requests, cleanup failure and repeated close."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "topic_reserve": {
+      "targets": [
+        "topic.reserve"
+      ],
+      "meaning": "Preserve explicit native borrow reserve with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "topic_acknowledge": {
+      "targets": [
+        "topic.acknowledge"
+      ],
+      "meaning": "Preserve explicit native borrow acknowledge with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "topic_release": {
+      "targets": [
+        "topic.release"
+      ],
+      "meaning": "Preserve explicit native borrow release with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_reserve": {
+      "targets": [
+        "service.reserve"
+      ],
+      "meaning": "Preserve explicit native borrow reserve with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_acknowledge": {
+      "targets": [
+        "service.acknowledge"
+      ],
+      "meaning": "Preserve explicit native borrow acknowledge with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_release": {
+      "targets": [
+        "service.release"
+      ],
+      "meaning": "Preserve explicit native borrow release with original metadata, sequence and independent reservation nonce.",
+      "authority": [
+        "Exact consumer, endpoint, original source grants and provider generation; no borrowed native pointer."
+      ],
+      "verification_obligations": [
+        "Failed guest copy, duplicate ACK/cancel, wrong nonce, competing consumers, expiry and lost native ACK."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "client_open": {
+      "targets": [
+        "service.open"
+      ],
+      "meaning": "Activate only the exact client endpoint and schemas.",
+      "authority": [
+        "Client role and complete node/context/type origins."
+      ],
+      "verification_obligations": [
+        "Native activation failure, response routing and provider replacement."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "client_abandon": {
+      "targets": [
+        "service.abandon"
+      ],
+      "meaning": "Retire local wait/response interest without claiming remote cancellation.",
+      "authority": [
+        "Exact owned request and cleanup capacity, independent of traffic quota."
+      ],
+      "verification_obligations": [
+        "Late reply, already complete request and unknown remote effect."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_open": {
+      "targets": [
+        "device.open",
+        "control.open"
+      ],
+      "meaning": "Bind an approved device or control-cycle profile; the guest never loads a native image or adapts a host ABI.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_describe": {
+      "targets": [
+        "device.describe"
+      ],
+      "meaning": "Expose only approved model/field/unit/limit/provider-state metadata.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_read": {
+      "targets": [
+        "sensor.open",
+        "sensor.take",
+        "buffer.read",
+        "control.sample"
+      ],
+      "meaning": "Read a typed state sample with provenance/freshness, independently of motion authority.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_submit": {
+      "targets": [
+        "device.submit",
+        "control.submit"
+      ],
+      "meaning": "Submit a typed unit/frame/sequence/deadline-constrained command under an independently fenced controller lease.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_result": {
+      "targets": [
+        "device.result",
+        "control.result",
+        "wait.create",
+        "wait.add",
+        "wait.poll"
+      ],
+      "meaning": "Wait for the exact owned request; received/accepted/executed/stopped/unknown remain different observations.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "device_close": {
+      "targets": [
+        "resource.close",
+        "device.stop",
+        "control.stop"
+      ],
+      "meaning": "Close/drain the resource with a separately provisioned stop path and retain unresolved physical effects.",
+      "authority": [
+        "Read, command, stop, configuration and maintenance are distinct grants/profiles; pinned host-side driver protocol only."
+      ],
+      "verification_obligations": [
+        "Real driver differential behavior; native image isolation; independent watchdog, controller replacement, unknown effects and crash recovery."
+      ],
+      "differential_qualification": "not_qualified"
+    },
+    "service_inspect": {
+      "targets": [
+        "service.describe"
+      ],
+      "meaning": "Observe the exact retained native service/client incarnation, identity and each request/response QoS profile independently.",
+      "authority": [
+        "Exact endpoint observation and metadata field scope."
+      ],
+      "verification_obligations": [
+        "Native GID/sequence/timestamps are absent when unavailable, never synthesized."
+      ],
+      "differential_qualification": "not_qualified"
+    }
+  },
+  "imports": [
+    {
+      "legacy": "uwvm_ros1_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros1>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.capability_open",
+      "cpp_target": "host::capability_open<core::version::ros1>",
+      "semantic_profile": "capability_open"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.capability_close",
+      "cpp_target": "host::capability_close<core::version::ros1>",
+      "semantic_profile": "capability_close"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.capability_revoke",
+      "cpp_target": "host::capability_revoke<core::version::ros1>",
+      "semantic_profile": "capability_revoke"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.topic_publish",
+      "cpp_target": "host::topic_publish<core::version::ros1>",
+      "semantic_profile": "topic_publish"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.topic_subscribe",
+      "cpp_target": "host::topic_subscribe<core::version::ros1>",
+      "semantic_profile": "topic_subscribe"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.message_poll",
+      "cpp_target": "host::message_poll<core::version::ros1>",
+      "semantic_profile": "multiplex_receive"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.event_stream_watch",
+      "cpp_target": "host::event_stream_watch<core::version::ros1>",
+      "semantic_profile": "event_watch"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.event_stream_poll",
+      "cpp_target": "host::event_stream_poll<core::version::ros1>",
+      "semantic_profile": "event_poll"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.event_stream_ready",
+      "cpp_target": "host::event_stream_ready<core::version::ros1>",
+      "semantic_profile": "event_ready"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.service_submit",
+      "cpp_target": "host::service_submit<core::version::ros1>",
+      "semantic_profile": "service_submit"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.service_call",
+      "cpp_target": "host::service_call<core::version::ros1>",
+      "semantic_profile": "service_call"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.service_advertise",
+      "cpp_target": "host::service_advertise<core::version::ros1>",
+      "semantic_profile": "service_server"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.service_respond",
+      "cpp_target": "host::service_respond<core::version::ros1>",
+      "semantic_profile": "service_response"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_send_goal",
+      "cpp_target": "host::action_send_goal<core::version::ros1>",
+      "semantic_profile": "action_submit"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_cancel_own_goal",
+      "cpp_target": "host::action_cancel_own_goal<core::version::ros1>",
+      "semantic_profile": "action_cancel_owned"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_cancel_any_goal",
+      "cpp_target": "host::action_cancel_any_goal<core::version::ros1>",
+      "semantic_profile": "action_cancel_set"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_receive_feedback",
+      "cpp_target": "host::action_receive_feedback<core::version::ros1>",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_receive_result",
+      "cpp_target": "host::action_receive_result<core::version::ros1>",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_advertise",
+      "cpp_target": "host::action_advertise<core::version::ros1>",
+      "semantic_profile": "action_server"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.action_respond",
+      "cpp_target": "host::action_respond<core::version::ros1>",
+      "semantic_profile": "action_server"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.tf_lookup",
+      "cpp_target": "host::tf_lookup<core::version::ros1>",
+      "semantic_profile": "transform_lookup"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.tf_broadcast",
+      "cpp_target": "host::tf_broadcast<core::version::ros1>",
+      "semantic_profile": "transform_publish"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_get",
+      "cpp_target": "host::parameter_get<core::version::ros1>",
+      "semantic_profile": "parameter_get"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_set",
+      "cpp_target": "host::parameter_set<core::version::ros1>",
+      "semantic_profile": "parameter_set"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_delete",
+      "cpp_target": "host::parameter_delete<core::version::ros1>",
+      "semantic_profile": "parameter_delete"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_exists",
+      "cpp_target": "host::parameter_exists<core::version::ros1>",
+      "semantic_profile": "parameter_exists"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_list",
+      "cpp_target": "host::parameter_list<core::version::ros1>",
+      "semantic_profile": "parameter_list"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.parameter_search",
+      "cpp_target": "host::parameter_search<core::version::ros1>",
+      "semantic_profile": "parameter_search"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_inspect_topic",
+      "cpp_target": "host::graph_inspect_topic<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_inspect_node",
+      "cpp_target": "host::graph_inspect_node<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_inspect_service",
+      "cpp_target": "host::graph_inspect_service<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_list_topics",
+      "cpp_target": "host::graph_list_topics<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_list_nodes",
+      "cpp_target": "host::graph_list_nodes<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.graph_list_services",
+      "cpp_target": "host::graph_list_services<core::version::ros1>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.time_read_ros",
+      "cpp_target": "host::time_read_ros<core::version::ros1>",
+      "semantic_profile": "clock_ros"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.time_read_wall",
+      "cpp_target": "host::time_read_wall<core::version::ros1>",
+      "semantic_profile": "clock_system"
+    },
+    {
+      "legacy": "uwvm_ros1_v1.log_write",
+      "cpp_target": "host::log_write<core::version::ros1>",
+      "semantic_profile": "logging"
+    },
+    {
+      "legacy": "uwvm_ros1_client_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros1>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros1_client_v1.features",
+      "cpp_target": "host::client_features<core::version::ros1>",
+      "semantic_profile": "provider_features"
+    },
+    {
+      "legacy": "uwvm_ros1_client_v1.service_available",
+      "cpp_target": "host::client_service_available<core::version::ros1>",
+      "semantic_profile": "service_available"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros2>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.capability_open",
+      "cpp_target": "host::capability_open<core::version::ros2>",
+      "semantic_profile": "capability_open"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.capability_close",
+      "cpp_target": "host::capability_close<core::version::ros2>",
+      "semantic_profile": "capability_close"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.capability_revoke",
+      "cpp_target": "host::capability_revoke<core::version::ros2>",
+      "semantic_profile": "capability_revoke"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.topic_publish",
+      "cpp_target": "host::topic_publish<core::version::ros2>",
+      "semantic_profile": "topic_publish"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.topic_subscribe",
+      "cpp_target": "host::topic_subscribe<core::version::ros2>",
+      "semantic_profile": "topic_subscribe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.message_poll",
+      "cpp_target": "host::message_poll<core::version::ros2>",
+      "semantic_profile": "multiplex_receive"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.event_stream_watch",
+      "cpp_target": "host::event_stream_watch<core::version::ros2>",
+      "semantic_profile": "event_watch"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.event_stream_poll",
+      "cpp_target": "host::event_stream_poll<core::version::ros2>",
+      "semantic_profile": "event_poll"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.event_stream_ready",
+      "cpp_target": "host::event_stream_ready<core::version::ros2>",
+      "semantic_profile": "event_ready"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.service_submit",
+      "cpp_target": "host::service_submit<core::version::ros2>",
+      "semantic_profile": "service_submit"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.service_call",
+      "cpp_target": "host::service_call<core::version::ros2>",
+      "semantic_profile": "service_call"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.service_advertise",
+      "cpp_target": "host::service_advertise<core::version::ros2>",
+      "semantic_profile": "service_server"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.service_respond",
+      "cpp_target": "host::service_respond<core::version::ros2>",
+      "semantic_profile": "service_response"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_send_goal",
+      "cpp_target": "host::action_send_goal<core::version::ros2>",
+      "semantic_profile": "action_submit"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_server_is_ready",
+      "cpp_target": "host::action_server_is_ready",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_send_begin",
+      "cpp_target": "host::action_send_begin",
+      "semantic_profile": "action_submit"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_goal_response",
+      "cpp_target": "host::action_goal_response",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_goal_status",
+      "cpp_target": "host::action_goal_status",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_cancel_begin_own",
+      "cpp_target": "host::action_cancel_begin_own",
+      "semantic_profile": "action_cancel_owned"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_cancel_response",
+      "cpp_target": "host::action_cancel_response",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_cancel_own_goal",
+      "cpp_target": "host::action_cancel_own_goal<core::version::ros2>",
+      "semantic_profile": "action_cancel_owned"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_cancel_any_goal",
+      "cpp_target": "host::action_cancel_any_goal<core::version::ros2>",
+      "semantic_profile": "action_cancel_set"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_receive_feedback",
+      "cpp_target": "host::action_receive_feedback<core::version::ros2>",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_receive_result",
+      "cpp_target": "host::action_receive_result<core::version::ros2>",
+      "semantic_profile": "action_observe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_advertise",
+      "cpp_target": "host::action_advertise<core::version::ros2>",
+      "semantic_profile": "action_server"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.action_respond",
+      "cpp_target": "host::action_respond<core::version::ros2>",
+      "semantic_profile": "action_server"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.tf_lookup",
+      "cpp_target": "host::tf_lookup<core::version::ros2>",
+      "semantic_profile": "transform_lookup"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.tf_broadcast",
+      "cpp_target": "host::tf_broadcast<core::version::ros2>",
+      "semantic_profile": "transform_publish"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_get",
+      "cpp_target": "host::parameter_get<core::version::ros2>",
+      "semantic_profile": "parameter_get"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_set",
+      "cpp_target": "host::parameter_set<core::version::ros2>",
+      "semantic_profile": "parameter_set"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_list",
+      "cpp_target": "host::parameter_list<core::version::ros2>",
+      "semantic_profile": "parameter_list"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_describe",
+      "cpp_target": "host::parameter_describe<core::version::ros2>",
+      "semantic_profile": "parameter_describe"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_declare",
+      "cpp_target": "host::parameter_declare<core::version::ros2>",
+      "semantic_profile": "parameter_declare"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_undeclare",
+      "cpp_target": "host::parameter_undeclare<core::version::ros2>",
+      "semantic_profile": "parameter_delete"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_inspect_topic",
+      "cpp_target": "host::graph_inspect_topic<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_inspect_node",
+      "cpp_target": "host::graph_inspect_node<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_inspect_service",
+      "cpp_target": "host::graph_inspect_service<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_inspect_action",
+      "cpp_target": "host::graph_inspect_action<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.parameter_subscribe_events",
+      "cpp_target": "host::parameter_subscribe_events<core::version::ros2>",
+      "semantic_profile": "event_watch"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_list_topics",
+      "cpp_target": "host::graph_list_topics<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_list_nodes",
+      "cpp_target": "host::graph_list_nodes<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.graph_list_services",
+      "cpp_target": "host::graph_list_services<core::version::ros2>",
+      "semantic_profile": "graph"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.lifecycle_get_state",
+      "cpp_target": "host::lifecycle_get_state<core::version::ros2>",
+      "semantic_profile": "lifecycle_state"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.lifecycle_change_state",
+      "cpp_target": "host::lifecycle_change_state<core::version::ros2>",
+      "semantic_profile": "lifecycle_change"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.time_read_ros",
+      "cpp_target": "host::time_read_ros<core::version::ros2>",
+      "semantic_profile": "clock_ros"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.time_read_system",
+      "cpp_target": "host::time_read_system<core::version::ros2>",
+      "semantic_profile": "clock_system"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.time_read_steady",
+      "cpp_target": "host::time_read_steady<core::version::ros2>",
+      "semantic_profile": "clock_steady"
+    },
+    {
+      "legacy": "uwvm_ros2_v1.log_write",
+      "cpp_target": "host::log_write<core::version::ros2>",
+      "semantic_profile": "logging"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros2>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_v1.publisher_activate",
+      "cpp_target": "host::rmw_publisher_activate",
+      "semantic_profile": "publisher_open"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_v1.publisher_inspect",
+      "cpp_target": "host::rmw_publisher_inspect",
+      "semantic_profile": "endpoint_inspect"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_v1.publisher_publish",
+      "cpp_target": "host::rmw_publisher_publish",
+      "semantic_profile": "topic_publish"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_v1.publisher_retire",
+      "cpp_target": "host::rmw_publisher_retire",
+      "semantic_profile": "endpoint_retire"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros2>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_activate",
+      "cpp_target": "host::rmw_subscription_activate",
+      "semantic_profile": "topic_subscribe"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_inspect",
+      "cpp_target": "host::rmw_subscription_inspect",
+      "semantic_profile": "endpoint_inspect"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_peek",
+      "cpp_target": "host::rmw_subscription_peek",
+      "semantic_profile": "topic_reserve"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_commit",
+      "cpp_target": "host::rmw_subscription_commit",
+      "semantic_profile": "topic_acknowledge"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_cancel",
+      "cpp_target": "host::rmw_subscription_cancel",
+      "semantic_profile": "topic_release"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_sub_v1.subscription_retire",
+      "cpp_target": "host::rmw_subscription_retire",
+      "semantic_profile": "endpoint_retire"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros2>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.client_activate",
+      "cpp_target": "host::rmw_client_activate",
+      "semantic_profile": "client_open"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.service_activate",
+      "cpp_target": "host::rmw_service_activate",
+      "semantic_profile": "service_server"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.endpoint_inspect",
+      "cpp_target": "host::rmw_service_inspect",
+      "semantic_profile": "service_inspect"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.client_submit",
+      "cpp_target": "host::rmw_client_submit",
+      "semantic_profile": "service_submit"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.client_abandon",
+      "cpp_target": "host::rmw_client_abandon",
+      "semantic_profile": "client_abandon"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.service_respond",
+      "cpp_target": "host::rmw_service_respond",
+      "semantic_profile": "service_response"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.endpoint_peek",
+      "cpp_target": "host::rmw_service_peek",
+      "semantic_profile": "service_reserve"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.endpoint_commit",
+      "cpp_target": "host::rmw_service_commit",
+      "semantic_profile": "service_acknowledge"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.endpoint_cancel",
+      "cpp_target": "host::rmw_service_cancel",
+      "semantic_profile": "service_release"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.client_available",
+      "cpp_target": "host::rmw_client_available",
+      "semantic_profile": "service_available"
+    },
+    {
+      "legacy": "uwvm_ros2_rmw_srv_v1.endpoint_retire",
+      "cpp_target": "host::rmw_service_retire",
+      "semantic_profile": "endpoint_retire"
+    },
+    {
+      "legacy": "uwvm_ros2_client_v1.abi_version",
+      "cpp_target": "host::abi_version<core::version::ros2>",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_ros2_client_v1.features",
+      "cpp_target": "host::client_features<core::version::ros2>",
+      "semantic_profile": "provider_features"
+    },
+    {
+      "legacy": "uwvm_ros2_client_v1.service_available",
+      "cpp_target": "host::client_service_available<core::version::ros2>",
+      "semantic_profile": "service_available"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.abi_version",
+      "cpp_target": "portable_host::abi_version",
+      "semantic_profile": "abi"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.open",
+      "cpp_target": "portable_host::open",
+      "semantic_profile": "device_open"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.describe",
+      "cpp_target": "portable_host::describe",
+      "semantic_profile": "device_describe"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.read_state",
+      "cpp_target": "portable_host::read_state",
+      "semantic_profile": "device_read"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.submit",
+      "cpp_target": "portable_host::submit",
+      "semantic_profile": "device_submit"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.wait",
+      "cpp_target": "portable_host::wait",
+      "semantic_profile": "device_result"
+    },
+    {
+      "legacy": "uwvm_portable_robot_v1.close",
+      "cpp_target": "portable_host::close",
+      "semantic_profile": "device_close"
+    }
+  ],
+  "acceptance": {
+    "source_inventory": "exact set equality; unknown, missing and duplicate imports fail",
+    "design": "all targets and safety obligations must exist",
+    "implementation": "derived separately from registered imports; registration alone is not semantics",
+    "differential": "every old operation requires native behavior and authority test receipts; currently unqualified"
+  }
+}

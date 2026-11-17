@@ -10,9 +10,11 @@ struct prepared_current_environment
     using views=runtime_wasip1_debug_environment::string_views;
     environment_type* target{};
     strings* argument_target{};strings* variable_target{};
+    bool preserve_current_resources{};
+    ::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment const> recorded{};
     strings new_arguments{},new_variables{};
     views argument_views{},variable_views{};
-    ::std::vector<fd_ref> resources{};
+    ::uwvm2::utils::container::std_vector<fd_ref> resources{};
     decltype(::std::declval<table_type>().opens) opens{};
     decltype(::std::declval<table_type>().renumber_map) renumber{};
     decltype(::std::declval<table_type>().closes) closes{};
@@ -31,14 +33,17 @@ struct prepared_managed_resource
 [[nodiscard]] static status prepare_current(native_capture_key const& key, owner const& supplied,
     llvm_jit_wasip1_environment_capsule_request const& selected, bool strict,
     ::std::uint_least64_t epoch, ::uwvm2::runtime::checkpoint::compilation_profile::owner const& profile,
-    prepared_current_environment& prepared, ::std::vector<prepared_managed_resource>* shared=nullptr)
+    prepared_current_environment& prepared, ::uwvm2::utils::container::std_vector<prepared_managed_resource>* shared=nullptr,
+    bool current_world_handoff=false)
 {
     try
     {
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-    // Restoring host objects/rights is a management permission transaction,
-    // never a side effect of guest debug checkpoint materialization.
-    return status::unsupported_resource;
+    // Historical resources are a separate capability transaction. The only
+    // current-world exception is minted by the coherent manager from a fresh
+    // capture in this SAME closed-host/paused/publication scope. File data and
+    // standalone environment restore never select it.
+    if(!current_world_handoff) { return status::unsupported_resource; }
 #endif
     if(prepared.target!=nullptr) { return status::invalid_capsule_owner; }
     auto const saved{canonical(supplied)};
@@ -58,13 +63,57 @@ struct prepared_managed_resource
     namespace fm=::uwvm2::imported::wasi::wasip1::fd_manager;
     namespace storage=::uwvm2::uwvm::imported::wasi::wasip1::storage;
     auto& environment{resolve_wasip1_env_for_runtime_module_id(static_cast<::std::size_t>(selected.module))};
-    auto* arguments{::std::addressof(storage::wasip1_argument_storage)};
-    auto* variables{::std::addressof(storage::wasip1_environment_storage)};
-    if(::std::addressof(environment)!=::std::addressof(storage::default_wasip1_env))
+    runtime_wasip1_debug_environment::strings* arguments{};
+    runtime_wasip1_debug_environment::strings* variables{};
+    if(!runtime_wasip1_debug_environment::resolve_text_owners(static_cast<::std::size_t>(selected.module),environment,arguments,variables))
+    { return status::unavailable_owned_text; }
+    if(current_world_handoff)
     {
-        auto const group{find_wasip1_override_for_runtime_module_id_slow(static_cast<::std::size_t>(selected.module))};
-        if(group==nullptr || ::std::addressof(group->env)!=::std::addressof(environment)) { return status::stale_environment; }
-        arguments=::std::addressof(group->argument_storage);variables=::std::addressof(group->environment_storage);
+        auto equal_text=[](auto const& backing,auto const& views,auto const& captured) noexcept
+        {
+            if(!runtime_wasip1_debug_environment::bound_text(backing,views) || backing.size()!=captured.size()) { return false; }
+            for(::std::size_t i{};i<backing.size();++i)
+            {
+                auto const& text=backing.index_unchecked(i);
+                if(text.size()!=captured[i].size() || (text.size()!=0u &&
+                   ::fast_io::freestanding::my_memcmp(text.data(),captured[i].data(),text.size())!=0)) { return false; }
+            }
+            return true;
+        };
+        if(!equal_text(*arguments,environment.argv,saved->data_.arguments) ||
+           !equal_text(*variables,environment.envs,saved->data_.environment)) { return status::stale_environment; }
+        auto& live=environment.fd_storage;
+        ::uwvm2::utils::mutex::rw_fair_shared_guard_t table_lock{live.fds_rwlock};
+        if(live.opens.size()!=saved->opens_size_ || live.closes.size()!=saved->closed_order_.size() ||
+           live.opens.size()+live.renumber_map.size()!=saved->bindings_.size()+saved->reserved_empty_.size()+saved->closed_order_.size())
+        { return status::stale_environment; }
+        for(::std::size_t i{};i<saved->closed_order_.size();++i)
+        {
+            auto const number=live.closes.index_unchecked(i);
+            if(number!=saved->closed_order_[i] || number>=live.opens.size() ||
+               !live.opens.index_unchecked(number).fd_p || live.opens.index_unchecked(number).fd_p->close_pos!=i)
+            { return status::stale_environment; }
+        }
+        for(::std::size_t i{};i<saved->bindings_.size();++i)
+        {
+            auto const& binding=saved->bindings_[i];auto const& row=saved->data_.descriptors[i];
+            auto const* slot=find_actual_descriptor(live,binding.guest_number);
+            if(binding.resource>=saved->resources_.size() || slot==nullptr || slot->close_pos!=SIZE_MAX ||
+               slot->wasi_fd.ptr!=saved->resources_[binding.resource].actual.ptr ||
+               static_cast<::std::uint64_t>(slot->rights_base)!=row.base_rights ||
+               static_cast<::std::uint64_t>(slot->rights_inherit)!=row.inheriting_rights)
+            { return status::stale_environment; }
+        }
+        for(auto const& empty:saved->reserved_empty_)
+        {
+            auto const* slot=find_actual_descriptor(live,empty.number);
+            if(slot==nullptr || slot->close_pos!=(empty.protected_slot?SIZE_MAX-1u:SIZE_MAX) || (slot->wasi_fd.ptr!=nullptr)!=empty.null_resource ||
+               (slot->wasi_fd.ptr!=nullptr && slot->wasi_fd.ptr->wasi_fd_storage.type!=fd_kind::null) ||
+               static_cast<::std::uint64_t>(slot->rights_base)!=empty.base ||
+               static_cast<::std::uint64_t>(slot->rights_inherit)!=empty.inheriting)
+            { return status::stale_environment; }
+        }
+        prepared.preserve_current_resources=true;
     }
     using strings=runtime_wasip1_debug_environment::strings;
     using views=runtime_wasip1_debug_environment::string_views;
@@ -80,7 +129,7 @@ struct prepared_managed_resource
     auto& resources{prepared.resources};resources.reserve(saved->resources_.size());
     for(auto const& pin:saved->resources_)
     {
-        if(pin.managed_identity!=0u)
+        if(pin.managed_identity!=0u && !current_world_handoff)
         {
             if(shared!=nullptr)
             {
@@ -148,6 +197,7 @@ struct prepared_managed_resource
         if(!empty.null_resource) { slot.fd_p->wasi_fd=fd_ref{fm::wasi_no_construct}; }
         slot.fd_p->rights_base=static_cast<decltype(slot.fd_p->rights_base)>(empty.base);
         slot.fd_p->rights_inherit=static_cast<decltype(slot.fd_p->rights_inherit)>(empty.inheriting);
+        if(empty.protected_slot) { slot.fd_p->close_pos=SIZE_MAX-1u; }
         if(number<opens.size())
         {
             if(opens.index_unchecked(number).fd_p->wasi_fd.ptr!=nullptr) { return status::invalid_capsule_owner; }
@@ -180,16 +230,16 @@ struct prepared_managed_resource
     catch(::fast_io::error const&) { return status::native_operation_failed; }
     catch(...) { return status::allocation_failed; }
 }
-using prepared_environment_group=::std::vector<::std::unique_ptr<prepared_current_environment>>;
+using prepared_environment_group=::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<prepared_current_environment>>;
 [[nodiscard]] static status prepare_group_current(native_capture_key const& key,
     ::std::span<owner const> supplied, bool strict, ::std::uint_least64_t epoch,
     ::uwvm2::runtime::checkpoint::compilation_profile::owner const& profile,
-    prepared_environment_group& prepared)
+    prepared_environment_group& prepared, bool current_world_handoff=false)
 {
     if(supplied.empty() || supplied.size()>registry_limit || !prepared.empty()) { return status::invalid_capsule_owner; }
     try
     {
-        ::std::vector<owner> canonical_saved{};canonical_saved.reserve(supplied.size());
+        ::uwvm2::utils::container::std_vector<owner> canonical_saved{};canonical_saved.reserve(supplied.size());
         ::std::size_t descriptors{},text{},bytes{};
         for(auto const& supplied_owner:supplied)
         {
@@ -207,13 +257,13 @@ using prepared_environment_group=::std::vector<::std::unique_ptr<prepared_curren
         }
         // Cross-module aliases retain one cloned anonymous file/cursor/flags.
         // Saved payload disagreement is rejected before publishing any table.
-        ::std::vector<prepared_managed_resource> shared{};prepared.reserve(canonical_saved.size());
+        ::uwvm2::utils::container::std_vector<prepared_managed_resource> shared{};prepared.reserve(canonical_saved.size());
         for(auto const& saved:canonical_saved)
         {
             llvm_jit_wasip1_environment_capsule_request request{};
             request.module=saved->data_.module;request.recording_label=saved->data_.recording_label;
-            auto next{::std::make_unique<prepared_current_environment>()};
-            auto const result{prepare_current(key,saved,request,strict,epoch,profile,*next,::std::addressof(shared))};
+            auto next{::uwvm2::utils::container::make_unique<prepared_current_environment>()};
+            auto const result{prepare_current(key,saved,request,strict,epoch,profile,*next,::std::addressof(shared),current_world_handoff)};
             if(result!=status::captured) { prepared.clear();return result; }
             for(auto const& prior:prepared)
             { if(prior->target==next->target) { prepared.clear();return status::invalid_capsule_owner; } }

@@ -9,7 +9,7 @@ option("ros-product-policy", function()
     add_deps("target", "llvm-target", "execution-int", "execution-jit", "use-llvm-compiler",
         "llvm-runtimes-provider", "stdlib", "llvm-build-jobs", "llvm-build-targets", "llvm-cmake-toolchain",
         "use-thread-local", "fno-exceptions", "enable-wsea", "linux-native-debug", "detailed-debug-check",
-        "disable-local-imported-wasip1", "enable-local-imported-wasip1-wasm64", "enable-local-imported-wasip1-socket", "import-ros1", "import-ros2",
+        "disable-local-imported-wasip1", "enable-local-imported-wasip1-wasm64", "enable-local-imported-wasip1-socket", "import-u2rosv1-ros1", "import-u2rosv1-ros2", "import-u2rosv2", "enable-preload-dl",
         "wasm-memory-model", "use-cxx-module", "enable-lto", "numeric-exception-fused", "gc-jit-access-profile",
         "gc-allocation-profile", "mingw-min", "apple-platform", "macos-x64-native-step", "macos-4gib-test",
         "enable-uwvm-int-combine-ops", "enable-uwvm-int-delay-local", "enable-uwvm-int-instruction-reorder",
@@ -739,15 +739,25 @@ option("enable-local-imported-wasip1-socket", function()
 end)
 
 -- ROS SDKs are linked only into independent gateway executables.
-option("import-ros1", function()
-    set_default(true)
+option("import-u2rosv1-ros1", function()
+    set_default(false)
     set_showmenu(true)
-    set_description("Required true: compile all ROS1 host imports; runtime exposure and grants default to none.")
+    set_description("Opt in to deprecated u2rosv1 imports for ros1; default false. Compilation grants no runtime authority.")
 end)
-option("import-ros2", function()
+option("import-u2rosv1-ros2", function()
+    set_default(false)
+    set_showmenu(true)
+    set_description("Opt in to deprecated u2rosv1 imports for ros2; default false. Independent of u2rosv2.")
+end)
+option("import-u2rosv2", function()
     set_default(true)
     set_showmenu(true)
-    set_description("Required true: compile all ROS2 host imports; runtime exposure and grants default to none.")
+    set_description("Required true: compile u2rosv2 robot-scene imports independently of deprecated u2rosv1; runtime grants default to none.")
+end)
+option("enable-preload-dl", function()
+    set_default(false)
+    set_showmenu(true)
+    set_description("Opt in to unsafe in-process native library preloading; default false. Cannot be used in a u2rosv2 deployment.")
 end)
 option("ros-custom-registry-header", function()
     set_default("none")

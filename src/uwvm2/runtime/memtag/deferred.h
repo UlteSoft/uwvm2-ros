@@ -1,6 +1,8 @@
 // Deferred tag-fault delivery, never deferred bounds enforcement. A worker
 // receives values only: it cannot retain or dereference a Guest/native owner.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <atomic>
@@ -31,9 +33,52 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::deferred
         ::std::uint64_t raw_pointer{}, memory_index{UINT64_MAX};
         ::std::uint64_t module_id{UINT64_MAX}, function_index{UINT64_MAX}, wasm_offset{UINT64_MAX};
         ::std::uint64_t sequence{};
+        bool hardware_notification{}; // ASYNC supplies no precise address.
     };
     using fault_callback=void(*)(fault const&) noexcept;
     inline ::std::atomic<fault_callback> deliver_callback{};
+    // A private execution owner can seal a classified fault and retire its
+    // real workers. This is not a Guest callback or permission to resume a
+    // violating program. The owner remains on this native stack until drain.
+    struct execution_fault_receiver
+    {
+        void* context{};
+        void (*deliver)(void*,fault const&) noexcept{};
+        bool stopped{};
+    };
+    inline thread_local execution_fault_receiver* execution_receiver{};
+    class execution_fault_scope
+    {
+        execution_fault_receiver* previous_{};
+    public:
+        explicit execution_fault_scope(execution_fault_receiver* receiver) noexcept:previous_{execution_receiver}
+        {
+            execution_receiver=receiver;
+#if defined(__linux__) && defined(__aarch64__)
+            mt::hardware_mte::asynchronous_capture_armed=receiver!=nullptr;
+#endif
+        }
+        ~execution_fault_scope()
+        {
+            execution_receiver=previous_;
+#if defined(__linux__) && defined(__aarch64__)
+            mt::hardware_mte::asynchronous_capture_armed=previous_!=nullptr;
+#endif
+        }
+        execution_fault_scope(execution_fault_scope const&)=delete;
+    };
+    [[nodiscard]] inline bool controlled_fault_delivery() noexcept { return execution_receiver!=nullptr; }
+    inline bool deliver_to_execution(fault const& evidence) noexcept
+    {
+        auto* receiver=execution_receiver;
+        if(!receiver)return false;
+        if(!receiver->stopped)
+        {
+            receiver->stopped=true;
+            receiver->deliver(receiver->context,evidence);
+        }
+        return true;
+    }
 
     struct stream
     {
@@ -58,7 +103,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::deferred
         ::std::array<item,capacity> queue_{};
         ::std::size_t read_{}, count_{};
         bool stopping_{}, started_{};
-        ::std::vector<::std::thread> workers_{};
+        ::uwvm2::utils::container::std_vector<::fast_io::native_thread> workers_{};
         static void publish(item work) noexcept
         {
             auto& target{*work.destination};
@@ -186,6 +231,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::deferred
         fault evidence{};
         if(!pool::drain(active_stream,evidence)) { return; }
         delivery_in_progress=true;
+        if(deliver_to_execution(evidence)) { delivery_in_progress=false;return; }
         auto const callback{deliver_callback.load(::std::memory_order_acquire)};
         if(callback!=nullptr) { callback(evidence); }
         namespace crash=::uwvm2::runtime::diagnostic::crash;
@@ -196,16 +242,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::deferred
         crash::pause_process();
         crash::finish_unhandled_fault();
     }
-    [[gnu::always_inline]] inline void poll(bool barrier=false) noexcept
+    [[gnu::always_inline]] inline bool poll(bool barrier=false) noexcept
     {
         // Physical ASYNC delivery still synchronizes even without a software
         // record. Software enqueue publishes observed before returning; a worker
         // clears it only when all log records are acknowledged. Crash evidence
         // keeps it set. Thus a false acquire also proves an empty barrier.
-        if(barrier) { mt::hardware_mte::synchronize_asynchronous_faults(); }
+        if(barrier || execution_receiver) { mt::hardware_mte::synchronize_asynchronous_faults(); }
         auto const* current{active_stream_raw};
         if(current && current->observed.load(::std::memory_order_acquire)) [[unlikely]]
         { deliver_pending(); }
+#if defined(__linux__) && defined(__aarch64__)
+        if(execution_receiver && mt::hardware_mte::asynchronous_fault_observed) [[unlikely]]
+        {
+            mt::hardware_mte::asynchronous_fault_observed=0;
+            fault evidence{};evidence.access.error=mt::access_error::tag_mismatch;
+            evidence.hardware_notification=true;
+            // The signal's PC and si_addr are not an exact Wasm fault location.
+            (void)deliver_to_execution(evidence);
+        }
+#endif
+        return !execution_receiver || !execution_receiver->stopped;
     }
     [[nodiscard]] inline ::std::uintptr_t pending_flag_address() noexcept
     {
@@ -273,7 +330,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag::deferred
             {
                 if(!workers().start(mt::asynchronous_worker_count.load(::std::memory_order_relaxed))) { return false; }
 #if defined(__cpp_exceptions)
-                try { active_stream=::std::make_shared<stream>(); }
+                try { active_stream=::uwvm2::utils::container::make_shared<stream>(); }
                 catch(...) { return false; }
 #else
                 return false;

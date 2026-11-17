@@ -1,6 +1,7 @@
 // Owned, display-only Wasm symbols. Malformed optional name maps are ignored;
 // they never change source ownership, instruction boundaries or execution.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <cstddef>
 #include <cstdint>
@@ -14,14 +15,14 @@
 #endif
 namespace uwvm2::uwvm::debugger::wasm_symbols
 {
-    using names=::std::map<::std::uint64_t,::std::string>;
+    using names=::uwvm2::utils::container::std_map<::std::uint64_t,::uwvm2::utils::container::std_string>;
     struct table { names functions{},globals{},tables{},memories{}; };
-    [[nodiscard]] inline ::std::string display(::std::string_view name)
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string display(::std::string_view name)
     {
         if(name.empty() || name.size()>4096u) { return {}; }
         // Metadata can contain terminal controls. Sanitize before it enters a
         // styled pane, and never interpret a metadata ESC as a colour command.
-        ::std::string value{name};
+        ::uwvm2::utils::container::std_string value{name};
         for(auto& c:value) { if(static_cast<unsigned char>(c)<32u || c==127) { c='?'; } }
 #if defined(UWVM_USE_LLVM_JIT) || defined(UWVM_USE_DEFAULT_JIT)
         value=::llvm::demangle(value);

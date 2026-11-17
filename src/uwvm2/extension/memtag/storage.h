@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/sanitizer_mapping.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # include <atomic>
@@ -63,6 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // Allocated only for enabled shared owners. All aliases borrow this same
         // control; no module index or raw byte address identifies a tag lease.
         ::uwvm2::utils::mutex::rwlock_t* shared_tag_gate_{};
+        ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memtag> allocation_charge_{};
 #if defined(__linux__) && defined(__aarch64__)
         bool hardware_selected_{};
         ::std::byte* hardware_base_{};
@@ -94,7 +97,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return error ? nullptr : address;
 # endif
 #elif defined(UWVM_SUPPORT_MMAP)
+#if defined(__linux__)
+            auto const address{::uwvm2::utils::allocator::sanitizer_mapping::reserve(bytes,MAP_PRIVATE|MAP_ANONYMOUS)};
+#else
             auto const address{::mmap(nullptr, bytes, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)};
+#endif
             return address == MAP_FAILED ? nullptr : address;
 #else
             static_cast<void>(bytes); return nullptr;
@@ -104,6 +111,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {
             if(new_bytes <= committed_bytes_) { return true; }
             if(should_fail(storage_operation::commit, new_bytes - committed_bytes_)) { return false; }
+            auto const control_bytes{shared_tag_gate_ == nullptr ? 0uz : sizeof(*shared_tag_gate_)};
+            if(new_bytes > SIZE_MAX-control_bytes) { return false; }
+            ::uwvm2::utils::allocator::resource::resize_transaction<::uwvm2::utils::allocator::resource::pool::memtag>
+                charge{allocation_charge_,new_bytes+control_bytes};
+            if(!charge) { return false; }
 #if defined(UWVM_SUPPORT_MMAP) && (defined(_WIN32) || defined(__CYGWIN__))
 # if !defined(__CYGWIN__) && !defined(__WINE__) && !defined(__BIONIC__) && defined(_WIN32_WINDOWS)
             auto const address{::fast_io::win32::VirtualAlloc(data_, new_bytes, 0x00001000u, 0x04u)};
@@ -121,13 +133,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 #else
             static_cast<void>(new_bytes); return false;
 #endif
+#if defined(__linux__)
+            ::uwvm2::utils::allocator::sanitizer_mapping::accessible(static_cast<::std::byte*>(data_)+committed_bytes_,new_bytes-committed_bytes_);
+#endif
+            charge.commit();
             committed_bytes_ = new_bytes;
             return true;
         }
         constexpr void release_allocation() noexcept
         {
             if(data_ == nullptr) { return; }
-            if(backend_ == storage_backend::growable) { ::std::free(data_); }
+            if(backend_ == storage_backend::growable) { ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate(data_); }
             else
             {
 #if defined(UWVM_SUPPORT_MMAP) && (defined(_WIN32) || defined(__CYGWIN__))
@@ -140,7 +156,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                     reinterpret_cast<void*>(-1), ::std::addressof(address), ::std::addressof(length), 0x00008000u));
 # endif
 #elif defined(UWVM_SUPPORT_MMAP)
+#if defined(__linux__)
+                static_cast<void>(::uwvm2::utils::allocator::sanitizer_mapping::release(data_,allocated_bytes_));
+#else
                 static_cast<void>(::munmap(data_, allocated_bytes_));
+#endif
 #endif
             }
         }
@@ -177,6 +197,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         constexpr void take(shadow_storage& other) noexcept
         {
             data_ = ::std::exchange(other.data_, nullptr);
+            allocation_charge_ = ::std::move(other.allocation_charge_);
             shared_tag_gate_ = ::std::exchange(other.shared_tag_gate_, nullptr);
             allocated_bytes_ = ::std::exchange(other.allocated_bytes_, 0u);
             committed_bytes_ = ::std::exchange(other.committed_bytes_, 0u);
@@ -323,6 +344,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(!enabled() || width_ != expected || shared_ != Shared || memory_bytes > prepared_memory_bytes())
             { return {nullptr, 0u, result_type::address_capacity + 1u}; }
             return {static_cast<typename result_type::tag_type*>(data_),
+                    tags_for(static_cast<::std::size_t>(memory_bytes)), memory_bytes, hardware_base(), shared_tag_gate_};
+        }
+
+        // Internal complete-operation path: the caller holds this exact
+        // owner's tag lease. Tag-mutating operations hold it EXCLUSIVELY across
+        // both tag publication and any zeroing effect. Avoid recursive locking;
+        // ordinary borrowed views must keep their automatic write gate.
+        template<::std::unsigned_integral Address, bool Shared = false>
+        [[nodiscard]] shadow_view<Address, Shared> view_under_tag_lease(::std::uint64_t memory_bytes) const noexcept
+        {
+            using result_type = shadow_view<Address, Shared>;
+            constexpr auto expected{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
+            if(!enabled() || width_ != expected || shared_ != Shared || memory_bytes > prepared_memory_bytes())
+            { return {nullptr, 0u, result_type::address_capacity + 1u}; }
+            return {static_cast<typename result_type::tag_type*>(data_),
                     tags_for(static_cast<::std::size_t>(memory_bytes)), memory_bytes, hardware_base()};
         }
 
@@ -381,7 +417,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 static_assert(alignof(control_type) <= alignof(::std::max_align_t));
                 if(should_fail(storage_operation::allocate, sizeof(control_type)))
                 { return storage_error::allocation_failed; }
-                candidate.shared_tag_gate_ = static_cast<control_type*>(::std::malloc(sizeof(control_type)));
+                auto const charged{candidate.allocation_charge_.bytes()};
+                if(charged > SIZE_MAX-sizeof(control_type) || !candidate.allocation_charge_.resize(charged+sizeof(control_type)))
+                { return storage_error::capacity_exceeded; }
+                candidate.shared_tag_gate_ = static_cast<control_type*>(::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::allocate(sizeof(control_type)));
                 if(candidate.shared_tag_gate_ == nullptr) { return storage_error::allocation_failed; }
                 ::std::construct_at(candidate.shared_tag_gate_);
             }
@@ -419,13 +458,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             else if(bytes > allocated_bytes_)
             {
                 if(should_fail(storage_operation::allocate, bytes)) { return storage_error::allocation_failed; }
-                auto* const replacement{::std::malloc(bytes)};
+                auto const control_bytes{shared_tag_gate_ == nullptr ? 0uz : sizeof(*shared_tag_gate_)};
+                if(bytes > SIZE_MAX-control_bytes) { return storage_error::capacity_exceeded; }
+                // Old and replacement allocations coexist during copying.
+                ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memtag> replacement_charge;
+                if(!replacement_charge.resize(bytes+control_bytes)) { return storage_error::capacity_exceeded; }
+                auto* const replacement{::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::allocate(bytes)};
                 if(replacement == nullptr) { return storage_error::allocation_failed; }
                 copy_tags(replacement, previous);
                 initialize_tags(replacement, previous, needed);
-                ::std::free(data_);
+                ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate(data_);
                 data_ = replacement;
                 allocated_bytes_ = bytes;
+                allocation_charge_ = ::std::move(replacement_charge);
             }
             else { initialize_tags(data_, previous, needed); }
             prepared_memory_bytes_.store(static_cast<::std::size_t>(new_memory_bytes), ::std::memory_order_release);
@@ -439,10 +484,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(shared_tag_gate_ != nullptr)
             {
                 ::std::destroy_at(shared_tag_gate_);
-                ::std::free(shared_tag_gate_);
+                ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate(shared_tag_gate_);
                 shared_tag_gate_ = nullptr;
             }
             release_allocation();
+            allocation_charge_.reset();
             data_ = nullptr;
             allocated_bytes_ = committed_bytes_ = page_size_ = 0u;
             maximum_memory_bytes_ = 0u;

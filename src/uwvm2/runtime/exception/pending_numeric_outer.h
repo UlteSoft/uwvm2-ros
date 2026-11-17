@@ -1,6 +1,9 @@
 // PRIVATE validated-LLVM experiment. Production compilation does not import it.
 // These native objects are deliberately outside the Wasm linear-memory ABI.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/runtime/exception/pending_numeric_bridge.h>
 #include <uwvm2/uwvm/runtime/storage/wasm_module.h>
@@ -262,9 +265,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment::nume
                        tag.exception_identity.get()) { return {}; }
                 }
             }
-            auto candidate{::std::shared_ptr<compile_plan>{new compile_plan{
+            auto candidate{::std::shared_ptr<compile_plan>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<compile_plan>([&](compile_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) compile_plan{
                 generation, generation, module->gc_store, module->gc_lease_roots,
-                ::std::move(symbols), module, module_id, function_count}}};
+                ::std::move(symbols), module, module_id, function_count}; }))}};
             if(!candidate->shape_valid_for_compilation()) { return {}; }
             return compile_plan::owner{::std::move(candidate)};
         }
@@ -328,8 +331,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment::nume
                 module->gc_store.owner_before(canonical_store) ||
                 (!module->gc_lease_roots && module->gc_lease_roots.use_count() != 0)) { return {}; }
 
-            ::std::vector<::std::array<payload_kind, max_payload_fields>> signatures(tag_count);
-            ::std::vector<admitted_tag> input(tag_count);
+            ::uwvm2::utils::container::std_vector<::std::array<payload_kind, max_payload_fields>> signatures(tag_count);
+            ::uwvm2::utils::container::std_vector<admitted_tag> input(tag_count);
             for(::std::size_t index{}; index != tag_count; ++index)
             {
                 // [actual initialized tag array: tag_count][index < count]
@@ -387,9 +390,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment::nume
                    product_source->pending_numeric_module_id() != module_id)
                 { return {}; }
             }
-            auto result{::std::shared_ptr<admitted_plan>{new admitted_plan{retained_generation, ::std::move(product_source),
+            auto result{::std::shared_ptr<admitted_plan>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<admitted_plan>([&](admitted_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) admitted_plan{retained_generation, ::std::move(product_source),
                 module->gc_store, module->gc_lease_roots, module, ::std::move(registry),
-                ::std::move(symbols), module_id, function_count}}};
+                ::std::move(symbols), module_id, function_count}; }))}};
             // The factory owns the ONLY mutable native plan alias. Bind its
             // control block BEFORE publishing a const owner, then retire it.
             result->canonical_owner_ = result;
@@ -444,7 +447,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment::nume
             auto const materialized{header_.materialize_in_registered(caught,
                 [&](::std::span<retired_frame const> retired, bool truncated)
                 {
-                    ::std::vector<diagnostic_frame_index> indices{};
+                    ::uwvm2::utils::container::std_vector<diagnostic_frame_index> indices{};
                     indices.reserve(retired.size());
                     for(auto const frame: retired)
                     {

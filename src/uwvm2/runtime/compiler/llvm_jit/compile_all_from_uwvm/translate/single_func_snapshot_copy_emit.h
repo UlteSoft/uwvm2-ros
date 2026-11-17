@@ -137,11 +137,12 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
     }
     // Materialize while every child Twine is alive; a stored concatenation
     // otherwise retains references to temporaries from this full expression.
-    auto const name{(::llvm::Twine{state.llvm_function->getName()} +
+    auto const name{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_string(::llvm::Twine{state.llvm_function->getName()} +
         (shared_numeric ? ".uwvm.private.numeric.locals" :
             (public_locals ? ".uwvm.private.debug.locals" : ".uwvm.private.checkpoint.locals")) +
-        ".count." + ::llvm::Twine{static_cast<::std::uint64_t>(count)}).str()};
-    auto const function{::llvm::Function::Create(signature,::llvm::GlobalValue::InternalLinkage,name,state.llvm_module)};
+        ".count." + ::llvm::Twine{static_cast<::std::uint64_t>(count)})};
+    auto const function{::llvm::Function::Create(signature,::llvm::GlobalValue::InternalLinkage,
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(name),state.llvm_module)};
     if(function == nullptr) { return nullptr; }
     function->addFnAttr(copy_attribute); function->setDoesNotThrow();
     function->addFnAttr("uwvm.debug.private.local-copy");
@@ -158,7 +159,7 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
     // Entry-owned table cells contain addresses even for uninitialized locals;
     // reading an address does not read that local's value. Each leaf is straight-line:
     // no absent/invalid flag can cause an absent value to be dereferenced.
-    auto const zero{new ::llvm::GlobalVariable(*state.llvm_module,clear_type,true,
+    auto const zero{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*state.llvm_module,clear_type,true,
         ::llvm::GlobalValue::PrivateLinkage,::llvm::ConstantAggregateZero::get(clear_type),
         ::llvm::Twine{function->getName()} + ".zero")};
     zero->setUnnamedAddr(::llvm::GlobalValue::UnnamedAddr::Global); zero->setAlignment(::llvm::Align{1u});
@@ -349,7 +350,7 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
             auto& zero{state.debug_inline_snapshot_zero};
             if(zero == nullptr)
             {
-                zero = new ::llvm::GlobalVariable(*state.llvm_module,clear_type,true,
+                zero = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*state.llvm_module,clear_type,true,
                     ::llvm::GlobalValue::PrivateLinkage,::llvm::ConstantInt::get(clear_type,0u),
                     ::llvm::Twine{state.llvm_function->getName()} + ".uwvm.private.inline.local.zero");
                 zero->setUnnamedAddr(::llvm::GlobalValue::UnnamedAddr::Global);zero->setAlignment(::llvm::Align{1u});
@@ -465,7 +466,7 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
     auto const bytes{::llvm::ConstantDataArray::get(state.ir_builder->getContext(),flags)};
     auto const found{state.debug_local_snapshot_flags.find(bytes)};
     if(found != state.debug_local_snapshot_flags.end()) { return found->second; }
-    auto const global{new ::llvm::GlobalVariable(*state.llvm_module,bytes->getType(),true,
+    auto const global{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*state.llvm_module,bytes->getType(),true,
         ::llvm::GlobalValue::PrivateLinkage,bytes,"uwvm.private.debug.local.flags")};
     global->setUnnamedAddr(::llvm::GlobalValue::UnnamedAddr::Global); global->setAlignment(::llvm::Align{1u});
     state.debug_local_snapshot_flags[bytes] = global; return global;

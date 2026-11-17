@@ -2,7 +2,6 @@
 // Real cohort/host/N/publication guards are held by the caller, never DATA.
 using fd_ref = ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_ref_t;
 using fd_owner = ::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_unique_ptr_t;
-inline static ::std::uint64_t next_managed_identity_{1u};
 [[nodiscard]] static ::fast_io::native_file& managed_file(fd_ref const& resource) noexcept
 {
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -25,10 +24,12 @@ static void set_managed_flags(fd_ref const& resource, int flags)
 }
 static void create_managed_file(fd_ref const& resource)
 {
+    auto created=::uwvm2::runtime::lib::wasip1_native_file::create_managed();
     auto& storage{resource.ptr->wasi_fd_storage};
     storage=::uwvm2::imported::wasi::wasip1::fd_manager::wasi_fd_storage_t{fd_type::file};
-    managed_file(resource)=::uwvm2::runtime::lib::wasip1_native_file::create();
+    managed_file(resource)=::std::move(created.file);
     (void)managed_flags(resource); // Qualify before publication.
+    resource.ptr->checkpoint_managed_identity=created.identity;
 }
 [[nodiscard]] static view manage_descriptor(request const& selected, wasip1_env_type& environment)
 {
@@ -77,7 +78,6 @@ static void create_managed_file(fd_ref const& resource)
     }
     else
     {
-        if(next_managed_identity_==0u) { out.result=status::resource_limit;return out; }
         candidate=fd_owner{};
         create_managed_file(candidate.fd_p->wasi_fd);
         auto& file{managed_file(candidate.fd_p->wasi_fd)};
@@ -87,7 +87,6 @@ static void create_managed_file(fd_ref const& resource)
             ::fast_io::operations::pwrite_all_bytes(file,first,first+selected.value.size(),0);
         }
         ::fast_io::operations::io_stream_seek_bytes(file,0,::fast_io::seekdir::beg);
-        candidate.fd_p->wasi_fd.ptr->checkpoint_managed_identity=next_managed_identity_;
         candidate.fd_p->rights_base=static_cast<decltype(candidate.fd_p->rights_base)>(0x60006eu);
         candidate.fd_p->rights_inherit={};
     }
@@ -112,7 +111,6 @@ static void create_managed_file(fd_ref const& resource)
         if(number==table.opens.size()) { table.opens.push_back(::std::move(candidate)); }
         else { table.renumber_map.emplace(static_cast<::std::int32_t>(number),::std::move(candidate)); }
     }
-    if(selected.operation==action::create_file) { next_managed_identity_=next_managed_identity_==UINT64_MAX ? 0u : next_managed_identity_+1u; }
     out.affected_descriptor=number;out.result=status::ok;out.mutation_applied=true;return out;
     }
     catch(::fast_io::error const&) { out.result=status::native_operation_failed;return out; }

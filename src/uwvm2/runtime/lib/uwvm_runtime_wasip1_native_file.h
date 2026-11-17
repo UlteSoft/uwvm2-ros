@@ -2,6 +2,8 @@
 // authority lives here; callers must hold the original cooperative host gate.
 #pragma once
 #ifndef UWVM_MODULE
+#include <atomic>
+#include <cstdint>
 #include <fast_io.h>
 #include <fast_io_device.h>
 #include <fast_io_dsal/string.h>
@@ -34,6 +36,56 @@ namespace uwvm2::runtime::lib::wasip1_native_file
 #endif
     };
 #endif
+    // Canonical WASI flags are portable archive data. A target must represent
+    // their exact observable set: missing or overlapping O_* bits may not
+    // silently weaken a saved request during cross-platform restoration.
+    [[nodiscard]] inline constexpr unsigned wasi_flags(int native) noexcept
+    {
+        unsigned result{};
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+# ifdef O_APPEND
+        if(O_APPEND!=0 && (native&O_APPEND)==O_APPEND)result|=1u;
+# endif
+# ifdef O_DSYNC
+        if(O_DSYNC!=0 && (native&O_DSYNC)==O_DSYNC)result|=2u;
+# endif
+# ifdef O_NONBLOCK
+        if(O_NONBLOCK!=0 && (native&O_NONBLOCK)==O_NONBLOCK)result|=4u;
+# endif
+# ifdef O_RSYNC
+        if(O_RSYNC!=0 && (native&O_RSYNC)==O_RSYNC)result|=8u;
+# endif
+# ifdef O_SYNC
+        if(O_SYNC!=0 && (native&O_SYNC)==O_SYNC)result|=16u;
+# endif
+#else
+        (void)native;
+#endif
+        return result;
+    }
+    [[nodiscard]] inline constexpr bool native_flags(unsigned canonical, int& result) noexcept
+    {
+        int candidate{};
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+# ifdef O_APPEND
+        if(canonical&1u)candidate|=O_APPEND;
+# endif
+# ifdef O_DSYNC
+        if(canonical&2u)candidate|=O_DSYNC;
+# endif
+# ifdef O_NONBLOCK
+        if(canonical&4u)candidate|=O_NONBLOCK;
+# endif
+# ifdef O_RSYNC
+        if(canonical&8u)candidate|=O_RSYNC;
+# endif
+# ifdef O_SYNC
+        if(canonical&16u)candidate|=O_SYNC;
+# endif
+#endif
+        if(wasi_flags(candidate)!=canonical)return false;
+        result=candidate;return true;
+    }
     [[nodiscard]] inline int flags(::fast_io::native_file const& file)
     {
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
@@ -111,4 +163,24 @@ namespace uwvm2::runtime::lib::wasip1_native_file
         ::fast_io::throw_posix_error(ENOTSUP);
 #endif
     }
+    struct managed_file
+    {
+        ::fast_io::native_file file{};
+        ::std::uint64_t identity{};
+    };
+    inline ::std::atomic<::std::uint64_t> next_managed_identity{1u};
+    // Native factory output only; wire data cannot issue a managed identity.
+    // Reserving before fallible IO makes even discarded identities nonreusable.
+    [[nodiscard]] inline managed_file create_managed()
+    {
+        auto identity=next_managed_identity.load(::std::memory_order_relaxed);
+        for(;;)
+        {
+            if(!identity) { ::fast_io::throw_posix_error(EOVERFLOW); }
+            auto const next=identity==UINT64_MAX ? 0u : identity+1u;
+            if(next_managed_identity.compare_exchange_weak(identity,next,::std::memory_order_relaxed))break;
+        }
+        return {create(),identity};
+    }
+
 }

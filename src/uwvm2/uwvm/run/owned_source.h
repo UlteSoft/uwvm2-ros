@@ -3,6 +3,7 @@
  *************************************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <memory>
@@ -35,7 +36,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     // original management profile and existing target contracts are rechecked.
     struct dev_rebuild_input
     {
-        ::std::u8string path{};
+        ::uwvm2::utils::container::std_u8string path{};
         ::uwvm2::utils::control::owned_file_image::owner image{};
         ::std::size_t module_index{}; // 0 = main; 1..N = startup preload order, never a new identity.
     };
@@ -113,17 +114,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         struct context
         {
             // Real owned inputs captured before the old selection is retired.
-            ::std::u8string path, rename;
+            ::uwvm2::utils::container::std_u8string path, rename;
             ::uwvm2::utils::control::owned_file_image::owner image{};
-            ::std::vector<::uwvm2::uwvm::runtime::full::full_preload_input> preloads{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::runtime::full::full_preload_input> preloads{};
 # if defined(UWVM_RUNTIME_LLVM_JIT)
             mode::runtime_llvm_jit_exception_dispatch_t dispatch{mode::global_runtime_llvm_jit_exception_dispatch};
 # endif
-            bool restart{}, preserve_host_state{};
+            bool restart{}, preserve_host_state{}, private_thread_replay{};
             bool ordinary_cache_input{}; // Derived below from actual CLI setup, never supplied as a certificate.
             int result{static_cast<int>(retval::parameter_error)};
         } state{};
         state.restart = restart_after_retirement;
+# if UWVM2_HAS_THREADED_PROFILE_HOST_API
+        // Sample the authenticated native configuration before entering Source
+        // management locks. No Guest state or archive bit can set this mode.
+        state.private_thread_replay=::uwvm2::runtime::lib::runtime_threaded_profile_record_status_host_api().status==
+            ::uwvm2::runtime::wasm_threads::journal_status::replaying;
+# endif
         state.preserve_host_state = rebuild != nullptr;
 # if defined(UWVM_RUNTIME_LLVM_JIT) && !defined(UWVM_MODULE)
         // Immutable source retention is required by real child worlds too; it
@@ -148,8 +155,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             auto const path{::uwvm2::uwvm::cmdline::wasm_file_ppos->str};
             auto const rename{rebuild ? ::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name :
                 ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name};
-            state.path = ::fast_io::u8concat_std(path);
-            state.rename = ::fast_io::u8concat_std(rename);
+            state.path = ::uwvm2::utils::container::u8concat(path);
+            state.rename = ::uwvm2::utils::container::u8concat(rename);
             if(rebuild)
             {
                 if(rebuild->module_index == 0u)
@@ -157,7 +164,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 else
                 {
                     auto const& original{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
-                    state.path = ::fast_io::u8concat_std(original.file_name);
+                    state.path = ::uwvm2::utils::container::u8concat(original.file_name);
                     auto input{::uwvm2::utils::control::owned_file_image::copy_owned_bytes(
                         {reinterpret_cast<::std::byte const*>(original.source_cbegin()), original.source_size()},
                         ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
@@ -199,8 +206,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             {
                 ++preload_index;
                 ::uwvm2::uwvm::runtime::full::full_preload_input input{};
-                input.file_name = ::fast_io::u8concat_std(original.file_name);
-                input.module_name = ::fast_io::u8concat_std(original.module_name);
+                input.file_name = ::uwvm2::utils::container::u8concat(original.file_name);
+                input.module_name = ::uwvm2::utils::container::u8concat(original.module_name);
                 input.parameters = original.wasm_parameter; // Exact original per-module feature policy.
                 if(rebuild && rebuild->module_index == preload_index)
                 {
@@ -264,7 +271,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                             ctx.result = static_cast<int>(retval::parameter_error);
                             return false;
                         }
-                        if(auto result{::uwvm2::uwvm::imported::ros::host::preflight()}; !result)
+                        // Virtual replay performs no gateway connection, not
+                        // even the otherwise mandatory live preflight probe.
+                        // Policy validation above still applies. The private
+                        // source-bound journal can never fall back to real I/O.
+                        if(!ctx.private_thread_replay)if(auto result{::uwvm2::uwvm::imported::ros::host::preflight()}; !result)
                         {
                             ::uwvm2::uwvm::imported::ros::print_policy_error(result);
                             ctx.result = static_cast<int>(retval::parameter_error);

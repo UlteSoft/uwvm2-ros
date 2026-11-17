@@ -44,6 +44,7 @@
 # include "wasm_set_memory_limit.h"
 # include "wasm_set_parser_limit.h"
 # include "wasm_set_initializer_limit.h"
+# include "wasm_set_resource_limit.h"
 # include "wasm_memory_grow_strict.h"
 # include "wasm_feature.h"
 
@@ -51,6 +52,7 @@
 # include "runtime_compiler_log.h"
 # include "runtime_compile_threads.h"
 # include "wasi_threads.h"
+# include "wasithread.h"
 # include "wasi_thread_signals.h"
 # include "runtime_scheduling_policy.h"
 # include "runtime_llvm_jit_policy.h"
@@ -129,6 +131,7 @@
 // ROS host extensions
 # include "ros1.h"
 # include "ros2.h"
+# include "scene.h"
 
 // log
 # include "log_output.h"

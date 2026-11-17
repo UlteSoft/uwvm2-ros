@@ -1,3 +1,7 @@
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
+#include <fast_io_device.h>
 // SPDX-License-Identifier: Apache-2.0
 // Linux ROS 2 native process for one explicitly granted software-simulation step.
 // This is never a Guest import provider and never creates a ROS action server.
@@ -13,11 +17,9 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
 #include <future>
 #include <optional>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #if !defined(__linux__) || !defined(__cpp_exceptions)
 # error The native joint helper requires Linux and checked C++ exception unwinding.
@@ -50,8 +52,8 @@ static bool same_file(struct stat const& a,struct stat const& b)
 }
 struct image_pin
 {
-    std::string path;fd_owner fd;struct stat identity{};
-    image_pin(std::string name,p::digest const& expected,clock_type::time_point deadline):path{std::move(name)},fd{::open(path.c_str(),O_RDONLY|O_CLOEXEC)}
+    ::uwvm2::utils::container::std_string path;fd_owner fd;struct stat identity{};
+    image_pin(::uwvm2::utils::container::std_string name,p::digest const& expected,clock_type::time_point deadline):path{std::move(name)},fd{::open(path.c_str(),O_RDONLY|O_CLOEXEC)}
     {
         need(fd.value>=0&&::fstat(fd.value,&identity)==0&&S_ISREG(identity.st_mode)&&identity.st_size>0&&identity.st_size<=512*1024*1024,"native image is not a bounded regular file");
         fast_io::sha256_context hash{};std::array<std::byte,65536> bytes{};off_t offset{};
@@ -67,17 +69,24 @@ struct image_pin
     bool unchanged() const
     { struct stat opened{},selected{};return ::fstat(fd.value,&opened)==0&&::stat(path.c_str(),&selected)==0&&same_file(identity,opened)&&same_file(identity,selected); }
 };
-static std::set<std::string> executable_images()
+static ::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string> executable_images()
 {
-    std::ifstream input{"/proc/self/maps"};need(input.good(),"native executable mappings unavailable");
-    std::set<std::string> paths;std::string line;unsigned count{};
-    while(std::getline(input,line))
+    ::fast_io::ibuf_file input{"/proc/self/maps"};
+    ::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string> paths;::uwvm2::utils::container::std_string line;unsigned count{};
+    while(::fast_io::io::scan<true>(input,::fast_io::mnp::line_get(line)))
     {
         need(++count<=4096&&line.size()<=8192,"native mapping census exceeded");
-        std::istringstream row{line};std::string extent,permissions,offset,device,inode,path;
-        need(static_cast<bool>(row>>extent>>permissions>>offset>>device>>inode),"malformed native mapping");
+        std::string_view remaining{line},permissions;
+        for(unsigned field{};field!=5u;++field)
+        {
+            auto start=remaining.find_first_not_of(" \t\r\v\f");need(start!=remaining.npos,"malformed native mapping");remaining.remove_prefix(start);
+            auto end=remaining.find_first_of(" \t\r\v\f");auto token=remaining.substr(0,end);
+            if(field==1u) { permissions=token; }
+            remaining.remove_prefix(end==remaining.npos?remaining.size():end);
+        }
         if(permissions.size()!=4||permissions[2]!='x') { continue; }
-        std::getline(row,path);auto start=path.find_first_not_of(' ');need(start!=path.npos,"anonymous executable mapping refused");path.erase(0,start);
+        auto start=remaining.find_first_not_of(' ');need(start!=remaining.npos,"anonymous executable mapping refused");
+        ::uwvm2::utils::container::std_string path{remaining.substr(start)};
         if(path=="[vdso]"||path=="[vsyscall]") { continue; }
         need(path.front()=='/'&&path.find(" (deleted)")==path.npos&&path.find('\\')==path.npos,"unidentified native executable mapping");paths.insert(path);
     }
@@ -85,12 +94,12 @@ static std::set<std::string> executable_images()
 }
 class provenance final
 {
-    std::set<std::string> paths_;
-    std::vector<std::unique_ptr<image_pin>> pins_;
+    ::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string> paths_;
+    ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<image_pin>> pins_;
 public:
-    provenance(p::joint_deployment const& d,std::string const& file)
+    provenance(p::joint_deployment const& d,::uwvm2::utils::container::std_string const& file)
     {
-        std::string bytes;need(config::read_exact_file(file,d.native_provenance,bytes)==p::error::ok,"native provenance file pin refused");
+        ::uwvm2::utils::container::std_string bytes;need(config::read_exact_file(file,d.native_provenance,bytes)==p::error::ok,"native provenance file pin refused");
         config::value v;need(config::parser{bytes}.parse(v)&&config::keys(v,{"format","execution_class","official_repository","official_commit","official_mode","rmw","images"}),"native provenance schema refused");
         auto actual_rmw=rmw_get_implementation_identifier();need(actual_rmw!=nullptr,"native RMW identity unavailable");
         need(config::equal(v,"format","uwvm-portable-native-provenance-v1")&&config::equal(v,"execution_class","software_simulation")&&
@@ -100,8 +109,8 @@ public:
         auto deadline=clock_type::now()+std::chrono::seconds{15};
         for(auto const& image:images->elements)
         {
-            std::string path;p::digest hash{};need(config::keys(image,{"path","sha256"})&&config::text(image,"path",path,4096)&&path.front()=='/'&&config::hex(image,"sha256",hash),"native image entry refused");
-            need(paths_.insert(path).second,"duplicate native image entry");pins_.push_back(std::make_unique<image_pin>(path,hash,deadline));
+            ::uwvm2::utils::container::std_string path;p::digest hash{};need(config::keys(image,{"path","sha256"})&&config::text(image,"path",path,4096)&&path.front()=='/'&&config::hex(image,"sha256",hash),"native image entry refused");
+            need(paths_.insert(path).second,"duplicate native image entry");pins_.push_back(::uwvm2::utils::container::make_unique<image_pin>(path,hash,deadline));
         }
         need(unchanged(),"loaded native images differ from exact provenance");
     }
@@ -122,7 +131,7 @@ class joint_backend final
     p::state latest_{},offered_{};p::command command_{};
     std::uint64_t source_stamp_{},accepted_ns_{},terminal_ns_{},command_deadline_{};
     bool consumed_{},goal_response_{},drain_started_{},drain_complete_{};
-    std::string controller_name_;
+    ::uwvm2::utils::container::std_string controller_name_;
 
     template<typename Predicate> bool spin_until(Predicate ready,std::uint64_t deadline)
     {
@@ -136,11 +145,11 @@ class joint_backend final
            message.header.stamp.sec<0||message.header.stamp.nanosec>=1000000000u) { return; }
         auto stamp=static_cast<std::uint64_t>(message.header.stamp.sec)*1000000000u+message.header.stamp.nanosec;
         if(stamp<=source_stamp_||latest_.sequence==UINT64_MAX) { return; }
-        std::set<std::string> names;for(auto const& name:message.name) { if(!names.insert(name).second) { return; } }
+        ::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string> names;for(auto const& name:message.name) { if(!names.emplace(name.data(),name.size()).second) { return; } }
         p::state next{};next.epoch=d_.mapping.epoch;next.count=d_.mapping.count;next.sequence=latest_.sequence+1;
         for(std::uint32_t slot{};slot!=next.count;++slot)
         {
-            auto found=std::find(message.name.begin(),message.name.end(),d_.native_joints[slot]);if(found==message.name.end()) { return; }
+            auto found=std::find_if(message.name.begin(),message.name.end(),[&](auto const& name) { return std::string_view{name}==std::string_view{d_.native_joints[slot]}; });if(found==message.name.end()) { return; }
             double radians=message.position[static_cast<std::size_t>(found-message.name.begin())];
             if(!std::isfinite(radians)||radians < -1000.0||radians > 1000.0) { return; }
             next.positions[slot]=std::llround(radians*1000000.0);
@@ -152,44 +161,46 @@ class joint_backend final
     bool controller(std::uint64_t deadline)
     {
         if(!spin_until([&]{return controllers_->service_is_ready()&&action_->action_server_is_ready();},deadline)) { return false; }
-        auto future=controllers_->async_send_request(std::make_shared<Controllers::Request>());
+        auto future=controllers_->async_send_request(::uwvm2::utils::container::make_shared<Controllers::Request>());
         if(!spin_until([&]{return future.wait_for(ns{0})==std::future_status::ready;},deadline))
         { controllers_->remove_pending_request(future);return false; }
         auto answer=future.get();if(!answer||answer->controller.size()>256) { return false; }
-        unsigned matches{};std::set<std::string> expected;
+        unsigned matches{};::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string> expected;
         for(std::uint32_t i{};i!=d_.mapping.count;++i) { expected.insert(d_.native_joints[i]+"/position"); }
         for(auto const& entry:answer->controller)
         {
-            if(entry.name!=controller_name_) { continue; }++matches;
-            if(entry.state!="active"||entry.type!=d_.controller_type||entry.claimed_interfaces.size()!=expected.size()||
-               std::set<std::string>(entry.claimed_interfaces.begin(),entry.claimed_interfaces.end())!=expected) { return false; }
+            if(std::string_view{entry.name}!=std::string_view{controller_name_}) { continue; }++matches;
+            if(entry.state!="active"||std::string_view{entry.type}!=std::string_view{d_.controller_type}||entry.claimed_interfaces.size()!=expected.size()||
+               ::uwvm2::utils::container::std_set<::uwvm2::utils::container::std_string>(entry.claimed_interfaces.begin(),entry.claimed_interfaces.end())!=expected) { return false; }
         }
         return matches==1;
     }
-    static std::vector<std::uint8_t> encode_event(Goal::SharedPtr const& goal,std::uint64_t observed,p::outcome outcome,std::int32_t status)
+    static ::uwvm2::utils::container::std_vector<std::uint8_t> encode_event(Goal::SharedPtr const& goal,std::uint64_t observed,p::outcome outcome,std::int32_t status)
     {
-        std::vector<std::uint8_t> bytes(32);auto const& uuid=goal->get_goal_id();std::copy(uuid.begin(),uuid.end(),bytes.begin());
+        ::uwvm2::utils::container::std_vector<std::uint8_t> bytes(32);auto const& uuid=goal->get_goal_id();std::copy(uuid.begin(),uuid.end(),bytes.begin());
         p::wire_detail::put(bytes,16,observed,8);p::wire_detail::put(bytes,24,static_cast<unsigned>(outcome),4);
         p::wire_detail::put(bytes,28,std::bit_cast<std::uint32_t>(status),4);return bytes;
     }
 public:
     explicit joint_backend(p::joint_deployment const& deployment):d_{deployment}
     {
-        auto action=d_.position_action;std::string const suffix="/follow_joint_trajectory";
+        auto action=d_.position_action;::uwvm2::utils::container::std_string const suffix="/follow_joint_trajectory";
         need(action.ends_with(suffix),"only the explicit JTC action profile is implemented");action.resize(action.size()-suffix.size());
         auto slash=action.find_last_of('/');need(slash!=action.npos&&slash+1<action.size(),"controller action name invalid");controller_name_=action.substr(slash+1);
         need(d_.controller_service==action.substr(0,slash)+"/controller_manager/list_controllers","controller manager namespace differs from action namespace");
         auto options=rclcpp::NodeOptions{}.use_global_arguments(false).enable_rosout(false).start_parameter_services(false).start_parameter_event_publisher(false);
-        node_=std::make_shared<rclcpp::Node>("uwvm_portable_joint_"+std::to_string(d_.native_generation),options);executor_.add_node(node_);
-        states_=node_->create_subscription<sensor_msgs::msg::JointState>(d_.state_topic,rclcpp::SensorDataQoS{},[this](sensor_msgs::msg::JointState::ConstSharedPtr m){if(m) { observe(*m); }});
-        controllers_=node_->create_client<Controllers>(d_.controller_service);action_=rclcpp_action::create_client<Action>(node_,d_.position_action);
+        // ROS owns its public ABI strings; pass borrowed names into that ABI.
+        auto node_name=::uwvm2::utils::container::concat("uwvm_portable_joint_",d_.native_generation);
+        node_=::uwvm2::utils::container::make_shared<rclcpp::Node>(node_name.c_str(),options);executor_.add_node(node_);
+        states_=node_->create_subscription<sensor_msgs::msg::JointState>(d_.state_topic.c_str(),rclcpp::SensorDataQoS{},[this](sensor_msgs::msg::JointState::ConstSharedPtr m){if(m) { observe(*m); }});
+        controllers_=node_->create_client<Controllers>(d_.controller_service.c_str());action_=rclcpp_action::create_client<Action>(node_,d_.position_action.c_str());
     }
-    p::error read(std::uint64_t deadline,std::vector<std::uint8_t>& output)
+    p::error read(std::uint64_t deadline,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     {
         if(!controller(deadline)||!spin_until([&]{return latest_.sequence&&p::monotonic_ns()<latest_.valid_until_ns;},deadline)) { return p::error::no_fresh_state; }
         offered_=latest_;output.resize(64u+16u*offered_.count);return p::encode(offered_,output).status;
     }
-    p::error submit(std::span<std::uint8_t const> bytes,std::uint64_t deadline,std::vector<std::uint8_t>& output)
+    p::error submit(std::span<std::uint8_t const> bytes,std::uint64_t deadline,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     {
         if(consumed_) { return p::error::bad_handle; }p::command command{};
         if(!p::decode(bytes,command)) { return p::error::malformed; }
@@ -202,7 +213,7 @@ public:
         { auto distance=std::llabs(latest_.positions[i]-offered_.positions[i]);if(static_cast<std::uint64_t>(distance)>d_.mapping.joints[i].tolerance) { return p::error::no_fresh_state; } }
         Action::Goal goal{};trajectory_msgs::msg::JointTrajectoryPoint point{};
         for(std::uint32_t i{};i!=command.count;++i)
-        { goal.trajectory.joint_names.push_back(d_.native_joints[i]);point.positions.push_back(static_cast<double>(command.targets[i])/1000000.0); }
+        { goal.trajectory.joint_names.emplace_back(d_.native_joints[i].data(),d_.native_joints[i].size());point.positions.push_back(static_cast<double>(command.targets[i])/1000000.0); }
         point.time_from_start.sec=static_cast<std::int32_t>(command.duration_ns/1000000000u);point.time_from_start.nanosec=static_cast<std::uint32_t>(command.duration_ns%1000000000u);
         goal.trajectory.points.push_back(std::move(point));
         rclcpp_action::Client<Action>::SendGoalOptions options{};
@@ -214,7 +225,7 @@ public:
         if(!goal_) { return p::error::denied; }
         output=encode_event(goal_,accepted_ns_,p::outcome::accepted,0);return p::error::ok;
     }
-    p::error wait(std::span<std::uint8_t const> request,std::uint64_t deadline,std::vector<std::uint8_t>& output)
+    p::error wait(std::span<std::uint8_t const> request,std::uint64_t deadline,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     {
         if(!goal_||request.size()!=24||deadline!=command_deadline_||p::wire_detail::get(request,16,8)!=command_.id||
            !std::equal(goal_->get_goal_id().begin(),goal_->get_goal_id().end(),request.begin())) { return p::error::bad_handle; }
@@ -275,11 +286,11 @@ static void serve(int fd,p::joint_deployment const& d,joint_backend& backend,pro
         need(header[0]=='U'&&header[1]=='P'&&header[2]=='N'&&header[3]=='1'&&p::wire_detail::get(header,4,2)==1&&
              p::wire_detail::get(header,12,4)==0&&p::wire_detail::get(header,16,8)==next&&size>=168&&size<=4264&&
              incoming_session&&(bound?incoming_session==session:operation==1)&&deadline>now&&deadline-now<=p::command_state::maximum_wait_ns,"native request header refused");
-        std::vector<std::uint8_t> input(static_cast<std::size_t>(size));need(ipc::transfer(fd,input.data(),input.size(),false,until(deadline)),"native request body incomplete");
+        ::uwvm2::utils::container::std_vector<std::uint8_t> input(static_cast<std::size_t>(size));need(ipc::transfer(fd,input.data(),input.size(),false,until(deadline)),"native request body incomplete");
         need(peer.unchanged()&&origin.unchanged()&&valid_binding(input,d),"native peer/provenance/binding changed");
         if(bound) { need(std::equal(binding.begin(),binding.end(),input.begin()),"owner binding changed"); }
         else { std::copy_n(input.begin(),168,binding.begin());session=incoming_session; }
-        auto body=std::span<std::uint8_t const>{input}.subspan(168);std::vector<std::uint8_t> output;p::error status=p::error::malformed;
+        auto body=std::span<std::uint8_t const>{input}.subspan(168);::uwvm2::utils::container::std_vector<std::uint8_t> output;p::error status=p::error::malformed;
         switch(operation)
         {
             case 1:if(!bound&&body.empty()) { bound=true;status=p::error::ok; }break;
@@ -292,7 +303,7 @@ static void serve(int fd,p::joint_deployment const& d,joint_backend& backend,pro
         if(status!=p::error::ok) { output.clear(); }need(output.size()<=4096,"native reply bound exceeded");
         p::wire_detail::put(header,8,168+output.size(),4);p::wire_detail::put(header,12,static_cast<unsigned>(status),4);
         auto const reply_prefix=header.size()+binding.size();
-        std::vector<std::uint8_t> reply(reply_prefix+output.size());
+        ::uwvm2::utils::container::std_vector<std::uint8_t> reply(reply_prefix+output.size());
         std::copy(header.begin(),header.end(),reply.begin());
         std::copy(binding.begin(),binding.end(),reply.begin()+header.size());
         std::copy(output.begin(),output.end(),reply.begin()+reply_prefix);
@@ -321,14 +332,14 @@ int main(int argc,char** argv)
     if(argc!=7&&argc!=9) { std::fprintf(stderr,"usage: native-joint adapter-path adapter-sha256 grant-path grant-sha256 provenance-path vm-executable-sha256 [--portable-robot-audit-run run-id]\n");return 2; }
     if(argc==9&&(std::string_view{argv[7]}!="--portable-robot-audit-run"||!p::runtime_audit::runtime.configure(argv[8])))
     { std::fprintf(stderr,"native-joint: invalid explicit portable audit run ID\n");return 2; }
-    std::unique_ptr<joint_backend> backend;std::string owned_socket;struct stat socket_identity{};int result=1;
+    ::uwvm2::utils::container::std_unique_ptr<joint_backend> backend;::uwvm2::utils::container::std_string owned_socket;struct stat socket_identity{};int result=1;bool ros_initialized{};
     try
     {
         need(p::deployment_selection::configure(argv[1],argv[2],argv[3],argv[4])==p::error::ok,"deployment refused");auto d=p::deployment_selection::current();
         need(d->native_uid==::getuid(),"native process uid differs from grant");p::digest vm_hash{};need(p::parse_digest(argv[6],vm_hash),"VM executable pin invalid");
         image_pin self{"/proc/self/exe",d->native_executable,clock_type::now()+std::chrono::seconds{2}};
-        rclcpp::init(0,nullptr);backend=std::make_unique<joint_backend>(*d);
-        std::vector<std::uint8_t> initial_state;
+        rclcpp::init(0,nullptr);ros_initialized=true;backend=::uwvm2::utils::container::make_unique<joint_backend>(*d);
+        ::uwvm2::utils::container::std_vector<std::uint8_t> initial_state;
         need(backend->read(p::monotonic_ns()+5000000000u,initial_state)==p::error::ok,"native controller and fresh-state readiness deadline");
         provenance origin{*d,argv[5]};
         auto slash=d->socket.find_last_of('/');need(slash!=d->socket.npos&&slash>0,"private socket directory required");
@@ -342,13 +353,16 @@ int main(int argc,char** argv)
         pollfd pending{listener.value,POLLIN,0};need(::poll(&pending,1,30000)>0,"finite VM connect deadline");
         fd_owner client{::accept4(listener.value,nullptr,nullptr,SOCK_CLOEXEC|SOCK_NONBLOCK)};need(client.value>=0,"native accept failed");
         std::uint32_t uid{},pid{};need(ipc::peer_credentials(client.value,uid,pid)&&uid==d->native_uid&&pid!=static_cast<std::uint32_t>(::getpid()),"VM peer credentials refused");
-        image_pin peer{"/proc/"+std::to_string(pid)+"/exe",vm_hash,clock_type::now()+std::chrono::seconds{2}};
+        image_pin peer{"/proc/"+::uwvm2::utils::container::to_string(pid)+"/exe",vm_hash,clock_type::now()+std::chrono::seconds{2}};
         serve(client.value,*d,*backend,origin,peer);result=backend->drain_owned()?0:3;
     }
     catch(std::exception const& error) { std::fprintf(stderr,"native-joint: %s\n",error.what()); }
     catch(...) { std::fprintf(stderr,"native-joint: non-standard checked exception\n"); }
     if(backend&&!backend->drain_owned()) { result=3; }
-    backend.reset();if(rclcpp::ok()) { rclcpp::shutdown(); }
+    backend.reset();
+    // A refused deployment must not construct a ROS context during cleanup.
+    // rclcpp::ok() may lazily initialize that context and throw before init().
+    if(ros_initialized&&rclcpp::ok()) { rclcpp::shutdown(); }
     if(!owned_socket.empty())
     { struct stat current{};if(::lstat(owned_socket.c_str(),&current)==0&&current.st_dev==socket_identity.st_dev&&current.st_ino==socket_identity.st_ino) { (void)::unlink(owned_socket.c_str()); } }
     return result;

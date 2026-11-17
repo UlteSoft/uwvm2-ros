@@ -15,6 +15,9 @@ import uwvm2.uwvm.imported.wasi.threads;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 import uwvm2.uwvm.imported.ros;
 #endif
+#if defined(UWVM_IMPORT_ROSV2)
+import uwvm2.uwvm.imported.scene;
+#endif
 
 #ifndef UWVM_MODULE
 #define UWVM_MODULE

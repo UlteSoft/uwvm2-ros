@@ -20,11 +20,14 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #ifndef UWVM_MODULE
 // std
 # include <uwvm2/extension/memtag/debug_types.h>
 # include <uwvm2/runtime/diagnostic/wasm_coredump.h>
+# include <uwvm2/runtime/diagnostic/snapshot_wasip1.h>
+# include <uwvm2/runtime/diagnostic/snapshot_ros.h>
 # include <uwvm2/runtime/diagnostic/crash_policy.h>
 # include <array>
 # include <atomic>
@@ -79,12 +82,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
 #endif
 
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-    // Host-only stopped DEV export. The actual ticket, current epoch and
+    class llvm_jit_checkpoint_thread_capture;
+    using llvm_jit_checkpoint_thread_capture_owner = ::std::shared_ptr<llvm_jit_checkpoint_thread_capture const>;
+    // Host-only stopped export, narrowed by immutable dump/debug permissions.
+    // The actual ticket, current epoch and
     // canonical source owners are revalidated; output never contains native pointers.
     extern "C++" ::uwvm2::runtime::diagnostic::wasm_coredump::result runtime_dump_stopped_guest_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::uint64_t expected_epoch, ::std::string_view executable, ::std::string_view reason,
-        void* writer_context, ::uwvm2::runtime::diagnostic::wasm_coredump::write_function) noexcept;
+        void* writer_context, ::uwvm2::runtime::diagnostic::wasm_coredump::write_function,
+        unsigned disclosure = 0u, ::std::uint64_t stop_identifier = 0u, unsigned stop_reason = 0u,
+        ::std::span<llvm_jit_checkpoint_thread_capture_owner const> typed_captures = {}) noexcept;
     // Privileged native foundation entry; never exported as a guest import.
     // Its callback owns/parses/initializes real storage while this same runtime's
     // execution_domain maintenance callback excludes entries and publication.
@@ -148,37 +156,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     using llvm_jit_debug_source_binding_owner = ::std::shared_ptr<llvm_jit_debug_source_binding const>;
     struct llvm_jit_debug_source_section
     {
-        ::std::string name{};
-        ::std::vector<::std::byte> payload{};
+        ::uwvm2::utils::container::std_string name{};
+        ::uwvm2::utils::container::std_vector<::std::byte> payload{};
     };
     struct llvm_jit_debug_source_function
     {
         ::std::uint_least64_t function{}, expression_begin{}, expression_size{}, function_generation{};
         // Bounded owned BEFORE-opcode diagnostic bytes, copied only by genuine
         // debug setup. Empty means budget/unavailable; never grants read authority.
-        ::std::vector<::std::byte> expression_bytes{};
+        ::uwvm2::utils::container::std_vector<::std::byte> expression_bytes{};
         // Same private source binding/generation, optional and bounded. These
         // diagnostic boundaries grant no read authority and are never wire input.
-        ::std::vector<::std::uint_least8_t> instruction_safe_point_bits{};
+        ::uwvm2::utils::container::std_vector<::std::uint_least8_t> instruction_safe_point_bits{};
         bool instruction_safe_points_complete{};
     };
     struct llvm_jit_debug_source_symbol
     {
         ::std::uint64_t index{};
         bool global{};
-        ::std::string name{}; // Detached display label, never runtime authority.
+        ::uwvm2::utils::container::std_string name{}; // Detached display label, never runtime authority.
         unsigned char kind{}; // 0=function, 1=table, 2=memory, 3=global (Wasm external kind).
 
     };
     struct llvm_jit_debug_source_image
     {
         ::std::uint_least64_t code_section_content_size{}, runtime_epoch{};
-        ::std::vector<llvm_jit_debug_source_section> sections{};
-        ::std::vector<llvm_jit_debug_source_function> functions{};
-        ::std::vector<llvm_jit_debug_source_symbol> symbols{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_source_section> sections{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_source_function> functions{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_source_symbol> symbols{};
         ::std::uint64_t function_count{}, global_count{}, table_count{};
         ::std::uint64_t imported_functions{}, imported_globals{}, imported_tables{}, imported_memories{};
-        ::std::vector<unsigned char> memory_address_bits{};
+        ::uwvm2::utils::container::std_vector<unsigned char> memory_address_bits{};
         bool inventory_available{};
     };
     struct llvm_jit_debug_source_position
@@ -213,7 +221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint_least64_t participant{};
         ::uwvm2::utils::thread::cooperative_pause_location location{};
         // Owned outer -> inner identities. No caller PC/source scope is guessed.
-        ::std::vector<llvm_jit_debug_activation_identity> frames{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_activation_identity> frames{};
     };
     extern "C++" llvm_jit_debug_activation_capture_owner llvm_jit_debug_capture_activation_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket) noexcept;
@@ -250,7 +258,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     struct llvm_jit_debug_source_object_copy
     {
         llvm_jit_debug_source_activation_snapshot position{};
-        ::std::vector<::std::byte> bytes{};
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
         ::std::uint_least64_t guest_offset{};
         ::std::uint_least8_t address_bytes{};
     };
@@ -292,8 +300,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // HOST-ONLY immutable-input diagnostics. The runtime mints a private owner
     // only in the genuine selected on_before_park callback; no guest import,
     // public number, shared_ptr alias, source pin or copied value can mint it.
-    class llvm_jit_checkpoint_thread_capture;
-    using llvm_jit_checkpoint_thread_capture_owner = ::std::shared_ptr<llvm_jit_checkpoint_thread_capture const>;
     class llvm_jit_debug_source_memory_view;
     using llvm_jit_debug_source_memory_callback = bool (*)(void*, llvm_jit_debug_source_memory_view&) noexcept;
     extern "C++" bool llvm_jit_debug_with_source_memory_host_api(
@@ -320,11 +326,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint_least64_t participant{}, incarnation{}, total_count{};
         // Native scalar carrier DATA, not canonical Wasm memory bytes. REF
         // carriers are unavailable and zeroed, never provider/native addresses.
-        ::std::vector<llvm_jit_debug_source_captured_local> values{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_source_captured_local> values{};
         // Same sealed selected frame, bottom-first Wasm operands. Globals are
         // copied under this SAME closed-host/publication transaction. REF and
         // imported-global aliases remain unavailable, never native addresses.
-        ::std::vector<llvm_jit_debug_source_captured_local> operands{}, globals{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_debug_source_captured_local> operands{}, globals{};
         ::std::uint_least64_t operand_count{}, global_count{};
     };
     // HOST-only synchronous bounded reader. Runtime construction is private;
@@ -413,8 +419,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint64_t module{};
         // Exact function/table/memory/global/tag/data/element index order.
         ::std::array<::std::uint64_t, 7u> declaration_counts{};
-        ::std::vector<::std::byte> original_module{};
-        ::std::vector<llvm_jit_checkpoint_data_segment_copy> data{};
+        ::uwvm2::utils::container::std_vector<::std::byte> original_module{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_checkpoint_data_segment_copy> data{};
     };
     struct llvm_jit_checkpoint_thread_data_observation
     {
@@ -427,8 +433,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         llvm_jit_checkpoint_query_status status{llvm_jit_checkpoint_query_status::not_selected};
         llvm_jit_checkpoint_resource_status resource_status{llvm_jit_checkpoint_resource_status::invalid_management_scope};
         ::std::uint_least64_t observed_runtime_epoch{};
-        ::std::vector<llvm_jit_checkpoint_thread_data_observation> threads{};
-        ::std::vector<llvm_jit_checkpoint_module_input_copy> modules{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_checkpoint_thread_data_observation> threads{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_checkpoint_module_input_copy> modules{};
         // Copied immutable inputs and scalar thread observations are DATA. They
         // contain no ticket, control owner, executable PC, native stack or issuer.
         inline static constexpr bool complete_instance = false;
@@ -490,7 +496,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::size_t maximum_managed_file_bytes{16777216u}, maximum_managed_total_bytes{67108864u};
         bool portable_metadata_only{};
         ::std::shared_ptr<::uwvm2::uwvm::debugger::wasip1_portable::snapshot const> portable_restore{};
-        ::std::vector<::uwvm2::uwvm::debugger::wasip1_portable::rebind> portable_rebindings{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::debugger::wasip1_portable::rebind> portable_rebindings{};
         // Labels and bounds are DATA, not source/env identity or host authority.
     };
     struct llvm_jit_wasip1_environment_capsule_data
@@ -498,11 +504,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::uint64_t issuer_serial{}, observed_runtime_epoch{}, module{};
         ::std::array<::std::byte,16u> recording_label{};
         ::std::array<::std::byte,32u> original_wasm{}, builtin_interface{};
-        ::std::vector<::uwvm2::uwvm::debugger::wasip1_state::text> arguments{}, environment{};
-        ::std::vector<::uwvm2::uwvm::debugger::wasip1_state::descriptor_entry> descriptors{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::debugger::wasip1_state::text> arguments{}, environment{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::debugger::wasip1_state::descriptor_entry> descriptors{};
         ::std::size_t distinct_native_bindings{}, captured_directory_entries{}, duplicated_observers{};
         bool shared_environment{};
         ::std::size_t managed_resources{}, retained_external_resources{}, managed_content_bytes{};
+        ::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment const> archive_environment{};
         // No native handle, resource pointer, host path, source/engine/cohort
         // owner or old logical descriptor number can issue restoration rights.
         inline static constexpr bool persisted_resource_restore_available = false;
@@ -592,9 +599,55 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::uwvm2::uwvm::debugger::checkpoint::error data_error{
             ::uwvm2::uwvm::debugger::checkpoint::error::unavailable_capability};
         ::std::shared_ptr<::uwvm2::uwvm::debugger::checkpoint::state const> graph{};
-        ::std::vector<llvm_jit_wasip1_environment_capsule_owner> wasip1_environments{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_wasip1_environment_capsule_owner> wasip1_environments{};
         bool wasip1_checkpoint_required{true}, wasip1_captured_together{};
+        ::uwvm2::utils::container::std_vector<::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_ros::environment const>> ros_environments{};
     };
+    struct llvm_jit_checkpoint_replay_status
+    {
+        // 0 inactive; 1 recording; 2 sealed recording; 3 replaying;
+        // 4 replay endpoint; 5 divergence or unsupported recorded operation.
+        unsigned mode{};
+        ::std::uint64_t instructions{}, events{}, cursor{};
+        ::uwvm2::uwvm::debugger::checkpoint::error error{};
+    };
+    extern "C++" llvm_jit_checkpoint_replay_status llvm_jit_checkpoint_replay_status_host_api() noexcept;
+    struct llvm_jit_checkpoint_replay_history
+    {
+        ::std::uint64_t epoch{},sequence{},instruction{};
+        ::uwvm2::utils::container::std_vector<::std::byte> archive{};
+    };
+    // Detached observation only; an epoch/event identifies this copied view,
+    // never a live source/FD/ROS capability or permission to change execution.
+    extern "C++" llvm_jit_checkpoint_replay_history llvm_jit_checkpoint_replay_history_host_api() noexcept;
+    class llvm_jit_checkpoint_pending_snapshot;
+    using llvm_jit_checkpoint_pending_snapshot_owner=::std::shared_ptr<llvm_jit_checkpoint_pending_snapshot const>;
+    struct llvm_jit_checkpoint_pending_capture
+    {
+        llvm_jit_checkpoint_pending_snapshot_owner retained{};
+        ::std::shared_ptr<::uwvm2::uwvm::debugger::checkpoint::state const> graph{};
+    };
+    // Only same-process, same live pause reattachment. Files never mint this
+    // native capability. Unknown/cross-process results are not dispatched.
+    extern "C++" llvm_jit_checkpoint_pending_capture llvm_jit_checkpoint_capture_pending_host_api(
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&) noexcept;
+    extern "C++" bool llvm_jit_checkpoint_validate_pending_host_api(
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
+        llvm_jit_checkpoint_pending_snapshot_owner const&) noexcept;
+    // Compiler-only relocation for resumable debug code; owner is independently
+    // resolved against the actual current module, never a guest capability.
+    extern "C++" bool llvm_jit_checkpoint_memtag_entropy(::std::uintptr_t owner,
+        unsigned operation,unsigned address_bits,::std::uint8_t& value) noexcept;
+    extern "C++" ::std::uint64_t llvm_jit_checkpoint_wait(::std::uintptr_t owner,unsigned operation,
+        unsigned address_bits,::std::uint64_t offset,::std::uint64_t address,::std::uint64_t expected,
+        ::std::int64_t timeout,void* context,::std::uint64_t (*invoke)(void*)) UWVM_THROWS;
+    // Requires full debugger authority and a new authentic complete stop.
+    // Action 1 starts recording, 2 seals it, 3 samples the historical environment.
+    // Each action requires this exact genuine complete before-opcode stop.
+    extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_record_host_api(
+        ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
+        ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
+        ::std::array<::std::byte,16u> const& recording_label,unsigned action) noexcept;
     // Host-only retirement of ONE complete runtime-owned native cohort.
     // Pending operations retain the old workers/code/closed host and execution
     // admission. A canonical retry can join TLS/kernel exit; it does not restore
@@ -603,7 +656,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     using llvm_jit_checkpoint_native_retirement_owner = ::std::shared_ptr<llvm_jit_checkpoint_native_retirement const>;
     enum class llvm_jit_checkpoint_native_retirement_status : unsigned char
     { retired_and_joined, pending_execution, pending_native_join, requires_llvm_jit_full,
-      invalid_context, invalid_deadline, busy, stale_owner, rejected_current_cohort, allocation_failed, failed_closed, preparation_declined, prepared_world_ready_closed };
+      invalid_context, invalid_deadline, busy, stale_owner, rejected_current_cohort, allocation_failed, failed_closed, preparation_declined, prepared_world_ready_closed, restored_execution_started, restored_startup_failed };
     struct llvm_jit_checkpoint_native_retirement_result;
     extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_retire_saved_native_workers_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
@@ -617,8 +670,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     { prepared_and_discarded, requires_llvm_jit_full, not_selected, invalid_request,
       unavailable_capture, resource_preparation_declined, engine_preparation_declined, allocation_failed,
       wasip1_preparation_declined, frame_preparation_declined, root_preparation_declined, worker_root_preparation_declined, prepared_and_retained, dispatch_binding_preparation_declined, indirect_binding_preparation_declined, source_initializer_binding_preparation_declined, full_publication_record_preparation_declined, full_code_owner_handoff_declined, closed_worker_preparation_declined };
+    enum class llvm_jit_checkpoint_environment_source : unsigned char { current, captured, recorded };
+    struct llvm_jit_checkpoint_wasip1_resource_rebind
+    {
+        ::std::uint64_t module{};
+        ::std::uint32_t resource{}, target_descriptor{};
+        // An explicit HOST selection in the current target policy group.
+        // A saved descriptor or resource number cannot choose this binding.
+    };
     struct llvm_jit_checkpoint_prepare_request
     {
+        // Optional saved DATA, not executable/source/capability authority. The
+        // manager compares it with the actual current code and feature policy
+        // before preparing or retiring any original worker. Callers keep this
+        // native-owned graph stable for the synchronous request.
+        ::std::shared_ptr<::uwvm2::uwvm::debugger::checkpoint::state const> saved_graph{};
+        // Explicit environment choice. Current keeps the target's live host
+        // environment; captured accepts only genuine same-process capsules
+        // from this recording. Neither restores permissions nor resets quotas.
+        llvm_jit_checkpoint_environment_source environment_source{llvm_jit_checkpoint_environment_source::current};
+        ::uwvm2::utils::container::std_vector<llvm_jit_wasip1_environment_capsule_owner> saved_wasip1_environments{};
+        ::uwvm2::utils::container::std_vector<::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment const>> recorded_wasip1_environments{};
+        ::uwvm2::utils::container::std_vector<::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_ros::environment const>> recorded_ros_environments{};
+        ::uwvm2::utils::container::std_vector<llvm_jit_checkpoint_wasip1_resource_rebind> wasip1_resource_rebindings{};
         ::std::array<::std::byte,16u> recording_label{};
         ::uwvm2::uwvm::debugger::checkpoint::limits graph_budget{};
         ::std::uint64_t maximum_native_payload_bytes{256u*1024u*1024u};
@@ -632,6 +706,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         // Prepare every visible distinct WASIp1 environment in this SAME stop.
         // These bounded candidates are discarded with the candidate Wasm world.
         bool include_wasip1{}, require_managed_wasip1_resources{true};
+        // Request an actual new cooperative pause before restored execution.
+        // Requires the configured native observer's restoration callback.
+        bool pause_after_restore{};
+        // A separate validated executable journal. Ordinary restoration never
+        // ignores events. Replay stays sealed from native provider execution.
+        ::std::shared_ptr<::uwvm2::uwvm::debugger::checkpoint::state const> replay_graph{};
+
         // Combined final defined/import cache entries; checked before allocation.
         ::std::size_t maximum_private_dispatch_bindings{1048576u};
         // Combined caller type records, table views and per-caller function slots.
@@ -732,6 +813,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // retained original instance. Pending execution/TLS must finish first.
     extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_discard_prepared_instance_host_api(
         llvm_jit_checkpoint_native_retirement_owner const&, ::std::chrono::steady_clock::time_point) noexcept;
+    // Publish the prepared resources and enroll all replacement threads before
+    // admitting guest execution. Full mutation permission is mandatory.
+    extern "C++" llvm_jit_checkpoint_native_retirement_result llvm_jit_checkpoint_publish_prepared_instance_host_api(
+        llvm_jit_checkpoint_native_retirement_owner const&, ::std::chrono::steady_clock::time_point) noexcept;
+    enum class llvm_jit_checkpoint_restored_join_status : unsigned char
+    { joined, pending, not_current, invalid_context, allocation_failed };
+    struct llvm_jit_checkpoint_restored_join_result
+    {
+        llvm_jit_checkpoint_restored_join_status status{llvm_jit_checkpoint_restored_join_status::not_current};
+        ::uwvm2::utils::container::std_vector<llvm_jit_checkpoint_continuation_status> threads{};
+    };
+    // Wait for actual OS/TLS completion in the currently selected restored
+    // world. The epoch is a stale-state guard, not restore or read authority.
+    extern "C++" llvm_jit_checkpoint_restored_join_result llvm_jit_checkpoint_join_restored_instance_host_api(
+        ::std::uint_least64_t runtime_epoch, ::std::chrono::steady_clock::time_point) noexcept;
     extern "C++" llvm_jit_checkpoint_prepare_result llvm_jit_checkpoint_prepare_instance_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
@@ -959,12 +1055,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         // TLS ledger or capture. Only copied, owned bytes leave the real guard.
         llvm_jit_debug_native_target target{};
         bool native_instruction_stop{}; // false means a cooperative safepoint code view
-        ::std::vector<::std::uint8_t> bytes{};
-        ::std::vector<::std::uint8_t> guest_code{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> bytes{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> guest_code{};
         // ARM ELF mapping DATA: 0 is a proved literal pool, 1 is text.
         // Empty retains ordinary forward decoding on other architectures.
         // This grants no display, memory or execution permission.
-        ::std::vector<::std::uint8_t> instruction_code{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> instruction_code{};
         ::std::size_t size{};
         ::std::uintptr_t stop_pc{}, owner_begin{}, owner_end{};
         ::std::uint_least64_t participant{}, module{}, function{}, function_generation{}, runtime_epoch{};
@@ -1045,6 +1141,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         // Explicit host controller opt-in only. Custom observers continue to
         // receive every opcode unless they implement the hint publication contract.
         bool selective_instruction_observation{};
+        // Cold host lifecycle only. Publication has joined the old workers and
+        // keeps new execution closed while this callback installs its genuine
+        // new ticket. No runtime entry, compile, reset or wait is allowed here.
+        bool (*on_restored_pause)(void* context,
+            ::uwvm2::utils::thread::cooperative_pause_domain const* domain,
+            ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const& ticket,
+            ::std::uint_least64_t epoch) noexcept{};
+        // Called outside world/publication locks after every restored root has
+        // returned. This is an event, never an OS-join receipt. No callback is
+        // delivered for cohort retirement into another restoration.
+        void (*on_restored_completion)(void* context,
+            ::uwvm2::utils::thread::cooperative_pause_domain const* domain,
+            ::std::uint_least64_t epoch, ::std::uint_least32_t exit_code) noexcept{};
     };
     /// Host-only launch opt-in, before any runtime registry is published. The controller owns authorization
     /// and must never expose this native API or its domain through guest imports. The runtime retains the
@@ -1455,6 +1564,64 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     extern "C++" bool preload_memory_range_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size) noexcept;
     extern "C++" bool preload_memory_read_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void* destination, ::std::size_t size) noexcept;
     extern "C++" bool preload_memory_write_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void const* source, ::std::size_t size) noexcept;
+    class ros_exchange_memory_access;
+    using ros_exchange_memory_callback = ::std::uint32_t (*)(void*,ros_exchange_memory_access&) noexcept;
+    /** @brief Authenticate one ROSv2 carrier invocation; never cache authority across calls.
+     * @details The runtime constructs an uncopyable access object for a closed
+     * synchronous host callback. That callback must not run guest code, wait,
+     * retain the object or expose its address. The current execution lease
+     * excludes module replacement/destruction until this callback returns.
+     * Identity and the immutable owned/shared/unexported declaration are checked
+     * once; every copy still checks current bounds and memory tags while pinning
+     * the memory backend. No allocation, guest pointer, imported-memory callback
+     * or replay payload is introduced. Provider/operation grants remain separate.
+     */
+    extern "C++" ::std::uint32_t with_ros_exchange_memory_host_api(ros_exchange_memory_callback,void*) noexcept;
+    class ros_exchange_memory_access
+    {
+        friend ::std::uint32_t with_ros_exchange_memory_host_api(ros_exchange_memory_callback,void*) noexcept;
+        ros_caller_identity caller_{};
+        void const* memory_owner_{};
+        ::std::size_t memory_index_{};
+        ros_exchange_memory_access()=default;
+        ~ros_exchange_memory_access()=default;
+    public:
+        ros_exchange_memory_access(ros_exchange_memory_access const&)=delete;
+        ros_exchange_memory_access& operator=(ros_exchange_memory_access const&)=delete;
+        [[nodiscard]] ros_caller_identity const& identity()const noexcept{return caller_;}
+        /// @brief Validate a tagged span of the single owned exchange memory selected for this invocation.
+        bool capture(::std::size_t memory,::std::uint64_t offset,::std::size_t size,::std::uint64_t& normalized) noexcept;
+        /// @brief Copy with fresh tag/bounds checks and byte-atomic shared-memory accesses.
+        bool copy(::std::size_t memory,::std::uint64_t offset,void* data,::std::size_t size,bool write) noexcept;
+        /** @brief Copy an admitted input and zero its complete extent under one backend pin.
+         * @details Requires the scoped owned-memory proof and fresh full-range
+         * bounds/tags. Host output must be disjoint VM-owned storage. Each
+         * byte is read and erased atomically; this supplies no whole-message
+         * snapshot. Refusal writes nothing and the caller must still attempt
+         * tag-independent cleanup of its already captured input extent when
+         * clearing is enabled (the default). Only trusted route policy may
+         * disable clearing; no guest carrier field selects this boolean.
+         */
+        bool read_input(::std::size_t memory,::std::uint64_t offset,void* data,::std::size_t size,bool clear_after_copy=true) noexcept;
+        /** @brief Write a contiguous frame with one fresh full-range tag/bounds proof.
+         * @details The authenticated owner is the same as capture/copy. Prefix
+         * and payload are synchronous native borrows, never retained. Both
+         * parts use byte-atomic stores while the backend is pinned. No extra
+         * copy or allocation is introduced; complete-range refusal writes none
+         * of the frame. Delivery and erasure remain the router's responsibility.
+         */
+        bool write_frame(::std::size_t memory,::std::uint64_t offset,void const* prefix,::std::size_t prefix_size,
+            void const* payload,::std::size_t payload_size) noexcept;
+        /** @brief Erase a captured normalized region of this invocation's owner.
+         * @details The live execution lease protects this owner; a fresh backend
+         * pin/bounds check protects growth. Cleanup ignores changed tags and
+         * uses byte-atomic stores, exactly as remote sealed-region erasure.
+         * It cannot select another owner or survive the synchronous callback.
+         */
+        bool erase(::std::uint64_t normalized,::std::uint64_t size) noexcept;
+    };
+    extern "C++" bool ros_exchange_memory_erase_host_api(void const* instance,::std::uint64_t generation,::std::uint64_t memory,
+        ::std::uint64_t offset,::std::uint64_t size,::std::uint64_t length_offset=0,::std::uint64_t length_size=0) noexcept;
 }  // namespace uwvm2::runtime::lib
 
 #ifndef UWVM_MODULE

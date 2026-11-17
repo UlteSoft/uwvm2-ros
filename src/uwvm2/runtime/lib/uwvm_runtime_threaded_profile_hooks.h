@@ -8,7 +8,7 @@ namespace threaded_profile
     [[nodiscard]] ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* active_host_module() noexcept;
     [[nodiscard]] bool has_active_host_call() noexcept;
     [[nodiscard]] bool active_host_stop_requested() noexcept;
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     [[nodiscard]] bool observed_caller(ros_caller_identity&) noexcept;
     [[nodiscard]] bool caller_source_facts(ros_caller_source_facts&,bool) noexcept;
 #endif

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_selectors.h"
 # include <fast_io.h>
@@ -61,13 +62,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     struct source_expression_step
     {
         source_expression_step_kind kind{};
-        ::std::string member{};
+        ::uwvm2::utils::container::std_string member{};
         ::std::int64_t index{};
     };
     struct source_expression
     {
-        ::std::string root_name{};
-        ::std::vector<source_expression_step> steps{};
+        ::uwvm2::utils::container::std_string root_name{};
+        ::uwvm2::utils::container::std_vector<source_expression_step> steps{};
     };
     struct source_expression_limits
     {
@@ -127,7 +128,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             // No guest evaluation or pointer authority is created by parsing.
             [[nodiscard]] object_selector_error reference(::std::size_t depth, bool primary_only)
             {
-                ::std::vector<continuation> continuations{};
+                ::uwvm2::utils::container::std_vector<continuation> continuations{};
                 auto const remaining{depth < max_nesting ? max_nesting - depth : 0u};
                 bool unary_operand{!primary_only};
                 for(;;)
@@ -172,7 +173,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         }
                         cursor = root_end; // Failed builtin lookahead retains the exact variable spelling.
                     }
-                    pending.root_name = ::fast_io::concat_std(text.substr(begin, cursor - begin));
+                    pending.root_name = ::uwvm2::utils::container::concat(text.substr(begin, cursor - begin));
                     if(unary_operand)
                     {
                         auto const result{postfix_tail()};
@@ -251,7 +252,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         space(); ::std::string_view name{};
                         if(!identifier(true, name)) { return object_selector_error::malformed; }
                         if(arrow) { pending.steps.push_back({source_expression_step_kind::dereference, {}, {}}); }
-                        pending.steps.push_back({source_expression_step_kind::member, ::fast_io::concat_std(name), {}});
+                        pending.steps.push_back({source_expression_step_kind::member, ::uwvm2::utils::container::concat(name), {}});
                     }
                     else if(value == '[')
                     {
@@ -349,7 +350,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             bounded_cap.object_limits.max_object_bytes = expression_details::bounded(cap.object_limits.max_object_bytes, 65536u);
             bounded_cap.object_limits.max_metadata_string_bytes = expression_details::bounded(cap.object_limits.max_metadata_string_bytes, 1024u * 1024u);
             bounded_cap.object_limits.max_result_string_bytes = expression_details::bounded(cap.object_limits.max_result_string_bytes, 65536u);
-            ::std::vector<object_node> nodes{};
+            ::uwvm2::utils::container::std_vector<object_node> nodes{};
             auto const status{with_known_bits ?
                 query_selected_object_value_with_known_bits(types, root_type, segment, copied_root_bytes, known_bits, nodes, bounded_cap) :
                 query_selected_object_value(types, root_type, segment, copied_root_bytes, nodes, bounded_cap)};

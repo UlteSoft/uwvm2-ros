@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <cstddef>
 #include <cstdint>
 #include <limits>

@@ -21,7 +21,7 @@
  ****************************************/
 
 module;
-
+#include <uwvm2/utils/container/standard.h>
 // std
 #include <atomic>
 #include <cstddef>
@@ -43,6 +43,7 @@ module;
 # include <llvm/Bitcode/BitcodeWriter.h>
 # include <llvm/ExecutionEngine/ObjectCache.h>
 # include <llvm/IR/Module.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
 # include <llvm/Support/MemoryBuffer.h>
 # include <llvm/Support/raw_ostream.h>
 #endif

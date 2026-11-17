@@ -42,6 +42,7 @@ export import :wasm_depend_recursion_limit;
 export import :wasm_set_memory_limit;
 export import :wasm_set_parser_limit;
 export import :wasm_set_initializer_limit;
+export import :wasm_set_resource_limit;
 export import :wasm_feature;
 
 // runtime

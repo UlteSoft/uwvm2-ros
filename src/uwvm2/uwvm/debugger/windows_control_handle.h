@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(_WIN32) && !defined(__CYGWIN__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -140,7 +143,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             return ::uwvm2::utils::control::win32_abi::uwvm_GetOverlappedResult(endpoint_.native_handle(), ::std::addressof(pending), ::std::addressof(written), FALSE) != 0 &&
                    written == size && parent_live();
         }
-        [[nodiscard]] bool send_text(::std::string const& message) noexcept
+        [[nodiscard]] bool send_text(::uwvm2::utils::container::std_string const& message) noexcept
         {
             if(message.size() > maximum_reply_bytes)
             { return send_literal("error: bounded debugger response exceeded 65536 bytes\n"); }
@@ -220,7 +223,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // Native members retire the event and authenticated parent after
             // the endpoint has completed cancellation/detachment.
         }
-        [[nodiscard]] static ::std::unique_ptr<windows_control_handle> adopt(::std::uintptr_t value) noexcept
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<windows_control_handle> adopt(::std::uintptr_t value) noexcept
         {
             if(value < 4u || value == static_cast<::std::uintptr_t>(-1)) { return {}; }
             ::HANDLE endpoint{reinterpret_cast<::HANDLE>(value)};
@@ -250,10 +253,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             { return {}; }
             ::fast_io::native_file event{::uwvm2::utils::control::win32_abi::uwvm_CreateEventW(nullptr, TRUE, FALSE, nullptr)};
             if(!event) { return {}; }
-            auto* raw{new (::std::nothrow) windows_control_handle(
-                ::std::move(supplied), ::std::move(event), ::std::move(parent), parent_pid, creation, token)};
+            auto* raw{::uwvm2::utils::allocator::fast_io_strict::try_object<windows_control_handle>([&](windows_control_handle* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) windows_control_handle(
+                ::std::move(supplied), ::std::move(event), ::std::move(parent), parent_pid, creation, token); })};
             if(raw == nullptr) { return {}; }
-            ::std::unique_ptr<windows_control_handle> channel{raw};
+            ::uwvm2::utils::container::std_unique_ptr<windows_control_handle> channel{raw};
             if(!channel->parent_live() ||
                ::uwvm2::utils::control::seal_debug_control_handle_host_api(endpoint) !=
                    ::uwvm2::utils::control::sealed_input_status::ok) { return {}; }
@@ -278,7 +281,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 if(!message.valid) { break; }
                 if(command_view{message.bytes.data(), message.size} == "permissions")
                 {
-                    auto const text=::fast_io::concat_std("permissions ",::std::string{::uwvm2::utils::control::debug_permissions::name()},"\n");
+                    auto const text=::uwvm2::utils::container::concat("permissions ",::uwvm2::utils::container::std_string{::uwvm2::utils::control::debug_permissions::name()},"\n");
                     if(!send_text(text.data(),text.size()))return;
                     continue;
                 }
@@ -324,6 +327,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::wasip1_state:
                     case console_command_kind::host_trace:
                     case console_command_kind::ros_state:
+                    case console_command_kind::scene_state:
+                    case console_command_kind::wasithread_state:
                     case console_command_kind::breakpoint_control:
                     case console_command_kind::assembly_next:
                     case console_command_kind::assembly_finish:
@@ -337,8 +342,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::source_print_options:
                     case console_command_kind::source_printer_config:
                     case console_command_kind::wasm_disassemble:
+                    case console_command_kind::snapshot_record:
+                    case console_command_kind::snapshot_restore:
                     case console_command_kind::wasm_dump:
                     case console_command_kind::module_list:
+                    case console_command_kind::host_interfaces:
                     case console_command_kind::protocol: break;
                 }
                 if(!send_text(details::execute_control_command(control, command))) { return; }

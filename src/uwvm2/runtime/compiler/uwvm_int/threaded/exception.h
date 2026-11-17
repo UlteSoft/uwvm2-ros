@@ -11,7 +11,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         if(exception_top_==exceptions_.size() || count>exception_values_.size()-exception_value_top_)
         { return fail(status::resource_limit); }
         auto const base{value_top_-count};
-        exceptions_[exception_top_]={tag,exception_value_top_,count};
+        exceptions_[exception_top_]={tag,exception_value_top_,count,frame.module};
         ::std::copy_n(values_.data()+base,count,exception_values_.data()+exception_value_top_);
         exception_value_top_+=count;value_top_=base;
         return raise(lease,++exception_top_); // 0 is only ref.null exn/noexn.
@@ -22,9 +22,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         if(token==0u) { return fail(status::trap_null); }
         if(token>exception_top_) { return fail(status::invariant_failure); }
         auto const exception{exceptions_[static_cast<::std::size_t>(token-1u)]};
-        // Each exception is immutable in this engine's bounded arena. All its
-        // payloads/tokens remain live until entry retirement; no C++ throw or
-        // native/parent exception object crosses this explicit unwind.
+        // Escaped exnrefs retain immutable identity until entry retirement.
+        // A fresh exception caught without a reference can be reclaimed after
+        // its payload has reached the operand stack; it has no other owner.
         auto owner{call_top_};
         for(auto n{control_top_};n!=0uz;)
         {
@@ -54,7 +54,28 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     for(::std::size_t i{};i<exception.count;++i)
                     { if(!push(exception_values_[exception.offset+i])) { return false; } }
                 }
-                if(with_reference && !push(token)) { return false; }
+                if(with_reference)
+                {
+                    auto& retained=exceptions_[static_cast<::std::size_t>(token-1u)];
+                    if(!retained.escaped)
+                    {
+                        auto const result=::uwvm2::uwvm::runtime::initializer::make_threaded_exception_reference(
+                            *world_,retained.module,*retained.tag,[&](::std::size_t i,::std::size_t width) noexcept
+                            {return ::std::span<::std::byte const>{reinterpret_cast<::std::byte const*>(&exception_values_[retained.offset+i]),width};},retained.reference);
+                        if(result!=storage::gc_object_status::ok)return fail(result==storage::gc_object_status::out_of_memory?
+                            status::resource_limit:status::invariant_failure);
+                        retained.escaped=true;
+                    }
+                    auto const rooted=world_->module(activation.module)->gc_store->retain_gc_reference(retained.reference);
+                    if(rooted!=storage::gc_object_status::ok)return fail(status::resource_limit);
+                    stack_value value{};::std::memcpy(&value,&retained.reference,sizeof(retained.reference));
+                    if(!push(value)) { return false; }
+                }
+                else if(token==exception_top_ && !exception.escaped)
+                {
+                    exception_value_top_=exception.offset;
+                    exceptions_[--exception_top_]={};
+                }
                 // Existing tuple branch preserves loop/function/result arity,
                 // and removes the try's handlers before any rethrow.
                 return branch(0uz);

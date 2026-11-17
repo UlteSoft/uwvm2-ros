@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #endif
 #ifndef UWVM_MODULE
 #if defined(__linux__)

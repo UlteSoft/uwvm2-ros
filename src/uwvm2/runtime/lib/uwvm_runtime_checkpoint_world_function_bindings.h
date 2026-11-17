@@ -139,15 +139,40 @@ bool dispatch_bindings_prepared_{};
             }
             else
             {
-#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
-                if(leaf.imported->link_kind!=imported_kind::local_imported ||
-                   original->builtin_wasip1_member_==nullptr ||
-                   leaf.imported->target.local_imported.module_ptr!=original->builtin_wasip1_member_ ||
-                   dense>=wasip1_dispatch_contexts_.size())
+                if(leaf.imported->link_kind!=imported_kind::local_imported)
                 { return fail(preparation_status::unavailable_adapter); }
-                auto const& environment=wasip1_dispatch_contexts_.index_unchecked(dense);
-                if(!environment.import_visible || environment.env==nullptr)
-                { return fail(preparation_status::invalid_import); }
+                ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data binding{};
+                bool authenticated{};
+                for(auto const& provider:modules_)
+                {
+                    auto const& functions=provider.actual->imported_function_vec_storage;
+                    for(::std::size_t imported_index{};imported_index<functions.size();++imported_index)
+                    {
+                        if(::std::addressof(functions.index_unchecked(imported_index))!=leaf.imported)continue;
+                        auto old=original->registry_.find(provider.file->module_name);
+                        if(old==original->registry_.end() ||
+                           !original->actual_checkpoint_builtin_function(provider.old_actual_id,current_runtime_generation(),
+                                ::std::addressof(old->second),imported_index,binding) ||
+                           imported_index>=old->second.imported_function_vec_storage.size())
+                            return fail(preparation_status::unavailable_adapter);
+                        auto const& prior=old->second.imported_function_vec_storage.index_unchecked(imported_index);
+                        authenticated=prior.target.local_imported.module_ptr==leaf.imported->target.local_imported.module_ptr &&
+                            prior.target.local_imported.index==leaf.imported->target.local_imported.index;
+                        break;
+                    }
+                    if(authenticated)break;
+                }
+                if(!authenticated)return fail(preparation_status::unavailable_adapter);
+                if(binding.ros_family==0u)
+                {
+#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
+                    if(dense>=wasip1_dispatch_contexts_.size())return fail(preparation_status::unavailable_adapter);
+                    auto const& environment=wasip1_dispatch_contexts_.index_unchecked(dense);
+                    if(!environment.import_visible || environment.env==nullptr)return fail(preparation_status::invalid_import);
+#else
+                    return fail(preparation_status::unavailable_adapter);
+#endif
+                }
                 // Only the authenticated immutable builtin can supply native
                 // signature metadata. No arbitrary provider callback is invoked.
                 next.k=cached_import_target::kind::local_imported;
@@ -167,14 +192,14 @@ bool dispatch_bindings_prepared_{};
                         target.local_imported_wasm_fp_control_policy=query_local_imported_function_wasm_fp_control_policy(
                             target.u.local_imported.module_ptr,target.u.local_imported.index);
                     }
+                    else if constexpr(requires { target.llvm_wasm_fp_control_policy; })
+                        target.llvm_wasm_fp_control_policy=query_local_imported_function_wasm_fp_control_policy(
+                            target.u.local_imported.module_ptr,target.u.local_imported.index);
                 }(next);
                 auto const sig=next.signature();
                 next.param_bytes=total_abi_bytes(sig.params);next.result_bytes=total_abi_bytes(sig.results);
                 if((next.param_bytes==0u && sig.params.size!=0u) || (next.result_bytes==0u && sig.results.size!=0u))
                 { return fail(preparation_status::type_mismatch); }
-#else
-                return fail(preparation_status::unavailable_adapter);
-#endif
             }
             next.reference_params=signature_has_reference_carrier(next.signature().params);
             next.reference_results=signature_has_reference_carrier(next.signature().results);

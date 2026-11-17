@@ -382,7 +382,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string collect_target_triple(::llvm::TargetMachine const& target_machine) noexcept
     {
-        auto triple{target_machine.getTargetTriple().str()};
+        auto const& triple{target_machine.getTargetTriple().str()};
         return details::u8string_from_chars(triple.data(), triple.size());
     }
 #endif
@@ -625,6 +625,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // not let a previously cached unsafe object bypass these repairs.
         details::append_cache_key_value(out, u8"llvm-simd-scalar-lowering", u8"scalar-target-contract-v3");
         details::append_cache_key_value(out, u8"guarded-store", u8"cross-custom-page-last-byte-preflight-v1");
+        // Neutral RMWs must retain their guard faults even if their results
+        // are unused. Exclude older optimized objects independently of source IDs.
+        details::append_cache_key_value(out, u8"llvm-guest-atomics", u8"volatile-sc-alignment-first-v1");
         // Native objects may omit the u32-sum overflow branch only with the matching unsigned-domain mmap layout.
         // Never reuse such code with the former 2-GiB-front-guard reservation, even when project version fields match.
         details::append_cache_key_value(out, u8"wasm32-mmap-layout", u8"unsigned-8g-domain-tail64-v1");
@@ -662,6 +665,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // v3 also makes generated raw-call operands and status values register-wide, avoiding target-specific narrow
         // integer extension attributes at the handwritten LLVM/C++ ABI boundary.
         details::append_cache_key_value(out, u8"llvm-jit-bridge-symbol-abi", u8"generated-register-wide-internal-entry-v3");
+        // Import aliases must name one defining object in optimized IR.
+        details::append_cache_key_value(out, u8"llvm-global-storage-identity", u8"defining-module-index-v1");
         // Generated status CFG changes in every GC profile. Native bridge ABI
         // is unchanged, but old multi-guard objects cannot bypass this version.
         details::append_cache_key_value(out, u8"llvm-gc-status-dispatch", u8"zero-fast-cold-v1");
@@ -677,6 +682,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         details::append_cache_key_value(out, u8"llvm-gc-local-witness", u8"typed-pure-simd-preserves-v2");
         details::append_cache_key_value(out, u8"llvm-gc-lock-region", u8"same-element-actual-ir-unconditional-no-effects-v1");
         details::append_cache_key_value(out, u8"llvm-gc-local-domain", u8"immutable-retained-store-relocations-v2");
+        details::append_cache_key_value(out, u8"llvm-gc-object-lock", u8"x86-64-acquire-exchange-v1");
+        details::append_cache_key_value(out, u8"llvm-gc-local-authentication", u8"owned-index-exact-type-v1");
+        details::append_cache_key_value(out, u8"llvm-gc-root-values", u8"exact-local-ssa-deduplication-v1");
+        details::append_cache_key_value(out, u8"llvm-gc-private-calls", u8"closed-caller-numeric-leaf-owned-clone-v4-fastcc-cold-wrapper-root-alias-scope");
         details::append_cache_key_value(out, u8"llvm-gc-checked-layout", u8"ordinary-fast-fallback-weights-v1");
 # if (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD) && UWVM_EXPERIMENTAL_TYPED_ARRAY_LOAD == 1) || \
      (defined(UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE) && UWVM_EXPERIMENTAL_TYPED_ARRAY_STORE == 1)
@@ -690,7 +699,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         details::append_cache_key_value(out, u8"gc-field-classification", u8"immutable-any-reference-bit-v1");
         details::append_cache_key_value(out, u8"gc-array-construction-fill", u8"hybrid-native-seed512-libc-copy-v2");
 # if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
-        details::append_cache_key_value(out, u8"gc-array-pressure", u8"count4096-wide-numeric-carrier-1mib-actual-entry-v2");
+        details::append_cache_key_value(out, u8"gc-array-pressure", u8"count4096-all-array-carrier-1mib-actual-entry-v3");
 # endif
 # if defined(UWVM_EXPERIMENTAL_GENERAL_GC_SLAB) && UWVM_EXPERIMENTAL_GENERAL_GC_SLAB == 1
         details::append_cache_key_value(out, u8"gc-general-slab", u8"pow2-carrier-units-reference-and-packed-one-lock-v1");
@@ -771,6 +780,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         details::append_cache_key_value(out, u8"product", cache_product_name);
         details::append_cache_key_value(out, u8"bridge-buffer-ownership", u8"register-wide-caller-owned-v3");
         details::append_cache_key_value(out, u8"host-binding-lifetime", u8"current-module-relocated-generation-v1");
+        // Linear memory, shadow and table owners now retain live allocation charges.
+        details::append_cache_key_value(out, u8"resource-owner-layout", u8"charged-memory-table-shadow-v1");
         // Numeric GC arrays now own natural-width byte tails in all engines.
         // This runtime storage contract is not a source/build label; reject
         // native objects compiled against the former 16-byte carrier layout.

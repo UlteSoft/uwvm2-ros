@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <chrono>
 #include <atomic>
 #include <cstddef>
@@ -40,7 +41,7 @@ namespace uwvm2::runtime::lib
         ::std::span<unsigned char const> manifest, ::std::chrono::steady_clock::time_point deadline) noexcept;
     extern "C++" ::uwvm2::utils::update::status runtime_update_observe_transition_host_api(
         ::uwvm2::utils::update::transition_facts&) noexcept;
-    extern "C++" ::uwvm2::utils::update::status runtime_update_read_policy_host_api(::std::vector<unsigned char>&) noexcept;
+    extern "C++" ::uwvm2::utils::update::status runtime_update_read_policy_host_api(::uwvm2::utils::container::std_vector<unsigned char>&) noexcept;
     extern "C++" ::uwvm2::utils::update::status runtime_update_ready_host_api() noexcept;
     extern "C++" ::uwvm2::utils::update::status runtime_update_cancel_private_host_api() noexcept;
     extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(

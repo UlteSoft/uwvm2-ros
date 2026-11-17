@@ -21,7 +21,9 @@
  ****************************************/
 
 module;
-
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 // std
 #include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 #include <atomic>
@@ -64,6 +66,7 @@ module;
 export module uwvm2.uwvm.run:run;
 
 import :threaded_signal_cli;
+import uwvm2.runtime.diagnostic.crash_file;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 import uwvm2.uwvm.imported.ros;
 #endif
@@ -81,6 +84,9 @@ import uwvm2.parser.wasm.binfmt.base;
 // does. A textual header in the global fragment cannot see module-owned
 // u8string_view; adding textual container headers there would mix type ownership.
 import uwvm2.runtime;
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+import uwvm2.runtime.wasm_threads;
+#endif
 import uwvm2.uwvm.io;
 import uwvm2.uwvm.utils.ansies;
 import uwvm2.uwvm.utils.memory;

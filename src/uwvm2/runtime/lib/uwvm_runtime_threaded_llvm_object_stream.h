@@ -4,7 +4,7 @@
 // before any allocation/copy; an invalid stream is never passed to the loader.
         class bounded_object_stream final:public ::llvm::raw_pwrite_stream
         {
-            ::std::unique_ptr<char[]> bytes_{};
+            ::uwvm2::utils::container::std_unique_ptr<char[]> bytes_{};
             ::std::size_t capacity_{},maximum_{},used_{};
             ::std::uint64_t position_{};
             bool overflow_{};
@@ -14,7 +14,7 @@
                 auto next=capacity_==0u?(::std::min)(maximum_,::std::size_t{4096u}):capacity_;
                 while(next<required)
                     next=next>maximum_-next?maximum_:next+next;
-                auto replacement=::std::make_unique_for_overwrite<char[]>(next);
+                auto replacement=::uwvm2::utils::container::make_unique_for_overwrite<char[]>(next);
                 if(used_!=0u)::std::memcpy(replacement.get(),bytes_.get(),used_);
                 bytes_=::std::move(replacement);capacity_=next;
             }

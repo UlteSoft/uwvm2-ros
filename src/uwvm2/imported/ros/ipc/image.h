@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 #include <exception>
 #include <stdexcept>
@@ -13,9 +14,9 @@ namespace uwvm2::imported::ros::ipc
     struct image
     {
         std::uint32_t sequence{}, seconds{}, nanoseconds{}, height{}, width{}, step{};
-        std::string frame_id{}, encoding{};
+        ::uwvm2::utils::container::std_string frame_id{}, encoding{};
         bool bigendian{};
-        std::vector<std::uint8_t> data{};
+        ::uwvm2::utils::container::std_vector<std::uint8_t> data{};
     };
     // The caller keeps these fields alive for the encoding expression. Native
     // subscription callbacks can borrow their generated Image without first
@@ -63,7 +64,7 @@ namespace uwvm2::imported::ros::ipc
         if(!number(value.step)||!number(n)||p>size||n!=size-p) { return false; }
         value.data=bytes+p;value.data_size=n;if(!valid_image_view(value,backend)) {return false;}out=value;return true;
     }
-    inline bool decode_image(std::vector<std::uint8_t> const& bytes,std::uint8_t backend,image& out)
+    inline bool decode_image(::uwvm2::utils::container::std_vector<std::uint8_t> const& bytes,std::uint8_t backend,image& out)
     {
         image_view view;if(!decode_image_view(bytes.data(),bytes.size(),backend,view)) {return false;}
         image value;value.sequence=view.sequence;value.seconds=view.seconds;value.nanoseconds=view.nanoseconds;
@@ -71,9 +72,9 @@ namespace uwvm2::imported::ros::ipc
         value.frame_id=view.frame_id;value.encoding=view.encoding;
         value.data.assign(view.data,view.data+view.data_size);out=std::move(value);return true;
     }
-    inline std::vector<std::uint8_t> encode_image_view(image_view const& in)
+    inline ::uwvm2::utils::container::std_vector<std::uint8_t> encode_image_view(image_view const& in)
     {
-        std::vector<std::uint8_t> b;
+        ::uwvm2::utils::container::std_vector<std::uint8_t> b;
         std::size_t total{37};
         for(auto length:{in.frame_id.size(),in.encoding.size(),in.data_size})
         {
@@ -95,7 +96,7 @@ namespace uwvm2::imported::ros::ipc
         put(b,in.bigendian?1:0,1); put(b,in.step,4); put(b,in.data_size,4);
         if(in.data_size) { b.insert(b.end(),in.data,in.data+in.data_size); }return b;
     }
-    inline std::vector<std::uint8_t> encode_image(image const& in)
+    inline ::uwvm2::utils::container::std_vector<std::uint8_t> encode_image(image const& in)
     {
         return encode_image_view({in.sequence,in.seconds,in.nanoseconds,in.height,in.width,in.step,
                                   in.frame_id,in.encoding,in.bigendian,in.data.data(),in.data.size()});

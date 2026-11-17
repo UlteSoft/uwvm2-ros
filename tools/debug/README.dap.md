@@ -9,6 +9,22 @@ through `secure_server.py` (Linux), `secure_server_macos.py` (macOS), or
 it cannot enable debug instrumentation inside an unprepared VM. The guest gets
 neither the broker listener nor the authorization token.
 
+Dump disclosure is independently constrained by `--debug-dump-max
+diagnostic|full` or `--debug-dump-force none|diagnostic|full` at VM launch.
+`uwvm/dumpPolicy` queries the immutable selection and allowed per-export levels;
+`uwvm/dump` accepts `stopId`, absolute VM-host `path` and optional `disclosure`.
+
+`uwvm/restoreSnapshot` requires `full` permission, an exact `stopId`, an absolute
+VM-host path and an explicit `environment` of `current` or `recorded`. Recorded
+WASI resources additionally need current guest descriptor bindings. Preparation
+refusal with an authenticated retained stop permits a fresh status query; it
+does not reuse old frames or leave the IDE permanently restoring. Pending or
+uncertain operations keep old references retired. See the
+[joint snapshot contract](../../documents/runtime/unified-snapshot.md).
+Diagnostic archives include original static Wasm and fault coordinates but no
+dynamic sensitive state. Full disclosure does not assert complete/restorable
+capture. See [unified snapshots](../../documents/runtime/unified-snapshot.md).
+
 Use the [unified project importer](README.ide-import.md) for isolated Code/Cursor
 workspaces and local or authenticated SSH transport. The [Neovim integration](README.neovim.md)
 also presents actual Wasm/native instructions, host-call JSON and colored memory tags.
@@ -210,11 +226,14 @@ bytes are read. Out-of-owner rows use
 invalid filler address "-1". Symbol lookup attempts only the actual current
 owner's optional full bounded Wasm custom name, safely escaped.
 
-Only attach.stepLevel=native may give the selected top physical cooperative
-frame a separate uwvm-native-code:ID, after genuine readonly owner-copy success
-and fresh matching complete status. At native level, an inline source frame belonging to that same selected physical
-JIT frame shares its authenticated code reference. Other source/Wasm frames
-remain without code access. Native traps retain uwvm-native-stop:ID. Both are opaque
+Every inspectable source or Wasm stop may give the selected top physical
+cooperative frame a separate uwvm-native-code:ID, after genuine readonly
+owner-copy success and fresh matching complete status. This lets a source or
+Wasm position resolve to the exact current LLVM-JIT instruction; the step level
+still only controls stepping granularity. At native level, an inline source
+frame belonging to that same selected physical JIT frame shares its
+authenticated code reference. Other source/Wasm frames remain without code
+access. Native traps retain uwvm-native-stop:ID. Both are opaque
 display/query references, not memory/write/breakpoint/restart/locals authority.
 Build the runtime and adapter from the same revision when using this view.
 If the stopped runtime cannot return a valid current range, the adapter emits
@@ -225,6 +244,21 @@ Decoded instruction rows include their `function-offset`. The adapter checks
 that offset against the copied function owner's bounds before exposing code;
 missing or inconsistent offsets are rejected. Rebuilding only the extension
 cannot upgrade an older runtime's console protocol.
+The native VS Code source editor is the sole owner of source arrows,
+breakpoint composition, column indicators and line highlights. It uses yellow
+for the current top frame and green for a selected caller. Authenticated
+statement exactness remains in `uwvmSourceExact`, `uwvmSourceLocation`,
+`uwvm/positions` and the source hover; it is not encoded by inventing frames.
+Source-backed Wasm frames additionally carry `uwvmWasmLocation` so the custom
+Wasm view can follow the same stop while native source markers remain stable.
+The Wasm view uses yellow for an instruction start and green inside it.
+Assembly exposes only the current owned LLVM-JIT instruction, never a green
+source projection. Missing authenticated source/native mappings remain absent.
+The [optional native workbench repair](README.vscode-workbench.md) consumes
+boolean `uwvmSourceExact` only for `uwvm-llvm-full` source frames. It selects
+the native green decoration for an in-statement stop without changing frame
+identity, ordering, scopes, or native instruction capabilities. Stock editors
+ignore this field for arrow styling.
 The new console grammar is
 disassemble-range THREAD STOP_ID COUNT BYTE_OFFSET INSTRUCTION_OFFSET SYMBOLS;
 numeric stop labels only reject stale requests. The runtime-private capture,
@@ -670,3 +704,96 @@ operand pages. Clients that negotiate the standard DAP `supportsANSIStyling`
 capability receive the annotation in red; other clients receive plain text.
 Styling is emitted only for adapter-owned notices. Escape bytes from guest or
 host values remain visible text, so data cannot inject IDE styling.
+
+Execution recording uses `uwvm/recordSnapshot` with `action: "start"` and an exact
+`stopId`, `action: "save"` with `stopId` and an absolute host `path`, or
+`action: "mark"` with `stopId` to capture a coherent environment sample, or
+`action: "status"`. Full debugger and full dump permissions are required.
+`uwvm/restoreSnapshot` additionally accepts `environment: "replay"`, with no
+resource bindings. It restores the journal origin paused and consumes recorded
+imports on subsequent execution. A pending replay restore follows the same
+continuation protocol and retires all previous frame/value references.
+The adapter supports captured native worker cohorts, shared memories, pending
+atomic waits and active runtime memory tags. All-stop and stale-reference rules
+apply to the whole cohort after each restoration. Recorded phased WASI/u2rosv1
+imports replay their memory transactions and return values without calling a
+native provider.
+
+An explicit `--wasi-threads` launch uses the real private child-world driver
+through the same authenticated broker and DAP adapter. Its recording starts
+before the first Wasm instruction; `start` reports that existing recording
+instead of restarting it. `pause`, `continue`, `threads` and `stackTrace` address
+the actual logical workers. This replay driver does not advertise unsupported
+variable editing, breakpoints or machine-instruction stepping. It does not change
+the capabilities of an ordinary debugger session.
+
+For this driver, `uwvm/threadReplay` with `action: "replay"`, `path`, `stopId`
+and optional `cursor` is equivalent to `uwvm/restoreSnapshot` with
+`environment: "replay"`. Zero cursor selects the saved endpoint. A live cohort
+requires its exact current stop; a physically joined terminal cohort uses stop
+0 and remains connected to the IDE for saving and replay. The
+`uwvm/threadReplay` event with `state: "joined"` is distinct from DAP session
+termination. Old frame and value references retire before reconstruction, even
+if the requested archive is subsequently refused.
+
+An actually admitted unresolved WASI/u2rosv1 operation can reattach only to its
+original process, source owners and exact retained stop. Its native operation
+may finish externally while paused, but cannot publish its result into Wasm until
+continuation. Another process cannot reconstruct an unknown result. Completed
+records replay virtually and never resend the external operation. See
+[`wasi-threads-replay.md`](../../documents/runtime/wasi-threads-replay.md) for
+the supported inputs, current engine boundaries and failure semantics.
+
+`uwvm/snapshotHistory` reads the saved origin or a coherent recorded environment
+sample. An empty argument object returns its index; `{kind,id}` selects a WASIp1
+environment or a u2rosv1 environment for the ros1 or ros2 backend. The labels
+u2rosv1/u2rosv2 name the uwvm2-ros interface ABI, independently of ros1/ros2,
+which name the official ROS backend versions.
+`{path,event}` opens an archive on the VM host,
+with event 0 selecting its origin. This works through the same authenticated
+channel for remote debugging. Full or read-only debug permission and full dump
+disclosure are required. Page transfers bind to one immutable selection serial;
+replaced or malformed data is rejected without falling back to live inspection.
+Viewing history does not move execution, restore a resource or grant a permission.
+The Diagnostics view exposes the same controls, including private-thread
+recording and replay. Thread archives retain typed environment samples at the
+origin, explicit coherent marks and completion. The sample's recorded cursor is
+displayed separately from its index; unsampled or still-locked native state is
+never presented as a new current sample.
+
+`uwvm/hostInterfaces` accepts an optional unsigned 64-bit `first` library
+offset and returns authenticated build flags for u2rosv1/ros1, u2rosv1/ros2,
+u2rosv2 and preloaddl. It also returns at most 32 copied library metadata rows
+per page within the control channel's byte limit, with exact decimal offsets
+and explicit name/path truncation. Follow `next` while `more` is true; long
+entries can produce pages shorter than 32 rows. Full
+and read-only permissions can query this immutable launch inventory without a
+Wasm stop, including through the private thread driver after the cohort joins.
+Limited and none cannot query it. No native addresses, symbol resolution,
+library callbacks or file reads are involved.
+
+The current archive/journal schema is required; no pre-release migration or
+legacy-format conversion is provided. See `documents/runtime/unified-snapshot.md`
+for the explicit unsupported cases and failure semantics.
+
+
+### Long installation and session paths
+
+The Linux and macOS brokers, DAP client, and Linux signed-update relay support
+private session directories whose absolute socket paths exceed sockaddr_un.
+Keep using the ordinary socketDir / --socket-dir / updateSocketDir settings;
+no shorter installation directory or alternate public listener is required.
+
+Linux binds and connects through a checked, close-on-exec directory descriptor
+and /proc/self/fd. macOS uses pthread_fchdir_np on a temporary dedicated thread
+for the bind/connect syscall, then clears its per-thread directory. Neither
+implementation changes the process working directory or creates a helper
+process that could change the authenticated peer identity. The socket and
+capability remain in the requested owner-only directory. Guest-preopen overlap,
+capability authentication, and peer-credential checks still apply. Ordinary
+filesystem component/path limits still apply to opening that directory.
+
+Custom Unix clients can use tools/debug/private_unix_socket.py's connect_private
+with the requested path; a raw AF_UNIX connect with an overlong absolute address
+still exceeds the operating system's socket-address field. Windows continues
+to use its authenticated named-pipe transport.

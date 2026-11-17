@@ -8,6 +8,12 @@ it is not an executable module to instantiate.
 This document specifies the encoding API and its extensions. It does not imply
 that every execution mode already has a qualified stopped-state collector.
 
+The debugger now places this inspection payload inside a
+[unified snapshot archive](unified-snapshot.md). The outer archive records
+disclosure, platform, static original Wasm and completeness. A diagnostic-only
+archive contains no sensitive coredump payload. This inner format remains an
+inspection component and is not itself an executable checkpoint.
+
 ## Collection contract
 
 The measure(dump_view) function validates metadata and computes the entire
@@ -136,6 +142,6 @@ destination failure returns failure and the count of fully accepted output
 bytes. A malformed returned tag is an error. No failure becomes a successful but
 silently incomplete dump.
 
-Process-exit policy and RELEASE/DEV permissions belong to the runtime collector
-and command controller. This encoder does not grant RELEASE code arbitrary
-memory, local-variable or native-state access.
+Process-exit policy, the four debugger permission levels and immutable dump
+disclosure policy belong to the runtime collector and command controller. This
+encoder grants no memory, local-variable, native-state or restore authority.

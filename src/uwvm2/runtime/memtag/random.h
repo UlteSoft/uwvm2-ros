@@ -42,7 +42,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     // Called before borrowing a native memory, never while holding its grow pin.
     // Entropy failure is explicit: no time/address/counter fallback can turn a
     // failed host entropy source into predictable allocation tags.
-    [[nodiscard]] inline bool next_random_tag(::std::uint8_t& tag) noexcept
+    [[nodiscard]] inline bool next_native_random_tag(::std::uint8_t& tag) noexcept
     {
 #if defined(__linux__)
         auto& buffer{details::entropy_buffer};
@@ -77,6 +77,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         static_cast<void>(tag);
         return false;
 #endif
+    }
+    struct tag_entropy_observer
+    {
+        void* context{};
+        bool (*next)(void*,::std::uint8_t&,bool(*)(::std::uint8_t&) noexcept) noexcept{};
+    };
+    inline constinit thread_local tag_entropy_observer const* current_tag_entropy_observer{};
+    [[nodiscard]] inline bool next_random_tag(::std::uint8_t& tag) noexcept
+    {
+        auto* actual=current_tag_entropy_observer;
+        return actual?actual->next(actual->context,tag,next_native_random_tag):next_native_random_tag(tag);
     }
 }
 #ifndef UWVM_MODULE

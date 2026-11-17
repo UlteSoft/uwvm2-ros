@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <cstddef>
 #include <cstdint>
@@ -56,7 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_ef
     struct result
     {
         status state{status::invalid_graph};
-        ::std::vector<effect> functions{};
+        ::uwvm2::utils::container::std_vector<effect> functions{};
         ::std::size_t propagation_visits{};
     };
 
@@ -85,10 +86,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_ef
             { return {}; }
         }
 
-        result output{status::ok, ::std::vector<effect>(count), 0uz};
-        ::std::vector<::std::size_t> heads(count, unknown_target);
-        ::std::vector<::std::size_t> next(calls.size(), unknown_target);
-        ::std::vector<::std::size_t> queue(2uz * count);
+        result output{status::ok, ::uwvm2::utils::container::std_vector<effect>(count), 0uz};
+        ::uwvm2::utils::container::std_vector<::std::size_t> heads(count, unknown_target);
+        ::uwvm2::utils::container::std_vector<::std::size_t> next(calls.size(), unknown_target);
+        ::uwvm2::utils::container::std_vector<::std::size_t> queue(2uz * count);
         ::std::size_t read{}, written{};
         for(::std::size_t index{}; index != count; ++index)
         {

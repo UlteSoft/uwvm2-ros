@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/runtime/lib/uwvm_runtime_posix_abi.h>
 #ifndef UWVM_MODULE
 # include "arm_ehabi_registration.h"
@@ -386,6 +387,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         , private arm_ehabi_registration_owner
 # endif
     {
+        public:
+            static void operator delete(void* raw) noexcept
+            { ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<runtime_llvm_jit_section_memory_manager>::deallocate(static_cast<runtime_llvm_jit_section_memory_manager*>(raw)); }
+        private:
+
 # if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
 #  include "native_eh_private_leaf_cfi_observer.h"
 # endif
@@ -792,7 +798,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
     defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
         struct arm_ehabi_section
         { ::std::uint8_t* address{}; ::std::size_t size{}, allocation_size{}; bool code{}, index{}, table{}, authenticated{}; };
-        ::std::vector<arm_ehabi_section> arm_ehabi_sections_{};
+        ::uwvm2::utils::container::std_vector<arm_ehabi_section> arm_ehabi_sections_{};
         bool arm_ehabi_published_{};
         ::llvm::ExecutionEngine* arm_ehabi_listener_engine_{}; // identity only; MCJIT drains listeners before releasing this manager.
         void record_arm_ehabi_section(::std::uint8_t* address, ::std::uintptr_t size,
@@ -811,7 +817,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
             if(!arm_ehabi_lookup_is_exported()) { return false; }
             for(auto const& section: arm_ehabi_sections_)
             { if((section.code || section.index || section.table) && !section.authenticated) { return false; } }
-            ::std::vector<arm_ehabi_owned_table> tables{};
+            ::uwvm2::utils::container::std_vector<arm_ehabi_owned_table> tables{};
             for(auto const& section: arm_ehabi_sections_)
             {
                 if(!section.index) { continue; }

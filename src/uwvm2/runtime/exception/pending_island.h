@@ -1,5 +1,8 @@
 // Private native experiment. Not imported by production modules or JIT.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/runtime/exception/roots.h>
 #include <array>
@@ -53,8 +56,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment
             bool numeric_only{true};
             ::std::size_t numeric_bytes{};
         };
-        ::std::vector<owned_tag> tags_;
-        ::std::vector<instance_root> generation_and_store_pins_;
+        ::uwvm2::utils::container::std_vector<owned_tag> tags_;
+        ::uwvm2::utils::container::std_vector<instance_root> generation_and_store_pins_;
         ::std::weak_ptr<prepared_registry const> canonical_owner_;
         prepared_registry() = default;
         friend class pending_context;
@@ -99,7 +102,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception::pending_experiment
                 }
             }
             for(auto const& pin: pins) { if(!pin || pin.use_count() == 0) { return {}; } }
-            auto result{::std::shared_ptr<prepared_registry>{new prepared_registry{}}};
+            auto result{::std::shared_ptr<prepared_registry>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<prepared_registry>([&](prepared_registry* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) prepared_registry{}; }))}};
             result->tags_.reserve(input.size());
             if(!pins.empty()) { result->generation_and_store_pins_.assign(pins.begin(), pins.end()); }
             for(auto const& tag: input)

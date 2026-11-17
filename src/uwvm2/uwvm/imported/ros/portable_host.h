@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_IMPORT_ROS2)
 #include <uwvm2/imported/ros/portable/memory.h>
 #include <uwvm2/imported/ros/portable/native_client.h>
@@ -44,7 +46,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
     // Retain its tombstone and consumed command through close/retirement, so
     // pointer reuse, reopen or a rollback cannot silently reissue a goal.
     inline ::std::mutex registry_mutex{};
-    inline ::std::unique_ptr<owner_state> selected_owner{};
+    inline ::uwvm2::utils::container::std_unique_ptr<owner_state> selected_owner{};
     inline ::std::uint64_t next_handle{1};
 
     inline error caller(unsigned index,api::ros_caller_source_facts& facts,model::owner_key& owner,
@@ -175,7 +177,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
                !observed_write(0,handle_out,nullptr,0)) { return error::denied; }
             ::std::lock_guard lock{registry_mutex};
             if(selected_owner||next_handle==UINT64_MAX) { return error::bad_handle; }
-            selected_owner=::std::make_unique<owner_state>();auto& state{*selected_owner};
+            selected_owner=::uwvm2::utils::container::make_unique<owner_state>();auto& state{*selected_owner};
             state.owner=owner;state.deployment=deployment;state.handle=next_handle++;
             state.policy=runtime_policy.effective(::uwvm2::imported::ros::version::ros2,deployment->module);
             state.binding={owner,deployment->mapping.epoch,deployment->policy_epoch,deployment->native_generation,
@@ -210,7 +212,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             auto required{64u+16u*deployment->mapping.count};
             if(auto e{output_preflight(facts,selector,output,capacity,length,required)};e!=error::ok) { return e; }
             auto& state{*selected_owner};auto now{model::monotonic_ns()};if(!now||now>UINT64_MAX-500000000u) { return error::deadline; }
-            ::std::vector<::std::uint8_t> response{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> response{};
             if(auto e{state.native.request(model::native_operation::read_state,{},response,now+500000000u)};e!=error::ok) { return e; }
             model::state sample{};now=model::monotonic_ns();
             if(!model::decode(response,sample)||sample.epoch!=deployment->mapping.epoch||sample.count!=deployment->mapping.count||
@@ -252,7 +254,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             state.command_id=request.id;state.deadline_ns=now+model::command_state::maximum_wait_ns;
             // Reservation survives every exception, socket error, late reply
             // and failed output copy. There is no command retry or re-open.
-            ::std::vector<::std::uint8_t> response{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> response{};
             if(auto e{state.native.request(model::native_operation::submit,{bytes.data(),size},response,state.deadline_ns)};e!=error::ok)
             { (void)state.command.mark_indeterminate(state.binding);state.native.close();return e; }
             model::native_event accepted{};now=model::monotonic_ns();
@@ -284,7 +286,7 @@ namespace uwvm2::uwvm::imported::ros::portable_host
             auto& state{*selected_owner};if(!command_id||command_id!=state.command_id||state.command.current_phase()!=model::command_state::phase::accepted) { return error::bad_handle; }
             if(auto e{output_preflight(facts,selector,output,capacity,length,96)};e!=error::ok) { return e; }
             ::std::array<::std::uint8_t,24> request{};::std::copy(state.native_goal_uuid.begin(),state.native_goal_uuid.end(),request.begin());model::wire_detail::put(request,16,command_id,8);
-            ::std::vector<::std::uint8_t> response{};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> response{};
             if(auto e{state.native.request(model::native_operation::wait,request,response,state.deadline_ns)};e!=error::ok)
             { (void)state.command.mark_indeterminate(state.binding);state.native.close();return e; }
             model::native_event event{};

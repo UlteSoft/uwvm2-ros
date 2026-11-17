@@ -165,7 +165,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             namespace mt=::uwvm2::extension::memtag;
             static_assert(Memory::can_mmap);
             static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>>);
-            if constexpr(Guest) { deferred::poll(); }
+            if constexpr(Guest) { if(!deferred::poll())return mt::access_result{.error=mt::access_error::memory_not_representable}; }
             if(!configured<Address,false>(memory))
             { return mt::access_result{.error=mt::access_error::memory_not_representable}; }
             auto const length{memory.memory_length_p?memory.memory_length_p->load(::std::memory_order_acquire):0u};
@@ -199,7 +199,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             return details::with_private_origin_access<Address,Guest>(memory,pointer,offset,bytes,
                 ::std::forward<Function>(function),encoded_origin);
         }
-        if constexpr(Guest) { deferred::poll(); }
+        if constexpr(Guest) { if(!deferred::poll())return mt::access_result{.error=mt::access_error::memory_not_representable}; }
         if(!details::configured<Address,Shared>(memory))
         { return {.error=mt::access_error::memory_not_representable}; }
         return details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
@@ -211,11 +211,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                 if constexpr(Guest)
                 {
                     if(memory.memtag_shadow.hardware_active() &&
-                       mt::hardware_checked_access_requested())
+                       mt::hardware_checked_access_requested() &&
+                       (mt::asynchronous_requested() || !deferred::controlled_fault_delivery()))
                     { comparison_mask=sizeof(Address)==4u?0u:0xf0u; }
                 }
-                // Hardware sync/async checks the low nibble at the physical access.
-                // memory64 still checks its upper four software tag bits here.
+                // Ordinary hardware execution delegates the low nibble to the
+                // physical access. A native recording owner additionally proves
+                // sync accesses before entering the callback: a SIGSEGV must not
+                // skip C++ tag/relocation leases or prevent sealing its history.
+                // Hardware remains enabled, and ASYNC uses the actual signal
+                // latch. memory64 always checks the upper four bits here.
                 mt::access_result result{};
                 if constexpr(Enforcing)
                 {
@@ -340,7 +345,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         ::std::uint64_t bytes,Function&& function) noexcept
     {
         static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>,::std::span<::std::byte>>);
-        if constexpr(Guest) { deferred::poll(); }
+        if constexpr(Guest) { if(!deferred::poll())return copy_access_result{{.error=::uwvm2::extension::memtag::access_error::memory_not_representable},false}; }
         return details::with_two_snapshots(destination_memory,source_memory,
             [&](::std::span<::std::byte> destination_data,::std::span<::std::byte> source_data) noexcept
             {
@@ -371,10 +376,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         return with_copy_policy<true>(destination_memory,source_memory,destination,source,bytes,::std::forward<Function>(function));
     }
 
-    template<bool Enabled, ::std::unsigned_integral Address, bool Shared, typename Memory>
+    template<bool Enabled, ::std::unsigned_integral Address, bool Shared, typename Memory,
+        typename Random=decltype(&next_random_tag)>
     [[nodiscard]] inline execution_result<Address> execute(
         Memory const& memory, ::uwvm2::extension::memtag::opcode operation,
-        ::std::span<Address const> arguments) noexcept
+        ::std::span<Address const> arguments,Random random_source=&next_random_tag) noexcept
     {
         namespace mt = ::uwvm2::extension::memtag;
         using view_type = mt::shadow_view<Address,Shared>;
@@ -422,7 +428,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             }
             if(operation==mt::opcode::random || random_store)
             {
-                if(!next_random_tag(random)) { result.error=bridge_error::entropy_unavailable; return result; }
+                if(!random_source(random)) { result.error=bridge_error::entropy_unavailable; return result; }
             }
         }
         result.operation=details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
@@ -432,7 +438,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                 if constexpr(Enabled)
                 {
                     return mt::execute_operation<true,Address,Shared>(operation,arguments,data,
-                        memory.memtag_shadow.template view<Address,Shared>(data.size()),generator);
+                        memory.memtag_shadow.template view_under_tag_lease<Address,Shared>(data.size()),generator);
                 }
                 else
                 {

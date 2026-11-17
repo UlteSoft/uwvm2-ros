@@ -66,6 +66,9 @@ import uwvm2.uwvm.runtime.threaded_builtin_loader;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 import uwvm2.uwvm.imported.ros;
 #endif
+#if defined(UWVM_IMPORT_ROSV2)
+import uwvm2.uwvm.imported.scene;
+#endif
 import :retval;
 
 #ifndef UWVM_MODULE

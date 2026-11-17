@@ -1,5 +1,7 @@
 // TU-private implementation after real record/registry and native-owner bridges.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 namespace
 {
@@ -63,7 +65,7 @@ namespace
     }
     return true;
 }
-[[nodiscard]] ::std::unique_ptr<checkpoint_root_generation_publication_bridge::identity>
+[[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<checkpoint_root_generation_publication_bridge::identity>
 checkpoint_root_generation_publication_bridge::prepare(compiled_module_record const& record,::std::size_t dense) noexcept
 {
     try
@@ -72,7 +74,7 @@ checkpoint_root_generation_publication_bridge::prepare(compiled_module_record co
         if(!publication || !publication->engine || !publication->context || !publication->checkpoint_profile ||
            !record.runtime_module || dense==SIZE_MAX || publication->checkpoint_root_identity ||
            !::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(publication->source)) { return {}; }
-        auto root=::std::unique_ptr<identity>{new identity{}};
+        auto root=::uwvm2::utils::container::std_unique_ptr<identity>{::uwvm2::utils::allocator::fast_io_strict::object<identity>([&](identity* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) identity{}; })};
         root->source_=publication->source;root->profile_=publication->checkpoint_profile;
         root->module_=record.runtime_module;root->engine_=publication->engine.get();root->context_=publication->context.get();
         root->publication_=publication;root->module_id_=dense;

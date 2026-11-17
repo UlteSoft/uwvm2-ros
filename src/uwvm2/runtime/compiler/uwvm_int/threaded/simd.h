@@ -83,9 +83,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             static_assert(Kind==kind::memory_load || Kind==kind::memory_store);
             if constexpr(Kind==kind::memory_store || Lanes!=0u) { if(!pop_vector(a)) { return false; } }
             if(!actual.pop(integer)) { return false; }
-            auto& memory{*actual.modules_[actual.calls_[actual.call_top_-1u].module].memory};
+            auto& memory{*actual.modules_[actual.calls_[actual.call_top_-1u].module].memories[ins.target].memory};
             constexpr auto bytes{simd::simd_memory_access_size<Op>()};
-            auto const okay{actual.memory_span(memory,static_cast<::std::uint32_t>(integer),ins.immediate,bytes,
+            auto const okay{actual.memory_span(memory,memory_address(memory,integer),ins.immediate,bytes,
                 [&](::std::span<::std::byte> data) noexcept
                 {
                     // Shared plain SIMD accesses may tear, but cannot create a

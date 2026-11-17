@@ -140,7 +140,7 @@ inline void invalidate_runtime_local_func_llvm_jit_checkpoint_value_witness(
 }
 [[nodiscard]] inline bool prepare_runtime_local_func_llvm_jit_checkpoint_saved_if(
     runtime_local_func_llvm_jit_emit_state_t& state,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> const& parameters,
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> const& parameters,
     ::std::size_t& first) noexcept
 {
     first = SIZE_MAX;

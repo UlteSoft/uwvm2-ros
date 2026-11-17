@@ -1,4 +1,8 @@
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <array>
 #include <atomic>
 #include <cerrno>
@@ -90,12 +94,12 @@ namespace uwvm2::uwvm::run::production_update_cli
         }
         static ::std::uint32_t u32(unsigned char const* p) noexcept
         { return p[0] | (static_cast<::std::uint32_t>(p[1])<<8) | (static_cast<::std::uint32_t>(p[2])<<16) | (static_cast<::std::uint32_t>(p[3])<<24); }
-        static void put32(::std::vector<unsigned char>& out, ::std::uint32_t n)
+        static void put32(::uwvm2::utils::container::std_vector<unsigned char>& out, ::std::uint32_t n)
         { for(unsigned i{}; i < 4; ++i) { out.push_back(static_cast<unsigned char>(n>>(i*8))); } }
         bool reply(update::status status, ::std::span<unsigned char const> result = {})
         {
             update::facts f{}; (void)::uwvm2::runtime::lib::runtime_update_observe_host_api(f);
-            ::std::vector<unsigned char> out{'U','U','R','1'};
+            ::uwvm2::utils::container::std_vector<unsigned char> out{'U','U','R','1'};
             put32(out, static_cast<::std::uint32_t>(296 + result.size()));
             put32(out, static_cast<unsigned>(status)); put32(out, static_cast<unsigned>(f.state));
             put32(out, f.active); put32(out, f.coordinator_connected);
@@ -103,11 +107,11 @@ namespace uwvm2::uwvm::run::production_update_cli
             for(auto const* d : {&f.nonce, &f.installed, &f.prepared, &f.ready, &f.transaction, &f.contract, &f.scope, &f.issuer}) { out.insert(out.end(), d->begin(), d->end()); }
             out.insert(out.end(), result.begin(), result.end()); return send(out);
         }
-        update::status transition_facts(::std::vector<unsigned char>& result)
+        update::status transition_facts(::uwvm2::utils::container::std_vector<unsigned char>& result)
         {
             using namespace ::uwvm2::runtime::lib;
             update::transition_facts f{}; auto status{runtime_update_observe_transition_host_api(f)};
-            ::std::vector<unsigned char> policy;
+            ::uwvm2::utils::container::std_vector<unsigned char> policy;
             if(status == update::status::ok) { status = runtime_update_read_policy_host_api(policy); }
             if(status == update::status::ok)
             {
@@ -126,7 +130,7 @@ namespace uwvm2::uwvm::run::production_update_cli
         }
         channel(channel const&) = delete;
         channel& operator=(channel const&) = delete;
-        static ::std::unique_ptr<channel> adopt(int fd)
+        static ::uwvm2::utils::container::std_unique_ptr<channel> adopt(int fd)
         {
             if(fd < 3) { return {}; }
             int passcred{}; ::socklen_t credential_size{sizeof(passcred)};
@@ -150,7 +154,7 @@ namespace uwvm2::uwvm::run::production_update_cli
             ::close(fd);
             int const pidfd{static_cast<int>(::syscall(SYS_pidfd_open, peer.pid, 0u))};
             if(pidfd < 0) { ::close(owned); return {}; }
-            ::std::unique_ptr<channel> result{new (::std::nothrow) channel(owned, pidfd, peer)};
+            ::uwvm2::utils::container::std_unique_ptr<channel> result{::uwvm2::utils::allocator::fast_io_strict::try_object<channel>([&](channel* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) channel(owned, pidfd, peer); })};
             if(!result) { ::close(owned); ::close(pidfd); return {}; }
             ::timeval timeout{10, 0}; int enable{1};
             if(!result->peer_live() || ::setsockopt(owned, SOL_SOCKET, SO_PASSCRED, &enable, sizeof(enable)) != 0 ||
@@ -171,9 +175,9 @@ namespace uwvm2::uwvm::run::production_update_cli
                 if(!receive(header.data(), header.size()) || ::std::memcmp(header.data(), "UUP1", 4) != 0) { break; }
                 auto const operation{u32(header.data()+4)}, length{u32(header.data()+8)};
                 if(length > update::maximum_image_bytes + update::maximum_manifest_bytes + update::permit::wire_size + 4u || operation > 9) { break; }
-                ::std::vector<unsigned char> payload(length);
+                ::uwvm2::utils::container::std_vector<unsigned char> payload(length);
                 if(!receive(payload.data(), payload.size())) { break; }
-                update::status status{update::status::invalid_state}; ::std::vector<unsigned char> result;
+                update::status status{update::status::invalid_state}; ::uwvm2::utils::container::std_vector<unsigned char> result;
                 if(operation == 0 && payload.empty()) { status = update::status::ok; }
                 else if(operation == 8 && payload.empty()) { status = transition_facts(result); }
                 else if(operation == 9)
@@ -200,9 +204,9 @@ namespace uwvm2::uwvm::run::production_update_cli
                 if(::std::memcmp(header.data(), "UUP1", 4) != 0) { break; }
                 auto const operation{u32(header.data()+4)}, length{u32(header.data()+8)};
                 if(length > update::maximum_image_bytes + update::maximum_manifest_bytes + update::permit::wire_size + 4u || operation > 9) { break; }
-                ::std::vector<unsigned char> payload(length);
+                ::uwvm2::utils::container::std_vector<unsigned char> payload(length);
                 if(!receive(payload.data(), payload.size())) { break; }
-                update::status status{update::status::invalid_input}; ::std::vector<unsigned char> result;
+                update::status status{update::status::invalid_input}; ::uwvm2::utils::container::std_vector<unsigned char> result;
                 if(operation == 0 && payload.empty()) { status = update::status::ok; }
                 else if(operation == 1 && payload.size() >= update::permit::wire_size + 4)
                 {
@@ -213,7 +217,7 @@ namespace uwvm2::uwvm::run::production_update_cli
                         auto const prefix{update::permit::wire_size + 4u + static_cast<::std::size_t>(count)*8u};
                         if(count > 0 && count <= update::maximum_functions && prefix < payload.size())
                         {
-                            ::std::vector<::std::uint64_t> functions(count);
+                            ::uwvm2::utils::container::std_vector<::std::uint64_t> functions(count);
                             for(::std::size_t i{}; i < count; ++i)
                             { for(unsigned j{}; j < 8; ++j) { functions[i] |= static_cast<::std::uint64_t>(payload[update::permit::wire_size+4+i*8+j]) << (j*8); } }
                             status = runtime_update_prepare_host_api(p, ::std::span{payload}.subspan(prefix), functions,
@@ -267,9 +271,9 @@ namespace uwvm2::uwvm::run::production_update_cli
                             struct call_state
                             {
                                 void const* module{}; ::std::uint32_t index{};
-                                ::std::vector<unsigned char> input{}, output{}; bool exited{};
+                                ::uwvm2::utils::container::std_vector<unsigned char> input{}, output{}; bool exited{};
                             };
-                            auto state{::std::make_shared<call_state>()};
+                            auto state{::uwvm2::utils::container::make_shared<call_state>()};
                             state->module = runtime_module; state->index = index;
                             state->input.assign(payload.begin()+12, payload.end()); state->output.resize(output);
                             auto launched{runtime_launch_llvm_jit_debug_guest_worker_host_api(allowed_call.debug_control, state,

@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include "contract.h"
 #include <algorithm>
@@ -32,8 +33,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         unsigned opcode{};
         ::std::uint64_t immediate{};
         ::std::size_t offset{}, target{}, alternate{}, parameters{}, results{};
-        ::std::vector<::std::uint32_t> labels{};
-        ::std::vector<catch_clause> catches{};
+        ::uwvm2::utils::container::std_vector<::std::uint32_t> labels{};
+        ::uwvm2::utils::container::std_vector<catch_clause> catches{};
         ::std::array<::std::uint8_t,16u> literal{};
         bool (*simd_handler)(engine&,instruction const&) noexcept{};
 
@@ -52,7 +53,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // Instruction/debug maps retain immutable file coordinates. Public
         // Wasm fault events use an offset from this function's first opcode.
         ::std::size_t expression_file_offset{};
-        ::std::vector<instruction> instructions{};
+        ::uwvm2::utils::container::std_vector<instruction> instructions{};
 
         [[nodiscard]] ::std::uint64_t expression_offset(::std::size_t file_offset) const noexcept
         { return file_offset>=expression_file_offset ? file_offset-expression_file_offset : UINT64_MAX; }
@@ -60,7 +61,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
     struct module_program
     {
         storage::wasm_module_storage_t const* instance{};
-        ::std::vector<function_program> functions{};
+        ::uwvm2::utils::container::std_vector<function_program> functions{};
     };
     namespace detail
     {
@@ -70,8 +71,20 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         {
             return t.kind<=core::value_kind::v128 || t.kind==core::value_kind::reference;
         }
+        [[nodiscard]] inline bool abstract_reference(::std::int64_t code) noexcept
+        { return code>=static_cast<::std::int64_t>(core::abstract_heap_type::exn) &&
+                 code<=static_cast<::std::int64_t>(core::abstract_heap_type::noexn); }
+        [[nodiscard]] inline bool heap_in_module(::std::int64_t code,storage::wasm_module_storage_t const& module) noexcept
+        { return abstract_reference(code) || (code>=0 && static_cast<::std::uint64_t>(code)<module.type_section_storage.type_section_count); }
         [[nodiscard]] inline bool carrier_type(value_type t) noexcept
-        { return numeric_type(t) || t==value_type::externref || t==value_type::funcref; }
+        {
+            // EH references are engine-owned arena tokens just like the
+            // catch_ref/throw_ref operands. Accept their retained 0x69 signature
+            // carrier in local functions and multi-value block types. Native
+            // entry/host signatures remain independently numeric-only below.
+            return numeric_type(t) || t==value_type::externref || t==value_type::funcref ||
+                static_cast<unsigned>(t)==0x69u;
+        }
         [[nodiscard]] inline ::std::size_t abi_bytes(value_type t) noexcept
         { return t==value_type::i32 || t==value_type::f32 ? 4uz : t==value_type::v128 ? 16uz : t==value_type::funcref ? sizeof(storage::gc_reference) : 8uz; }
         [[nodiscard]] inline bool abi_fits(value_type const* begin,value_type const* end,::std::size_t limit) noexcept
@@ -134,9 +147,9 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         };
         [[nodiscard]] inline bool supported_plain(unsigned op) noexcept
         {
-            return op<=0x05u || op==0x08u || op==0x0au || (op>=0x0bu&&op<=0x13u) || (op>=0x1au && op<=0x1cu) || op==0x1fu || (op>=0x20u && op<=0x24u) ||
+            return op<=0x05u || op==0x08u || op==0x0au || (op>=0x0bu&&op<=0x15u) || (op>=0x1au && op<=0x1cu) || op==0x1fu || (op>=0x20u && op<=0x26u) ||
                    (op>=0x28u && op<=0x40u) || (op>=0x41u && op<=0xc4u) ||
-                   op==0xd0u || op==0xd1u || (op>=0xd4u && op<=0xd6u);
+                    (op>=0xd0u && op<=0xd6u);
         }
         // The caller retains a nonforgeable World/source validation certificate
         // from the actual immutable validated file and unchanged feature object.
@@ -151,7 +164,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             if(out.locals>budget.values) { return status::resource_limit; }
             for(auto const& run: source.wasm_code_ptr->locals)
             {
-                if(!(run.has_core_type ? value_type_supported(run.core_type) : numeric_type(run.type)) || run.count>budget.values-out.locals) { return status::unsupported_profile; }
+                if(!(run.has_core_type ? value_type_supported(run.core_type) : carrier_type(run.type)) || run.count>budget.values-out.locals) { return status::unsupported_profile; }
                 out.locals+=run.count;
             }
             auto const& body{source.wasm_code_ptr->body};
@@ -165,7 +178,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             if(charged_bytes>budget.instruction_bytes || bytes>(budget.instruction_bytes-charged_bytes)/sizeof(instruction))
             { return status::resource_limit; }
             charged_bytes+=bytes*sizeof(instruction);out.instructions.reserve(bytes);
-            ::std::vector<::std::size_t> nesting{};nesting.reserve(::std::min(bytes,budget.controls));
+            ::uwvm2::utils::container::std_vector<::std::size_t> nesting{};nesting.reserve(::std::min(bytes,budget.controls));
             while(input.current!=input.end && input.valid)
             {
                 instruction ins{};ins.offset=static_cast<::std::size_t>(reinterpret_cast<::std::uintptr_t>(input.current)-source_begin);ins.opcode=input.byte();
@@ -176,11 +189,11 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     auto const block{static_cast<::std::int64_t>(input.leb(33u,true))};
                     if(block==-64) { }
                     else if(block>=-5 && block<=-1) { ins.results=1; }
-                    else if(block==-23 || block==-12) { ins.results=1; }
+                    else if(abstract_reference(block)) { ins.results=1; }
                     else if(block==-29 || block==-28)
                     {
                         auto const heap{static_cast<::std::int64_t>(input.leb(33u,true))};
-                        if(heap!=-23 && heap!=-12) { return status::unsupported_profile; }
+                        if(!heap_in_module(heap,module)) { return status::validation_failed; }
                         ins.results=1;
                     }
                     else if(block>=0 && static_cast<::std::size_t>(block)<module.type_section_storage.type_section_count)
@@ -231,7 +244,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     charged_bytes+=(n+1u)*sizeof(::std::uint32_t);ins.labels.reserve(n+1u);
                     for(::std::uint64_t i{};i<=n;++i) { ins.labels.push_back(static_cast<::std::uint32_t>(input.leb(32u))); }
                 }
-                else if(op==0x0cu || op==0x0du || op==0x10u || op==0x12u || op==0x08u || (op>=0x20u&&op<=0x24u) || (op==0x3fu||op==0x40u) || op==0xd5u || op==0xd6u)
+                else if(op==0x0cu || op==0x0du || op==0x10u || op==0x12u || op==0x14u || op==0x15u || op==0x08u || (op>=0x20u&&op<=0x26u) || (op==0x3fu||op==0x40u) || op==0xd2u || op==0xd5u || op==0xd6u)
                 { ins.immediate=input.leb(32u); }
                 else if(op==0x11u || op==0x13u) { ins.immediate=input.leb(32u);ins.target=input.leb(32u); }
                 else if(op==0x41u || op==0x42u) { ins.immediate=input.leb(op==0x41u?32u:64u,true); }
@@ -242,8 +255,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     if(input.leb(32u)!=1u) { return status::validation_failed; }
                     auto const t{static_cast<::std::int64_t>(input.leb(33u,true))};
                     if(t==-29 || t==-28)
-                    { auto const heap{static_cast<::std::int64_t>(input.leb(33u,true))};if(heap!=-23&&heap!=-12) { return status::unsupported_profile; } }
-                    else if((t<-5||t>-1)&&t!=-23&&t!=-12) { return status::unsupported_profile; }
+                    { auto const heap{static_cast<::std::int64_t>(input.leb(33u,true))};if(!heap_in_module(heap,module)) { return status::validation_failed; } }
+                    else if((t<-5||t>-1)&&!abstract_reference(t)) { return status::validation_failed; }
                 }
                 else if(op==0xd0u)
                 {
@@ -274,11 +287,14 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     namespace v3=::uwvm2::validation::standard::wasm3;
                     auto const decoded{v3::scan_gc_instruction(input.current,input.end)};
                     if(decoded.error!=v3::gc_immediate_error::ok) { return status::validation_failed; }
-                    // Aggregate and i31 operations use owned, full-width native
-                    // reference carriers; unsupported casts remain explicit.
-                    if(decoded.opcode>19u && decoded.opcode<28u) { return status::unsupported_profile; }
                     ins.opcode=0x800u+decoded.opcode;ins.immediate=decoded.first;ins.target=decoded.second;
                     auto const sub=decoded.opcode;
+                    if(sub>=20u && sub<=25u)
+                    {
+                        if(!heap_in_module(decoded.to.heap.code,module)) { return status::validation_failed; }
+                        ins.immediate=static_cast<::std::uint64_t>(decoded.to.heap.code);
+                        ins.target=decoded.first;ins.alternate=decoded.to.nullable;
+                    }
                     if(sub==0u)
                     { if(!module.gc_store || !module.gc_store->field_count(decoded.first,ins.parameters)) { return status::validation_failed; } }
                     else if(sub==1u) { ins.parameters=0u; }
@@ -308,18 +324,18 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                         { return status::validation_failed; }
                     }
                     if(sub<=7u) { ins.opcode=0x200u+static_cast<unsigned>(sub); }
-                    else if(sub<=11u)
+                    else if(sub<=17u)
                     {
                         ins.opcode=0x300u+static_cast<unsigned>(sub);
                         ins.immediate=input.leb(32u);
-                        if(sub==8u || sub==10u) { ins.target=input.leb(32u); }
+                        if(sub==8u || sub==10u || sub==12u || sub==14u) { ins.target=input.leb(32u); }
                     }
                     else if(auto const* tag{::uwvm2::extension::memtag::find_instruction(static_cast<::std::uint32_t>(sub))};
                         tag!=nullptr && tag->operation!=::uwvm2::extension::memtag::opcode::add)
                     {
                         ins.opcode=0x400u+static_cast<unsigned>(sub);
                         ins.target=input.leb(32u);
-                        if(ins.target!=0u) { return status::unsupported_profile; }
+                        if(ins.target>=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size())return status::validation_failed;
                     }
                     else { return status::unsupported_profile; }
                 }
@@ -345,8 +361,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                                 auto const flags{input.leb(32u)};
                                 if((flags&~127u)!=0u || (flags&63u)>Align) { input.valid=false;return true; }
                                 ins.target=(flags&64u)?input.leb(32u):0u;
-                                if(ins.target!=0u) { return false; }
-                                ins.immediate=input.leb(module.memory_declarations_require_memory64?64u:32u);
+                                if(ins.target>=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size())return false;
+                                ins.immediate=input.leb(storage::runtime_memory_is_address64(module,ins.target)?64u:32u);
                                 if constexpr(Lanes!=0u) { ins.alternate=input.byte();if(ins.alternate>=Lanes) { input.valid=false; } }
                             }
                             else if constexpr(Kind==kind::extract_lane || Kind==kind::replace_lane)
@@ -367,16 +383,15 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     if(ins.opcode!=0x103u)
                     {
                         auto const alignment{input.leb(32u)};
-                        // This finite profile is wasm32, one imported shared
-                        // memory. Multi-memory/memory64 are not silently erased.
-                        if(alignment&~63u) { return status::unsupported_profile; }
-                        ins.immediate=input.leb(32u);
+                        if(alignment&~127u)return status::validation_failed;
+                        ins.target=(alignment&64u)?input.leb(32u):0u;
+                        if(ins.target>=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size())return status::validation_failed;
+                        ins.immediate=input.leb(storage::runtime_memory_is_address64(module,ins.target)?64u:32u);
                     }
                 }
                 else if(!supported_plain(op)) { return status::unsupported_profile; }
-                // GC/SIMD, call_ref/tail calls and bulk table remain cold
-                // unsupported. Atomic subcodes and numeric opcodes are decoded
-                // exactly; no guest feature defaults are rewritten.
+                // Exact checked decoding retains the original source feature
+                // admission; an unsupported opcode is never erased or skipped.
                 out.instructions.push_back(::std::move(ins));
             }
             return input.valid && nesting.empty() && !out.instructions.empty() &&

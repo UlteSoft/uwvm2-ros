@@ -1,6 +1,7 @@
 // PRIVATE SOURCE stage: bounded actual-object relocation DATA only. This is
 // neither a loaded native owner nor an execution/read/trap permission issuer.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "uwvm_runtime_native_owner_table_format.h"
 #ifndef UWVM_MODULE
 #include <algorithm>
@@ -27,7 +28,7 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
 {
     struct row
     {
-        ::std::string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
+        ::uwvm2::utils::container::std_string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
         unsigned role{}, shape{}, pointer_bytes{};
         // Real same-object TEXT section/offsets, never loaded code addresses.
         ::std::uint64_t section{}, begin_offset{}, end_offset{}, section_size{};
@@ -200,12 +201,12 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
     // Failures discard all DATA rows. Object-relative endpoints require later
     // genuine notifyObjectLoaded+same engine/plan/source/generation publication.
     // No row here grants a code view, native address, lease, SI/NI or trap gate.
-    [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,::std::vector<row>& output)
+    [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,::uwvm2::utils::container::std_vector<row>& output)
     {
         output.clear();
         if(!object.isRelocatableObject() || object.getData().size()>PTRDIFF_MAX ||
            (object.getBytesInAddress()!=4u && object.getBytesInAddress()!=8u)) { return false; }
-        ::std::vector<row> candidate{};
+        ::uwvm2::utils::container::std_vector<row> candidate{};
         ::std::size_t section_count{},table_count{};
         for(auto const& section:object.sections())
         {
@@ -218,7 +219,7 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
             auto bytes{section.getContents()};
             if(!bytes) { ::llvm::consumeError(bytes.takeError());return false; }
             if(bytes->empty() || bytes->size()!=section.getSize() || bytes->size()>detail::max_object_bytes || bytes->size()>PTRDIFF_MAX) { return false; }
-            ::std::vector<detail::wire_row> records{};
+            ::uwvm2::utils::container::std_vector<detail::wire_row> records{};
             ::std::size_t offset{};
             while(offset<bytes->size())
             {

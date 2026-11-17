@@ -210,6 +210,8 @@ public:
     }
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner> make_lease_owner() const;
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::tag_instance_identity const> make_tag_identity() const;
+    [[nodiscard]] ::uwvm2::object::memory::linear::native_memory_t make_memory() const;
+    void prepare_memory(::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t&,::std::size_t) const;
     void prepare_table(::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t&, ::std::size_t) const noexcept;
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store> make_store(
         ::uwvm2::uwvm::runtime::storage::gc_type::recursive_type_section const& section,

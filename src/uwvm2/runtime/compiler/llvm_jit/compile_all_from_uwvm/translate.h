@@ -76,10 +76,12 @@
 #  include <llvm/IR/LLVMContext.h>
 #  include <llvm/IR/Metadata.h>
 #  include <llvm/IR/Module.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
 #  include <llvm/IR/Type.h>
 #  include <llvm/IR/Value.h>
 #  include <llvm/IR/Verifier.h>
 #  include <llvm/Transforms/Utils/Cloning.h>
+#  include <llvm/Transforms/Utils/Local.h>
 #  include <llvm/Transforms/Utils/ModuleUtils.h>
 #  include <llvm/Analysis/ValueTracking.h>
 #  include <llvm/Support/KnownBits.h>
@@ -229,7 +231,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         ::std::size_t begin,
         ::std::size_t count) noexcept;
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     extern "C++" void llvm_jit_publish_ros_provenance(::std::uintptr_t provenance) noexcept;
     extern "C++" ::std::uintptr_t llvm_jit_seed_ros_provenance(::std::uintptr_t own_module) noexcept;
 #endif

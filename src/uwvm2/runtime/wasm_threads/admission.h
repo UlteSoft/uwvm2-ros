@@ -66,6 +66,7 @@ namespace uwvm2::runtime::wasm_threads
         ::std::uint_least64_t generation_{}, validation_epoch_{};
         threaded_profile_limits limits_{};
         threaded_debug_observation observation_{threaded_debug_observation::none};
+        bool instruction_control_{};
         ::std::weak_ptr<ThreadedSpawnAdmission const> canonical_owner_;
 
         ThreadedSpawnAdmission(parent_owner source,
@@ -73,10 +74,11 @@ namespace uwvm2::runtime::wasm_threads
             ::std::size_t module_id, ::std::uint_least64_t generation,
             ::std::uint_least64_t validation_epoch, threaded_profile_limits limits,
             ::uwvm2::utils::thread::execution_domain::lease actual_provider_generation,
-            threaded_debug_observation observation = threaded_debug_observation::none) noexcept
+            threaded_debug_observation observation = threaded_debug_observation::none,
+            bool instruction_control = false) noexcept
             : provider_generation_{::std::move(actual_provider_generation)},
               source_{::std::move(source)}, module_{::std::addressof(module)},
-              module_id_{module_id}, generation_{generation}, validation_epoch_{validation_epoch}, limits_{limits}, observation_{observation} {}
+              module_id_{module_id}, generation_{generation}, validation_epoch_{validation_epoch}, limits_{limits}, observation_{observation}, instruction_control_{instruction_control} {}
 
     public:
         ThreadedSpawnAdmission(ThreadedSpawnAdmission const&) = delete;
@@ -89,6 +91,7 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] auto const& initializer_limits() const noexcept { return limits_.initializer; }
         [[nodiscard]] auto const& limits() const noexcept { return limits_; }
         [[nodiscard]] threaded_debug_observation debug_observation() const noexcept { return observation_; }
+        [[nodiscard]] bool instruction_control() const noexcept { return instruction_control_; }
         [[nodiscard]] ::std::size_t max_table_elements() const noexcept { return limits_.max_table_elements; }
         [[nodiscard]] ::std::size_t max_local_memory_bytes() const noexcept { return limits_.max_local_memory_bytes; }
         [[nodiscard]] ::std::size_t max_shared_memory_bytes() const noexcept { return limits_.max_shared_memory_bytes; }

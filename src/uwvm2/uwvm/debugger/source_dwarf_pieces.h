@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_types.h"
 # include <cstring>
@@ -21,15 +22,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         ::std::uint64_t first_source_byte{};
         // OWNED memory copy, made while the actual authenticated source capture
         // and execution lease remain valid. This is never a borrowed host span.
-        ::std::vector<::std::byte> bytes{};
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
     };
     enum class piece_unavailable_reason
     { none, empty_or_unsupported, local_not_captured, carrier_mismatch, source_bounds, memory_not_copied, local_unavailable };
     enum class piece_query_error { none, malformed, limit_exceeded, allocation_failure };
     struct composite_value
     {
-        ::std::vector<::std::byte> bytes{}, known_bits{};
-        ::std::vector<piece_unavailable_reason> piece_reasons{};
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes{}, known_bits{};
+        ::uwvm2::utils::container::std_vector<piece_unavailable_reason> piece_reasons{};
         bool fully_available{};
     };
     struct piece_query_limits

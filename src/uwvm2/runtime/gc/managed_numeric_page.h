@@ -146,7 +146,7 @@ namespace uwvm2::uwvm::runtime::storage
             ::std::uintptr_t tokens{};
             if(!reserve_fresh_token_page(tokens)) { return numeric_page_status::size_overflow; }
             // On OOM this range is burned, never authenticated or reused.
-            auto* backing{new (::std::nothrow) ::std::byte[bytes]};
+            auto* backing{::uwvm2::utils::allocator::resource::try_gc_bytes(bytes)};
             if(backing == nullptr) { return numeric_page_status::out_of_memory; }
             auto* chunk{::new(static_cast<void*>(backing)) chunk_type{}};
             chunk->owner = ::std::addressof(store); chunk->backing = backing;

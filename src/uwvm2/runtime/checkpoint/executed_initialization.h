@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "materialization.h"
 #endif
@@ -19,7 +20,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     {
         sealed_function_plan::owner plan_{};
         ::std::size_t parameter_count_{};
-        ::std::vector<::std::uint8_t> flags_{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> flags_{};
         status state_{status::invalid_plan};
         [[nodiscard]] ::std::span<typed_slot const> declaration() const noexcept
         {
@@ -91,7 +92,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
                 // clears parameters or a defaultable local's initialized state.
                 if(bytes[i] > 1u || (locals[i].initialized && bytes[i] == 0u)) { return status::invalid_layout; }
             }
-            ::std::vector<::std::uint8_t> detached{bytes.begin(), bytes.end()};
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> detached{bytes.begin(), bytes.end()};
             flags_.swap(detached); return status::ok; // failure before swap cannot mutate the current flags
         }
         [[nodiscard]] status executable_restore_capability() const noexcept { return status::unavailable_resume; }

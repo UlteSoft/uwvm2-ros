@@ -1,5 +1,7 @@
 // Cold, explicit child-construction allocation accounting. SOURCE ONLY.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 #include <atomic>
 #include <cstddef>
@@ -19,7 +21,7 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 {
     // Counts actual requested allocation bytes, including control blocks and
-    // compiler-supplied new[] cookie bytes. This is not RSS or malloc overhead.
+    // explicit array-prefix bytes. This is not RSS or malloc overhead.
     // The count is monotonic through construction (freed scratch is not reused
     // as an excuse to exceed a per-child request budget).
     class threaded_allocation_account final
@@ -33,8 +35,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         [[nodiscard]] static threaded_allocation_account* create(::std::size_t maximum) noexcept
         {
             if(maximum < sizeof(threaded_allocation_account)) { return nullptr; }
-            return new(::std::nothrow) threaded_allocation_account{maximum};
+            namespace budget=::uwvm2::utils::allocator::resource;
+            if(!budget::acquire(budget::pool::threads,sizeof(threaded_allocation_account))) { return nullptr; }
+            auto* result{::uwvm2::utils::allocator::fast_io_strict::try_object<threaded_allocation_account>([&](threaded_allocation_account* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) threaded_allocation_account{maximum}; })};
+            if(result==nullptr) { budget::release(budget::pool::threads,sizeof(threaded_allocation_account)); }
+            return result;
         }
+        ~threaded_allocation_account()
+        { ::uwvm2::utils::allocator::resource::release(::uwvm2::utils::allocator::resource::pool::threads,
+            requested_.load(::std::memory_order_relaxed)); }
         // Called only by the dedicated compiler before publication. The account
         // is never widened after a guest begins; subsequent charges are atomic.
         [[nodiscard]] bool reserve_other_storage(::std::size_t bytes) noexcept
@@ -46,58 +55,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
         void retain() noexcept { references_.fetch_add(1uz, ::std::memory_order_relaxed); }
         void release() noexcept
-        { if(references_.fetch_sub(1uz, ::std::memory_order_acq_rel) == 1uz) { delete this; } }
+        { if(references_.fetch_sub(1uz, ::std::memory_order_acq_rel) == 1uz) { ::uwvm2::utils::allocator::fast_io_strict::destroy_object(this); } }
         [[nodiscard]] bool charge(::std::size_t bytes) noexcept
         {
+            namespace budget=::uwvm2::utils::allocator::resource;
+            if(!budget::acquire(budget::pool::threads,bytes)) { return false; }
             auto previous{requested_.load(::std::memory_order_relaxed)};
             for(;;)
             {
-                if(bytes > maximum_ - previous) { return false; }
+                if(previous>maximum_ || bytes > maximum_ - previous) { budget::release(budget::pool::threads,bytes); return false; }
                 if(requested_.compare_exchange_weak(previous, previous + bytes,
                     ::std::memory_order_relaxed, ::std::memory_order_relaxed)) { return true; }
             }
         }
         [[nodiscard]] ::std::size_t requested_bytes() const noexcept
         { return requested_.load(::std::memory_order_relaxed); }
-        [[nodiscard]] void* try_malloc(::std::size_t bytes) noexcept
+        // Requested backing bytes are charged before allocating. The paired
+        // native-global vector allocator chooses the same backend/alignment.
+        template<typename T> [[nodiscard]] T* try_vector_storage(::std::size_t count) noexcept
         {
-            if(bytes == 0uz) { return nullptr; }
-            return charge(bytes) ? ::std::malloc(bytes) : nullptr;
+            if(count==0u || count>SIZE_MAX/sizeof(T) || !charge(count*sizeof(T))) { return nullptr; }
+            return ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count);
         }
-#if defined(__linux__)
-        // The vector keeps its original typed c_malloc deallocator. For an
-        // over-aligned value that deallocator recovers the raw malloc pointer
-        // from the preceding header, so use the matching fast_io fallback.
-        template<typename T> [[nodiscard]] T* try_c_malloc_vector_storage(::std::size_t count) noexcept
+        template<typename T> [[nodiscard]] T* try_array(::std::size_t count) noexcept
         {
-            using native = ::fast_io::c_malloc_allocator;
-            using compatible = ::fast_io::generic_allocator_adapter<native>;
-            static_assert(!::fast_io::details::native_allocate_aligned_has_ops<native> &&
-                !::fast_io::details::has_deallocate_aligned_impl<native> &&
-                !::fast_io::details::has_deallocate_aligned_n_impl<native>,
-                "The bounded vector allocator must match the c_malloc aligned-storage contract.");
-            if(count == 0uz || count > (SIZE_MAX / sizeof(T))) { return nullptr; }
-            auto const bytes{count * sizeof(T)};
-            if constexpr(alignof(T) <= compatible::default_alignment)
-            { return static_cast<T*>(try_malloc(bytes)); }
-            else
-            {
-                constexpr auto alignment{alignof(T) < sizeof(void*) ? sizeof(void*) : alignof(T)};
-                constexpr auto overhead{alignment + sizeof(void*)};
-                if(bytes > SIZE_MAX - overhead) { return nullptr; }
-                // Charge the actual raw allocation, including alignment slack
-                // and the allocator's pointer header; failure stays nonfatal.
-                auto const request{::fast_io::details::allocator_compute_aligned_total_size_impl(alignment, bytes)};
-                auto* raw{try_malloc(request)};
-                if(raw == nullptr) { return nullptr; }
-                return static_cast<T*>(::fast_io::details::allocator_adjust_ptr_to_aligned_impl(raw, alignment));
-            }
+            constexpr auto prefix=::uwvm2::utils::allocator::fast_io_strict::array_prefix<T>;
+            if(count>(SIZE_MAX-prefix)/sizeof(T) || !charge(prefix+count*sizeof(T))) { return nullptr; }
+            return ::uwvm2::utils::allocator::fast_io_strict::try_array<T>(count);
         }
-#endif
-        [[nodiscard]] void* try_new_array(::std::size_t actual_bytes) noexcept
-        { return charge(actual_bytes) ? ::operator new[](actual_bytes, ::std::nothrow) : nullptr; }
-        [[nodiscard]] void* try_new_array(::std::size_t actual_bytes, ::std::align_val_t alignment) noexcept
-        { return charge(actual_bytes) ? ::operator new[](actual_bytes, alignment, ::std::nothrow) : nullptr; }
+
     };
 
     class threaded_allocation_pin final
@@ -135,9 +121,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const bytes{count * sizeof(T)};
                 if(pin_.get().charge(bytes))
                 {
-                    if constexpr(alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-                    { raw = ::operator new(bytes, ::std::align_val_t{alignof(T)}, ::std::nothrow); }
-                    else { raw = ::operator new(bytes, ::std::nothrow); }
+                    raw = ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count);
                 }
             }
             if(raw == nullptr)
@@ -152,9 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
         void deallocate(T* pointer, ::std::size_t) noexcept
         {
-            if constexpr(alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-            { ::operator delete(pointer, ::std::align_val_t{alignof(T)}); }
-            else { ::operator delete(pointer); }
+            ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::deallocate(pointer);
         }
         template<typename U, typename... Args> void construct(U* pointer, Args&&... args)
         { ::new(const_cast<void*>(static_cast<void const*>(pointer))) U(::std::forward<Args>(args)...); }
@@ -162,20 +144,4 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         { return ::std::addressof(pin_.get()) == ::std::addressof(other.pin_.get()); }
     };
 
-    // The placement allocation overload sees the exact ABI request, including
-    // a nontrivial element's array cookie; matching delete[] stays standard.
-    struct threaded_nothrow_array { threaded_allocation_account* account; };
 }
-
-[[nodiscard]] inline void* operator new[](::std::size_t bytes,
-    ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array request) noexcept
-{ return request.account->try_new_array(bytes); }
-inline void operator delete[](void* pointer,
-    ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array) noexcept
-{ ::operator delete[](pointer); }
-[[nodiscard]] inline void* operator new[](::std::size_t bytes, ::std::align_val_t alignment,
-    ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array request) noexcept
-{ return request.account->try_new_array(bytes, alignment); }
-inline void operator delete[](void* pointer, ::std::align_val_t alignment,
-    ::uwvm2::uwvm::runtime::initializer::threaded_nothrow_array) noexcept
-{ ::operator delete[](pointer, alignment); }

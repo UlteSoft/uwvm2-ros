@@ -1,6 +1,7 @@
 module;
 export module uwvm2.utils.control;
 export import :debug_permissions;
+export import :dump_permissions;
 export import :protocol;
 export import :sealed_input;
 export import :protected_assets;

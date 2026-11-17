@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <fast_io_dsal/array.h>
 # include <cstddef>
@@ -11,6 +12,7 @@
 # include <limits>
 # include <memory>
 # include <string>
+# include <vector>
 # include <fast_io.h>
 # include <fast_io_dsal/string_view.h>
 # include <uwvm2/utils/control/protocol.h>
@@ -21,6 +23,8 @@
 # include "wasm_path.h"
 # include "wasip1_state.h"
 # include "ros_state.h"
+# include "scene_state.h"
+# include "wasithread_state.h"
 # include "host_trace.h"
 # include "source_pretty_registry.h"
 # include "console_help_catalog.h"
@@ -33,7 +37,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     inline constexpr ::std::size_t max_command_bytes{512};
     inline constexpr ::std::size_t max_input_command_bytes{wasip1_state::maximum_command_bytes}; // Long input is restricted to bounded WASIp1 edits and HOST pretty-printer configuration.
     using command_text_view = ::fast_io::string_view;
-    enum class console_command_kind { wasm_disassemble, assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace, watchpoint, breakpoint_commands, callback_echo, wasm_dump };
+    enum class console_command_kind { wasm_disassemble, assembly_breakpoint, module_list, protocol, source_step, source_breakpoint, source_locals, assembly_step, replacement_file, help, quit, unsupported, invalid, empty, assembly_disassemble, assembly_disassemble_range, wasm_event, wasm_script, assembly_registers, source_type, source_value, assembly_next, source_frame, wasm_state, wasip1_state, wasm_path, wasm_mutation, wasm_step, breakpoint_control, assembly_finish, execution_relocate, ros_state, source_print_options, source_printer_config, host_trace, watchpoint, breakpoint_commands, callback_echo, wasm_dump, scene_state, wasithread_state, snapshot_restore, snapshot_record, host_interfaces };
     enum class unavailable_step_level { none, source, assembly };
     enum class source_step_policy { into, over, out };
     enum class source_run_to_policy { none, until, advance };
@@ -45,6 +49,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
     enum class relocation_level { source, wasm, assembly };
     enum class source_print_action { set_pretty, show_pretty, set_elements, show_elements, list_printers };
     inline constexpr ::std::size_t maximum_source_print_elements{4096u};
+    struct snapshot_fd_binding
+    {
+        ::std::uint64_t module{};
+        ::std::uint32_t resource{},descriptor{};
+    };
     struct console_command
     {
         console_command_kind kind{console_command_kind::invalid};
@@ -58,11 +67,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::std::uint64_t module_help_page{1u}; // Host metadata page, never a runtime operation.
         ::fast_io::array<char, max_command_bytes> source_path{};
         ::std::size_t source_path_size{};
-        ::std::string dump_path{}; // Owned HOST output path; never a Guest FD or memory address.
+        ::uwvm2::utils::container::std_string dump_path{}; // Owned HOST output path; never a Guest FD or memory address.
         ::std::uint64_t dump_stop_identifier{};
+        unsigned dump_disclosure{}; // 0: launch default, 1: diagnostic, 2: full
+        unsigned recording_action{};
+        ::std::uint64_t history_serial{},history_kind{},history_id{},history_offset{},history_count{};
+        bool restore_replay{};
+        bool dump_policy_query{}; // Read-only immutable launch policy, no setter.
+        bool restore_recorded{},restore_continue{};
+        ::uwvm2::utils::container::std_vector<snapshot_fd_binding> restore_bindings{};
         bool basic_threads{}; // Numeric participant census; no source names or native state.
         bool memory_tags{}; // Read-only tag projection of the same authenticated guest memory range.
         bool wait_for_event{}; // Host observation using an authenticated status request.
+        bool retain_native_entry{}; // Capture the real first JIT instruction without executing it.
         bool run_from_entry{}; // Standalone launcher request; never a wire resume/restart capability.
         console_launch_action launch_action{}; // HOST CLI only; controller/transport cannot execute it.
         ::fast_io::array<char, console_help::maximum_selector_bytes> help_topic{};
@@ -119,6 +136,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         bool relocation_absolute{};
         bool source_frame_explicit{}; // per-request ordinal, never activation/read authority.
         host_trace::request host_trace_request{};
+        wasithread_state::request wasithread_state_request{};
+        scene_state::request scene_state_request{}; // Detached scene metadata, never authority.
         ros_state::request ros_state_request{}; // Append-only diagnostic DATA, no ROS authority.
     };
     // Shared by the controller and every transport BEFORE status-wrapped
@@ -146,12 +165,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         if(!p::inspection_allowed())return false;
         switch(c.kind)
         {
-            case console_command_kind::wasm_disassemble: case console_command_kind::module_list:
+            case console_command_kind::wasm_disassemble: case console_command_kind::module_list: case console_command_kind::host_interfaces:
             case console_command_kind::source_locals: case console_command_kind::source_type:
             case console_command_kind::source_value: case console_command_kind::source_frame:
             case console_command_kind::wasm_state: case console_command_kind::wasm_path:
             case console_command_kind::assembly_disassemble: case console_command_kind::assembly_disassemble_range:
             case console_command_kind::assembly_registers:return true;
+            case console_command_kind::scene_state:case console_command_kind::wasithread_state:return true;
+            case console_command_kind::snapshot_record:return c.recording_action==3u || c.recording_action==4u || c.recording_action==5u || c.recording_action==7u;
             case console_command_kind::ros_state:return c.ros_state_request.trace_control==0u;
             case console_command_kind::source_print_options:return c.source_print_policy==source_print_action::show_pretty ||
                 c.source_print_policy==source_print_action::show_elements || c.source_print_policy==source_print_action::list_printers;
@@ -185,6 +206,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             c.kind==console_command_kind::assembly_step || c.kind==console_command_kind::assembly_next ||
             c.kind==console_command_kind::assembly_finish || c.kind==console_command_kind::replacement_file ||
             c.kind==console_command_kind::wasm_mutation || c.kind==console_command_kind::wasm_script ||
+            c.kind==console_command_kind::snapshot_restore ||
             c.kind==console_command_kind::execution_relocate || c.source_run_to!=source_run_to_policy::none;
     }
     // Console-owned preferences survive a CLI run/restart. Explicit /r and /p
@@ -295,9 +317,115 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         {
             auto at{details::skip_command_space(line,head_end)};
             auto end{details::command_word_end(line,at)};
+            if(line.subview(at,end-at)=="policy" && details::skip_command_space(line,end)==line.size())
+            {
+                console_command result{};result.kind=console_command_kind::wasm_dump;result.dump_policy_query=true;
+                result.operation=::uwvm2::utils::control::operation::status;return result;
+            }
+            if(line.subview(at,end-at)=="history")
+            {
+                console_command result{};result.kind=console_command_kind::snapshot_record;
+                result.operation=::uwvm2::utils::control::operation::status;result.recording_action=4u;
+                at=details::skip_command_space(line,end);
+                if(at==line.size())return result;
+                end=details::command_word_end(line,at);
+                if(line.subview(at,end-at)=="open")
+                {
+                    at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+                    if(!details::parse_decimal(line.subview(at,end-at),result.history_id))return {};
+                    at=details::skip_command_space(line,end);if(at==line.size())return {};
+                    auto path=line.subview(at);for(auto byte:path)if(static_cast<unsigned char>(byte)<32u)return {};
+                    result.dump_path.assign(path.data(),path.size());result.recording_action=7u;return result;
+                }
+                for(auto* field:{&result.history_serial,&result.history_kind,&result.history_id,&result.history_offset,&result.history_count})
+                {
+                    end=details::command_word_end(line,at);
+                    if(!details::parse_decimal(line.subview(at,end-at),*field))return {};
+                    at=details::skip_command_space(line,end);
+                }
+                if(at!=line.size() || !result.history_serial || result.history_kind<6u || result.history_kind>8u ||
+                   !result.history_count || result.history_count>4096u)return {};
+                result.recording_action=5u;return result;
+            }
+            if(line.subview(at,end-at)=="record")
+            {
+                console_command result{};result.kind=console_command_kind::snapshot_record;
+                result.operation=::uwvm2::utils::control::operation::status;
+                at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+                auto action=line.subview(at,end-at);
+                if(action=="status")
+                {if(details::skip_command_space(line,end)!=line.size())return {};result.recording_action=3u;return result;}
+                if(action!="start" && action!="save" && action!="mark")return {};
+                result.recording_action=action=="start"?1u:action=="mark"?6u:2u;
+                at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+                if(!details::parse_decimal(line.subview(at,end-at),result.dump_stop_identifier) || !result.dump_stop_identifier)return {};
+                at=details::skip_command_space(line,end);
+                if(result.recording_action==1u || result.recording_action==6u){if(at!=line.size())return {};return result;}
+                if(at==line.size())return {};
+                auto path=line.subview(at);for(auto ch:path)if(ch=='\0')return {};
+                result.dump_path.assign(path.data(),path.size());return result;
+            }
+            if(line.subview(at,end-at)=="restore" || line.subview(at,end-at)=="replay")
+            {
+                console_command result{};result.kind=console_command_kind::snapshot_restore;
+                result.operation=::uwvm2::utils::control::operation::status;
+                result.restore_replay=line.subview(at,end-at)=="replay";
+                if(!result.restore_replay){at=details::skip_command_space(line,end);end=details::command_word_end(line,at);}
+                auto mode=result.restore_replay ? ::fast_io::string_view{"current"}:line.subview(at,end-at);
+                if(mode=="continue")
+                {
+                    if(details::skip_command_space(line,end)!=line.size())return {};
+                    result.restore_continue=true;return result;
+                }
+                if(mode!="current" && mode!="recorded")return {};
+                result.restore_recorded=mode=="recorded";
+                at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+                if(!details::parse_decimal(line.subview(at,end-at),result.dump_stop_identifier) || !result.dump_stop_identifier)return {};
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                try {
+#endif
+                    if(result.restore_recorded)
+                    {
+                        at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
+                        auto bindings=line.subview(at,end-at);
+                        if(bindings.empty())return {};
+                        if(bindings!="-")
+                        {
+                            ::std::size_t cursor{};
+                            while(cursor<bindings.size())
+                            {
+                                ::std::uint64_t fields[3u]{};
+                                for(unsigned field{};field<3u;++field)
+                                {
+                                    auto begin=cursor;
+                                    while(cursor<bindings.size() && bindings[cursor]!=':' && bindings[cursor]!=',')++cursor;
+                                    if(!details::parse_decimal(bindings.subview(begin,cursor-begin),fields[field]))return {};
+                                    if(field!=2u)
+                                    {if(cursor==bindings.size() || bindings[cursor]!=':')return {};++cursor;}
+                                }
+                                if(fields[1]>UINT32_MAX || fields[2]>INT32_MAX)return {};
+                                for(auto const& previous:result.restore_bindings)
+                                    if(previous.module==fields[0] && previous.resource==fields[1])return {};
+                                result.restore_bindings.push_back({fields[0],static_cast<::std::uint32_t>(fields[1]),static_cast<::std::uint32_t>(fields[2])});
+                                if(cursor==bindings.size())break;
+                                if(bindings[cursor++]!=',' || cursor==bindings.size())return {};
+                            }
+                        }
+                    }
+                    at=details::skip_command_space(line,end);if(at==line.size())return {};
+                    auto path=line.subview(at);for(auto ch:path)if(ch=='\0')return {};
+                    result.dump_path.assign(path.data(),path.size());
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                }catch(...){return {};}
+#endif
+                return result;
+            }
             if(line.subview(at,end-at)!="wasm")return {};
             at=details::skip_command_space(line,end);end=details::command_word_end(line,at);
             console_command result{};
+            auto const disclosure=line.subview(at,end-at);
+            if(disclosure=="diagnostic"||disclosure=="full")
+            {result.dump_disclosure=disclosure=="full"?2u:1u;at=details::skip_command_space(line,end);end=details::command_word_end(line,at);}
             if(!details::parse_decimal(line.subview(at,end-at),result.dump_stop_identifier) || !result.dump_stop_identifier)return {};
             at=details::skip_command_space(line,end);
             if(at==line.size())return {};
@@ -842,6 +970,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(!ros_state::parse(line,result.ros_state_request)) {return {};}
             result.operation=::uwvm2::utils::control::operation::status;return result;
         }
+        if(line.starts_with("info wasithread "))
+        {
+            console_command result{console_command_kind::wasithread_state};
+            if(!wasithread_state::parse(line,result.wasithread_state_request))return {};
+            result.operation=::uwvm2::utils::control::operation::status;return result;
+        }
+        // The scene grammar is independent of frozen ROS v1 grammars.
+        {
+            ::std::size_t cursor{};
+            auto word=[&]() noexcept
+            {
+                while(cursor<line.size()&&::fast_io::char_category::c_space::char_is(line[cursor]))++cursor;
+                auto start=cursor;
+                while(cursor<line.size()&&!::fast_io::char_category::c_space::char_is(line[cursor]))++cursor;
+                return line.subview(start,cursor-start);
+            };
+            if(word()=="info"&&word()=="scene")
+            {
+                console_command result{console_command_kind::scene_state};
+                if(!scene_state::parse(line,result.scene_state_request))return {};
+                result.operation=::uwvm2::utils::control::operation::status;return result;
+            }
+        }
         ::fast_io::array<::fast_io::string_view, 7> words{};
         ::std::size_t count{}, cursor{};
         while(cursor != line.size())
@@ -1102,6 +1253,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         else if((name == "status" && count == 1u) || (name == "info" && count == 2u && words[1] == "threads"))
         { result.operation = status; }
         else if(name == "info" && count == 2u && words[1] == "breakpoints") { result.operation = breakpoint_list; }
+        else if(name == "info" && (count == 2u || count == 3u) && words[1] == "host-interfaces")
+        {
+            result.module_help_page=0u;
+            if(count==3u&&!details::parse_decimal(words[2],result.module_help_page))return {};
+            result.kind=console_command_kind::host_interfaces;return result;
+        }
         else if(name == "info" && (count == 2u || count == 3u) && words[1] == "modules")
         {
             if(count == 3u && (!details::parse_decimal(words[2], result.module_help_page) || result.module_help_page == 0u)) { return {}; }
@@ -1141,6 +1298,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(!details::parse_decimal(words[1], result.native_breakpoint_offset)) { return {}; }
             result.kind = console_command_kind::assembly_breakpoint;
             result.operation = status; // Existing authenticated host policy admission.
+        }
+        else if(name == "inspect" && count == 4u && words[1] == "asm")
+        {
+            if(!details::parse_decimal(words[2], result.requested_step_thread) || !result.requested_step_thread ||
+               !details::parse_decimal(words[3], result.disassembly_stop_identifier) || !result.disassembly_stop_identifier)
+            { return {}; }
+            result.kind = console_command_kind::assembly_step; result.operation = step;
+            result.retain_native_entry = true; result.payload_size = 8u;
+            ::fast_io::io::print(output, ::fast_io::mnp::le_put<64>(result.requested_step_thread));
         }
         else if((name == "ni" || name == "nexti") && (count == 1u || count == 2u))
         {

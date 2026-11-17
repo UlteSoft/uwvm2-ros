@@ -2,6 +2,8 @@
 // NOT the unique type-erased native implementation. Consumers must retain the
 // actual maintenance/closed host/cohort/source lease for every lexical borrow.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -36,6 +38,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         unsigned parameter_count{}, result_count{};
         bool exits_guest{}; // derived only from the canonical builtin tuple
         bool exit_wasm64{};
+        bool phased_memory{}; // audited provider memory phases; native loader DATA only
         ::std::array<unsigned char, 16u> parameters{}, results{};
     };
     class builtin_wasip1_loader_identity final
@@ -100,6 +103,93 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             auto const name{known[index].function_name};
             result.exit_wasm64 = name == u8"proc_exit_wasm64";
             result.exits_guest = name == u8"proc_exit" || result.exit_wasm64;
+            result.phased_memory = name == u8"poll_oneoff" || name == u8"poll_oneoff_wasm64";
+            result.phased_memory |= name == u8"fd_read" || name == u8"fd_read_wasm64" ||
+                    name == u8"fd_write" || name == u8"fd_write_wasm64" ||
+                    name == u8"fd_pread" || name == u8"fd_pread_wasm64" ||
+                    name == u8"fd_pwrite" || name == u8"fd_pwrite_wasm64";
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
+            result.phased_memory |= name == u8"sock_recv" || name == u8"sock_recv_wasm64" ||
+                    name == u8"sock_send" || name == u8"sock_send_wasm64" ||
+                    name == u8"sock_accept" || name == u8"sock_accept_wasm64" ||
+                    name == u8"sock_shutdown" || name == u8"sock_shutdown_wasm64";
+#endif
+            // These metadata providers acquire native resource locks without
+            // an instruction turn. Their guest writes are separately phased.
+            result.phased_memory |= name == u8"fd_advise" ||
+                name == u8"fd_advise_wasm64" ||
+                name == u8"fd_allocate" ||
+                name == u8"fd_allocate_wasm64" ||
+                name == u8"fd_close" ||
+                name == u8"fd_close_wasm64" ||
+                name == u8"fd_datasync" ||
+                name == u8"fd_datasync_wasm64" ||
+                name == u8"fd_fdstat_get" ||
+                name == u8"fd_fdstat_get_wasm64" ||
+                name == u8"fd_fdstat_set_flags" ||
+                name == u8"fd_fdstat_set_flags_wasm64" ||
+                name == u8"fd_fdstat_set_rights" ||
+                name == u8"fd_fdstat_set_rights_wasm64" ||
+                name == u8"fd_filestat_set_size" ||
+                name == u8"fd_filestat_set_size_wasm64" ||
+                name == u8"fd_filestat_set_times" ||
+                name == u8"fd_filestat_set_times_wasm64" ||
+                name == u8"fd_renumber" ||
+                name == u8"fd_renumber_wasm64" ||
+                name == u8"fd_sync" ||
+                name == u8"fd_sync_wasm64";
+            result.phased_memory |= name == u8"path_create_directory" ||
+                name == u8"path_create_directory_wasm64" ||
+                name == u8"path_filestat_get" ||
+                name == u8"path_filestat_get_wasm64" ||
+                name == u8"path_filestat_set_times" ||
+                name == u8"path_filestat_set_times_wasm64" ||
+                name == u8"path_link" ||
+                name == u8"path_link_wasm64" ||
+                name == u8"path_open" ||
+                name == u8"path_open_wasm64" ||
+                name == u8"path_readlink" ||
+                name == u8"path_readlink_wasm64" ||
+                name == u8"path_remove_directory" ||
+                name == u8"path_remove_directory_wasm64" ||
+                name == u8"path_rename" ||
+                name == u8"path_rename_wasm64" ||
+                name == u8"path_symlink" ||
+                name == u8"path_symlink_wasm64" ||
+                name == u8"path_unlink_file" ||
+                name == u8"path_unlink_file_wasm64" ||
+                name == u8"fd_filestat_get" ||
+                name == u8"fd_filestat_get_wasm64" ||
+                name == u8"fd_prestat_get" ||
+                name == u8"fd_prestat_get_wasm64" ||
+                name == u8"fd_prestat_dir_name" ||
+                name == u8"fd_prestat_dir_name_wasm64" ||
+                name == u8"fd_readdir" ||
+                name == u8"fd_readdir_wasm64" ||
+                name == u8"fd_seek" ||
+                name == u8"fd_seek_wasm64" ||
+                name == u8"fd_tell" ||
+                name == u8"fd_tell_wasm64";
+            // Scalar/environment providers wait without retaining a guest turn.
+            // Randomness uses detached native buffers; output copies reacquire it.
+            result.phased_memory |= name == u8"args_get" ||
+                name == u8"args_get_wasm64" ||
+                name == u8"args_sizes_get" ||
+                name == u8"args_sizes_get_wasm64" ||
+                name == u8"environ_get" ||
+                name == u8"environ_get_wasm64" ||
+                name == u8"environ_sizes_get" ||
+                name == u8"environ_sizes_get_wasm64" ||
+                name == u8"clock_res_get" ||
+                name == u8"clock_res_get_wasm64" ||
+                name == u8"clock_time_get" ||
+                name == u8"clock_time_get_wasm64" ||
+                name == u8"random_get" ||
+                name == u8"random_get_wasm64" ||
+                name == u8"sched_yield" ||
+                name == u8"sched_yield_wasm64" ||
+                name == u8"proc_raise" ||
+                name == u8"proc_raise_wasm64";
             auto const copy{[](auto const& native, auto& destination, unsigned& count) noexcept -> bool
             {
                 // These pointers originate ONLY in our known compile-time
@@ -232,7 +322,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 auto const implementation{actual.index_unchecked(ordinal).ptr};
                 if(implementation == nullptr) { return false; }
                 ::std::shared_ptr<builtin_wasip1_loader_identity> result{
-                    new builtin_wasip1_loader_identity{implementation,ordinal,wasix}};
+                    ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<builtin_wasip1_loader_identity>([&](builtin_wasip1_loader_identity* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) builtin_wasip1_loader_identity{implementation,ordinal,wasix}; }))};
                 result->canonical_owner_=result;selected_=::std::move(result);return true;
             }
             // Ordinary OOM preserves the previous native-loading result while

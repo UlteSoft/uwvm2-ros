@@ -21,6 +21,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/control/wasithread_diagnostics.h>
 
 // std
 #include <cstddef>
@@ -53,6 +54,9 @@ import uwvm2.uwvm.utils.depend;
 import uwvm2.uwvm.utils.ansies;
 import uwvm2.uwvm.utils.memory;
 import uwvm2.uwvm.imported.wasi.wasip1.storage;
+#if defined(UWVM_IMPORT_ROSV2)
+import uwvm2.uwvm.imported.scene.storage;
+#endif
 import uwvm2.uwvm.wasm.base;
 import uwvm2.uwvm.wasm.type;
 import uwvm2.uwvm.wasm.storage;

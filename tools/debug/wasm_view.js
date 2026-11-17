@@ -5,22 +5,65 @@
 const path=require("path"),fs=require("fs"),crypto=require("crypto");
 const language=require("./wasm_language"),models=require("./wasm_view_model");
 const editorStyle=require("./editor_style");
+const navigation=require("./navigation_state");
 const VIEW="uwvm.wasmInstructions";
 function register(vscode,context,sessions) {
   if(!vscode.window?.registerCustomEditorProvider)return;
-  const panels=new Set(),selectedThreads=new Map(),stacks=new Map();
+  const history=require("./navigation_history").get(sessions);
+  const panels=new Set(),selectedThreads=new Map(),stacks=new Map(),reveals=new Map(),restores=new Map(),followedStops=new Map();
   const add=x=>context.subscriptions.push(x);
   const send=(m,message)=>{if(m.ready&&!m.disposed)void m.panel.webview.postMessage({...message,revision:m.revision});};
   const live=(m,stamp)=>!m.disposed && m.revision===stamp && sessions.get(m.id.session)===m.session;
   function retire(m,reason) {
-    ++m.revision;m.current=undefined;m.error=reason||"Stopped snapshot retired; waiting for the current frame.";
+    ++m.revision;m.current=undefined;m.next=undefined;m.error=reason||"Stopped snapshot retired; waiting for the current frame.";
     state(m);
   }
   function fail(m,error) {m.error=String(error?.message||error);send(m,{action:"notice",message:m.error,error:true});}
   function state(m) {
-    send(m,{action:"state",valid:!!m.current,message:m.error,permission:m.permission,sessionName:m.session.name,
-      module:m.id.module,function:m.id.function,name:m.functionName,epoch:m.id.epoch,generation:m.id.generation,...m.current});
+    send(m,{action:"state",valid:!!m.current&&!m.current.native,message:m.error,permission:m.permission,sessionName:m.session.name,
+      module:m.id.module,function:m.id.function,name:m.functionName,epoch:m.id.epoch,generation:m.id.generation,
+      next:m.next,movable:m.movable,follow:!m.historyRestore,...m.current});
     points(m);
+  }
+  // Positions from the adapter. At a cooperative stop in this function the
+  // Wasm pointer is EXACT (yellow, refreshed from the stop itself). At an
+  // assembly stop the runtime identifies whether this is the start (yellow)
+  // or inside (green). Native projections are display-only, never edit handles.
+  function positions(session,pos) {
+    for(const m of panels) {
+      if(m.disposed||m.id.session!==session.id)continue;
+      const w=pos&&pos.state==="stopped"?pos.wasm:undefined;
+      const here=!!w&&w.module===m.id.module&&w.function===m.id.function;
+      m.movable=pos&&pos.movable?{wasm:!!pos.movable.wasm,reason:(pos.moveReason||{}).wasm||""}:undefined;
+      if(here){if(!pos.native)m.next=undefined;void refresh(m,pos.threadId);continue;}
+      let next;
+      if(here&&pos.native&&m.layout) {
+        const row=m.layout.rows.find(r=>r.offset===String(w.offset));
+        if(row&&w.provenance==="exact"&&String(w.epoch)===String(m.id.epoch)&&String(w.generation)===String(m.id.generation))next={line:row.line,exact:w.exact===true,provenance:w.provenance,stopId:pos.stopId,threadId:pos.threadId,nativePc:pos.nativePc};
+      }
+      if(pos&&pos.native){m.current=undefined;m.error=next?"":"The stop is in assembly code outside this function.";}
+      m.next=next;state(m);
+    }
+    // Follow the stop into another function when a Wasm view of this session
+    // is open but shows a different function. VS Code itself does this at the
+    // Wasm level; this covers the source and assembly levels. A view the user
+    // closed stays closed.
+    if(!pos||pos.state!=="stopped"||!pos.wasm)return;
+    const followKey=JSON.stringify([pos.stopId,pos.threadId,pos.wasm.module,pos.wasm.function]);
+    const followed=followedStops.get(session.id);followedStops.set(session.id,followKey);
+    if(followed===followKey)return;
+    const open=[...panels].filter(m=>!m.disposed&&m.id.session===session.id);
+    if(!open.length||open.some(m=>pos.wasm&&m.id.module===pos.wasm.module&&m.id.function===pos.wasm.function))return;
+    const visible=open.find(m=>m.panel.visible);
+    if(!visible)return;
+    const isCurrent=navigation.current(session);
+    void (async()=>{
+      try {
+        const reply=await session.customRequest("uwvm/currentWasmDocument",{});
+        if(!isCurrent()||!visible.panel.visible||!reply?.source?.path||sessions.get(session.id)!==session)return;
+        await vscode.commands.executeCommand("vscode.openWith",vscode.Uri.parse(reply.source.path),VIEW,{preview:true,preserveFocus:true,viewColumn:visible.panel.viewColumn});
+      } catch(_) { /* following is a convenience; the stop itself is unaffected */ }
+    })();
   }
   function points(m) {
     if(!m.ready||!m.layout)return;
@@ -59,7 +102,14 @@ function register(vscode,context,sessions) {
       if(!live(m,stamp))return;
       m.permission=permission?.permissions;
       if(!["full","read-only"].includes(m.permission))throw new Error("Instruction inspection requires full or read-only permission. Limited mode retains basic crash diagnostics.");
-      const reply=await m.session.customRequest("uwvm/wasmDocument",{reference:m.id.reference,includeLayout:!m.layout,
+      if(!m.layout) {
+        const layout=await m.session.customRequest("uwvm/wasmDocumentLayout",{reference:m.id.reference});
+        if(!live(m,stamp))return;
+        if(layout.reference!==m.id.reference||layout.module!==m.id.module||layout.function!==m.id.function||layout.epoch!==m.id.epoch||layout.generation!==m.id.generation||layout.digest!==crypto.createHash("sha256").update(m.document.getText(),"utf8").digest("hex"))throw new Error("Instruction document identity differs.");
+        m.layout=models.layout(m.document);for(const row of m.layout.rows)row.safe=false;
+        send(m,{action:"load",...m.layout,addressBits:layout.addressBits});
+      }
+      const reply=await m.session.customRequest("uwvm/wasmDocument",{reference:m.id.reference,includeLayout:true,
         ...(threadId===undefined?{}:{threadId})});
       if(!live(m,stamp))return;
       if(!reply || reply.reference!==m.id.reference || reply.module!==m.id.module || reply.function!==m.id.function ||
@@ -67,17 +117,18 @@ function register(vscode,context,sessions) {
          !/^[1-9][0-9]{0,19}$/.test(reply.stopId) || BigInt(reply.stopId)>=1n<<64n ||
          reply.digest!==crypto.createHash("sha256").update(m.document.getText(),"utf8").digest("hex"))
         throw new Error("The instruction document differs from the current owned generation.");
-      if(!m.layout) {
-        const data=models.layout(m.document),safe=new Set(reply.safeLines);
+      {
+        const data=m.layout,safe=new Set(reply.safeLines);
         if(!Array.isArray(reply.safeLines) || safe.size!==reply.safeLines.length || reply.safeLines.some(line=>!Number.isSafeInteger(line)||line<2||line>data.rows.length+1))
           throw new Error("Executable instruction boundaries are unavailable.");
         for(const row of data.rows)row.safe=safe.has(row.line);
         m.layout=data;
-        send(m,{action:"load",...data,addressBits:reply.addressBits});
+        send(m,{action:"safe-lines",lines:reply.safeLines});
       }
       const row=m.layout.rows[reply.line-2];
       if(!row || !row.safe || row.offset!==reply.offset)throw new Error("The current instruction is not an executable boundary.");
-      m.current={stopId:reply.stopId,threadId:reply.threadId,line:reply.line,offset:reply.offset};
+      m.current={stopId:reply.stopId,threadId:reply.threadId,line:reply.line,offset:reply.offset,native:reply.native===true};
+      m.next=reply.native?{line:reply.line,exact:reply.exact===true,provenance:"exact",stopId:reply.stopId,threadId:reply.threadId}:undefined;
       m.error="";state(m);
       // Optional metadata cannot invalidate a correctly authenticated PC.
       try {
@@ -90,6 +141,10 @@ function register(vscode,context,sessions) {
     } catch(error) {if(live(m,stamp)){m.current=undefined;m.error=String(error.message||error);state(m);}}
     finally {
       m.refreshing=false;
+      const requested=reveals.get(m.document.uri.toString());
+      if(requested&&m.layout&&m.ready){reveals.delete(m.document.uri.toString());send(m,{action:"reveal",line:requested});}
+      if(m.historyRestore&&m.layout&&m.ready){send(m,{action:"restore-viewport",...m.historyRestore});m.viewport=m.historyRestore;m.historyRestore=undefined;}
+      if(m.viewport===undefined&&m.layout){m.viewport={line:m.current?.line||2,top:0,left:0};if(m.panel.active)m.navigation?.visit(m.viewport);}
       if(m.refreshAgain!==undefined){const next=m.refreshAgain;m.refreshAgain=undefined;void refresh(m,next);}
     }
   }
@@ -97,6 +152,7 @@ function register(vscode,context,sessions) {
     const stamp=m.revision,current=m.current;
     if(message.revision!==stamp || !current || !live(m,stamp))throw new Error("This action belongs to a retired stopped snapshot.");
     if(write&&m.permission!=="full")throw new Error("Changing execution or breakpoints requires full permission.");
+    if(write&&current.native)throw new Error("This is a code projection at a native instruction stop; select a cooperative Wasm stop to edit Wasm state.");
     const reply=await m.session.customRequest("uwvm/wasmDocument",{reference:m.id.reference,ifStop:current.stopId,threadId:current.threadId});
     if(!live(m,stamp)||m.current!==current||reply.stopId!==current.stopId||reply.threadId!==current.threadId||reply.digest!==crypto.createHash("sha256").update(m.document.getText(),"utf8").digest("hex"))
       throw new Error("The stopped snapshot changed before the action.");
@@ -149,11 +205,36 @@ function register(vscode,context,sessions) {
   }
   async function request(m,message) {
     if(!message||typeof message.action!=="string"||m.disposed)return;
-    const mutation=message.action==="breakpoint"||["continue","next","stepIn","stepOut"].includes(message.action);
+    const mutation=message.action==="breakpoint"||message.action==="jump"||["continue","next","stepIn","stepOut"].includes(message.action);
     if(mutation&&m.mutating){fail(m,new Error("An execution or breakpoint action is still pending."));return;}
     if(mutation)m.mutating=true;
     try {
-      if(message.action==="ready") {m.ready=true;send(m,{action:"editorStyle",...editorStyle.read(vscode,m.document.uri)});await refresh(m,selectedThreads.get(m.id.session));return;}
+      if(["navigate-back","navigate-forward"].includes(message.action)){await history?.move(message.action==="navigate-back"?-1:1,m.session);return;}
+      if(message.action==="viewport") {
+        const p=message.position;
+        if(m.layout&&p&&Number.isSafeInteger(p.line)&&p.line>=2&&p.line<=m.layout.rows.length+1&&Number.isFinite(p.top)&&p.top>=0&&p.top<=m.layout.rows.length&&Number.isFinite(p.left)&&p.left>=0&&p.left<1e8) {
+          m.viewport={line:p.line,top:p.top,left:p.left};
+          if(m.panel.active)m.navigation?.visit(m.viewport,true);
+        }return;
+      }
+      if(message.action==="navigate-line") {
+        const line=message.line;
+        if(!m.layout||!Number.isSafeInteger(line)||line<2||line>m.layout.rows.length+1)throw new Error("Destination is outside this Wasm function.");
+        if(m.viewport)m.navigation?.visit(m.viewport,true);
+        const place={line,top:Math.max(0,line-2),left:0};m.navigation?.visit(place);
+        m.viewport=place;send(m,{action:"reveal",line});return;
+      }
+      if(message.action==="navigate-call") {
+        if(!["full","read-only"].includes(m.permission))throw new Error("Instruction inspection requires full or read-only permission.");
+        const row=m.layout.rows[message.line-2],token=row?.tokens[message.token];
+        if(!token||token.meaning?.kind!=="object"||token.meaning.key!=="function")throw new Error("Select a function operand.");
+        const isCurrent=navigation.begin(m.session);
+        const target=await m.session.customRequest("uwvm/wasmFunctionDocument",{reference:m.id.reference,index:token.meaning.value});
+        if(!isCurrent()||m.disposed)return;
+        if(m.viewport)m.navigation?.visit(m.viewport,true);
+        await open({...target,sessionId:m.session.id,isCurrent,preview:false});return;
+      }
+      if(message.action==="ready") {m.ready=true;send(m,{action:"navigation",...history?.state(m.session)});send(m,{action:"editorStyle",...editorStyle.read(vscode,m.document.uri)});await refresh(m,selectedThreads.get(m.id.session));return;}
       if(message.action==="refresh") {
         const thread=m.current?.threadId||selectedThreads.get(m.id.session);
         if(thread!==undefined)await m.session.customRequest("stackTrace",{threadId:thread,startFrame:0,levels:1});
@@ -168,6 +249,19 @@ function register(vscode,context,sessions) {
         if(vscode.debug.activeDebugSession!==m.session)throw new Error("Select this view's debug session before executing.");
         await vscode.commands.executeCommand({continue:"workbench.action.debug.continue",next:"workbench.action.debug.stepOver",stepIn:"workbench.action.debug.stepInto",stepOut:"workbench.action.debug.stepOut"}[message.action]);return;
       }
+      if(message.action==="jump") {
+        const {current}=await fresh(m,message,true);
+        const row=m.layout.rows[message.line-2];
+        if(!row?.safe)throw new Error("Execution can move only to an instruction with a stop point.");
+        if(row.line===current.line)return;
+        try {
+          await m.session.customRequest("uwvm/jump",{level:"wasm",target:row.offset,ifStop:current.stopId});
+          send(m,{action:"notice",message:"Execution moved to "+row.address+"."});
+        } catch(error) {
+          throw new Error("The pointer stays at "+m.layout.rows[current.line-2].address+": "+String(error?.message||error).replace(/^jump unavailable: /,""));
+        }
+        return;
+      }
       if(message.action==="copy") {
         if(!m.layout||!Number.isSafeInteger(message.first)||!Number.isSafeInteger(message.last))return;
         const first=Math.min(message.first,message.last),last=Math.max(message.first,message.last);
@@ -180,7 +274,21 @@ function register(vscode,context,sessions) {
   const provider={async resolveCustomTextEditor(document,panel) {
     const id=language.identity(document.uri),session=id&&sessions.get(id.session);
     if(!id||!session||session.type!=="uwvm-llvm-full")throw new Error("Open an authenticated UWVM Wasm stack frame.");
-    const m={id,document,panel,session,revision:0,ready:false,disposed:false};panels.add(m);
+    const restoring=restores.get(document.uri.toString());
+    const m={id,document,panel,session,revision:0,ready:false,disposed:false,historyRestore:restoring?.place};
+    restores.delete(document.uri.toString());panels.add(m);
+    if(history) {
+      const binding=restoring?.binding||{};binding.target=m;
+      if(!binding.entry)binding.entry=history.register(session,async(place,valid)=>{
+        if(!valid())return;
+        const target=binding.target;
+        if(target.disposed){await open({sessionId:session.id,source:{path:document.uri.toString()},line:place.line,viewport:place,historyBinding:binding,isCurrent:valid});return;}
+        target.panel.reveal(target.panel.viewColumn,false);target.viewport=place;send(target,{action:"restore-viewport",...place});
+      },()=>binding.target.viewport);
+      m.navigation=binding.entry;
+      add(history.subscribe(()=>send(m,{action:"navigation",...history.state(session)})));
+      add(panel.onDidChangeViewState(()=>{if(panel.active)m.navigation.visit(m.viewport||{line:m.current?.line||2,top:0,left:0});}));
+    }
     panel.webview.options={enableScripts:true,localResourceRoots:[vscode.Uri.file(context.extensionPath)]};
     const nonce=crypto.randomBytes(18).toString("hex"),asset=name=>panel.webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath,name))).toString();
     panel.webview.html=fs.readFileSync(path.join(context.extensionPath,"wasm_view.html"),"utf8")
@@ -198,7 +306,7 @@ function register(vscode,context,sessions) {
     if(event.affectsConfiguration("editor"))for(const m of panels)send(m,{action:"editorStyle",...editorStyle.read(vscode,m.document.uri)});
   }));
   if(vscode.debug.onDidChangeBreakpoints)add(vscode.debug.onDidChangeBreakpoints(()=>{for(const m of panels)points(m);}));
-  add(vscode.debug.onDidTerminateDebugSession(s=>{selectedThreads.delete(s.id);stacks.delete(s.id);for(const m of panels)if(m.id.session===s.id)retire(m,"Debug session ended; retained code is historical only.");}));
+  add(vscode.debug.onDidTerminateDebugSession(s=>{selectedThreads.delete(s.id);stacks.delete(s.id);followedStops.delete(s.id);for(const m of panels)if(m.id.session===s.id)retire(m,"Debug session ended; retained code is historical only.");}));
   add(vscode.debug.registerDebugAdapterTrackerFactory("uwvm-llvm-full",{createDebugAdapterTracker(session) {
     const requests=new Map(),consoleRequests=new Set();return {
       onWillReceiveMessage(packet) {
@@ -225,24 +333,45 @@ function register(vscode,context,sessions) {
         if(packet.command!=="stackTrace")return;
         const thread=requests.get(packet.request_seq);requests.delete(packet.request_seq);
         if(!packet.success||!Number.isSafeInteger(thread))return;
-        const frame=packet.body?.stackFrames?.find(frame=>typeof frame.source?.path==="string"&&frame.source.path.startsWith("uwvm-wasm:"));
+        // Source-backed frames retain native source-marker ownership. Their
+        // authenticated Wasm document remains a separate code projection.
+        const frame=packet.body?.stackFrames?.map(frame=>frame.uwvmWasmLocation||frame)
+          .find(frame=>typeof frame.source?.path==="string"&&frame.source.path.startsWith("uwvm-wasm:"));
         if(!frame)return;selectedThreads.set(session.id,thread);stacks.set(session.id,frame.source.path);
         for(const m of panels)if(m.id.session===session.id && vscode.Uri.parse(frame.source.path).toString()===m.document.uri.toString())void refresh(m,thread);
       }
     };
   }}));
-  async function open() {
+  async function open(selection) {
     const session=vscode.debug.activeDebugSession;
     if(!session||sessions.get(session.id)!==session)throw new Error("Select a live UWVM debug session.");
+    const isCurrent=selection?.isCurrent||navigation.begin(session);
+    const live=()=>isCurrent()&&vscode.debug.activeDebugSession===session&&sessions.get(session.id)===session;
     await session.customRequest("uwvm/wasmView",{visible:true});
-    const result=await session.customRequest("threads",{}),thread=selectedThreads.get(session.id)||result.threads?.[0]?.id;
-    if(!Number.isSafeInteger(thread))throw new Error("No current Wasm participant.");
-    const frames=await session.customRequest("stackTrace",{threadId:thread,startFrame:0,levels:1});
-    const source=frames.stackFrames?.find(frame=>frame.source?.path?.startsWith("uwvm-wasm:"))?.source;
-    if(!source)throw new Error("Select the Wasm instruction level at a cooperative Wasm stop.");
-    return vscode.commands.executeCommand("vscode.openWith",vscode.Uri.parse(source.path),VIEW,{preview:true});
+    if(!live())return;
+    let source;
+    if(selection && selection.sessionId===session.id && selection.source?.path?.startsWith("uwvm-wasm:") && Number.isSafeInteger(selection.line) && selection.line>0) source=selection.source;
+    else {
+      const result=await session.customRequest("uwvm/codeLocation",{level:"wasm"});source=result.source;selection=result;
+    }
+    if(!live())return;
+    if(!source?.path?.startsWith("uwvm-wasm:"))throw new Error("A current Wasm document is required.");
+    const uri=vscode.Uri.parse(source.path);
+    // Reveal the instance that is already open (never a second copy), and
+    // open new ones in the code group, not in the inspector group beside it.
+    const existing=[...panels].find(p=>!p.disposed&&p.document.uri.toString()===uri.toString());
+    if(existing){existing.panel.reveal(existing.panel.viewColumn,selection?.preserveFocus===true);if(selection?.line){existing.navigation?.visit({line:selection.line,top:Math.max(0,selection.line-2),left:0});send(existing,{action:"reveal",line:selection.line});}return;}
+    if(selection?.viewport)restores.set(uri.toString(),{place:selection.viewport,binding:selection.historyBinding});
+    else if(selection?.line)reveals.set(uri.toString(),selection.line);
+    return vscode.commands.executeCommand("vscode.openWith",uri,VIEW,{preview:selection?.preview!==false,preserveFocus:selection?.preserveFocus===true,viewColumn:codeColumn()});
+  }
+  function codeColumn() {
+    const groups=vscode.window.tabGroups?vscode.window.tabGroups.all:[];
+    const inspector=tab=>tab.input&&typeof tab.input.viewType==="string"&&/uwvm\.(memory|registers|wasip1|ros|scene|diagnostics|breakpoints|watch|signedUpdate)\b/.test(tab.input.viewType);
+    const group=groups.find(g=>g.tabs.some(t=>!inspector(t)))||groups.find(g=>!g.tabs.length);
+    return group?group.viewColumn:vscode.ViewColumn.One;
   }
   add(vscode.commands.registerCommand("uwvm.openWasmInstructions",open));
-  return {open,provider,panels};
+  return {open,provider,panels,positions};
 }
 module.exports={register,VIEW};

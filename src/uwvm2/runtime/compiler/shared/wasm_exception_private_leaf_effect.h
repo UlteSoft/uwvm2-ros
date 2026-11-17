@@ -3,6 +3,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <limits>
@@ -47,7 +49,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_pr
         [[nodiscard]] static owner create(::std::size_t module, ::std::size_t functions)
         {
             if(module == unknown_function || functions == 0uz || functions > native_extent_limit) { return {}; }
-            return ::std::make_shared<observation_domain>(construction_key{}, module, functions);
+            return ::uwvm2::utils::container::make_shared<observation_domain>(construction_key{}, module, functions);
         }
         [[nodiscard]] static bool has_actual_observation_owner(owner const& input) noexcept
         {
@@ -169,15 +171,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_pr
         struct direct_call
         {
             ::std::size_t target{unknown_function};
-            ::std::vector<handler_observation> handlers{};
+            ::uwvm2::utils::container::std_vector<handler_observation> handlers{};
         };
         observation_domain::owner domain_{};
         ::std::size_t function_index_{unknown_function};
         bool eligible_leaf_{};
-        ::std::vector<linked_tag_identity> escaping_{};
-        ::std::vector<direct_call> calls_{};
+        ::uwvm2::utils::container::std_vector<linked_tag_identity> escaping_{};
+        ::uwvm2::utils::container::std_vector<direct_call> calls_{};
         function_observation(observation_domain::owner domain, ::std::size_t function_index, bool eligible,
-            ::std::vector<linked_tag_identity>&& escaping, ::std::vector<direct_call>&& calls) noexcept
+            ::uwvm2::utils::container::std_vector<linked_tag_identity>&& escaping, ::uwvm2::utils::container::std_vector<direct_call>&& calls) noexcept
             : domain_{::std::move(domain)}, function_index_{function_index}, eligible_leaf_{eligible},
               escaping_{::std::move(escaping)}, calls_{::std::move(calls)} {}
     public:
@@ -206,8 +208,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_pr
         observation_domain::owner domain_{};
         ::std::size_t function_index_{unknown_function}, expression_size_{}, cursor_{};
         bool stream_valid_{true}, eligible_leaf_{}, outer_end_{}, sealed_{};
-        ::std::vector<linked_tag_identity> escaping_{};
-        ::std::vector<function_observation::direct_call> calls_{};
+        ::uwvm2::utils::container::std_vector<linked_tag_identity> escaping_{};
+        ::uwvm2::utils::container::std_vector<function_observation::direct_call> calls_{};
 
         function_recorder(observation_domain::owner domain, ::std::size_t function_index,
             ::std::size_t expression_size, signature_class signature) noexcept

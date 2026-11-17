@@ -1087,7 +1087,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // The specification list already ends with '\n'.
 #ifdef UWVM_SUPPORT_PRELOAD_DL
                             // Support Preload Dynamic Linking Module (--wasm-register-dl)
-                            u8"  * Support Preload Dynamic Linking Module\n"
+                            u8"  * Legacy native library preloading (unisolated; explicit build opt-in)\n"
+#endif
+#ifdef UWVM_IMPORT_ROS1
+                            u8"  * Deprecated ROSv1 imports for ROS 1 (explicit build opt-in)\n"
+#endif
+#ifdef UWVM_IMPORT_ROS2
+                            u8"  * Deprecated ROSv1 imports for ROS 2 (explicit build opt-in)\n"
+#endif
+#ifdef UWVM_IMPORT_ROSV2
+                            u8"  * ROSv2 robot-scene host (independent; runtime authority defaults to zero)\n"
 #endif
 
         // Local Imported

@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 // Scalar token scanning also uses hex_get, which the fast_io module does not export.
 #include <fast_io.h>
 #include <bit>

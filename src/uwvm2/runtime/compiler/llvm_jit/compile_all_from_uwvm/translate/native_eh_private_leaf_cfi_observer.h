@@ -2,7 +2,7 @@
 // exact-1 candidate gate. These observations do not grant code permission.
 private:
     struct private_leaf_fde_range { ::std::uintptr_t begin{}, size{}; };
-    ::std::vector<private_leaf_fde_range> private_leaf_fde_ranges_{};
+    ::uwvm2::utils::container::std_vector<private_leaf_fde_range> private_leaf_fde_ranges_{};
     ::llvm::Triple::ArchType private_leaf_cfi_arch_{::llvm::Triple::UnknownArch};
     bool private_leaf_cfi_enabled_{}, private_leaf_cfi_valid_{};
     void observe_private_leaf_registered_eh_frames(::std::uint8_t const* addr,

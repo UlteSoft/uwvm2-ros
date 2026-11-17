@@ -5,6 +5,7 @@
  * paired observer/responder, and independent availability capabilities.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "rmw_metadata.h"
 #include <new>
 #include <vector>
@@ -167,13 +168,13 @@ namespace uwvm2::imported::ros::ipc::rmw_service
      * failure; do not consume a native queue merely because allocation failed.
      */
     inline std::uint32_t pack_delivery(control const& reply,std::uint8_t const* record,std::size_t n,
-        std::vector<std::uint8_t>& output) noexcept
+        ::uwvm2::utils::container::std_vector<std::uint8_t>& output) noexcept
     {
         std::array<std::uint8_t,header_bytes> b{};metadata::header h{};
         if(!encode(reply,true,b)||!associated_record(reply,record,n,h)){return 22;}
         try
         {
-            std::vector<std::uint8_t> next(header_bytes+n);std::copy(b.begin(),b.end(),next.begin());
+            ::uwvm2::utils::container::std_vector<std::uint8_t> next(header_bytes+n);std::copy(b.begin(),b.end(),next.begin());
             std::copy(record,record+n,next.begin()+header_bytes);output=std::move(next);return 0;
         }
         catch(std::bad_alloc const&){return 12;}catch(...){return 5;}

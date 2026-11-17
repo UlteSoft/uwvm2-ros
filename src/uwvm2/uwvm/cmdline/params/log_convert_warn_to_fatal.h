@@ -63,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     inline constexpr ::uwvm2::utils::cmdline::parameter log_convert_warn_to_fatal{
         .name{u8"--warning-as-error"},
         .describe{u8"Treat selected warnings as fatal errors."},
-        .usage{u8"[all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|parser|untrusted-dl"
+        .usage{u8"[all_host_calls[_FAMILY]|all_host_denied[_FAMILY]|all_host_limited[_FAMILY]|host_call_FAMILY.API|host_denied_FAMILY.API|host_limited_FAMILY.API|all|vm|parser|untrusted-dl|deprecated-ros|retained-ros-input"
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
                u8"|dl"
 #endif

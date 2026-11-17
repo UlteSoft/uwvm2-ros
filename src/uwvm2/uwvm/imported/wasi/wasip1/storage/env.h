@@ -237,7 +237,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         if(name == u8"args") { return permission::args; }
         if(name == u8"environ") { return permission::environ; }
         if(name == u8"proc-exit") { return permission::proc_exit; }
-        if(name == u8"thread-spawn") { return permission::thread_spawn; }
+        // thread-spawn belongs exclusively to the independent wasithread/I1T policy.
         if(name == u8"realtime-resolution") { return permission::realtime_resolution; }
         if(name == u8"realtime-timer") { return permission::realtime_timer; }
         if(name == u8"monotonic-resolution") { return permission::monotonic_resolution; }

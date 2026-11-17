@@ -5,6 +5,7 @@ extern "C++"
 {
     class runtime_threaded_profile_bridge final
     {
+        inline static auto const native_process_{::getpid()};
         using group = ::uwvm2::runtime::wasm_threads::ThreadedGroup;
         using lease = group::ChildLease;
         using admission = ::uwvm2::runtime::wasm_threads::ThreadedSpawnAdmission;
@@ -94,6 +95,20 @@ extern "C++"
             }};
             return match(expected.parameter, provided.parameter, params) && match(expected.result, provided.result, results);
         }
+        // Source registries can enumerate differently on 32- and 64-bit hosts.
+        // A journal uses name order, never a native registry's bucket order.
+        [[nodiscard]] static ::std::uint64_t logical_source_module(::std::size_t native) noexcept
+        {
+            if(native>=g_runtime.modules.size())return UINT64_MAX;
+            auto const name=g_runtime.modules.index_unchecked(native).module_name;
+            ::std::uint64_t rank{};
+            for(auto const& module:g_runtime.modules)
+            {
+                auto const other=module.module_name;
+                rank+=::std::lexicographical_compare(other.data(),other.data()+other.size(),name.data(),name.data()+name.size());
+            }
+            return rank;
+        }
         struct imported_leaf
         {
             local_imported_t const* provider{};
@@ -181,7 +196,7 @@ extern "C++"
 
         // Defined by the concrete lifecycle/work adapter below; no callback,
         // empty provider or ordinary parent entry can implement this operation.
-        [[nodiscard]] static ::std::int32_t spawn_actual(lease&, ::std::uint32_t) noexcept;
+        [[nodiscard]] static ::std::int32_t spawn_actual(lease&, ::std::uint32_t, ::std::size_t, ::std::uint32_t=0u) noexcept;
 
     public:
         [[nodiscard]] static import_status admit_import_checked(world const& instance,
@@ -194,14 +209,28 @@ extern "C++"
             auto const* from=instance.module(module);auto const* to=instance.module(target_module);
             auto const* expected=from->imported_function_vec_storage.index_unchecked(imported).import_type_ptr;
             auto const* actual=to->local_defined_function_vec_storage.index_unchecked(target_function-to->imported_function_vec_storage.size()).function_type_ptr;
-            ::std::size_t params{},results{};
-            return expected && expected->imports.storage.function && actual &&
-                numeric_abi(*expected->imports.storage.function,*actual,params,results) ? import_status::allowed : import_status::denied;
+            if(!expected||!expected->imports.storage.function||!actual)return import_status::denied;
+            auto index=[](auto const& owner,signature const* type) noexcept
+            {
+                auto const begin=reinterpret_cast<::std::uintptr_t>(owner.type_section_storage.type_section_begin);
+                auto const address=reinterpret_cast<::std::uintptr_t>(type);
+                if(!begin||!type||address<begin||(address-begin)%sizeof(signature))return SIZE_MAX;
+                auto const result=(address-begin)/sizeof(signature);
+                return result<owner.type_section_storage.type_section_count?result:SIZE_MAX;
+            };
+            auto const e=index(*from,expected->imports.storage.function),a=index(*to,actual);
+            // A Wasm-to-Wasm import carries the complete Core 3 value ABI.
+            // Native providers above remain subject to their exact numeric
+            // signature and independent cancellation/authority admission.
+            return e<=UINT32_MAX&&a<=UINT32_MAX&&
+                ::uwvm2::uwvm::runtime::storage::gc_object_store::canonical_function_type_matches(
+                    to->gc_store.get(),static_cast<::std::uint32_t>(a),from->gc_store.get(),static_cast<::std::uint32_t>(e))?
+                import_status::allowed:import_status::denied;
         }
 
         [[nodiscard]] static dispatch_status dispatch_import_checked(lease& actual, world const& instance,
-            ::std::size_t module, ::std::size_t caller_function, ::std::size_t imported,
-            ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module) noexcept
+            ::std::size_t caller_module, ::std::size_t caller_function, ::std::size_t imported,
+            ::std::span<::std::byte> results, ::std::span<::std::byte const> params, bool cross_module, ::std::size_t import_receiver) noexcept
         {
             if(!actual_lease(actual, instance) || current_host_ != nullptr) { return dispatch_status::rejected; }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -209,7 +238,9 @@ extern "C++"
             { ::uwvm2::utils::thread::process_exit::request_process_exit(0u); }
 #endif
             if(actual.cancellation().stop_requested()) { return dispatch_status::group_stopped; }
-            auto const* caller{instance.module(module)};
+            auto const module=import_receiver==SIZE_MAX?caller_module:import_receiver;
+            cross_module |= module!=caller_module;
+            auto const* caller{instance.module(caller_module)};
             if(!caller || caller_function < caller->imported_function_vec_storage.size() ||
                caller_function - caller->imported_function_vec_storage.size() >= caller->local_defined_function_vec_storage.size())
             { return dispatch_status::rejected; }
@@ -222,14 +253,76 @@ extern "C++"
             // compilation; never use the ordinary false TLS marker here.
             details::scoped_wasm_host_fp_control_restore native_fp{};
             if(!native_fp.ready())
-            { actual.request_trap(1u, module, caller_function, 0u); return dispatch_status::rejected; }
+            { actual.request_trap(1u, caller_module, caller_function, 0u); return dispatch_status::rejected; }
+            namespace journal_types=::uwvm2::runtime::wasm_threads;
+            if(auto* recording=journal_types::current_thread_journal;recording&&recording->journal->replaying())
+            {
+                // Wait for admission while still a pausable Guest participant.
+                // In particular, a prefix BEFORE thread-spawn must not create
+                // an unfinishable spawn-inflight census. This peek grants no
+                // native call and consumes no event; the actual branch below
+                // still validates/consumes its event and current authority.
+                journal_types::journal_event next;
+                if(!recording->journal->peek(*recording,next))return dispatch_status::group_stopped;
+            }
             dispatch_status completed{};
             {
                 host_census census{actual,leaf.spawn};
                 if(!census.entered)
                 {
-                    if(!actual.cancellation().stop_requested())actual.request_trap(1u,module,caller_function,0u);
+                    if(!actual.cancellation().stop_requested())actual.request_trap(1u,caller_module,caller_function,0u);
                     return actual.cancellation().stop_requested()?dispatch_status::group_stopped:dispatch_status::rejected;
+                }
+                namespace jt=::uwvm2::runtime::wasm_threads;
+                auto* journal_context=jt::current_thread_journal;
+                struct import_journal_scope
+                {
+                    jt::thread_journal_context* current;lease& actual;
+                    explicit import_journal_scope(jt::thread_journal_context* value,lease& worker):current{value},actual{worker}{if(current)current->host=true;}
+                    ~import_journal_scope(){if(current){(void)actual.group_->debug_return_host(*actual.slot_,true);current->host=false;current->journal->release(*current);}}
+                } journal_scope{journal_context,actual};
+                if(journal_context&&!leaf.spawn&&!leaf.exits)
+                {
+                    try
+                    {
+                        auto event=jt::journal_at(jt::journal_kind::host_begin);
+                        // The recorded call site and the declared import receiver
+                        // are different identities for a cross-module funcref.
+                        // Bind both, so a recording cannot redirect a result to
+                        // an equally shaped import in another policy group.
+                        auto const receiver=journal_context->logical_module(module);
+                        if(receiver>UINT32_MAX){journal_context->journal->refuse();return dispatch_status::rejected;}
+                        event.a=imported;event.b=(receiver<<1u)|(leaf.ros?1u:0u);event.c=results.size();event.input.assign(params.begin(),params.end());
+                        // Waiting for a recorded turn has not dispatched an
+                        // external call. It must still participate in all-stop;
+                        // otherwise a prefix just before host_begin strands an
+                        // unparkable host-inflight worker. select() returns this
+                        // retained participant before it admits the event.
+                        if(!journal_context->retain_host(journal_context->native))return dispatch_status::rejected;
+                        if(!journal_context->journal->select(*journal_context,::std::move(event)))return dispatch_status::rejected;
+                        if(!journal_context->retain_host(journal_context->native))return dispatch_status::rejected;
+                        journal_context->journal->release(*journal_context);
+                    }
+                    catch(...){journal_context->journal->refuse();return dispatch_status::rejected;}
+                    if(journal_context->journal->replaying())
+                    {
+                        host_call call{&actual,&instance,caller_function,leaf.ros,module,imported,cross_module};host_scope selected{call};
+                        return replay_import(results);
+                    }
+                }
+                if(journal_context&&!leaf.exits)
+                {
+                    auto* domain=::uwvm2::utils::thread::process_exit::current_guest_domain;
+                    if(domain&&domain->claimed())
+                    {
+                        // A call whose admission lost to proc_exit has no
+                        // unknown native effect. Preserve its retained boundary
+                        // until the exit owner's real wait obligations finish.
+                        journal_context->journal->release(*journal_context);
+                        ::std::unique_lock lock{actual.group_->mutex_};
+                        actual.group_->changes_.wait(lock,[&]{return actual.cancellation().stop_requested();});
+                        return dispatch_status::group_stopped;
+                    }
                 }
                 completed=[&]() noexcept -> dispatch_status
                 {
@@ -243,7 +336,7 @@ extern "C++"
                             ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
                                 ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,exit_name),
                                 !env.allows_interface(exit_name));
-                            struct denied_exit { lease* actual;::std::size_t module,function; } fault{&actual,module,caller_function};
+                            struct denied_exit { lease* actual;::std::size_t module,function; } fault{&actual,caller_module,caller_function};
                             // A known denied Guest exit is also a Guest fault.
                             // If an authorized exit already won, do not let this
                             // later denial cancel another operation's exit-wait.
@@ -257,6 +350,23 @@ extern "C++"
                         }
 #endif
                         ::std::uint32_t code{}; ::std::memcpy(&code, params.data(), sizeof(code));
+                        if(journal_context)
+                        {
+                            auto begin=jt::journal_at(jt::journal_kind::exit_begin);begin.a=code;
+                            if(!journal_context->journal->select(*journal_context,::std::move(begin)))return dispatch_status::rejected;
+                            auto* domain=::uwvm2::utils::thread::process_exit::current_guest_domain;
+                            if(!domain){journal_context->journal->refuse();return dispatch_status::rejected;}
+                            code=domain->claim(code);
+                            ::std::array<::std::byte,4> selected_code{};
+                            for(unsigned n{};n<4u;++n)selected_code[n]=static_cast<::std::byte>(code>>(8u*n));
+                            if(!journal_context->journal->verify(*journal_context,selected_code))return dispatch_status::rejected;
+                            if(!journal_context->retain_host(journal_context->native))return dispatch_status::rejected;
+                            journal_context->journal->release(*journal_context);
+                            if(!journal_context->journal->replaying())code=domain->finish(code);
+                            auto end=jt::journal_at(jt::journal_kind::exit_end);end.a=code;
+                            if(!journal_context->journal->select(*journal_context,::std::move(end)))return dispatch_status::rejected;
+                            actual.request_proc_exit(code);return dispatch_status::group_stopped;
+                        }
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
                         ::uwvm2::utils::thread::process_exit::request_process_exit(code);
 #else
@@ -265,32 +375,33 @@ extern "C++"
                     }
                     if(leaf.spawn)
                     {
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
-                        auto& env{resolve_wasip1_env_for_runtime_module_id(instance.source_module_id(module))};
-                        if(!env.allows_interface(u8"thread-spawn") || !env.permits(::uwvm2::imported::wasi::wasip1::environment::permission_t::thread_spawn))
-                        {
-                            ::uwvm2::imported::wasi::wasip1::environment::diagnostic_denied(env,
-                                ::uwvm2::utils::control::host_interfaces::find(::uwvm2::utils::control::host_interfaces::family::wasip1,::fast_io::u8string_view{u8"thread-spawn"}),
-                                !env.allows_interface(u8"thread-spawn"));
-                            ::std::int32_t const denied{-1};
-                            ::std::memcpy(results.data(), &denied, sizeof(denied));
-                            return dispatch_status::returned;
-                        }
-#elif defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-                        ::std::int32_t const denied{-1};
-                        ::std::memcpy(results.data(), &denied, sizeof(denied));
-                        return dispatch_status::returned;
-#endif
                         ::std::uint32_t argument{}; ::std::memcpy(&argument, params.data(), sizeof(argument));
-                        auto const tid{spawn_actual(actual, argument)};
+                        if(journal_context)
+                        {
+                            auto event=jt::journal_at(jt::journal_kind::spawn);event.a=argument;event.b=journal_context->logical_module(module);
+                            if(!journal_context->journal->select(*journal_context,::std::move(event),false))return dispatch_status::rejected;
+                        }
+                        ::std::uint32_t replay_tid{};
+                        if(journal_context&&journal_context->journal->replaying())
+                        {
+                            if(!journal_context->journal->value(*journal_context,results))return dispatch_status::rejected;
+                            ::std::int32_t saved{};::std::memcpy(&saved,results.data(),sizeof(saved));
+                            // A recorded failed creation owns no native child.
+                            // Never retry it against today's kernel/resources.
+                            if(saved==-1)return dispatch_status::returned;
+                            if(saved<=0||saved>=(1<<29)){journal_context->journal->refuse();return dispatch_status::rejected;}
+                            replay_tid=static_cast<::std::uint32_t>(saved);
+                        }
+                        auto const tid{spawn_actual(actual, argument, instance.source_module_id(module),replay_tid)};
                         ::std::memcpy(results.data(), &tid, sizeof(tid));
+                        if(journal_context&&!journal_context->journal->verify(*journal_context,results))return dispatch_status::rejected;
                         return actual.cancellation().stop_requested() ? dispatch_status::group_stopped : dispatch_status::returned;
                     }
                     if(leaf.wasi)
                     {
 #if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
                         host_call call{&actual, &instance, caller_function, false,module,imported,cross_module}; host_scope selected{call};
-                        auto const status{runtime_threaded_wasip1_adapter::dispatch(actual, instance, module, caller_function,
+                        auto const status{runtime_threaded_wasip1_adapter::dispatch(actual, instance, module, caller_module, caller_function,
                             imported, *leaf.provider, results, params)};
                         return actual.cancellation().stop_requested() ? dispatch_status::group_stopped : status;
 #else
@@ -298,13 +409,13 @@ extern "C++"
 #endif
                     }
                     if(!leaf.ros) { return dispatch_status::rejected; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                     // This lexical private constructor is the agreed Native-only call
                     // boundary. A conflicting nested fd fails closed; no ordinary RPC
                     // fallback, Guest setter, detached callback or fd consumption exists.
                     ::uwvm2::imported::ros::ipc::cancellation_scope cancellation{actual.cancellation_fd()};
                     if(!cancellation.valid())
-                    { actual.request_trap(1u, module, caller_function, 0u); return dispatch_status::rejected; }
+                    { actual.request_trap(1u, caller_module, caller_function, 0u); return dispatch_status::rejected; }
                     host_call call{&actual, &instance, caller_function, true,module,imported,cross_module}; host_scope selected{call};
                     preload_module_memory_attribute_t memory_attribute{};
                     memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy;
@@ -320,6 +431,17 @@ extern "C++"
                     return dispatch_status::rejected;
 #endif
                 }();
+                if(journal_context&&!leaf.spawn&&!leaf.exits)
+                {
+                    if(completed!=dispatch_status::returned)
+                    {if(!actual.cancellation().stop_requested())journal_context->journal->refuse();}
+                    else
+                    {
+                        auto event=jt::journal_at(jt::journal_kind::host_end);event.a=results.size();
+                        if(!journal_context->journal->select(*journal_context,::std::move(event))||
+                            !journal_context->journal->verify(*journal_context,results))completed=dispatch_status::rejected;
+                    }
+                }
             } // Provider/preload/Host TLS/cancellation scopes, THEN census ended.
             // No provider/backend/Host/shard/allocator lock is retained here.
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -332,7 +454,7 @@ extern "C++"
             if(actual.group_->debug_control_&&!actual.group_->debug_poll(*actual.slot_,
                 ::uwvm2::runtime::wasm_threads::debug_stop_site::host_boundary))
             {
-                if(!actual.cancellation().stop_requested())actual.request_trap(1u,module,caller_function,0u);
+                if(!actual.cancellation().stop_requested())actual.request_trap(1u,caller_module,caller_function,0u);
                 return dispatch_status::group_stopped;
             }
             return actual.cancellation().stop_requested()?dispatch_status::group_stopped:completed;
@@ -343,7 +465,7 @@ extern "C++"
         { auto const call{checked_host()}; return !call || call->actual->cancellation().stop_requested(); }
         [[nodiscard]] static runtime_module_storage_t const* active_host_module() noexcept
         { auto const value{checked_host()}; return value ? value->instance->module(0u) : nullptr; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         [[nodiscard]] static bool observed_caller(ros_caller_identity& out) noexcept
         {
             out = {}; auto const call{checked_host()};
@@ -356,7 +478,7 @@ extern "C++"
             return true;
         }
 #endif
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         [[nodiscard]] static bool caller_source_facts(ros_caller_source_facts& out,bool allow_exports) noexcept
         {
             out={};auto const* call=checked_host();
@@ -384,24 +506,33 @@ extern "C++"
             hash.update(bytes,bytes+length);hash.do_final();hash.digest_to_byte_ptr(result.whole_wasm_sha256.data());
             result.caller=caller;result.whole_wasm_bytes=length;result.memory_bytes=memory.byte_length;
             result.builtin_interface_sha256=provider.interface_sha256;result.builtin_function_index=provider.function_index;
-            result.builtin_kind=static_cast<unsigned>(provider.kind);result.shared_memory=true;
+            result.builtin_kind=static_cast<unsigned>(provider.kind);
+            auto const* receiver_memory=call->instance->native_memory(call->module,0u);if(!receiver_memory)return false;
+            result.shared_memory=::uwvm2::runtime::wasm_threads::is_shared(*receiver_memory);
             out=result;return true;
         }
 #endif
         [[nodiscard]] static ::std::size_t memory_descriptor_count() noexcept
-        { auto const call{checked_host()}; return call && call->instance->shared_memory(0u) ? 1u : 0u; }
+        { auto const call{checked_host()};auto const* module=call?call->instance->module(call->module):nullptr;
+          return module?module->imported_memory_vec_storage.size()+module->local_defined_memory_vec_storage.size():0u; }
         [[nodiscard]] static bool memory_descriptor(::std::size_t ordinal, preload_memory_descriptor_t* out) noexcept
         {
             auto const call{checked_host()};
-            if(!call || ordinal != 0u || out == nullptr) { return false; }
-            auto const* shared{call->instance->shared_memory(0u)};
-            if(!shared) { return false; }
-            auto const& memory{shared->memory};
-            if(memory.memory_length_p == nullptr || memory.custom_page_size_log2 != 16u) { return false; }
-            auto const length{memory.memory_length_p->load(::std::memory_order_seq_cst)};
-            if(length > call->actual->admission().max_shared_memory_bytes()) { return false; }
+            if(!call || ordinal>=memory_descriptor_count() || out == nullptr) { return false; }
+            auto const* actual=call->instance->native_memory(call->module,ordinal);
+            if(!actual) { return false; }
+            auto const& memory{*actual};
+            auto const live_owner{[]<typename Memory>(Memory const& candidate) noexcept
+            {
+                if constexpr(requires { candidate.memory_length_p; })
+                { return candidate.memory_length_p != nullptr; }
+                else { return false; }
+            }(memory)};
+            if(!live_owner || memory.custom_page_size_log2 != 16u) { return false; }
+            auto const length{memory.get_page_size() << 16u};
+            if(length > call->instance->memory_growth_limit(memory,SIZE_MAX)) { return false; }
             *out = preload_memory_descriptor_t{
-                .memory_index = 0u,
+                .memory_index = ordinal,
                 .delivery_state = ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_copy,
                 .backend_kind = ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_backend_native_defined,
                 .reserved0 = 0u, .reserved1 = 0u, .page_count = length >> 16u,
@@ -414,12 +545,12 @@ extern "C++"
         {
             normalized=0u;
             auto const call{checked_host()}; preload_memory_descriptor_t descriptor{};
-            if(!call || index!=0u || !memory_descriptor(0u,&descriptor)) { return false; }
-            auto const* shared{call->instance->shared_memory(0u)};
-            if(!shared) { return false; }
-            if(shared->memory.memtag_shadow.enabled())
+            if(!call || !memory_descriptor(index,&descriptor)) { return false; }
+            auto const* actual=call->instance->native_memory(call->module,index);
+            if(!actual) { return false; }
+            if(actual->memtag_shadow.enabled())
             {
-                auto const checked{::uwvm2::runtime::memtag::check_host_access(shared->memory,offset,bytes)};
+                auto const checked{::uwvm2::runtime::memtag::check_host_access(*actual,offset,bytes)};
                 ::uwvm2::runtime::memtag::record_host_fault(index,offset,checked);
                 if(!checked) { return false; }
                 normalized=checked.address;return true;
@@ -427,20 +558,20 @@ extern "C++"
             if(offset>descriptor.byte_length || bytes>descriptor.byte_length-offset) { return false; }
             normalized=offset;return true;
         }
-        [[nodiscard]] static bool memory_copy(::std::size_t index, ::std::uint_least64_t offset,
+        [[nodiscard]] static bool memory_copy_unrecorded(::std::size_t index, ::std::uint_least64_t offset,
             void* buffer, ::std::size_t bytes, bool write) noexcept
         {
             auto const call{checked_host()}; preload_memory_descriptor_t descriptor{};
-            if(!call || index != 0u || !memory_descriptor(0u, &descriptor) ||
+            if(!call || !memory_descriptor(index, &descriptor) ||
                (buffer == nullptr && bytes != 0u))
             { return false; }
-            auto const* shared{call->instance->shared_memory(0u)};
-            if(!shared) { return false; }
-            if(shared->memory.memtag_shadow.enabled())
+            auto const* actual=call->instance->native_memory(call->module,index);
+            if(!actual) { return false; }
+            if(actual->memtag_shadow.enabled())
             {
                 bool completed{true};
                 auto const checked{::uwvm2::runtime::memtag::with_host_access(
-                    shared->memory,offset,bytes,[&](::std::span<::std::byte> data) noexcept
+                    *actual,offset,bytes,[&](::std::span<::std::byte> data) noexcept
                     {
                         auto* native{static_cast<::std::byte*>(buffer)};
                         for(::std::size_t i{};i!=data.size();++i)
@@ -456,7 +587,7 @@ extern "C++"
                 return static_cast<bool>(checked) && completed;
             }
             if(offset>descriptor.byte_length || bytes>descriptor.byte_length-offset) { return false; }
-            auto* const base{shared->memory.memory_begin};
+            auto* const base{actual->memory_begin};
             auto* const native{static_cast<::std::byte*>(buffer)};
             if(bytes != 0u && base == nullptr) { return false; }
             // Guest plain accesses in this profile use atomic byte operations.
@@ -471,6 +602,99 @@ extern "C++"
                 else { native[i] = cell.load(::std::memory_order_relaxed); }
             }
             return true;
+        }
+
+        [[nodiscard]] static bool memory_copy(::std::size_t index, ::std::uint_least64_t offset,
+            void* buffer, ::std::size_t bytes, bool write) noexcept
+        {
+            namespace t=::uwvm2::runtime::wasm_threads;
+            if(!t::current_thread_journal)return memory_copy_unrecorded(index,offset,buffer,bytes,write);
+            if(!buffer&&bytes)return false;
+            t::thread_journal_memory_phase phase{index,offset,bytes,write};if(!phase.entered())return false;
+            try
+            {
+                ::uwvm2::utils::container::std_vector<::std::byte> before;
+                if(write)
+                {
+                    before.resize(bytes);
+                    if(!memory_copy_unrecorded(index,offset,before.data(),bytes,false))return false;
+                    phase.before(before);
+                }
+                return phase.finish(memory_copy_unrecorded(index,offset,buffer,bytes,write),
+                    {static_cast<::std::byte const*>(buffer),bytes});
+            }
+            catch(...){t::current_thread_journal->journal->refuse();return false;}
+        }
+        [[nodiscard]] static dispatch_status replay_import(::std::span<::std::byte> results) noexcept
+        {
+            namespace t=::uwvm2::runtime::wasm_threads;
+            auto& context=*t::current_thread_journal;auto& journal=*context.journal;
+            try
+            {
+                for(;;)
+                {
+                    t::journal_event event;if(!journal.peek(context,event))return dispatch_status::rejected;
+                    if(event.kind==t::journal_kind::trap)
+                    {
+                        auto* call=checked_host();
+                        if(!call||event.module!=context.logical_module(context.location.module)||event.function!=context.location.function||
+                           event.offset!=context.location.offset||event.a<120u||event.a>122u)
+                        {journal.refuse();return dispatch_status::rejected;}
+                        // A virtual result must retain its recorded fault class,
+                        // without dispatching the native provider to obtain it.
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+                        namespace crash=::uwvm2::runtime::diagnostic::crash;
+                        crash::report(static_cast<crash::category>(event.a),"recorded native import fault",0u,call->module,event.function,event.offset);
+                        crash::pause_process();
+#endif
+                        call->actual->request_trap(static_cast<::std::uint32_t>(event.a),call->module,
+                            static_cast<::std::size_t>(event.function),event.offset,static_cast<t::journal_fault>(event.a));
+                        return dispatch_status::group_stopped;
+                    }
+                    if(event.module!=context.logical_module(context.location.module)||event.function!=context.location.function||event.offset!=context.location.offset)
+                    {journal.refuse();return dispatch_status::rejected;}
+                    if(event.kind==t::journal_kind::host_end)
+                    {
+                        auto expected=t::journal_at(t::journal_kind::host_end);expected.a=results.size();
+                        if(!journal.select(context,::std::move(expected))||!journal.value(context,results))return dispatch_status::rejected;
+                        journal.release(context);return dispatch_status::returned;
+                    }
+                    if((event.kind!=t::journal_kind::memory_read&&event.kind!=t::journal_kind::memory_write)||event.c>SIZE_MAX)
+                    {journal.refuse();return dispatch_status::rejected;}
+                    bool const write=event.kind==t::journal_kind::memory_write;auto count=static_cast<::std::size_t>(event.c);
+                    if(count>(SIZE_MAX-1u)/(write?2u:1u)||event.output.size()!=1u+count*(write?2u:1u)||
+                       event.output[0]> ::std::byte{1}){journal.refuse();return dispatch_status::rejected;}
+                    // Recorded bytes may change guest state under full debug
+                    // authority; they can never select a native provider/address.
+                    if(!journal.select(context,event))return dispatch_status::rejected;
+                    if(event.output[0]==::std::byte{0})
+                    {
+                        // An unsuccessful checked copy performed no guest write.
+                        // Its recorded errno/result is consumed at host_end. Do
+                        // not turn the known failure into a real provider call.
+                        if(!context.retain_host(context.native))return dispatch_status::rejected;
+                        journal.release(context);continue;
+                    }
+                    ::uwvm2::utils::container::std_vector<::std::byte> current(count);
+                    bool const entire=event.a==UINT64_MAX;
+                    auto raw_copy=[&](void* buffer,bool write_memory)
+                    {
+                        if(!entire)return event.a<SIZE_MAX&&memory_copy_unrecorded(static_cast<::std::size_t>(event.a),event.b,buffer,count,write_memory);
+                        auto* call=checked_host();if(!call||call->ros||event.b)return false;
+                        auto* actual=call->instance->native_memory(call->module,0u);if(!actual)return false;
+                        return t::copy_threaded_memory(*actual,
+                            {static_cast<::std::byte*>(buffer),count},write_memory);
+                    };
+                    if(!raw_copy(current.data(),false)||
+                       !::std::equal(current.begin(),current.end(),event.output.begin()+1u))
+                    {journal.refuse();return dispatch_status::rejected;}
+                    if(write&&!raw_copy(event.output.data()+1u+count,true))
+                    {journal.refuse();return dispatch_status::rejected;}
+                    if(!context.retain_host(context.native))return dispatch_status::rejected;
+                    journal.release(context);
+                }
+            }
+            catch(...){journal.refuse();return dispatch_status::rejected;}
         }
 
 #include "uwvm_runtime_threaded_profile_lifecycle.h"

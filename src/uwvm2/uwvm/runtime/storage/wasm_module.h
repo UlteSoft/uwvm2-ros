@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -321,6 +322,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
     struct local_defined_table_storage_t
     {
+        ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::table> allocation_charge{};
         ::uwvm2::utils::container::vector<local_defined_table_elem_storage_t> elems{};
         static_assert(::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<::uwvm2::utils::container::vector<local_defined_table_elem_storage_t>>);
 
@@ -368,6 +370,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             auto const old_begin{elements.imp.begin_ptr};
             auto const capacity{old_begin == nullptr ? 0uz : static_cast<::std::size_t>(elements.imp.end_ptr - old_begin)};
             auto new_begin{old_begin};
+            // Charge the complete replacement while the old vector remains live.
+            // Realloc failure leaves both the old contents and its charge intact.
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::table> replacement_charge{};
+            if(new_size > capacity && !replacement_charge.resize(new_size*sizeof(element))) { return false; }
             if(new_size > capacity)
             {
                 // [old allocation] remains live if allocation/reallocation returns null.
@@ -386,6 +392,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // [safe                 ] publish the owner and its one-past capacity together after success.
                 elements.imp.begin_ptr = new_begin;
                 elements.imp.end_ptr = new_begin + new_size;
+                table.allocation_charge = ::std::move(replacement_charge);
             }
             // [old_size ... new_size) fits the proven capacity; construct only new trivially copyable slots.
             for(auto index{old_size}; index != new_size; ++index)

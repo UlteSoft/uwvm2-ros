@@ -14,9 +14,9 @@ Source focus:
 | --- | --- | --- | --- | --- | --- |
 | `--log-output` | `-log` | `[out|err|file <file:path>]` | Once | Core; file target gated on constrained platforms | Route main diagnostics to stdout, stderr, or file. |
 | `--log-color` | `-log-c` | `[enable|disable]` | Repeatable | Core | Force colored diagnostic output on or off. |
-| `--enable-warning` | None | `[all|parser]` | Repeatable | Core | Enable selected warning categories. |
-| `--disable-warning` | None | `[all|vm|untrusted-dl|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
-| `--warning-as-error` | None | `[all|vm|parser|untrusted-dl|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
+| `--enable-warning` | None | `[all|parser|wasip1|untrusted-dl|deprecated-ros|retained-ros-input]` | Repeatable | Core | Enable selected warning categories. |
+| `--disable-warning` | None | `[all|vm|untrusted-dl|deprecated-ros|retained-ros-input|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Disable selected warning categories. |
+| `--warning-as-error` | None | `[all|vm|parser|untrusted-dl|deprecated-ros|retained-ros-input|dl|depend|nt-path|toctou|runtime|runtime-compile-threads]` | Repeatable | Core; some categories gated | Convert selected warning categories to fatal termination. |
 | `--log-verbose` | `-log-vb` | None | Once | Core | Enable verbose progress diagnostics. |
 | `--log-win32-use-ansi` | `-log-ansi` | None | Once | Legacy Win32 color configurations | Use ANSI escapes for colored logs instead of Win32 console attributes. |
 
@@ -85,7 +85,9 @@ Warning categories referenced by the current command-line source:
 | --- | --- |
 | `vm` | General VM warnings. |
 | `parser` | Parser warnings. Enabled separately. |
-| `untrusted-dl` | Warnings about untrusted native dynamic-library loading contexts. |
+| `untrusted-dl` | Native code is loaded into the VM process without isolation. |
+| `deprecated-ros` | Explicit enablement of a deprecated ROS1/ROS2 VM target; migrate to classified ROSv2 providers after checking implementation coverage. |
+| `retained-ros-input` | A registered ROSv2 message route deliberately retains copied input bytes in the sender memory. |
 | `dl` | Native dynamic-library warnings when preload-DL support is compiled. |
 | `depend` | Dependency traversal/checking warnings. |
 | `nt-path` | Windows NT `::NT::` path resolution warnings. |
@@ -100,15 +102,16 @@ Gated categories are only accepted when their compile-time feature/platform bran
 Accepted values:
 
 - `parser`
+- `wasip1`
+- `untrusted-dl`
+- `deprecated-ros`
+- `retained-ros-input`
 - `all`
 
-Current source behavior:
-
-- `parser` enables parser warnings.
-- `all` also enables parser warnings.
-- It does not enable every warning class; most non-parser warning classes default to enabled and are controlled by `--disable-warning`.
-
-The option is parser-repeatable. Repeating it with `parser` or `all` is harmless because it sets the same bool to `true`.
+Each named category sets its display flag to `true`. `all` enables these four
+categories and the host diagnostic groups handled by the callback; it is not a
+reset of every warning class. Repetition is allowed. Enabling display does not
+clear a previously selected warning-to-error policy.
 
 Example:
 
@@ -123,6 +126,8 @@ Accepted values:
 - `all`
 - `vm`
 - `untrusted-dl`
+- `deprecated-ros`
+- `retained-ros-input`
 - `dl` when compiled
 - `depend`
 - `nt-path` on Windows NT builds
@@ -135,7 +140,7 @@ Behavior:
 - `all` disables every compiled non-parser warning class handled by this callback.
 - Parser warnings are not disabled by `all` in this callback, because parser warnings are enabled through `--enable-warning` and fatalized through `--warning-as-error`.
 - Repeating the command is allowed and simply sets the relevant show flag to `false`.
-- Disabling a warning does not unset its fatal-conversion flag if you set fatal conversion separately; avoid contradictory configurations if you need predictable operator-facing behavior.
+- Disabling a warning leaves its fatal-conversion flag stored. For `deprecated-ros`, `untrusted-dl` and `retained-ros-input`, suppression also suppresses promotion; re-enabling display restores the stored promotion policy.
 
 Examples:
 
@@ -152,6 +157,8 @@ Accepted values:
 - `vm`
 - `parser`
 - `untrusted-dl`
+- `deprecated-ros`
+- `retained-ros-input`
 - `dl` when compiled
 - `depend`
 - `nt-path` on Windows NT builds
@@ -162,7 +169,7 @@ Accepted values:
 Behavior:
 
 - `all` sets every compiled fatal-conversion flag handled by this callback, including `parser`.
-- When a later code path emits a warning in a fatalized category, the code path prints a fatal conversion message and terminates.
+- A later active warning in a promoted category refuses the operation. Legacy ROS enablement returns a command-line error before changing target authority; native preload refuses before running the library constructor.
 - This option does not by itself emit a warning. It changes behavior of later warnings.
 - Repeating the command is allowed.
 
@@ -234,3 +241,40 @@ Output routing:
 - Legacy `--wasip1-*-trace` switches are removed. Use the runtime diagnostic and debugger host-call facilities; unknown switches fail before execution.
 
 Host call selectors and default severities are specified in [exact host permissions](host-permissions.md).
+
+## Legacy ROS and native preload boundaries
+
+`deprecated-ros` is enabled by default. Both legacy ROS families and all Global,
+Single and Group enable options use it. Creating or disabling a target does not
+emit this advisory. Enabling a target still grants no resource or ROSv2 right.
+For example, `--warning-as-error deprecated-ros --ros2-global-enable` fails
+before changing the target's enabled state.
+
+`untrusted-dl` is also enabled by default. Its advisory is printed once per
+process, but its promotion check runs on **every** native load. Promoting it
+after the first successful load therefore rejects the next library before any
+constructor executes. Previously loaded native code is not unloaded or isolated
+by this policy. Signature verification establishes the selected trust check;
+it does not create a process boundary. Prefer qualified process-isolated
+ROSv2 providers where their required operations are implemented.
+
+These callbacks follow command-line order. Suppression is an explicit operator
+choice, not a grant or an isolation mechanism. The native qualification driver
+`tools/ros_scene/legacy_warning_checks.py` tests the real callbacks, policy
+state and two independently loaded benign libraries under ASan/UBSan and an
+optimized build. GCC additionally qualifies the legacy callback paths; the
+native loader requires the project's C++26-capable compiler.
+
+## Registered-message input retention
+
+`retained-ros-input` is enabled by default. Explicitly selecting
+`--ros-scene-call-clear-input ENV ROUTE false` warns that request headers and
+payloads remain in the sender's memory. The default `true` mode emits no warning.
+`--warning-as-error retained-ros-input` rejects the nonclearing option before
+its route policy changes. The `all` category includes this warning for enable,
+disable and promotion. Suppression also suppresses fatal promotion, consistently
+with the existing native-preload and legacy-ROS warning policy; re-enabling the
+warning restores any stored promotion flag. Options take effect in CLI order.
+
+This policy affects input carriers only. Broker storage and delivered regions
+retain mandatory cleanup, and warning settings grant no communication authority.

@@ -660,6 +660,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         put_word(40u,static_cast<::std::uint64_t>(st_atim),8u);
         put_word(48u,static_cast<::std::uint64_t>(st_mtim),8u);
         put_word(56u,static_cast<::std::uint64_t>(st_ctim),8u);
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_wasm32_unchecked(
             memory,stat_ptrsz,encoded_filestat,encoded_filestat+sizeof(encoded_filestat));
 

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -45,7 +46,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         // Private control-block identity survives an operation/guard after owner
         // retirement, avoiding a dangling gate borrow. It does NOT pin VM code,
         // memory or any runtime resource: the producer needs its real lease too.
-        ::std::shared_ptr<state> state_{::std::make_shared<state>()};
+        ::std::shared_ptr<state> state_{::uwvm2::utils::container::make_shared<state>()};
         checkpoint_host_admission() = default;
     public:
         struct observation

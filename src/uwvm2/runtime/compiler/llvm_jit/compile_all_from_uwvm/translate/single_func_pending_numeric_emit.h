@@ -100,7 +100,7 @@ inline void emit_pending_numeric_status_check(runtime_local_func_llvm_jit_emit_s
 
 [[nodiscard]] inline bool emit_pending_numeric_catch_tuple(runtime_local_func_llvm_jit_emit_state_t& state,
     llvm_jit_exception_handler_t const& handler,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t>& values) noexcept
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t>& values) noexcept
 {
     namespace native = ::uwvm2::runtime::exception::pending_experiment::numeric_guest_bridge;
     if(handler.with_reference || state.pending_numeric_context == nullptr) { return false; }
@@ -207,7 +207,7 @@ inline void emit_pending_numeric_status_check(runtime_local_func_llvm_jit_emit_s
                 // [safe                           ] only a real tag match enters.
                 builder.SetInsertPoint(selected);
             }
-            ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+            ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
             if(!emit_pending_numeric_catch_tuple(state, handler, values)) { return false; }
             llvm_jit_branch_target_t const target{.params = handler.params, .block = handler.block,
                 .phis = handler.phis, .control_stack_index = handler.control_stack_index};

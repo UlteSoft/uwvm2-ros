@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 
 // std
 #include <cstddef>
@@ -61,6 +62,7 @@ import uwvm2.imported.wasi.wasip1.fd_manager;
 import uwvm2.imported.wasi.wasip1.memory;
 import uwvm2.imported.wasi.wasip1.environment;
 import :base;
+import :checkpoint_io;
 import :posix;
 
 #ifndef UWVM_MODULE

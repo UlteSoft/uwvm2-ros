@@ -45,6 +45,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     namespace details
     {
         inline bool debug_permissions_is_exist{};
+        inline bool debug_dump_max_exists{}, debug_dump_force_exists{};
+        inline unsigned debug_dump_constraint{}; // maximum=0, forced=1
+        inline unsigned debug_dump_disclosure{2u}; // none=0, diagnostic=1, full=2
+#if defined(UWVM_MODULE)
+        extern "C++"
+#endif
+        ::uwvm2::utils::cmdline::parameter_return_type debug_dump_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
+
         inline unsigned debug_permission_selection{}; // limited=0, full=1, read-only=2, none=3
         inline bool mode_is_exist{};  // [global]
         inline unsigned debug_crash_action{}; // 0: crash (default), 1: pause, 2: stable Guest-fault exit
@@ -163,6 +174,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .handle{::std::addressof(details::debug_crash_callback)},
         .is_exist{::std::addressof(details::debug_crash_action_exists)},
         .cate{::uwvm2::utils::cmdline::categorization::debug}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter debug_dump_max{
+        .name{u8"--debug-dump-max"},
+        .describe{u8"Launch-only dump disclosure ceiling (default: full); each export may select less. Diagnostic includes static Wasm and fault locations, not dynamic sensitive state. Mutually exclusive with --debug-dump-force; debugger permissions still apply."},
+        .usage{u8"<diagnostic|full>"}, .handle{::std::addressof(details::debug_dump_callback)},
+        .is_exist{::std::addressof(details::debug_dump_max_exists)}, .cate{::uwvm2::utils::cmdline::categorization::debug}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter debug_dump_force{
+        .name{u8"--debug-dump-force"},
+        .describe{u8"Force every dump to this disclosure level; none disables all dumps. Cannot be changed by a debug session. Mutually exclusive with --debug-dump-max; never grants debugger or restore authority."},
+        .usage{u8"<none|diagnostic|full>"}, .handle{::std::addressof(details::debug_dump_callback)},
+        .is_exist{::std::addressof(details::debug_dump_force_exists)}, .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter debug_permissions{
         .name{u8"--debug-permissions"},
         .describe{u8"Debugger launch permissions only: full (inspect/modify/control execution), read-only (inspect/full dump; no execution control), limited (non-sensitive diagnostics/dump only; default), none (no debugger or dump). -Rdbg and -m debug default to full; other modes default to limited; explicit selection wins. Does not grant imports, drivers or updates."},

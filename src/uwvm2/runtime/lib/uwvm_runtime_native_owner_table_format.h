@@ -1,6 +1,7 @@
 // Pure owned object-record DATA. This parser never authenticates a VM capture,
 // code owner, native address, execution lease, loaded relocation or permission.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <fast_io.h>
 #include <fast_io_unit/string.h>
@@ -15,7 +16,7 @@ namespace uwvm2::runtime::lib::details::native_owner_table_format
     inline constexpr ::std::size_t fixed_bytes{32u}, max_name_bytes{65535u};
     struct record
     {
-        ::std::string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
+        ::uwvm2::utils::container::std_string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
         ::std::uint64_t unrelocated_begin_bits{}, unrelocated_end_bits{};
         ::std::uint32_t bytes{};
         unsigned pointer_bytes{}, byte_order{}, continuous_shape{}, role{};
@@ -77,7 +78,7 @@ namespace uwvm2::runtime::lib::details::native_owner_table_format
         }
         else if(!get<64u>(input,offset,order,value.unrelocated_begin_bits) ||
                 !get<64u>(input,offset,order,value.unrelocated_end_bits)) { return false; }
-        auto copy_name=[&](::std::uint32_t count,::std::string& name)
+        auto copy_name=[&](::std::uint32_t count,::uwvm2::utils::container::std_string& name)
         {
             if(offset>row_size || count>row_size-offset) { return false; }
             // [complete bounded name within this same input][row padding]
@@ -86,7 +87,7 @@ namespace uwvm2::runtime::lib::details::native_owner_table_format
             if(count!=0u)
             {
                 auto const* first{input.data()+offset};
-                name=::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{reinterpret_cast<char const*>(first),count});
+                name=::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{reinterpret_cast<char const*>(first),count});
             }
             // [consumed exact owned name][remaining same bounded record]
             // [safe] complete count<=remaining precedes the numeric cursor move.

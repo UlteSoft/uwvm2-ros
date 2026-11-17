@@ -106,7 +106,10 @@ Names are exact and case sensitive, without wildcards. Conflicting grant/deny is
 | `proc-exit` | Request whole-process exit through the runtime; the first accepted code wins and per-operation exit wait policy applies. |
 | `proc-raise` | A separately installed, scoped host signal handler; no process-wide fallback. |
 | `sched-yield` | Bounded scheduler requests. |
-| `thread-spawn` | Guest spawning through the separately authorized WASI threads bridge. Core atomics/threads do not grant this. |
+
+`wasi.thread-spawn` is not a WASIp1 permission. Use the independent
+[wasithread / I1T policy](../runtime/wasithread-policy.md); Core atomics do not
+grant host thread creation. Old WASIp1 spellings are rejected.
 
 `stdio-full-rights` is rejected in this product. It remains an upstream
 ordinary uwvm input only when the ROS product policy is absent.

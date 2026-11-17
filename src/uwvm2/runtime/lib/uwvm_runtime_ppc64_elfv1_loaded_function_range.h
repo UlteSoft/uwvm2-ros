@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -34,7 +35,7 @@ namespace uwvm2::runtime::lib::details
             ::llvm::object::RelocationRef relocation;
         };
         ::llvm::object::ObjectFile const* object_{};
-        ::std::vector<entry> entries_{};
+        ::uwvm2::utils::container::std_vector<entry> entries_{};
     public:
         explicit ppc64_elfv1_relocation_index(::llvm::object::ObjectFile const& object)
         {

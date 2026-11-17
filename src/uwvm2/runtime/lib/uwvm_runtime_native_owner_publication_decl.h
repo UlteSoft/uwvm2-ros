@@ -18,7 +18,7 @@ namespace details
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module_{};
             ::std::size_t module_id_{SIZE_MAX};
             ::std::uint_least64_t epoch_{};
-            ::std::vector<pending::expected_function> expected_{};
+            ::uwvm2::utils::container::std_vector<pending::expected_function> expected_{};
             captured()=default;
         public:
             captured(captured const&)=delete;
@@ -26,16 +26,16 @@ namespace details
         };
         // Called ONLY at the actual optimized IR handoff seam, before parallel
         // object emission or reset, under the already-held publication guard.
-        [[nodiscard]] static ::std::unique_ptr<captured> capture_actual_full(
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<captured> capture_actual_full(
             compiled_module_record&,::llvm::Module&,::llvm::LLVMContext const&) noexcept;
-        [[nodiscard]] static ::std::unique_ptr<pending> observe_actual_full(
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<pending> observe_actual_full(
             ::llvm::ExecutionEngine&,captured const&) noexcept;
         [[nodiscard]] static bool seal_actual_full(
             compiled_module_record&,captured const&,pending&) noexcept;
-        [[nodiscard]] static ::std::unique_ptr<captured> capture_actual_replacement(compiled_module_record&,
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<captured> capture_actual_replacement(compiled_module_record&,
             llvm_jit_debug_replace_transaction&,::llvm::Module&,::llvm::LLVMContext const&,
             ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::local_func_storage_t const&) noexcept;
-        [[nodiscard]] static ::std::unique_ptr<pending> observe_actual_replacement(
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<pending> observe_actual_replacement(
             llvm_jit_debug_replace_transaction&,captured const&) noexcept;
         [[nodiscard]] static bool seal_actual_prepared_replacement(
             llvm_jit_debug_replace_transaction&,captured const&,pending&) noexcept;

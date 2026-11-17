@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include <algorithm>
 #include <span>
@@ -43,9 +44,9 @@ namespace uwvm2::imported::ros
         return !segment_start;
     }
 
-    inline ::std::vector<::std::string_view> operation_schema(version v, ::std::string_view operation, ::std::string_view type = {})
+    inline ::uwvm2::utils::container::std_vector<::std::string_view> operation_schema(version v, ::std::string_view operation, ::std::string_view type = {})
     {
-        using list = ::std::vector<::std::string_view>;
+        using list = ::uwvm2::utils::container::std_vector<::std::string_view>;
         list fields{};
         if(operation == "event.observe")
         {
@@ -175,7 +176,7 @@ namespace uwvm2::imported::ros
         { return {errc::invalid_argument, "resource must be a canonical absolute ROS name"}; }
         for(auto field : fields)
         {
-            if(!resource_quota_field(field) && !cap.limits.contains(field)) { return {errc::invalid_argument, "missing explicit field: " + ::std::string(field)}; }
+            if(!resource_quota_field(field) && !cap.limits.contains(field)) { return {errc::invalid_argument, "missing explicit field: " + ::uwvm2::utils::container::std_string(field)}; }
         }
         for(auto const& [key, value] : cap.limits)
         {
@@ -231,7 +232,7 @@ namespace uwvm2::imported::ros
                 ::std::uint64_t number{};
                 if(!parse_u64(value, number) || !number) { return {errc::invalid_argument, "positive integer required: " + key}; }
                 auto ceiling{::std::uint64_t{1048576}};
-                if(key.find("bytes") != ::std::string::npos) { ceiling = key.find("per-second") != ::std::string::npos ? 1073741824 : 67108864; }
+                if(key.find("bytes") != ::uwvm2::utils::container::std_string::npos) { ceiling = key.find("per-second") != ::uwvm2::utils::container::std_string::npos ? 1073741824 : 67108864; }
                 if(key == "timeout-ms" || key == "buffer-cache-ms") { ceiling = 60000; }
                 if(cap.operation == "service.available" && key == "max-wait-ns") { ceiling = ipc::client_availability::maximum_wait_ns; }
                 if(key == "list-depth") { ceiling = 32; }
@@ -257,7 +258,7 @@ namespace uwvm2::imported::ros
                 auto expected{cap.operation == "action.cancel-own-goal" ? "own" : cap.operation == "action.cancel-any-goal" ? "any" : "not-applicable"};
                 if(value != expected) { return {errc::invalid_argument, "cancel scope must match independent cancellation operation"}; }
             }
-            else if(key == "source-frame" || key == "target-frame") { if(!canonical_resource(::std::string("/") + value)) { return {errc::invalid_argument, "TF frame must be explicit canonical frame name"}; } }
+            else if(key == "source-frame" || key == "target-frame") { if(!canonical_resource(::uwvm2::utils::container::std_string("/") + value)) { return {errc::invalid_argument, "TF frame must be explicit canonical frame name"}; } }
             else if(key == "allowed-transition") { if(value != "configure" && value != "activate" && value != "deactivate" && value != "cleanup" && value != "shutdown") { return {errc::invalid_argument, "invalid explicit lifecycle transition"}; } }
             else if(key == "audit")
             { if(value != "allow-and-deny" && value != "deny-only") { return {errc::invalid_argument, "audit requires allow-and-deny or deny-only"}; } }

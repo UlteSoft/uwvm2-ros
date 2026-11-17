@@ -1,5 +1,6 @@
 // Host-owned import diagnostics. APL-2.0 (see LICENSE).
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "host_interfaces.h"
 #include <string>
 #include <string_view>
@@ -24,7 +25,7 @@ namespace uwvm2::utils::control::host_diagnostics
     { return id<api::invalid?(kind==event::denied?configuration.denied[id]:configuration.limited[id]):severity::off; }
     template<typename Text> bool configure(Text const& input,severity value)
     {
-        std::string text;for(auto c:input)text+=static_cast<char>(c);
+        ::uwvm2::utils::container::std_string text;for(auto c:input)text+=static_cast<char>(c);
         bool deny{},limit{};std::string_view selector{text};
         if(selector=="all") { configuration.denied.fill(value);configuration.limited.fill(value);return true; }
         if(selector.substr(0,14)=="all_host_calls"){deny=limit=true;selector.remove_prefix(14);}
@@ -43,7 +44,7 @@ namespace uwvm2::utils::control::host_diagnostics
                 { if(deny)configuration.denied[i]=value;if(limit)configuration.limited[i]=value;return true; }
             return false;
         }
-        if(!selector.empty() && selector!="_wasip1" && selector!="_ros1" && selector!="_ros2")return false;
+        if(!selector.empty() && selector!="_wasip1" && selector!="_ros1" && selector!="_ros2" && selector!="_wasithread")return false;
         for(std::size_t i{};i<api::invalid;++i)
             if(selector.empty() || selector.substr(1)==api::name(api::catalogue[i].group))
             {if(deny)configuration.denied[i]=value;if(limit)configuration.limited[i]=value;}
@@ -51,9 +52,9 @@ namespace uwvm2::utils::control::host_diagnostics
     }
     // Diagnostic text never executes terminal controls, shell substitutions or
     // new lines from module/target names. No input length cap is introduced.
-    inline std::string quote_argument(std::string_view value)
+    inline ::uwvm2::utils::container::std_string quote_argument(std::string_view value)
     {
-        constexpr char digits[]="0123456789abcdef";std::string result{"'"};
+        constexpr char digits[]="0123456789abcdef";::uwvm2::utils::container::std_string result{"'"};
         for(unsigned char c:value)
         {
             if(c=='\'')result+="'\\''";
@@ -64,9 +65,9 @@ namespace uwvm2::utils::control::host_diagnostics
     }
     template<typename Text> inline std::string_view view(Text const& text) noexcept
     {return {reinterpret_cast<char const*>(text.data()),text.size()};}
-    inline std::string command(api::family family,std::string_view scope,std::string_view target,std::string_view action)
+    inline ::uwvm2::utils::container::std_string command(api::family family,std::string_view scope,std::string_view target,std::string_view action)
     {
-        std::string out{"--"};out+=api::name(family);out+='-';out+=scope;out+='-';out+=action;
+        ::uwvm2::utils::container::std_string out{"--"};out+=api::name(family);out+='-';out+=scope;out+='-';out+=action;
         if(scope!="global"){out+=' ';out+=quote_argument(target);}return out;
     }
     inline void report(std::size_t id,event kind,std::string_view scope,std::string_view target,
@@ -78,10 +79,10 @@ namespace uwvm2::utils::control::host_diagnostics
 #endif
         {
             auto const& entry=api::catalogue[id];
-            std::string text=level==severity::error?"uwvm: [error] ":"uwvm: [warning] ";
+            ::uwvm2::utils::container::std_string text=level==severity::error?"uwvm: [error] ":"uwvm: [warning] ";
             text+=api::name(entry.group);text+='.';text+=entry.key;text+=" ";text+=kind==event::denied?"denied":"limited";
             text+=" for ";text+=scope;text+=' ';text+=quote_argument(target);text+=": ";text+=reason;
-            text+=". Configure: ";text+=remedy.empty()?command(entry.group,scope,target,"interface")+" "+std::string(entry.key)+" allow":std::string(remedy);
+            text+=". Configure: ";text+=remedy.empty()?command(entry.group,scope,target,"interface")+" "+::uwvm2::utils::container::std_string(entry.key)+" allow": ::uwvm2::utils::container::std_string(remedy);
             text+=". [host_";text+=kind==event::denied?"denied_":"limited_";text+=api::name(entry.group);text+='.';text+=entry.key;text+="]";
             if(sink)sink(text);
         }
@@ -99,7 +100,7 @@ namespace uwvm2::utils::control::host_diagnostics
         {
             auto remedy=command(api::catalogue[id].group,scope,target,"grant")+
                 " <alias> <operation> <resource> <type> <trusted-identity>; inspect the contract with --"+
-                std::string(api::name(api::catalogue[id].group))+"-dump-effective-policy";
+                ::uwvm2::utils::container::std_string(api::name(api::catalogue[id].group))+"-dump-effective-policy";
             report(id,event::denied,scope,target,reason,remedy);return;
         }
 #if defined(__cpp_exceptions)
@@ -115,7 +116,7 @@ namespace uwvm2::utils::control::host_diagnostics
         try
 #endif
         {
-            std::string text{"uwvm: [error] Cannot link import "};text+=quote_argument(name_space);text+='.';text+=quote_argument(function);
+            ::uwvm2::utils::container::std_string text{"uwvm: [error] Cannot link import "};text+=quote_argument(name_space);text+='.';text+=quote_argument(function);
             text+=" for ";text+=scope;text+=' ';text+=quote_argument(target);text+=": ";
             if(id==api::invalid)text+="unknown host interface; no permission can enable an unregistered interface";
             else
@@ -137,10 +138,10 @@ namespace uwvm2::utils::control::host_diagnostics
     inline thread_local call_scope* active{};
     struct call_scope
     {
-        struct notice {std::string key,detail;bool wait;};
+        struct notice {::uwvm2::utils::container::std_string key,detail;bool wait;};
         std::size_t id;std::string_view scope,target;call_scope* previous{};
-        bool observing{},installed{},limit_seen{};std::vector<notice> notices;
-        std::string denied_reason;
+        bool observing{},installed{},limit_seen{};::uwvm2::utils::container::std_vector<notice> notices;
+        ::uwvm2::utils::container::std_string denied_reason;
         call_scope(std::size_t index,std::string_view s,std::string_view t,bool capture_denials=false) noexcept:id(index),scope(s),target(t)
         {
             observing=selected(id,event::limited)!=severity::off || (capture_denials && selected(id,event::denied)!=severity::off);
@@ -156,7 +157,7 @@ namespace uwvm2::utils::control::host_diagnostics
             try
 #endif
             {
-                auto const& entry=api::catalogue[id];std::string reason,remedy;
+                auto const& entry=api::catalogue[id];::uwvm2::utils::container::std_string reason,remedy;
                 for(auto const& notice:notices)
                 {
                     if(!reason.empty())reason+="; ";
@@ -190,7 +191,7 @@ namespace uwvm2::utils::control::host_diagnostics
             // Coalesce the same exhausted field within one attempt, not calls.
             for(auto const& notice:active->notices)
                 if(notice.key==key && notice.wait==wait && notice.detail==detail)return;
-            active->notices.push_back({std::string(key),std::string(detail),wait});
+            active->notices.push_back({::uwvm2::utils::container::std_string(key),::uwvm2::utils::container::std_string(detail),wait});
         }
 #if defined(__cpp_exceptions)
         catch(...) {}

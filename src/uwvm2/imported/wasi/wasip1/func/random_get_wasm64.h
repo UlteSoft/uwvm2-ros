@@ -22,6 +22,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -115,7 +116,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         auto const memory_pointer{env.get_memory()};
         if(memory_pointer == nullptr) [[unlikely]] { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
         auto& memory{*memory_pointer};
-        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.shared())
+        // A recording provider releases its instruction turn while obtaining
+        // entropy. Use detached batches even on an untagged/nonshared owner.
+        if(::uwvm2::runtime::checkpoint::host_memory_phase::current ||
+           (memory.memtag_shadow.enabled() && memory.memtag_shadow.shared()))
         { return random_get_shared_tagged(memory,buf,buf_len); }
 
 

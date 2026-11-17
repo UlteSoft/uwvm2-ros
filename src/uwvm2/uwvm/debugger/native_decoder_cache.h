@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -26,7 +29,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
     // stop identifiers, generations, registers or execution authority.
     struct target_key
     {
-        ::std::string triple{}, cpu{}, features{};
+        ::uwvm2::utils::container::std_string triple{}, cpu{}, features{};
         unsigned version{}, pointer_bits{}, maximum{}, alignment{};
         bool little_endian{};
 
@@ -56,8 +59,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
     struct slot
     {
         target_key key{};
-        ::std::unique_ptr<Decoder> decoder{};
-        ::std::unique_ptr<slot> next{};
+        ::uwvm2::utils::container::std_unique_ptr<Decoder> decoder{};
+        ::uwvm2::utils::container::std_unique_ptr<slot> next{};
 
         ~slot() noexcept
         {
@@ -71,19 +74,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
     };
 
     template<typename Decoder>
-    [[nodiscard]] inline ::std::unique_ptr<slot<Decoder>>& local_slot() noexcept
+    [[nodiscard]] inline ::uwvm2::utils::container::std_unique_ptr<slot<Decoder>>& local_slot() noexcept
     {
         // One idle chain per decoder type and host thread. Each active lease
         // removes its node; nested queries never share mutable LLVM state.
         // The chain grows only to the observed simultaneous lease depth.
-        static thread_local ::std::unique_ptr<slot<Decoder>> value{};
+        static thread_local ::uwvm2::utils::container::std_unique_ptr<slot<Decoder>> value{};
         return value;
     }
 
     template<typename Decoder, typename Description>
     class lease final
     {
-        ::std::unique_ptr<slot<Decoder>> owner_{};
+        ::uwvm2::utils::container::std_unique_ptr<slot<Decoder>> owner_{};
         Decoder* decoder_{};
 
         void acquire(Description const& description)
@@ -95,13 +98,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::native_decoder_cache
                 owner_ = ::std::move(idle);
                 idle = ::std::move(owner_->next);
             }
-            else { owner_.reset(new (::std::nothrow) slot<Decoder>{}); }
+            else { owner_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<slot<Decoder>>([&](slot<Decoder>* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) slot<Decoder>{}; })); }
             if(!owner_) { return; }
             if(!owner_->decoder || !owner_->key.matches(description))
             {
                 owner_->decoder.reset();
                 owner_->key.assign(description);
-                owner_->decoder.reset(new (::std::nothrow) Decoder{description});
+                owner_->decoder.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<Decoder>([&](Decoder* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) Decoder{description}; }));
             }
             if(owner_->decoder && *owner_->decoder) { decoder_ = owner_->decoder.get(); }
             else { owner_.reset(); }

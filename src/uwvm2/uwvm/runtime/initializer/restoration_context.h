@@ -1,5 +1,9 @@
 // Private native restore preparation; ordinary initialize_runtime is unchanged.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 namespace uwvm2::runtime::lib
 {
     extern "C++" { class runtime_checkpoint_world_transaction; }
@@ -144,7 +148,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     };
                     auto main_image{copy_image(actual->file_)};
                     if(!main_image) { return {{}, source_copy_status::copy_failed}; }
-                    ::std::vector<::uwvm2::uwvm::runtime::full::full_preload_input> inputs{};
+                    ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::runtime::full::full_preload_input> inputs{};
                     if(actual->preload_inputs_.size() > inputs.max_size() || actual->preload_inputs_.size() >
                         static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) /
                             sizeof(::uwvm2::uwvm::runtime::full::full_preload_input))
@@ -229,7 +233,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
                 return nullptr;
             }
-            [[nodiscard]] ::std::unique_ptr<staged_compiler_module_owner> prepare_compiler_module_owner(
+            [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<staged_compiler_module_owner> prepare_compiler_module_owner(
                 storage_module const* candidate)
             {
                 if(state_ != skeleton_result::built) { return {}; }
@@ -240,8 +244,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 // module-vector, declaration discriminator and final owned WF
                 // membership. Strong source owns all FINAL maps/parser/records.
                 // No ordinary initialized/source-ready/epoch flag is written.
-                return ::std::unique_ptr<staged_compiler_module_owner>{
-                    new staged_compiler_module_owner{::std::move(actual), candidate, file}};
+                return ::uwvm2::utils::container::std_unique_ptr<staged_compiler_module_owner>{
+                    ::uwvm2::utils::allocator::fast_io_strict::object<staged_compiler_module_owner>([&](staged_compiler_module_owner* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) staged_compiler_module_owner{::std::move(actual), candidate, file}; })};
             }
             using saved_core_type = ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type;
             using saved_core_kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
@@ -254,7 +258,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { ::std::uintptr_t address{}; bool completed{}; };
             // Fixed sorted actual native comparison keys, never authority or wire
             // pointers. Fill/final checks cost O(log R), not a growing O(R) scan.
-            ::std::vector<completion_record> completed_resource_records_{};
+            ::uwvm2::utils::container::std_vector<completion_record> completed_resource_records_{};
             ::std::size_t expected_resource_records_{}, completed_resource_count_{}, function_import_hop_limit_{};
             bool resource_fixups_attempted_{}, resource_fixups_started_{};
             struct element_allocation
@@ -263,7 +267,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::std::size_t function_count{}, opaque_count{}, gc_count{};
                 ::std::size_t function_cursor{}, opaque_cursor{}, gc_cursor{};
             };
-            ::std::vector<element_allocation> element_allocations_{};
+            ::uwvm2::utils::container::std_vector<element_allocation> element_allocations_{};
             [[nodiscard]] bool begin_resource_fixups(::std::size_t max_records, ::std::size_t maximum_native_element_bytes)
             {
                 if(state_ != skeleton_result::built || resource_fixups_attempted_ || !source_ || source_->initialized_ ||
@@ -1087,7 +1091,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner> const& leases,
             ::uwvm2::uwvm::runtime::storage::gc_function_type_match_callback callback) const noexcept
         {
-            return ::std::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback);
+            return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback);
         }
         template<initialization_purpose Purpose>
         inline ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store>
@@ -1097,7 +1101,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::uwvm::runtime::storage::gc_function_type_match_callback callback) const noexcept(Purpose == initialization_purpose::ordinary)
         {
             if constexpr(Purpose == initialization_purpose::ordinary)
-            { return ::std::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback); }
+            { return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback); }
             else
             {
                 if(restoration_ == nullptr) { ::fast_io::fast_terminate(); }

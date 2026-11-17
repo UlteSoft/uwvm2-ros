@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -57,7 +58,7 @@ namespace uwvm2::utils::update
         (void)result; return false;
 #endif
     }
-    inline void append_u64(::std::vector<unsigned char>& bytes, ::std::uint64_t n)
+    inline void append_u64(::uwvm2::utils::container::std_vector<unsigned char>& bytes, ::std::uint64_t n)
     { for(unsigned i{}; i != 8; ++i) { bytes.push_back(static_cast<unsigned char>(n >> (i * 8))); } }
     inline bool zero(digest const& d) noexcept { return d == digest{}; }
     // Fixed-width wire format: no optional/duplicate fields or nested object parser.
@@ -82,10 +83,10 @@ namespace uwvm2::utils::update
             { for(unsigned i{}; i < 8; ++i) { out[pos++] = static_cast<unsigned char>(n >> (i*8)); } }
             return out;
         }
-        [[nodiscard]] ::std::vector<unsigned char> encoding(bool with_signature = true) const
+        [[nodiscard]] ::uwvm2::utils::container::std_vector<unsigned char> encoding(bool with_signature = true) const
         {
             auto const fixed{unsigned_encoding()};
-            ::std::vector<unsigned char> out; out.reserve(wire_size); out.insert(out.end(), fixed.begin(), fixed.end());
+            ::uwvm2::utils::container::std_vector<unsigned char> out; out.reserve(wire_size); out.insert(out.end(), fixed.begin(), fixed.end());
             if(with_signature) { out.insert(out.end(), signature.begin(), signature.end()); }
             return out;
         }
@@ -135,7 +136,7 @@ namespace uwvm2::utils::update
     {
         configuration config_{}, candidate_config_{}, launch_config_{}; facts facts_{}; permit candidate_{}, launch_{};
         bool launch_authorized_{};
-        ::std::vector<digest> transactions_{};
+        ::uwvm2::utils::container::std_vector<digest> transactions_{};
         bool candidate_contract_installed_{};
         static ::std::uint64_t now() noexcept
         { return static_cast<::std::uint64_t>(::std::chrono::duration_cast<::std::chrono::seconds>(::std::chrono::system_clock::now().time_since_epoch()).count()); }
@@ -278,7 +279,7 @@ namespace uwvm2::utils::update
     // Structural scope check, not a replacement for the actual Wasm validator.
     // Non-code bytes, including custom sections, must be identical. Changed bodies
     // still pass the existing feature-aware parser/type validator/compiler.
-    inline bool split(::std::span<unsigned char const> bytes, ::std::vector<section>& sections, ::std::vector<function_body>& bodies)
+    inline bool split(::std::span<unsigned char const> bytes, ::uwvm2::utils::container::std_vector<section>& sections, ::uwvm2::utils::container::std_vector<function_body>& bodies)
     {
         constexpr unsigned char magic[]{0,97,115,109,1,0,0,0};
         if(bytes.size() < 8 || bytes.size() > maximum_image_bytes || ::std::memcmp(bytes.data(), magic, 8) != 0) { return false; }
@@ -306,12 +307,12 @@ namespace uwvm2::utils::update
         return code;
     }
     inline status function_scope(::std::span<unsigned char const> base, ::std::span<unsigned char const> target,
-        ::std::span<::std::uint64_t const> allowed_local_indices, ::std::vector<function_body>& new_bodies)
+        ::std::span<::std::uint64_t const> allowed_local_indices, ::uwvm2::utils::container::std_vector<function_body>& new_bodies)
     {
         if(allowed_local_indices.empty() || allowed_local_indices.size() > maximum_functions) { return status::invalid_input; }
         for(::std::size_t i{1}; i < allowed_local_indices.size(); ++i)
         { if(allowed_local_indices[i] <= allowed_local_indices[i-1]) { return status::invalid_input; } }
-        ::std::vector<section> a, b; ::std::vector<function_body> old_bodies;
+        ::uwvm2::utils::container::std_vector<section> a, b; ::uwvm2::utils::container::std_vector<function_body> old_bodies;
         if(!split(base, a, old_bodies) || !split(target, b, new_bodies) || a.size() != b.size() || old_bodies.size() != new_bodies.size()) { return status::validation_failed; }
         if(allowed_local_indices.back() >= new_bodies.size()) { return status::invalid_input; }
         for(::std::size_t i{}; i < a.size(); ++i)

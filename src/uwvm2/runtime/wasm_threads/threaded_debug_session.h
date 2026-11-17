@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Stage A: Host-only bounded metadata snapshots. Not a Guest memory authority,
 // pause/step capability, ordinary debugger provider, or an unwind implementation.
 #ifndef UWVM_MODULE
@@ -45,16 +46,20 @@ namespace uwvm2::runtime::wasm_threads
         using world_owner=::std::shared_ptr<::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const>;
         world_owner world_;
         debug_backend backend_;
-        ::std::vector<debug_function_row> functions_;
-        ::std::vector<debug_logical_pc_row> logical_;
-        ::std::vector<debug_cfi_row> cfi_;
-        explicit code_debug_image(world_owner const& world,debug_backend backend) noexcept:world_{world},backend_{backend}{}
+        ::std::size_t source_module_;
+        bool instruction_control_{};
+        ::uwvm2::utils::container::std_vector<debug_function_row> functions_;
+        ::uwvm2::utils::container::std_vector<debug_logical_pc_row> logical_;
+        ::uwvm2::utils::container::std_vector<debug_cfi_row> cfi_;
+        explicit code_debug_image(world_owner const& world,debug_backend backend,::std::size_t source_module) noexcept
+            :world_{world},backend_{backend},source_module_{source_module}{}
     public:
         code_debug_image(code_debug_image const&)=delete;
         code_debug_image& operator=(code_debug_image const&)=delete;
         ~code_debug_image()=default;
         [[nodiscard]] auto const& retained_world() const noexcept{return world_;}
         [[nodiscard]] debug_backend backend() const noexcept{return backend_;}
+        [[nodiscard]] ::std::size_t source_module() const noexcept{return source_module_;}
         [[nodiscard]] auto functions() const noexcept{return ::std::span<debug_function_row const>{functions_};}
         [[nodiscard]] auto logical_pcs() const noexcept{return ::std::span<debug_logical_pc_row const>{logical_};}
         [[nodiscard]] auto cfi_ranges() const noexcept{return ::std::span<debug_cfi_row const>{cfi_};}
@@ -67,9 +72,11 @@ namespace uwvm2::runtime::wasm_threads
             add(functions_.capacity(),sizeof(debug_function_row));add(logical_.capacity(),sizeof(debug_logical_pc_row));
             add(cfi_.capacity(),sizeof(debug_cfi_row));return n;
         }
-        // LLVM currently supplies function-level relocated extents only; neither
-        // that fact nor CFI registration promises opcode/line/local information.
-        [[nodiscard]] bool exact_logical_pc_map() const noexcept{return backend_==debug_backend::interpreter;}
+        // A private LLVM instruction map is issued only by the actual compiler
+        // when instruction control was selected before compilation. Native
+        // extents/CFI alone never claim opcode or local-value information.
+        [[nodiscard]] bool exact_logical_pc_map() const noexcept
+        {return backend_==debug_backend::interpreter || instruction_control_;}
     };
     class threaded_debug_worker_ticket final
     {
@@ -97,9 +104,9 @@ namespace uwvm2::runtime::wasm_threads
     {
         friend class ThreadedGroup;
         ::std::weak_ptr<ThreadedGroup> group_;
-        ::std::uint64_t epoch_{};
-        threaded_debug_session(::std::weak_ptr<ThreadedGroup> group,::std::uint64_t epoch) noexcept
-            :group_{::std::move(group)},epoch_{epoch}{}
+        ::std::uint64_t epoch_{}, native_process_{};
+        threaded_debug_session(::std::weak_ptr<ThreadedGroup> group,::std::uint64_t epoch,::std::uint64_t native_process) noexcept
+            :group_{::std::move(group)},epoch_{epoch},native_process_{native_process}{}
     public:
         threaded_debug_session() noexcept=default;
         [[nodiscard]] debug_read_status workers(::std::span<threaded_debug_worker_ticket>,::std::size_t& needed) const noexcept;

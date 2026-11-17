@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 # include <uwvm2/utils/macro/push_macros.h>
 #include <cerrno>
 #include <cstddef>

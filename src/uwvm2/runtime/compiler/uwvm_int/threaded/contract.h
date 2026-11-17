@@ -6,7 +6,7 @@
 #include <memory>
 #include <exception>
 #include <span>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #include <uwvm2/uwvm/runtime/initializer/threaded_child_world.h>
 #include <uwvm2/runtime/wasm_threads/thread_group.h>
 
@@ -21,7 +21,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         cancelled, trap_unreachable, trap_divide_by_zero, trap_integer_overflow,
         trap_memory, trap_unaligned, trap_table, trap_null, trap_signature,
         proc_exit, host_denied, host_failure, invariant_failure, already_entered,
-        trap_invalid_conversion, trap_uncaught_exception, memory_failure, trap_memtag
+        trap_invalid_conversion, trap_uncaught_exception, memory_failure, trap_memtag, trap_cast
     };
     struct execution_result
     {

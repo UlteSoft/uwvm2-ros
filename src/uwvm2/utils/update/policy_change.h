@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).     *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <memory>
 # include <limits>
@@ -205,7 +207,7 @@ namespace uwvm2::utils::update
             return status::ok;
         }
         template<typename Serializer>
-        [[nodiscard]] inline bool collect(Serializer&& serializer,::std::vector<unsigned char>& bytes)
+        [[nodiscard]] inline bool collect(Serializer&& serializer,::uwvm2::utils::container::std_vector<unsigned char>& bytes)
         {
             bytes.clear();bool overflow{};
             auto sink{[&](unsigned char c){if(bytes.size()==maximum_effective_wasi_policy_bytes){overflow=true;return;}bytes.push_back(c);}};
@@ -213,10 +215,10 @@ namespace uwvm2::utils::update
         }
     }
     // Authoring helper only. Neither encoding nor decoding conveys authority.
-    [[nodiscard]] inline bool encode_wasi_policy(wasi_policy_spec const& spec,::std::vector<unsigned char>& bytes)
+    [[nodiscard]] inline bool encode_wasi_policy(wasi_policy_spec const& spec,::uwvm2::utils::container::std_vector<unsigned char>& bytes)
     {
         if(!wasi_policy_detail::valid_spec(spec))return false;
-        ::std::vector<unsigned char> output(wasi_policy_detail::magic.begin(),wasi_policy_detail::magic.end());
+        ::uwvm2::utils::container::std_vector<unsigned char> output(wasi_policy_detail::magic.begin(),wasi_policy_detail::magic.end());
         auto number{[&](::std::uint64_t n){append_u64(output,n);}};
         number(spec.interface_enabled);number(static_cast<::std::uint32_t>(spec.non_fd_permissions));number(spec.fd_limit);
         for(auto value:spec.interfaces.entries)output.push_back(static_cast<unsigned char>(value));
@@ -241,7 +243,7 @@ namespace uwvm2::utils::update
     }
     template<wasi_policy_environment::wasip1_memory Memory> class prepared_wasi_policy;
     template<wasi_policy_environment::wasip1_memory Memory>
-    struct wasi_policy_prepare_result {status result{status::invalid_input};::std::unique_ptr<prepared_wasi_policy<Memory>> plan{};};
+    struct wasi_policy_prepare_result {status result{status::invalid_input};::uwvm2::utils::container::std_unique_ptr<prepared_wasi_policy<Memory>> plan{};};
     template<wasi_policy_environment::wasip1_memory Memory>
     class prepared_wasi_policy
     {
@@ -249,7 +251,7 @@ namespace uwvm2::utils::update
         environment_type const* owner_{};
         wasi_policy_spec proposed_{};wasi_policy_views argv_views_{},env_views_{};
         digest old_hash_{},new_hash_{},measurement_{};
-        ::std::vector<unsigned char> canonical_request_{};
+        ::uwvm2::utils::container::std_vector<unsigned char> canonical_request_{};
         ::std::uint64_t base_generation_{},target_generation_{},base_revocation_{},target_revocation_{};
         bool consumed_{};
         template<wasi_policy_environment::wasip1_memory M>
@@ -286,7 +288,7 @@ namespace uwvm2::utils::update
 #endif
             if(base_generation==0u || base_generation==UINT64_MAX || target_generation!=base_generation+1u || target_revocation<base_revocation)
                 return {status::invalid_input,{}};
-            auto plan{::std::make_unique<prepared_wasi_policy<Memory>>()};
+            auto plan{::uwvm2::utils::container::make_unique<prepared_wasi_policy<Memory>>()};
             if(!wasi_policy_detail::decode(bytes,plan->proposed_))return {status::invalid_input,{}};
             if(auto allowed{wasi_policy_detail::resources(env,plan->proposed_)};allowed!=status::ok)return {allowed,{}};
             if(wasi_policy_detail::tightens(env,plan->proposed_)&&target_revocation==base_revocation)return {status::unauthorized,{}};
@@ -296,11 +298,11 @@ namespace uwvm2::utils::update
                plan->canonical_request_.size()!=bytes.size() || !::std::equal(bytes.begin(),bytes.end(),plan->canonical_request_.begin()))return {status::invalid_input,{}};
             for(auto const& value:plan->proposed_.argv)plan->argv_views_.emplace_back(value.data(),value.size());
             for(auto const& value:plan->proposed_.envs)plan->env_views_.emplace_back(value.data(),value.size());
-            ::std::vector<unsigned char> old_bytes,new_bytes;
+            ::uwvm2::utils::container::std_vector<unsigned char> old_bytes,new_bytes;
             if(!wasi_policy_detail::collect([&](auto& sink){return wasi_policy_environment::serialize_policy(env,sink);},old_bytes) ||
                !wasi_policy_detail::collect([&](auto& sink){return wasi_policy_environment::serialize_policy_with_configuration(env,plan->proposed_,sink);},new_bytes))return {status::invalid_input,{}};
             if(!hash(old_bytes,plan->old_hash_)||!hash(new_bytes,plan->new_hash_))return {status::unsupported,{}};
-            ::std::vector<unsigned char> material;
+            ::uwvm2::utils::container::std_vector<unsigned char> material;
             constexpr ::std::string_view domain{"uwvm.wasi.policy.change.v1"};for(char c:domain)material.push_back(static_cast<unsigned char>(c));material.push_back(0);
             append_u64(material,reinterpret_cast<::std::uintptr_t>(&env));append_u64(material,base_generation);append_u64(material,target_generation);
             append_u64(material,base_revocation);append_u64(material,target_revocation);
@@ -327,7 +329,7 @@ namespace uwvm2::utils::update
         try
         {
 #endif
-            ::std::vector<unsigned char> bytes;digest measured{};
+            ::uwvm2::utils::container::std_vector<unsigned char> bytes;digest measured{};
             if(!wasi_policy_detail::collect([&](auto& sink){return wasi_policy_environment::serialize_policy(env,sink);},bytes) || !hash(bytes,measured))return status::invalid_input;
             return measured==plan.old_hash_?status::ok:status::stale_base;
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)

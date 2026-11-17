@@ -43,7 +43,8 @@
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return nullptr;}
             auto* memory=actual_memory(owner);
             if(memory==nullptr||stopped())return nullptr;
-            if(!::uwvm2::runtime::memtag::details::configured<::std::uint32_t,true>(*memory))
+            if(!memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
+                {return ::uwvm2::runtime::memtag::details::configured<Address,Shared>(*memory);}))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return nullptr;}
             return memory;
         }
@@ -52,9 +53,9 @@
             ::std::uint64_t offset,::std::uint64_t pointer,::std::uint64_t input) noexcept
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
-            auto* memory=actual_tagged_memory(owner);if(memory==nullptr||!memtag_u32(pointer))return 0u;
-            auto const result=emit::llvm_jit_memtag_scalar_access<::std::uint32_t,true,ResultBits,Bytes,Signed,Store>(
-                *memory,offset,pointer,input);
+            auto* memory=actual_tagged_memory(owner);if(memory==nullptr)return 0u;
+            auto const result=memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
+            {return emit::llvm_jit_memtag_scalar_access<Address,Shared,ResultBits,Bytes,Signed,Store>(*memory,offset,pointer,input);});
             if(!result.access){memtag_access_failure(*memory,pointer,result.access);return 0u;}
             return result.value;
         }
@@ -63,11 +64,11 @@
             ::std::uint64_t expected,::std::uint64_t opcode) noexcept
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
-            auto* memory=actual_tagged_memory(owner);if(memory==nullptr||!memtag_u32(pointer))return 0u;
+            auto* memory=actual_tagged_memory(owner);if(memory==nullptr)return 0u;
             if(opcode<0x10u||opcode>0x4eu)
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return 0u;}
-            auto const result=emit::llvm_jit_memtag_atomic_access<::std::uint32_t,true>(
-                *memory,offset,pointer,input,expected,opcode);
+            auto const result=memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
+            {return emit::llvm_jit_memtag_atomic_access<Address,Shared>(*memory,offset,pointer,input,expected,opcode);});
             if(!result.access){memtag_access_failure(*memory,pointer,result.access);return 0u;}
             if(result.unaligned){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::unaligned_atomic));return 0u;}
             return result.value;
@@ -78,29 +79,30 @@
         {
             namespace mt=::uwvm2::extension::memtag;
             auto* memory=actual_memory(owner);
-            if(memory==nullptr||stopped()||!memtag_u32(first)||!memtag_u32(second)||!memtag_u32(third)||!memtag_u32(fourth))return 0u;
+            if(memory==nullptr||stopped())return 0u;
             constexpr auto descriptor=mt::find_instruction(static_cast<unsigned>(Operation));
             static_assert(descriptor!=nullptr&&Operation!=mt::opcode::add);
-            ::std::array<::std::uint32_t,4u> arguments{static_cast<::std::uint32_t>(first),static_cast<::std::uint32_t>(second),
-                static_cast<::std::uint32_t>(third),static_cast<::std::uint32_t>(fourth)};
-            auto const result=::uwvm2::runtime::memtag::execute<true,::std::uint32_t,true>(*memory,Operation,
-                ::std::span<::std::uint32_t const>{arguments.data(),descriptor->operand_count});
-            if(!result)
+            return memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept -> ::std::uint64_t
             {
-                if(result.operation.error==mt::operation_error::memory_access)
-                    memtag_access_failure(*memory,first,result.operation.access);
-                else fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
-                return 0u;
-            }
-            return result.operation.value;
+                ::std::array<Address,4u> arguments{static_cast<Address>(first),static_cast<Address>(second),static_cast<Address>(third),static_cast<Address>(fourth)};
+                auto const result=::uwvm2::runtime::memtag::execute<true,Address,Shared>(*memory,Operation,
+                    ::std::span<Address const>{arguments.data(),descriptor->operand_count});
+                if(!result)
+                {
+                    if(result.operation.error==mt::operation_error::memory_access)memtag_access_failure(*memory,first,result.operation.access);
+                    else fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
+                    return 0u;
+                }
+                return result.operation.value;
+            });
         }
+
         static void memtag_fill(::std::uintptr_t owner,::std::uint64_t destination,
             ::std::uint64_t value,::std::uint64_t bytes) noexcept
         {
             auto* memory=actual_memory(owner);
-            if(memory==nullptr||stopped()||!memtag_u32(destination)||!memtag_u32(value)||!memtag_u32(bytes))return;
-            auto const checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
-                *memory,static_cast<::std::uint32_t>(destination),0u,bytes,[&](::std::span<::std::byte> data) noexcept
+            if(memory==nullptr||stopped())return;
+            auto const checked=memory_access(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
                     while(at<data.size()&&!stopped())
@@ -116,15 +118,13 @@
             ::std::uint64_t destination,::std::uint64_t source,::std::uint64_t bytes) noexcept
         {
             auto* dst=actual_memory(destination_owner);auto* src=actual_memory(source_owner);
-            if(dst==nullptr||src==nullptr||stopped()||!memtag_u32(destination)||!memtag_u32(source)||!memtag_u32(bytes))return;
-            auto const checked=::uwvm2::runtime::memtag::with_guest_copy(*dst,*src,
-                static_cast<::std::uint32_t>(destination),static_cast<::std::uint32_t>(source),bytes,
-                [&](::std::span<::std::byte> d,::std::span<::std::byte> s) noexcept
+            if(dst==nullptr||src==nullptr||stopped())return;
+            auto copy=[&](::std::span<::std::byte> d,::std::span<::std::byte> s) noexcept
                 {
                     // Use canonical Guest offsets for overlap, never differently
                     // tagged native integer pointers into the same owner.
-                    auto const da=dst->memtag_shadow.enabled()?destination&UINT64_C(0x0fffffff):destination;
-                    auto const sa=src->memtag_shadow.enabled()?source&UINT64_C(0x0fffffff):source;
+                    auto const da=dst->memtag_shadow.enabled()?destination&(memory64(*dst)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff)):destination;
+                    auto const sa=src->memtag_shadow.enabled()?source&(memory64(*src)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff)):source;
                     bool const backward=dst==src&&da>sa&&da-sa<bytes;
                     ::std::size_t remaining=d.size();
                     while(remaining!=0u&&!stopped())
@@ -139,7 +139,10 @@
                         }
                         remaining-=count;
                     }
-                });
+                };
+            auto const checked=memory_geometry(*dst,[&]<typename D,bool>() noexcept
+            {return memory_geometry(*src,[&]<typename S,bool>() noexcept
+            {return ::uwvm2::runtime::memtag::with_guest_copy<D,S>(*dst,*src,static_cast<D>(destination),static_cast<S>(source),bytes,copy);});});
             if(!checked)memtag_access_failure(checked.source_failed?*src:*dst,
                 checked.source_failed?source:destination,checked.access);
         }
@@ -147,19 +150,22 @@
             ::std::uint64_t index,::std::uint64_t destination,::std::uint64_t source,::std::uint64_t bytes) noexcept
         {
             auto* e=active_;auto* memory=actual_memory(owner);
-            if(e==nullptr||memory==nullptr||stopped()||!memtag_u32(destination)||!memtag_u32(source)||!memtag_u32(bytes))return;
+            if(e==nullptr||memory==nullptr||stopped()||!memtag_u32(source)||!memtag_u32(bytes))return;
             if(module_owner!=reinterpret_cast<::std::uintptr_t>(e->child->module_)||
                 index>=e->child->module_->local_defined_data_vec_storage.size())
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
             auto const payload=::uwvm2::uwvm::runtime::storage::load_wasm_data_segment_payload(
                 e->child->module_->local_defined_data_vec_storage.index_unchecked(static_cast<::std::size_t>(index)).data);
-            if((payload.byte_begin==nullptr)!=(payload.byte_end==nullptr))
+            auto const* file=e->child->world_->file(e->child->module_index_);
+            if(!file){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
+            auto const base=reinterpret_cast<::std::uintptr_t>(file->source_cbegin());
+            auto const begin=reinterpret_cast<::std::uintptr_t>(payload.byte_begin),end=reinterpret_cast<::std::uintptr_t>(payload.byte_end);
+            if((begin==0u)!=(end==0u)||(begin&&(begin<base||end<begin||end-base>file->source_size())))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
-            auto const size=payload.byte_begin==nullptr?0u:static_cast<::std::size_t>(payload.byte_end-payload.byte_begin);
+            auto const size=begin?end-begin:0u;
             if(bytes>size||source>size-bytes)
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));return;}
-            auto const checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
-                *memory,static_cast<::std::uint32_t>(destination),0u,bytes,[&](::std::span<::std::byte> data) noexcept
+            auto const checked=memory_access(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
                     while(at<data.size()&&!stopped())
@@ -176,9 +182,15 @@
             ::std::uint64_t pointer,::std::uint64_t expected,::std::int64_t timeout) noexcept
         {
             static_assert(Operation<=2u);
-            auto* memory=actual_memory(owner);if(memory==nullptr||stopped()||!memtag_u32(pointer))return 0u;
-            auto const result=::uwvm2::runtime::memtag::wait_notify<Operation,::std::uint32_t,true>(
-                *memory,static_cast<::std::uint32_t>(pointer),offset,expected,timeout);
+            auto* memory=actual_memory(owner);if(memory==nullptr||stopped())return 0u;
+            namespace wt=::uwvm2::runtime::wasm_threads;
+            auto const result=[&]() noexcept
+            {
+                if(memory->memtag_shadow.enabled())return memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
+                {return ::uwvm2::runtime::memtag::wait_notify<Operation,Address,Shared>(*memory,static_cast<Address>(pointer),offset,expected,timeout);});
+                ::uwvm2::runtime::memtag::wait_execution_result r{};
+                r.wait=wt::memory_wait_notify64<Operation>(*memory,offset,pointer,expected,timeout);return r;
+            }();
             if(!result.access){memtag_access_failure(*memory,pointer,result.access);return 0u;}
             namespace wait=::uwvm2::runtime::wasm_threads;
             switch(result.wait.status)
@@ -207,7 +219,7 @@
                 Op==code::v128_load32_lane||Op==code::v128_load64_lane;
             constexpr bool lane_store=store&&Op!=code::v128_store;
             constexpr auto width=emit::llvm_jit_simd_details::simd_memory_access_size<Op>();
-            auto* memory=actual_memory(owner);if(memory==nullptr||stopped()||!memtag_u32(pointer))return;
+            auto* memory=actual_memory(owner);if(memory==nullptr||stopped())return;
             if(((store||lane_load)&&vector_address==0u)||(!store&&result_address==0u)||
                ((lane_load||lane_store)&&lane>=16u/width))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
@@ -229,8 +241,7 @@
                 else value=emit::llvm_jit_simd_details::eval_memory_load<Op>(detached.data(),value,static_cast<emit::llvm_jit_simd_details::u8>(lane));
             };
             ::uwvm2::extension::memtag::access_result checked{};
-            if constexpr(Tagged)checked=::uwvm2::runtime::memtag::with_guest_access<::std::uint32_t,true>(
-                *memory,static_cast<::std::uint32_t>(pointer),offset,width,access);
+            if constexpr(Tagged)checked=memory_access(*memory,pointer,offset,width,access);
             else
             {
                 if(memory->memtag_shadow.enabled())
@@ -265,11 +276,13 @@
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             namespace mt=::uwvm2::extension::memtag;
             ::std::uintptr_t replacement{};
+            auto geometry=[&]<typename Address,bool Shared>() noexcept
+            {
             auto scalar=[&]<unsigned Bits,::std::size_t Bytes,bool Signed,bool Store>() noexcept
             {
-                if(original==address(&emit::llvm_jit_memtag_scalar_bridge<::std::uint32_t,true,Bits,Bytes,Signed,Store,false>)&&
-                   emit::memtag_shared_lease_declaration(declaration,emit::memtag_shared_access_family::scalar,
-                       sizeof(::std::uintptr_t)*CHAR_BIT,emit::get_llvm_jit_host_calling_conv()))
+                if(original==address(&emit::llvm_jit_memtag_scalar_bridge<Address,Shared,Bits,Bytes,Signed,Store,false>)&&
+                   (!Shared||emit::memtag_shared_lease_declaration(declaration,emit::memtag_shared_access_family::scalar,
+                       sizeof(::std::uintptr_t)*CHAR_BIT,emit::get_llvm_jit_host_calling_conv())))
                     replacement=address(&memtag_scalar<Bits,Bytes,Signed,Store>);
             };
             auto width=[&]<unsigned Bits,::std::size_t Bytes>() noexcept
@@ -280,13 +293,13 @@
             };
             width.template operator()<32u,1u>();width.template operator()<32u,2u>();width.template operator()<32u,4u>();
             width.template operator()<64u,1u>();width.template operator()<64u,2u>();width.template operator()<64u,4u>();width.template operator()<64u,8u>();
-            if(original==address(&emit::llvm_jit_memtag_atomic_bridge<::std::uint32_t,true,false>)&&
-               emit::memtag_shared_lease_declaration(declaration,emit::memtag_shared_access_family::atomic,
-                   sizeof(::std::uintptr_t)*CHAR_BIT,emit::get_llvm_jit_host_calling_conv()))
+            if(original==address(&emit::llvm_jit_memtag_atomic_bridge<Address,Shared,false>)&&
+               (!Shared||emit::memtag_shared_lease_declaration(declaration,emit::memtag_shared_access_family::atomic,
+                   sizeof(::std::uintptr_t)*CHAR_BIT,emit::get_llvm_jit_host_calling_conv())))
                 replacement=address(&memtag_atomic);
             auto operation=[&]<mt::opcode Op>() noexcept
             {
-                if(original==address(&emit::llvm_jit_memtag_operation_bridge<Op,::std::uint32_t,true,false>))
+                if(original==address(&emit::llvm_jit_memtag_operation_bridge<Op,Address,Shared,false>))
                     replacement=address(&memtag_operation<Op>);
             };
             operation.template operator()<mt::opcode::status>();
@@ -314,12 +327,18 @@
             {
                 constexpr bool store=Op==code::v128_store||Op==code::v128_store8_lane||
                     Op==code::v128_store16_lane||Op==code::v128_store32_lane||Op==code::v128_store64_lane;
-                if(original==address(&emit::llvm_jit_memtag_simd_bridge<Op,::std::uint32_t,true,false>))
+                if(original==address(&emit::llvm_jit_memtag_simd_bridge<Op,Address,Shared,false>))
                     replacement=address(&simd_memory<Op,true>);
                 if constexpr(store)
-                {if(original==address(&emit::llvm_jit_simd_memory_store_bridge<Op>))replacement=address(&simd_store<Op>);}
+                {
+                    if(original==address(&emit::llvm_jit_simd_memory_store_bridge<Op>))replacement=address(&simd_store<Op>);
+                    if(original==address(&emit::llvm_jit_memory64_simd_store_bridge<Op>))replacement=address(&simd_store64<Op>);
+                }
                 else
-                {if(original==address(&emit::llvm_jit_simd_memory_load_bridge<Op>))replacement=address(&simd_load<Op>);}
+                {
+                    if(original==address(&emit::llvm_jit_simd_memory_load_bridge<Op>))replacement=address(&simd_load<Op>);
+                    if(original==address(&emit::llvm_jit_memory64_simd_load_bridge<Op>))replacement=address(&simd_load64<Op>);
+                }
             };
             simd.template operator()<code::v128_load>();
             simd.template operator()<code::v128_load8x8_s>();
@@ -344,11 +363,17 @@
             simd.template operator()<code::v128_load32_zero>();
             simd.template operator()<code::v128_load64_zero>();
             if(original==address(&llvm_jit_memtag_trap))replacement=address(&memtag_trap);
-            else if(original==address(&emit::llvm_jit_memtag_fill_bridge<::std::uint32_t,true,false>))replacement=address(&memtag_fill);
+            else if(original==address(&emit::llvm_jit_memtag_fill_bridge<Address,Shared,false>))replacement=address(&memtag_fill);
             else if(original==address(&emit::llvm_jit_memtag_copy_bridge<::std::uint32_t,::std::uint32_t,false>))replacement=address(&memtag_copy);
-            else if(original==address(&emit::llvm_jit_memtag_init_bridge<::std::uint32_t,true,false>))replacement=address(&memtag_init);
-            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<0u,::std::uint32_t,true,false>))replacement=address(&memtag_wait_notify<0u>);
-            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<1u,::std::uint32_t,true,false>))replacement=address(&memtag_wait_notify<1u>);
-            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<2u,::std::uint32_t,true,false>))replacement=address(&memtag_wait_notify<2u>);
+            else if(original==address(&emit::llvm_jit_memtag_init_bridge<Address,Shared,false>))replacement=address(&memtag_init);
+            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<0u,Address,Shared,false>))replacement=address(&memtag_wait_notify<0u>);
+            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<1u,Address,Shared,false>))replacement=address(&memtag_wait_notify<1u>);
+            else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<2u,Address,Shared,false>))replacement=address(&memtag_wait_notify<2u>);
+            };
+            geometry.template operator()<::std::uint32_t,false>();geometry.template operator()<::std::uint32_t,true>();
+            geometry.template operator()<::std::uint64_t,false>();geometry.template operator()<::std::uint64_t,true>();
+            if(original==address(&emit::llvm_jit_memtag_copy_bridge<::std::uint64_t,::std::uint32_t,false>)||
+               original==address(&emit::llvm_jit_memtag_copy_bridge<::std::uint32_t,::std::uint64_t,false>)||
+               original==address(&emit::llvm_jit_memtag_copy_bridge<::std::uint64_t,::std::uint64_t,false>))replacement=address(&memtag_copy);
             return replacement;
         }

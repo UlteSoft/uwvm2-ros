@@ -9,6 +9,13 @@ It cannot open, revoke, grant, refresh or consume a capability or event.
 
 The robot product uses immutable `--debug-permissions full|read-only|limited|none`. Full and read-only permissions allow these sensitive ROS views. Limited permits only non-sensitive diagnostics; none denies the endpoint. The authenticated host broker preserves the VM command line, and both `-Rdbg` and `-m debug` default to full. Permissions never grant ROS interfaces or resources. See [Debugger permissions](../../documents/command-line/debug-permissions.md).
 
+Host-call names and trace filters use `message_poll`, `event_stream_watch`,
+`event_stream_poll` and `event_stream_ready` in the selected `uwvm_ros1_v1` or
+`uwvm_ros2_v1` module. IDE adapters display the Runtime's names directly.
+There are no alternate names for these operations; update saved filters and
+rebuild guests with the matching SDK. See
+[message and event-stream APIs](../../documents/runtime/ros-event-streams.md).
+
 At a cooperative frame-zero stop the Variables view offers:
 
 - **ROS capabilities (process-owned)**: stored capability metadata and counters.

@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/runtime/lib/uwvm_runtime_posix_abi.h>
 
 #ifndef UWVM_MODULE
@@ -1010,10 +1011,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             using native_worker = ::fast_io::native_thread;
 #else
-            using native_worker = ::std::thread;
+            struct native_worker
+            {
+                [[nodiscard]] constexpr bool joinable() const noexcept { return false; }
+                constexpr void join() const noexcept {}
+            };
 #endif
             native_worker worker{};
-            ::std::deque<cache_store_request> requests{};
+            ::uwvm2::utils::container::std_deque<cache_store_request> requests{};
             ::std::size_t active_requests{};
             bool stop_requested{};
             bool worker_started{};
@@ -1071,7 +1076,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #endif
                 {
                     // The worker is lazy so programs that never store an object do not pay for a thread.
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
                     this->worker = native_worker{[this]() noexcept { this->run(); }};
+#else
+                    return false;
+#endif
                     this->worker_started = true;
                     return true;
                 }

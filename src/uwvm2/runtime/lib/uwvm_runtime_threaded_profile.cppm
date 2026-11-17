@@ -22,7 +22,7 @@ module;
 #include <new>
 #include <optional>
 #include <span>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #include <string>
 #include <thread>
 #include <type_traits>

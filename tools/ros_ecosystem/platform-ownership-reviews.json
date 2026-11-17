@@ -1,0 +1,58 @@
+{
+  "scope": "Three explicitly reviewed source paths; not complete vendor, package or industrial qualification.",
+  "review_date": "2026-11-18",
+  "cases": [
+    {
+      "id": "ur-local-mode-compatibility",
+      "source_id": "30db24fbc36b405a5b7aa2c0",
+      "url": "https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver",
+      "ref": "262330ed9b5467a17c8ceae09567991e22d13944",
+      "path": "Universal_Robots_ROS2_Driver-262330ed9b5467a17c8ceae09567991e22d13944/ur_robot_driver/src/hardware_interface.cpp",
+      "sha256": "2fca799496a687cced846e14c02cd677608aeff4d5b9bb1628986339b5e3cd0a",
+      "line_start": 1320,
+      "line_end": 1398,
+      "reviewed_scope": "Reviewed local current-mode accounting and start-interface compatibility checks; no cross-process device lease is established by this path.",
+      "requirements": [
+        "One canonical robot owner outside per-VM permission groups.",
+        "Atomic admission must include every affected joint/mode; rejected mode combinations must produce no partial command."
+      ],
+      "status": "LIMITED_SOURCE_PATH_REVIEW",
+      "upstream_execution_qualified": false
+    },
+    {
+      "id": "franka-control-lifetime",
+      "source_id": "281f92ec39b40bd84355b0c1",
+      "url": "https://github.com/frankarobotics/franka_ros2",
+      "ref": "4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec",
+      "path": "franka_ros2-4acc05c01ebfcdf916ee6b3df966df0ad7b2f9ec/franka_hardware/src/robot.cpp",
+      "sha256": "76d10280fc82551f29b8c4f9d474fb67cb8e9a0ff6c1d9c7efe308a881c7c620",
+      "line_start": 52,
+      "line_end": 110,
+      "reviewed_scope": "Reviewed active-control lifetime and command dispatch; the local mutex and object reset do not constitute authenticated physical-stop evidence.",
+      "requirements": [
+        "Independent control ownership, command cardinality/units and controller mode checks.",
+        "Unexpected exit leaves effect state unknown; receiver replacement needs stop and effect reconciliation."
+      ],
+      "status": "LIMITED_SOURCE_PATH_REVIEW",
+      "upstream_execution_qualified": false
+    },
+    {
+      "id": "unitree-low-command-effects",
+      "source_id": "ea7a2ef63b4c9832f2788a77",
+      "url": "https://github.com/unitreerobotics/unitree_ros2",
+      "ref": "668d1ec5a05d1c38d3306bdca7d59f2ba3581a88",
+      "path": "unitree_ros2-668d1ec5a05d1c38d3306bdca7d59f2ba3581a88/example/src/src/g1/lowlevel/g1_low_level_example.cpp",
+      "sha256": "35f289a7c09d0d57c7e758d630f610478a51d98b7afddba6ee9518b801af8a1d",
+      "line_start": 75,
+      "line_end": 173,
+      "reviewed_scope": "Reviewed fixed low-command publisher, periodic controller and motor commands. A topic publish can enable motors and write gains/targets; CRC is not an authority grant.",
+      "requirements": [
+        "Motor-enable, mode, gains, position, velocity and torque need explicit semantic policy even when carried by DDS.",
+        "Publisher/topic authority alone must not grant every possible physical effect.",
+        "Keep control-loop timing in the stable-authority contract; explicit attenuation may invalidate stability guarantees."
+      ],
+      "status": "LIMITED_SOURCE_PATH_REVIEW",
+      "upstream_execution_qualified": false
+    }
+  ]
+}

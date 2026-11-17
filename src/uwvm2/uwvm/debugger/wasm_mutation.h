@@ -1,6 +1,7 @@
 // Management request DATA only. A request, source path or detached reply cannot
 // authorize a write; the runtime repeats the complete current stop proof.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -356,9 +357,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_mutation
         }
         return "invalid refusal";
     }
-    [[nodiscard]] inline ::std::string format(result const& out)
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string format(result const& out)
     {
-        return ::fast_io::concat_std("Wasm mutation v=",protocol_version," status=",wasm_state::status_text(out.status),
+        return ::uwvm2::utils::container::concat("Wasm mutation v=",protocol_version," status=",wasm_state::status_text(out.status),
             " applied=",out.applied ? 1u : 0u," reason=",refusal_text(out.reason)," runtime=",out.runtime_epoch,
             " module=",out.module," target=",out.target==destination::global ? ::fast_io::string_view{"global"} : out.target==destination::table ? ::fast_io::string_view{"table"} : out.target==destination::memory ? ::fast_io::string_view{"memory"} : out.target==destination::local ? ::fast_io::string_view{"local"} :
             out.target==destination::operand ? ::fast_io::string_view{"operand"} : ::fast_io::string_view{"member"},

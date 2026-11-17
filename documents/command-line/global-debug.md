@@ -24,6 +24,13 @@ Use `--debug-permissions full|read-only|limited|none`. `-Rdbg` and `-m debug` (i
 
 `full` permits inspection and qualified mutation. `read-only` permits complete inspection and dumps while refusing state/code mutation and stepping. `limited` permits non-sensitive status and redacted dumps. `none` starts no debugger endpoint and denies dump. A separate authenticated FD/HANDLE is required for an actual session; Guest stdin is never repurposed.
 
+The `debug` category also contains `--debug-dump-max diagnostic|full` (default
+`full`) and `--debug-dump-force none|diagnostic|full`. They are mutually exclusive
+launch selections. The maximum allows a lower per-export choice; the forced
+selection requires an exact match and `none` disables exports. Debugger
+permissions remain an additional ceiling. See the
+[snapshot contract](../runtime/unified-snapshot.md).
+
 See [Debugger permissions](debug-permissions.md) for the exact command and IDE contract, [bounded diagnostics](../runtime/release-diagnostics.md) for the metadata-only endpoint, and [production updates](../runtime/production-update.md) for independently signed update authority.
 
 ## `--help`

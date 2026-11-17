@@ -8,13 +8,13 @@
 
 namespace uwvm2::imported::ros::ipc
 {
-    // Versioned event records are an additive API. Legacy event_poll and RPC
-    // bodies retain their existing layouts and destructive-too-small behavior.
+    // Event streams return versioned records. message_poll and RPC return
+    // operation-specific bodies and may consume a record before a size failure.
     // Integers are unaligned little endian; no native struct is a wire object.
     inline constexpr std::uint32_t event_magic{0x45525755}; // "UWRE"
     inline constexpr std::uint16_t event_version{1};
     inline constexpr std::size_t event_header_bytes{64};
-    inline constexpr std::size_t event_ready_bytes{32};
+    inline constexpr std::size_t event_stream_ready_bytes{32};
     inline constexpr std::string_view event_type{"builtin/event-v1"};
     inline constexpr std::string_view event_type_identity{"builtin:ros-event-envelope-le64-v1"};
     enum class event_kind : std::uint16_t
@@ -161,9 +161,9 @@ namespace uwvm2::imported::ros::ipc
     {
         std::uint64_t ready_events{},next_event_bytes{},admission_slots{},admission_bytes{};
     };
-    inline std::array<std::uint8_t,event_ready_bytes> encode_event_readiness(event_readiness const& value) noexcept
+    inline std::array<std::uint8_t,event_stream_ready_bytes> encode_event_readiness(event_readiness const& value) noexcept
     {
-        std::array<std::uint8_t,event_ready_bytes> bytes{};
+        std::array<std::uint8_t,event_stream_ready_bytes> bytes{};
         event_put(bytes.data(),value.ready_events,8);event_put(bytes.data()+8,value.next_event_bytes,8);
         event_put(bytes.data()+16,value.admission_slots,8);event_put(bytes.data()+24,value.admission_bytes,8);return bytes;
     }

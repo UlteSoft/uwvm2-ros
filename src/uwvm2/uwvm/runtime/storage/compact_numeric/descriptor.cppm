@@ -3,6 +3,8 @@
  * Private source-only persistent numeric foundation.
  *************************************************************/
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #include <array>
 #include <atomic>
 #include <bit>

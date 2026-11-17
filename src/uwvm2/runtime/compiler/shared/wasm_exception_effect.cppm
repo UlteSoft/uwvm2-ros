@@ -1,5 +1,6 @@
 // PRIVATE source-only dual-mode adapter. No compiler/native qualification is inherited.
 module;
+#include <uwvm2/utils/container/standard.h>
 #include <cstddef>
 #include <cstdint>
 #include <limits>

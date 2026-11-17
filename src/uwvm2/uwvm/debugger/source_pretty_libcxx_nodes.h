@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #if UWVM_DEBUG_LANGUAGE_CPP
 #ifndef UWVM_MODULE
@@ -27,7 +28,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             ::std::size_t&,unsigned,member_ancestor const*) noexcept;
         [[nodiscard]] inline bool first_path(::std::span<dwarf::type_record const>,::std::size_t,
             ::std::initializer_list<::std::string_view>,field&) noexcept;
-        inline void add_preview(::std::vector<dwarf::object_node> const&,::std::size_t,::std::uint64_t,::std::string&);
+        inline void add_preview(::uwvm2::utils::container::std_vector<dwarf::object_node> const&,::std::size_t,::std::uint64_t,::uwvm2::utils::container::std_string&);
     }
     namespace libcxx_node_details
     {
@@ -46,7 +47,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 dwarf::cxx_language(a.language) && !a.tinygo_producer && !b.tinygo_producer && !a.zig_producer && !b.zig_producer;
         }
         template<class Session> [[nodiscard]] outcome apply(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth,
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth,
             bool ordered,bool hashed,bool forward)
         {
             auto const& type{work.types[root]};field owner{root,0u},head{},tail{},size{};::std::size_t element{dwarf::no_record};
@@ -142,12 +143,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 work.types[next.type].referenced_type!=work.types[head.type].referenced_type) { return outcome::unavailable; }
             if(!ordered && !hashed && !forward && (!path(work.types,node,"__prev_",previous) || !pointer(work.types,previous,work.width) ||
                 work.types[previous.type].referenced_type!=work.types[head.type].referenced_type)) { return outcome::unavailable; }
-            struct saved { ::std::uint64_t address{};::std::vector<::std::byte> bytes{}; };
-            ::std::vector<saved> stack{};::std::vector<::std::uint64_t> visited{};::std::uint64_t shown{},prior{},sentinel{};bool incomplete{};::std::string text{"["};
+            struct saved { ::std::uint64_t address{};::uwvm2::utils::container::std_vector<::std::byte> bytes{}; };
+            ::uwvm2::utils::container::std_vector<saved> stack{};::uwvm2::utils::container::std_vector<::std::uint64_t> visited{};::std::uint64_t shown{},prior{},sentinel{};bool incomplete{};::uwvm2::utils::container::std_string text{"["};
             while((!counted || shown<count) && (ordered ? current!=0u || !stack.empty() : current!=0u) &&
                 work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
-                ::std::vector<::std::byte> copied{};auto address{current};
+                ::uwvm2::utils::container::std_vector<::std::byte> copied{};auto address{current};
                 if(ordered)
                 {
                     while(current!=0u)
@@ -175,7 +176,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                     }
                     prior=address;
                 }
-                ::std::string label{"["};number(label,shown);label+=']';auto const before{tree.size()};++work.elements;
+                ::uwvm2::utils::container::std_string label{"["};number(label,shown);label+=']';auto const before{tree.size()};++work.elements;
                 if(!work.append(tree,element,::std::span<::std::byte const>{copied}.subspan(static_cast<::std::size_t>(payload.offset),static_cast<::std::size_t>(value_type.byte_size)),::std::move(label),depth))
                 { incomplete=true;break; }
                 sequence_details::add_preview(tree,before,shown,text);++shown;
@@ -190,7 +191,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             if(forward && current!=0u && ::std::find(visited.begin(),visited.end(),current)!=visited.end()) { return outcome::unavailable; }
             bool const truncated{incomplete || (counted ? shown<count : current!=0u)};
             if(truncated || shown>8u) { if(shown!=0u) { text+=", "; }text+="..."; }text+=']';
-            ::std::string result{counted || !truncated ? "size=" : "size=unknown (copied prefix) "};
+            ::uwvm2::utils::container::std_string result{counted || !truncated ? "size=" : "size=unknown (copied prefix) "};
             if(counted || !truncated) { number(result,counted ? count : shown);result+=' '; }result+=text;
             summary(tree[0u],ordered ? "libc++ ordered tree" : hashed ? "libc++ hash chain" : forward ? "libc++ forward_list" : "libc++ list",
                 ::std::move(result),counted ? count-shown : 0u);tree[0u].pretty_truncated|=truncated;return outcome::formatted;
@@ -198,7 +199,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
     }
     template<class Session> [[nodiscard]] outcome extended_libcxx_nodes(Session& work,::std::size_t root,
         ::std::span<::std::byte const> bytes,::std::span<::std::byte const> known,::std::span<::std::byte const> pointer_known,
-        ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
     {
         if(root>=work.types.size() || tree.empty() || tree[0u].type!=root || (work.width!=4u && work.width!=8u) ||
            (!known.empty() && known.size()!=bytes.size()) || (!pointer_known.empty() && pointer_known.size()!=bytes.size())) { return outcome::unavailable; }

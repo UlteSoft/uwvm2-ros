@@ -1,0 +1,1608 @@
+{
+  "format": "robot-provider-operational-contracts",
+  "abi_module": "uwvm_ros_v2",
+  "scope": "Normative design and bounded executable request codecs; production provider registration and qualification are separate.",
+  "catalogue": "interface-catalogue.json",
+  "decoder": "src/uwvm2/imported/ros/scene/robot_provider_contract.h",
+  "common": {
+    "authority": "Zero authority by default; exact operation exposure, caller-bound capability, immutable target/profile and all independent secondary origins. Missing rate means unlimited inside the grant; explicit zero denies; capacity is independent.",
+    "admission": "Check primary and carrier extent before owned copy; decode completely; validate all source/controller/version claims against host registries; reserve complete reply, pins, work and recovery before effects.",
+    "effect": "Revalidate current complete authority at every external effect and delivery boundary. Never hold an authority lock across IPC waits. Receiver independently fences generation, controller epoch, expiry and command schema.",
+    "recovery": "Key session is the owned resource; its operation selects a declared sequence domain. Each domain admits strictly next sequence or exact last retry, with modified content rejected. Normal work and stop/close domains have independent replay capacity so lost normal receipts cannot block safety. Unknown/partial effects retain separate recovery debt and never trigger automatic retry.",
+    "delivery": "Validate every guest result span before effects. Failed inert handle delivery rolls back; failed effect-result or queue delivery preserves the same receipt/item. Complete copy precedes consumption.",
+    "retirement": "Logical close does not release borrowed data, native work, process trees, correlations or unknown effects. Capacity remains charged through positive cleanup evidence. Derived-resource close never closes unrelated sources.",
+    "stop": "Independent stop/fault capacity survives normal queue saturation, rate attenuation, revocation and unknown records. Guest stop needs its own grant. Requested, acknowledged, exited and physically stopped are distinct.",
+    "configuration": "Trusted exact profiles bind protocol, peer, direction, type, effect class, content validator and finite reservations. Unknown fields fail. Static validation never launches or performs I/O on a native target.",
+    "placement": "CPU/NUMA/native-thread/process/memory/queue reservations and required versus inherited guarantees are explicit. Check actual allowed sets at launch. No implicit exclusive core, real-time guarantee or zero-copy claim.",
+    "isolation": "Native extensions run outside the VM. An OS backend lacking a required isolation, fencing, exit or placement guarantee refuses activation; no preloaddl or generic WASI fallback.",
+    "allocation": "Decode allocates nothing. Owned operational state uses recoverable project fast_io allocation and returns no_memory before effects; ordinary terminating allocation is excluded from untrusted admission.",
+    "debug": "Only cached bounded profile/state/count/generation/deadline/reason DTOs. No secrets, payload, host paths, native handles, arbitrary inspection callback or implicit native poll.",
+    "evidence": "Design, structural/semantic codecs, runtime registration, real native effects, Wasm carriers, safety tests and O3+g performance are independently recorded. No certification or ecosystem-wide support follows from a catalogue entry."
+  },
+  "families": {
+    "device": {
+      "profile_fields": [
+        "protocol",
+        "target",
+        "effects",
+        "command_schema",
+        "mode_profiles",
+        "stop_profile",
+        "controller_scope",
+        "source_rules",
+        "dependency_rules",
+        "watchdog_profile",
+        "receiver_fencing",
+        "normal_channel",
+        "command_ack_channel",
+        "stop_channel",
+        "stop_ack_channel",
+        "state_evidence_source"
+      ],
+      "capacity_fields": [
+        "handles",
+        "pending_commands",
+        "command_bytes",
+        "reply_bytes",
+        "observation_pins",
+        "dependency_pins",
+        "recovery_records",
+        "retained_bytes",
+        "workspace_bytes",
+        "workspace_calls",
+        "stop_bytes",
+        "stop_slots"
+      ],
+      "timing_fields": [
+        "maximum_age_ns",
+        "maximum_deadline_ns",
+        "maximum_queue_ns",
+        "maximum_silence_ns",
+        "stop_deadline_ns"
+      ],
+      "states": [
+        "prepared",
+        "ready",
+        "stopping",
+        "stopped",
+        "faulted",
+        "retired",
+        "outcome_unknown"
+      ],
+      "required_features": [
+        "isolated_native_driver",
+        "direction_bound_transport",
+        "exact_protocol",
+        "independent_watchdog",
+        "receiver_fencing",
+        "independent_stop_reservation",
+        "qualified_state_observer"
+      ],
+      "profile_field_types": {
+        "protocol": "profile_ref",
+        "target": "resource_selector",
+        "effects": "effect_set",
+        "command_schema": "profile_ref",
+        "mode_profiles": "profile_set",
+        "stop_profile": "profile_ref",
+        "controller_scope": "profile_ref",
+        "source_rules": "source_rules",
+        "dependency_rules": "dependency_rules",
+        "watchdog_profile": "profile_ref",
+        "receiver_fencing": "profile_ref",
+        "normal_channel": "channel",
+        "command_ack_channel": "channel",
+        "stop_channel": "channel",
+        "stop_ack_channel": "channel",
+        "state_evidence_source": "profile_ref"
+      },
+      "limit_contract": "All named capacities are explicit unsigned finite reservations [0,2^64-2], checked against implementation support and aggregate memory/element budgets. Zero enables no dependent operation; activation requires the full selected workflow reservation. Unknown, duplicate or missing fields fail. Timing fields are positive finite nanoseconds, not rates."
+    },
+    "control": {
+      "profile_fields": [
+        "device_profile",
+        "controller_scope",
+        "priority",
+        "preemption_policy",
+        "mode_profile",
+        "command_schema",
+        "sample_sources",
+        "version_dependencies",
+        "watchdog_profile",
+        "stop_profile",
+        "missed_phase_policy"
+      ],
+      "capacity_fields": [
+        "cycles",
+        "sample_bytes",
+        "input_pins",
+        "dependency_pins",
+        "command_bytes",
+        "reply_bytes",
+        "recovery_records",
+        "retained_bytes",
+        "workspace_bytes",
+        "workspace_calls",
+        "stop_bytes",
+        "stop_slots"
+      ],
+      "timing_fields": [
+        "lease_duration_ns",
+        "ownership_prepare_ns",
+        "sample_period_ns",
+        "write_window_ns",
+        "maximum_age_ns",
+        "stop_deadline_ns"
+      ],
+      "states": [
+        "prepared",
+        "owned",
+        "sampled",
+        "submitted",
+        "completed",
+        "latched",
+        "retired"
+      ],
+      "required_features": [
+        "exclusive_arbitration",
+        "receiver_fencing",
+        "independent_watchdog",
+        "stable_cycle_reservation",
+        "independent_stop_reservation"
+      ],
+      "profile_field_types": {
+        "device_profile": "profile_ref",
+        "controller_scope": "profile_ref",
+        "priority": "u32",
+        "preemption_policy": "preemption_policy",
+        "mode_profile": "profile_ref",
+        "command_schema": "profile_ref",
+        "sample_sources": "source_rules",
+        "version_dependencies": "dependency_rules",
+        "watchdog_profile": "profile_ref",
+        "stop_profile": "profile_ref",
+        "missed_phase_policy": "missed_phase_policy"
+      },
+      "limit_contract": "All named capacities are explicit unsigned finite reservations [0,2^64-2], checked against implementation support and aggregate memory/element budgets. Zero enables no dependent operation; activation requires the full selected workflow reservation. Unknown, duplicate or missing fields fail. Timing fields are positive finite nanoseconds, not rates."
+    },
+    "media": {
+      "profile_fields": [
+        "mode",
+        "source_profile",
+        "input_layouts",
+        "output_layout",
+        "codec_profile",
+        "color_or_sample_contract",
+        "metadata_policy",
+        "egress_profile",
+        "loss_policy",
+        "close_policy",
+        "isolation_profile"
+      ],
+      "capacity_fields": [
+        "streams",
+        "pending_frames",
+        "encoded_bytes",
+        "decoded_bytes",
+        "width",
+        "height",
+        "channels",
+        "samples",
+        "planes",
+        "output_bytes",
+        "output_buffers",
+        "retained_bytes",
+        "workspace_bytes",
+        "workspace_calls",
+        "recovery_records",
+        "stop_bytes",
+        "stop_slots"
+      ],
+      "timing_fields": [
+        "maximum_age_ns",
+        "maximum_deadline_ns",
+        "close_deadline_ns"
+      ],
+      "states": [
+        "prepared",
+        "ready",
+        "draining",
+        "closed",
+        "failed",
+        "retired",
+        "outcome_unknown"
+      ],
+      "required_features": [
+        "bounded_codec_expansion",
+        "sealed_input_pins",
+        "independent_output_authority",
+        "source_provenance",
+        "explicit_egress"
+      ],
+      "profile_field_types": {
+        "mode": "media_mode",
+        "source_profile": "profile_ref",
+        "input_layouts": "profile_set",
+        "output_layout": "profile_ref",
+        "codec_profile": "profile_ref",
+        "color_or_sample_contract": "profile_ref",
+        "metadata_policy": "metadata_policy",
+        "egress_profile": "optional<profile_ref>",
+        "loss_policy": "loss_policy",
+        "close_policy": "close_policy",
+        "isolation_profile": "profile_ref"
+      },
+      "limit_contract": "All named capacities are explicit unsigned finite reservations [0,2^64-2], checked against implementation support and aggregate memory/element budgets. Zero enables no dependent operation; activation requires the full selected workflow reservation. Unknown, duplicate or missing fields fail. Timing fields are positive finite nanoseconds, not rates."
+    },
+    "bridge": {
+      "profile_fields": [
+        "flow_graph",
+        "edge_roles",
+        "source_ros_generation",
+        "destination_ros_generation",
+        "conversion_profiles",
+        "qos_mapping",
+        "effects",
+        "correlation_policy",
+        "loop_policy",
+        "loss_policy",
+        "drain_policy",
+        "isolation_profile"
+      ],
+      "capacity_fields": [
+        "bridges",
+        "edges",
+        "pending_forwards",
+        "correlations",
+        "input_bytes",
+        "output_bytes",
+        "retained_bytes",
+        "workspace_bytes",
+        "workspace_calls",
+        "recovery_records",
+        "hop_limit",
+        "stop_bytes",
+        "stop_slots"
+      ],
+      "timing_fields": [
+        "startup_ns",
+        "forward_deadline_ns",
+        "correlation_lifetime_ns",
+        "stop_deadline_ns"
+      ],
+      "states": [
+        "prepared",
+        "starting",
+        "running",
+        "draining",
+        "stopped",
+        "failed",
+        "retired",
+        "outcome_unknown"
+      ],
+      "required_features": [
+        "all_edge_authority",
+        "reviewed_conversion",
+        "bounded_correlation",
+        "loop_prevention",
+        "effect_class_preservation",
+        "independent_stop_reservation"
+      ],
+      "profile_field_types": {
+        "flow_graph": "flow_graph",
+        "edge_roles": "role_bindings",
+        "source_ros_generation": "ros_generation",
+        "destination_ros_generation": "ros_generation",
+        "conversion_profiles": "profile_set",
+        "qos_mapping": "profile_ref",
+        "effects": "effect_set",
+        "correlation_policy": "profile_ref",
+        "loop_policy": "loop_policy",
+        "loss_policy": "loss_policy",
+        "drain_policy": "close_policy",
+        "isolation_profile": "profile_ref"
+      },
+      "limit_contract": "All named capacities are explicit unsigned finite reservations [0,2^64-2], checked against implementation support and aggregate memory/element budgets. Zero enables no dependent operation; activation requires the full selected workflow reservation. Unknown, duplicate or missing fields fail. Timing fields are positive finite nanoseconds, not rates."
+    }
+  },
+  "operations": {
+    "device.open": {
+      "family": "device",
+      "primary_action": "device.open",
+      "request_schema": "device_open__request",
+      "result_schema": "device_open__result",
+      "secondary_admission": "Exact immutable device profile and already prepared qualified driver/watchdog.",
+      "effect": "Reserve inert owned ledger handle, no bus I/O.",
+      "commit_and_recovery": "Publish after complete handle copy; failed copy rolls back.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "Four deployment-owned directional framed lanes and a closed scalar command schema. Actual controller-install and command acknowledgements fence generation, epoch, sequence and digest. Stop has independent capacity; an acknowledgement is not physical execution or stopped-state evidence. Current transport qualification is Linux PTY/pipe only."
+    },
+    "device.submit": {
+      "family": "device",
+      "primary_action": "device.submit",
+      "request_schema": "device_submit__request",
+      "result_schema": "device_submit__result",
+      "secondary_admission": "Current control.submit on controller; each observation buffer.read and actual source resource.observe; each dependency resource.observe and active revision.",
+      "effect": "Validate complete mode/schema/units/frame/limits/freshness/dependencies and receiver fence; reserve one command.",
+      "commit_and_recovery": "Commit key and receipt before native work. Partial/unknown result retains pins, latches target and triggers independent stop.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "command",
+      "implementation_scope": "Four deployment-owned directional framed lanes and a closed scalar command schema. Actual controller-install and command acknowledgements fence generation, epoch, sequence and digest. Stop has independent capacity; an acknowledgement is not physical execution or stopped-state evidence. Current transport qualification is Linux PTY/pipe only."
+    },
+    "device.result": {
+      "family": "device",
+      "primary_action": "device.result",
+      "request_schema": "device_result__request",
+      "result_schema": "device_result__result",
+      "secondary_admission": "Owned device and request; evidence scope restricted to that request.",
+      "effect": "Read retained outcome and optional independently qualified execution evidence.",
+      "commit_and_recovery": "No resend, implicit reconciliation or unknown-debt release.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "Four deployment-owned directional framed lanes and a closed scalar command schema. Actual controller-install and command acknowledgements fence generation, epoch, sequence and digest. Stop has independent capacity; an acknowledgement is not physical execution or stopped-state evidence. Current transport qualification is Linux PTY/pipe only."
+    },
+    "device.stop": {
+      "family": "device",
+      "primary_action": "device.stop",
+      "request_schema": "device_stop__request",
+      "result_schema": "device_stop__result",
+      "secondary_admission": "Own stop grant and exact stop profile.",
+      "effect": "Latch/coalesce stop using independent channel and capacity.",
+      "commit_and_recovery": "Commit keyed stop receipt; retry never means another stop command and ACK never means observed safe state.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "stop",
+      "implementation_scope": "Four deployment-owned directional framed lanes and a closed scalar command schema. Actual controller-install and command acknowledgements fence generation, epoch, sequence and digest. Stop has independent capacity; an acknowledgement is not physical execution or stopped-state evidence. Current transport qualification is Linux PTY/pipe only."
+    },
+    "device.describe": {
+      "family": "device",
+      "primary_action": "device.describe",
+      "request_schema": "device_describe__request",
+      "result_schema": "device_describe__result",
+      "secondary_admission": "Owned device scope.",
+      "effect": "Read cached support, state, watchdog and capacities.",
+      "commit_and_recovery": "No native polling, lease renewal, rearm or secret/native identity export.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "Four deployment-owned directional framed lanes and a closed scalar command schema. Actual controller-install and command acknowledgements fence generation, epoch, sequence and digest. Stop has independent capacity; an acknowledgement is not physical execution or stopped-state evidence. Current transport qualification is Linux PTY/pipe only."
+    },
+    "control.open": {
+      "family": "control",
+      "primary_action": "control.open",
+      "request_schema": "control_open__request",
+      "result_schema": "control_open__result",
+      "secondary_admission": "Actual device.submit and device.stop origins plus complete configured source/dependency closure.",
+      "effect": "Prepare exclusive ownership under immutable priority/preemption/lease policy and reserve complete cycle.",
+      "commit_and_recovery": "Publish cycle/epoch/provider/expiry after complete copy; failed copy discards staging; remote effect still needs receiver fencing.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "One finite controller lease per device generation. Original sensor witnesses and sealed buffers are retained across a completely admitted sample/write phase, with an independent stop lane and autonomous lease/deadline supervision. No automatic rearm, preemption, arbitrary controller plugin or physical watchdog certification."
+    },
+    "control.sample": {
+      "family": "control",
+      "primary_action": "control.sample",
+      "request_schema": "control_sample__request",
+      "result_schema": "control_sample__result",
+      "secondary_admission": "Current control/device ownership and all source resource.observe/buffer.read and version dependency origins.",
+      "effect": "Pin one complete trusted sample and active dependency set.",
+      "commit_and_recovery": "Complete delivery adopts one sequence/deadline; retry retains same sample, failed delivery does not advance.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "One finite controller lease per device generation. Original sensor witnesses and sealed buffers are retained across a completely admitted sample/write phase, with an independent stop lane and autonomous lease/deadline supervision. No automatic rearm, preemption, arbitrary controller plugin or physical watchdog certification."
+    },
+    "control.submit": {
+      "family": "control",
+      "primary_action": "control.submit",
+      "request_schema": "control_submit__request",
+      "result_schema": "control_submit__result",
+      "secondary_admission": "Original device.submit, control lease and all retained source/dependency origins.",
+      "effect": "Require same cycle sequence/epoch/schema/write deadline, then recheck original evidence.",
+      "commit_and_recovery": "Commit one actual device receipt. No attenuation silently skips an admitted phase; timeout/unknown latches stop.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "cycle_write",
+      "implementation_scope": "One finite controller lease per device generation. Original sensor witnesses and sealed buffers are retained across a completely admitted sample/write phase, with an independent stop lane and autonomous lease/deadline supervision. No automatic rearm, preemption, arbitrary controller plugin or physical watchdog certification."
+    },
+    "control.result": {
+      "family": "control",
+      "primary_action": "control.result",
+      "request_schema": "control_result__request",
+      "result_schema": "control_result__result",
+      "secondary_admission": "Owned cycle and submitted sequence.",
+      "effect": "Read actual device completion, unknown state and missed phase.",
+      "commit_and_recovery": "Read does not advance cycle or release unknown debt; next sample acknowledges only qualified terminal result.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "One finite controller lease per device generation. Original sensor witnesses and sealed buffers are retained across a completely admitted sample/write phase, with an independent stop lane and autonomous lease/deadline supervision. No automatic rearm, preemption, arbitrary controller plugin or physical watchdog certification."
+    },
+    "control.stop": {
+      "family": "control",
+      "primary_action": "control.stop",
+      "request_schema": "control_stop__request",
+      "result_schema": "control_stop__result",
+      "secondary_admission": "Explicit control.stop and exact retained device.stop profile.",
+      "effect": "Latch cycle and independently request device stop.",
+      "commit_and_recovery": "Commit keyed receipt even with unknown normal work; never implicitly rearm or renew.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "stop",
+      "implementation_scope": "One finite controller lease per device generation. Original sensor witnesses and sealed buffers are retained across a completely admitted sample/write phase, with an independent stop lane and autonomous lease/deadline supervision. No automatic rearm, preemption, arbitrary controller plugin or physical watchdog certification."
+    },
+    "media.open": {
+      "family": "media",
+      "primary_action": "media.open",
+      "request_schema": "media_open__request",
+      "result_schema": "media_open__result",
+      "secondary_admission": "Source resource.observe; output buffer.create/write/seal; optional exact egress and source data.export.",
+      "effect": "Reserve codec/layout, complete frame/output/workspace and isolated codec owner if required.",
+      "commit_and_recovery": "Publish inert stream after complete handle copy; failed delivery starts no egress.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "Immutable sealed input to independently authorized sealed output. Exact packed uint8 mono/rgb/bgr copy or red/blue swap; no native codecs, viewer, listener or egress."
+    },
+    "media.submit": {
+      "family": "media",
+      "primary_action": "media.submit",
+      "request_schema": "media_submit__request",
+      "result_schema": "media_submit__result",
+      "secondary_admission": "Source-matching sealed input buffer.read; retained output grants; each egress direction action and input data.export.",
+      "effect": "Validate actual layout/provenance/sequence/freshness and reserve worst-case decoded output before codec work.",
+      "commit_and_recovery": "Commit one keyed pinned job; each external egress rechecks authority. Unknown egress is retained, never retried automatically.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "frame",
+      "implementation_scope": "Immutable sealed input to independently authorized sealed output. Exact packed uint8 mono/rgb/bgr copy or red/blue swap; no native codecs, viewer, listener or egress."
+    },
+    "media.take": {
+      "family": "media",
+      "primary_action": "media.take",
+      "request_schema": "media_take__request",
+      "result_schema": "media_take__result",
+      "secondary_admission": "Original output capability buffer.read and profile-required data.export.",
+      "effect": "Stage complete immutable output with authentic source/receive metadata and explicit loss.",
+      "commit_and_recovery": "Full copy commits queue position and buffer identity; failed/short copy preserves both.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "Immutable sealed input to independently authorized sealed output. Exact packed uint8 mono/rgb/bgr copy or red/blue swap; no native codecs, viewer, listener or egress."
+    },
+    "media.close": {
+      "family": "media",
+      "primary_action": "media.close",
+      "request_schema": "media_close__request",
+      "result_schema": "media_close__result",
+      "secondary_admission": "Owned stream and retained declared close policy.",
+      "effect": "Fence new work; drain/cancel only owned codec/egress jobs using independent close capacity.",
+      "commit_and_recovery": "Commit keyed close receipt; release only after borrowers and native work retire; source remains open.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "close",
+      "implementation_scope": "Immutable sealed input to independently authorized sealed output. Exact packed uint8 mono/rgb/bgr copy or red/blue swap; no native codecs, viewer, listener or egress."
+    },
+    "bridge.create": {
+      "family": "bridge",
+      "primary_action": "bridge.create",
+      "request_schema": "bridge_create__request",
+      "result_schema": "bridge_create__result",
+      "secondary_admission": "Every independently owned source/destination operation and ancestor, exact schemas/converters, export scope and destination effect predicates.",
+      "effect": "Resolve every unique graph slot, QoS/loss/loop policy and complete correlation/recovery reservations.",
+      "commit_and_recovery": "Publish inert bridge after complete copy; missing/duplicate slots fail before forwarding.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "One directed dedicated topic subscription to publisher, compiled std-string/std-bool canonical schemas, retained source reservation and native acceptance receipt. Current native worker supports ROS 2 loopback; no ROS 1, service/action forwarding, remote-delivery proof or physical safety claim."
+    },
+    "bridge.start": {
+      "family": "bridge",
+      "primary_action": "bridge.start",
+      "request_schema": "bridge_start__request",
+      "result_schema": "bridge_start__result",
+      "secondary_admission": "All original edge grants and generations.",
+      "effect": "Start exact approved flow graph; revalidate every forward independently.",
+      "commit_and_recovery": "Commit keyed start receipt before enable; timeout cannot invent a new generation or erase uncertain forwarding.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "start",
+      "implementation_scope": "One directed dedicated topic subscription to publisher, compiled std-string/std-bool canonical schemas, retained source reservation and native acceptance receipt. Current native worker supports ROS 2 loopback; no ROS 1, service/action forwarding, remote-delivery proof or physical safety claim."
+    },
+    "bridge.stop": {
+      "family": "bridge",
+      "primary_action": "bridge.stop",
+      "request_schema": "bridge_stop__request",
+      "result_schema": "bridge_stop__result",
+      "secondary_admission": "Owned bridge and exact drain/cancel profile.",
+      "effect": "Fence admission; drain/cancel only owned edges/correlations with reserved stop capacity.",
+      "commit_and_recovery": "Commit keyed receipt; retain unknown forwarded effects and source acknowledgement debt; no unrelated endpoint closure.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": "stop",
+      "implementation_scope": "One directed dedicated topic subscription to publisher, compiled std-string/std-bool canonical schemas, retained source reservation and native acceptance receipt. Current native worker supports ROS 2 loopback; no ROS 1, service/action forwarding, remote-delivery proof or physical safety claim."
+    },
+    "bridge.describe": {
+      "family": "bridge",
+      "primary_action": "bridge.describe",
+      "request_schema": "bridge_describe__request",
+      "result_schema": "bridge_describe__result",
+      "secondary_admission": "Owned bridge scope.",
+      "effect": "Read cached graph state, pending/lost/unknown counters and last receipt.",
+      "commit_and_recovery": "No discovery, forwarding or secret peer data.",
+      "inherits": [
+        "authority",
+        "admission",
+        "effect",
+        "recovery",
+        "delivery",
+        "retirement",
+        "stop",
+        "configuration",
+        "placement",
+        "isolation",
+        "allocation",
+        "debug",
+        "evidence"
+      ],
+      "implementation": "registered_local",
+      "sequence_domain": null,
+      "implementation_scope": "One directed dedicated topic subscription to publisher, compiled std-string/std-bool canonical schemas, retained source reservation and native acceptance receipt. Current native worker supports ROS 2 loopback; no ROS 1, service/action forwarding, remote-delivery proof or physical safety claim."
+    }
+  },
+  "domains": [
+    {
+      "id": 1,
+      "name": "identity_policy",
+      "mechanism": "trusted_deployment",
+      "operations": [
+        "capability.open",
+        "capability.close",
+        "capability.revoke",
+        "permission.report",
+        "module.describe",
+        "module.imports",
+        "module.exports",
+        "module.group",
+        "module.permission.report",
+        "module.call.submit",
+        "module.call.take",
+        "module.call.respond",
+        "module.call.result",
+        "module.call.acknowledge",
+        "module.call.cancel",
+        "module.importers",
+        "vm.describe"
+      ],
+      "boundary": "Authenticate actual subjects and immutable grant ceilings; no guest self elevation or private credential export."
+    },
+    {
+      "id": 2,
+      "name": "compute_scheduling",
+      "mechanism": "trusted_deployment",
+      "operations": [
+        "model.open",
+        "control.open",
+        "module.call.submit",
+        "module.call.take",
+        "module.call.respond",
+        "module.call.result",
+        "module.call.acknowledge",
+        "module.call.cancel",
+        "driver.connect",
+        "driver.submit",
+        "driver.result",
+        "driver.describe",
+        "driver.disconnect"
+      ],
+      "boundary": "Reserve actual CPU/NUMA/native-thread/memory/accelerator resources; I1T remains separately managed."
+    },
+    {
+      "id": 3,
+      "name": "storage_configuration",
+      "mechanism": "provider",
+      "operations": [
+        "artifact.open",
+        "artifact.read",
+        "artifact.publish",
+        "artifact.remove"
+      ],
+      "boundary": "Publish immutable revisions separately from domain-specific activation."
+    },
+    {
+      "id": 4,
+      "name": "external_services",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "service.submit",
+        "model.submit"
+      ],
+      "boundary": "Exact protocol/peer/direction/schema/credential-use/export scope; no universal socket."
+    },
+    {
+      "id": 5,
+      "name": "ros_graph_types",
+      "mechanism": "provider",
+      "operations": [
+        "context.open",
+        "node.open",
+        "topic.open",
+        "service.open",
+        "action.open",
+        "graph.snapshot",
+        "type.describe"
+      ],
+      "boundary": "Exact origin chains/roles/types/QoS; downstream effect classification remains mandatory."
+    },
+    {
+      "id": 6,
+      "name": "component_lifecycle",
+      "mechanism": "provider",
+      "operations": [
+        "lifecycle.submit",
+        "module.call.submit",
+        "module.call.take",
+        "module.call.respond",
+        "module.call.result",
+        "module.call.acknowledge",
+        "module.call.cancel",
+        "driver.connect",
+        "driver.submit",
+        "driver.result",
+        "driver.describe",
+        "driver.disconnect"
+      ],
+      "boundary": "Isolated immutable closure and generation; lifecycle activation never rearms hardware."
+    },
+    {
+      "id": 7,
+      "name": "hardware_buses",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "device.open",
+        "device.submit",
+        "device.stop",
+        "device.describe"
+      ],
+      "boundary": "Distinct target/protocol/command/configuration/maintenance profiles; no raw bus opcode."
+    },
+    {
+      "id": 8,
+      "name": "sensors",
+      "mechanism": "provider",
+      "operations": [
+        "sensor.open",
+        "sensor.take",
+        "sensor.describe"
+      ],
+      "boundary": "Authentic capture/calibration/frame/clock/loss; changing configuration needs separate effect authority."
+    },
+    {
+      "id": 9,
+      "name": "description_calibration",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "artifact.read",
+        "artifact.publish",
+        "device.submit",
+        "parameter.set.atomic"
+      ],
+      "boundary": "Read/stage/activate separately; active changes fence all affected execution dependencies."
+    },
+    {
+      "id": 10,
+      "name": "time_coordinates",
+      "mechanism": "provider",
+      "operations": [
+        "clock.create",
+        "clock.read",
+        "transform.lookup",
+        "transform.publish"
+      ],
+      "boundary": "Steady security expiry is independent of simulated or ROS clock epochs."
+    },
+    {
+      "id": 11,
+      "name": "perception",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "sensor.take",
+        "model.submit",
+        "media.submit",
+        "proposal.publish"
+      ],
+      "boundary": "Typed compute/observation output retains provenance and no actuator grant."
+    },
+    {
+      "id": 12,
+      "name": "localization",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "transform.publish",
+        "parameter.set.atomic",
+        "service.submit"
+      ],
+      "boundary": "Reset/state injection/estimator replacement need exact separate effect profiles."
+    },
+    {
+      "id": 13,
+      "name": "maps_world_state",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "artifact.publish",
+        "model.submit",
+        "service.submit"
+      ],
+      "boundary": "Query/propose/commit/activate separately; collision or forbidden-zone changes invalidate dependent plans."
+    },
+    {
+      "id": 14,
+      "name": "motion_execution",
+      "mechanism": "provider",
+      "operations": [
+        "device.submit",
+        "control.open",
+        "control.sample",
+        "control.submit",
+        "control.stop"
+      ],
+      "boundary": "Current controller/mode/units/frame/limits/trusted state and independent watchdog at effect."
+    },
+    {
+      "id": 15,
+      "name": "navigation_planning",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "model.submit",
+        "service.submit",
+        "action.submit",
+        "proposal.accept"
+      ],
+      "boundary": "Planning and inert proposal admission do not execute motion."
+    },
+    {
+      "id": 16,
+      "name": "manipulation_whole_body",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "model.submit",
+        "action.submit",
+        "control.submit"
+      ],
+      "boundary": "Coupled ownership/contact/collision/full-body validators; scalar limits alone are insufficient."
+    },
+    {
+      "id": 17,
+      "name": "task_behavior",
+      "mechanism": "pure_guest_and_profiles",
+      "operations": [
+        "action.submit",
+        "lifecycle.submit",
+        "request.describe"
+      ],
+      "boundary": "Composition never unions permissions; compensation invokes separately granted operations."
+    },
+    {
+      "id": 18,
+      "name": "models_agents",
+      "mechanism": "provider",
+      "operations": [
+        "model.open",
+        "model.submit",
+        "model.take",
+        "proposal.capture",
+        "proposal.publish",
+        "proposal.accept"
+      ],
+      "boundary": "Inert language/vision/world output; independent target and original-source admission."
+    },
+    {
+      "id": 19,
+      "name": "human_teleoperation",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "media.take",
+        "media.submit",
+        "control.open",
+        "control.submit"
+      ],
+      "boundary": "Authenticated operator/mode/enable state; reconnect never restores ownership or teaching grants."
+    },
+    {
+      "id": 20,
+      "name": "control_ownership_modes",
+      "mechanism": "provider",
+      "operations": [
+        "control.open",
+        "control.sample",
+        "control.submit",
+        "control.stop"
+      ],
+      "boundary": "Immutable priority/preemption, lease epoch and allowed modes; no implicit renewal/rearm."
+    },
+    {
+      "id": 21,
+      "name": "safety_fault_recovery",
+      "mechanism": "trusted_deployment_and_provider",
+      "operations": [
+        "device.stop",
+        "device.result",
+        "control.stop"
+      ],
+      "boundary": "Independent stop; trusted qualified reconciliation/rearm; unknown never implies physical safe state."
+    },
+    {
+      "id": 22,
+      "name": "energy_thermal",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "sensor.take",
+        "device.submit",
+        "device.describe"
+      ],
+      "boundary": "Separate observation, power/charging and envelope effects; include live power/thermal bounds at execution."
+    },
+    {
+      "id": 23,
+      "name": "fleet_facilities",
+      "mechanism": "semantic_profile",
+      "operations": [
+        "service.submit",
+        "action.submit",
+        "bridge.start"
+      ],
+      "boundary": "Exact facility/robot identity, reservation, handover and communication-loss policy."
+    },
+    {
+      "id": 24,
+      "name": "audit_observability",
+      "mechanism": "provider",
+      "operations": [
+        "log.emit",
+        "diagnostic.read",
+        "event.stream.poll",
+        "request.describe",
+        "permission.report",
+        "module.describe",
+        "module.imports",
+        "module.exports",
+        "module.group",
+        "module.permission.report",
+        "module.importers",
+        "vm.describe"
+      ],
+      "boundary": "Redacted bounded origin/grant/proposal/effect/failure correlation; observation grants no action."
+    },
+    {
+      "id": 25,
+      "name": "simulation_replay",
+      "mechanism": "provider",
+      "operations": [
+        "recording.open",
+        "recording.append",
+        "replay.open",
+        "replay.read"
+      ],
+      "boundary": "Preserve clock/provenance and separate simulation authority; recordings cannot recreate physical grants."
+    },
+    {
+      "id": 26,
+      "name": "supply_chain_maintenance",
+      "mechanism": "trusted_deployment_and_provider",
+      "operations": [
+        "artifact.publish",
+        "driver.connect",
+        "driver.submit",
+        "driver.result",
+        "driver.describe",
+        "driver.disconnect"
+      ],
+      "boundary": "Pinned source/image closure, stage/activate/rollback and unresolved-effect reconstruction."
+    }
+  ],
+  "cli_contract": {
+    "status": "registered_bindings_with_explicit_platform_scope",
+    "profile": "--ros-scene-FAMILY-profile ENV ALIAS ID SHA256 PROFILE_FILE",
+    "limit": "--ros-scene-FAMILY-limit ENV ALIAS NAME VALUE",
+    "placement": "--ros-scene-FAMILY-placement ENV ALIAS CPUS MEMORY_POLICY NUMA_NODES",
+    "validation": "Bound file size; reject unknown/duplicate fields, bad canonical digests and arithmetic overflow; freeze before activation. Static validation starts no worker/device/listener.",
+    "activation": "All capacity defaults zero; exact grants do not manufacture provider support. Each required OS guarantee is checked before activation.",
+    "channels": "Trusted device command/ack/stop/state channels have separate fixed directions and identity. Guests select no path or descriptor.",
+    "warnings": "Keep legacy ROS deprecation and unisolated preloaddl cond warnings/escalation; rosv2 does not suppress separately requested legacy warnings.",
+    "binding_reference": "documents/runtime/ros-robot-bindings.md"
+  },
+  "response_decoder": "src/uwvm2/imported/ros/scene/robot_provider_response.h",
+  "reply_effect_matrix": {
+    "admitted": [
+      "none",
+      "locally_accepted"
+    ],
+    "queued": [
+      "locally_accepted"
+    ],
+    "running": [
+      "locally_accepted"
+    ],
+    "succeeded": [
+      "committed",
+      "observed_remote"
+    ],
+    "failed": [
+      "none",
+      "locally_accepted",
+      "committed",
+      "observed_remote",
+      "partial"
+    ],
+    "cancelled": [
+      "none",
+      "locally_accepted",
+      "committed",
+      "observed_remote",
+      "partial"
+    ],
+    "outcome_unknown": [
+      "unknown",
+      "partial"
+    ]
+  },
+  "reply_semantics": "This closed matrix applies to the five designed robot-provider families. Existing other provider receipt encodings retain their separately specified contracts. A terminal failure/cancel may have a known partial effect; unknown effects never become succeeded. Observed transport completion is not physical safe-state evidence.",
+  "errors": {
+    "denied": "Missing exposure, caller-bound grant, required secondary authority or trusted policy predicate; no new effect.",
+    "invalid": "Malformed/noncanonical record, unsupported closed selector, impossible state or contradictory reply; no new effect.",
+    "not_supported": "Provider lacks a required semantic or platform guarantee; no fallback to legacy ROS, WASI, generic sockets or in-VM loaders.",
+    "stale": "Wrong owned generation, controller epoch, dependency revision, clock incarnation or input freshness; fence before effect.",
+    "conflict": "Same key with modified content, out-of-order key, ownership conflict or incompatible state transition; keep prior recovery record.",
+    "again": "No complete event, ownership transition pending or a bounded concurrent reservation is busy; do not consume input.",
+    "quota": "Explicit capacity or attenuation reached before admission; stop/fault reservations remain independent.",
+    "no_memory": "Recoverable fast_io allocation failed before effect; unwind only owned temporary reservations.",
+    "deadline": "Admission/phase deadline expired; return the retained receipt if any effect may already have occurred.",
+    "cancelled": "Local interest or admissible pending work was cancelled; do not assert remote rollback or safe physical stopping.",
+    "outcome_unknown": "An effect may have happened without qualified completion; retain pins/accounting and query/reconcile before any non-idempotent retry."
+  },
+  "errors_scope": "Semantic failure classes for design and audit; each actual binding maps them to its existing resources::error numeric values or a closed receipt. These strings do not introduce new ABI integer values.",
+  "deployment_types": {
+    "profile_ref": {
+      "fields": [
+        [
+          "identity",
+          "nonempty_utf8"
+        ],
+        [
+          "sha256",
+          "digest32"
+        ]
+      ],
+      "rule": "Identity and exact content hash select a reviewed immutable definition; a name alone never loads code."
+    },
+    "profile_set": {
+      "element": "profile_ref",
+      "rule": "Sorted unique profile identities; finite declared element budget; no wildcard."
+    },
+    "resource_selector": {
+      "fields": [
+        [
+          "robot",
+          "nonempty_utf8"
+        ],
+        [
+          "resource",
+          "nonempty_utf8"
+        ],
+        [
+          "incarnation_policy",
+          "profile_ref"
+        ]
+      ],
+      "rule": "Trusted deployment resolves the exact native target and authenticated peer; no guest path or address substitution."
+    },
+    "channel": {
+      "fields": [
+        [
+          "target",
+          "resource_selector"
+        ],
+        [
+          "direction",
+          "channel_direction"
+        ],
+        [
+          "protocol",
+          "profile_ref"
+        ],
+        [
+          "peer_identity",
+          "profile_ref"
+        ]
+      ],
+      "rule": "Separate command/acknowledgement/stop/state roles. Negotiated ports remain within a protocol-specific authenticated peer policy, never a universal socket."
+    },
+    "channel_direction": {
+      "enum": [
+        "send",
+        "receive"
+      ]
+    },
+    "effect_class": {
+      "enum": [
+        "observation",
+        "computation",
+        "state_mutation",
+        "external_egress",
+        "physical_execution",
+        "maintenance"
+      ],
+      "rule": "Closed classification label only. A route declares its entire effect_set; physical execution, maintenance and data egress predicates can all apply to the same route."
+    },
+    "source_rules": {
+      "element": "source_rule",
+      "rule": "Sorted unique role slots and whole-list capacity. Required sources must be authentic and present."
+    },
+    "source_rule": {
+      "fields": [
+        [
+          "slot",
+          "positive_u64"
+        ],
+        [
+          "profile",
+          "profile_ref"
+        ],
+        [
+          "frame",
+          "profile_ref"
+        ],
+        [
+          "units",
+          "profile_ref"
+        ],
+        [
+          "clock",
+          "profile_ref"
+        ],
+        [
+          "freshness",
+          "freshness_kind"
+        ],
+        [
+          "maximum_age_ns",
+          "finite_duration"
+        ],
+        [
+          "uncertainty",
+          "profile_ref"
+        ]
+      ],
+      "rule": "Source generation, captured steady time and latest sample identity are host-owned; no guest self-attestation."
+    },
+    "freshness_kind": {
+      "enum": [
+        "latest_required",
+        "bounded_age"
+      ]
+    },
+    "dependency_rules": {
+      "element": "dependency_rule",
+      "rule": "Sorted unique slots; state revision equality checked at admission and actual effect under the selected consistency contract."
+    },
+    "dependency_rule": {
+      "fields": [
+        [
+          "slot",
+          "positive_u64"
+        ],
+        [
+          "profile",
+          "profile_ref"
+        ],
+        [
+          "activation_scope",
+          "resource_selector"
+        ],
+        [
+          "consistency",
+          "profile_ref"
+        ]
+      ],
+      "rule": "Map/calibration/tool/safety/energy dependencies reference active semantic revisions, not merely stored file hashes."
+    },
+    "preemption_policy": {
+      "enum": [
+        "deny",
+        "after_observed_stop"
+      ],
+      "rule": "A higher configured priority cannot bypass independent stop evidence or rearm a safety latch."
+    },
+    "missed_phase_policy": {
+      "enum": [
+        "latch_stop",
+        "qualified_hold_then_stop"
+      ],
+      "rule": "A hold policy needs a qualified bound and watchdog in the selected device profile; ordinary queue/rate rejection cannot silently skip a write."
+    },
+    "media_mode": {
+      "enum": [
+        "decode",
+        "encode",
+        "transform"
+      ],
+      "rule": "Acquisition, codec work, recording and external egress are independent capabilities."
+    },
+    "metadata_policy": {
+      "enum": [
+        "preserve_authenticated",
+        "mark_derived"
+      ],
+      "rule": "Derived data keep original source chain and separately identify the processing generation; unavailable native fields remain absent."
+    },
+    "loss_policy": {
+      "enum": [
+        "reject_new",
+        "drop_oldest_complete",
+        "fail_session"
+      ],
+      "rule": "Only complete frame/message loss under a declared tolerant profile; count losses and discontinuities. No policy silently drops a control phase or correlated response."
+    },
+    "close_policy": {
+      "enum": [
+        "cancel_pending",
+        "drain_bounded"
+      ],
+      "rule": "Unknown crossed effects survive either choice. A finite close deadline fences further work but cannot declare physical rollback."
+    },
+    "ros_generation": {
+      "enum": [
+        "ros1",
+        "ros2"
+      ],
+      "rule": "This describes the source protocol itself, not an internal API version suffix."
+    },
+    "flow_graph": {
+      "element": "flow_edge",
+      "rule": "Validate the entire directed graph before enabling any edge; finite slots, correlations and hop/lifetime bounds. Reverse flow is a separate edge."
+    },
+    "flow_edge": {
+      "fields": [
+        [
+          "slot",
+          "positive_u64"
+        ],
+        [
+          "source_role",
+          "positive_u64"
+        ],
+        [
+          "destination_role",
+          "positive_u64"
+        ],
+        [
+          "conversion",
+          "profile_ref"
+        ],
+        [
+          "effects",
+          "effect_set"
+        ]
+      ],
+      "rule": "A bridge slot binds the exact independently granted endpoints and complete ancestor chains after remapping."
+    },
+    "role_bindings": {
+      "element": "role_binding",
+      "rule": "Sorted unique slots. Worker messages can select only declared slots, never guest capability integers or arbitrary host operations."
+    },
+    "role_binding": {
+      "fields": [
+        [
+          "slot",
+          "positive_u64"
+        ],
+        [
+          "action",
+          "nonempty_utf8"
+        ],
+        [
+          "target",
+          "profile_ref"
+        ],
+        [
+          "input_schema",
+          "profile_ref"
+        ],
+        [
+          "output_schema",
+          "profile_ref"
+        ],
+        [
+          "effects",
+          "effect_set"
+        ]
+      ],
+      "rule": "Action must be an exact registered operation/grant-only predicate with separately admitted target closure; no prefix permission."
+    },
+    "loop_policy": {
+      "fields": [
+        [
+          "identity",
+          "profile_ref"
+        ],
+        [
+          "max_hops",
+          "positive_u64"
+        ],
+        [
+          "max_lifetime_ns",
+          "finite_duration"
+        ],
+        [
+          "seen_capacity",
+          "positive_u64"
+        ]
+      ],
+      "rule": "Preserve trusted origin and loop identity; restart must not clear deduplication while prior effects are unresolved."
+    },
+    "manifest_closure": {
+      "element": "image",
+      "rule": "Complete immutable image and dependency set, sorted unique logical identities; no inherited loader search paths or runtime download."
+    },
+    "image": {
+      "fields": [
+        [
+          "identity",
+          "nonempty_utf8"
+        ],
+        [
+          "sha256",
+          "digest32"
+        ],
+        [
+          "bytes",
+          "positive_u64"
+        ],
+        [
+          "role",
+          "image_role"
+        ]
+      ],
+      "rule": "The trusted OS launcher authenticates the actual loaded image closure. Content identity alone is not sandbox qualification."
+    },
+    "image_role": {
+      "enum": [
+        "executable",
+        "library",
+        "read_only_data"
+      ]
+    },
+    "dependency_graph": {
+      "element": "dependency_edge",
+      "rule": "Acyclic startup graph with finite nodes and explicit readiness/failure propagation; no guest extension at runtime."
+    },
+    "dependency_edge": {
+      "fields": [
+        [
+          "parent",
+          "positive_u64"
+        ],
+        [
+          "child",
+          "positive_u64"
+        ],
+        [
+          "readiness",
+          "profile_ref"
+        ]
+      ],
+      "rule": "Slot identities refer only to the manifest. Readiness includes generation and semantic health, not merely process existence."
+    },
+    "restart_policy": {
+      "enum": [
+        "disabled",
+        "after_reconciliation"
+      ],
+      "rule": "Even after reconciliation a new generation requires fresh origin grants and qualification; old commands and control leases never resume."
+    },
+    "reconciliation_policy": {
+      "fields": [
+        [
+          "observer",
+          "profile_ref"
+        ],
+        [
+          "durable_ledger",
+          "optional<profile_ref>"
+        ],
+        [
+          "unresolved_policy",
+          "unresolved_policy"
+        ]
+      ],
+      "rule": "Durable recovery or qualified state reconstruction is mandatory for unknown effects across restart. Storage loss prevents rearm."
+    },
+    "unresolved_policy": {
+      "enum": [
+        "retain_and_stop",
+        "deny_restart"
+      ]
+    },
+    "positive_u64": {
+      "rule": "Canonical integer in [1, 2^64-2]; no sentinel for unlimited."
+    },
+    "u32": {
+      "rule": "Canonical integer in [0, 2^32-1]."
+    },
+    "finite_duration": {
+      "rule": "Integer nanoseconds in [1, INT64_MAX]. Time source, queue and phase interpretation must be declared."
+    },
+    "nonempty_utf8": {
+      "rule": "Bounded canonical UTF-8, no NUL; trusted definition byte/element/depth budgets apply."
+    },
+    "digest32": {
+      "rule": "Exactly 32 raw hash bytes; JSON tooling uses 64 lowercase hexadecimal characters without a prefix."
+    },
+    "effect_set": {
+      "element": "effect_class",
+      "rule": "Nonempty sorted unique set in the declared enum order. Include every downstream effect class and independently enforce every applicable predicate. No unknown class or implicit strongest-class substitution."
+    }
+  },
+  "deployment_rules": [
+    "Parse a closed bounded definition as inert data; unknown fields, duplicate fields, unresolved profile identities and dependency cycles fail. The deployment resolves and hashes the complete profile closure before activation; nested profile refs cannot select unknown extensible behavior.",
+    "Profile-file content hash and semantic body hash are independent: freeze exactly the bytes validated. No untrusted path, environment, search path or later mutable library can change the activated definition.",
+    "All named capacity and timing fields are supplied exactly once before activation. Required capacity products/sums use checked arithmetic including process stacks, runtime image copies, IPC headers, padding, records, stopped/unknown debt and maximum codec expansion.",
+    "Device normal and stop directions are send; both acknowledgement channels are receive. Transport and state-evidence scopes match the physical target. Stop traffic has independent queue and execution capacity; sharing a normal queue is rejected.",
+    "An effectful bridge/component/media route reuses the exact destination domain validator and safety predicates; transport/profile names do not substitute for effect authorization.",
+    "Control sample_period_ns, write_window_ns and ownership_prepare_ns fit inside the declared lease/watchdog budget; queueing, handover and stop execution are included. Reopening or reconnecting never renews ownership.",
+    "Raw media layout/profile validates full row/channel/sample relations and bytes-per-element. Encoded output reserves its decoded worst case before codec work. Unavailable codec bounds refuse activation.",
+    "Bridge role/edge slots are total: every declared mandatory role appears once, each edge references declared roles, and runtime bindings have no duplicate or unknown slots. QoS/type/clock conversion losses are explicit and must be admitted by both directions.",
+    "Component shared workers contain only explicitly co-trusted images and share one accounted resource/failure domain. Untrusted/native plugins never share the VM address space. A dl library may load only in the approved worker from the pinned closure.",
+    "Native process/thread counts, CPU placement, NUMA policy, memory/handle/scratch/IPC/stderr budgets are separate from guest I1T policy. A required unavailable guarantee fails activation; inheritance must be explicitly selected and reported.",
+    "No guest interface upgrades policy, arms a physical latch, installs firmware, switches an active map or changes safety limits merely by storing bytes or starting a component. Such changes require their own trusted domain-specific activation profile and state evidence."
+  ],
+  "sequence_rules": [
+    "Sequence starts at one per owned resource and declared domain; zero and wraparound are invalid. Unkeyed read/open/take operations do not invent an exactly-once sequence.",
+    "Changing any canonical request field under an already admitted key conflicts; exact retries recover the retained result even after its original deadline, subject to current inspection authority.",
+    "A new successful key acknowledges only that domain's previous replay receipt. It does not erase an unresolved external effect, release cleanup debt or acknowledge another domain.",
+    "Stop/close capacity and sequence progress are independent of saturated normal work. Trusted watchdog admission uses its reserved internal path and cannot be disabled by guest keys or guest stop rate attenuation."
+  ]
+}

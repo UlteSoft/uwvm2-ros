@@ -6,18 +6,22 @@
 // Private actual native guest owner. Include INSIDE runtime::lib after the
 // host/retirement declarations. No guest, wire, native-handle or attach API.
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 namespace { class runtime_debug_execution_scope; class runtime_execution_entry_scope; }
 extern "C++"
 {
     class runtime_checkpoint_guest_worker_bridge;
     class runtime_checkpoint_world_transaction;
+    class runtime_checkpoint_continuation_dispatcher;
 }
     // Its first public forward declaration belongs to the runtime API module.
     // Keep that attachment, like the existing debug source/shutdown owner.
     class llvm_jit_debug_guest_worker final
     {
         friend class runtime_checkpoint_guest_worker_bridge;
+        friend class runtime_checkpoint_world_transaction;
         using domain = ::uwvm2::utils::thread::cooperative_pause_domain;
         using source_type = ::uwvm2::uwvm::runtime::full::full_source_instance;
         using gate = ::uwvm2::utils::thread::checkpoint_host_admission;
@@ -34,14 +38,21 @@ extern "C++"
         // pins the actual old generation. This is not physical/TLS retirement.
         ::uwvm2::utils::thread::execution_domain::lease execution_{};
         gate::host_operation startup_{};
-        ::std::unique_ptr<::fast_io::native_thread> native_{};
+        ::uwvm2::utils::container::std_unique_ptr<::fast_io::native_thread> native_{};
         ::std::atomic<bool> published_{};
+        ::std::mutex publication_mutex_{};
+        ::std::condition_variable publication_changed_{};
+        bool cancelled_before_publication_{}; // written before published_ release; no guest runs on cancellation
         ::std::mutex join_mutex_{};
         // Registry mutex guards the live genuine scope binding. This pointer is
         // never exposed or dereferenced by a manager; domain enrollment supplies
         // the actual identifier. A stored capture cannot replace this producer.
         domain::participant const* participant_{};
         ::std::uint_least64_t participant_id_{};
+        // Registry mutex. Published only by the actual native trampoline after
+        // the entire launch callback returns, never between guest entries.
+        // TLS destructors/kernel exit still require an actual OS join.
+        bool body_returned_{};
         bool physically_joined_{}; // join mutex; written only on actual OS joined
         bool entry_refused_{}; // this actual worker only; negative graph stop
         bool guest_exit_{}; // actual private terminal unwind, not physical join
@@ -69,6 +80,7 @@ extern "C++"
         friend class runtime_execution_entry_scope;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_coherent_manager;
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
+        friend class ::uwvm2::runtime::lib::runtime_checkpoint_continuation_dispatcher;
         using worker = llvm_jit_debug_guest_worker;
         using mutable_owner = ::std::shared_ptr<worker>;
         using domain = ::uwvm2::utils::thread::cooperative_pause_domain;
@@ -82,12 +94,12 @@ extern "C++"
             // Completed owners belong to the separate weak canonical history.
         };
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::vector<registry_slot> registry_{};
+        inline static ::uwvm2::utils::container::std_vector<registry_slot> registry_{};
         // Live worker storage grows before native thread creation. A caller
         // may retain a completed owner for retry without occupying a live slot.
         // Weak history authenticates those control blocks without retaining
         // native/source/launch resources. Expired entries are reused at launch.
-        inline static ::std::vector<::std::weak_ptr<worker>> canonical_registry_{};
+        inline static ::uwvm2::utils::container::std_vector<::std::weak_ptr<worker>> canonical_registry_{};
         inline static constinit thread_local worker* actual_worker_{};
         template<typename A, typename B>
         [[nodiscard]] static bool same_owner(A const& a, B const& b) noexcept
@@ -96,6 +108,13 @@ extern "C++"
         [[nodiscard]] static ::std::size_t register_actual_worker(mutable_owner const&);
         static void unregister_unstarted_worker(mutable_owner const&, ::std::size_t) noexcept;
         static void actual_worker_body(mutable_owner) noexcept;
+        static void release_publication(mutable_owner const& actual, bool cancel = false) noexcept
+        {
+            { ::std::lock_guard lock{actual->publication_mutex_};
+              actual->cancelled_before_publication_ = cancel;
+              actual->published_.store(true, ::std::memory_order_release); }
+            actual->publication_changed_.notify_one();
+        }
         static void scope_admitted(domain::participant const&) noexcept;
         static void scope_leaving(domain::participant const&) noexcept;
         // Genuine initial trampoline only, after normal admission REFUSES.
@@ -136,7 +155,7 @@ extern "C++"
         // turn WASIp1 proc_exit into this private terminal native unwind.
         static void try_builtin_proc_exit(::std::size_t module, ::std::size_t import_index,
             void const* expected_cache, ::std::byte const* params, ::std::size_t bytes) UWVM_THROWS;
-        [[nodiscard]] static bool accept_guest_exit(guest_exit_signal const&) noexcept;
+        [[nodiscard]] static bool accept_guest_exit(guest_exit_signal const&, void const* root_baseline=nullptr) noexcept;
 #endif
     private:
 #if defined(UWVM_CPP_EXCEPTIONS)
@@ -177,7 +196,7 @@ extern "C++"
         private:
             ::std::weak_ptr<join_cohort> canonical_{};
             retirement::owner request_{};
-            ::std::vector<mutable_owner> members_{}, tentative_{};
+            ::uwvm2::utils::container::std_vector<mutable_owner> members_{}, tentative_{};
             ::std::size_t size_{};
             enum class phase : unsigned char { empty, sealed, joined } phase_{};
             actual_physical_join physical_{*this};
@@ -192,6 +211,7 @@ extern "C++"
         // permission. The sole manager fills it only from the authentic request
         // that already owns ONE complete cohort and the still-closed host gate.
         [[nodiscard]] static pending_join_owner prepare_join_storage(::std::size_t) noexcept;
+        [[nodiscard]] static ::std::size_t sealed_worker_count(pending_join_owner const&) noexcept;
         [[nodiscard]] static bool seal_from_actual_retirement_while_cohort_owned(
             pending_join_owner const&, retirement::owner const&) noexcept;
         [[nodiscard]] static actual_physical_join_owner join_after_actual_drain_until(

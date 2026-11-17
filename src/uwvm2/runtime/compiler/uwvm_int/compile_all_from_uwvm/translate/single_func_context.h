@@ -90,7 +90,7 @@ struct block_t
     ::std::size_t stacktop_cache_f64_count_at_end{};
     // Codegen type stack snapshot at end label entry.
     // Needed to restore type information when a polymorphic fallthrough reaches `end` and becomes reachable again.
-    ::uwvm2::utils::container::vector<operand_stack_storage_t> codegen_operand_stack_at_end{};
+    ::uwvm2::utils::container::validation_vector<operand_stack_storage_t> codegen_operand_stack_at_end{};
 
     // Stack-top cache snapshot at `if` or `loop` entry. The numeric loop fields also describe
     // exception re-entry into its already emitted header; no loop type-vector copy is needed.
@@ -101,7 +101,7 @@ struct block_t
     ::std::size_t stacktop_cache_i64_count_at_else_entry{};
     ::std::size_t stacktop_cache_f32_count_at_else_entry{};
     ::std::size_t stacktop_cache_f64_count_at_else_entry{};
-    ::uwvm2::utils::container::vector<operand_stack_storage_t> codegen_operand_stack_at_else_entry{};
+    ::uwvm2::utils::container::validation_vector<operand_stack_storage_t> codegen_operand_stack_at_else_entry{};
 
     // Stack-top cache snapshot at then-path end (used when else-path is unreachable but then-path reaches `end`).
     // Only meaningful for `if-else` frames when scalar stack-top caching is enabled.
@@ -113,7 +113,7 @@ struct block_t
     ::std::size_t stacktop_cache_i64_count_at_then_end{};
     ::std::size_t stacktop_cache_f32_count_at_then_end{};
     ::std::size_t stacktop_cache_f64_count_at_then_end{};
-    ::uwvm2::utils::container::vector<operand_stack_storage_t> codegen_operand_stack_at_then_end{};
+    ::uwvm2::utils::container::validation_vector<operand_stack_storage_t> codegen_operand_stack_at_then_end{};
 
     // Translation labels:
     // - For `block`/`if`/`else`/`function`: `end_label_id` is the branch target.
@@ -143,10 +143,10 @@ auto const all_memory_count{static_cast<wasm_u32>(imported_memory_count + local_
 
 // Reuse translation temporaries across functions to avoid repeated heap allocations.
 using curr_block_type = block_t;
-::uwvm2::utils::container::vector<curr_block_type> control_flow_stack{};
+::uwvm2::utils::container::validation_vector<curr_block_type> control_flow_stack{};
 
 using curr_operand_stack_value_type = wasm_value_type;
-using curr_operand_stack_type = ::uwvm2::utils::container::vector<operand_stack_storage_t>;
+using curr_operand_stack_type = ::uwvm2::utils::container::validation_vector<operand_stack_storage_t>;
 curr_operand_stack_type operand_stack{};
 // A Core 3 null exn reference can be recognized without creating a borrowed exception
 // carrier. It is admitted only immediately before throw_ref, so no branch, local, or

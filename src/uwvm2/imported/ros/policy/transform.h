@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include <array>
 #include "schema.h"
@@ -12,7 +13,7 @@ namespace uwvm2::imported::ros
 {
     struct transform_fields
     {
-        ::std::string source_frame{}, target_frame{};
+        ::uwvm2::utils::container::std_string source_frame{}, target_frame{};
         ::std::array<double, 3> translation{};
         ::std::array<double, 4> quaternion{};
         ::std::uint32_t nanoseconds{};

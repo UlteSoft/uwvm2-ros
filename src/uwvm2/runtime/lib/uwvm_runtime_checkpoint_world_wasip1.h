@@ -1,6 +1,8 @@
 // Private candidate-world WASIp1 ownership. Include inside the transaction.
 // No original environment pointer survives installation; no live table swaps.
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
 using wasip1_capsule = llvm_jit_wasip1_environment_capsule;
 using wasip1_environment = wasip1_capsule::prepared_current_environment::environment_type;
@@ -8,6 +10,7 @@ struct owned_world_wasip1_environment
 {
     // These final string allocations own every view in the nonmoving env.
     wasip1_capsule::prepared_current_environment::strings arguments{}, variables{};
+    bool preserve_current_resources{};
     wasip1_environment environment{
         .wasip1_memory_resolver = ::uwvm2::uwvm::imported::wasi::wasip1::storage::resolve_current_wasip1_memory};
 };
@@ -17,8 +20,8 @@ struct world_wasip1_module_binding
     native_memory_t* memory0{}; // genuine NEW module memory; no old memory borrow
 };
 // Before engines/frame carriers: their destruction precedes WASIp1 resources.
-::std::vector<::std::unique_ptr<owned_world_wasip1_environment>> wasip1_environments_{};
-::std::vector<world_wasip1_module_binding> wasip1_modules_{};
+::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<owned_world_wasip1_environment>> wasip1_environments_{};
+::uwvm2::utils::container::std_vector<world_wasip1_module_binding> wasip1_modules_{};
 ::std::size_t wasip1_bound_modules_{}, wasip1_bound_memories_{}, wasip1_shared_modules_{};
 // Final native dispatch-cache shape, ready for a future non-fallible swap
 // during COMPLETE world publication. Its raw pointers borrow only this world.
@@ -68,7 +71,7 @@ bool wasip1_dispatch_tls_restored_{};
            original.trace_wasip1_group_name_storage.size() > wasip1_capsule::text_limit)
         { return status::resource_limit; }
     }
-    if(!charge_native(prepared.size(),sizeof(::std::unique_ptr<owned_world_wasip1_environment>)) ||
+    if(!charge_native(prepared.size(),sizeof(::uwvm2::utils::container::std_unique_ptr<owned_world_wasip1_environment>)) ||
        !charge_native(prepared.size(),sizeof(owned_world_wasip1_environment)) ||
        !charge_native(modules_.size(),sizeof(world_wasip1_module_binding)) ||
        !charge_native(modules_.size(),sizeof(cached_wasip1_runtime_module_context)))
@@ -113,7 +116,8 @@ bool wasip1_dispatch_tls_restored_{};
         if(!charge_native(original.trace_wasip1_output_file_path_storage.size()+1u,sizeof(char8_t)) ||
            !charge_native(original.trace_wasip1_group_name_storage.size()+1u,sizeof(char8_t)))
         { return status::resource_limit; }
-        auto owned{::std::make_unique<owned_world_wasip1_environment>()};
+        auto owned{::uwvm2::utils::container::make_unique<owned_world_wasip1_environment>()};
+        owned->preserve_current_resources=candidate.preserve_current_resources;
         auto& next{owned->environment};
         next.fd_storage.fd_limit = original.fd_storage.fd_limit;
         next.wasip1_proc_exit_func_ptr = original.wasip1_proc_exit_func_ptr;
@@ -161,6 +165,13 @@ bool wasip1_dispatch_tls_restored_{};
         auto const saved{wasip1_capsule::canonical(supplied[n])};
         if(!saved || n >= wasip1_environments_.size()) { return status::invalid_capsule_owner; }
         auto& owned{*wasip1_environments_[n]}; auto& env{owned.environment};
+        if(prepared[n]->recorded)
+        {
+            if(env.wasip1_memory!=nullptr || !env.mount_dir_roots.empty() ||
+               !wasip1_capsule::recorded_table_matches(*prepared[n]->recorded,prepared[n]->resources,
+                   env,owned.arguments,owned.variables)) { return status::stale_environment; }
+            continue;
+        }
         auto const text_matches{[](auto const& owners,auto const& views,auto const& data) noexcept
         {
             if(owners.size()!=views.size() || owners.size()!=data.size()) { return false; }
@@ -179,9 +190,18 @@ bool wasip1_dispatch_tls_restored_{};
         { return status::stale_environment; }
         for(::std::size_t i{};i<saved->closed_order_.size();++i)
         { if(env.fd_storage.closes.index_unchecked(i)!=saved->closed_order_[i]) { return status::stale_environment; } }
+        for(auto const& empty:saved->reserved_empty_)
+        {
+            auto const* slot=wasip1_capsule::find_actual_descriptor(env.fd_storage,empty.number);
+            if(slot==nullptr || slot->close_pos!=(empty.protected_slot?SIZE_MAX-1u:SIZE_MAX) ||
+               (slot->wasi_fd.ptr!=nullptr)!=empty.null_resource ||
+               (slot->wasi_fd.ptr!=nullptr && slot->wasi_fd.ptr->wasi_fd_storage.type!=wasip1_capsule::fd_kind::null) ||
+               static_cast<::std::uint64_t>(slot->rights_base)!=empty.base ||
+               static_cast<::std::uint64_t>(slot->rights_inherit)!=empty.inheriting) { return status::stale_environment; }
+        }
         using resource_identity=decltype(::std::declval<wasip1_capsule::fd_ref>().ptr);
         if(!charge_native(saved->resources_.size(),sizeof(resource_identity))) { return status::resource_limit; }
-        ::std::vector<resource_identity> representatives(saved->resources_.size());
+        ::uwvm2::utils::container::std_vector<resource_identity> representatives(saved->resources_.size());
         for(::std::size_t i{};i<saved->bindings_.size();++i)
         {
             auto const& binding{saved->bindings_[i]};
@@ -194,8 +214,12 @@ bool wasip1_dispatch_tls_restored_{};
             if(representative!=nullptr)
             { if(representative!=slot->wasi_fd.ptr) { return status::stale_environment; } continue; }
             representative=slot->wasi_fd.ptr;
-            if(pin.managed_identity==0u)
-            { if(slot->wasi_fd.ptr!=pin.actual.ptr) { return status::stale_environment; } continue; }
+            if(pin.managed_identity==0u || owned.preserve_current_resources)
+            {
+                // Current-environment restore retains the actual open resource,
+                // including file cursors/aliases; it does not rewind host IO.
+                if(slot->wasi_fd.ptr!=pin.actual.ptr) { return status::stale_environment; } continue;
+            }
             if(slot->wasi_fd.ptr==pin.actual.ptr || slot->wasi_fd.ptr->wasi_fd_storage.type!=wasip1_capsule::fd_kind::file)
             { return status::stale_environment; }
             auto& file{runtime_wasip1_debug_environment::managed_file(slot->wasi_fd)};

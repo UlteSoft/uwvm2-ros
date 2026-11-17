@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 namespace uwvm2::runtime::compiler::uwvm_int::threaded
 {
     inline status engine::prepare(::uwvm2::validation::error::code_validation_error_impl& error)
@@ -27,24 +28,20 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         for(::std::size_t m{};m<modules_.size();++m)
         {
             auto const* module{world_->module(m)};if(!module || !world_->file(m) || !world_->feature_parameter(m)) { return status::invalid_world; }
-            if(module->table_declarations_require_gc ||
-                module->global_declarations_require_gc || module->element_declarations_require_gc ||
-                !module->imported_table_vec_storage.empty() || module->table_declarations_require_table64)
-            { return status::unsupported_profile; }
-            auto& bound{modules_[m]};bound.program.instance=module;bound.memory=shared_memory(*module);
-            auto const* shared{world_->shared_memory(0)};
-            if(!bound.memory || !shared || bound.memory!=::std::addressof(shared->memory)) { return status::unsupported_profile; }
-            // These are the ACTUAL initialized effective limits, including
-            // explicit module policy. Do not re-intersect declared limits after
-            // overrides have replaced them. The address-domain ceiling and
-            // group reservation remain separate finite caps.
-            auto const& effective{module->imported_memory_vec_storage.empty() ?
-                module->local_defined_memory_vec_storage.index_unchecked(0).effective_limits :
-                module->imported_memory_vec_storage.index_unchecked(0).effective_limits};
-            auto const pages{effective.present_max ? (::std::min)(static_cast<::std::uint64_t>(effective.max),::std::uint64_t{65536u}) : ::std::uint64_t{65536u}};
-            if(pages>(static_cast<::std::uint64_t>(SIZE_MAX)>>16u)) { return status::unsupported_profile; }
-            bound.maximum_memory_bytes=(::std::min)(static_cast<::std::size_t>(pages<<16u),world_->admission().limits().max_shared_memory_bytes);
-            if(!bound.maximum_memory_bytes) { return status::resource_limit; }
+            auto& bound=modules_[m];bound.program.instance=module;
+            auto const memory_count=module->imported_memory_vec_storage.size()+module->local_defined_memory_vec_storage.size();
+            if(!charge(memory_count,sizeof(bound_memory),storage_bytes,limits_.storage_bytes))return status::resource_limit;
+            bound.memories.reserve(memory_count);
+            for(::std::size_t i{};i<memory_count;++i)
+            {
+                auto* owner=world_->memory(m,i);if(!owner||!owner->memory.memory_begin||!owner->memory.memory_length_p)return status::invalid_world;
+                auto const& effective=owner->effective_limits;
+                auto const domain=memory64(owner->memory)?(UINT64_MAX>>16u):UINT64_C(65536);
+                auto const pages=effective.present_max?(::std::min)(domain,static_cast<::std::uint64_t>(effective.max)):domain;
+                auto const native_pages=(::std::min)(pages,static_cast<::std::uint64_t>(SIZE_MAX>>16u));
+                auto const cap=world_->memory_growth_limit(owner->memory,static_cast<::std::size_t>(native_pages<<16u));
+                bound.memories.push_back({&owner->memory,cap});
+            }
             auto const* retained_file{world_->file(m)};
             auto const source_begin{reinterpret_cast<::std::uintptr_t>(retained_file->source_cbegin())};
             auto const source_end{reinterpret_cast<::std::uintptr_t>(retained_file->source_cend())};
@@ -70,17 +67,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     !detail::abi_fits(type->result.begin,type->result.end,limits_.host_bytes))
                 { return status::resource_limit; }
             }
-            // Refuse unsupported function subtyping while accepting aggregate
-            // schemas already validated and privately copied by the world.
-            // Refuse recursive/nominal/subtyped definitions that the finite
-            // finite signature matcher below does not implement. Defaults do
-            // not participate: only actual retained type declarations do.
-            auto const* recursive{module->type_section_storage.core3_recursive_types_ptr};
-            if(recursive)
-            {
-                for(::std::size_t i{};i<module->type_section_storage.type_section_count;++i)
-                { if(module->gc_store && [&]{storage::gc_type::composite_kind k{};return module->gc_store->type_kind(i,k) && k==storage::gc_type::composite_kind::function;}() && !::uwvm2::validation::standard::wasm3::core3_is_plain_function_definition(recursive,i)) { return status::unsupported_profile; } }
-            }
+            // Calls use the retained canonical recursive type graph, including
+            // function subtyping, rather than flattened numeric signatures.
             auto const& types{module->type_section_storage};
             bool const rich{types.owned_signature_begin && types.owned_signature_end &&
                 static_cast<::std::size_t>(types.owned_signature_end-types.owned_signature_begin)==types.type_section_count};
@@ -112,7 +100,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 ::std::size_t locals{static_cast<::std::size_t>(local.function_type_ptr->parameter.end-local.function_type_ptr->parameter.begin)};
                 for(auto const& run: local.wasm_code_ptr->locals)
                 {
-                    if(!(run.has_core_type ? detail::value_type_supported(run.core_type) : detail::numeric_type(run.type)) || run.count>limits_.values-locals) { return status::unsupported_profile; }
+                    if(!(run.has_core_type ? detail::value_type_supported(run.core_type) : detail::carrier_type(run.type)) || run.count>limits_.values-locals) { return status::unsupported_profile; }
                     locals+=run.count;
                 }
             }
@@ -126,8 +114,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             {
                 auto* g{resolve_global(*module,i)};if(!g) { return status::unsupported_profile; }
                 using kind=::uwvm2::object::global::global_type;
-                if((g->kind!=kind::wasm_i32 && g->kind!=kind::wasm_i64 && g->kind!=kind::wasm_f32 && g->kind!=kind::wasm_f64 && g->kind!=kind::wasm_v128) ||
-                    (i<module->imported_global_vec_storage.size() && g->is_mutable)) { return status::unsupported_profile; }
+                if(g->kind!=kind::wasm_i32 && g->kind!=kind::wasm_i64 && g->kind!=kind::wasm_f32 && g->kind!=kind::wasm_f64 && g->kind!=kind::wasm_v128 && g->kind!=kind::wasm_ref)
+                    { return status::unsupported_profile; }
                 bound.globals.push_back(g);
             }
             auto const imported_tags{module->imported_tag_vec_storage.size()};
@@ -160,19 +148,19 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                             { ins.simd_handler=&engine::simd_execute<Op,Kind,Scalar,Lanes,Align>;return true; }))
                         { return status::unsupported_profile; }
                     }
-                    if((ins.opcode==0x3fu || ins.opcode==0x40u) && ins.immediate!=0u) { return status::unsupported_profile; }
-                    if((ins.opcode==0x308u || ins.opcode==0x309u) && ins.immediate>=module->local_defined_data_vec_storage.size())
-                    { return status::validation_failed; }
-                    if((ins.opcode==0x308u && ins.target!=0u) ||
-                        (ins.opcode==0x30au && (ins.immediate!=0u || ins.target!=0u)) ||
-                        (ins.opcode==0x30bu && ins.immediate!=0u)) { return status::unsupported_profile; }
+                    if((ins.opcode==0x3fu||ins.opcode==0x40u)&&ins.immediate>=memory_count)return status::validation_failed;
+                    if((ins.opcode==0x308u||ins.opcode==0x309u)&&ins.immediate>=module->local_defined_data_vec_storage.size())return status::validation_failed;
+                    if((ins.opcode==0x308u&&ins.target>=memory_count)||
+                       (ins.opcode==0x30au&&(ins.immediate>=memory_count||ins.target>=memory_count))||
+                       (ins.opcode==0x30bu&&ins.immediate>=memory_count))return status::validation_failed;
                     if(ins.opcode==0x08u && ins.immediate>=bound.tags.size()) { return status::validation_failed; }
-                    if(ins.opcode==0x11u)
+                    if(ins.opcode==0x11u || ins.opcode==0x13u || ins.opcode==0x14u || ins.opcode==0x15u)
                     {
                         if(ins.immediate>=types.type_section_count) { return status::validation_failed; }
                         auto const* t{types.type_section_begin+ins.immediate};
-                        if(!detail::equal_signature(t,t)) { return status::unsupported_profile; }
+                        if(!detail::executable_signature(t)) { return status::unsupported_profile; }
                     }
+                    if(ins.opcode==0xd2u&&ins.immediate>=bound.targets.size())return status::validation_failed;
                     for(auto const& clause:ins.catches)
                     { if(clause.kind<2u && clause.tag>=bound.tags.size()) { return status::validation_failed; } }
                 }
@@ -192,19 +180,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(bound.targets[f].host && threads::admit_import(*world_,m,f)!=threads::import_admission::allowed)
                 { return status::host_denied; }
             }
-            for(auto const& table: module->local_defined_table_vec_storage)
-            {
-                if(!table.table_type_ptr || table.elems.size()>limits_.values) { return status::resource_limit; }
-                if(::uwvm2::parser::wasm::standard::wasm1p1::features::to_value_type(table.table_type_ptr->reftype)!=value_type::funcref)
-                { return status::unsupported_profile; }
-                for(auto const& slot: table.elems)
-                {
-                    if(slot.type==storage::local_defined_table_elem_storage_type_t::func_ref_imported && !slot.storage.imported_ptr) { continue; }
-                    if(slot.type!=storage::local_defined_table_elem_storage_type_t::func_ref_defined) { return status::unsupported_profile; }
-                    if(slot.storage.defined_ptr)
-                    { target t{};if(!defined_target(slot.storage.defined_ptr,t)) { return status::unsupported_profile; } }
-                }
-            }
+            for(::std::size_t t{};t<module->imported_table_vec_storage.size()+module->local_defined_table_vec_storage.size();++t)
+                if(!world_->table(m,t))return status::invalid_world;
         }
         auto const m{world_->entry_module_index()},f{world_->thread_start_function_index()};
         if(m>=modules_.size() || f>=modules_[m].targets.size() || modules_[m].targets[f].host) { return status::invalid_world; }
@@ -228,7 +205,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         if(!charge(1u,sizeof(threads::code_debug_image),storage_bytes,limits_.storage_bytes)||
            !charge(debug_functions,sizeof(threads::debug_function_row),storage_bytes,limits_.storage_bytes)||
            !charge(debug_pcs,sizeof(threads::debug_logical_pc_row),storage_bytes,limits_.storage_bytes))return status::resource_limit;
-        debug_.reset(new threads::code_debug_image{world_,threads::debug_backend::interpreter});
+        debug_.reset(::uwvm2::utils::allocator::fast_io_strict::object<threads::code_debug_image>([&](threads::code_debug_image* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) threads::code_debug_image{world_,threads::debug_backend::interpreter,world_->source_module_id()}; }));
         debug_->functions_.resize(debug_functions);debug_->logical_.resize(debug_pcs);
         ::std::size_t row{},pc{};
         for(::std::size_t m{};m!=modules_.size();++m)

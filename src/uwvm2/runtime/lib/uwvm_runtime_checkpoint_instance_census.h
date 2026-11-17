@@ -2,6 +2,7 @@
 // All callers already retain its genuine lexical execution/cohort/host/N/publication
 // guards. These nested work records are cold construction DATA, never credentials.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 using census_state = ::uwvm2::uwvm::debugger::checkpoint::state;
 using census_object = ::uwvm2::uwvm::debugger::checkpoint::object;
 using census_object_id = ::uwvm2::uwvm::debugger::checkpoint::object_id;
@@ -27,13 +28,13 @@ struct complete_census_work
     work actual{};
     census_state snapshot{};
     ::uwvm2::uwvm::debugger::checkpoint::limits cap{};
-    ::std::vector<census_object_id> module_ids{}, instance_ids{};
-    ::std::vector<::std::vector<census_object_id>> function_ids{}, tag_ids{},
+    ::uwvm2::utils::container::std_vector<census_object_id> module_ids{}, instance_ids{};
+    ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<census_object_id>> function_ids{}, tag_ids{},
         table_ids{}, memory_ids{}, global_ids{}, data_ids{}, element_ids{};
-    ::std::vector<census_pending_reference> pending{};
+    ::uwvm2::utils::container::std_vector<census_pending_reference> pending{};
     // Strong actual compiler plan owners are retained as cold attachment DATA.
     // They never replace the real execution/cohort/publication lifetime guards.
-    ::std::vector<census_function_plan_pin> function_plan_pins{};
+    ::uwvm2::utils::container::std_vector<census_function_plan_pin> function_plan_pins{};
     ::std::uint64_t links{}, values{}, payload{}, wire_bytes{128u + 48u};
     census_error status{census_error::none};
     struct reference_index_entry
@@ -43,7 +44,7 @@ struct complete_census_work
         census_object_id wire{}; // zero means unused bucket, never a valid object.
         ::std::size_t exception_pending{SIZE_MAX}; // actual strong owner in pending, not a token.
     };
-    ::std::vector<reference_index_entry> reference_index{};
+    ::uwvm2::utils::container::std_vector<reference_index_entry> reference_index{};
     ::std::size_t indexed_references{};
     [[nodiscard]] bool fail(census_error error) noexcept
     { if(status == census_error::none) { status = error; } return false; }
@@ -208,7 +209,7 @@ struct complete_census_work
         auto const next{old == 0u ? 2u : old * 2u}; // All factors proved BEFORE product.
         if(next > cap.max_objects * 2u || next > host_limit / sizeof(reference_index_entry) ||
             next > reference_index.max_size()) { return fail(census_error::limit_exceeded); }
-        ::std::vector<reference_index_entry> replacement(next);
+        ::uwvm2::utils::container::std_vector<reference_index_entry> replacement(next);
         auto const mask{next - 1u};
         for(auto const& entry : reference_index)
         {

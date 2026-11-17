@@ -23,6 +23,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -155,7 +156,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::binfmt::ver1
         inline consteval void check_extensible_section_is_series() noexcept
         {
             // use std vector for consteval environment
-            ::std::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte> vec{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte> vec{};
             [&vec]<::std::size_t... I>(::std::index_sequence<I...>) constexpr noexcept
             { ((vec.push_back(Sec...[I] ::section_id)), ...); }(::std::make_index_sequence<sizeof...(Sec)>{});
             ::std::ranges::sort(vec);
@@ -179,7 +180,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::binfmt::ver1
         {
             static_assert(sizeof...(Sec) != 0);
             // use std vector for consteval environment
-            ::std::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte> vec{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte> vec{};
             [&vec]<::std::size_t... I>(::std::index_sequence<I...>) constexpr noexcept
             { ((vec.push_back(Sec...[I] ::section_id)), ...); }(::std::make_index_sequence<sizeof...(Sec)>{});
             ::std::ranges::sort(vec);

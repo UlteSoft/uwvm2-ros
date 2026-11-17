@@ -21,7 +21,7 @@ class owned_native_eh_private_leaf_publication final
     owned_native_eh_private_leaf_publication(source_type::owner source,
         ::std::shared_ptr<stage_type const> stage, ::std::size_t module_id, ::std::uint_least64_t generation) noexcept
         : source_{::std::move(source)}, stage_{::std::move(stage)}, runtime_generation_{generation}, module_id_{module_id} {}
-    [[nodiscard]] static ::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_publication>
+    [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<owned_native_eh_private_leaf_publication>
         prepare_actual_record(compiled_module_record& rec) noexcept;
     [[nodiscard]] bool bind_actual_numeric_bridge(::llvm::ExecutionEngine& engine, ::llvm::LLVMContext& context) noexcept;
     [[nodiscard]] bool verify_actual_selected_calls(compiled_module_record const& rec, ::llvm::ExecutionEngine& engine) const noexcept;

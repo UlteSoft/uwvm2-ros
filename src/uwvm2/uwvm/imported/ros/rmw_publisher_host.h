@@ -4,6 +4,7 @@
  * module/instance/generation; no Guest argument selects a management identity.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -252,7 +253,7 @@ namespace uwvm2::uwvm::imported::ros::host
             if(!memory_range(memory,input,length)){return audit.finish(22);}
             // One owned allocation/read. Admission borrows the active body,
             // then the fixed envelope is filled without another payload copy.
-            ::std::vector<::std::uint8_t> packet(core::ipc::rmw_publish::header_bytes+static_cast<::std::size_t>(length));
+            ::uwvm2::utils::container::std_vector<::std::uint8_t> packet(core::ipc::rmw_publish::header_bytes+static_cast<::std::size_t>(length));
             auto body{::std::span<::std::uint8_t>{packet.data()+core::ipc::rmw_publish::header_bytes,static_cast<::std::size_t>(length)}};
             if(!observed_read(memory,input,body.data(),body.size())){return audit.finish(22);}
             core::authorization admitted;granted=capabilities.authorize(caller.runtime_instance,caller.generation,version,handle,"topic.publish",::std::as_bytes(body),admitted,true,true);

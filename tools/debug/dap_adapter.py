@@ -30,7 +30,7 @@ from urllib.parse import unquote
 
 
 class LocalRequestRefusal(ValueError):
-    """No value read/mutation was dispatched; current authorities stay intact."""
+    """Local or verified read-only refusal; current authorities stay intact."""
 
 
 class UnsupportedHoverFrame(LocalRequestRefusal):
@@ -141,6 +141,407 @@ def parse_wasm_memory_page(reply, module, memory, address, count):
     return bytes(copied)
 
 
+def wasithread_state_options(arguments):
+    """Closed read-only I1T metadata grammar; no spawn, grant or count mutation."""
+    if type(arguments) is not dict or set(arguments) - {"selection", "start", "count", "ifStop"}:
+        raise ValueError("closed I1T policy query required")
+    selected = arguments.get("selection", "policy")
+    if selected not in ("policy", "members"):
+        raise ValueError("I1T selection must be policy or members")
+    out = {"selection": selected}
+    for key, default, low, high in (("start", 0, 0, (1 << 64)-9), ("count", 8, 1, 8), ("ifStop", None, 1, (1 << 64)-1)):
+        value = arguments.get(key, default)
+        if value is None and key == "ifStop":
+            continue
+        if type(value) is str and re.fullmatch(r"0|[1-9][0-9]{0,19}", value):
+            value = int(value)
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError("invalid I1T integer: " + key)
+        out[key] = value
+    return out
+
+
+def parse_wasithread_state(reply, options, stop_id):
+    if type(reply) is not str or len(reply) > 33024 or not reply.endswith("\n") or not reply.isascii():
+        raise ValueError("complete bounded ASCII I1T packet required")
+    lines = reply.splitlines()
+    if len(lines) < 2 or lines[0] != f"wasithread stop={stop_id} selection={options['selection']} status=available":
+        raise ValueError("I1T stop or selection changed, or inspection refused")
+    def fields(line, prefix, keys):
+        if not line.startswith(prefix + " "):
+            raise ValueError("unexpected I1T row")
+        pairs = [part.split("=", 1) for part in line[len(prefix)+1:].split(" ")]
+        if any(len(p) != 2 for p in pairs) or len({p[0] for p in pairs}) != len(pairs):
+            raise ValueError("invalid or duplicate I1T field")
+        row = dict(pairs)
+        if set(row) != set(keys):
+            raise ValueError("I1T row fields differ")
+        return row
+    def number(text):
+        if not re.fullmatch(r"0|[1-9][0-9]{0,19}", text) or int(text) >= 1 << 64:
+            raise ValueError("invalid I1T count")
+        return int(text)
+    def boolean(text):
+        if text not in ("0", "1"):
+            raise ValueError("invalid I1T boolean")
+        return text == "1"
+    def label(text):
+        if text == "-": return ""
+        if not re.fullmatch(r"(?:[0-9a-f]{2})+", text):
+            raise ValueError("invalid I1T identity encoding")
+        # Module names are raw Wasm UTF-8; surrogateescape preserves bytes from
+        # host filenames without interpreting them as console/HTML syntax.
+        value = bytes.fromhex(text).decode("utf-8", "surrogateescape")
+        if any(ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError("control byte in I1T identity")
+        return value
+    page = fields(lines[-1], "page", ("first", "total", "count", "sealed"))
+    first, total, count = (number(page[k]) for k in ("first", "total", "count"))
+    sealed = boolean(page["sealed"])
+    if first != options["start"] or count > options["count"] or count != len(lines)-2 or count != min(options["count"], max(0, total-first)):
+        raise ValueError("I1T page is incomplete")
+    rows = []
+    for line in lines[1:-1]:
+        if options["selection"] == "policy":
+            row = fields(line, "policy", ("scope", "target", "enabled", "interface", "mains", "extra", "admissions", "max-extra", "max-threads", "max-spawns"))
+            if row["scope"] not in ("global", "single", "group") or row["interface"] not in ("hidden", "deny", "allow"):
+                raise ValueError("invalid I1T scope or exposure")
+            target = label(row["target"])
+            if (row["scope"] == "global") != (target == ""):
+                raise ValueError("invalid I1T scope identity")
+            counts = {k: str(number(row[k])) for k in ("mains", "extra", "admissions", "max-extra", "max-threads", "max-spawns")}
+            rows.append({"Scope": row["scope"], "Target": target or "All otherwise unassigned modules",
+                         "Enabled": boolean(row["enabled"]), "Interface": row["interface"],
+                         "Main threads": counts["mains"], "Additional threads": counts["extra"], "Spawn admissions": counts["admissions"],
+                         **{label_: ("unlimited" if counts[key] == str((1 << 64)-1) else counts[key]) for key, label_ in
+                            (("max-extra", "Maximum extra threads"), ("max-threads", "Maximum total threads"), ("max-spawns", "Maximum spawn admissions"))}})
+        else:
+            row = fields(line, "member", ("scope", "target", "module"))
+            target, module = label(row["target"]), label(row["module"])
+            if row["scope"] not in ("single", "group") or not target or not module or row["scope"] == "single" and target != module:
+                raise ValueError("invalid I1T membership")
+            rows.append({"Scope": row["scope"], "Target": target, "Module": module})
+    end = first + count
+    return {"available": True, "status": "available", "selection": options["selection"], "rows": rows,
+            "start": str(first), "total": str(total), "next": str(end), "more": end < total, "sealed": sealed, "stopId": str(stop_id)}
+
+
+SCENE_SELECTIONS = ("authority", "resources")
+
+
+def scene_state_options(arguments):
+    """Validate the independent, closed scene metadata request grammar.
+
+    The request conveys no capability or provider operation. Exact ASCII IDs
+    cannot introduce console syntax; pagination and reply size are bounded.
+    """
+    if type(arguments) is not dict or set(arguments) - {"selection", "environment", "alias", "start", "count", "ifStop"}:
+        raise ValueError("closed read-only scene query arguments required")
+    selected = arguments.get("selection", "authority")
+    if type(selected) is not str or selected not in SCENE_SELECTIONS:
+        raise ValueError("unknown scene metadata selection")
+    options = {"selection": selected, "start": arguments.get("start", 0), "count": arguments.get("count", 8)}
+    for key, lower, upper in (("start", 0, 4096), ("count", 1, 8), ("ifStop", 1, (1 << 64)-1)):
+        if key not in options and key not in arguments:
+            continue
+        value = arguments.get(key, options.get(key))
+        if key == "ifStop" and type(value) is str and re.fullmatch(r"[1-9][0-9]{0,19}", value):
+            value = int(value)
+        if type(value) is not int or not lower <= value <= upper:
+            raise ValueError("bounded exact scene integer required: " + key)
+        options[key] = value
+    for key in ("environment", "alias"):
+        if key in arguments:
+            value = arguments[key]
+            if type(value) is not str or re.fullmatch(r"[A-Za-z0-9_.-]{1,255}", value) is None:
+                raise ValueError("exact scene logical identifier required: " + key)
+            options[key] = value
+    return options
+
+
+def parse_scene_state(reply, options, stop_id):
+    """Decode bounded detached scene rows; reject malformed or stale packets.
+
+    Labels preserve exact bytes separately from display text. Diagnostic IDs
+    and counters are decimal strings so editor JSON never rounds a uint64.
+    Unavailable replies are errors, never complete empty resource inventories.
+    """
+    if type(reply) is not str or not reply.isascii() or "\r" in reply or not 0 < len(reply) <= MAX_REPLY or not reply.endswith("\n"):
+        raise ValueError("complete bounded ASCII scene packet required")
+    lines = reply.splitlines()
+    if len(lines) < 2 or lines[0] != f"scene scope=process-owned stop={stop_id} selection={options['selection']} status=available":
+        raise ValueError("scene metadata unavailable or stop/selection changed")
+    token = re.compile(r'([a-z_]+)=("(?:[^"\\\x00-\x1f\x7f]|\\x[0-9a-f]{2})*"(?:\[truncated\])?|[^ "\\\x00-\x1f\x7f]+)(?: |$)')
+    def fields(text):
+        result = {}; cursor = 0
+        while cursor < len(text):
+            match = token.match(text, cursor)
+            if match is None or match[1] in result:
+                raise ValueError("malformed or duplicate scene field")
+            result[match[1]] = match[2]; cursor = match.end()
+        return result
+    def integer(value, maximum=(1 << 64)-1):
+        if re.fullmatch(r"0|[1-9][0-9]{0,19}", value) is None or int(value) > maximum:
+            raise ValueError("invalid scene unsigned counter")
+        return int(value)
+    def boolean(value):
+        if value not in ("0", "1"):
+            raise ValueError("invalid scene boolean")
+        return value == "1"
+    def quoted(value, capacity):
+        truncated = value.endswith("[truncated]")
+        if truncated:
+            raise ValueError("complete scene logical labels required")
+        literal = value[:-11] if truncated else value
+        if len(literal) < 2 or literal[0] != '"' or literal[-1] != '"':
+            raise ValueError("quoted scene label required")
+        raw = bytearray(); cursor = 1
+        while cursor < len(literal)-1:
+            if literal[cursor] == "\\":
+                if re.fullmatch(r"\\x[0-9a-f]{2}", literal[cursor:cursor+4]) is None:
+                    raise ValueError("invalid scene label escape")
+                raw.append(int(literal[cursor+2:cursor+4], 16)); cursor += 4
+            else:
+                raw.append(ord(literal[cursor])); cursor += 1
+        if len(raw) > capacity or truncated and len(raw) != capacity:
+            raise ValueError("scene label exceeds bounded capacity")
+        return {"text": raw.decode("utf-8", "backslashreplace"), "bytesBase64": base64.b64encode(raw).decode("ascii"), "truncated": truncated}
+    texts = {"environment": 255, "alias": 255, "resource": 255, "binding": 255, "type": 32, "state": 16, "platform": 255}
+    counters = {"id", "open_handles", "admissions", "refused", "sequence", "members", "size_bytes", "accepted_bytes", "reserved_bytes", "retained_receipts",
+                "generation", "transition", "deadline_ns", "status_code", "lease_count", "workspace_bytes", "input_bytes", "output_bytes", "output_items",
+                "sample_count", "query_count", "pending_queries", "query_bytes", "carrier_bytes",
+                "emitted_records", "exported_records", "lost_records", "retained_bytes", "copy_failures"}
+    flags = {"revoked", "attenuated", "retired", "armed", "immutable", "published", "durable", "callback_pending", "callback_delivered",
+             "counters_saturated", "pending_page", "busy", "exit_observed", "platform_enabled", "clear_after_copy"}
+    rows = []
+    for line in lines[1:-1]:
+        if not line.startswith("row ") or len(rows) >= options["count"]:
+            raise ValueError("unexpected or excessive scene row")
+        values = fields(line[4:])
+        if set(values) != set(texts) | counters | flags | {"kind"}:
+            raise ValueError("incomplete scene row schema")
+        if values["kind"] != ("grant" if options["selection"] == "authority" else "resource"):
+            raise ValueError("scene row kind differs from selected inventory")
+        row = {key: quoted(values[key], capacity) for key, capacity in texts.items()}
+        row.update({key: str(integer(values[key])) for key in counters})
+        row.update({key: boolean(values[key]) for key in flags}); row["kind"] = values["kind"]
+        platform = row["platform"]["text"]
+        if platform:
+            match = re.fullmatch(r"uwvm_ros_v2\.platform_extension\.[a-z][a-z0-9_-]*\.v([1-9][0-9]*)", platform)
+            if (not match or int(match[1]) > 4294967295 or row["platform"]["truncated"] or
+                    row["type"]["text"] not in {"device", "control", "driver"}):
+                raise ValueError("invalid u2rosv2 child platform identity")
+        elif row["platform_enabled"]:
+            raise ValueError("platform switch has no child module")
+        if row["kind"] == "resource" and row["type"]["text"] == "module.call":
+            state = row["state"]["text"]
+            occupied, delivered, quarantined = (int(row[k]) for k in ("open_handles", "sample_count", "query_count"))
+            permitted_counters = {"members", "open_handles", "sample_count", "query_count", "reserved_bytes"}
+            if (row["binding"]["text"] != "registered-message" or occupied > int(row["members"]) or
+                    delivered + quarantined > occupied or row["retired"] != (state == "retired") or
+                    state not in {"ready", "active", "quarantined", "retired"} or
+                    not row["retired"] and (bool(quarantined) != (state == "quarantined")) or
+                    any(row[k] != "0" for k in counters - permitted_counters) or
+                    any(row[k] for k in flags - {"retired", "clear_after_copy"})):
+                raise ValueError("invalid registered message aggregate metadata")
+            for key in ("environment", "alias"):
+                if key in options and row[key]["text"] != options[key]:
+                    raise ValueError("scene logical identifier filter differs")
+            rows.append(row)
+            continue
+        if row["clear_after_copy"]:
+            raise ValueError("input erasure policy on another row")
+        if row["kind"] == "resource" and row["type"]["text"] == "driver":
+            state = row["state"]["text"]
+            if (row["binding"]["text"] != "registered-driver" or int(row["status_code"]) > 2**32-1 or int(row["query_count"]) > 1 or
+                    state not in {"prepared", "handshake", "ready", "pending", "result", "closed", "failed"} or
+                    row["query_count"] != "0" and state not in {"closed", "failed"} or
+                    any(row[key] != "0" for key in counters - {"sequence", "status_code", "query_count"}) or
+                    any(row[key] for key in flags - {"platform_enabled"})):
+                raise ValueError("invalid detached driver session metadata")
+            for key in ("environment", "alias"):
+                if key in options and row[key]["text"] != options[key]:
+                    raise ValueError("scene logical identifier filter differs")
+            rows.append(row)
+            continue
+        artifact = row["kind"] == "resource" and row["type"]["text"] == "artifact"
+        if artifact != row["immutable"] or not artifact and row["size_bytes"] != "0":
+            raise ValueError("inconsistent immutable artifact metadata")
+        output = row["kind"] == "resource" and row["type"]["text"] == "artifact.output"
+        receipt = row["kind"] == "resource" and row["type"]["text"] == "artifact.receipt"
+        lifecycle = row["kind"] == "resource" and row["type"]["text"] == "lifecycle"
+        buffer = row["kind"] == "resource" and row["type"]["text"] == "buffer"
+        model = row["kind"] == "resource" and row["type"]["text"] == "model"
+        transform = row["kind"] == "resource" and row["type"]["text"] == "transform"
+        log = row["kind"] == "resource" and row["type"]["text"] == "log"
+        diagnostic = row["kind"] == "resource" and row["type"]["text"] == "diagnostic"
+        recording = row["kind"] == "resource" and row["type"]["text"] == "recording"
+        replay = row["kind"] == "resource" and row["type"]["text"] == "replay"
+        sensor = row["kind"] == "resource" and row["type"]["text"] == "sensor"
+        proposal = row["kind"] == "resource" and row["type"]["text"] == "model.proposal"
+        communication = row["kind"] == "resource" and row["type"]["text"] == "communication"
+        parameter = row["kind"] == "resource" and row["type"]["text"] == "parameter"
+        component = row["kind"] == "resource" and row["type"]["text"] == "component"
+        if not component and row["exit_observed"]:
+            raise ValueError("process exit observation on another row")
+        bridge = row["kind"] == "resource" and row["type"]["text"] == "bridge"
+        device = row["kind"] == "resource" and row["type"]["text"] in {"device", "control"}
+        media = row["kind"] == "resource" and row["type"]["text"] == "media"
+        if not log and (any(row[key] != "0" for key in ("emitted_records", "copy_failures")) or not media and row["exported_records"] != "0"):
+            raise ValueError("log counters on another row")
+        if not log and not sensor and not bridge and (row["lost_records"] != "0" or row["counters_saturated"]):
+            raise ValueError("loss accounting on another row")
+        if not log and not sensor and not recording and not parameter and row["retained_bytes"] != "0":
+            raise ValueError("retained payload accounting on another row")
+        if not diagnostic and row["pending_page"] or not diagnostic and not log and not sensor and not bridge and row["busy"]:
+            raise ValueError("log/diagnostic activity on another row")
+        if (not buffer and not recording and not sensor and not proposal and not device and row["lease_count"] != "0" or
+                not buffer and not model and not transform and not sensor and not proposal and not parameter and not media and row["workspace_bytes"] != "0"):
+            raise ValueError("buffer accounting on another row")
+        if (not model and not sensor and not parameter and (row["input_bytes"] != "0" or not media and not bridge and not component and row["output_items"] != "0") or
+                not model and row["output_bytes"] != "0"):
+            raise ValueError("model accounting on another row")
+        if (not transform and not recording and not sensor and not proposal and not parameter and not media and not bridge and not device and not component and row["sample_count"] != "0" or
+                not transform and not recording and not proposal and not parameter and not bridge and not device and not component and row["query_count"] != "0" or
+                not transform and any(row[key] != "0" for key in ("pending_queries", "query_bytes", "carrier_bytes"))):
+            raise ValueError("transform accounting on another row")
+        state = row["state"]["text"]
+        if component:
+            if (row["binding"]["text"] != "isolated-roles" or int(row["members"]) > 1 or int(row["open_handles"]) > 1 or
+                    int(row["status_code"]) > 9 or state == "failed" and row["status_code"] == "0" or
+                    row["status_code"] != "0" and state not in {"failed", "retired", "outcome_unknown"} or
+                    int(row["query_count"]) > int(row["sample_count"]) or row["exit_observed"] and row["members"] != "0" or
+                    state == "exited" and not row["exit_observed"] or row["retired"] != (state == "retired") or
+                    state not in {"prepared", "starting", "ready", "stopping", "exited", "failed", "retired", "outcome_unknown"} or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "retained_receipts", "admissions", "refused", "sequence")) or
+                    any(row[key] for key in ("revoked", "attenuated", "armed", "published", "durable"))):
+                raise ValueError("invalid isolated component aggregate metadata")
+        if device:
+            cycle = row["type"]["text"] == "control"
+            if (row["binding"]["text"] != ("framed-control" if cycle else "framed-scalar") or
+                    int(row["query_count"]) > int(row["sample_count"]) or cycle and int(row["open_handles"]) > 1 or
+                    not cycle and (row["sequence"] != "0" or row["generation"] != "0") or
+                    state not in {"prepared", "ready", "stopping", "stop_accepted", "outcome_unknown", "retired"} or
+                    row["retired"] != (state == "retired") or row["armed"] != (state == "ready") or
+                    not row["retired"] and (state == "outcome_unknown") != bool(int(row["query_count"])) or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "retained_receipts", "admissions", "refused")) or
+                    any(row[key] for key in ("revoked", "attenuated", "published", "durable"))):
+                raise ValueError("invalid framed device/control aggregate metadata")
+        if bridge:
+            if (row["binding"]["text"] != "topic-forwarder" or row["members"] != "1" or int(row["open_handles"]) > 1 or
+                    int(row["sample_count"]) > 1 or int(row["query_count"]) > int(row["sample_count"]) or
+                    state not in {"idle", "running", "outcome_unknown", "retired"} or row["retired"] != (state == "retired") or
+                    not row["retired"] and (state == "outcome_unknown") != bool(int(row["query_count"])) or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "retained_receipts", "admissions", "refused", "sequence")) or
+                    any(row[key] for key in ("revoked", "attenuated", "armed", "published", "durable"))):
+                raise ValueError("invalid directed topic bridge aggregate metadata")
+        if media:
+            if (row["binding"]["text"] != "immutable-buffer-media" or int(row["open_handles"]) > int(row["members"]) or
+                    int(row["exported_records"]) > int(row["output_items"]) or state not in {"idle", "active", "retired"} or row["retired"] != (state == "retired") or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "retained_receipts", "admissions", "refused", "sequence")) or
+                    any(row[key] for key in ("revoked", "attenuated", "armed", "published", "durable"))):
+                raise ValueError("invalid immutable-buffer media aggregate metadata")
+        if parameter:
+            if (row["binding"]["text"] != "local-parameters" or state or int(row["open_handles"]) > int(row["members"]) or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "reserved_bytes", "retained_receipts", "admissions", "refused", "sequence")) or
+                    any(row[key] for key in ("revoked", "attenuated", "armed", "published", "durable"))):
+                raise ValueError("invalid local parameter aggregate metadata")
+        if communication:
+            if (row["binding"]["text"] not in {"native-communication", "native-action", "native-graph", "event-stream"} or row["members"] != "1" or
+                    (row["binding"]["text"] != "event-stream" and int(row["open_handles"]) > 1) or int(row["retained_receipts"]) > 1 or
+                    any(row[key] != "0" for key in ("id", "accepted_bytes", "reserved_bytes", "admissions", "refused", "sequence")) or
+                    any(row[key] for key in ("revoked", "attenuated", "armed", "published", "durable")) or
+                    state not in {"configured", "ready", "retired"} or row["retired"] != (state == "retired")):
+                raise ValueError("invalid worker-local communication metadata")
+        if recording or replay or sensor or proposal:
+            if (any(row[key] != "0" for key in ("id", "accepted_bytes", "retained_receipts", "admissions", "sequence")) or
+                    any(row[key] for key in ("published", "durable", "revoked", "attenuated", "armed"))):
+                raise ValueError("invalid private provider aggregate metadata")
+            if row["retired"] != (state == "retired") or not row["retired"] and state not in ({"active", "idle", "failed"} if sensor else {"active", "idle"}):
+                raise ValueError("invalid cached private provider state")
+            if recording and (row["binding"]["text"] != "private-recording" or row["refused"] != "0" or
+                              int(row["retained_bytes"]) > int(row["reserved_bytes"]) or int(row["members"]) > int(row["open_handles"])):
+                raise ValueError("invalid private recording counts")
+            if replay and (row["binding"]["text"] != "private-replay" or row["refused"] != "0" or row["members"] != row["open_handles"]):
+                raise ValueError("invalid private replay counts")
+            if sensor and (row["binding"]["text"] != "bounded-sensor" or int(row["open_handles"]) > int(row["members"]) or
+                           int(row["retained_bytes"]) > int(row["reserved_bytes"]) or int(row["status_code"]) > (1 << 32)-1 or
+                           not row["retired"] and (state == "failed") != (row["status_code"] != "0")):
+                raise ValueError("invalid bounded sensor metadata")
+            if proposal and (row["binding"]["text"] != "model-proposals" or any(row[key] != "0" for key in ("open_handles", "reserved_bytes", "refused"))):
+                raise ValueError("invalid inert proposal metadata")
+        if log or diagnostic:
+            if (state or any(row[key] != "0" for key in ("id", "open_handles", "accepted_bytes", "retained_receipts", "admissions", "sequence")) or
+                    any(row[key] for key in ("published", "durable", "revoked", "attenuated", "armed"))):
+                raise ValueError("invalid log/diagnostic aggregate metadata")
+            if log and (row["binding"]["text"] != "private-log" or int(row["retained_bytes"]) > int(row["reserved_bytes"]) or
+                        any(int(row[key]) > int(row["emitted_records"]) for key in ("exported_records", "lost_records", "members"))):
+                raise ValueError("invalid private-log counters")
+            if diagnostic and (row["binding"]["text"] != "local-diagnostic" or row["refused"] != "0"):
+                raise ValueError("invalid diagnostic snapshot metadata")
+        if buffer and (row["id"] != "0" or row["binding"]["text"] != "sealed-buffer" or
+                       int(row["open_handles"]) > int(row["members"]) or state or
+                       row["accepted_bytes"] != "0" or row["retained_receipts"] != "0" or row["published"] or row["durable"]):
+            raise ValueError("invalid buffer aggregate metadata")
+        if model and (row["id"] != "0" or row["binding"]["text"] != "local-model" or state or
+                      any(row[key] != "0" for key in ("accepted_bytes", "reserved_bytes", "retained_receipts")) or row["published"] or row["durable"]):
+            raise ValueError("invalid model aggregate metadata")
+        if transform and (row["id"] != "0" or row["binding"]["text"] != "local-transform" or state or
+                          int(row["open_handles"]) > int(row["members"]) or int(row["pending_queries"]) > int(row["query_count"]) or
+                          any(row[key] != "0" for key in ("accepted_bytes", "retained_receipts", "admissions", "refused", "sequence")) or
+                          any(row[key] for key in ("published", "durable", "revoked", "attenuated", "armed"))):
+            raise ValueError("invalid transform aggregate metadata")
+        if lifecycle:
+            if (row["id"] != "0" or row["binding"]["text"] != "local-lifecycle" or row["generation"] == "0" or
+                    any(row[key] != "0" for key in ("accepted_bytes", "reserved_bytes", "retained_receipts")) or row["published"] or row["durable"]):
+                raise ValueError("invalid lifecycle binding metadata")
+            primary = {"unconfigured", "inactive", "active", "finalized"}
+            intermediate = {"configuring", "cleaning_up", "shutting_down", "activating", "deactivating", "error_processing"}
+            if state not in primary | intermediate or row["callback_pending"] != (state in intermediate):
+                raise ValueError("invalid lifecycle state/callback relationship")
+            if row["status_code"] != "0" and (row["status_code"] not in {"110", "125"} or state != "finalized"):
+                raise ValueError("invalid lifecycle completion status")
+            if row["callback_pending"]:
+                transition = int(row["transition"])
+                if (not 0 < int(row["deadline_ns"]) < 1 << 63 or not 1 <= transition <= 7 or row["status_code"] != "0" or
+                        not (state == "configuring" and transition == 1 or state == "cleaning_up" and transition == 2 or
+                             state == "activating" and transition == 3 or state == "deactivating" and transition == 4 or
+                             state == "shutting_down" and transition >= 5 or state == "error_processing")):
+                    raise ValueError("invalid lifecycle pending transition")
+            elif row["transition"] != "0" or row["deadline_ns"] != "0" or row["callback_delivered"]:
+                raise ValueError("terminal lifecycle carries a pending callback")
+        elif (any(row[key] != "0" for key in ("transition", "deadline_ns")) or not device and row["generation"] != "0" or not sensor and not component and row["status_code"] != "0" or
+              row["callback_pending"] or row["callback_delivered"]):
+            raise ValueError("lifecycle metadata on another row")
+        if output or receipt:
+            if state not in {"none", "staged", "published", "aborted", "removed"} or row["durable"] or row["published"] != (state == "published") or int(row["retained_receipts"]) > 1:
+                raise ValueError("inconsistent volatile artifact state")
+            if output and (row["id"] == "0" or state not in {"staged", "published"} or int(row["accepted_bytes"]) > int(row["reserved_bytes"])):
+                raise ValueError("invalid live output identity/state")
+            if receipt and (row["retained_receipts"] != "1" or row["reserved_bytes"] != "0" or
+                            not (state == "none" and row["id"] == "0" and row["accepted_bytes"] == "0" or
+                                 state in {"aborted", "removed"} and row["id"] != "0")):
+                raise ValueError("invalid retained output receipt")
+        elif not any((lifecycle, buffer, transform, log, diagnostic, recording, replay, sensor, proposal, communication, parameter, media, bridge, device, component)) and (state or any(row[key] != "0" for key in ("accepted_bytes", "reserved_bytes", "retained_receipts")) or row["published"] or row["durable"]):
+            raise ValueError("transaction metadata on a non-output row")
+        for key in ("environment", "alias"):
+            if key in options and (row[key]["truncated"] or row[key]["text"] != options[key]):
+                raise ValueError("scene logical identifier filter differs")
+        rows.append(row)
+    if not lines[-1].startswith("page "):
+        raise ValueError("scene page trailer missing")
+    page = fields(lines[-1][5:])
+    if set(page) != {"total", "next", "more"}:
+        raise ValueError("invalid scene page schema")
+    total, next_value, more = integer(page["total"], 4096), integer(page["next"], 4096), boolean(page["more"])
+    expected_count = min(options["count"], max(0, total-options["start"]))
+    if len(rows) != expected_count or next_value != (options["start"]+len(rows) if rows else 0) or more != (options["start"]+len(rows) < total):
+        raise ValueError("incomplete or inconsistent scene page")
+    return {"selection": options["selection"], "scope": "process-owned", "stopId": str(stop_id), "available": True,
+            "status": "available", "rows": rows, "total": total, "next": next_value, "more": more,
+            "start": options["start"], "payloadsRead": False, "nativeOperationsIssued": False}
+
+
 ROS_SELECTIONS = ("capabilities", "sessions", "queues", "services", "actions", "parameters", "tf", "graph", "stats", "calls", "trace", "policy")
 ROS_SELECTION_ALIASES = {"instances": "sessions", "events": "queues"}
 ROS_ROW_TEXT = {"module": 255, "alias": 255, "op": 64, "resource": 256, "type": 192}
@@ -185,6 +586,8 @@ def ros_state_options(arguments):
         if key not in arguments and key not in options:
             continue
         value = arguments.get(key, options.get(key))
+        if key == "ifStop" and isinstance(value, str) and re.fullmatch(r"[1-9][0-9]{0,19}", value):
+            value = int(value)
         if type(value) is not int or not minimum <= value <= maximum:
             raise ValueError("bounded exact ROS integer required: " + key)
         options[key] = value
@@ -2104,6 +2507,16 @@ def parse_wasip1_state(text, selected, module, first, count, stop_id):
     for line in lines[2:]:
         if result["more"]:
             raise ValueError("WASIp1 state follows its pagination trailer")
+        if line.startswith("    current-path="):
+            path = re.fullmatch(r'    current-path=(?:"(.*)" \(live native handle\)|(unavailable \(no cached pathname used\)))', line)
+            if selected not in ("fds", "preopens") or not result["variables"] or path is None or "currentPath" in result["variables"][-1]:
+                raise ValueError("invalid WASIp1 descriptor path observation")
+            if path[1] is not None:
+                check_text(path[1])
+            # Observation only: never used as an authority to reopen/delete a
+            # host file. Guest descriptor edits still require current rights.
+            result["variables"][-1]["currentPath"] = path[1]
+            continue
         if trailer := re.fullmatch(r"  more next=([0-9]{1,20})", line):
             value = int(trailer[1])
             expected = first if not result["variables"] else result["next"]
@@ -2130,7 +2543,7 @@ def parse_wasip1_state(text, selected, module, first, count, stop_id):
             number = int(row[1]); result["next"] = number + 1
             result["variables"].append({"name": f"fd {number}", "value": line.strip(), "type": "guest descriptor metadata",
                 "variablesReference": 0, "descriptor": number, "rightsBase": int(row[3], 16), "rightsInheriting": int(row[4], 16),
-                "preopened": row[5] == "1", "managedResource": int(row[7] or 0)})
+                "preopened": row[5] == "1", "managedResource": int(row[7] or 0), "storageKind": row[2], "guestName": row[6]})
     if len(result["variables"]) > result["total"]:
         raise ValueError("WASIp1 rows exceed actual cardinality")
     for variable in result["variables"]:
@@ -2300,11 +2713,19 @@ def read_dap(stream):
 
 def private_capability(directory):
     root = Path(directory).absolute()
-    info = root.lstat()
+    try:
+        info = root.lstat()
+    except FileNotFoundError as error:
+        raise ValueError("The debug broker directory no longer exists. Start the host-owned broker task before attaching, "
+                         "or import a runtime launch profile for F5.") from error
     if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o077:
         raise ValueError("debug broker directory must be real and owner-only")
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(root / "capability", flags)
+    try:
+        fd = os.open(root / "capability", flags)
+    except FileNotFoundError as error:
+        raise ValueError("The debug broker is no longer running. Start the host-owned broker task before attaching, "
+                         "or import a runtime launch profile so F5 starts a new session after the program exits.") from error
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o077:
@@ -2336,7 +2757,12 @@ class UnixBroker:
         self.channel = socket.socket(socket.AF_UNIX, kind)
         self.channel.settimeout(8)
         try:
-            self.channel.connect(str(root / "control.sock"))
+            from private_unix_socket import connect_private
+            try:
+                connect_private(self.channel, root / "control.sock")
+            except (FileNotFoundError, ConnectionRefusedError) as error:
+                raise ValueError("The debug broker is no longer accepting connections. Restart the host-owned broker task "
+                                 "before attaching; a finished session cannot reuse its previous connection.") from error
             self.send_raw(capability)
             if self.receive_raw() != b"ready\n":
                 raise ValueError("debug broker rejected the capability")
@@ -2395,7 +2821,11 @@ class UnixBroker:
         # subsequent commands retain their independent transport deadlines.
         startup, self.first_request = self.first_request, False
         startup = startup and sys.platform == "linux"
-        self.channel.settimeout(None if startup else 8)
+        # Restore validates and recompiles an entire archive before the atomic
+        # publication. Its duration depends on module size; a socket timeout
+        # must not discard a legitimate in-flight management reply.
+        restoring = command.split()[:2] == ["dump", "restore"]
+        self.channel.settimeout(None if startup or restoring else 8)
         try:
             self.send_raw(data)
             if startup:
@@ -2632,6 +3062,7 @@ def parse_status(text):
     native_stop = False
     native_breakpoint_stop = False
     native_breakpoint = None
+    breakpoint_hit = None
     uncaught_stop = False
     uncaught_thread = None
     stop_id = None
@@ -2643,7 +3074,7 @@ def parse_status(text):
                       "breakpoint" if "breakpoint" in line else "step" if "step" in line else "pause")
             native_breakpoint_stop = line == "stopped: native breakpoint"
             native_stop = line in ("stopped: native data watchpoint", "stopped: native instruction step", "stopped: native breakpoint",
-                                   "stopped: first Wasm instruction JIT entry", "stopped: execution relocated")
+                                   "stopped: first Wasm instruction JIT entry", "stopped: execution relocated", "stopped: native inspection")
             if line in ("stopped: first Wasm instruction", "stopped: first Wasm instruction JIT entry"):
                 reason = "entry"
         elif line.startswith("prepared;"):
@@ -2659,6 +3090,11 @@ def parse_status(text):
                     or stop_id is not None or threads or not re.fullmatch(r"native-breakpoint [1-9][0-9]*", line)):
                 raise ValueError("invalid native breakpoint identity")
             native_breakpoint = unsigned_id(int(line.split()[1]), "native breakpoint")
+        elif line.startswith("breakpoint-hit "):
+            match = re.fullmatch(r"breakpoint-hit thread=([1-9][0-9]*) levels=(source|wasm|source,wasm)", line)
+            if match is None or state != "stopped" or reason != "breakpoint" or native_stop or breakpoint_hit is not None or stop_id is not None or threads:
+                raise ValueError("invalid breakpoint hit provenance")
+            breakpoint_hit = (unsigned_id(int(match[1]), "breakpoint participant"), match[2].split(","))
         elif line.startswith("uncaught-thread "):
             if not uncaught_stop or uncaught_thread is not None or threads or not re.fullmatch(r"uncaught-thread [1-9][0-9]*", line):
                 raise ValueError("invalid uncaught Wasm participant")
@@ -2680,6 +3116,32 @@ def parse_status(text):
         elif current is not None and (match := SOURCE_RE.match(line)):
             current["source"] = {"path": match.group(1), "line": int(match.group(2)),
                                  "column": int(match.group(3))}
+        elif line.startswith("  native-operation="):
+            if (current is None or "native_pc" in current or current.get("retained_host") or
+                    line != "  native-operation=pending; Wasm call retained; native stack and assembly unavailable"):
+                raise ValueError("invalid retained native operation provenance")
+            current["retained_host"] = True
+        elif line.startswith("  native-wasm provenance=exact ") and current is not None and "native_pc" in current:
+            match = re.fullmatch(r"  native-wasm provenance=exact module=([0-9]{1,20}) function=([0-9]{1,20}) byte-offset=([0-9]{1,20}) function-generation=([0-9]{1,20}) runtime-epoch=([0-9]{1,20})", line)
+            if match is None or "native_wasm" in current:
+                raise ValueError("invalid or repeated native Wasm position")
+            module, function, offset, generation, epoch = map(int, match.groups())
+            if (max(module, function, offset, generation, epoch) >= 1 << 64 or min(generation, epoch) == 0
+                    or (module, function, epoch) != (current["module"], current["function"], current["generation"])):
+                raise ValueError("native Wasm position belongs to another code owner")
+            current["native_wasm"] = dict(module=module, function=function, offset=offset, generation=generation, epoch=epoch)
+        elif line.startswith("  source-position="):
+            if current is None or not ("source" in current or "native_source" in current) or line not in ("  source-position=exact", "  source-position=next") or "source_exact" in current:
+                raise ValueError("invalid source position provenance")
+            current["source_exact"] = line.endswith("=exact")
+        elif line.startswith("  native-wasm-start="):
+            if current is None or "native_wasm" not in current or line not in ("  native-wasm-start=yes", "  native-wasm-start=no") or "native_wasm_start" in current:
+                raise ValueError("invalid native Wasm instruction boundary")
+            current["native_wasm_start"] = line.endswith("=yes")
+        elif line.startswith("  native-source ") and current is not None and "native_pc" in current:
+            match = re.fullmatch(r"  native-source (.+):(\d+):(\d+)", line)
+            if match is not None:
+                current["native_source"] = {"path": match[1], "line": int(match[2]), "column": int(match[3])}
         elif line.startswith("  native-pc="):
             match = NATIVE_PC_RE.fullmatch(line)
             if (current is None or state != "stopped" or not native_stop or match is None
@@ -2694,12 +3156,22 @@ def parse_status(text):
     if uncaught_stop and (uncaught_thread is None or sum(t.get("uncaught_exception", False) for t in threads) != 1):
         raise ValueError("uncaught Wasm stop lacks its actual participant")
     native_threads = [thread for thread in threads if "native_pc" in thread]
+    if any(t.get("retained_host") and "native_pc" in t for t in threads):
+        raise ValueError("pending native operation is not a JIT assembly stop")
     if native_breakpoint_stop and (native_breakpoint is None or stop_id is None or len(native_threads) != 1):
         raise ValueError("native breakpoint stop lacks its actual identity or participant")
     if (len(native_threads) > 1 or any("source" in thread for thread in native_threads)
             or (native_threads and (state != "stopped" or not native_stop))
             or (native_threads and len({thread["id"] for thread in threads}) != len(threads))):
         raise ValueError("ambiguous native stopped-thread location")
+    if breakpoint_hit is not None:
+        matches = [thread for thread in threads if thread["id"] == breakpoint_hit[0]]
+        if stop_id is None or len(matches) != 1:
+            raise ValueError("breakpoint hit lacks its actual stopped participant")
+        matches[0]["breakpoint_levels"] = breakpoint_hit[1]
+    if native_breakpoint_stop:
+        native_threads[0]["breakpoint_levels"] = ["native"]
+        native_threads[0]["breakpoint_id"] = native_breakpoint
     return state, reason, threads, exit_code
 
 
@@ -2778,7 +3250,12 @@ def parse_native_registers(text, location):
                 raise ValueError("unqualified upper numeric register bits")
         if expected == pc_name and (value == "unavailable" or "?" in value or int(value, 16) != int(location["native_pc"], 16)):
             raise ValueError("native register PC disagrees with the actual stop")
-        values.append({"name": expected, "value": value.lower(), "variablesReference": 0,
+        reason = ("Hidden: runtime/control register; no Wasm numeric value is exposed" if expected in forbidden else
+                  "No live Wasm numeric register location is recorded at this instruction") if value == "unavailable" else (
+                  "Only the displayed bits have a current Wasm numeric location; ? bits remain hidden" if "?" in value else
+                  "Current owned JIT instruction address" if expected == pc_name else "Current Wasm numeric register bits")
+        values.append({"name": expected, "value": value.lower(), "type": "JIT PC" if expected == pc_name else "register bits",
+                       "variablesReference": 0, "uwvmAvailability": reason,
                        "presentationHint": {"attributes": ["readOnly"]}})
     return architecture, values
 
@@ -2840,9 +3317,9 @@ def map_source_path(path, mappings, reverse=False):
 DEBUG_PERMISSIONS = ("full", "read-only", "limited", "none")
 
 
-def debug_capabilities(permission, step_level="source"):
-    full = permission == "full"
-    inspect = permission in ("full", "read-only")
+def debug_capabilities(permission, step_level="source", threaded=False):
+    full = permission == "full" and not threaded
+    inspect = permission in ("full", "read-only") and not threaded
     return {"supportsConfigurationDoneRequest": True, "supportsEvaluateForHovers": inspect and step_level != "wasm",
             "supportsSteppingGranularity": full, "supportsInstructionBreakpoints": full,
             "supportsHitConditionalBreakpoints": full, "supportsConditionalBreakpoints": full,
@@ -2850,6 +3327,47 @@ def debug_capabilities(permission, step_level="source"):
             "supportsSetVariable": full, "supportsReadMemoryRequest": inspect,
             "supportsWriteMemoryRequest": full, "supportsDisassembleRequest": inspect,
             "supportsTerminateRequest": False, "supportsCancelRequest": True, "supportsANSIStyling": True}
+
+
+def snapshot_binding_integer(value, bits, name):
+    if isinstance(value, str) and re.fullmatch(r"0|[1-9][0-9]*", value):
+        value = int(value)
+    if type(value) is not int or not 0 <= value < (1 << bits):
+        raise ValueError(name + " is out of range")
+    return value
+
+
+def parse_host_interfaces(text, first=0):
+    """Bounded launch metadata only: never native addresses or driver code."""
+    if len(text) > 65536:
+        raise ValueError("host interface inventory exceeds the transport limit")
+    lines = text.splitlines()
+    header = re.fullmatch(r"host-interfaces schema=1 first=([0-9]+) total=([0-9]+) count=([0-9]+) more=([01])", lines[0] if lines else "")
+    if not header:
+        raise ValueError("VM did not report host interface build metadata")
+    start, total, count, more = map(int, header.groups())
+    if (start != first or max(start, total) >= 1 << 64 or count > min(32, max(0, total - start))
+            or (start < total and count == 0) or bool(more) != (start + count < total)):
+        raise ValueError("invalid host interface inventory page")
+    builds = {}
+    for line in lines[1:5]:
+        match = re.fullmatch(r"interface (u2rosv1-ros1|u2rosv1-ros2|u2rosv2|preloaddl) built=([01])", line)
+        if not match or match[1] in builds:
+            raise ValueError("invalid host interface build row")
+        builds[match[1]] = match[2] == "1"
+    if len(builds) != 4 or len(lines) != 5 + count or total and not builds["preloaddl"]:
+        raise ValueError("incomplete host interface inventory")
+    libraries = []
+    for line in lines[5:]:
+        match = re.fullmatch(r"library index=([0-9]+) functions=([0-9]+) signature-verified=([01]) name-hex=(-|[0-9a-f]{2,8192}) name-truncated=([01]) path-hex=(-|[0-9a-f]{2,8192}) path-truncated=([01])", line)
+        if not match or int(match[1]) != start + len(libraries) or int(match[2]) >= 1 << 64:
+            raise ValueError("invalid preload library metadata")
+        def fragment(encoded, truncated):
+            raw = b"" if encoded == "-" else bytes.fromhex(encoded)
+            return {"text": raw.decode("utf-8", "backslashreplace"), "bytesBase64": base64.b64encode(raw).decode("ascii"), "truncated": truncated == "1"}
+        libraries.append({"index": match[1], "functions": match[2], "signatureVerified": match[3] == "1",
+                          "name": fragment(match[4], match[5]), "path": fragment(match[6], match[7])})
+    return {"builds": builds, "libraries": libraries, "first": str(start), "total": str(total), "more": bool(more), "next": str(start + count)}
 
 
 def dap_permission_allowed(permission, command):
@@ -2862,11 +3380,89 @@ def dap_permission_allowed(permission, command):
     if permission == "full":
         return True
     if permission == "limited":
-        return command in ("threads", "stackTrace", "scopes", "evaluate", "uwvm/diagnostics", "uwvm/dump", "uwvm/permissions")
+        return command in ("threads", "stackTrace", "scopes", "evaluate", "uwvm/diagnostics", "uwvm/dump", "uwvm/dumpPolicy", "uwvm/permissions")
     return command not in ("pause", "continue", "next", "stepIn", "stepOut", "stepBack", "reverseContinue", "restart", "terminate",
                            "goto", "gotoTargets", "setVariable", "setExpression", "writeMemory", "setBreakpoints",
                            "setFunctionBreakpoints", "setInstructionBreakpoints", "setDataBreakpoints", "setExceptionBreakpoints",
-                           "uwvm/wasip1Edit", "uwvm/breakpointControl", "uwvm/editorBreakpoints", "uwvm/breakpointCreate")
+                           "uwvm/wasip1Edit", "uwvm/breakpointControl", "uwvm/editorBreakpoints", "uwvm/breakpointCreate", "uwvm/jump", "uwvm/nativeEntry", "uwvm/restoreSnapshot", "uwvm/recordSnapshot", "uwvm/threadReplay")
+
+
+def read_snapshot_history(send, args):
+    """Read only authenticated detached DATA, on the VM host, including remotely.
+
+    Each chunk is bound to one immutable history serial. A world replacement
+    during transfer rejects the request instead of mixing two environments.
+    """
+    if not isinstance(args, dict):
+        raise ValueError("history arguments must be an object")
+    opening = "path" in args
+    text = "dump history"
+    if opening:
+        if set(args) - {"path", "event"}:
+            raise ValueError("opening history accepts only path and event")
+        path = args["path"]
+        if not isinstance(path, str) or not (path.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', path) or path.startswith('\\\\')) or any(ord(c) < 32 or ord(c) == 127 for c in path):
+            raise ValueError("history path must be absolute on the VM host without control characters")
+        event = snapshot_binding_integer(args.get("event", "0"), 64, "history event")
+        text += f" open {event} {path}"
+    elif args:
+        if set(args) != {"kind", "id"} or args["kind"] not in ("wasip1", "ros1", "ros2"):
+            raise ValueError("history selection requires kind and id")
+        selected_identifier = snapshot_binding_integer(args["id"], 64, "history id")
+    header = send(text)
+    lines = header.splitlines()
+    match = re.fullmatch(r"snapshot-history serial=([1-9][0-9]*) position=(origin|checkpoint) event=(0|[1-9][0-9]*) instruction=(0|[1-9][0-9]*) recording=([0-9a-f]{32})(?: samples=([1-9][0-9]*) cursor=([1-9][0-9]*))?; historical data, no live resource access", lines[0] if lines else "")
+    if not match:
+        raise ValueError(header.strip() or "historical environments are unavailable")
+    serial, position, event, instruction, recording, sample_count, cursor = match.groups()
+    event = str(snapshot_binding_integer(event, 64, "history event"))
+    instruction = str(snapshot_binding_integer(instruction, 64, "history instruction"))
+    if (position == "origin") != (event == "0") or (position == "origin" and instruction != "0"):
+        raise ValueError("invalid historical environment position")
+    serial_number = snapshot_binding_integer(serial, 64, "history serial")
+    rows, previous = [], None
+    for line in lines[1:]:
+        row = re.fullmatch(r"environment kind=([6-8]) id=(0|[1-9][0-9]*) bytes=([1-9][0-9]*)", line)
+        if not row:
+            raise ValueError("invalid historical environment index")
+        kind, identifier, size = map(int, row.groups())
+        if identifier >= 1 << 64 or size >= 1 << 64 or (previous is not None and (kind, identifier) <= previous):
+            raise ValueError("invalid historical environment identity")
+        previous = kind, identifier
+        rows.append({"kind": {6: "wasip1", 7: "ros1", 8: "ros2"}[kind], "id": str(identifier), "bytes": str(size)})
+    result = {"historical": True, "position": position, "event": event, "instruction": instruction, "recording": recording,
+              "serial": str(serial_number), "environments": rows, "restoreAuthority": False}
+    if sample_count is not None:
+        sample_count = snapshot_binding_integer(sample_count, 64, "environment sample count")
+        cursor = snapshot_binding_integer(cursor, 64, "environment journal cursor")
+        if int(event) >= sample_count:
+            raise ValueError("environment sample lies outside the archive")
+        result.update(threaded=True, sampleCount=str(sample_count), cursor=str(cursor))
+    if not args or opening:
+        return result
+    identifier = selected_identifier
+    row = next((r for r in rows if r["kind"] == args["kind"] and int(r["id"]) == identifier), None)
+    if row is None:
+        raise ValueError("historical environment is not present")
+    kind, size = {"wasip1": 6, "ros1": 7, "ros2": 8}[args["kind"]], int(row["bytes"])
+    payload = bytearray()
+    while len(payload) < size:
+        offset, count = len(payload), min(4096, size - len(payload))
+        reply = send(f"dump history {serial} {kind} {identifier} {offset} {count}")
+        prefix = f"snapshot-history-bytes serial={serial} kind={kind} id={identifier} offset={offset} count={count} hex="
+        if not reply.startswith(prefix) or not re.fullmatch(r"[0-9a-f]{" + str(count * 2) + r"}\n", reply[len(prefix):]):
+            raise ValueError("historical data changed or the VM refused this read")
+        payload.extend(bytes.fromhex(reply[len(prefix):].strip()))
+    # Check the serial again even if the archive was replaced after the last
+    # chunk. No fallback to any live WASI or ROS inspection command is allowed.
+    if send("dump history") != header:
+        raise ValueError("historical environment changed during transfer")
+    from snapshot import wasip1, ros
+    environment = wasip1(payload) if kind == 6 else ros(payload)
+    if environment["recording"] != recording or (kind == 6 and int(environment["module"]) != identifier) or (kind != 6 and environment["backend"] != kind - 6):
+        raise ValueError("historical environment payload identity differs from index")
+    result["environment"] = environment
+    return result
 
 
 class Adapter:
@@ -2883,11 +3479,16 @@ class Adapter:
         self.wasm_layout_groups = {}
         self.wasm_table_groups = {}
         self.frame_details = {}
+        self.stack_frame_ids = {}
+        self.mutation_stop_key = None
         self.output = output
         self.sequence = 1
         self.broker = None
         self.update_socket_dir = None
         self.pending_update = None
+        self.snapshot_restore_pending = False
+        self.threaded_profile = False
+        self.thread_replay_terminal_code = None
         self.update_results = queue.Queue()
         self.debug_permissions = "full"  # No transport authority until authenticated attach.
         self.limited_stop_id = 0
@@ -2915,6 +3516,9 @@ class Adapter:
         self.complete_editor_breakpoints = complete_editor_breakpoints
         self.client_ansi_styling = False
         self.published_breakpoints = set()
+        self.source_breakpoint_ids = set()
+        self.last_step_kind = None
+        self.disassembly_view_visible = False
         self.native_instruction_addresses = {}
         self.data_breakpoint_handles = {}
         self.data_breakpoints = {}
@@ -2945,6 +3549,8 @@ class Adapter:
         self.next_reference = 1
         self.module_id = 0
         self.step_level = "source"
+        self.step_level_locked = False
+        self.breakpoint_view_level = None
         self.inline_frames = set()
         self.finished = False
         self.configuration_complete = False
@@ -3032,11 +3638,30 @@ class Adapter:
                     # Wasm has its own generation-bound document/editor.
                     if str(row.get('instructionPointerReference', '')).startswith('wasm:'):
                         row.pop('instructionPointerReference', None)
+                    if self.wasm_source_session and row.get("uwvmSourceLocation"):
+                        # Native source markers have one owner at every level.
+                        # Keep the independent Wasm editor projection without
+                        # adding frames or changing their execution authority.
+                        projection = row["uwvmSourceLocation"]
+                        if row.get("source", {}).get("path", "").startswith("uwvm-wasm:"):
+                            row["uwvmWasmLocation"] = {"source": row["source"], "line": row["line"], "column": row["column"]}
+                        if row.get("source", {}).get("path") != projection["path"]:
+                            row["source"] = {"name": Path(projection["path"]).name, "path": projection["path"]}
+                        row["line"], row["column"] = projection["line"], projection["column"]
                     if (not self.wasm_view_visible and
                             (row.get('source', {}).get('sourceReference') in self.wasm_documents or
                               row.get('source', {}).get('path', '').startswith('uwvm-wasm:'))):
                         row.pop('source', None)
                         row['line'], row['column'] = 0, 0
+                    source_path = row.get("source", {}).get("path", "")
+                    if self.wasm_source_session and "uwvmSourceExact" in row and (source_path.startswith(("/", "file:", "\\\\")) or re.match(r"^[A-Za-z]:[\\/]", source_path)):
+                        # Preserve the authentic DAP location for CALL STACK,
+                        # native source navigation and other editor tools. The
+                        # extension suppresses its own marker when this frame
+                        # already gives VS Code ownership of the source row.
+                        row["uwvmSourceLocation"] = {"path": row["source"]["path"], "line": row["line"], "column": row["column"]}
+                    if self.wasm_source_session and (self.breakpoint_view_level or self.step_level) != "native" and not self.disassembly_view_visible:
+                        row.pop("instructionPointerReference", None)
                     frames.append(row)
                 body = dict(body, stackFrames=frames)
             if request['command'] == 'variables' and isinstance(body, dict) and 'variables' in body:
@@ -3065,6 +3690,13 @@ class Adapter:
                 return
             self.notified_stop_key = self.stop_key
             body = dict(body or {})
+            if self.threads and self.threads[0].get('stop_id'):
+                body['uwvmStopId'] = str(self.threads[0]['stop_id'])
+            hit = next((t for t in self.threads if t.get("breakpoint_levels")), None)
+            if self.breakpoint_view_level and hit is not None:
+                body.update(threadId=hit["id"], uwvmBreakpointLevel=self.breakpoint_view_level,
+                            uwvmStopId=str(hit["stop_id"]))
+                if hit.get("breakpoint_id"): body["hitBreakpointIds"] = [hit["breakpoint_id"]]
             if not self.threads and self.stop_key[0] == 'entry' and self.debug_permissions != 'limited':
                 body['threadId'] = (1 << 31) - 1
                 body.setdefault('description', 'Initial Wasm entry — Continue starts execution')
@@ -3075,6 +3707,18 @@ class Adapter:
             result["body"] = body
         self.emit(result)
 
+    def refresh_presentation_stop(self):
+        # Callers authenticate status before acknowledging their request.
+        # Publication cannot perform another fallible broker operation after
+        # the success response has already gone to the client.
+        if self.state != "stopped" or self.stop_key is None:
+            return
+        body = {"reason": "pause", "allThreadsStopped": True, "uwvmPresentationChange": True}
+        if self.threads:
+            selected = next((row for row in self.threads if row.get("breakpoint_levels")), self.threads[0])
+            body["threadId"] = selected["id"]
+        self.event("stopped", body, force=True)
+
     def command(self, text):
         if self.broker is None:
             raise ValueError("attach to a host debug broker first")
@@ -3082,12 +3726,16 @@ class Adapter:
         # Retire stopped references before every console spelling that can
         # advance execution, including aliases sent through DAP evaluate.
         words = text.split()
+        if words[:1] == ["thread-history"] and self.debug_permissions != "full":
+            raise ValueError("thread execution recording and replay require full permission")
+        if words[:2] == ["thread-history", "replay"]:
+            self.invalidate_stop()
         if self.debug_permissions != "full":
             # The VM repeats this admission independently. Do not send an
             # execution-changing REPL alias merely because evaluate is readable.
             if words and words[0] in ("pause", "continue", "c", "resume", "step", "s", "next", "n",
                     "ni", "nexti", "finish", "fin", "run", "r", "start", "startw", "starti", "restart",
-                    "kill", "jump", "goto", "advance", "return", "replace", "wasm-script"):
+                    "kill", "jump", "goto", "advance", "return", "replace", "wasm-script", "inspect"):
                 raise ValueError("debugger permission " + self.debug_permissions + " denies execution control")
             if (words[:1] in (["set"], ["unset"]) or words[:3] in
                     (["trace", "host", "on"], ["trace", "host", "off"], ["trace", "host", "clear"],
@@ -3098,6 +3746,13 @@ class Adapter:
         # Retire before sending even a malformed/failed replacement: its reply
         # may fail after publication or transport loss. Old IDs never resurrect.
         replacing = bool(words and words[0] == "replace")
+        restoring = words[:2] in (["dump", "restore"], ["dump", "replay"])
+        if words[:2] == ["dump", "record"] and self.debug_permissions != "full":
+            raise ValueError("recording execution requires full debugger permission")
+        if self.snapshot_restore_pending and not (words == ["dump", "restore", "continue"] or words == ["dump", "policy"]):
+            raise LocalRequestRefusal("snapshot restoration is pending; use dump restore continue before accessing execution state")
+        if restoring and self.debug_permissions != "full":
+            raise ValueError("restoring execution requires full debugger permission")
         # A bounded VM script may commit an ABI-checked replacement in any
         # child. Retire BEFORE sending the whole batch, including malformed,
         # rejected or diagnostic-only batches. Do not infer child success or a
@@ -3108,13 +3763,33 @@ class Adapter:
         # authoritative status/frame query must mint replacement opaque labels.
         printer_configuration = (words[:2] == ["set", "print"] or
                                  words[:1] == ["pretty-printer"] and words[1:2] != ["list"])
-        if replacing or scripted or printer_configuration or words and words[0] in ("continue", "c", "step", "s", "ni", "nexti", "finish", "fin", "quit", "q"):
+        if replacing or restoring or scripted or printer_configuration or words and words[0] in ("continue", "c", "step", "s", "ni", "nexti", "finish", "fin", "quit", "q", "inspect"):
             self.invalidate_stop()
+            self.last_step_kind = None
+        if restoring:
+            # An uncertain transport result may follow real old-worker retirement.
+            # Do not poll its temporarily closed domain as process termination,
+            # or republish stale threads/values before the new stop is verified.
+            self.snapshot_restore_pending = True
+            self.state = "restoring"
+            self.threads = []
         try:
             reply = self.broker.request(text)
         except (OSError, ValueError, RuntimeError, ConnectionError):
             self.invalidate_stop()
             raise
+        if restoring:
+            completed = re.fullmatch(r"snapshot-restored stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}) source=(ready|unavailable); guest paused; external effects are not rewound\n", reply)
+            reattached = re.fullmatch(r"snapshot-reattached stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}); original native operation retained; guest paused; no external operation repeated\n", reply)
+            rejected = re.fullmatch(r"error: snapshot-restore rejected phase=([0-9]+) detail=([0-9]+) preparation=[0-9]+ state-error=[0-9]+ applied=0 retained=1; original stopped world retained; inspect status before further management\n", reply)
+            # Only authenticated preflight refusals can reopen read access.
+            # A failed/pending publication or an unknown outcome must keep old
+            # references retired even when its reply says applied=0.
+            retained = rejected and (1 <= int(rejected[1]) <= 5 or
+                                     int(rejected[1]) == 6 and int(rejected[2]) == 11)
+            acknowledged = completed or reattached
+            if acknowledged and all(int(acknowledged[i]) < 1 << 64 for i in (1, 2)) or retained:
+                self.snapshot_restore_pending = False
         if reply.startswith("error: "):
             # A missing optional source frame table is a read-only refusal.
             # stackTrace reobserves the complete stop before publishing its
@@ -3122,6 +3797,13 @@ class Adapter:
             # code/frame references for that same stopped generation.
             if (words[:1] == ["frames"] and len(words) in (3, 5)
                     and reply == "error: current source frames unavailable: valid embedded -g DWARF and a current private source/activation capture are required\n"):
+                raise RuntimeError(reply.strip())
+            if (words[:1] == ["disassemble-range"] and len(words) == 7
+                    and words[3:] == ["1", "0", "0", "0"]
+                    and reply == "error: native disassembly range is unavailable\n"):
+                # Optional landing qualification rechecks the complete stop
+                # before accepting this refusal. Ordinary disassembly requests
+                # still fail closed through handle()'s RuntimeError path.
                 raise RuntimeError(reply.strip())
             had_stop = self.stop_key is not None
             self.invalidate_stop()
@@ -3216,10 +3898,22 @@ class Adapter:
             item = page['rows'][0] if page['rows'] else None
         return item['name'] if item is not None and item['name'] else f'func {function}'
 
+    @staticmethod
+    def wasm_code_location(location):
+        """Code display only. A native trap never restores cooperative values."""
+        if "native_pc" not in location:
+            return location
+        mapped = location.get("native_wasm")
+        if (not mapped or (mapped["module"], mapped["function"], mapped["epoch"]) !=
+                (location["module"], location["function"], location["generation"])):
+            raise LocalRequestRefusal("No authenticated Wasm code position at this native instruction")
+        return dict(location, offset=mapped["offset"])
+
     def ensure_wasm_document(self, location):
+        location = self.wasm_code_location(location)
         expected = self.stop_key
         source = f"wasm:{location['module']}:{location['function']}:{location['offset']}"
-        packet = self.wasm_disassembly(source, 1, with_metadata=True, thread_id=location["id"])
+        packet = self.wasm_disassembly(source, 1, with_metadata=True, thread_id=location["id"], code_only=True)
         identity = packet["identity"]
         key = (location['module'], location['function'], identity[4], identity[5])
         reference = self.wasm_document_keys.get(key)
@@ -3230,7 +3924,7 @@ class Adapter:
         # Copy the complete function in bounded transport pages. No UI page
         # quota truncates a function; only the authenticated code extent ends it.
         while True:
-            page = self.wasm_disassembly(source, 32, -location['offset'], instruction, with_metadata=True, thread_id=location['id'])
+            page = self.wasm_disassembly(source, 32, -location['offset'], instruction, with_metadata=True, thread_id=location['id'], code_only=True)
             if page['identity'][:8] != identity[:8]:
                 raise ValueError("Wasm code generation changed while building the document")
             for row in page['instructions']:
@@ -3267,8 +3961,178 @@ class Adapter:
         self.wasm_document_keys[key] = reference
         return reference, document
 
+    def source_statement_exact(self, thread):
+        """Exactness comes from authenticated code/line metadata, never the
+        selected step level, a previous request or a coincident breakpoint."""
+        return thread.get("source_exact", False)
+
+    def selected_location(self, args):
+        self.observe(self.command("status"), notify=False)
+        candidates = self.threads
+        if "threadId" in args:
+            thread = unsigned_id(args["threadId"], "thread")
+            candidates = [t for t in candidates if t["id"] == thread]
+        if self.state != "stopped" or self.stop_key is None or not candidates:
+            raise LocalRequestRefusal("Select a current stopped participant")
+        location = next((t for t in candidates if t.get("breakpoint_levels")), candidates[0])
+        if "ifStop" in args and str(args["ifStop"]) != str(location.get("stop_id")):
+            raise LocalRequestRefusal("This navigation or value belongs to an earlier stop")
+        return location
+
+    def code_location(self, level, location):
+        if level == "source":
+            source = location.get("native_source") if "native_wasm" in location else location.get("source")
+            if not source: raise LocalRequestRefusal("No source position was captured for this instruction")
+            return {"level": level, "source": {"path": map_source_path(source["path"], self.source_map)},
+                    "line": source["line"], "column": max(1, source["column"]), "exact": self.source_statement_exact(location)}
+        if level == "native":
+            if "native_pc" in location:
+                frame = self.stack_frame_reference("native", location["id"], location["module"], location["function"])
+                self.frames[frame] = (location["id"], -1, location["module"], location["function"])
+                self.native_frames.add(frame)
+                reference = f"uwvm-native-stop:{frame}"
+            else:
+                reference = self.qualify_native_code_reference(location)
+                if reference is None: raise LocalRequestRefusal("No current owned JIT instruction was captured")
+            return {"level": level, "instructionReference": reference, "current": True}
+        if level != "wasm": raise LocalRequestRefusal("Select source, wasm or native")
+        location = self.wasm_code_location(location)
+        if "native_pc" in location:
+            source = self.wasm_document_source(None, location)
+            return {"level": level, "source": source, "line": self.wasm_document_line(source, location["offset"]), "column": 1}
+        frame = self.stack_frame_reference("wasm", location["id"], 0, location["module"], location["function"])
+        self.frames[frame] = (location["id"], 0, location["module"], location["function"])
+        source = self.wasm_document_source(frame, location)
+        return {"level": level, "source": source, "line": self.wasm_document_line(source, location["offset"]), "column": 1}
+
+    def watch_value(self, args):
+        level, expression = args.get("level"), args.get("expression")
+        if not isinstance(expression, str) or not expression:
+            raise LocalRequestRefusal("A watch expression is required")
+        if level == "wasm":
+            match = re.fullmatch(r"(local|operand|global)\[([0-9]+)\]|table\[([0-9]+)\]\[([0-9]+)\]", expression)
+            if not match: raise LocalRequestRefusal("Use local[N], operand[N], global[N] or table[T][N]")
+            if any(len(v) > 20 or int(v) >= 1 << 64 for v in (match[2], match[3], match[4]) if v is not None):
+                raise LocalRequestRefusal("Wasm watch indices must fit u64")
+        elif level == "source":
+            try:
+                expression = validate_source_evaluation_expression(expression)
+            except ValueError as error:
+                raise LocalRequestRefusal(str(error)) from error
+        elif level == "native":
+            try:
+                native_register_selector(expression, "x86_64")
+            except ValueError as error:
+                raise LocalRequestRefusal(str(error)) from error
+        else: raise LocalRequestRefusal("Select source, wasm or native")
+        location = self.selected_location(args)
+        expected = self.stop_key
+        if level == "native":
+            if "native_pc" not in location: raise LocalRequestRefusal("Capture a current JIT register stop first")
+            frame = self.stack_frame_reference("native", location["id"], location["module"], location["function"])
+            self.frames[frame] = (location["id"], -1, location["module"], location["function"])
+            self.native_frames.add(frame)
+            architecture, values = self.query_native_registers(frame)
+            selected = native_register_selector(expression, architecture)
+            value = next((v for v in values if v["name"] == selected), None)
+            if value is None: raise LocalRequestRefusal("Register is absent on this architecture")
+            result = {"result": value["value"], "type": value.get("type", "register"), "variablesReference": 0}
+        elif level == "wasm":
+            if "native_pc" in location: raise LocalRequestRefusal("Wasm values require a current cooperative stop")
+            selected = {"local": "locals", "operand": "operands", "global": "globals"}.get(match[1], "table")
+            table, index = (int(match[3]), int(match[4])) if selected == "table" else (0, int(match[2]))
+            selection = (location["id"], location["module"], 0, selected, table)
+            values = self.paged_wasm_scope(expected, selection, index, 1, include_notice=False)
+            if len(values) != 1 or values[0].get("type") == "unavailable":
+                raise LocalRequestRefusal(values[0]["value"] if values else "Index is outside this Wasm state")
+            result = dict(values[0]); result["result"] = result.pop("value"); result.pop("name", None)
+        else:
+            if "native_pc" in location: raise LocalRequestRefusal("Source values require a current source activation")
+            rows = parse_source_frames(self.command(f"frames {location['id']} {location['stop_id']}"), location["id"], location["stop_id"])
+            row = rows[0]
+            if not row["current"]: raise LocalRequestRefusal("Source values were not captured")
+            frame = self.stack_frame_reference("source", location["id"], row["ordinal"], row["module"], row["function"], row["kind"])
+            self.frames[frame] = (location["id"], 0 if row["kind"] == "physical" else -2, row["module"], row["function"])
+            self.source_frame_ordinals[frame] = (expected, row); self.source_frames.add(frame)
+            text = self.source_watch_packet(expected, frame, row, expression)
+            result = self.source_object_display(text, expected, frame, row)
+        self.observe(self.command("status"), notify=False)
+        if self.stop_key != expected: raise LocalRequestRefusal("The watch stop retired during evaluation")
+        return dict(result, stopId=str(location["stop_id"]), threadId=location["id"], level=level)
+
+    def current_positions(self):
+        """Position of the stop at every level, with exact/next semantics:
+        a cooperative stop is exact at Wasm and assembly, and exact at source
+        only at a statement start; a native stop is exact at assembly only."""
+        self.observe(self.command("status"), notify=False)
+        if self.state != "stopped" or self.stop_key is None or not self.threads:
+            return {"state": self.state}
+        if self.debug_permissions in ("full", "read-only"):
+            self.sync_breakpoints()
+        thread = next((row for row in self.threads if row.get("breakpoint_levels")),
+                      next((row for row in self.threads if "native_pc" in row), self.threads[0]))
+        native = "native_pc" in thread
+        if native:
+            place = thread.get("native_wasm")
+            wasm = dict(place, exact=thread.get("native_wasm_start", False), provenance="exact") if place else None
+            # A previous cooperative location cannot identify this native PC.
+            # Show no source/Wasm pointer when the current provenance is absent.
+            src = thread.get("native_source") if place else None
+            source_exact = self.source_statement_exact(thread)
+        else:
+            wasm = {"module": thread["module"], "function": thread["function"], "offset": thread["offset"], "exact": not thread.get("retained_host", False)}
+            src, source_exact = thread.get("source"), self.source_statement_exact(thread)
+        source = None
+        if src and self.debug_permissions in ("full", "read-only"):
+            try:
+                local = map_source_path(src["path"], self.source_map)
+            except ValueError:
+                local = None
+            if local:
+                source = {"path": local, "line": src["line"], "column": src["column"], "exact": source_exact}
+        # A cooperative stop has no live native PC in its status packet. Still
+        # qualify the current JIT owner for every inspectable stop, rather than
+        # waiting for the IDE to open Disassembly. Source/Wasm markers and the
+        # native view then share one exact, authenticated instruction identity.
+        # The opaque reference is display-only; the adapter revalidates stop,
+        # generation and owner on every disassemble request. This path is only
+        # reached while debugging, so it cannot add work to normal execution.
+        asm_reference = None
+        if not native and not thread.get("retained_host") and self.debug_permissions in ("full", "read-only"):
+            asm_reference = self.qualify_native_code_reference(thread)
+        asm = ({"exact": True, "provenance": "llvm-jit", "nativePc": thread["native_pc"]} if native else
+               {"exact": True, "provenance": "llvm-jit", "instructionReference": asm_reference} if asm_reference else None)
+        result = {"state": "stopped", "threadId": thread["id"], "native": native, "level": self.step_level, "displayLevel": self.breakpoint_view_level or self.step_level,
+                  "wasm": {key: str(value) if key in ("module", "function", "offset", "generation", "epoch") else value for key, value in wasm.items()} if wasm else None,
+                  "source": source, "asm": asm}
+        if thread.get("stop_id"):
+            result["stopId"] = str(thread["stop_id"])
+        if native:
+            result["nativePc"] = thread["native_pc"]
+        # Only an EXACT pointer can be moved, and only where the runtime can
+        # relocate: today that is the native PC at an assembly stop, inside the
+        # same JIT function (the VM refuses Wasm/source relocation because it
+        # cannot yet restore operand/control stacks at a resumable landing).
+        full = self.debug_permissions == "full"
+        denied = "Moving the execution pointer needs full debugger permission."
+        # The runtime implements native PC relocation for macOS arm64 only
+        # (llvm_jit_debug_relocate_native_pc_host_api); elsewhere it refuses.
+        # The adapter runs on the VM host, so this is the VM host platform.
+        import platform as _platform
+        relocates = sys.platform == "darwin" and _platform.machine() in ("arm64", "aarch64")
+        result["movable"] = {"asm": full and native and relocates, "wasm": False, "source": False}
+        result["moveReason"] = {
+            "asm": denied if not full else "This runtime build cannot move the native pointer on " + sys.platform + "/" + _platform.machine() + " (relocation is implemented for macOS arm64)." if not relocates
+                   else "" if native else "Capture the current JIT instruction using Registers; relocation requires a native instruction stop.",
+            "wasm": denied if not full else "This runtime cannot move the Wasm pointer yet: it would need the operand and control stacks restored at a resumable JIT landing.",
+            "source": denied if not full else "This runtime cannot move the source pointer yet: it would need the operand and control stacks restored at a resumable JIT landing."}
+        return result
+
     def wasm_document_source(self, frame_reference, location):
         reference, document = self.ensure_wasm_document(location)
+        return self.stored_wasm_source(reference, document)
+
+    def stored_wasm_source(self, reference, document):
         suffix = f"/module-{document['module']}/function-{document['function']}/code-{document['epoch']}-{document['generation']}.uwvm-wat"
         name = f"module {document['module']} func {document['function']}.wat"
         if self.wasm_source_session is None:
@@ -3287,23 +4151,23 @@ class Adapter:
             raise ValueError("unknown Wasm document URI")
         return reference
 
-    def current_wasm_document(self, reference, if_stop=None, thread_id=None):
+    def current_wasm_document(self, reference, if_stop=None, thread_id=None, *, code_only=False):
         document = self.wasm_documents.get(reference)
         if document is None:
             raise ValueError("unknown Wasm document")
         self.observe(self.command('status'), notify=False)
         expected = self.stop_key
         candidates = [t for t in self.threads if (t['module'], t['function'], t['generation']) ==
-                      (document['module'], document['function'], document['epoch']) and 'native_pc' not in t
+                      (document['module'], document['function'], document['epoch']) and (code_only or 'native_pc' not in t)
                       and (thread_id is None or t['id'] == thread_id)]
         if self.state != 'stopped' or expected is None or not candidates:
-            raise ValueError("document has no current cooperative Wasm activation")
+            raise LocalRequestRefusal("document has no current Wasm activation")
         # Content is session/generation stable; values are always rebound to a
         # genuine current participant. A stale hover carries its exact stop ID.
-        location = candidates[0]
+        location = self.wasm_code_location(candidates[0])
         if if_stop is not None and str(location['stop_id']) != if_stop:
             raise ValueError("Wasm document inspection belongs to an earlier stop")
-        packet = self.wasm_disassembly(f"wasm:{location['module']}:{location['function']}:{location['offset']}", 1, with_metadata=True, thread_id=location['id'])
+        packet = self.wasm_disassembly(f"wasm:{location['module']}:{location['function']}:{location['offset']}", 1, with_metadata=True, thread_id=location['id'], code_only=code_only)
         if packet['identity'][5] != document['generation'] or self.stop_key != expected:
             raise ValueError("Wasm document code generation has retired")
         return document, location, expected
@@ -3321,11 +4185,14 @@ class Adapter:
         return line
 
     def invalidate_stop(self):
+        self.breakpoint_view_level = None
+        self.mutation_stop_key = None
         self.stop_key = None
         self.entry_frame = None
         self.native_reference_origins.clear()
         self.data_breakpoint_handles.clear()
         self.frames.clear()
+        self.stack_frame_ids.clear()
         self.wasm_metadata_cache.clear(); self.structured_views.clear(); self.wasm_layout_groups.clear(); self.wasm_table_groups.clear(); self.frame_details.clear()
         self.scopes.clear()
         self.wasm_local_scope_stops.clear()
@@ -3381,6 +4248,28 @@ class Adapter:
             self.source_object_bytes += byte_count
         body = dict(variables[0]);body['result'] = body.pop('value');body.pop('name')
         return body
+
+    def source_watch_packet(self, expected_key, frame_id, row, expression):
+        """Evaluate in the authenticated source frame; keep optional failures local."""
+        spelling = f"print-frame {row['thread']} {row['stop_id']} {row['ordinal']} {expression}"
+        if len(spelling.encode("ascii")) > MAX_SOURCE_COMMAND:
+            raise LocalRequestRefusal("source evaluation exceeds the controller's 512-byte command packet capacity")
+        def current():
+            if (self.state != "stopped" or self.stop_key != expected_key
+                    or self.source_frame_ordinals.get(frame_id) != (expected_key, row)):
+                raise ValueError("selected source frame retired during value copy")
+        self.observe(self.command("status"), notify=False);current()
+        # Only this exact read-only refusal is optional. A complete second
+        # status must still authenticate the same stop before preserving IDs.
+        result = self.broker.request(spelling)
+        unavailable = "error: source value unavailable: current captured location, layout or single unshared local-memory read is unavailable\n"
+        if isinstance(result, str) and result.startswith("error: ") and result != unavailable:
+            raise RuntimeError(result.strip())
+        self.observe(self.command("status"), notify=False);current()
+        if result == unavailable:
+            raise LocalRequestRefusal(result.strip())
+        validate_source_evaluation_reply(result, row["stop_id"], row["thread"])
+        return result
 
     def source_root_packet(self, expected_key, frame_id, row, name, dereference=False):
         """Read only a reselected current symbol; never use copied address bits."""
@@ -3510,6 +4399,19 @@ class Adapter:
             raise LocalRequestRefusal("stack frame belongs to a retired stop")
         return frame
 
+    def stack_frame_reference(self, *identity):
+        # Repeated stackTrace requests at one authenticated stop must preserve
+        # frame identity, including the native instruction reference. VS Code
+        # compares this identity to distinguish the current (yellow) frame from
+        # a selected caller (green). invalidate_stop retires the entire map.
+        if self.stop_key is None:
+            raise LocalRequestRefusal("stack frame requires a current stop")
+        reference = self.stack_frame_ids.get(identity)
+        if reference is None:
+            reference = self.new_reference()
+            self.stack_frame_ids[identity] = reference
+        return reference
+
     def new_reference(self):
         # DAP frame/scope references are session-unique signed 32-bit IDs.
         # Exhaustion refuses a new reference; it must never wrap to an old ID.
@@ -3533,6 +4435,7 @@ class Adapter:
                            "participants": count, "reason": reason, "redacted": True})
                 return ("running", "running", "stopped", "exited", "closed")[state], "exception", [], code
             first = reply.splitlines()[0] if reply else ''
+            self.threaded_profile = any(re.fullmatch(r"threaded-profile events=[0-9]+ cursor=[0-9]+ journal=[0-6]", line) for line in reply.splitlines())
             self.stop_description = first.removeprefix('stopped: ') if first.startswith('stopped: ') else ('Initial Wasm entry' if first.startswith('prepared;') else None)
             return parse_status(reply)
         except ValueError:
@@ -3548,16 +4451,32 @@ class Adapter:
         self.threads = threads
         self.state = state
         if state == "stopped":
+            self.thread_replay_terminal_code = None
             key = (("limited", self.limited_stop_id) if self.debug_permissions == "limited" else
                    (reason, tuple((t["id"], t["module"], t["function"], t["offset"],
                                   t["generation"], t.get("native_pc"), t.get("stop_id")) for t in threads)))
             changed = key != self.stop_key
             if changed:
                 self.stop_key = key
+                self.mutation_stop_key = None
+                self.breakpoint_view_level = None
+                hit = next((row for row in threads if row.get("breakpoint_levels")), None) if reason == "breakpoint" else None
+                if hit is not None:
+                    hit_levels = hit["breakpoint_levels"]
+                    # Simultaneous hits keep the selected level when it is one
+                    # of the actual hits; otherwise prefer their reported order.
+                    level = self.step_level if self.step_level in hit_levels else hit_levels[0]
+                    self.breakpoint_view_level = level
+                    if level == "wasm": self.wasm_view_visible = True
+                    if not self.step_level_locked and level != self.step_level:
+                        self.step_level = level
+                        self.event("uwvm/stepLevel", {"level": level, "locked": False})
+                        self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions, level, self.threaded_profile)})
                 self.entry_frame = None
                 self.native_reference_origins.clear()
                 self.data_breakpoint_handles.clear()
                 self.frames.clear()
+                self.stack_frame_ids.clear()
                 self.wasm_metadata_cache.clear(); self.structured_views.clear(); self.wasm_layout_groups.clear(); self.wasm_table_groups.clear(); self.frame_details.clear()
                 self.scopes.clear()
                 self.wasm_local_scope_stops.clear()
@@ -3584,16 +4503,33 @@ class Adapter:
                 event = {"reason": reason, "allThreadsStopped": True}
                 if self.stop_description and self.debug_permissions != 'limited': event['description'] = self.stop_description
                 if threads:
-                    event["threadId"] = threads[0]["id"]
+                    selected = next((row for row in threads if row.get("breakpoint_levels")), threads[0])
+                    event["threadId"] = selected["id"]
+                    if self.breakpoint_view_level:
+                        event["uwvmBreakpointLevel"] = self.breakpoint_view_level
+                        event["uwvmStopId"] = str(selected["stop_id"])
+                        if selected.get("breakpoint_id"): event["hitBreakpointIds"] = [selected["breakpoint_id"]]
                 self.event("stopped", event)
             return changed
         elif state == "exited":
             self.invalidate_stop()
+            if self.threaded_profile:
+                # The Guest cohort joined, but the authenticated host session
+                # still owns its recording and can reconstruct it. Terminated
+                # would make a normal IDE tear down that replay entry point.
+                if self.thread_replay_terminal_code != code:
+                    self.thread_replay_terminal_code = code
+                    self.event("uwvm/threadReplay", {"state": "joined", "exitCode": code or 0,
+                                                      "stopId": "0", "canReplay": True})
+                    self.event("output", {"category": "console", "output":
+                        f"WASI Threads cohort exited ({code or 0}); recording and replay remain available.\n"})
+                return False
             if not self.finished:
                 self.finished = True
                 self.event("exited", {"exitCode": code or 0})
                 self.event("terminated")
         elif state == "running":
+            self.thread_replay_terminal_code = None
             self.invalidate_stop()
         elif state == "closed":
             self.invalidate_stop()
@@ -3603,17 +4539,18 @@ class Adapter:
         return False
 
     def sync_breakpoints(self):
+        if self.threaded_profile: return []
         if self.debug_permissions not in ('full', 'read-only') or self.state != 'stopped': return []
         text = self.command('info breakpoints')
         rows = []
         if text != 'no breakpoints\n':
             for line in text.splitlines():
-                m = re.fullmatch(r'breakpoint (\d+) module=(\d+) function=(\d+) kind=(asm|wasm) byte-offset=(\d+) temporary=(yes|no) enabled=(yes|no) hits=(\d+) ignore=(\d+)(?: condition=(.*))?', line)
+                m = re.fullmatch(r'breakpoint (\d+) module=(\d+) function=(\d+) kind=(asm|wasm|source) byte-offset=(\d+) temporary=(yes|no) enabled=(yes|no) hits=(\d+) ignore=(\d+)(?: condition=(.*))?', line)
                 if m is None: raise ValueError('invalid breakpoint inventory')
                 identifier, module, function, offset, hits, ignore = (int(m[i]) for i in (1, 2, 3, 5, 8, 9))
                 if not identifier or any(v >= 1 << 64 for v in (identifier, module, function, offset, hits, ignore)):
                     raise ValueError('breakpoint identity exceeds its exact width')
-                rows.append(dict(id=identifier, module=str(module), function=str(function), kind=m[4],
+                rows.append(dict(id=identifier, module=str(module), function=str(function), kind='asm' if m[4]=='asm' else 'wasm', origin=m[4],
                     offset=str(offset), temporary=m[6]=='yes', enabled=m[7]=='yes', hits=str(hits),
                     ignore=str(ignore), condition=m[10] or ''))
         if len({r['id'] for r in rows}) != len(rows): raise ValueError('ambiguous breakpoint inventory')
@@ -3629,6 +4566,15 @@ class Adapter:
                         break
                 display.setdefault('instructionReference', f"wasm:{row['module']}:{row['function']}:{row['offset']}")
             display['message'] = ('Enabled' if row['enabled'] else 'Disabled') + (' · temporary' if row['temporary'] else '')
+            # Level of the point as the user created it: a source line, a Wasm
+            # instruction or an owned JIT instruction. The VM stores source
+            # points as Wasm-offset points, so the adapter keeps their origin.
+            location_path = (display.get('source') or {}).get('path', '')
+            row['level'] = ('asm' if row['kind'] == 'asm' else
+                            'source' if row.get('origin') == 'source' or identifier in self.source_breakpoint_ids or
+                                (location_path and not location_path.startswith(('uwvm-wasm:', '/uwvm-wasm/'))) else 'wasm')
+            if row['level'] == 'source' and 'source' in display:
+                row['source'] = {'path': display['source'].get('path'), 'line': display.get('line')}
             displays[identifier] = display
             if self.breakpoint_displays.get(identifier) != display:
                 if identifier in self.published_breakpoints or ('source' in display and not self.complete_editor_breakpoints):
@@ -3640,6 +4586,7 @@ class Adapter:
             self.event('breakpoint', {'reason': 'removed', 'breakpoint': {'id': identifier}})
             self.breakpoint_locations.pop(identifier, None)
             self.source_breakpoint_specs.pop(identifier, None)
+            self.source_breakpoint_ids.discard(identifier)
             self.published_breakpoints.discard(identifier)
         if inventory != self.breakpoint_inventory or displays != self.breakpoint_displays:
             self.event('uwvm/breakpoints', {'available': True, 'rows': rows, 'locations': {str(k): v for k, v in displays.items()}})
@@ -3744,6 +4691,7 @@ class Adapter:
                     if match is None: raise RuntimeError(reply.strip())
                     identifier = int(match[1]); keep.add(identifier)
                     self.breakpoint_locations[identifier] = dict(source=dict(source), line=line)
+                    if not (explicit or ref is not None): self.source_breakpoint_ids.add(identifier)
                     if not point.get('enabled', True): self.command(f'disable {identifier}')
                 self.source_breakpoint_specs[identifier] = (condition, ignore)
                 if publish_response: self.published_breakpoints.add(identifier)
@@ -3801,6 +4749,8 @@ class Adapter:
 
     def poll(self):
         self.finish_update_requests()
+        if self.snapshot_restore_pending:
+            return
         if self.broker is not None and not self.finished:
             try:
                 self.observe(self.command("status"))
@@ -3871,7 +4821,9 @@ class Adapter:
             if (self.state != "stopped" or self.stop_key != expected_key or current != [location]
                     or len(rows) != 1):
                 return None
-            reference = self.new_reference()
+            reference = next((ref for ref, saved in self.native_code_refs.items()
+                              if saved == (location["id"], expected_key, identity)), None)
+            if reference is None: reference = self.new_reference()
             self.native_code_refs[reference] = (location["id"], expected_key, identity)
             return f"uwvm-native-code:{reference}"
         except (OSError, ValueError, RuntimeError, ConnectionError) as error:
@@ -3894,9 +4846,13 @@ class Adapter:
             # error spellings still fail the entire request closed.
             if not isinstance(error, RuntimeError) or str(error) != "error: native disassembly range is unavailable":
                 raise
+            self.observe(self.command("status"), notify=False)
+            if (self.state != "stopped" or self.stop_key != expected_key
+                    or [entry for entry in self.threads if entry["id"] == location["id"]] != [location]):
+                raise ValueError("stop changed while native code was unavailable")
             return None
 
-    def disassemble_owned_range(self, request, args, reference, count):
+    def disassemble_owned_range(self, request, args, reference, count, *, source_document=False):
         match = re.fullmatch(r"uwvm-native-(stop|code):([1-9][0-9]{0,9})", reference)
         if match is None:
             raise ValueError("current opaque native instruction reference required")
@@ -3905,15 +4861,15 @@ class Adapter:
         if kind == "stop":
             frame = self.frames.get(identifier)
             if frame is None or identifier not in self.native_frames or frame[1] != -1:
-                raise ValueError("stale native stopped-frame reference")
+                raise LocalRequestRefusal("stale native stopped-frame reference")
             thread, saved_identity = frame[0], None
         else:
             saved = self.native_code_refs.get(identifier)
             if saved is None or saved[1] != expected_key:
-                raise ValueError("stale cooperative native-code reference")
+                raise LocalRequestRefusal("stale cooperative native-code reference")
             thread, _, saved_identity = saved
         if expected_key is None:
-            raise ValueError("native reference has no current stop")
+            raise LocalRequestRefusal("native reference has no current stop")
         self.observe(self.command("status"))
         current = [entry for entry in self.threads if entry["id"] == thread]
         if (self.state != "stopped" or self.stop_key != expected_key or len(current) != 1 or
@@ -3986,8 +4942,60 @@ class Adapter:
             if row.get('presentationHint') != 'invalid':
                 self.native_instruction_addresses[int(row['address'], 16)] = (expected_key, dict(location), identity)
         self.native_reference_origins[reference] = (expected_key, identity[:9])
+        if source_document:
+            return instructions
         self.respond(request, {"instructions": instructions})
 
+
+    def query_wasithread_state(self, arguments):
+        options = wasithread_state_options(arguments)
+        expected, _, stop_id = self.cooperative_memory_stop()
+        if any(item.get("stop_id") != stop_id for item in self.threads) or options.get("ifStop", stop_id) != stop_id:
+            raise ValueError("I1T query requires the complete current stop")
+        try:
+            result = parse_wasithread_state(self.command(
+                f"info wasithread {options['selection']} {options['start']} {options['count']} {stop_id}"), options, stop_id)
+            self.observe(self.command("status"), notify=False)
+            if self.state != "stopped" or self.stop_key != expected:
+                raise ValueError("I1T query stop changed")
+            return result
+        except (OSError, ValueError, RuntimeError):
+            self.invalidate_stop()
+            raise
+
+    def query_scene_state(self, arguments, *, expected_stop=None):
+        """Copy scene metadata only inside one complete cooperative stop cohort.
+
+        Independent debugger authorization remains enforced by command admission
+        and the scene hook. No model, storage, driver or transport work is run.
+        A failed copy retires references before any caller can reuse the stop.
+        """
+        options = scene_state_options(arguments)
+        expected, _, stop_id = self.cooperative_memory_stop()
+        if any(item.get("stop_id") != stop_id for item in self.threads):
+            self.invalidate_stop()
+            raise ValueError("scene metadata requires a complete stopped cohort")
+        if expected_stop is not None and expected != expected_stop:
+            raise ValueError("scene metadata belongs to a retired stop")
+        if "ifStop" in options and options["ifStop"] != stop_id:
+            raise ValueError("scene metadata request asserts a retired stop")
+        words = ["info", "scene", options["selection"], "first="+str(options["start"]),
+                 "count="+str(options["count"]), "if-stop="+str(stop_id)]
+        for key in ("environment", "alias"):
+            if key in options:
+                words.append(key+"="+options[key])
+        command = " ".join(words)
+        if len(command) > 512:
+            raise ValueError("scene query exceeds bounded console line")
+        try:
+            copied = parse_scene_state(self.command(command), options, stop_id)
+            self.observe(self.command("status"), notify=False)
+            if self.state != "stopped" or self.stop_key != expected:
+                raise ValueError("scene metadata stop cohort changed during the copy")
+            return copied
+        except (OSError, ValueError, RuntimeError):
+            self.invalidate_stop()
+            raise
 
     def query_ros_state(self, arguments, *, expected_stop=None):
         """Fresh authenticated metadata query, fenced by one real stop cohort.
@@ -4034,7 +5042,9 @@ class Adapter:
             raise ValueError("bounded WASIp1 module and page required")
         self.observe(self.command("status"), notify=False)
         if self.state != "stopped" or not self.threads or any(item.get("native_pc") for item in self.threads):
-            raise ValueError("WASIp1 state requires a current cooperative Wasm stop")
+            # This is a locally established unsupported view, not a failed
+            # read. Preserve valid native frames/register/code capabilities.
+            raise LocalRequestRefusal("WASIp1 state requires a current cooperative Wasm stop")
         if expected_stop is not None and self.stop_key != expected_stop:
             raise ValueError("WASIp1 scope belongs to a retired stop")
         expected = self.stop_key
@@ -4216,7 +5226,7 @@ class Adapter:
             raise ValueError("invalid retained observation view")
         return values[start: start+count if count else None]
 
-    def wasm_disassembly(self, reference, count, byte_offset=0, instruction_offset=0, *, with_metadata=False, thread_id=None):
+    def wasm_disassembly(self, reference, count, byte_offset=0, instruction_offset=0, *, with_metadata=False, thread_id=None, code_only=False):
         match = re.fullmatch(r"wasm:([0-9]+):([0-9]+):([0-9]+)", reference or "")
         if match is None:
             raise ValueError("current Wasm instruction reference required")
@@ -4224,11 +5234,15 @@ class Adapter:
         expected = self.stop_key
         candidates = [v for v in self.frames.values() if v[1] == 0 and v[2:] == (module, function)
                       and (thread_id is None or v[0] == thread_id)]
-        if expected is None or not candidates:
+        if expected is None or (not candidates and not (code_only and thread_id is not None)):
             raise ValueError("retired Wasm instruction reference")
-        self.cooperative_memory_stop()
-        current = [v for v in self.threads if v["id"] == candidates[0][0] and
-                   (v["module"], v["function"], v["offset"]) == (module, function, offset)]
+        if code_only:
+            self.observe(self.command("status"), notify=False)
+        else:
+            self.cooperative_memory_stop()
+        selected = thread_id if code_only and thread_id is not None else candidates[0][0]
+        current = [self.wasm_code_location(v) for v in self.threads if v["id"] == selected]
+        current = [v for v in current if (v["module"], v["function"], v["offset"]) == (module, function, offset)]
         if self.stop_key != expected or len(current) != 1:
             raise ValueError("Wasm instruction reference differs from the current stop")
         location, result, identity = current[0], [], None
@@ -4260,7 +5274,10 @@ class Adapter:
                 previous_end = at+size
                 result.append({"address": str(at), "instruction": row[4],
                                "symbol": f"wasm:{module}:{function}:{at}", "_size": size, "_safe": row[3] == "1"})
-            self.cooperative_memory_stop()
+            if code_only:
+                self.observe(self.command("status"), notify=False)
+            else:
+                self.cooperative_memory_stop()
             if self.stop_key != expected:
                 raise ValueError("Wasm instruction page stop retired")
         if with_metadata:
@@ -4547,7 +5564,7 @@ class Adapter:
         try:
             packet = self.command(spelling + f" if-stop {stop_id}")
         except (OSError, ValueError, RuntimeError, ConnectionError) as error:
-            raise RuntimeError("WASIp1 edit outcome is unconfirmed; inspect state before retrying") from error
+            raise RuntimeError("WASIp1 edit outcome is unconfirmed; inspect state before retrying: " + str(error)) from error
         match = re.match(r"wasip1-stop ([0-9]{1,20})\nwasip1 module=([0-9]{1,20}) status=(.+) epoch=([0-9]{1,20}) applied=([01]) shared-environment=([01]) total=([0-9]{1,20})\n", packet)
         if (match is None or int(match[1]) != stop_id or int(match[2]) != module or match[3] not in _WASIP1_STATUS
                 or int(match[4]) >= 1 << 64 or int(match[7]) > 65536 or ((match[5] == "1") != (match[3] == "ok"))):
@@ -5002,7 +6019,12 @@ class Adapter:
         if not isinstance(value, str) or not 0 < len(value) <= 128:
             raise ValueError("bounded numeric value or bits HEX required")
         width = {"i32": 32, "f32": 32, "i64": 64, "f64": 64, "v128": 128}[kind]
-        if value.startswith("bits "):
+        if kind == "v128" and value.startswith("bytes="):
+            raw = value[6:]
+            if re.fullmatch(r"[0-9a-fA-F]{32}", raw) is None:
+                raise ValueError("v128 bytes= requires exactly 16 hexadecimal bytes in memory order")
+            bits = int.from_bytes(bytes.fromhex(raw), "little")
+        elif value.startswith(("bits ", "bits=")):
             raw = value[5:].strip()
             if re.fullmatch(r"(?:0x)?[0-9a-fA-F]+", raw) is None:
                 raise ValueError("hexadecimal bit pattern required")
@@ -5273,6 +6295,62 @@ class Adapter:
         self.data_breakpoints = retained
         return {"breakpoints": registered}
 
+    def thread_history_request(self, request, args):
+        """The normal DAP session controls the genuine private thread driver.
+
+        A recording is explicit launch authority; execution state is not supplied
+        by a DAP thread ID or by the archived source/environment metadata.
+        """
+        if self.debug_permissions != "full" or not self.threaded_profile:
+            raise ValueError("a full-permission private thread session is required")
+        command = request["command"]
+        replay = command == "uwvm/restoreSnapshot" or command == "uwvm/threadReplay" and args.get("action") == "replay"
+        action = "replay" if replay else "save" if command == "uwvm/dump" else args.get("action", "status")
+        if action == "start":
+            # The CLI created the origin before the first actual instruction.
+            # Never silently restart an existing execution to synthesize one.
+            action = "status"
+        if action not in ("status", "save", "mark", "replay"):
+            raise ValueError("thread history action must be status, save, mark or replay")
+        text = "thread-history " + action
+        if action != "status":
+            stop = snapshot_binding_integer(args.get("stopId"), 64, "thread stopId")
+            self.observe(self.command("status"), notify=False)
+            if self.state != "exited" and (self.state != "stopped" or not self.threads or any(t.get("stop_id") != stop for t in self.threads)):
+                raise ValueError("thread history requires the exact current stopped cohort")
+            if self.state == "exited" and stop:
+                raise ValueError("a joined terminal history uses stopId 0")
+            text += " " + str(stop)
+        if action in ("save", "replay"):
+            path = args.get("path")
+            if not isinstance(path, str) or not path.startswith('/') or any(ord(c) < 32 or ord(c) == 127 for c in path):
+                raise ValueError("thread archive path must be absolute on the VM host")
+            if action == "replay":
+                if args.get("environment", "replay") != "replay" or args.get("bindings") or args.get("continue"):
+                    raise ValueError("thread reconstruction replays recorded effects; live resource rebinding is not accepted")
+                cursor = snapshot_binding_integer(args.get("cursor", "0"), 64, "thread replay cursor")
+                text += " " + str(cursor)
+            elif args.get("disclosure", "full") != "full":
+                raise ValueError("an executable thread history requires full disclosure")
+            text += " " + path
+        reply = self.command(text)
+        if action == "replay":
+            observed = self._decode_status(reply)
+            if not self.threaded_profile or observed[0] not in ("stopped", "exited", "running"):
+                raise ValueError("VM did not acknowledge private thread reconstruction")
+            self.respond(request, {"threaded": True, "execution": observed[0], "externalEffectsOnReplay": False, "text": reply})
+            self._commit_status(observed)
+        elif action == "status":
+            match = re.fullmatch(r"thread-history mode=([0-6]) events=([0-9]+) cursor=([0-9]+) stop=([0-9]+)\n", reply)
+            if not match: raise ValueError("invalid thread journal observation")
+            self.respond(request, {"threaded": True, "mode": int(match[1]), "events": match[2], "cursor": match[3], "stopId": match[4], "text": reply})
+        else:
+            match = re.fullmatch(r"thread-history saved=([01]) samples=([0-9]+) retained=([01])\n", reply)
+            if not match or (match[1] == "1") != (action == "save"):
+                raise ValueError("invalid thread history save acknowledgement")
+            self.respond(request, {"threaded": True, "saved": action == "save", "samples": match[2], "retainedNativePending": match[3] == "1",
+                                   "disclosure": "full", "redacted": False, "text": reply})
+
     def handle(self, request):
         command = request.get("command")
         args = request.get("arguments") or {}
@@ -5283,6 +6361,9 @@ class Adapter:
         try:
             if not dap_permission_allowed(self.debug_permissions, command):
                 raise LocalRequestRefusal("debugger permission " + self.debug_permissions + " denies " + command)
+            if self.threaded_profile and command in ("uwvm/recordSnapshot", "uwvm/restoreSnapshot", "uwvm/dump", "uwvm/threadReplay"):
+                self.thread_history_request(request, args)
+                return
             if command == "initialize":
                 if any(type(args.get(key, False)) is not bool for key in ("supportsMemoryEvent", "supportsInvalidatedEvent")):
                     raise ValueError("memory and invalidation event capabilities must be boolean")
@@ -5310,6 +6391,8 @@ class Adapter:
                 step_level = args.get("stepLevel", "source")
                 if step_level not in ("source", "wasm", "native"):
                     raise ValueError("stepLevel must be source, wasm or native")
+                step_level_locked = args.get("stepLevelLocked", False)
+                if type(step_level_locked) is not bool: raise ValueError("stepLevelLocked must be boolean")
                 source_map = compile_source_map(args.get("sourceMap", {}))
                 update_directory = args.get("updateSocketDir")
                 if update_directory is not None and (sys.platform != "linux" or type(update_directory) is not str or
@@ -5356,10 +6439,11 @@ class Adapter:
                 self.module_id = module_id
                 self.source_map = source_map
                 self.step_level = step_level
+                self.step_level_locked = step_level_locked
                 self.respond(request)
-                self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions, self.step_level)})
+                self.event("capabilities", {"capabilities": debug_capabilities(self.debug_permissions, self.step_level, self.threaded_profile)})
                 self.event("uwvm/permissions", {"permissions": self.debug_permissions})
-                self.event("uwvm/stepLevel", {"level": self.step_level})
+                self.event("uwvm/stepLevel", {"level": self.step_level, "locked": self.step_level_locked})
                 self.event("initialized")
                 self._commit_status(observation, notify=not(self.resume_on_entry and observation[1] == 'entry'))
                 self.attach_entry_key = self.stop_key if observation[1] == 'entry' else None
@@ -5367,6 +6451,9 @@ class Adapter:
                     'Attached to the host-owned VM. Restart reconnects this attach session; it does not reset the VM.\n'})
             elif command == "uwvm/breakpoints":
                 self.observe(self.command('status'), notify=False)
+                if self.threaded_profile:
+                    self.respond(request, {'available': False, 'state': self.state, 'reason': 'private thread replay cohort'})
+                    return
                 if self.state != 'stopped':
                     # Unavailable is not an empty inventory. A running guest
                     # must not make a frontend delete its retained breakpoints.
@@ -5446,17 +6533,128 @@ class Adapter:
                 if self.stop_key != expected: raise ValueError('callback page stop retired')
                 self.respond(request, {'id': identifier, 'rows': rows, 'start': first, 'next': next_index, 'total': total, 'more': next_index < total})
             elif command == "uwvm/stepLevel":
-                if 'level' not in args:
-                    self.respond(request, {'level': self.step_level})
+                if "locked" in args and type(args["locked"]) is not bool:
+                    raise ValueError("step level lock must be boolean")
+                level = args.get("level", self.step_level)
+                if level not in ("source", "wasm", "native"): raise ValueError("select source, wasm or native")
+                if self.step_level_locked and level != self.step_level:
+                    raise LocalRequestRefusal("Step level is locked. Unlock it before selecting another level.")
+                changed = self.step_level != level
+                if changed:
+                    self.observe(self.command("status"), notify=False)
+                self.step_level = level
+                self.step_level_locked = args.get("locked", self.step_level_locked)
+                if 'level' in args:
+                    self.breakpoint_view_level = None
+                    self.disassembly_view_visible = level == 'native'
+                    if self.step_level == 'wasm': self.wasm_view_visible = True
+                body = {'level': self.step_level, 'locked': self.step_level_locked}
+                self.respond(request, body)
+                if 'level' in args or 'locked' in args: self.event('uwvm/stepLevel', body)
+                if changed:
+                    self.event('capabilities', {'capabilities': debug_capabilities(self.debug_permissions, self.step_level, self.threaded_profile)})
+                    # A presentation change does not remove the participant.
+                    # Invalidating stacks makes VS Code discard its threads
+                    # and can select another paused session in the meantime.
+                    self.refresh_presentation_stop()
+            elif command == "uwvm/watch":
+                self.respond(request, self.watch_value(args))
+            elif command == "uwvm/codeLocation":
+                location = self.selected_location(args)
+                expected = self.stop_key
+                result = self.code_location(args.get("level"), location)
+                if self.stop_key != expected: raise LocalRequestRefusal("The navigation stop retired")
+                self.respond(request, dict(result, stopId=str(location["stop_id"]), threadId=location["id"]))
+            elif command == "uwvm/breakpointLocation":
+                location = self.selected_location(args)
+                identifier = unsigned_id(args.get("id"), "breakpoint")
+                self.sync_breakpoints()
+                point = self.breakpoint_inventory.get(identifier)
+                if point is None: raise LocalRequestRefusal("The breakpoint no longer exists")
+                display = self.breakpoint_displays.get(identifier, {})
+                level = point["level"]
+                if level == "source" and display.get("source"):
+                    result = dict(level="source", source=display["source"], line=display["line"], column=1)
+                elif level == "wasm":
+                    if (point["module"], point["function"]) != (str(location["module"]), str(location["function"])):
+                        raise LocalRequestRefusal("This function has no current code capture; select its captured frame first")
+                    result = self.code_location("wasm", location)
+                    result["line"] = self.wasm_document_line(result["source"], int(point["offset"]))
+                else:
+                    raise LocalRequestRefusal("This breakpoint has no captured navigable source location")
+                self.respond(request, dict(result, stopId=str(location["stop_id"]), threadId=location["id"]))
+            elif command == "uwvm/positions":
+                self.respond(request, self.current_positions())
+            elif command == "uwvm/currentWasmDocument":
+                # Display-only document for the current authenticated function at
+                # any step level, so the Wasm view can follow source/asm stops.
+                self.observe(self.command("status"), notify=False)
+                candidates = [t for t in self.threads if "stop_id" in t]
+                if self.state != "stopped" or not candidates:
+                    raise LocalRequestRefusal("the Wasm view needs a current Wasm stop")
+                location = next((t for t in candidates if t.get("breakpoint_levels")), candidates[0])
+                self.respond(request, {"source": self.wasm_document_source(None, location)})
+            elif command == "uwvm/disassemblyView":
+                if type(args.get("visible")) is not bool:
+                    raise ValueError("Disassembly view visibility must be boolean")
+                changed = self.disassembly_view_visible != args["visible"]
+                if changed and args["visible"]:
+                    self.observe(self.command("status"), notify=False)
+                self.disassembly_view_visible = args["visible"]
+                self.respond(request, {"visible": self.disassembly_view_visible})
+                if (changed and args["visible"] and self.state == "stopped" and self.supports_invalidated_event
+                        and any("native_pc" not in row for row in self.threads)):
+                    # Cooperative frames acquire a JIT code reference on demand.
+                    # Native frames already have it; invalidating them here
+                    # briefly removes the top frame in VS Code and turns its
+                    # current-instruction marker into a focused-frame marker.
+                    self.refresh_presentation_stop()
+            elif command == "uwvm/nativeEntry":
+                self.observe(self.command("status"), notify=False)
+                if self.state != "stopped" or self.stop_key is None or len(self.threads) != 1:
+                    raise LocalRequestRefusal("Capturing native registers requires one current stopped participant")
+                location = self.threads[0]
+                if str(args.get("ifStop")) != str(location.get("stop_id")):
+                    raise LocalRequestRefusal("Native inspection belongs to an earlier stop")
+                if "native_pc" in location:
+                    self.respond(request, {"stopId": str(location["stop_id"]), "captured": True})
                     return
-                if args['level'] not in ('source', 'wasm', 'native'): raise ValueError('select source, wasm or native')
-                changed = self.step_level != args['level']
-                self.step_level = args['level']
-                if self.step_level == 'wasm': self.wasm_view_visible = True
-                self.respond(request, {'level': self.step_level})
-                self.event('uwvm/stepLevel', {'level': self.step_level})
-                self.event('capabilities', {'capabilities': debug_capabilities(self.debug_permissions, self.step_level)})
-                if changed: self.event('invalidated', {'areas': ['stacks', 'variables']})
+                self.invalidate_stop()
+                reply = self.command(f"inspect asm {location['id']} {location['stop_id']}")
+                snapshot = self._decode_status(reply)
+                if snapshot[0] != "stopped" or len(snapshot[2]) != 1 or "native_pc" not in snapshot[2][0]:
+                    self._commit_status(snapshot)
+                    raise LocalRequestRefusal("The runtime could not capture a current JIT instruction stop")
+                self.respond(request, {"stopId": str(snapshot[2][0]["stop_id"]), "captured": True})
+                self._commit_status(snapshot, notify=False)
+                self.event("stopped", {"reason": "pause", "threadId": snapshot[2][0]["id"],
+                    "allThreadsStopped": True, "uwvmInspectionStop": True,
+                    "description": "Current JIT instruction captured for inspection"})
+            elif command == "uwvm/jump":
+                level, target, if_stop = args.get("level"), args.get("target"), args.get("ifStop")
+                if (level not in ("src", "wasm", "asm") or not isinstance(target, str)
+                        or re.fullmatch(r"\*?(?:0x[0-9a-fA-F]{1,16}|[0-9]{1,20})", target) is None
+                        or (target.startswith("*") and level != "asm")):
+                    raise ValueError("jump requires level src|wasm|asm and a decimal or 0x target")
+                self.observe(self.command("status"), notify=False)
+                if self.state != "stopped" or self.stop_key is None:
+                    raise ValueError("moving the execution pointer requires a stopped guest")
+                if if_stop is not None and not any(str(t.get("stop_id")) == str(if_stop) for t in self.threads):
+                    raise ValueError("the dragged pointer belongs to an earlier stop; nothing was moved")
+                try:
+                    reply = self.command(f"jump {level} {target}")
+                except RuntimeError as error:
+                    # The runtime refused before moving: re-establish the
+                    # unchanged stop so the IDE keeps its frames.
+                    self.observe(self.command("status"), notify=False)
+                    if self.supports_invalidated_event:
+                        self.event("invalidated", {"areas": ["stacks", "variables"]})
+                    raise ValueError(str(error).removeprefix("error: ")) from error
+                self.invalidate_stop()
+                self.last_step_kind = None
+                observation = self._decode_status(self.command("status"))
+                self.respond(request, {"text": reply.strip()})
+                self._commit_status(observation)
             elif command == "uwvm/wasmView":
                 if type(args.get('visible')) is not bool:
                     raise ValueError('Wasm document visibility must be boolean')
@@ -5464,7 +6662,37 @@ class Adapter:
                 self.respond(request, {'visible': self.wasm_view_visible})
             elif command == "uwvm/permissions":
                 self.respond(request, {"permissions": self.debug_permissions})
+            elif command == "uwvm/hostInterfaces":
+                if set(args) - {"first"}:
+                    raise ValueError("host interface inventory accepts only a page offset")
+                first = args.get("first", "0")
+                if not isinstance(first, str) or not re.fullmatch(r"0|[1-9][0-9]{0,19}", first) or int(first) >= 1 << 64:
+                    raise ValueError("host interface page must be a u64 decimal")
+                self.respond(request, parse_host_interfaces(self.command("info host-interfaces " + first), int(first)))
+            elif command == "uwvm/dumpPolicy":
+                reply = self.command("dump policy")
+                match = re.fullmatch(r"dump-policy (max|force)=(none|diagnostic|full) effective=(none|diagnostic|full)\n", reply)
+                if not match or (match[1] == "max" and match[2] == "none"):
+                    raise ValueError("VM did not report a valid immutable dump policy")
+                kind, configured, effective = match.groups()
+                levels = ("none", "diagnostic", "full")
+                ceiling = 1 if self.debug_permissions == "limited" else 2 if self.debug_permissions in ("full", "read-only") else 0
+                selected = levels.index(configured)
+                expected = selected if kind == "force" else min(selected, ceiling)
+                if expected > ceiling or effective != levels[expected]:
+                    raise ValueError("VM dump policy conflicts with the authenticated debugger permissions")
+                options = ([] if effective == "none" else [effective] if kind == "force" else
+                           ["diagnostic", "full"] if effective == "full" else ["diagnostic"])
+                if self.threaded_profile:
+                    options = [level for level in options if level == "full"]
+                self.respond(request, {"kind": kind, "configured": configured, "effective": effective,
+                                       "allowed": options, "immutable": True})
             elif command == "uwvm/diagnostics":
+                if self.snapshot_restore_pending:
+                    self.respond(request, {"permissions": self.debug_permissions, "restorePending": True,
+                        "text": "Snapshot restoration is pending; no current stopped state is available.\n",
+                        "details": {"State": "restoring", "Next action": "Continue pending restore"}, "redacted": False})
+                    return
                 reply = self.command("status")
                 self.observe(reply, notify=False)
                 details = {'State': self.state, 'Permissions': self.debug_permissions}
@@ -5475,7 +6703,9 @@ class Adapter:
                     details['Stop reason'] = self.stop_description or (self.stop_key[0] if self.stop_key else None)
                     details['Participants'] = [{key: value for key, value in row.items() if key != 'native_pc'} for row in self.threads]
                 self.respond(request, {"permissions": self.debug_permissions, "text": reply, "details": details,
-                                       "redacted": self.debug_permissions == "limited"})
+                                       "redacted": self.debug_permissions == "limited", "threaded": self.threaded_profile,
+                                       "cooperative": (self.state == "stopped" and bool(self.threads) and
+                                                       all("native_pc" not in row for row in self.threads))})
             elif command == "uwvm/dump":
                 path = args.get("path")
                 stop = args.get("stopId")
@@ -5485,8 +6715,117 @@ class Adapter:
                     raise ValueError("dump path must be an absolute path on the VM host without control characters")
                 if type(stop) is not int or not 0 < stop < (1 << 64):
                     raise ValueError("dump requires the exact current nonzero stopId")
-                reply = self.command("dump wasm " + str(stop) + " " + path)
-                self.respond(request, {"text": reply, "redacted": self.debug_permissions == "limited"})
+                disclosure = args.get("disclosure")
+                if disclosure not in (None, "diagnostic", "full"):
+                    raise ValueError("dump disclosure must be diagnostic or full; launch policy can only be changed at startup")
+                reply = self.command("dump wasm " + ((disclosure + " ") if disclosure else "") + str(stop) + " " + path)
+                saved = re.fullmatch(r"wasm-dump saved stop=([1-9][0-9]{0,19}) disclosure=(diagnostic|full); current stop retained; inspect capture completeness metadata\n", reply)
+                if not saved:
+                    raise ValueError(reply.strip() or "dump was not saved")
+                if int(saved[1]) != stop or (disclosure is not None and saved[2] != disclosure) or (
+                        self.debug_permissions == "limited" and saved[2] != "diagnostic"):
+                    raise ValueError("VM dump acknowledgement does not match the requested stop or permitted disclosure")
+                self.respond(request, {"text": reply, "redacted": saved[2] == "diagnostic",
+                                       "disclosure": saved[2]})
+            elif command == "uwvm/snapshotHistory":
+                if self.debug_permissions not in ("full", "read-only"):
+                    raise ValueError("historical environments require full or read-only debugger permission")
+                self.respond(request, read_snapshot_history(self.command, args))
+            elif command == "uwvm/recordSnapshot":
+                if self.debug_permissions != "full":
+                    raise ValueError("recording execution requires full debugger permission")
+                action = args.get("action")
+                if action not in ("start", "save", "status", "mark"):
+                    raise ValueError("record action must be start, save, mark or status")
+                text = "dump record " + action
+                if action != "status":
+                    stop = unsigned_id(snapshot_binding_integer(args.get("stopId"), 64, "record stopId"), "record stopId")
+                    text += " " + str(stop)
+                if action == "save":
+                    path = args.get("path")
+                    if not isinstance(path, str) or not (path.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', path) or path.startswith('\\\\')) or any(ord(c) < 32 for c in path):
+                        raise ValueError("recording path must be absolute on the VM host without control characters")
+                    text += " " + path
+                reply = self.command(text)
+                recorded = re.fullmatch(r"snapshot-record mode=([0-5]) instructions=([0-9]+) events=([0-9]+) cursor=([0-9]+) state-error=0 journal-error=([0-9]+) saved=([01])(?: retained=(1))?; (guest stopped|guest running|pause incomplete|guest exited|debug domain closed)\n", reply)
+                if not recorded:
+                    raise ValueError(reply.strip() or "VM did not acknowledge the recording operation")
+                execution = {"guest stopped": "stopped", "guest running": "running", "pause incomplete": "stopping",
+                             "guest exited": "exited", "debug domain closed": "closed"}[recorded[8]]
+                pending_native = recorded[7] == "1"
+                if pending_native and (action != "save" or recorded[1] != "1" or recorded[6] != "1"):
+                    raise ValueError("invalid retained native recording acknowledgement")
+                if action != "status" and (execution != "stopped" or recorded[5] != "0" or
+                        (action in ("start", "mark") and (recorded[1] != "1" or recorded[6] != "0")) or
+                        (action == "save" and (recorded[1] != ("1" if pending_native else "2") or recorded[6] != "1"))):
+                    raise ValueError("recording acknowledgement does not match the request")
+                self.respond(request, {"mode": int(recorded[1]), "instructions": recorded[2], "events": recorded[3],
+                    "cursor": recorded[4], "stateError": int(recorded[5]), "saved": recorded[6] == "1",
+                    "execution": execution, "retainedNativePending": pending_native, "text": reply})
+            elif command == "uwvm/restoreSnapshot":
+                # This changes execution. Snapshot bytes never supply launch
+                # authority, descriptors, a stop ticket or a native address.
+                if self.debug_permissions != "full":
+                    raise ValueError("restoring execution requires full debugger permission")
+                continuing = args.get("continue", False)
+                if type(continuing) is not bool:
+                    raise ValueError("continue must be a boolean")
+                if continuing:
+                    if set(args) != {"continue"}:
+                        raise ValueError("continuing a restore takes no new archive or bindings")
+                    text = "dump restore continue"
+                else:
+                    path, stop, environment = args.get("path"), args.get("stopId"), args.get("environment")
+                    stop = unsigned_id(snapshot_binding_integer(stop, 64, "restore stopId"), "restore stopId")
+                    if environment not in ("current", "recorded", "replay"):
+                        raise ValueError("explicit current, recorded or replay environment selection is required")
+                    if not isinstance(path, str) or not (path.startswith('/') or re.match(r'^[A-Za-z]:[\\/]', path) or path.startswith('\\\\')) or any(ord(c) < 32 for c in path):
+                        raise ValueError("snapshot path must be absolute on the VM host without control characters")
+                    bindings = args.get("bindings", [])
+                    if not isinstance(bindings, list) or (environment in ("current", "replay") and bindings):
+                        raise ValueError("only recorded environment restoration takes descriptor bindings")
+                    encoded, seen = [], set()
+                    for row in bindings:
+                        if not isinstance(row, dict) or set(row) != {"module", "resource", "descriptor"}:
+                            raise ValueError("each binding requires module, resource and descriptor")
+                        module = snapshot_binding_integer(row["module"], 64, "binding module")
+                        resource = snapshot_binding_integer(row["resource"], 32, "binding resource")
+                        descriptor = snapshot_binding_integer(row["descriptor"], 31, "binding descriptor")
+                        if (module, resource) in seen:
+                            raise ValueError("duplicate snapshot resource binding")
+                        seen.add((module, resource))
+                        encoded.append(f"{module}:{resource}:{descriptor}")
+                    text = f"dump replay {stop} " if environment == "replay" else f"dump restore {environment} {stop} "
+                    if environment == "recorded": text += (",".join(encoded) or "-") + " "
+                    text += path
+                reply = self.command(text)
+                pending = re.fullmatch(r"snapshot-restore pending phase=([0-9]+) detail=([0-9]+) preparation=([0-9]+) state-error=([0-9]+) applied=([01]) retained=0; use dump restore continue; guest execution remains closed\n", reply)
+                if pending:
+                    self.respond(request, {"pending": True, "applied": pending[5] == "1",
+                        "phase": int(pending[1]), "detail": int(pending[2]), "preparation": int(pending[3]),
+                        "stateError": int(pending[4])})
+                    return
+                restored = re.fullmatch(r"snapshot-restored stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}) source=(ready|unavailable); guest paused; external effects are not rewound\n", reply)
+                reattached = re.fullmatch(r"snapshot-reattached stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}); original native operation retained; guest paused; no external operation repeated\n", reply)
+                identity = restored or reattached
+                if not identity:
+                    raise ValueError("VM did not acknowledge a restored stopped world")
+                snapshot = self._decode_status(self.command("status"))
+                if (snapshot[0] != "stopped" or not snapshot[2] or
+                        len({row["id"] for row in snapshot[2]}) != len(snapshot[2]) or any(
+                        row.get("stop_id") != int(identity[1]) or row.get("generation") != int(identity[2]) or
+                        not 0 < row["id"] < 1 << 64 or not 0 < row["generation"] < 1 << 64 or
+                        any(not 0 <= row[key] < 1 << 64 for key in ("module", "function", "offset"))
+                        for row in snapshot[2])):
+                    self.invalidate_stop()
+                    raise ValueError("restoration committed, but the new stop could not be authenticated")
+                self._commit_status(snapshot, notify=False)
+                self.sync_breakpoints()
+                self.respond(request, {"pending": False, "applied": True, "stopId": identity[1],
+                    "epoch": identity[2], "sourceAvailable": bool(restored and restored[3] == "ready"),
+                    "retainedNativePending": bool(reattached), "externalEffectsRewound": False})
+                self.event("invalidated", {"areas": ["all"]})
+                self._commit_status(snapshot)
             elif command == "configurationDone":
                 if self.configuration_complete:
                     self.respond(request);return
@@ -5556,6 +6895,7 @@ class Adapter:
                 # Resume may succeed before a transport failure. Retire all
                 # stopped references before sending this state-changing command.
                 self.invalidate_stop()
+                self.last_step_kind = None
                 reply = self.command("continue")
                 observation = self._decode_status(reply)
                 self.respond(request, {"allThreadsContinued": True})
@@ -5566,12 +6906,19 @@ class Adapter:
                 self.observe(self.command('status'), notify=False)
                 if not self.threads and self.state == 'stopped' and self.stop_key and self.stop_key[0] == 'entry':
                     raise ValueError("Initial Wasm entry: no instruction has executed. Use Continue (F5) to start the prepared VM; stepping requires a real instruction stop.")
+                if self.state != 'stopped' or self.stop_key is None:
+                    raise ValueError("stepping requires an identified stopped execution domain")
+                if not any(entry["id"] == thread for entry in self.threads):
+                    raise ValueError("selected participant is not in the observed stop")
                 granularity = args.get("granularity", "statement")
                 effective_level = self.step_level
                 if 'wasmReference' in args:
                     if not isinstance(args.get('ifStop'), str): raise ValueError('current Wasm view stop required')
                     self.current_wasm_document(unsigned_id(args['wasmReference'], 'Wasm document reference'), args['ifStop'], thread)
                     effective_level = 'wasm'
+                if self.step_level_locked:
+                    if effective_level != self.step_level or (granularity == "line" and effective_level != "source") or (granularity == "instruction" and effective_level == "source"):
+                        raise ValueError("Step level is locked; the requested granularity selects another level.")
                 # Source is the default IDE level: ordinary next/stepOut must
                 # reach the real source policy instead of failing statement mode.
                 # An unavailable source scope is an explicit controller error;
@@ -5597,7 +6944,9 @@ class Adapter:
                 # lost/canceled or repeats a display stop. Retire all old value,
                 # frame and code references BEFORE contacting the broker.
                 self.invalidate_stop()
+                self.last_step_kind = None
                 reply = self.command(native)
+                self.last_step_kind = native.split()[1] if native.startswith("step ") else "asm"
                 # Decode before sending success or movement events. A rejected
                 # snapshot gets exactly one failure response, never success
                 # followed by a second response for the same request sequence.
@@ -5635,6 +6984,14 @@ class Adapter:
                     return
                 if self.state != "stopped" or len(current) != 1:
                     raise ValueError("selected thread has no complete stopped location")
+                if self.threaded_profile:
+                    location = current[0]
+                    identifier = self.stack_frame_reference("thread-replay", thread, 0, location["module"], location["function"], "physical")
+                    self.frames[identifier] = (thread, -5, location["module"], location["function"])
+                    frames = [{"id": identifier, "name": f"Wasm {location['module']}:{location['function']} @ 0x{location['offset']:x}",
+                               "line": 0, "column": 0, "moduleId": str(location["module"]), "presentationHint": "label", "canRestart": False}]
+                    self.respond(request, {"stackFrames": frames[start:start+page_count], "totalFrames": 1})
+                    return
                 trace = self.command(f"bt {thread}")
                 state, reason, entries, _ = parse_status(trace)
                 if state != "stopped" or len(entries) != 1 or entries[0] != current[0]:
@@ -5642,10 +6999,18 @@ class Adapter:
                 source = next((t.get("source") for t in entries if t["id"] == thread), None)
                 frames = []
                 location = entries[0]
+                display_level = self.breakpoint_view_level or self.step_level
                 language_rows = []
                 native_reference = None
-                if self.step_level == "wasm" and "native_pc" not in location and "stop_id" in location:
+                if display_level == "wasm" and "native_pc" not in location and "stop_id" in location:
                     expected_key = self.stop_key
+                    if self.disassembly_view_visible and start == 0:
+                        # Qualify BEFORE minting frames (see the source path).
+                        native_reference = self.qualify_native_code_reference(location)
+                        if native_reference is None:
+                            self.observe(self.command("status"), notify=False)
+                        if self.state != "stopped" or self.stop_key != expected_key:
+                            raise ValueError("stop changed during native code qualification")
                     try:
                         page = parse_source_frames(self.command(f"frames wasm {thread} {location['stop_id']} {start} {page_count}"),
                                                    thread, location["stop_id"], with_page=True, wasm=True)
@@ -5665,16 +7030,32 @@ class Adapter:
                         for row in page["rows"]:
                             if row["ordinal"] == 0 and (row["module"], row["function"], row["runtime_epoch"]) != (location["module"], location["function"], location["generation"]):
                                 raise ValueError("current Wasm activation differs from stopped location")
-                            frame_id = self.new_reference()
+                            frame_id = self.stack_frame_reference("wasm", thread, row["ordinal"], row["module"], row["function"])
                             self.frames[frame_id] = (thread, row["ordinal"], row["module"], row["function"])
                             function_name = self.wasm_function_name(row['module'], row['function'])
                             self.frame_details[frame_id] = (expected_key, dict(row, name=function_name))
                             frame = {"id": frame_id, "name": function_name,
                                      "line": 0, "column": 0, "moduleId": str(row["module"]), "canRestart": False}
                             if row["ordinal"] == 0:
-                                frame["instructionPointerReference"] = f"wasm:{location['module']}:{location['function']}:{location['offset']}"
+                                frame["instructionPointerReference"] = native_reference or f"wasm:{location['module']}:{location['function']}:{location['offset']}"
                                 frame["source"] = self.wasm_document_source(frame_id, location)
                                 frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
+                                # Extensions use this authenticated metadata
+                                # when the position endpoint is missing a
+                                # source projection.  It is display metadata
+                                # only; the opaque JIT reference remains the
+                                # sole native disassembly capability.
+                                frame["uwvmSourceExact"] = self.source_statement_exact(location)
+                                if self.wasm_source_session and location.get("source"):
+                                    target = self.code_location("source", location)
+                                    frame["uwvmSourceLocation"] = dict(path=target["source"]["path"], line=target["line"], column=target["column"])
+                                frame["uwvmPosition"] = {
+                                    "wasm": {"module": str(location["module"]),
+                                             "function": str(location["function"]),
+                                             "offset": str(location["offset"]), "exact": True},
+                                    "source": {"exact": self.source_statement_exact(location)},
+                                    "asm": {"provenance": "llvm-jit", "instructionReference": native_reference}
+                                }
                             frames.append(frame)
                         self.respond(request, {"stackFrames": frames, "totalFrames": page["total"]})
                         if changed:
@@ -5703,7 +7084,7 @@ class Adapter:
                         self.observe(self.command("status"), notify=False)
                         if self.state != "stopped" or self.stop_key != expected_key:
                             raise ValueError("source frame stop changed while metadata was unavailable")
-                    if self.step_level == "native":
+                    if display_level == "native" or self.disassembly_view_visible and start == 0:
                         # Qualify optional native code BEFORE minting display
                         # frames. A terminal helper has no owned native landing;
                         # its refusal must not erase an otherwise authentic Wasm
@@ -5716,7 +7097,7 @@ class Adapter:
                     for row in language_rows:
                         if row["current"] and row["kind"] != "caller" and (row["module"], row["function"], row["runtime_epoch"]) != (location["module"], location["function"], location["generation"]):
                             raise ValueError("current inline/physical frame differs from actual source activation")
-                        frame_id = self.new_reference()
+                        frame_id = self.stack_frame_reference("source", thread, row["ordinal"], row["module"], row["function"], row["kind"])
                         index = 0 if row["kind"] == "physical" else -2 if row["kind"] == "inline" else -3
                         self.frames[frame_id] = (thread, index, row["module"], row["function"])
                         self.source_frame_ordinals[frame_id] = (expected_key, row)
@@ -5729,18 +7110,26 @@ class Adapter:
                         if row["ordinal"] == 0 and source:
                             frame["source"] = {"name": Path(source["path"]).name, "path": map_source_path(source["path"], self.source_map)}
                             frame["line"], frame["column"] = source["line"], source["column"]
+                            frame["uwvmSourceExact"] = self.source_statement_exact(location)
+                            frame["uwvmPosition"] = {
+                                "wasm": {"module": str(location["module"]),
+                                         "function": str(location["function"]),
+                                         "offset": str(location["offset"]), "exact": True},
+                                "source": {"exact": self.source_statement_exact(location)},
+                                "asm": {"provenance": "llvm-jit", "instructionReference": native_reference}
+                            }
                         elif row["kind"] == "caller":
                             availability = "saved caller values" if row["current"] else "caller values unavailable"
                             frame["name"] += " · caller"
                             self.frame_details[frame_id] = (expected_key, dict(row, availability=availability))
                             frame["presentationHint"] = "label"
                         if (row["kind"] == "physical" or
-                                self.step_level == "native" and row["kind"] == "inline" and row["current"]):
+                                display_level == "native" and row["kind"] == "inline" and row["current"]):
                             # The actual current physical Code PC is shared by
                             # its inline scopes; no older caller PC is invented.
                             frame["instructionPointerReference"] = (
                                 f"wasm:{location['module']}:{location['function']}:{location['offset']}")
-                            if self.step_level == "native" and native_reference is not None:
+                            if native_reference is not None and (display_level == "native" or row["kind"] == "physical"):
                                 frame["instructionPointerReference"] = native_reference
                         frames.append(frame)
                 inline_labels = parse_inline_labels(trace, thread)
@@ -5748,7 +7137,7 @@ class Adapter:
                     raise ValueError("native stop cannot retain inline source metadata")
                 if total_frames is None and not language_rows and "native_pc" not in location and "stop_id" in location:
                     for label in inline_labels:
-                        frame_id = self.new_reference()
+                        frame_id = self.stack_frame_reference("inline-label", thread, label)
                         self.frames[frame_id] = (thread, -2, location["module"], location["function"])
                         self.inline_frames.add(frame_id)
                         # Metadata labels show the real current physical frame's
@@ -5762,7 +7151,7 @@ class Adapter:
                     if any(FRAME_RE.match(line) for line in trace.splitlines()):
                         raise ValueError("native stop cannot reuse a Wasm caller-frame snapshot")
                     function_name = self.wasm_function_name(location['module'], location['function'])
-                    frame_id = self.new_reference()
+                    frame_id = self.stack_frame_reference("native", thread, location["module"], location["function"])
                     self.frames[frame_id] = (thread, -1, location["module"], location["function"])
                     self.native_frames.add(frame_id)
                     # This is one authenticated instruction-position label, not
@@ -5773,16 +7162,38 @@ class Adapter:
                     # code-copy command; no readMemory/write/breakpoint authority.
                     frames.append({"id": frame_id,
                                    "name": function_name+" · asm",
-                                   "line": 0, "column": 0, "presentationHint": "normal",
+                                   "line": 1, "column": 1, "presentationHint": "normal",
+                                   "source": {"name": f"module-{location['module']}-func-{location['function']}-stop-{location['stop_id']}.asm",
+                                              "sourceReference": frame_id, "origin": "Current owned LLVM JIT instruction"},
                                    "moduleId": str(location["module"]), "canRestart": False,
                                    "instructionPointerReference": f"uwvm-native-stop:{frame_id}"})
+                    if self.wasm_source_session:
+                        # VS Code already has a native Disassembly editor.
+                        # An additional .asm source opens a competing editor on
+                        # every stop and steals subsequent S/W navigation.
+                        frames[-1].pop('source', None)
+                        frames[-1]['line'], frames[-1]['column'] = 0, 0
+                    # Navigation follows the selected display level. The frame
+                    # remains a native capability: source/Wasm metadata does
+                    # not turn its scopes into cooperative values.
+                    if display_level == 'source' and location.get('native_source'):
+                        target = self.code_location('source', location)
+                        frames[-1].update(source=target['source'], line=target['line'], column=target['column'],
+                                          uwvmSourceExact=target['exact'])
+                    elif display_level == 'wasm' and location.get('native_wasm'):
+                        target = self.code_location('wasm', location)
+                        frames[-1].update(source=target['source'], line=target['line'], column=1)
+                    if self.wasm_source_session and location.get('native_wasm') and location.get('native_source'):
+                        target = self.code_location('source', location)
+                        frames[-1].update(uwvmSourceExact=target['exact'],
+                                          uwvmSourceLocation=dict(path=target['source']['path'], line=target['line'], column=target['column']))
                 for line in (() if total_frames is not None else trace.splitlines()):
                     match = FRAME_RE.match(line)
                     if not match:
                         continue
                     index, module, function = map(int, match.groups())
                     function_name = self.wasm_function_name(module, function)
-                    frame_id = self.new_reference()
+                    frame_id = self.stack_frame_reference("trace", thread, index, module, function)
                     self.frames[frame_id] = (thread, index, module, function)
                     frame = {"id": frame_id, "name": function_name, "line": 1, "column": 1}
                     if index == 0:
@@ -5795,18 +7206,21 @@ class Adapter:
                             self.source_frames.add(frame_id)
                         frame["source"] = {"name": Path(source["path"]).name, "path": map_source_path(source["path"], self.source_map)}
                         frame["line"], frame["column"] = source["line"], source["column"]
+                        frame["uwvmSourceExact"] = self.source_statement_exact(location)
                     else:
                         frame["source"] = self.wasm_document_source(frame_id, location) if index == 0 else {"name": f"wasm module {module}"}
                         if index == 0:
                             # The generation-stable document retains the whole
                             # function; resolve the exact current instruction.
                             frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
-                    if index == 0 and self.step_level == "native" and native_reference is not None:
+                    if index == 0 and native_reference is not None:
                         frame["instructionPointerReference"] = native_reference
                     frames.append(frame)
-                if self.step_level == "wasm" and "native_pc" not in location:
+                if display_level == "wasm" and "native_pc" not in location:
                     for frame in frames:
                         if self.frames[frame["id"]][1] == 0:
+                            if self.wasm_source_session and frame.get("source", {}).get("path") and "uwvmSourceExact" in frame:
+                                frame["uwvmSourceLocation"] = dict(path=frame["source"]["path"], line=frame["line"], column=frame["column"])
                             frame["source"] = self.wasm_document_source(frame["id"], location)
                             frame["line"], frame["column"] = self.wasm_document_line(frame['source'], location['offset']), 1
                 # A failed/private query cannot leave labels whose stop retired
@@ -5829,6 +7243,12 @@ class Adapter:
                         or type(args.get("resolveSymbols", False)) is not bool):
                     raise ValueError("native disassembly requires a current opaque reference, count 1..512 and signed 64-bit offsets")
                 if reference.startswith("wasm:"):
+                    if not self.disassembly_view_visible:
+                        # The IDE opened its Disassembly view at a Wasm/source
+                        # stop: publish the owned JIT reference for the top frame.
+                        self.disassembly_view_visible = True
+                        if self.supports_invalidated_event:
+                            self.event("invalidated", {"areas": ["stacks"]})
                     raise ValueError("Use the Wasm instruction document; Disassembly accepts only owned native JIT code")
                 # Preserve the original r2 zero-offset <=32 native-stop wire
                 # subset. IDE symbols, offsets, bigger windows and cooperative
@@ -5881,7 +7301,7 @@ class Adapter:
                     return
                 frame = self.current_frame(unsigned_id(args.get("frameId"), "frameId"))
                 scopes = []
-                if frame[1] == -4:
+                if frame[1] in (-4, -5):
                     self.respond(request, {"scopes": []})
                     return
                 if args["frameId"] in self.native_frames:
@@ -5903,7 +7323,7 @@ class Adapter:
                     self.source_scope_stops[reference] = (expected_key, row)
                     self.source_scope_frames[reference] = args["frameId"]
                     scopes.append({"name": "Source variables" if row["current"] else "Caller variables unavailable",
-                                   "variablesReference": reference, "expensive": False})
+                                   "variablesReference": reference, "expensive": self.mutation_stop_key == self.stop_key})
                 if (frame[1] >= 0 and self.stop_key is not None and not any(t.get('native_pc') for t in self.threads)):
                     inventory = self.wasm_metadata(frame[2])
                     for title, selected in (("Wasm locals", "locals"), ("Wasm operand stack", "operands"),
@@ -5915,7 +7335,12 @@ class Adapter:
                         selection = (frame[0], frame[2], 0 if selected == 'globals' else frame[1], selected, 0)
                         self.wasm_scope_stops[reference] = (self.stop_key, selection)
                         description = self.wasm_scope_description(self.stop_key, selection)
-                        scope = dict(name=title, variablesReference=reference, expensive=selected not in ('locals', 'operands'))
+                        # On an in-place edit the client restores its existing
+                        # expansion state. Do not invite it to reopen the first
+                        # scope unconditionally and push the edited operand out
+                        # of view. These refreshed snapshots are still lazy.
+                        scope = dict(name=title, variablesReference=reference,
+                            expensive=selected not in ('locals', 'operands') or self.mutation_stop_key == self.stop_key)
                         if 'unavailable' not in description and description['total'] < 1 << 31:
                             scope.update(indexedVariables=description['total'], namedVariables=(
                                 1 if selected == 'operands' and self.stop_key[0] == 'exception' else 0))
@@ -5932,7 +7357,7 @@ class Adapter:
                     locations = [t for t in self.threads if t['id'] == frame[0]]
                     if len(locations) == 1: fields['Current instruction'] = dict(offset=hex(locations[0]['offset']), stopId=locations[0].get('stop_id'))
                 reference = self.structured_reference(fields, self.stop_key)
-                scopes.append(dict(name='Frame details', variablesReference=reference, expensive=False))
+                scopes.append(dict(name='Frame details', variablesReference=reference, expensive=True))
                 self.respond(request, {"scopes": scopes})
             elif command == "uwvm/signedUpdate":
                 if self.update_socket_dir is None:
@@ -5951,6 +7376,10 @@ class Adapter:
                 self.respond(request, self.query_host_trace(args, byte_page=True))
             elif command == "uwvm/exportHostTrace":
                 self.respond(request, self.export_host_trace(args))
+            elif command == "uwvm/wasithreadState":
+                self.respond(request, self.query_wasithread_state(args))
+            elif command == "uwvm/sceneState":
+                self.respond(request, self.query_scene_state(args))
             elif command == "uwvm/rosState":
                 self.respond(request, self.query_ros_state(args))
             elif command == "uwvm/wasip1Edit":
@@ -5995,9 +7424,28 @@ class Adapter:
                 reference = args.get("variablesReference")
                 setter = (self.set_gc_member_variable if type(reference) is int and reference in self.wasm_object_views
                           else self.set_numeric_variable)
-                self.respond(request, setter(args))
-                if self.supports_invalidated_event:
-                    self.event("invalidated", {"areas": ["stacks", "variables"]})
+                display_level = self.breakpoint_view_level
+                before = tuple((row["id"], row["module"], row["function"], row["offset"], row["generation"])
+                               for row in self.threads)
+                edited = setter(args)
+                after = tuple((row["id"], row["module"], row["function"], row["offset"], row["generation"])
+                              for row in self.threads)
+                if self.state == "stopped" and self.stop_key is not None and before == after:
+                    self.breakpoint_view_level = display_level
+                    self.mutation_stop_key = self.stop_key
+                self.respond(request, edited)
+                # The mutation retired every value/frame capability and minted
+                # a new stop. Publish it exactly like a step, preserving the
+                # client's thread/tree identity. Invalidating "stacks" makes
+                # VS Code delete all threads and discard expanded variables.
+                # Do not set preserveFocusHint: that keeps VS Code's old
+                # focused frame/scopes after their capabilities were retired.
+                # The extension restores a visible inspector after the client
+                # has selected the newly authenticated frame.
+                if self.state == "stopped" and self.stop_key is not None and self.threads:
+                    self.event("stopped", {"reason": "pause", "threadId": self.threads[0]["id"],
+                        "allThreadsStopped": True, "uwvmStateMutation": True,
+                        "description": "Variable updated; execution has not advanced"})
             elif command == "dataBreakpointInfo":
                 self.respond(request, self.data_breakpoint_info(args))
             elif command == "setDataBreakpoints":
@@ -6239,13 +7687,30 @@ class Adapter:
                     raise ValueError("Wasm memory write range out of bounds")
                 if "ifStop" in args and args["ifStop"] is None:
                     raise ValueError("ifStop requires a nonzero decimal stop identity")
+                display_level = self.breakpoint_view_level
+                before = tuple((t['id'], t['module'], t['function'], t['offset'], t['generation']) for t in self.threads)
                 committed_stop = self.write_wasm_memory(module, memory, address, data, if_stop=args.get("ifStop"))
                 self.respond(request, {"offset": displacement, "bytesWritten": len(data),
                                        **({"stopId": committed_stop} if committed_stop is not None else {})})
                 if data and self.supports_memory_event:
                     self.event("memory", {"memoryReference": reference, "offset": displacement, "count": len(data)})
                 if data and self.supports_invalidated_event:
-                    self.event("invalidated", {"areas": ["stacks", "variables"]})
+                    # The commit has already been acknowledged. A failed
+                    # refresh cannot turn it into a failed write or retry it.
+                    try:
+                        self.observe(self.command('status'), notify=False)
+                    except (OSError, ValueError, RuntimeError):
+                        self.invalidate_stop()
+                    after = tuple((t['id'], t['module'], t['function'], t['offset'], t['generation']) for t in self.threads)
+                    if self.state == 'stopped' and self.stop_key is not None and self.threads:
+                        if before == after:
+                            self.breakpoint_view_level = display_level
+                            self.mutation_stop_key = self.stop_key
+                        self.event('stopped', {'reason': 'pause', 'threadId': self.threads[0]['id'],
+                            'allThreadsStopped': True, 'uwvmStateMutation': True,
+                            'description': 'Memory write committed; stopped state refreshed'})
+                    else:
+                        self.event("invalidated", {"areas": ["stacks", "variables"]})
             elif command == "source":
                 ref = unsigned_id(args.get("sourceReference"), "sourceReference")
                 supplied = args.get("source") or {}
@@ -6253,23 +7718,63 @@ class Adapter:
                 uri_reference = self.wasm_document_reference(supplied.get('path'))
                 if uri_reference is not None and uri_reference != ref:
                     raise ValueError("Wasm document URI/reference mismatch")
+                if ref in self.native_frames:
+                    # A genuine source for clients that otherwise cannot select
+                    # a source-less native frame on pause/entry. The same owned
+                    # JIT range query used by Disassembly supplies every byte.
+                    # No previous stop, raw address or invented source line is read.
+                    rows = self.disassemble_owned_range(request, {}, f"uwvm-native-stop:{ref}", 32, source_document=True)
+                    content = "\n".join(row["address"] + "  " + row.get("instructionBytes", "") + "  " + row["instruction"]
+                                        if row.get("presentationHint") != "invalid" else "; unavailable instruction" for row in rows) + "\n"
+                    self.respond(request, {"content": content, "mimeType": "text/x-asm"})
+                    return
                 document = self.wasm_documents.get(ref)
                 if document is None: raise ValueError("unknown Wasm instruction document")
                 self.respond(request, {"content": document['content'], "mimeType": "text/x-wat"})
+            elif command == "uwvm/wasmFunctionDocument":
+                ref = unsigned_id(args.get('reference'), 'Wasm document reference')
+                raw = args.get('index')
+                if not isinstance(raw, str) or not re.fullmatch(r'(0|[1-9][0-9]{0,19})', raw) or int(raw) >= 1 << 64:
+                    raise LocalRequestRefusal('A function index from the displayed instruction is required')
+                document = self.wasm_documents.get(ref)
+                if document is None: raise LocalRequestRefusal('Unknown instruction document')
+                self.observe(self.command('status'), notify=False)
+                expected = self.stop_key
+                if self.state != 'stopped' or expected is None or not any(t['generation'] == document['epoch'] for t in self.threads):
+                    raise LocalRequestRefusal('This instruction document belongs to a retired code generation')
+                function = int(raw)
+                meta = self.wasm_metadata(document['module'], 'functions', function, 1)
+                if not meta['rows'] or meta['rows'][0]['imported']:
+                    raise LocalRequestRefusal('This is a host import; it has no Wasm instruction body')
+                candidates = [(key, doc) for key, doc in self.wasm_documents.items() if
+                              (doc['module'], doc['function'], doc['epoch']) == (document['module'], function, document['epoch'])]
+                if len(candidates) != 1:
+                    raise LocalRequestRefusal('This function body has not been captured in this code generation. Step into it once to enable code browsing; navigation never executes the call')
+                key, target = candidates[0]
+                if self.stop_key != expected: raise LocalRequestRefusal('The code navigation stop retired')
+                self.respond(request, {'level':'wasm', 'source': self.stored_wasm_source(key, target), 'line':2, 'column':1})
+            elif command == "uwvm/wasmDocumentLayout":
+                ref = unsigned_id(args.get('reference'), 'Wasm document reference')
+                document = self.wasm_documents.get(ref)
+                if document is None: raise LocalRequestRefusal('Unknown instruction document')
+                self.respond(request, dict(reference=ref, module=str(document['module']), function=str(document['function']),
+                    epoch=str(document['epoch']), generation=str(document['generation']), digest=document['digest'],
+                    addressBits=document['addressBits']))
             elif command == "uwvm/wasmDocument":
                 ref = unsigned_id(args.get('reference'), 'Wasm document reference')
                 thread_id = unsigned_id(args['threadId'], 'Wasm thread') if 'threadId' in args else None
-                document, location, _ = self.current_wasm_document(ref, args.get('ifStop'), thread_id)
+                document, location, _ = self.current_wasm_document(ref, args.get('ifStop'), thread_id, code_only=True)
                 self.respond(request, dict(reference=ref, module=str(document['module']), function=str(document['function']),
                     epoch=str(document['epoch']), generation=str(document['generation']), stopId=str(location['stop_id']),
                     offset=str(location['offset']), line=self.wasm_offset_line(document, location['offset']), digest=document['digest'],
-                    threadId=location['id'], addressBits=document['addressBits'],
+                    threadId=location['id'], addressBits=document['addressBits'], native="native_pc" in location,
+                    exact=location.get('native_wasm_start', False) if 'native_pc' in location else True,
                     **({'safeLines': document['safeLines']} if args.get('includeLayout') is True else {})))
             elif command == "uwvm/wasmHover":
                 ref = unsigned_id(args.get('reference'), 'Wasm document reference')
                 if not isinstance(args.get('ifStop'), str): raise ValueError('current hover stop ID required')
                 thread_id = unsigned_id(args['threadId'], 'Wasm thread') if 'threadId' in args else None
-                document, location, expected = self.current_wasm_document(ref, args['ifStop'], thread_id)
+                document, location, expected = self.current_wasm_document(ref, args['ifStop'], thread_id, code_only=True)
                 kind, raw = args.get('kind'), args.get('index')
                 if kind not in ('function', 'local', 'global', 'table', 'memory') or not isinstance(raw, str) or not re.fullmatch(r'[0-9]{1,20}', raw) or int(raw) >= 1 << 64:
                     raise ValueError('a single original Wasm index is required')
@@ -6278,7 +7783,9 @@ class Adapter:
                     metadata = self.wasm_metadata(document['module'], ('memories' if kind == 'memory' else kind+'s'), index, 1)
                     if len(metadata['rows']) != 1: raise ValueError('Wasm object index out of range')
                     result.update(metadata['rows'][0]);result['index'] = raw
-                if kind in ('local', 'global'):
+                if kind in ('local', 'global') and 'native_pc' in location:
+                    result['unavailable'] = 'No cooperative value snapshot at this native instruction'
+                elif kind in ('local', 'global'):
                     _, value = self.query_wasm_state(location['id'], document['module'], 0, kind+'s', index, 1, expected_stop=expected)
                     if 'unavailable' in value: result['unavailable'] = value['unavailable']
                     elif len(value['rows']) == 1:
@@ -6379,42 +7886,46 @@ class Adapter:
                     self.respond(request, {"result": "Recorded calls export completed",
                                            "variablesReference": self.structured_reference(exported, self.stop_key)})
                     return
+                if args.get("context") in ("watch", "hover", "variables") and expression.startswith(("wasm:", "src:", "asm:")):
+                    prefix, value = expression.split(":", 1)
+                    options = {"level": {"wasm": "wasm", "src": "source", "asm": "native"}[prefix], "expression": value.strip()}
+                    if "frameId" in args:
+                        frame = self.current_frame(args["frameId"])
+                        if frame[1] not in (-2, -1, 0): raise LocalRequestRefusal("Select a current frame for an explicitly scoped watch")
+                        options["threadId"] = frame[0]
+                    self.respond(request, self.watch_value(options))
+                    return
                 language_frame = self.source_frame_ordinals.get(args.get("frameId")) if type(args.get("frameId")) is int else None
                 source_context = args.get("context") in ("watch", "hover", "variables")
                 if source_context and type(args.get("frameId")) is int and args["frameId"] in self.native_frames:
                     # Validate syntax before any broker command; no native
                     # dereference/arithmetic or language-evaluation fallback.
-                    native_register_selector(expression, "x86_64")
+                    try:
+                        native_register_selector(expression, "x86_64")
+                    except ValueError as error:
+                        raise LocalRequestRefusal(str(error)) from error
                     architecture, values = self.query_native_registers(args["frameId"])
                     selected = native_register_selector(expression, architecture)
                     matched = [row for row in values if row["name"] == selected]
-                    if len(matched) != 1: raise ValueError("register unavailable on the current architecture")
+                    if len(matched) != 1: raise LocalRequestRefusal("register unavailable on the current architecture")
                     self.respond(request, {"result": matched[0]["value"], "variablesReference": 0,
                                            "presentationHint": {"attributes": ["readOnly"]}})
                     return
                 if source_context:
                     if language_frame is None:
-                        frame_id = args.get("frameId")
-                        wasm_frame = self.frames.get(frame_id) if type(frame_id) is int else None
-                        if (self.stop_key is not None and wasm_frame is not None and wasm_frame[1] == 0
-                                and frame_id in self.wasm_source_uris.values()):
-                            raise UnsupportedHoverFrame("watch/hover requires an actual current opaque source frame; no console command fallback")
-                        raise ValueError("watch/hover requires an actual current opaque source frame; no console command fallback")
+                        # WATCH entries survive level switches and returns.
+                        # A Wasm frame/document is not a source evaluation
+                        # capability. Refuse only this expression, leaving the
+                        # actual frame and its VARIABLES scopes usable.
+                        raise UnsupportedHoverFrame("watch/hover requires an actual current opaque source frame; no console command fallback")
                     expected_key, row = language_frame
                     if not row["current"]:
-                        raise ValueError("caller source PC and locals were not captured")
-                    source_expression = validate_source_evaluation_expression(expression)
-                    source_command = f"print-frame {row['thread']} {row['stop_id']} {row['ordinal']} {source_expression}"
-                    if len(source_command.encode("ascii")) > MAX_SOURCE_COMMAND:
-                        raise ValueError("source evaluation exceeds the controller's 512-byte command packet capacity")
-                    self.observe(self.command("status"), notify=False)
-                    if self.state != "stopped" or self.stop_key != expected_key or args["frameId"] not in self.source_frame_ordinals:
-                        raise ValueError("selected source frame belongs to a retired stop")
-                    result = self.command(source_command)
-                    self.observe(self.command("status"), notify=False)
-                    if self.state != "stopped" or self.stop_key != expected_key or args["frameId"] not in self.source_frame_ordinals:
-                        raise ValueError("selected source frame retired during value copy")
-                    validate_source_evaluation_reply(result, row["stop_id"], row["thread"])
+                        raise LocalRequestRefusal("caller source PC and locals were not captured")
+                    try:
+                        source_expression = validate_source_evaluation_expression(expression)
+                    except ValueError as error:
+                        raise LocalRequestRefusal(str(error)) from error
+                    result = self.source_watch_packet(expected_key, args["frameId"], row, source_expression)
                 else:
                     if expression.lstrip().startswith(("set wasip1 ", "unset wasip1 ", "set wasm ", "wasm-script ")):
                         # A successful host-environment mutation leaves the
@@ -6426,12 +7937,19 @@ class Adapter:
                 words = expression.split()
                 observation = self._decode_status(result) if (
                     not source_context and words and words[0] in
-                    ("continue", "c", "pause", "step", "s", "ni", "nexti", "finish", "fin", "status", "wait")) else None
+                    ("continue", "c", "pause", "step", "s", "ni", "nexti", "finish", "fin", "status", "wait", "inspect")) else None
                 display = self.source_object_display(result, expected_key, args["frameId"], row) if source_context else {"result": result.rstrip("\n"), "variablesReference": 0}
                 if source_context and not self.supports_variable_type:
                     display.pop("type", None)
                 self.respond(request, display)
-                if not source_context and words and words[0] in ('breakwasm', 'bw', 'breaksource', 'breakasm', 'bi', 'break', 'b', 'tbreak', 'tb', 'delete', 'enable', 'disable', 'condition', 'ignore', 'commands'):
+                if not source_context and words and words[0] in ('breaksource', 'bs', 'break', 'b', 'tbreak', 'tb'):
+                    for created in re.finditer(r"^breakpoint (\d+) source=(.+):(\d+) function=\d+ byte-offset=\d+$", result, re.M):
+                        identifier, compiler_path, line_number = int(created[1]), created[2], int(created[3])
+                        try: local_path = map_source_path(compiler_path, self.source_map)
+                        except ValueError: local_path = compiler_path
+                        self.source_breakpoint_ids.add(identifier)
+                        self.breakpoint_locations[identifier] = {'source': {'name': Path(local_path).name, 'path': local_path}, 'line': line_number}
+                if not source_context and words and words[0] in ('breakwasm', 'bw', 'breaksource', 'bs', 'breakasm', 'bi', 'break', 'b', 'tbreak', 'tb', 'delete', 'enable', 'disable', 'condition', 'ignore', 'commands'):
                     self.sync_breakpoints()
                 if observation is not None:
                     # Commit after the response, without reparsing. A terminal
@@ -6457,8 +7975,8 @@ class Adapter:
             else:
                 raise ValueError(f"DAP request {command!r} is unavailable")
         except (OSError, ValueError, RuntimeError, ConnectionError, KeyError, MemoryError) as error:
-            # Local unsupported views/stale UI IDs/permission refusals have
-            # dispatched no value read or mutation. Do not retire unrelated
+            # Local unsupported views/stale UI IDs/permission refusals and
+            # verified read-only unavailability must not retire unrelated
             # panes. Status already retires references when the real stop
             # changes. Uncertain VM, transport, ownership and allocation
             # failures retain their fail-closed retirement.

@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstring>
@@ -37,7 +40,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store const> receiving_store{};
         ::std::size_t target_ip_offset{};
         ::std::size_t prefix_bytes{};
-        ::std::vector<::uwvm2::runtime::exception::payload_kind> parameter_kinds{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_kind> parameter_kinds{};
     };
 
     struct exception_numeric_call_spec
@@ -45,7 +48,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         // Fully spilled operand bytes at protected-opcode entry, INCLUDING parameters and any
         // indirect-call index. invoke_with_exception_handler retains this original top across the call.
         ::std::size_t stack_bytes_at_call{};
-        ::std::vector<exception_numeric_handler_spec> handlers{};
+        ::uwvm2::utils::container::std_vector<exception_numeric_handler_spec> handlers{};
     };
 
     // One immutable owner travels with local_func_storage_t. It pins descriptors, handler signatures,
@@ -64,13 +67,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         {
             exception_function_metadata const* owner{};
             ::std::size_t stack_bytes_at_call{};
-            ::std::vector<handler> handlers{};
+            ::uwvm2::utils::container::std_vector<handler> handlers{};
             exception_call_site site{};
         };
         ::std::span<::std::byte const> code_{};
         ::std::size_t operand_capacity_{};
-        ::std::vector<call_context> calls_{};
-        ::std::vector<::std::shared_ptr<exception_throw_site const>> throws_{};
+        ::uwvm2::utils::container::std_vector<call_context> calls_{};
+        ::uwvm2::utils::container::std_vector<::std::shared_ptr<exception_throw_site const>> throws_{};
 
         inline exception_function_metadata(::std::span<::std::byte const> code, ::std::size_t operand_capacity) noexcept
             : code_{code}, operand_capacity_{operand_capacity} {}
@@ -182,7 +185,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             constexpr auto limit{static_cast<::std::size_t>(::std::numeric_limits<::std::ptrdiff_t>::max())};
             if(final_code.data() == nullptr || final_code.size() > limit || opfunc_width == 0uz ||
                opfunc_width > final_code.size() || operand_capacity > limit) { return {}; }
-            auto owner{::std::shared_ptr<exception_function_metadata>{new exception_function_metadata{final_code, operand_capacity}}};
+            auto owner{::std::shared_ptr<exception_function_metadata>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<exception_function_metadata>([&](exception_function_metadata* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exception_function_metadata{final_code, operand_capacity}; }))}};
             owner->calls_.reserve(call_specs.size());
             for(auto const& source: call_specs)
             {

@@ -44,6 +44,7 @@ export import :wasm_depend_recursion_limit;
 export import :wasm_set_memory_limit;
 export import :wasm_set_parser_limit;
 export import :wasm_set_initializer_limit;
+export import :wasm_set_resource_limit;
 export import :wasm_memory_grow_strict;
 export import :wasm_feature;
 
@@ -136,7 +137,9 @@ export import :log_verbose;
 export import :log_win32_use_ansi;
 
 export import :ros;
+export import :scene;
 export import :wasi_threads;
+export import :wasithread;
 export import :wasi_thread_signals;
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

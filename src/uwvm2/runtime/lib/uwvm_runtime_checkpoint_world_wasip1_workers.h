@@ -1,12 +1,14 @@
 // Include ONLY inside the private candidate world. This validates actual
 // per-thread native WASIp1 selection without invoking a guest or host import.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 class private_wasip1_dispatch_workers final
 {
     static constexpr ::std::size_t worker_count{2u};
     struct packet
     {
-        ::std::unique_ptr<::fast_io::native_thread> native{};
+        ::uwvm2::utils::container::std_unique_ptr<::fast_io::native_thread> native{};
         ::std::atomic<unsigned char> arrival{};
         ::std::size_t held_module{}, visits{};
         wasip1_environment const* selected_environment{};
@@ -128,7 +130,7 @@ public:
         {
             for(auto& worker:workers_)
             {
-                worker.native.reset(new ::fast_io::native_thread{[this,actual=::std::addressof(worker)]() noexcept { run(*actual); }});
+                worker.native.reset(::uwvm2::utils::allocator::fast_io_strict::object<::fast_io::native_thread>([&](::fast_io::native_thread* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ::fast_io::native_thread{[this,actual=::std::addressof(worker)]() noexcept { run(*actual); }}; }));
                 ++started_;
             }
             for(auto const& worker:workers_)

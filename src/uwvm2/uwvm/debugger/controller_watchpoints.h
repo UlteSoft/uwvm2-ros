@@ -1,8 +1,9 @@
 // Included inside controller. Only the authenticated full-permission manager reaches here.
 // Software value watchpoints observe real complete stops, never stale snapshots.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
         [[nodiscard]] bool sample_watchpoint_locked(data_watchpoint& point, controller_reply const& stopped,
-            ::std::vector<::std::byte>& bytes, ::std::string& error)
+            ::uwvm2::utils::container::std_vector<::std::byte>& bytes, ::uwvm2::utils::container::std_string& error)
         {
             if(!pause_ || stopped.stop_identifier!=stop_identifier_ || exited_ || domain_->is_closed())
             { error="current complete stop required";return false; }
@@ -164,7 +165,7 @@
                     else if(command.watchpoint_policy==watchpoint_action::enable)
                     {
                         if(result.execution!=execution_status::stopped) { result.status=control_error::invalid_state;return result; }
-                        ::std::vector<::std::byte> value;::std::string error;
+                        ::uwvm2::utils::container::std_vector<::std::byte> value;::uwvm2::utils::container::std_string error;
                         if(!sample_watchpoint_locked(*point,result,value,error))
                         { result.watchpoint_error=::std::move(error);result.status=control_error::invalid_state;return result; }
                         point->value=::std::move(value);point->enabled=true;
@@ -179,7 +180,7 @@
                 if(point.memory)
                 {
                     point.query=command;
-                    point.description=::fast_io::concat_std("memory module=",command.wasm_state_request.module,
+                    point.description=::uwvm2::utils::container::concat("memory module=",command.wasm_state_request.module,
                         " memory=",command.wasm_state_request.index," offset=",command.wasm_state_request.first,
                         " bytes=",command.wasm_state_request.count);
                 }
@@ -219,7 +220,7 @@
                     { query.requested_step_thread=result.threads.front().identifier; }
                     point.description.assign(command.script_text.data(),command.script_size);
                 }
-                ::std::string error;
+                ::uwvm2::utils::container::std_string error;
                 if(!sample_watchpoint_locked(point,result,point.value,error))
                 { result.status=control_error::invalid_state;result.watchpoint_error=::std::move(error);return result; }
                 point.identifier=next_watchpoint_;watchpoints_.push_back(::std::move(point));
@@ -236,7 +237,7 @@
                 for(auto& point:watchpoints_)
                 {
                     if(!point.enabled) { continue; }
-                    ::std::vector<::std::byte> value;::std::string error;
+                    ::uwvm2::utils::container::std_vector<::std::byte> value;::uwvm2::utils::container::std_string error;
                     if(sample_watchpoint_locked(point,stopped,value,error)) { point.value=::std::move(value); }
                     else { watch_error_=::std::move(error); }
                 }
@@ -263,7 +264,7 @@
                 for(auto& point:watchpoints_)
                 {
                     if(!point.enabled) { continue; }
-                    ::std::vector<::std::byte> current;::std::string error;
+                    ::uwvm2::utils::container::std_vector<::std::byte> current;::uwvm2::utils::container::std_string error;
                     if(!sample_watchpoint_locked(point,stopped,current,error))
                     { watch_error_=::std::move(error);watch_hit_=point.identifier;break; }
                     if(current!=point.value)

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <bit>
@@ -56,7 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
         unsigned char path_size{};
         // Complete immutable ORIGINAL index path copied from a session DATA
         // ledger. Labels identify only that path, NEVER dense/native objects.
-        ::std::vector<::std::uint64_t> long_path{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> long_path{};
         ::std::uint64_t path_session{}, path_handle{};
         [[nodiscard]] constexpr bool compressed_path() const noexcept { return path_session!=0u; }
         [[nodiscard]] constexpr bool member_page() const noexcept { return member_count != 0u; }
@@ -176,7 +177,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
         ::std::uint64_t first_member{}, next_member{};
         object_kind kind{object_kind::structure};
         ::std::uint64_t tag_module{}, tag_index{};
-        ::std::vector<row> members{};
+        ::uwvm2::utils::container::std_vector<row> members{};
         bool tag_identity_available{}, members_truncated{}, has_more_members{};
     };
     // Exact lexical DATA from the current authenticated sealed site. These
@@ -202,11 +203,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
         request requested{};
         ::std::uint64_t runtime_epoch{}, module{}, total_values{}, first{};
         ::std::uint64_t selected_object{}; // DISPLAY only: terminal rooted path result.
-        ::std::vector<row> rows{};
-        ::std::vector<object> objects{};
-        ::std::vector<control> controls{};
-        ::std::vector<handler> handlers{};
-        ::std::vector<declared_row> declarations{};
+        ::uwvm2::utils::container::std_vector<row> rows{};
+        ::uwvm2::utils::container::std_vector<object> objects{};
+        ::uwvm2::utils::container::std_vector<control> controls{};
+        ::uwvm2::utils::container::std_vector<handler> handlers{};
+        ::uwvm2::utils::container::std_vector<declared_row> declarations{};
         bool rows_truncated{}, graph_truncated{};
         // A view has no native pointers, pause tickets or retained runtime
         // owners. A later command must authenticate the actual stop again.
@@ -495,12 +496,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
         }
         return true;
     }
-    [[nodiscard]] inline ::std::string format(view const& result)
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string format(view const& result)
     {
-        if(!valid(result)) { return ::fast_io::concat_std("error: invalid bounded Wasm state result\n"); }
+        if(!valid(result)) { return ::uwvm2::utils::container::concat("error: invalid bounded Wasm state result\n"); }
         if(result.result != status::available)
-        { return ::fast_io::concat_std("Wasm state unavailable: ", status_text(result.result), ::fast_io::mnp::chvw('\n')); }
-        ::std::string text{}; ::fast_io::ostring_ref_std output{__builtin_addressof(text)};
+        { return ::uwvm2::utils::container::concat("Wasm state unavailable: ", status_text(result.result), ::fast_io::mnp::chvw('\n')); }
+        ::uwvm2::utils::container::std_string text{}; ::uwvm2::utils::container::ostring_ref output{__builtin_addressof(text)};
         ::fast_io::io::print(output, "Wasm state thread=", ::fast_io::mnp::dec(result.requested.participant),
             " module=", ::fast_io::mnp::dec(result.module), " epoch=", ::fast_io::mnp::dec(result.runtime_epoch),
             " first=", ::fast_io::mnp::dec(result.first), " total=", ::fast_io::mnp::dec(result.total_values), ::fast_io::mnp::chvw('\n'));
@@ -563,10 +564,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
             if(result.rows_truncated)
             { ::fast_io::io::print(output,"Wasm layout page next=",::fast_io::mnp::dec(result.first+result.controls.size()+result.handlers.size()+result.declarations.size()),::fast_io::mnp::chvw('\n')); }
             if(text.size() > maximum_reply_bytes-256u)
-            { return ::fast_io::concat_std("Wasm state unavailable: ",status_text(status::resource_limit),::fast_io::mnp::chvw('\n')); }
+            { return ::uwvm2::utils::container::concat("Wasm state unavailable: ",status_text(status::resource_limit),::fast_io::mnp::chvw('\n')); }
             return text;
         }
-        auto append = [&](::std::string const& row_text)
+        auto append = [&](::uwvm2::utils::container::std_string const& row_text)
         {
             // [owned bounded formatted prefix][new owned row] reply_end
             // [safe                                         ] subtract BEFORE addition/append;
@@ -577,13 +578,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
         ::std::size_t shown_rows{}, shown_objects{};
         for(auto const& item : result.rows)
         {
-            ::std::string row_text{}; ::fast_io::ostring_ref_std row_output{__builtin_addressof(row_text)};
+            ::uwvm2::utils::container::std_string row_text{}; ::uwvm2::utils::container::ostring_ref row_output{__builtin_addressof(row_text)};
             switch(result.requested.selected)
             {
                 case selection::locals: ::fast_io::io::print(row_output, "local "); break;
                 case selection::operands: ::fast_io::io::print(row_output, "operand "); break;
                 case selection::saved_parameters: ::fast_io::io::print(row_output, "saved-parameter "); break;
-                default: return ::fast_io::concat_std("error: invalid bounded Wasm value selection\n");
+                default: return ::uwvm2::utils::container::concat("error: invalid bounded Wasm value selection\n");
                 case selection::globals: ::fast_io::io::print(row_output, "global "); break;
                 case selection::table: ::fast_io::io::print(row_output, "table ", ::fast_io::mnp::dec(result.requested.index), " element "); break;
             }
@@ -596,7 +597,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
                     // A requested original-root page must remain COMPLETE.
                     // Even a future longer value format must not expose a
                     // prefix with unresolved dense object references.
-                    return ::fast_io::concat_std("Wasm state unavailable: ", status_text(status::resource_limit), ::fast_io::mnp::chvw('\n'));
+                    return ::uwvm2::utils::container::concat("Wasm state unavailable: ", status_text(status::resource_limit), ::fast_io::mnp::chvw('\n'));
                 }
                 break;
             }
@@ -613,7 +614,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
                 index = ordinal == 0u ? selected : ordinal <= selected ? ordinal - 1u : ordinal;
             }
             auto const& item{result.objects[index]};
-            ::std::string row_text{}; ::fast_io::ostring_ref_std row_output{__builtin_addressof(row_text)};
+            ::uwvm2::utils::container::std_string row_text{}; ::uwvm2::utils::container::ostring_ref row_output{__builtin_addressof(row_text)};
             ::fast_io::io::print(row_output, "object #", ::fast_io::mnp::dec(item.identifier), ::fast_io::mnp::chvw(' '));
             switch(item.kind)
             {
@@ -648,7 +649,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::wasm_state
                 {
                     // Discard EVERY partial field/object label before return;
                     // detached IDs in a truncated prefix have no query value.
-                    return ::fast_io::concat_std("Wasm state unavailable: ", status_text(status::resource_limit), ::fast_io::mnp::chvw('\n'));
+                    return ::uwvm2::utils::container::concat("Wasm state unavailable: ", status_text(status::resource_limit), ::fast_io::mnp::chvw('\n'));
                 }
                 break;
             }

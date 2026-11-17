@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Private compiler implementation, not a source/native/CFI capability. The
 // sealed plan supplies dense ALL-local bindings from its actual same-walk
 // records; this transform only operates on an unpublished owned LLVM module.
@@ -91,7 +92,7 @@ namespace uwvm2::runtime::compiler::llvm_jit::checked_whole_local_targets
                 reader->isVolatile() && !reader->isAtomic() && reader->getAlign().value() >= bits / 8u;
         }
         [[nodiscard]] inline bool relocatable_base_matches(::llvm::LoadInst& loaded, ::llvm::Function& caller,
-            slot_binding const& binding, unsigned bits, ::std::vector<::llvm::Instruction*>& auxiliaries,
+            slot_binding const& binding, unsigned bits, ::uwvm2::utils::container::std_vector<::llvm::Instruction*>& auxiliaries,
             ::llvm::SmallPtrSetImpl<::llvm::GlobalVariable*>& checked_carriers)
         {
             auto const module{caller.getParent()};
@@ -134,7 +135,7 @@ namespace uwvm2::runtime::compiler::llvm_jit::checked_whole_local_targets
             return true;
         }
         [[nodiscard]] inline bool base_matches(::llvm::Value* base, ::llvm::Function& caller,
-            slot_binding const& binding, unsigned bits, ::std::vector<::llvm::Instruction*>& auxiliaries,
+            slot_binding const& binding, unsigned bits, ::uwvm2::utils::container::std_vector<::llvm::Instruction*>& auxiliaries,
             ::llvm::SmallPtrSetImpl<::llvm::GlobalVariable*>& checked_carriers)
         {
             auto const module{caller.getParent()};
@@ -277,8 +278,8 @@ namespace uwvm2::runtime::compiler::llvm_jit::checked_whole_local_targets
                     !binding.core->hasInternalLinkage() || binding.core->isIntrinsic()))) { return {}; }
         }
         struct replacement { ::llvm::LoadInst* load{}; ::llvm::Constant* target{}; };
-        ::std::vector<replacement> pending{};
-        ::std::vector<::llvm::Instruction*> auxiliaries{};
+        ::uwvm2::utils::container::std_vector<replacement> pending{};
+        ::uwvm2::utils::container::std_vector<::llvm::Instruction*> auxiliaries{};
         ::llvm::SmallPtrSet<::llvm::GlobalVariable*, 16u> checked_carriers{};
         for(auto& function: module) for(auto& block: function) for(auto& instruction: block)
         {

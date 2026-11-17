@@ -53,6 +53,38 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #else
     inline
 #endif
+    ::uwvm2::utils::cmdline::parameter_return_type debug_dump_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using result=::uwvm2::utils::cmdline::parameter_return_type;
+        bool const forced=current->str==u8"--debug-dump-force";
+        if((forced&&debug_dump_max_exists)||(!forced&&debug_dump_force_exists))
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] --debug-dump-max and --debug-dump-force are mutually exclusive; choose one launch policy");
+            return result::return_m1_imme;
+        }
+        auto const next=current+1u;
+        if(next==end||next->type!=::uwvm2::utils::cmdline::parameter_parsing_results_type::arg||
+           (next->str!=u8"diagnostic"&&next->str!=u8"full"&&!(forced&&next->str==u8"none")))
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] ",current->str,
+                ::fast_io::mnp::os_c_str(forced?u8" requires none, diagnostic or full":u8" requires diagnostic or full; use --debug-dump-force none to disable dumps"));
+            return result::return_m1_imme;
+        }
+        debug_dump_constraint=forced?1u:0u;
+        debug_dump_disclosure=next->str==u8"full"?2u:next->str==u8"diagnostic"?1u:0u;
+        next->type=::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg;
+        return result::def;
+    }
+
+#if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline
+#endif
     ::uwvm2::utils::cmdline::parameter_return_type update_option_callback(
         ::uwvm2::utils::cmdline::parameter_parsing_results*,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current,

@@ -20,6 +20,8 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -331,9 +333,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
     // This adapter keeps the repository vector spelling without its fail-fast
     // allocator; callers contain bad_alloc/length_error before returning.
     template<typename T>
-    struct recoverable_host_vector : ::std::vector<T>
+    struct recoverable_host_vector : ::uwvm2::utils::container::std_vector<T,::uwvm2::utils::allocator::resource::std_allocator<T>>
     {
-        using ::std::vector<T>::vector;
+        using base_type = ::uwvm2::utils::container::std_vector<T,::uwvm2::utils::allocator::resource::std_allocator<T>>;
+        using base_type::base_type;
         template<typename... Args> constexpr T& emplace_back_unchecked(Args&&... args)
         { return this->emplace_back(static_cast<Args&&>(args)...); }
         constexpr T& front_unchecked() noexcept { return this->front(); }
@@ -355,10 +358,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             [[nodiscard]] static ::fast_io::io_scatter_t* allocate(::std::size_t count) noexcept
             {
                 if(count > SIZE_MAX / sizeof(::fast_io::io_scatter_t)) { return nullptr; }
-                return static_cast<::fast_io::io_scatter_t*>(::std::malloc(count * sizeof(::fast_io::io_scatter_t)));
+                return reinterpret_cast<::fast_io::io_scatter_t*>(::uwvm2::utils::allocator::resource::try_bytes<
+                    ::uwvm2::utils::allocator::resource::pool::auxiliary>(count * sizeof(::fast_io::io_scatter_t)));
             }
             static constexpr void deallocate(::fast_io::io_scatter_t* value) noexcept
-            { if(value != nullptr) { ::std::free(value); } }
+            { ::uwvm2::utils::allocator::resource::free_bytes<::uwvm2::utils::allocator::resource::pool::auxiliary>(reinterpret_cast<::std::byte*>(value)); }
         };
 #else
         using allocator = ::fast_io::native_typed_global_allocator<::fast_io::io_scatter_t>;

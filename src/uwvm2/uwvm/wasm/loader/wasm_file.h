@@ -20,6 +20,8 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -105,7 +107,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             if(!image)
             {
                 auto snapshot{::uwvm2::utils::control::owned_file_image::read(
-                    ::std::u8string{load_file_name.cbegin(), load_file_name.size()})};
+                    ::uwvm2::utils::container::std_u8string{load_file_name.cbegin(), load_file_name.size()}, ::uwvm2::utils::allocator::resource::module_file_bytes)};
                 if(!snapshot)
                 {
                     ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
@@ -334,6 +336,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 # endif
 #endif
 
+        }
+
+        if(wf.source_size() > ::uwvm2::utils::allocator::resource::module_file_bytes)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] parser: input exceeds --wasm-set-resource-limit parser input-bytes.");
+            return load_wasm_file_rtl::load_error;
         }
 
         // binfmt_ver has to be modified by the change_binfmt_ver function.

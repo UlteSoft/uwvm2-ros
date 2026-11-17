@@ -4,8 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 // These names are introduced by native LLVM lowering, not by Wasm imports.
 // Static compiler runtimes do not put all of their helpers in the process
@@ -91,7 +92,7 @@ namespace uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins
     extern "C" void address_aeabi_d2f() asm("__aeabi_d2f");
     extern "C" void address_aeabi_f2d() asm("__aeabi_f2d");
 # endif
-    [[nodiscard]] inline ::std::uintptr_t find(::std::string const& name) noexcept
+    [[nodiscard]] inline ::std::uintptr_t find(::std::string_view name) noexcept
     {
         if(name == "__divdi3") { return reinterpret_cast<::std::uintptr_t>(&address_divdi3); }
         if(name == "__udivdi3") { return reinterpret_cast<::std::uintptr_t>(&address_udivdi3); }

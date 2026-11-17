@@ -2,6 +2,9 @@
 // Trust policy and rollback storage belong to the trusted operating-system user,
 // never to a downloader. See documents/security/wsea.md for the wire contract.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -91,10 +94,10 @@ namespace uwvm2::utils::security::wsea
                 EVP_DigestUpdate(second.get(),image.data()+prefix_size,image.size()-prefix_size)==1 &&
                 EVP_DigestFinal_ex(second.get(),complete.data(),&total)==1 && total==complete.size();
         }
-        inline ::std::string hex(digest const& value)
+        inline ::uwvm2::utils::container::std_string hex(digest const& value)
         {
             constexpr char alphabet[]{"0123456789abcdef"};
-            ::std::string out(64, '0');
+            ::uwvm2::utils::container::std_string out(64, '0');
             for(::std::size_t i{}; i != value.size(); ++i)
             { out[2*i] = alphabet[value[i] >> 4]; out[2*i+1] = alphabet[value[i] & 15]; }
             return out;
@@ -123,9 +126,9 @@ namespace uwvm2::utils::security::wsea
             }
             return true;
         }
-        inline ::std::vector<::std::string_view> split(::std::string_view s, char delimiter)
+        inline ::uwvm2::utils::container::std_vector<::std::string_view> split(::std::string_view s, char delimiter)
         {
-            ::std::vector<::std::string_view> out;
+            ::uwvm2::utils::container::std_vector<::std::string_view> out;
             for(;;)
             {
                 auto p{s.find(delimiter)};
@@ -141,10 +144,10 @@ namespace uwvm2::utils::security::wsea
             return true;
         }
 #if !defined(UWVM_WSEA_CRYPTO_ONLY)
-        inline ::std::string normalize(::std::string_view p)
+        inline ::uwvm2::utils::container::std_string normalize(::std::string_view p)
         {
             if(!path_text(p)) { return {}; }
-            ::std::string input;
+            ::uwvm2::utils::container::std_string input;
             if(p.front() != '/')
             {
                 char cwd[4097]{};
@@ -152,14 +155,14 @@ namespace uwvm2::utils::security::wsea
                 input = cwd; input += '/';
             }
             input.append(p);
-            ::std::vector<::std::string_view> parts;
+            ::uwvm2::utils::container::std_vector<::std::string_view> parts;
             for(auto segment : split(input, '/'))
             {
                 if(segment.empty() || segment == ".") { continue; }
                 if(segment == "..") { if(!parts.empty()) { parts.pop_back(); } }
                 else { parts.push_back(segment); }
             }
-            ::std::string out;
+            ::uwvm2::utils::container::std_string out;
             for(auto part : parts) { out += '/'; out.append(part); }
             return out.empty() ? "/" : out;
         }
@@ -182,7 +185,7 @@ namespace uwvm2::utils::security::wsea
                 auto part{parts[i]};
                 if(part.empty() || part == "." || part == "..") { return {}; }
                 bool dir{i+1 != parts.size() || directory};
-                ::std::string name{part};
+                ::uwvm2::utils::container::std_string name{part};
                 fd next{::openat(current.value, name.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | (dir ? O_DIRECTORY : O_NONBLOCK))};
                 struct stat st{};
                 if(!next || ::fstat(next.value, &st) != 0 || !trusted_stat(st, dir)) { return {}; }
@@ -190,7 +193,7 @@ namespace uwvm2::utils::security::wsea
             }
             return current;
         }
-        inline bool read_fd(int file, ::std::size_t limit, ::std::string& out)
+        inline bool read_fd(int file, ::std::size_t limit, ::uwvm2::utils::container::std_string& out)
         {
             struct stat before{};
             if(::fstat(file, &before) != 0 || !S_ISREG(before.st_mode) || before.st_size < 0 || static_cast<::std::uintmax_t>(before.st_size) > limit) { return false; }
@@ -209,7 +212,7 @@ namespace uwvm2::utils::security::wsea
             return ::fstat(file, &after) == 0 && before.st_dev == after.st_dev && before.st_ino == after.st_ino &&
                 before.st_size == after.st_size && before.st_mtime == after.st_mtime && before.st_ctime == after.st_ctime;
         }
-        inline bool material(::std::string const& path, ::std::size_t limit, ::std::string& out)
+        inline bool material(::uwvm2::utils::container::std_string const& path, ::std::size_t limit, ::uwvm2::utils::container::std_string& out)
         {
             fd file{::open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK)};
             return file && read_fd(file.value, limit, out);
@@ -266,10 +269,10 @@ namespace uwvm2::utils::security::wsea
         inline constexpr ::std::size_t max_signatures{8};
         struct rule
         {
-            ::std::string id, abi, signer;
+            ::uwvm2::utils::container::std_string id, abi, signer;
             ::std::uint64_t version{}, epoch{}, capabilities{};
             ::std::uint64_t algorithms{1}; // ES256 only unless explicitly configured
-            ::std::vector<::std::string> additional_signers;
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> additional_signers;
             ::std::uint64_t threshold{1};
             bool threshold_set{};
             bool accepts(::std::string_view pin) const noexcept
@@ -282,16 +285,16 @@ namespace uwvm2::utils::security::wsea
         struct policy
         {
             ::std::uint64_t version{}, max_age{}, max_size{};
-            ::std::string config_path, root_path, state_path, root_pem, fingerprint;
-            ::std::vector<rule> rules;
+            ::uwvm2::utils::container::std_string config_path, root_path, state_path, root_pem, fingerprint;
+            ::uwvm2::utils::container::std_vector<rule> rules;
         };
 #if !defined(UWVM_WSEA_CRYPTO_ONLY)
         inline result load_policy(::std::string_view path, ::std::shared_ptr<policy const>& output)
         {
-            auto p{::std::make_shared<policy>()};
+            auto p{::uwvm2::utils::container::make_shared<policy>()};
             p->config_path=path;
             auto file{protected_open(path, false)};
-            ::std::string text;
+            ::uwvm2::utils::container::std_string text;
             if(!file || !read_fd(file.value, 65536, text)) { return deny("POL_002", "Policy must be a bounded, OS-protected regular file with trusted ancestors"); }
             if(text.empty() || text.back() != '\n') { return deny("POL_002", "Malformed policy"); }
             auto lines{split(text, '\n')};
@@ -353,9 +356,9 @@ namespace uwvm2::utils::security::wsea
             if(!hash(joined.data(),joined.size(),d)) { return deny("SIG_005", "SHA-256 unavailable"); }
             p->fingerprint=hex(d); output=::std::move(p); return {};
         }
-        struct selection { ::std::string module, policy_path, expected_id; ::std::shared_ptr<policy const> config; };
+        struct selection { ::uwvm2::utils::container::std_string module, policy_path, expected_id; ::std::shared_ptr<policy const> config; };
         inline ::std::mutex registry_mutex;
-        inline ::std::vector<selection> selections;
+        inline ::uwvm2::utils::container::std_vector<selection> selections;
         inline ::std::shared_ptr<policy const> default_policy;
 #endif
 
@@ -386,7 +389,7 @@ namespace uwvm2::utils::security::wsea
             bool exact(unsigned char c) noexcept
             { if(bytes.empty() || static_cast<unsigned char>(bytes.front())!=c) { return false; } bytes.remove_prefix(1); return true; }
         };
-        inline void append_head(::std::string& out, unsigned major, ::std::uint64_t n)
+        inline void append_head(::uwvm2::utils::container::std_string& out, unsigned major, ::std::uint64_t n)
         {
             if(n<24) { out+=static_cast<char>((major<<5)|n); return; }
             unsigned count{n<=255 ? 1u : n<=65535 ? 2u : n<=4294967295ull ? 4u : 8u};
@@ -398,7 +401,7 @@ namespace uwvm2::utils::security::wsea
             ::std::string_view payload, signature, id, abi, hash, protected_headers;
             signature_profile const* algorithm{};
             ::std::uint64_t version{}, epoch{}, size{}, before{}, after{}, capabilities{};
-            ::std::vector<::std::string> signers; // authenticated distinct SPKIs, never decoded from the manifest
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> signers; // authenticated distinct SPKIs, never decoded from the manifest
         };
         inline bool decode(::std::string_view input, manifest& m) noexcept
         {
@@ -438,7 +441,7 @@ namespace uwvm2::utils::security::wsea
         struct embedded_evidence
         {
             ::std::string_view prefix, payload, cose, certificates, crls;
-            ::std::vector<signature_evidence> signatures;
+            ::uwvm2::utils::container::std_vector<signature_evidence> signatures;
         };
         inline result extract_embedded(::std::string_view image, embedded_evidence& out) noexcept
         {
@@ -489,10 +492,10 @@ namespace uwvm2::utils::security::wsea
             }
             return deny("SIG_001","Missing embedded WSEA custom section");
         }
-        inline bool pem_blocks(::std::string_view input, ::std::string_view label, ::std::vector<::std::string_view>& blocks)
+        inline bool pem_blocks(::std::string_view input, ::std::string_view label, ::uwvm2::utils::container::std_vector<::std::string_view>& blocks)
         {
-            ::std::string begin{"-----BEGIN "}; begin+=label; begin+="-----";
-            ::std::string end{"-----END "}; end+=label; end+="-----";
+            ::uwvm2::utils::container::std_string begin{"-----BEGIN "}; begin+=label; begin+="-----";
+            ::uwvm2::utils::container::std_string end{"-----END "}; end+=label; end+="-----";
             while(!input.empty())
             {
                 while(!input.empty() && (input.front()=='\n' || input.front()=='\r' || input.front()==' ' || input.front()=='\t')) { input.remove_prefix(1); }
@@ -519,7 +522,7 @@ namespace uwvm2::utils::security::wsea
             if(!value || value->type!=V_ASN1_SEQUENCE) { return {}; }
             int size{i2d_ASN1_TYPE(value,nullptr)};
             if(size<=0 || size>4194304) { return {}; }
-            ::std::vector<unsigned char> data(static_cast<::std::size_t>(size)); auto output{data.data()};
+            ::uwvm2::utils::container::std_vector<unsigned char> data(static_cast<::std::size_t>(size)); auto output{data.data()};
             if(i2d_ASN1_TYPE(value,&output)!=size) { return {}; }
             return asn1_fields(data.data(),size);
         }
@@ -580,7 +583,7 @@ namespace uwvm2::utils::security::wsea
             auto cursor{static_cast<unsigned char const*>(der.get())};
             owned<T,Free> object{Decode(nullptr,&cursor,length)};
             if(!object || cursor!=der.get()+length || Encode(object.get(),nullptr)!=length) { return {}; }
-            ::std::vector<unsigned char> canonical(static_cast<::std::size_t>(length)); auto output{canonical.data()};
+            ::uwvm2::utils::container::std_vector<unsigned char> canonical(static_cast<::std::size_t>(length)); auto output{canonical.data()};
             if(Encode(object.get(),&output)!=length || ::std::memcmp(der.get(),canonical.data(),canonical.size())!=0) { return {}; }
             return object;
         }
@@ -787,7 +790,7 @@ namespace uwvm2::utils::security::wsea
             if(!crl || !outer || X509_CRL_get_version(crl)!=1) { return false; }
             int size{i2d_X509_CRL(crl,nullptr)};
             if(size<=0 || size>4194304) { return false; }
-            ::std::vector<unsigned char> der(static_cast<::std::size_t>(size)); auto output{der.data()};
+            ::uwvm2::utils::container::std_vector<unsigned char> der(static_cast<::std::size_t>(size)); auto output{der.data()};
             if(i2d_X509_CRL(crl,&output)!=size) { return false; }
             auto cursor{static_cast<unsigned char const*>(der.data())};
             STACK_OF(ASN1_TYPE)* outer_fields{d2i_ASN1_SEQUENCE_ANY(nullptr,&cursor,size)};
@@ -801,7 +804,7 @@ namespace uwvm2::utils::security::wsea
             if(!tbs_field || tbs_field->type!=V_ASN1_SEQUENCE) { return false; }
             int tbs_size{i2d_ASN1_TYPE(tbs_field,nullptr)};
             if(tbs_size<=0 || tbs_size>size) { return false; }
-            ::std::vector<unsigned char> tbs(static_cast<::std::size_t>(tbs_size)); output=tbs.data();
+            ::uwvm2::utils::container::std_vector<unsigned char> tbs(static_cast<::std::size_t>(tbs_size)); output=tbs.data();
             if(i2d_ASN1_TYPE(tbs_field,&output)!=tbs_size) { return false; }
             cursor=tbs.data();
             STACK_OF(ASN1_TYPE)* fields{d2i_ASN1_SEQUENCE_ANY(nullptr,&cursor,tbs_size)};
@@ -835,25 +838,25 @@ namespace uwvm2::utils::security::wsea
             auto end{static_cast<::std::uint64_t>(now)+static_cast<::std::uint64_t>(days)*86400+static_cast<unsigned>(seconds)};
             if(end<limit) { limit=end; } return true;
         }
-        inline result revocation_memory(policy const& p, ::std::string const& pin, bool record);
+        inline result revocation_memory(policy const& p, ::uwvm2::utils::container::std_string const& pin, bool record);
         // Deployment tools share this exact evidence verifier. Only the VM
         // consults its persistent revocation memory here; deployment performs
         // its own read-only state gate and never obtains an execution receipt.
         template<bool ReadRevocationMemory = true>
         inline result verify_crypto(policy const& p, manifest const& m, ::std::string_view certificate_pem,
-                                    ::std::string_view crl_pem, ::std::time_t now, ::std::uint64_t& valid_until, ::std::string& signer_identity)
+                                    ::std::string_view crl_pem, ::std::time_t now, ::std::uint64_t& valid_until, ::uwvm2::utils::container::std_string& signer_identity)
         {
 #if defined(UWVM_WSEA_CRYPTO_ONLY)
             static_assert(!ReadRevocationMemory, "Memory-only adapter cannot authorize execution or access VM state");
 #endif
-            ::std::vector<::std::string_view> roots, certs, crls;
+            ::uwvm2::utils::container::std_vector<::std::string_view> roots, certs, crls;
             if(!pem_blocks(p.root_pem,"CERTIFICATE",roots) || roots.size()>16) { return deny("CERT_001","Malformed trust anchors"); }
             if(!pem_blocks(certificate_pem,"CERTIFICATE",certs) || certs.size()>16) { return deny("CERT_002","Malformed signer chain"); }
             if(!pem_blocks(crl_pem,"X509 CRL",crls) || crls.size()>16) { return deny("CERT_005","Missing authenticated revocation evidence"); }
             owned<X509_STORE,X509_STORE_free> store{X509_STORE_new()};
             owned<X509_STORE_CTX,X509_STORE_CTX_free> ctx{X509_STORE_CTX_new()};
             if(!store || !ctx) { return deny("CERT_002","Certificate verifier unavailable"); }
-            ::std::vector<owned<X509,X509_free>> root_objects, cert_objects;
+            ::uwvm2::utils::container::std_vector<owned<X509,X509_free>> root_objects, cert_objects;
             for(auto block : roots)
             {
                 auto cert{pem_object<X509,d2i_X509,i2d_X509,X509_free>(block,"CERTIFICATE")};
@@ -905,7 +908,7 @@ namespace uwvm2::utils::security::wsea
             auto subject_public_key{X509_get_X509_PUBKEY(leaf)};
             int der_size{subject_public_key ? i2d_X509_PUBKEY(subject_public_key,nullptr) : -1};
             if(der_size<=0) { return deny("CERT_006","Invalid signer public key"); }
-            ::std::vector<unsigned char> der(static_cast<::std::size_t>(der_size)); auto der_ptr{der.data()};
+            ::uwvm2::utils::container::std_vector<unsigned char> der(static_cast<::std::size_t>(der_size)); auto der_ptr{der.data()};
             digest spki{};
             if(i2d_X509_PUBKEY(subject_public_key,&der_ptr)!=der_size || !hash(der.data(),der.size(),spki)) { return deny("CERT_006","Invalid signer identity"); }
             signer_identity=hex(spki);
@@ -1016,7 +1019,7 @@ namespace uwvm2::utils::security::wsea
                 }
                 if(!covered) { return deny("CERT_005","CRL evidence does not cover every non-root certificate"); }
             }
-            ::std::vector<unsigned char> signature;
+            ::uwvm2::utils::container::std_vector<unsigned char> signature;
             auto const& algorithm{*m.algorithm};
             if(algorithm.kind==signature_kind::ecdsa)
             {
@@ -1049,7 +1052,7 @@ namespace uwvm2::utils::security::wsea
             }
             // The algorithm identifier itself is authenticated. Never rebuild
             // it from an unsigned suggestion or retry a different algorithm.
-            ::std::string structure{"\x84\x6a" "Signature1",12};
+            ::uwvm2::utils::container::std_string structure{"\x84\x6a" "Signature1",12};
             append_head(structure,2,m.protected_headers.size()); structure.append(m.protected_headers); structure+='\x40';
             append_head(structure,2,m.payload.size()); structure.append(m.payload);
             auto digest_type{algorithm.hash_nid ? EVP_get_digestbynid(algorithm.hash_nid) : nullptr};
@@ -1075,7 +1078,7 @@ namespace uwvm2::utils::security::wsea
         // Never let a downloader undo it by replaying an older, still-fresh
         // issuer CRL. This strict profile retires the release key permanently;
         // administrator recovery provisions a new key and policy version.
-        inline result revocation_memory(policy const& p, ::std::string const& pin, bool record)
+        inline result revocation_memory(policy const& p, ::uwvm2::utils::container::std_string const& pin, bool record)
         {
             auto dir{protected_open(p.state_path,true)}; struct stat st{};
             if(!dir || ::fstat(dir.value,&st)!=0 || st.st_uid!=::geteuid() || (st.st_mode&0777)!=0700)
@@ -1088,13 +1091,13 @@ namespace uwvm2::utils::security::wsea
                    (st.st_mode&0777)!=0600 || st.st_nlink!=1 || ::flock(lock.value,LOCK_EX)!=0)
                 { return deny("POL_001","Cannot lock protected revocation state"); }
             }
-            ::std::string name{"revoked-"}; name+=pin;
+            ::uwvm2::utils::container::std_string name{"revoked-"}; name+=pin;
             if(record)
             {
                 fd created{::openat(dir.value,name.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK,0600)};
                 if(created)
                 {
-                    ::std::string content{"UWVM-WSEA-REVOKED-1\n"}; content+=pin; content+='\n';
+                    ::uwvm2::utils::container::std_string content{"UWVM-WSEA-REVOKED-1\n"}; content+=pin; content+='\n';
                     ::std::size_t done{};
                     while(done<content.size())
                     {
@@ -1120,7 +1123,7 @@ namespace uwvm2::utils::security::wsea
             // contents cannot grant permission or clear the protected fact.
             return deny("CERT_004","Release key has a persistent authenticated revocation record");
         }
-        struct floor { ::std::string id; ::std::uint64_t version{},epoch{}; };
+        struct floor { ::uwvm2::utils::container::std_string id; ::std::uint64_t version{},epoch{}; };
         inline result commit_state(policy const& p, manifest const& m, ::std::time_t checked_at, ::std::uint64_t valid_until)
         {
             auto dir{protected_open(p.state_path,true)}; struct stat st{};
@@ -1151,7 +1154,7 @@ namespace uwvm2::utils::security::wsea
                 break;
             }
             fd state{::openat(dir.value,"state",O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK)};
-            ::std::string text;
+            ::uwvm2::utils::container::std_string text;
             if(!state || ::fstat(state.value,&st)!=0 || !S_ISREG(st.st_mode) || st.st_uid!=::geteuid() || (st.st_mode&0777)!=0600 || st.st_nlink!=1 || !read_fd(state.value,1048576,text))
             { return deny("POL_001","Protected rollback state is missing or unsafe"); }
             auto lines{split(text,'\n')};
@@ -1169,7 +1172,7 @@ namespace uwvm2::utils::security::wsea
             if(now<1577836800 || now<checked_at || static_cast<::std::uint64_t>(now)>=valid_until)
             { return deny("POL_004","Trusted time rolled back during verification or authenticated evidence expired"); }
             if(static_cast<::std::uint64_t>(now)<last_time) { return deny("POL_004","Protected clock rollback detected"); }
-            ::std::vector<floor> floors;
+            ::uwvm2::utils::container::std_vector<floor> floors;
             bool found{};
             for(::std::size_t i{2}; i+1<lines.size(); ++i)
             {
@@ -1185,14 +1188,14 @@ namespace uwvm2::utils::security::wsea
                 }
                 floors.push_back(::std::move(f));
             }
-            if(!found) { if(floors.size()>=1024) { return deny("POL_001","Rollback state capacity exceeded"); } floors.push_back({::std::string{m.id},m.version,m.epoch}); }
-            ::std::string updated{"UWVM-WSEA-STATE-1\n"};
-            updated+=::std::to_string(p.version); updated+=' '; updated+=::std::to_string(now); updated+=' '; updated+=p.fingerprint; updated+='\n';
-            for(auto const& f : floors) { updated+=f.id; updated+='|'; updated+=::std::to_string(f.version); updated+='|'; updated+=::std::to_string(f.epoch); updated+='\n'; }
+            if(!found) { if(floors.size()>=1024) { return deny("POL_001","Rollback state capacity exceeded"); } floors.push_back({::uwvm2::utils::container::std_string{m.id},m.version,m.epoch}); }
+            ::uwvm2::utils::container::std_string updated{"UWVM-WSEA-STATE-1\n"};
+            updated+=::uwvm2::utils::container::to_string(p.version); updated+=' '; updated+=::uwvm2::utils::container::to_string(now); updated+=' '; updated+=p.fingerprint; updated+='\n';
+            for(auto const& f : floors) { updated+=f.id; updated+='|'; updated+=::uwvm2::utils::container::to_string(f.version); updated+='|'; updated+=::uwvm2::utils::container::to_string(f.epoch); updated+='\n'; }
             if(updated==text) { return {}; } // Same-second recheck needs no second durable write.
             unsigned char random[16]{};
             if(RAND_bytes(random,sizeof random)!=1) { return deny("POL_001","Cannot create atomic rollback transaction"); }
-            ::std::string name{".state-"};
+            ::uwvm2::utils::container::std_string name{".state-"};
             constexpr char chars[]{"0123456789abcdef"};
             for(auto b : random) { name+=chars[b>>4]; name+=chars[b&15]; }
             fd tmp{::openat(dir.value,name.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW,0600)};
@@ -1222,17 +1225,17 @@ namespace uwvm2::utils::security::wsea
         // Retain the manifest fingerprint as receipt metadata. matches() checks
         // the complete image digest, which also covers the embedded evidence.
         [[maybe_unused]] detail::digest manifest_digest_{};
-        ::std::string algorithm_{}; // owned profile names, never borrowed evidence
-        ::std::vector<::std::string> signers_;
+        ::uwvm2::utils::container::std_string algorithm_{}; // owned profile names, never borrowed evidence
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> signers_;
         ::std::uint64_t capabilities_{};
         ::std::uint64_t version_{}, epoch_{}, verified_at_{}, valid_until_{};
-        ::std::string id_;
-        ::std::string path_, expected_id_;
+        ::uwvm2::utils::container::std_string id_;
+        ::uwvm2::utils::container::std_string path_, expected_id_;
         ::std::shared_ptr<detail::policy const> policy_;
         verified_module(::std::byte const* bytes, ::std::size_t size, detail::digest digest, detail::digest manifest_digest,
-                        ::std::string algorithm, ::std::uint64_t caps, ::std::string path, ::std::string expected_id,
-                        ::std::string id, ::std::uint64_t version, ::std::uint64_t epoch, ::std::uint64_t now, ::std::uint64_t valid_until,
-                        ::std::shared_ptr<detail::policy const> policy, ::std::vector<::std::string> signers) noexcept
+                        ::uwvm2::utils::container::std_string algorithm, ::std::uint64_t caps, ::uwvm2::utils::container::std_string path, ::uwvm2::utils::container::std_string expected_id,
+                        ::uwvm2::utils::container::std_string id, ::std::uint64_t version, ::std::uint64_t epoch, ::std::uint64_t now, ::std::uint64_t valid_until,
+                        ::std::shared_ptr<detail::policy const> policy, ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> signers) noexcept
             : bytes_{bytes},size_{size},digest_{digest},manifest_digest_{manifest_digest},algorithm_{::std::move(algorithm)},signers_{::std::move(signers)},capabilities_{caps},
               version_{version},epoch_{epoch},verified_at_{now},valid_until_{valid_until},id_{::std::move(id)},
               path_{::std::move(path)},expected_id_{::std::move(expected_id)},policy_{::std::move(policy)} {}
@@ -1264,13 +1267,13 @@ namespace uwvm2::utils::security::wsea
         if(now<1577836800 || static_cast<::std::uint64_t>(now)<m.before || static_cast<::std::uint64_t>(now)>=m.after)
         { return deny("POL_004","Trusted OS time is unavailable or outside the manifest validity interval"); }
         auto valid_until{m.after};
-        ::std::string algorithms;
+        ::uwvm2::utils::container::std_string algorithms;
         for(auto const& entry : evidence.signatures)
         {
             detail::manifest contribution;
             if(!detail::decode(entry.cose,contribution) || contribution.payload!=m.payload)
             { return deny("SIG_002","Signatures must authenticate the identical manifest"); }
-            ::std::string signer;
+            ::uwvm2::utils::container::std_string signer;
             auto crypto{detail::verify_crypto(*p,contribution,entry.certificates,entry.crls,now,valid_until,signer)};
             if(!crypto)
             {
@@ -1295,8 +1298,8 @@ namespace uwvm2::utils::security::wsea
         // Re-signing unchanged payload under another allowed profile requires
         // a fresh receipt, just like replacing any other authenticated evidence.
         if(!detail::hash(evidence.payload.data(),evidence.payload.size(),manifest_digest)) { return deny("SIG_005","SHA-256 unavailable"); }
-        return {nullptr,nullptr,::std::shared_ptr<verified_module const>{new verified_module{bytes,size,complete,manifest_digest,::std::move(algorithms),m.capabilities,
-            detail::normalize(path),::std::string{expected_id},::std::string{m.id},m.version,m.epoch,static_cast<::std::uint64_t>(now),valid_until,::std::move(p),::std::move(m.signers)}}};
+        return {nullptr,nullptr,::std::shared_ptr<verified_module const>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<verified_module>([&](verified_module* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) verified_module{bytes,size,complete,manifest_digest,::std::move(algorithms),m.capabilities,
+            detail::normalize(path),::uwvm2::utils::container::std_string{expected_id},::uwvm2::utils::container::std_string{m.id},m.version,m.epoch,static_cast<::std::uint64_t>(now),valid_until,::std::move(p),::std::move(m.signers)}; }))}};
     }
     inline bool verified_module::matches(::std::byte const* bytes, ::std::size_t size) const noexcept
     {
@@ -1335,7 +1338,7 @@ namespace uwvm2::utils::security::wsea
         bool authorized{};
         for(auto const& r : policy->rules) { if(r.id==expected_id) { authorized=true; break; } }
         if(!authorized) { return deny("CERT_006","Selected module identity has no local publisher rule"); }
-        detail::selections.push_back({::std::move(module),::std::string{policy_path},::std::string{expected_id},::std::move(policy)}); return {};
+        detail::selections.push_back({::std::move(module),::uwvm2::utils::container::std_string{policy_path},::uwvm2::utils::container::std_string{expected_id},::std::move(policy)}); return {};
     }
     inline bool module_selected(::std::string_view path)
     {
@@ -1347,10 +1350,10 @@ namespace uwvm2::utils::security::wsea
     { ::std::lock_guard lock{detail::registry_mutex}; return !detail::selections.empty() || static_cast<bool>(detail::default_policy); }
     inline char const* status_message() noexcept
     { return secure_enabled() ? "WSEA: explicit module security enabled; offline COSE / algorithm allowlist / X.509 / CRL / rollback protection" : "WSEA: disabled; select each module with --secure module <wasm> <policy>"; }
-    inline ::std::string status_details()
+    inline ::uwvm2::utils::container::std_string status_details()
     {
         ::std::lock_guard lock{detail::registry_mutex};
-        ::std::string out;
+        ::uwvm2::utils::container::std_string out;
         for(auto const& selected : detail::selections)
         {
             out+="\nmodule="; out+=selected.module;
@@ -1360,7 +1363,7 @@ namespace uwvm2::utils::security::wsea
             auto checked{detail::load_policy(selected.policy_path,current)};
             if(checked)
             {
-                out+="\n  policy_version="; out+=::std::to_string(current->version);
+                out+="\n  policy_version="; out+=::uwvm2::utils::container::to_string(current->version);
                 for(auto const& rule : current->rules)
                 {
                     if(rule.id!=selected.expected_id) { continue; }
@@ -1376,7 +1379,7 @@ namespace uwvm2::utils::security::wsea
     }
     inline result verify_module(::std::string_view path,::std::byte const* bytes,::std::size_t size)
     {
-        ::std::shared_ptr<detail::policy const> p; ::std::string expected_id;
+        ::std::shared_ptr<detail::policy const> p; ::uwvm2::utils::container::std_string expected_id;
         {
             auto name{detail::normalize(path)}; ::std::lock_guard lock{detail::registry_mutex};
             for(auto const& selected : detail::selections) { if(name==selected.module) { p=selected.config; expected_id=selected.expected_id; break; } }
@@ -1406,7 +1409,7 @@ namespace uwvm2::utils::security::wsea
     inline bool module_selected(::std::string_view) noexcept { return false; }
     inline bool secure_enabled() noexcept { return false; }
     inline char const* status_message() noexcept { return "WSEA: disabled; this build does not support secure verification"; }
-    inline ::std::string status_details() { return {}; }
+    inline ::uwvm2::utils::container::std_string status_details() { return {}; }
     inline result verify_module(::std::string_view,::std::byte const*,::std::size_t) noexcept { return configure_policy({}); }
     inline result verify_module(::std::string_view,::std::string_view,::std::byte const*,::std::size_t) noexcept { return configure_policy({}); }
 #endif

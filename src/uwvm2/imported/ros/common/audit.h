@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -31,7 +34,7 @@ namespace uwvm2::imported::ros
     // The trusted host drains records; guests have no handle to this sink.
     class bounded_audit
     {
-        ::std::deque<::std::string> records{};
+        ::uwvm2::utils::container::std_deque<::uwvm2::utils::container::std_string> records{};
         ::std::uint64_t maximum_records{}, maximum_bytes{}, bytes{}, suppressed{};
         double rate{};
         ::std::uint64_t burst{},tokens{};
@@ -73,7 +76,7 @@ namespace uwvm2::imported::ros
             increment(statistics_.attempted);
             (void)reject(audit_record_status::oversized,statistics_.oversized);
         }
-        bool record(::std::string entry) noexcept
+        bool record(::uwvm2::utils::container::std_string entry) noexcept
         {
             if(statistics_.attempted==::std::numeric_limits<::std::uint64_t>::max())
             { return reject(audit_record_status::sequence_exhausted,statistics_.sequence_exhausted); }
@@ -87,7 +90,7 @@ namespace uwvm2::imported::ros
                 bool previous{synchronous_wait_context::native_exit_policy()};
                 ~restore_native_policy() { (void)synchronous_wait_context::select_native_exit(previous); }
             } native_policy;
-            ::std::unique_ptr<synchronous_quota_wait> fallback;
+            ::uwvm2::utils::container::std_unique_ptr<synchronous_quota_wait> fallback;
             synchronous_quota_wait* waiter{};
             while(limited_rate_)
             {
@@ -109,7 +112,7 @@ namespace uwvm2::imported::ros
                 if(!waiter)
                 {
                     if(synchronous_wait_context::present()) { waiter=synchronous_wait_context::waiter(); }
-                    else { fallback.reset(new(::std::nothrow) synchronous_quota_wait{});waiter=fallback.get(); }
+                    else { fallback.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<synchronous_quota_wait>([&](synchronous_quota_wait* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) synchronous_quota_wait{}; }));waiter=fallback.get(); }
                     if(!waiter) { return reject(audit_record_status::allocation_failed,statistics_.allocation_failed); }
                 }
                 if(!waiter->select_exit(finish_rate))
@@ -135,19 +138,22 @@ namespace uwvm2::imported::ros
             increment(statistics_.accepted);last_status_=audit_record_status::retained;
             return true;
         }
-        void drain(::std::vector<::std::string>& out, ::std::uint64_t& dropped)
+        void drain(::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& out, ::std::uint64_t& dropped)
         {
             // A failed output allocation must preserve every retained record
             // and the caller's previous output for a subsequent trusted retry.
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             try
 #endif
-            { ::std::vector<::std::string> candidate{records.begin(),records.end()};out.swap(candidate); }
+            { ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> candidate{records.begin(),records.end()};out.swap(candidate); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             catch(...) { increment(statistics_.drain_failed);throw; }
 #endif
             records.clear(); bytes = 0; dropped = suppressed;
         }
+        // Native coherent snapshot only. Never drain or reset audit state.
+        void copy_retained_records(::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& out) const
+        { ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> candidate{records.begin(),records.end()};out.swap(candidate); }
         ::std::uint64_t retained_bytes() const noexcept { return bytes; }
         ::std::size_t retained_records() const noexcept { return records.size(); }
         ::std::uint64_t dropped_records() const noexcept { return suppressed; }

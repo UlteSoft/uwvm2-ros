@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include "wire.h"
 #include <algorithm>
 #include <initializer_list>
@@ -68,10 +70,10 @@ namespace uwvm2::imported::ros::portable
         struct value
         {
             enum class kind { object,array,string,integer } type{};
-            ::std::string text{};
+            ::uwvm2::utils::container::std_string text{};
             ::std::uint64_t magnitude{};bool negative{};
-            ::std::map<::std::string,value,::std::less<>> members{};
-            ::std::vector<value> elements{};
+            ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,value,::std::less<>> members{};
+            ::uwvm2::utils::container::std_vector<value> elements{};
             value const* at(::std::string_view key) const noexcept
             { auto i{members.find(key)};return type==kind::object&&i!=members.end()?::std::addressof(i->second):nullptr; }
         };
@@ -96,7 +98,7 @@ namespace uwvm2::imported::ros::portable
                 }
                 return true;
             }
-            bool string(::std::string& result)
+            bool string(::uwvm2::utils::container::std_string& result)
             {
                 if(!take('"')) { return false; }result.clear();
                 while(at_<input_.size())
@@ -152,7 +154,7 @@ namespace uwvm2::imported::ros::portable
                     if(take(object?'}':']')) { return true; }
                     do
                     {
-                        ::std::string key{};if(object&&(!string(key)||!take(':'))) { return false; }
+                        ::uwvm2::utils::container::std_string key{};if(object&&(!string(key)||!take(':'))) { return false; }
                         value child{};if(!item(child,depth+1u)) { return false; }
                         if(object) { if(!out.members.emplace(::std::move(key),::std::move(child)).second) { return false; } }
                         else { out.elements.push_back(::std::move(child)); }
@@ -176,7 +178,7 @@ namespace uwvm2::imported::ros::portable
         };
         inline bool keys(value const& v,::std::initializer_list<::std::string_view> names) noexcept
         { if(v.type!=value::kind::object||v.members.size()!=names.size()) { return false; }for(auto key:names) { if(!v.at(key)) { return false; } }return true; }
-        inline bool text(value const& object,::std::string_view key,::std::string& out,::std::size_t maximum=1024u)
+        inline bool text(value const& object,::std::string_view key,::uwvm2::utils::container::std_string& out,::std::size_t maximum=1024u)
         { auto v{object.at(key)};if(!v||v->type!=value::kind::string||v->text.empty()||v->text.size()>maximum) { return false; }out=v->text;return true; }
         inline bool equal(value const& object,::std::string_view key,::std::string_view expected) noexcept
         { auto v{object.at(key)};return v&&v->type==value::kind::string&&v->text==expected; }
@@ -192,14 +194,14 @@ namespace uwvm2::imported::ros::portable
             for(auto c:value) { if(!((c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='_'||(absolute&&c=='/'))) { return false; } }
             return true;
         }
-        inline error read_exact_file(::std::string const& path,digest const& expected,::std::string& output)
+        inline error read_exact_file(::uwvm2::utils::container::std_string const& path,digest const& expected,::uwvm2::utils::container::std_string& output)
         {
 #if defined(__linux__)
             if(path.empty()||path.front()!='/'||path.size()>4096u||path.find('\0')!=path.npos) { return error::malformed; }
             int fd{::open(path.c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK)};if(fd<0) { return error::unavailable; }
             struct close_fd { int fd;~close_fd(){::close(fd);} } guard{fd};struct stat before{},after{};
             if(::fstat(fd,&before)!=0||!S_ISREG(before.st_mode)||before.st_size<=0||before.st_size>32768) { return error::malformed; }
-            ::std::string bytes(static_cast<::std::size_t>(before.st_size),'\0');::std::size_t at{};
+            ::uwvm2::utils::container::std_string bytes(static_cast<::std::size_t>(before.st_size),'\0');::std::size_t at{};
             while(at!=bytes.size())
             { auto n{::pread(fd,bytes.data()+at,bytes.size()-at,static_cast<off_t>(at))};if(n<0&&errno==EINTR) { continue; }if(n<=0) { return error::unavailable; }at+=static_cast<::std::size_t>(n); }
             char extra{};
@@ -219,10 +221,10 @@ namespace uwvm2::imported::ros::portable
         digest adapter_sha256{},policy_sha256{},wasm_sha256{},native_provenance{},native_executable{};
         ::std::uint64_t policy_epoch{},native_generation{};
         ::std::uint32_t native_uid{};
-        ::std::string alias{},module{},socket{},platform_id{},official_repository{},official_commit{},official_mode{};
-        ::std::array<::std::string,max_joints> native_joints{};
-        ::std::string state_topic{},position_action{},controller_service{};
-        ::std::string controller_type{"joint_trajectory_controller/JointTrajectoryController"};
+        ::uwvm2::utils::container::std_string alias{},module{},socket{},platform_id{},official_repository{},official_commit{},official_mode{};
+        ::std::array<::uwvm2::utils::container::std_string,max_joints> native_joints{};
+        ::uwvm2::utils::container::std_string state_topic{},position_action{},controller_service{};
+        ::uwvm2::utils::container::std_string controller_type{"joint_trajectory_controller/JointTrajectoryController"};
     };
 
     inline error parse_joint_deployment(::std::string_view adapter_bytes,::std::string_view policy_bytes,joint_deployment& output)
@@ -249,7 +251,7 @@ namespace uwvm2::imported::ros::portable
            !number(*native,"uid",uid,4294967294u)||!hex(*native,"executable_sha256",result.native_executable)||
            !hex(*native,"provenance_sha256",result.native_provenance)||!number(*native,"generation",result.native_generation)||!result.native_generation) { return error::malformed; }
         result.native_uid=static_cast<::std::uint32_t>(uid);
-        auto official{adapter.at("official_source")};auto ros{adapter.at("ros")};::std::string ignored{};
+        auto official{adapter.at("official_source")};auto ros{adapter.at("ros")};::uwvm2::utils::container::std_string ignored{};
         if(!official||!keys(*official,{"repository","commit","license","mode","scope"})||!text(*official,"repository",result.official_repository)||
            !text(*official,"commit",result.official_commit,40)||result.official_commit.size()!=40u||!text(*official,"mode",result.official_mode)||
            !text(*official,"license",ignored)||!text(*official,"scope",ignored)||!ros||!keys(*ros,{"release","os_abi","rmw","transport","security"})) { return error::malformed; }
@@ -303,16 +305,16 @@ namespace uwvm2::imported::ros::portable
         // Trusted command-line setup only, before any Wasm execution. The
         // separate CLI adapter pin binds exact adapter bytes without making
         // policy and adapter files contain each other's cryptographic hashes.
-        static error configure(::std::string const& adapter_path,::std::string_view adapter_hash,
-                               ::std::string const& policy_path,::std::string_view policy_hash)
+        static error configure(::uwvm2::utils::container::std_string const& adapter_path,::std::string_view adapter_hash,
+                               ::uwvm2::utils::container::std_string const& policy_path,::std::string_view policy_hash)
         {
             if(selected_) { return error::denied; }digest a{},p{};
             if(!parse_digest(adapter_hash,a)||!parse_digest(policy_hash,p)) { return error::malformed; }
-            ::std::string adapter{},policy{};
+            ::uwvm2::utils::container::std_string adapter{},policy{};
             if(auto e{deployment_detail::read_exact_file(adapter_path,a,adapter)};e!=error::ok) { return e; }
             if(auto e{deployment_detail::read_exact_file(policy_path,p,policy)};e!=error::ok) { return e; }
             joint_deployment result{};if(auto e{parse_joint_deployment(adapter,policy,result)};e!=error::ok) { return e; }
-            selected_=::std::make_shared<joint_deployment const>(::std::move(result));return error::ok;
+            selected_=::uwvm2::utils::container::make_shared<joint_deployment const>(::std::move(result));return error::ok;
         }
     };
 }

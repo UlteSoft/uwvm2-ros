@@ -2,6 +2,9 @@
 // Include inside the runtime namespace after actual capture/resource/manager
 // definitions and real host admission API. No guest code/IR calls this leaf.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
     class llvm_jit_checkpoint_thread_capture final
@@ -22,7 +25,7 @@
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_continuation_dispatcher;
         runtime_checkpoint_thread_capture::owner actual_{};
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::vector<::std::weak_ptr<llvm_jit_checkpoint_thread_capture const>> registry_{};
+        inline static ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_checkpoint_thread_capture const>> registry_{};
         // Qualified function friends nominate the real global-module APIs
         // first declared with C++ linkage in runtime.h. This class keeps its
         // runtime module attachment; no new friend overload is introduced.
@@ -77,6 +80,11 @@
             ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
             ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
             ::std::array<::std::byte,16u> const&, ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
+            -> llvm_jit_checkpoint_instance_capture_result;
+        friend auto ::uwvm2::runtime::lib::llvm_jit_checkpoint_record_host_api(
+            ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
+            ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
+            ::std::array<::std::byte,16u> const&, unsigned) noexcept
             -> llvm_jit_checkpoint_instance_capture_result;
         friend auto ::uwvm2::runtime::lib::llvm_jit_checkpoint_restore_wasip1_environment_group_host_api(
             ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
@@ -138,7 +146,7 @@
         if(captured.status != checkpoint_thread_capture_status::captured || !captured.capture) { return {status, {}}; }
         try
         {
-            ::std::shared_ptr<llvm_jit_checkpoint_thread_capture> wrapper{new llvm_jit_checkpoint_thread_capture};
+            ::std::shared_ptr<llvm_jit_checkpoint_thread_capture> wrapper{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_checkpoint_thread_capture>([&](llvm_jit_checkpoint_thread_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_checkpoint_thread_capture; }))};
             wrapper->actual_ = ::std::move(captured.capture);
             ::std::lock_guard lock{llvm_jit_checkpoint_thread_capture::registry_mutex_};
             for(auto& weak : llvm_jit_checkpoint_thread_capture::registry_)
@@ -341,7 +349,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
-        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -371,6 +379,7 @@
         out.wasip1_checkpoint_required=actual.wasip1_checkpoint_required;
         out.wasip1_captured_together=actual.wasip1_captured_together;
         out.wasip1_environments=::std::move(actual.wasip1_environments);
+        out.ros_environments=::std::move(actual.ros_environments);
         if(actual.captured)
         {
             // Zero-copy const graph alias retains the immutable logical graph
@@ -399,7 +408,7 @@
         ::std::array<::std::byte, 16u> const& label,
         ::uwvm2::uwvm::debugger::checkpoint::limits const& budget) noexcept
     {
-        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         using output_status = llvm_jit_checkpoint_instance_capture_status;
         llvm_jit_checkpoint_instance_capture_result out{};
@@ -429,6 +438,7 @@
         out.wasip1_checkpoint_required=actual.wasip1_checkpoint_required;
         out.wasip1_captured_together=actual.wasip1_captured_together;
         out.wasip1_environments=::std::move(actual.wasip1_environments);
+        out.ros_environments=::std::move(actual.ros_environments);
         if(actual.captured)
         {
             // Zero-copy const graph alias retains the immutable logical graph
@@ -477,7 +487,7 @@ extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_cap
     ::std::array<::std::byte, 16u> const&,
     ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
 {
-        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; }
     llvm_jit_checkpoint_instance_capture_result out{};
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     out.status = llvm_jit_checkpoint_instance_capture_status::unavailable_capture;
@@ -491,7 +501,7 @@ extern "C++" llvm_jit_checkpoint_instance_capture_result llvm_jit_checkpoint_cap
         ::std::span<llvm_jit_checkpoint_thread_capture_owner const>,
         ::std::array<::std::byte,16u> const&, ::uwvm2::uwvm::debugger::checkpoint::limits const&) noexcept
     {
-        if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {}; } llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
+        if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {}; } llvm_jit_checkpoint_instance_capture_result result{};result.status=llvm_jit_checkpoint_instance_capture_status::requires_llvm_jit_full;return result; }
 
 # endif
 #endif

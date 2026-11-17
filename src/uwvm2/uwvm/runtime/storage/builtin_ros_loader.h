@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 // Concrete built-in provider provenance. Debug and cache admission retain their
 // own sealed censuses; this identity grants neither execution nor resources.
 // This layer deliberately imports no ROS Host, cache or checkpoint operations.
@@ -27,6 +30,8 @@ namespace uwvm2::uwvm::imported::ros
     }
 }  // namespace uwvm2::uwvm::imported::ros
 
+namespace uwvm2::uwvm::imported::scene { extern "C++" { class sealed_loader_factory; } }
+
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 {
     enum class builtin_ros_kind : unsigned
@@ -38,7 +43,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         ros2_publisher,
         ros2_subscription,
         ros2_service,
-        portable_robot
+        portable_robot,
+        scene
     };
 
     struct builtin_ros_function_data
@@ -54,15 +60,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
     class builtin_ros_loader_identity final
     {
         friend class ::uwvm2::uwvm::imported::ros::sealed_debug_loader_factory;
+        friend class ::uwvm2::uwvm::imported::scene::sealed_loader_factory;
         using module = ::uwvm2::uwvm::wasm::type::local_imported_t;
         using implementation = decltype(::std::declval<module>().ptr);
         implementation implementation_{};
         ::std::size_t ordinal_{}, function_count_{};
         builtin_ros_kind kind_{};
         ::std::array<builtin_ros_function_data, 64u> functions_{};
+        ::uwvm2::utils::container::std_unique_ptr<builtin_ros_function_data[]> scene_tail_{};
+        ::std::size_t scene_tail_count_{};
         ::std::weak_ptr<builtin_ros_loader_identity const> canonical_owner_{};
-        inline static ::std::array<::std::shared_ptr<builtin_ros_loader_identity const>, 8u> selected_{};
+        inline static ::std::array<::std::shared_ptr<builtin_ros_loader_identity const>, 9u> selected_{};
         builtin_ros_loader_identity() noexcept = default;
+
+        /** @brief Address already bounded immutable provenance, never a guest index.
+         * @details The original 64 entries and legacy provider ceiling remain
+         * unchanged. Only the concrete scene factory may reserve a tail, sized
+         * from its trusted compiled tuple. No guest controls that count, and
+         * adding a trusted import does not require another numeric ceiling.
+         * Allocation size overflow is rejected by the recoverable allocator.
+         * Silent fast_io allocation failure declines source publication; no
+         * partial identity or extra import authority becomes visible. The tail
+         * stays owned by the same canonical loader identity through retirement.
+         */
+        builtin_ros_function_data& captured_function(::std::size_t index) noexcept
+        { return index < functions_.size() ? functions_[index] : scene_tail_[index-functions_.size()]; }
 
         template <class Tuple, ::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
         static constexpr auto const& known_functions(::uwvm2::uwvm::wasm::type::feature_list<Fs...>) noexcept
@@ -72,7 +94,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         bool capture_tuple() noexcept
         {
             auto const& known{known_functions<typename Concrete::local_function_tuple>(::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t{})};
-            if(known.size() == 0u || known.size() > functions_.size()) { return false; }
+            if(known.size() == 0u || (kind_!=builtin_ros_kind::scene && known.size() > functions_.size())) { return false; }
+            if(known.size() > functions_.size())
+            {
+                static_assert(::std::is_nothrow_default_constructible_v<builtin_ros_function_data>);
+                auto count{known.size()-functions_.size()};
+                ::uwvm2::utils::container::std_unique_ptr<builtin_ros_function_data[]> tail{
+                    ::uwvm2::utils::allocator::fast_io_strict::try_array<builtin_ros_function_data>(count)};
+                if(!tail) { return false; }
+                scene_tail_=::std::move(tail);
+                scene_tail_count_=count;
+            }
             ::fast_io::sha256_context hash{};
             auto number = [&](::std::uint64_t n) noexcept
             {
@@ -112,7 +144,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             for(::std::size_t i{}; i != known.size(); ++i)
             {
                 auto const& entry{known[i]};
-                auto& value{functions_[i]};
+                auto& value{captured_function(i)};
                 if(entry.index != i || !text(entry.function_name)) { return false; }
                 value.kind = kind_;
                 value.function_index = i;
@@ -132,7 +164,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             hash.do_final();
             ::std::array<::std::byte, 32u> digest{};
             hash.digest_to_byte_ptr(digest.data());
-            for(::std::size_t i{}; i != known.size(); ++i) { functions_[i].interface_sha256 = digest; }
+            for(::std::size_t i{}; i != known.size(); ++i) { captured_function(i).interface_sha256 = digest; }
             function_count_ = known.size();
             return true;
         }
@@ -154,7 +186,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 // provider provenance. Mint it at construction, independently
                 // of source-image ownership; each consumer still enforces its
                 // own source, lifetime and permission admission requirements.
-                ::std::shared_ptr<builtin_ros_loader_identity> identity{new builtin_ros_loader_identity};
+                ::std::shared_ptr<builtin_ros_loader_identity> identity{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<builtin_ros_loader_identity>([&](builtin_ros_loader_identity* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) builtin_ros_loader_identity; }))};
                 identity->kind_ = kind;
                 if(!identity->template capture_tuple<Concrete>()) { return false; }
                 auto ordinal = providers.size();
@@ -181,7 +213,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 
     public:
         using owner = ::std::shared_ptr<builtin_ros_loader_identity const>;
-        using census = ::std::array<owner, 8u>;
+        using census = decltype(selected_);
         builtin_ros_loader_identity(builtin_ros_loader_identity const&) = delete;
         builtin_ros_loader_identity& operator= (builtin_ros_loader_identity const&) = delete;
         ~builtin_ros_loader_identity() = default;
@@ -223,8 +255,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 
         [[nodiscard]] bool copy_function(module const* actual, ::std::size_t index, builtin_ros_function_data& out) const noexcept
         {
-            if(actual == nullptr || current_member() != actual || index >= function_count_ || function_count_ > functions_.size()) { return false; }
-            out = functions_[index];
+            if(actual == nullptr || current_member() != actual || index >= function_count_ ||
+               function_count_ > functions_.size()+scene_tail_count_) { return false; }
+            if(index < functions_.size()) { out = functions_[index]; }
+            else
+            {
+                if(kind_!=builtin_ros_kind::scene || !scene_tail_ || index-functions_.size()>=scene_tail_count_) { return false; }
+                out=scene_tail_[index-functions_.size()];
+            }
             return true;  // detached DATA, no provider/Guest pointer.
         }
     };

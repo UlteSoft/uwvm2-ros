@@ -14,7 +14,8 @@
   "main": "./extension.js",
   "activationEvents": [
     "onDebug",
-    "onView:uwvm.tools"
+    "onView:uwvm.tools",
+    "onCommand:uwvm.submitSignedUpdate"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -131,7 +132,7 @@
                   "native"
                 ],
                 "default": "source",
-                "description": "Default statement stepping level. Source requires embedded -g DWARF; wasm/native stepIn executes exactly one Wasm/native instruction. Explicit line/instruction requests remain source/native. Native enables bounded current-function disassembly display after a real owned-code query; source/wasm references do not grant native code access."
+                "description": "Default statement stepping level. Source requires embedded -g DWARF; wasm/native stepIn executes exactly one Wasm/native instruction. Explicit line/instruction requests remain source/native. Inspectable source and Wasm stops receive an authenticated current LLVM-JIT display reference; it grants disassembly display only, never host-code access or mutation."
               },
               "sourceMap": {
                 "type": "object",
@@ -168,6 +169,11 @@
                 "type": "boolean",
                 "default": true,
                 "description": "Keep the authenticated initial entry stop after attach. Generated runtime launch profiles default to false and continue once, after breakpoints are configured. Existing breakpoint, pause and fault stops are never auto-resumed. Restart reconnects; it does not reset this host-owned VM."
+              },
+              "stepLevelLocked": {
+                "type": "boolean",
+                "default": false,
+                "description": "Lock the selected Source/Wasm/Assembly stepping level. Breakpoint hits still reveal their own view; unlock before changing levels."
               }
             }
           }
@@ -276,103 +282,167 @@
     "commands": [
       {
         "command": "uwvm.openMemory",
-        "title": "UWVM: Open Memory Window",
-        "icon": "$(table)"
+        "title": "Open Memory",
+        "category": "UWVM",
+        "icon": "$(database)"
       },
       {
         "command": "uwvm.openRegisters",
-        "title": "UWVM: Open Registers Window",
+        "title": "Open Registers",
+        "category": "UWVM",
         "icon": "$(symbol-numeric)"
       },
       {
         "command": "uwvm.openWasip1",
-        "title": "UWVM: Open WASI Window",
-        "icon": "$(folder-opened)"
+        "title": "Open WASI",
+        "category": "UWVM",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "uwvm.openWasithread",
+        "title": "UWVM: Open WASI Threads",
+        "category": "UWVM"
+      },
+      {
+        "command": "uwvm.openScene",
+        "title": "Open u2rosv2 Robot Scene (in development)",
+        "category": "UWVM",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "uwvm.openPreloadDl",
+        "title": "Open preloaddl Inventory",
+        "category": "UWVM",
+        "icon": "$(library)"
       },
       {
         "command": "uwvm.openRos",
-        "title": "UWVM: Open ROS Window",
+        "title": "Open u2rosv1 (ros1 / ros2)",
+        "category": "UWVM",
         "icon": "$(radio-tower)"
       },
       {
         "command": "uwvm.writeMemory",
-        "title": "UWVM: Write Bytes in Current Memory Window"
+        "title": "Write Bytes in Focused Memory Window",
+        "category": "UWVM"
       },
       {
         "command": "uwvm.submitSignedUpdate",
-        "title": "UWVM: Submit Authorized Hot Update Request",
+        "title": "Submit Hot Update\u2026",
+        "category": "UWVM",
         "icon": "$(cloud-upload)"
       },
       {
         "command": "uwvm.showMemoryTags",
-        "title": "UWVM: Show Memory Tags"
+        "title": "Open Memory with Allocation Tags",
+        "category": "UWVM",
+        "icon": "$(tag)"
       },
       {
         "command": "uwvm.showDiagnostics",
-        "title": "UWVM: Show Diagnostics and Permissions"
+        "title": "Show Diagnostics",
+        "category": "UWVM",
+        "icon": "$(pulse)"
       },
       {
         "command": "uwvm.dump",
-        "title": "UWVM: Save Wasm Dump (Current Permissions)"
+        "title": "Save Wasm Dump\u2026",
+        "category": "UWVM",
+        "icon": "$(save)"
       },
       {
         "command": "uwvm.levelSource",
-        "title": "UWVM: Source Level",
+        "title": "Step Level: Source",
+        "category": "UWVM",
         "icon": "$(file-code)"
       },
       {
         "command": "uwvm.levelWasm",
-        "title": "UWVM: Wasm Level",
+        "title": "Step Level: Wasm",
+        "category": "UWVM",
         "icon": "$(symbol-method)"
       },
       {
         "command": "uwvm.levelAsm",
-        "title": "UWVM: JIT Assembly Level",
-        "icon": "$(code)"
-      },
-      {
-        "command": "uwvm.openWasiCalls",
-        "title": "UWVM: Recorded WASIp1 Calls",
-        "icon": "$(list-tree)"
-      },
-      {
-        "command": "uwvm.openRosCalls",
-        "title": "UWVM: Recorded ROS Calls",
-        "icon": "$(list-tree)"
+        "title": "Step Level: Assembly",
+        "category": "UWVM",
+        "icon": "$(chip)"
       },
       {
         "command": "uwvm.openBreakpoints",
-        "title": "UWVM: All Breakpoints",
-        "icon": "$(debug-breakpoint)"
+        "title": "Open Breakpoint Manager",
+        "category": "UWVM",
+        "icon": "$(debug-breakpoint-conditional)"
       },
       {
         "command": "uwvm.openWasmInstructions",
-        "title": "UWVM: Open Wasm Instruction View",
+        "title": "Open Wasm Instructions",
+        "category": "UWVM",
         "icon": "$(symbol-method)"
       },
       {
         "command": "uwvm.switchFromSource",
-        "title": "UWVM: S · Source — Click to change instruction level",
+        "title": "Step level: S \u00b7 Source (click to change)",
         "icon": {
           "light": "icons/level-S-light.svg",
           "dark": "icons/level-S-dark.svg"
-        }
+        },
+        "category": "UWVM"
       },
       {
         "command": "uwvm.switchFromWasm",
-        "title": "UWVM: W · Wasm — Click to change instruction level",
+        "title": "Step level: W \u00b7 Wasm (click to change)",
         "icon": {
           "light": "icons/level-W-light.svg",
           "dark": "icons/level-W-dark.svg"
-        }
+        },
+        "category": "UWVM"
       },
       {
         "command": "uwvm.switchFromAsm",
-        "title": "UWVM: A · Assembly — Click to change instruction level",
+        "title": "Step level: A \u00b7 Assembly (click to change)",
         "icon": {
           "light": "icons/level-A-light.svg",
           "dark": "icons/level-A-dark.svg"
-        }
+        },
+        "category": "UWVM"
+      },
+      {
+        "command": "uwvm.switchLevel",
+        "title": "Change Step Level\u2026",
+        "category": "UWVM",
+        "icon": "$(debug-step-into)"
+      },
+      {
+        "command": "uwvm.explainUnavailable",
+        "title": "Why Is This Unavailable?",
+        "category": "UWVM"
+      },
+      {
+        "command": "uwvm.toggleStepLock",
+        "title": "Lock / unlock step level",
+        "category": "UWVM",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "uwvm.openWatch",
+        "title": "Open Grouped Watch",
+        "category": "UWVM",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "uwvm.navigateBack",
+        "title": "Navigate Back",
+        "category": "UWVM",
+        "icon": "$(arrow-left)",
+        "enablement": "uwvm.canNavigateBack"
+      },
+      {
+        "command": "uwvm.navigateForward",
+        "title": "Navigate Forward",
+        "category": "UWVM",
+        "icon": "$(arrow-right)",
+        "enablement": "uwvm.canNavigateForward"
       }
     ],
     "menus": {
@@ -396,35 +466,122 @@
           "command": "uwvm.switchFromAsm",
           "when": "debugType == uwvm-llvm-full && uwvm.stepLevel == native",
           "group": "navigation@101"
+        },
+        {
+          "command": "uwvm.navigateBack",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "navigation@0"
+        },
+        {
+          "command": "uwvm.navigateForward",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "navigation@1"
         }
       ],
       "view/title": [
         {
-          "command": "uwvm.showDiagnostics",
-          "when": "view == uwvm.tools",
-          "group": "navigation"
-        },
-        {
           "command": "uwvm.openMemory",
           "when": "view == uwvm.tools",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "uwvm.openBreakpoints",
+          "when": "view == uwvm.tools",
+          "group": "navigation@2"
+        },
+        {
+          "command": "uwvm.showDiagnostics",
+          "when": "view == uwvm.tools",
+          "group": "navigation@3"
+        },
+        {
+          "command": "uwvm.submitSignedUpdate",
+          "when": "view == uwvm.tools",
+          "group": "more@1"
+        },
+        {
+          "command": "uwvm.navigateBack",
+          "when": "view == uwvm.tools",
+          "group": "navigation@0"
+        },
+        {
+          "command": "uwvm.navigateForward",
+          "when": "view == uwvm.tools",
+          "group": "navigation@1"
         }
       ],
       "editor/context": [
         {
-          "command": "uwvm.levelSource",
+          "command": "uwvm.switchLevel",
           "when": "debugType == uwvm-llvm-full",
           "group": "uwvm@0"
         },
         {
+          "command": "uwvm.openMemory",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "uwvm@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "uwvm.explainUnavailable",
+          "when": "false"
+        },
+        {
+          "command": "uwvm.switchFromSource",
+          "when": "false"
+        },
+        {
+          "command": "uwvm.switchFromWasm",
+          "when": "false"
+        },
+        {
+          "command": "uwvm.switchFromAsm",
+          "when": "false"
+        },
+        {
+          "command": "uwvm.levelSource",
+          "when": "uwvm.active"
+        },
+        {
           "command": "uwvm.levelWasm",
+          "when": "uwvm.active"
+        },
+        {
+          "command": "uwvm.levelAsm",
+          "when": "uwvm.active"
+        },
+        {
+          "command": "uwvm.switchLevel",
+          "when": "uwvm.active"
+        },
+        {
+          "command": "uwvm.writeMemory",
+          "when": "activeWebviewPanelId =~ /^uwvm\\.memory/"
+        }
+      ],
+      "debug/callstack/context": [
+        {
+          "command": "uwvm.openWasmInstructions",
           "when": "debugType == uwvm-llvm-full",
           "group": "uwvm@1"
         },
         {
-          "command": "uwvm.levelAsm",
+          "command": "uwvm.openMemory",
           "when": "debugType == uwvm-llvm-full",
           "group": "uwvm@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "uwvm.navigateBack",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "navigation@0"
+        },
+        {
+          "command": "uwvm.navigateForward",
+          "when": "debugType == uwvm-llvm-full",
+          "group": "navigation@1"
         }
       ]
     },
@@ -456,6 +613,10 @@
       }
     ],
     "configurationDefaults": {
+      "debug.showVariableTypes": true,
+      "workbench.colorCustomizations": {
+        "debugTokenExpression.type": "#dcdcaa"
+      },
       "[uwvm-wasm-disassembly]": {
         "editor.hover.delay": 350
       }
@@ -464,8 +625,9 @@
       "debug": [
         {
           "id": "uwvm.tools",
-          "name": "UWVM Debugger",
-          "visibility": "visible"
+          "name": "UWVM",
+          "visibility": "visible",
+          "icon": "$(debug-alt)"
         }
       ]
     },
@@ -479,6 +641,39 @@
           }
         ],
         "priority": "default"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "uwvm.switchLevel",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+alt+l",
+        "when": "inDebugMode && debugType == uwvm-llvm-full"
+      },
+      {
+        "command": "uwvm.openMemory",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m",
+        "when": "inDebugMode && debugType == uwvm-llvm-full"
+      },
+      {
+        "command": "uwvm.navigateBack",
+        "key": "alt+left",
+        "mac": "ctrl+-",
+        "when": "debugType == uwvm-llvm-full && !inputFocus"
+      },
+      {
+        "command": "uwvm.navigateForward",
+        "key": "alt+right",
+        "mac": "ctrl+shift+-",
+        "when": "debugType == uwvm-llvm-full && !inputFocus"
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "uwvm.tools",
+        "contents": "No UWVM session is attached.\n[Run and Debug](command:workbench.view.debug)\nChoose a UWVM configuration and press F5. Inspector windows open from this view once the guest pauses.\n[Submit Hot Update\u2026](command:uwvm.submitSignedUpdate)",
+        "when": "!uwvm.active"
       }
     ]
   }

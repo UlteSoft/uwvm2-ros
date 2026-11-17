@@ -2,6 +2,8 @@
 // shape before retirement. Engines, typed target arrays, loaded provenance and
 // LIVE native seals stay with their authentic staged owners until joint commit.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 bool full_publication_records_prepared_{};
 ::std::size_t prepared_publication_functions_{};
 
@@ -111,7 +113,7 @@ template<typename Local>
     }
     using local_type=engine_type::local_storage;
     constexpr ::std::size_t slot_bytes=sizeof(local_type)+2u*sizeof(::std::uintptr_t)+sizeof(::std::uint_least64_t)+
-        sizeof(llvm_jit_debug_safe_point_view)+sizeof(::std::unique_ptr<llvm_jit_debug_replace_transaction>)+
+        sizeof(llvm_jit_debug_safe_point_view)+sizeof(::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>)+
         sizeof(llvm_jit_debug_replace_transaction const*)+sizeof(full_code_publication::checkpoint_resume_entry)
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         +sizeof(::std::size_t)
@@ -128,7 +130,7 @@ template<typename Local>
            engine.generations_.size()!=count || engine.typed_targets_.size()!=count || !engine.engine_ || !engine.context_)
         { return fail(preparation_status::source_mismatch); }
         record.module_name=bound.file->module_name;
-        record.llvm_jit_full_publication.reset(new full_code_publication{prepared_source_});
+        record.llvm_jit_full_publication.reset(::uwvm2::utils::allocator::fast_io_strict::object<full_code_publication>([&](full_code_publication* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) full_code_publication{prepared_source_}; }));
         auto& publication=*record.llvm_jit_full_publication;
         publication.checkpoint_profile=actual_prepared_profile_;
         publication.checkpoint_resume_entries.resize(count);

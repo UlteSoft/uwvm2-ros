@@ -289,6 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory, buf_ptrsz, size_of_wasi_prestat_wasm64_t))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         if constexpr(is_default_wasi_prestat_wasm64_data_layout())
         {
             // If the memory is identical, it is copied directly, which is the most efficient approach.

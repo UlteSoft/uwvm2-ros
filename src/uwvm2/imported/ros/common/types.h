@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/control/host_interfaces.h>
 #include <uwvm2/utils/control/host_diagnostics.h>
 
@@ -27,33 +28,33 @@ namespace uwvm2::imported::ros
     struct result
     {
         errc code{errc::success};
-        ::std::string detail{};
+        ::uwvm2::utils::container::std_string detail{};
         explicit operator bool() const noexcept { return code == errc::success; }
     };
 
     inline result quota_failure(errc code,::std::string_view detail,::std::string_view field,::std::string_view alias={})
     {
         ::uwvm2::utils::control::host_diagnostics::limited(field,false,alias);
-        return {code,::std::string{detail}};
+        return {code,::uwvm2::utils::container::std_string{detail}};
     }
     struct capability_spec
     {
-        ::std::string alias{};
-        ::std::string operation{};
-        ::std::string resource{};
-        ::std::string type{};
-        ::std::string type_identity{};
-        ::std::map<::std::string, ::std::string, ::std::less<>> limits{};
+        ::uwvm2::utils::container::std_string alias{};
+        ::uwvm2::utils::container::std_string operation{};
+        ::uwvm2::utils::container::std_string resource{};
+        ::uwvm2::utils::container::std_string type{};
+        ::uwvm2::utils::container::std_string type_identity{};
+        ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string, ::uwvm2::utils::container::std_string, ::std::less<>> limits{};
     };
 
     struct target_policy
     {
         version ros_version{version::ros1};
         scope target_scope{scope::global};
-        ::std::string name{};
+        ::uwvm2::utils::container::std_string name{};
         bool enabled{};
-        ::std::map<::std::string, ::std::string, ::std::less<>> connection{};
-        ::std::map<::std::string, capability_spec, ::std::less<>> capabilities{};
+        ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string, ::uwvm2::utils::container::std_string, ::std::less<>> connection{};
+        ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string, capability_spec, ::std::less<>> capabilities{};
         ::uwvm2::utils::control::host_interfaces::policy interfaces{};
     };
 

@@ -7,8 +7,10 @@
         if(page_bytes_ == 0u || bytes % page_bytes_ != 0u || bytes <= page_bytes_ * 2u ||
            bytes - page_bytes_ * 2u < static_cast<::std::size_t>(PTHREAD_STACK_MIN))
         { result.preparation_error = EINVAL; return result; }
+        namespace budget=::uwvm2::utils::allocator::resource;
+        if(!budget::acquire(budget::pool::threads,bytes)) { result.preparation_error=ENOMEM; return result; }
         auto const mapping{::mmap(nullptr, bytes, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0)};
-        if(mapping == MAP_FAILED) { result.preparation_error = errno; return result; }
+        if(mapping == MAP_FAILED) { result.preparation_error = errno; budget::release(budget::pool::threads,bytes); return result; }
         result.mapping = mapping; result.bytes = bytes; result.guard_bytes = page_bytes_;
         if(::mprotect(result.usable_begin(), result.usable_bytes(), PROT_READ | PROT_WRITE) != 0)
         { result.preparation_error = errno; }
@@ -20,6 +22,7 @@
     {
         if(stack.mapping == nullptr) { return 0; }
         if(::munmap(stack.mapping, stack.bytes) != 0) { return errno; }
+        ::uwvm2::utils::allocator::resource::release(::uwvm2::utils::allocator::resource::pool::threads,stack.bytes);
         stack = {}; return 0;
     }
 
@@ -90,7 +93,7 @@
     }
 
     inline auto ThreadedGroup::submit_compilation(SpawnReservation&& reservation,
-        ::std::unique_ptr<CompilerWork> work) noexcept -> compiler_submission
+        ::uwvm2::utils::container::std_unique_ptr<CompilerWork> work) noexcept -> compiler_submission
     {
         auto retained{canonical_owner_.lock()};
         if(!retained || initialization_error_ != 0 || !admission_ || !work || reservation.group_ != this)
@@ -167,7 +170,7 @@
         for(;;)
         {
             compiler_slot* selected{};
-            ::std::unique_ptr<CompilerWork> work;
+            ::uwvm2::utils::container::std_unique_ptr<CompilerWork> work;
             ::std::uint64_t sequence{};
             bool initial_main{};
             {
@@ -226,7 +229,14 @@
                 // Actual slot0 role, captured before reservation consumption.
                 // Stack mapping can fail BEFORE Root's virtual main job runs;
                 // such a failure must still terminate ordinary main wait.
-                group.request_stop({termination_kind::native_failure, 3u, 0u, 0u, 0u});
+                bool const unavailable{!inconsistent &&
+                    (result.native_error == ENOMEM || result.native_error == EAGAIN)};
+                if(unavailable)
+                {
+                    ::std::fputs("uwvm: [error] WASI Threads initial stack preparation refused by the memory budget or host resource availability; check --wasm-set-resource-limit runtime threads-single-bytes/threads-live-bytes.\n", stderr);
+                }
+                group.request_stop({unavailable ? termination_kind::preparation_rejected : termination_kind::native_failure,
+                    unavailable ? static_cast<::std::uint32_t>(result.native_error) : 3u, 0u, 0u, 0u});
             }
             work.reset();
             auto const guest_position{selected->reservation.position_};
@@ -289,7 +299,7 @@
 
     inline int ThreadedGroup::retire_slot_storage(::std::size_t index, ::std::uint32_t expected_tid) noexcept
     {
-        ::std::unique_ptr<ChildWork> retired;
+        ::uwvm2::utils::container::std_unique_ptr<ChildWork> retired;
         ::std::shared_ptr<ThreadedGroup> retained;
         {
             ::std::lock_guard lock{mutex_};
@@ -371,7 +381,7 @@
         return selected.phase == slot_phase::preparing && selected.tid == reservation.tid_ &&
             selected.stack.preparation_error == 0 ? selected.stack.usable_bytes() : 0u;
     }
-    inline auto ThreadedGroup::CompilerLease::launch(::std::unique_ptr<ChildWork> work, ::std::uint32_t argument) noexcept -> launch_result
+    inline auto ThreadedGroup::CompilerLease::launch(::uwvm2::utils::container::std_unique_ptr<ChildWork> work, ::std::uint32_t argument) noexcept -> launch_result
     {
         if(!owns_current_native_thread()) { return {-1, EINVAL}; }
         return group_->launch(::std::move(job_->reservation), ::std::move(work), argument);

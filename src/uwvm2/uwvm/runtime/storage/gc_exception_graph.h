@@ -69,7 +69,7 @@ public:
                     // [detached node][initialized private successor/null]
                     // ^^ save the successor before releasing the immutable value.
                     auto* next{current->next};
-                    delete current;
+                    ::uwvm2::utils::allocator::fast_io_strict::destroy_object(current);
                     ++removed;
                     // [remaining batch] next was read before ending node lifetime.
                     // ^^ advance only to another detached native node or null.
@@ -99,10 +99,10 @@ private:
                 exn_root_node* root{};
                 bool seen{};
             };
-            ::std::unique_ptr<recipient_record[]> recipients_{};
+            ::uwvm2::utils::allocator::resource::owned_array<recipient_record> recipients_{};
             ::std::size_t recipient_capacity_{};
             ::std::size_t recipient_size_{};
-            ::std::unique_ptr<exn_token_entry*[]> work_{};
+            ::uwvm2::utils::allocator::resource::owned_array<exn_token_entry*> work_{};
             ::std::size_t node_count_{};
             ::std::size_t work_count_{};
             bool locked_{};
@@ -213,7 +213,7 @@ private:
                     // Preflight uses it as the sorted membership index; after
                     // preflight the very same slots become the bounded mark
                     // queue. No per-issued-ID side table persists between GCs.
-                    work_.reset(new(::std::nothrow) exn_token_entry*[node_count_]);
+                    work_ = ::uwvm2::utils::allocator::resource::try_array<exn_token_entry*>(node_count_);
                     if(!work_) { return gc_object_status::out_of_memory; }
                     ::std::size_t filled{};
                     for(auto* head : exn_buckets_)
@@ -239,7 +239,7 @@ private:
                 {
                     // Counts bound allocation and check index consistency only.
                     // They neither seed marking nor prove an external owner root.
-                    recipients_.reset(new(::std::nothrow) recipient_record[recipient_capacity_]);
+                    recipients_ = ::uwvm2::utils::allocator::resource::try_array<recipient_record>(recipient_capacity_);
                     if(!recipients_) { return gc_object_status::out_of_memory; }
                 }
                 for(::std::size_t index{}; index != store_count_; ++index)
@@ -466,7 +466,7 @@ private:
                         // ^^ remove the list edge before retiring its POD node.
                         *link = root->next;
                         --root->entry->root_count;
-                        delete root;
+                        ::uwvm2::utils::allocator::fast_io_strict::destroy_object(root);
                     }
                     if(store.exn_roots_ == nullptr) { store.exn_root_buckets_.reset(); }
                 }

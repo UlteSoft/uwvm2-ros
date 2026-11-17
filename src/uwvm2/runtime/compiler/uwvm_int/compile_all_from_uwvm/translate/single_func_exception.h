@@ -18,10 +18,10 @@ struct exception_target_record
     exception_entry_state entry{};
 };
 struct exception_call_fixup { ::std::size_t slot{}, call{}; };
-::std::vector<exception_target_record> exception_targets{};
-::std::vector<exception_op::exception_numeric_call_spec> exception_calls{};
-::std::vector<exception_call_fixup> exception_call_fixups{};
-::std::vector<::std::shared_ptr<exception_op::exception_throw_site const>> exception_throws{};
+::uwvm2::utils::container::std_vector<exception_target_record> exception_targets{};
+::uwvm2::utils::container::std_vector<exception_op::exception_numeric_call_spec> exception_calls{};
+::uwvm2::utils::container::std_vector<exception_call_fixup> exception_call_fixups{};
+::uwvm2::utils::container::std_vector<::std::shared_ptr<exception_op::exception_throw_site const>> exception_throws{};
 
 auto const exception_payload_kind{[&](wasm_value_type vt, ::std::byte const* opcode, unsigned opcode_value) UWVM_THROWS
     -> exception_value::payload_kind
@@ -147,7 +147,7 @@ auto const emit_exception_call_site{[&](::std::byte const* opcode, ::std::size_t
 
 auto const emit_exception_throw{[&](auto const& tag, ::std::byte const* opcode) UWVM_THROWS
 {
-    ::std::vector<exception_value::payload_kind> kinds{};
+    ::uwvm2::utils::container::std_vector<exception_value::payload_kind> kinds{};
     kinds.reserve(tag.parameters.size());
     for(::std::size_t index{}; index != tag.parameters.size(); ++index)
     { kinds.push_back(exception_payload_kind(tag.parameters.begin[index], opcode, 0x08u)); }

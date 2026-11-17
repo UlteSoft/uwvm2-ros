@@ -1,0 +1,2490 @@
+{
+  "format": "ros-operation-design-contract",
+  "abi_module": "uwvm_ros_v2",
+  "scope": "Normative design closure for every catalogue operation; registration and qualification remain separate. Exact fields, numeric contracts and action spellings come from the catalogue and concrete headers. This file adds no guest export.",
+  "catalogue": "interface-catalogue.json",
+  "robot_contract": "robot-provider-contracts.json",
+  "legacy_mapping": "legacy-coverage.json",
+  "common": {
+    "default_authority": "No exposed operation or grant by default. Grant only an exact resource/action/profile and actual caller incarnation. Capacity does not imply authority. The sole default exception is read-only permission.report after explicit ROSv2 module binding; it can be hidden or reduced. Foreign observation and registered messages still require independent explicit grants.",
+    "rate_progression": "Absent optional rate is unlimited inside an existing grant. Explicit zero denies; stable capacity reservations and independent fault/stop capacity are separate. Attenuation of a control phase requires an explicit qualified missed-phase policy.",
+    "origin_closure": "Each supplied capability is checked on its own actual origin. Ancestors, inputs, control owner, active versions, egress and output destinations do not borrow the primary handle permission.",
+    "effect_classification": "Classify the complete downstream graph, including ROS topics/services/actions/parameters, callbacks, bridges and native components. Unknown classification refuses effectful activation. Observation or planning never authorizes physical execution.",
+    "transaction": "Validate input/output spans, finite decode/work budgets, selected semantic value schema, current authority and complete reply/recovery/retention before effects. No guest pointer survives the call.",
+    "concurrency": "No authority/provider lock is held while waiting on IPC or invoking an external sink. Commit rechecks original identities/generations. Lock order and compound origin checks are provider obligations.",
+    "physical_execution": "Require current ownership/mode, complete physical content validator, original trusted state/dependencies, receiver fencing, independent watchdog and stop reservations at actual effect. Native ACK is not independently observed safe state.",
+    "allocation": "Owning admitted state uses recoverable project fast_io allocation. Null/failure returns before effect; ordinary terminating allocation is not an untrusted admission strategy. Borrowed codecs allocate nothing.",
+    "limits": "Every variable record/list/queue/metadata/pin/process/thread/native workspace has explicit finite capacity. Fixed implementation ceilings are support limits, not portable semantic limits and not silent truncation.",
+    "lifecycle": "Logical close/revoke does not reverse completed effects or free live borrows. Unknown physical/native outcomes retain identity and capacity through qualified reconciliation.",
+    "observability": "Debug/IDE expose cached bounded redacted state/counters/reasons only. They cannot trigger I/O, grant authority, export paths/credentials/payloads, or rearm safety.",
+    "platform": "Native extensions execute outside the VM in a qualified process boundary. Unsupported required isolation/placement/transport/cleanup guarantees refuse activation. No generic WASI or preloaddl fallback.",
+    "evidence": "A schema, decoded record, registered import, native provider, VM qualification, differential ROS case, performance profile and physical assurance are distinct evidence levels."
+  },
+  "behaviors": {
+    "discovery": {
+      "commit": "Return the explicitly exposed module major; do not discover hidden imports or provider features.",
+      "copy_failure": "No output memory carrier and no state to consume.",
+      "retry": "Read-only repeat.",
+      "retirement": "No resource created."
+    },
+    "capability_acquisition": {
+      "commit": "Resolve an exact existing alias and bind the actual caller incarnation. Publish a new handle without increasing its immutable grant ceiling.",
+      "copy_failure": "Rollback an undelivered new handle.",
+      "retry": "A repeat is a distinct handle acquisition; it does not reset grant counters or revoke existing handles.",
+      "retirement": "Capability close does not retire borrowed resources or accounting."
+    },
+    "capability_retirement": {
+      "commit": "Close an owned handle or execute the separately authorized revocation scope; fence further operations and wake affected work.",
+      "copy_failure": "Do not undo an already applied security restriction. Preserve bounded audit evidence.",
+      "retry": "Apply only the original owned scope; stale/closed identity cannot select a newer incarnation.",
+      "retirement": "Retained resources, pending effects and cleanup debt outlive logical revocation."
+    },
+    "owned_creation": {
+      "commit": "Validate exact origin/profile closure; reserve the complete admitted object and dependencies before publishing its identity.",
+      "copy_failure": "Rollback unpublished object and its own staged references; do not close parent/source objects.",
+      "retry": "Without an explicit creation key a repeat is a new acquisition; it cannot implicitly renew a lease or reset state.",
+      "retirement": "Release only after all retained borrowers, requests and native owners retire."
+    },
+    "asynchronous_creation": {
+      "commit": "Record the owned monotonic creation key, deadline and origin closure before beginning bounded isolated native creation.",
+      "copy_failure": "Retain the same creation receipt; no duplicate native launch from a failed copy.",
+      "retry": "Exact key and content recover the same creation; changed content conflicts. communication.open.take publishes the endpoint.",
+      "retirement": "Undelivered/cancelled native owners remain charged until positive cleanup evidence."
+    },
+    "owned_observation": {
+      "commit": "Authorize the complete visible origin and query; snapshot only the requested bounded result. Explicit timed queries may progress their documented provider state.",
+      "copy_failure": "No queue acknowledgement, implicit resubmission or resource retirement from a failed copy.",
+      "retry": "Repeat the query under current authority; snapshot cursors and generation must match their original filtered scope.",
+      "retirement": "A read does not erase recovery or physical uncertainty; owned snapshot/page pins have finite lifetime."
+    },
+    "local_mutation": {
+      "commit": "Validate all exact owner/dependency fields and complete mutation before committing within the owning registry.",
+      "copy_failure": "Honor the concrete wire commit point; a failed post-commit copy is not automatic rollback. No external hardware effect is permitted.",
+      "retry": "Use original offset/generation/sequence where provided. Unkeyed operations do not promise exactly-once replay.",
+      "retirement": "Only owned local state changes; held references and sealed content retain accounting."
+    },
+    "bounded_wait": {
+      "commit": "Reserve bounded output/wait capacity, release authority locks before waiting, then recheck current authority and the exact observed horizon.",
+      "copy_failure": "Do not consume readiness, messages or native acknowledgements on bad output.",
+      "retry": "A repeated wait observes current state; it never republishes a message or creates an acknowledgement.",
+      "retirement": "Cancel/shutdown wakes waiters; elapsed time never fabricates provider support."
+    },
+    "consume_after_copy": {
+      "commit": "Reserve a whole owned item and its original metadata/correlation. Copy and revalidate before marking it delivered or advancing the queue.",
+      "copy_failure": "Retain the same item or explicitly retire it only under revocation/deadline policy; failed copy cannot consume silently.",
+      "retry": "Retry delivers the retained item while its original authority and lifetime remain valid. Duplicate successful consumes are not exact replay.",
+      "retirement": "Pins and correlations survive logical handle close until their real borrower/recovery obligations finish."
+    },
+    "owned_close": {
+      "commit": "Fence new work on the exact owned resource and apply its documented drain/cancel/safe-release policy.",
+      "copy_failure": "Preserve already-applied closure; close never resets budgets or reopens a source.",
+      "retry": "No handle reuse or closure of unrelated sources. Already-retired identities remain invalid under the concrete binding.",
+      "retirement": "Delay capacity release until borrows/native work/processes actually retire; physical unknown outcomes remain latched."
+    },
+    "keyed_effect": {
+      "commit": "Decode the complete operation, validate original authority and secondary origins, and reserve reply/replay/effect capacity before recording the accepted request and crossing an effect boundary.",
+      "copy_failure": "Keep the same accepted receipt and any unknown effect; no automatic resend after failed delivery.",
+      "retry": "The exact original key and contents recover the retained receipt. Modified/out-of-order requests fail. Underlying native atomicity and cancellation are never inferred.",
+      "retirement": "Retain input pins, native correlation and cleanup/unknown debt through terminal evidence or qualified reconciliation."
+    },
+    "owned_cancellation": {
+      "commit": "Fence only the owned pending request or local response interest; native cancellation exists only when the selected provider explicitly supports it.",
+      "copy_failure": "Keep the observed cancellation receipt; do not convert lost output into another remote effect.",
+      "retry": "Repeat observes the same owned request; abandoned service interest is not remote cancellation.",
+      "retirement": "Already crossed effects remain represented and charged until qualified resolution."
+    },
+    "callback_response": {
+      "commit": "Require the exact delivered owned callback, current generation and deadline, legal response and any independently granted transformed values.",
+      "copy_failure": "Preserve exact response recovery where the concrete provider defines it; never call guest code from a native callback.",
+      "retry": "Only the matching original response can replay; conflicting transformed content or callback incarnation is rejected.",
+      "retirement": "Resolving a logical callback neither rearms a device nor proves an external effect completed."
+    },
+    "lifecycle_submission": {
+      "commit": "Commit only the next successful key, expected generation, legal transition, permitted mask and finite deadline; queue one guest callback.",
+      "copy_failure": "Retain the same five-word logical receipt.",
+      "retry": "Exact last successful submission recovers its receipt; rejected requests do not consume keys.",
+      "retirement": "Deadline enforcement of the local binding is on access; no autonomous physical watchdog is implied."
+    },
+    "receive_reservation": {
+      "commit": "Reserve the exact complete owned delivery and expose its identity/metadata without acknowledging native consumption.",
+      "copy_failure": "Retain the original item/identity; do not leak a partial new reservation.",
+      "retry": "Only the same live reservation and owner can be acknowledged or released.",
+      "retirement": "Reservation capacity remains charged until acknowledgement/release or qualified provider retirement."
+    },
+    "receive_acknowledgement": {
+      "commit": "Acknowledge only the exact current owned reservation after its checked delivery contract.",
+      "copy_failure": "Do not acknowledge a different item or repeat a native effect because output failed.",
+      "retry": "Idempotence is scoped to the concrete reservation identity; stale identities cannot consume a newer record.",
+      "retirement": "Release only this reservation and its retained correlation according to provider rules."
+    },
+    "receive_release": {
+      "commit": "Release the exact owned reservation without implying remote application completion.",
+      "copy_failure": "Do not alter unrelated queue entries.",
+      "retry": "Exact ownership and reservation incarnation remain mandatory.",
+      "retirement": "Return or retire only that item according to the explicit receive policy."
+    },
+    "cache_transaction": {
+      "commit": "Use the per-alias successful next key and exact receipt reservation. Reserve the entire object; publish only complete immutable session content.",
+      "copy_failure": "Preserve the same nine-word receipt and allocated object; no duplicate append or mutation.",
+      "retry": "Exact last request replays; the next successful mutation acknowledges the prior receipt. Status/read calls do not acknowledge.",
+      "retirement": "Volatile publication is not durability. Borrowed published content and incomplete transactions remain charged until actual retirement."
+    },
+    "recording_transaction": {
+      "commit": "Validate channel/source read and export authority; commit complete bounded records/checkpoints under the writer key and owned source pins.",
+      "copy_failure": "Retain exact receipt and checkpoint identity; no partial record publication.",
+      "retry": "Exact writer-key replay; record ordering and source generation remain unchanged.",
+      "retirement": "Current checkpoints are volatile MCAP objects; readers retain them independently of writer closure."
+    },
+    "proposal_pipeline": {
+      "commit": "Capture authentic ordered inputs; authenticate a completed model result; independently admit the exact target action and its original origins at acceptance. Each stage requires its own grant.",
+      "copy_failure": "Keep its exact keyed record; no model output or failed copy may manufacture a target invocation.",
+      "retry": "Exact stage keys only; changed model bytes, target, input order/digest or source incarnation conflict.",
+      "retirement": "Capture/model/proposal pins remain accounted; acceptance never transfers or expands authority. Current target support is independently qualified."
+    },
+    "bounded_logging": {
+      "commit": "Check the exact logger/severity/session sequence and explicit content budget; append inert private text without format-string execution.",
+      "copy_failure": "Keep the actual accepted/lost state, never claim durable audit storage.",
+      "retry": "Concrete session sequence controls duplicate handling; a loss counter cannot create execution authority.",
+      "retirement": "Bounded logging loss is observable and cannot consume independent stop/fault capacity."
+    },
+    "terminal_release": {
+      "commit": "Retire only a terminal owned recoverable receipt whose native cleanup and borrowing obligations are complete.",
+      "copy_failure": "Never forgive unknown effect or release a different request.",
+      "retry": "A released identity cannot refer to future work.",
+      "retirement": "Unresolved outcomes and cleanup debt block capacity retirement."
+    },
+    "robot_provider": {
+      "commit": "Apply the operation-specific admission/effect/recovery rule in robot-provider-contracts.json; required native guarantees must be positively available before activation.",
+      "copy_failure": "Apply that exact operation rule; never treat a decoded response as trusted physical evidence.",
+      "retry": "Resource-scoped strict next key/exact replay for keyed mutations; inert opens roll back on delivery failure; unkeyed observations do not execute work.",
+      "retirement": "Stop and unknown-effect reservations remain independent and survive logical closure."
+    }
+  },
+  "operations": [
+    {
+      "operation": "abi",
+      "primary_domain": 1,
+      "related_domains": [
+        1
+      ],
+      "behavior": "discovery",
+      "wire_source": "interface-catalogue.json#abi",
+      "authority_action": "abi",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#abi",
+      "provider_contract": null
+    },
+    {
+      "operation": "capability.open",
+      "primary_domain": 1,
+      "related_domains": [
+        1
+      ],
+      "behavior": "capability_acquisition",
+      "wire_source": "interface-catalogue.json#capability.open",
+      "authority_action": "capability.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#capability.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "capability.close",
+      "primary_domain": 1,
+      "related_domains": [
+        1
+      ],
+      "behavior": "capability_retirement",
+      "wire_source": "interface-catalogue.json#capability.close",
+      "authority_action": "capability.close",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#capability.close",
+      "provider_contract": null
+    },
+    {
+      "operation": "guard.create",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#guard.create",
+      "authority_action": "guard.create",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#guard.create",
+      "provider_contract": null
+    },
+    {
+      "operation": "guard.trigger",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#guard.trigger",
+      "authority_action": "guard.trigger",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#guard.trigger",
+      "provider_contract": null
+    },
+    {
+      "operation": "guard.take",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#guard.take",
+      "authority_action": "guard.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#guard.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "clock.create",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#clock.create",
+      "authority_action": "clock.create",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#clock.create",
+      "provider_contract": null
+    },
+    {
+      "operation": "clock.read",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#clock.read",
+      "authority_action": "clock.read",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#clock.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "clock.update",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#clock.update",
+      "authority_action": "clock.update",
+      "secondary_actions": [
+        "clock.read"
+      ],
+      "semantics_source": "interface-catalogue.json#clock.update",
+      "provider_contract": null
+    },
+    {
+      "operation": "timer.create",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#timer.create",
+      "authority_action": "timer.create",
+      "secondary_actions": [
+        "clock.read"
+      ],
+      "semantics_source": "interface-catalogue.json#timer.create",
+      "provider_contract": null
+    },
+    {
+      "operation": "timer.reset",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#timer.reset",
+      "authority_action": "timer.reset",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#timer.reset",
+      "provider_contract": null
+    },
+    {
+      "operation": "timer.cancel",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#timer.cancel",
+      "authority_action": "timer.cancel",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#timer.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "timer.take",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#timer.take",
+      "authority_action": "timer.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#timer.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "wait.create",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#wait.create",
+      "authority_action": "wait.create",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#wait.create",
+      "provider_contract": null
+    },
+    {
+      "operation": "wait.add",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#wait.add",
+      "authority_action": "wait.add",
+      "secondary_actions": [
+        "resource.observe"
+      ],
+      "semantics_source": "interface-catalogue.json#wait.add",
+      "provider_contract": null
+    },
+    {
+      "operation": "wait.remove",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#wait.remove",
+      "authority_action": "wait.remove",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#wait.remove",
+      "provider_contract": null
+    },
+    {
+      "operation": "wait.acknowledge",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#wait.acknowledge",
+      "authority_action": "wait.acknowledge",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#wait.acknowledge",
+      "provider_contract": null
+    },
+    {
+      "operation": "wait.poll",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "bounded_wait",
+      "wire_source": "interface-catalogue.json#wait.poll",
+      "authority_action": "wait.poll",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#wait.poll",
+      "provider_contract": null
+    },
+    {
+      "operation": "resource.close",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "owned_close",
+      "wire_source": "interface-catalogue.json#resource.close",
+      "authority_action": "resource.close",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#resource.close",
+      "provider_contract": null
+    },
+    {
+      "operation": "context.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#context.open",
+      "authority_action": "context.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#context.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "context.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#context.describe",
+      "authority_action": "context.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#context.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "context.shutdown",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#context.shutdown",
+      "authority_action": "context.shutdown",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#context.shutdown",
+      "provider_contract": null
+    },
+    {
+      "operation": "node.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "asynchronous_creation",
+      "wire_source": "interface-catalogue.json#node.open",
+      "authority_action": "node.open",
+      "secondary_actions": [
+        "context.open"
+      ],
+      "semantics_source": "interface-catalogue.json#node.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "node.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#node.describe",
+      "authority_action": "node.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#node.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "type.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#type.describe",
+      "authority_action": "type.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#type.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "asynchronous_creation",
+      "wire_source": "interface-catalogue.json#topic.open",
+      "authority_action": "topic.open",
+      "secondary_actions": [
+        "node.open",
+        "type.describe"
+      ],
+      "semantics_source": "interface-catalogue.json#topic.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.publish",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#topic.publish",
+      "authority_action": "topic.publish",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.publish",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.take",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#topic.take",
+      "authority_action": "topic.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#topic.describe",
+      "authority_action": "topic.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "qos.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#qos.describe",
+      "authority_action": "qos.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#qos.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "qos.liveliness.assert",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#qos.liveliness.assert",
+      "authority_action": "qos.liveliness.assert",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#qos.liveliness.assert",
+      "provider_contract": null
+    },
+    {
+      "operation": "qos.acknowledgements.wait",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "bounded_wait",
+      "wire_source": "interface-catalogue.json#qos.acknowledgements.wait",
+      "authority_action": "qos.acknowledgements.wait",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#qos.acknowledgements.wait",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "asynchronous_creation",
+      "wire_source": "interface-catalogue.json#service.open",
+      "authority_action": "service.open",
+      "secondary_actions": [
+        "node.open",
+        "type.describe"
+      ],
+      "semantics_source": "interface-catalogue.json#service.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.submit",
+      "primary_domain": 5,
+      "related_domains": [
+        4,
+        5,
+        12,
+        13,
+        15,
+        23
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#service.submit",
+      "authority_action": "service.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.take",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#service.take",
+      "authority_action": "service.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.respond",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#service.respond",
+      "authority_action": "service.respond",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.respond",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.available",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#service.available",
+      "authority_action": "service.available",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.available",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.abandon",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_cancellation",
+      "wire_source": "interface-catalogue.json#service.abandon",
+      "authority_action": "service.abandon",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.abandon",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "asynchronous_creation",
+      "wire_source": "interface-catalogue.json#action.open",
+      "authority_action": "action.open",
+      "secondary_actions": [
+        "node.open",
+        "type.describe"
+      ],
+      "semantics_source": "interface-catalogue.json#action.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.submit",
+      "primary_domain": 5,
+      "related_domains": [
+        5,
+        15,
+        16,
+        17,
+        23
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#action.submit",
+      "authority_action": "action.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.take",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#action.take",
+      "authority_action": "action.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.respond",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#action.respond",
+      "authority_action": "action.respond",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.respond",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.cancel",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#action.cancel",
+      "authority_action": "action.cancel",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#action.describe",
+      "authority_action": "action.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.open",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#parameter.open",
+      "authority_action": "parameter.open",
+      "secondary_actions": [
+        "node.open"
+      ],
+      "semantics_source": "interface-catalogue.json#parameter.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.declare",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#parameter.declare",
+      "authority_action": "parameter.declare",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.declare",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.undeclare",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#parameter.undeclare",
+      "authority_action": "parameter.undeclare",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.undeclare",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.get",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#parameter.get",
+      "authority_action": "parameter.get",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.get",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#parameter.describe",
+      "authority_action": "parameter.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.list",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#parameter.list",
+      "authority_action": "parameter.list",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.list",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.set",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#parameter.set",
+      "authority_action": "parameter.set",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.set",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.set.atomic",
+      "primary_domain": 5,
+      "related_domains": [
+        5,
+        9,
+        12
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#parameter.set.atomic",
+      "authority_action": "parameter.set.atomic",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.set.atomic",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.take",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#parameter.take",
+      "authority_action": "parameter.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.respond",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "callback_response",
+      "wire_source": "interface-catalogue.json#parameter.respond",
+      "authority_action": "parameter.respond",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.respond",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.open",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#lifecycle.open",
+      "authority_action": "lifecycle.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.state",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#lifecycle.state",
+      "authority_action": "lifecycle.state",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.state",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.transitions",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#lifecycle.transitions",
+      "authority_action": "lifecycle.transitions",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.transitions",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.submit",
+      "primary_domain": 6,
+      "related_domains": [
+        6,
+        17
+      ],
+      "behavior": "lifecycle_submission",
+      "wire_source": "interface-catalogue.json#lifecycle.submit",
+      "authority_action": "lifecycle.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.take",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#lifecycle.take",
+      "authority_action": "lifecycle.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "lifecycle.respond",
+      "primary_domain": 6,
+      "related_domains": [
+        6
+      ],
+      "behavior": "callback_response",
+      "wire_source": "interface-catalogue.json#lifecycle.respond",
+      "authority_action": "lifecycle.respond",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#lifecycle.respond",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.open",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#transform.open",
+      "authority_action": "transform.open",
+      "secondary_actions": [
+        "clock.read"
+      ],
+      "semantics_source": "interface-catalogue.json#transform.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.publish",
+      "primary_domain": 10,
+      "related_domains": [
+        10,
+        12
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#transform.publish",
+      "authority_action": "transform.publish",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.publish",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.lookup",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#transform.lookup",
+      "authority_action": "transform.lookup",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.lookup",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.available",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#transform.available",
+      "authority_action": "transform.available",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.available",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.velocity",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#transform.velocity",
+      "authority_action": "transform.velocity",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.velocity",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.submit",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#transform.submit",
+      "authority_action": "transform.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.take",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#transform.take",
+      "authority_action": "transform.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.cancel",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "owned_cancellation",
+      "wire_source": "interface-catalogue.json#transform.cancel",
+      "authority_action": "transform.cancel",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "transform.clear",
+      "primary_domain": 10,
+      "related_domains": [
+        10
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#transform.clear",
+      "authority_action": "transform.clear",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#transform.clear",
+      "provider_contract": null
+    },
+    {
+      "operation": "graph.snapshot",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#graph.snapshot",
+      "authority_action": "graph.snapshot",
+      "secondary_actions": [
+        "context.describe",
+        "node.open",
+        "context.open"
+      ],
+      "semantics_source": "interface-catalogue.json#graph.snapshot",
+      "provider_contract": null
+    },
+    {
+      "operation": "graph.watch",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#graph.watch",
+      "authority_action": "graph.watch",
+      "secondary_actions": [
+        "context.describe",
+        "node.open",
+        "context.open"
+      ],
+      "semantics_source": "interface-catalogue.json#graph.watch",
+      "provider_contract": null
+    },
+    {
+      "operation": "event.stream.open",
+      "primary_domain": 24,
+      "related_domains": [
+        24
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#event.stream.open",
+      "authority_action": "event.stream.open",
+      "secondary_actions": [
+        "resource.observe"
+      ],
+      "semantics_source": "interface-catalogue.json#event.stream.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "event.stream.poll",
+      "primary_domain": 24,
+      "related_domains": [
+        24
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#event.stream.poll",
+      "authority_action": "event.stream.poll",
+      "secondary_actions": [
+        "resource.observe"
+      ],
+      "semantics_source": "interface-catalogue.json#event.stream.poll",
+      "provider_contract": null
+    },
+    {
+      "operation": "event.stream.close",
+      "primary_domain": 24,
+      "related_domains": [
+        24
+      ],
+      "behavior": "owned_close",
+      "wire_source": "interface-catalogue.json#event.stream.close",
+      "authority_action": "event.stream.close",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#event.stream.close",
+      "provider_contract": null
+    },
+    {
+      "operation": "buffer.create",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#buffer.create",
+      "authority_action": "buffer.create",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#buffer.create",
+      "provider_contract": null
+    },
+    {
+      "operation": "buffer.write",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#buffer.write",
+      "authority_action": "buffer.write",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#buffer.write",
+      "provider_contract": null
+    },
+    {
+      "operation": "buffer.seal",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#buffer.seal",
+      "authority_action": "buffer.seal",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#buffer.seal",
+      "provider_contract": null
+    },
+    {
+      "operation": "buffer.read",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#buffer.read",
+      "authority_action": "buffer.read",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#buffer.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "buffer.describe",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#buffer.describe",
+      "authority_action": "buffer.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#buffer.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.open",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#artifact.open",
+      "authority_action": "artifact.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.read",
+      "primary_domain": 3,
+      "related_domains": [
+        3,
+        9
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#artifact.read",
+      "authority_action": "artifact.read",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.describe",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#artifact.describe",
+      "authority_action": "artifact.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.begin",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.begin",
+      "authority_action": "artifact.begin",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.begin",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.append",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.append",
+      "authority_action": "artifact.append",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.append",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.commit",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.commit",
+      "authority_action": "artifact.commit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.commit",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.abort",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.abort",
+      "authority_action": "artifact.abort",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.abort",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.remove",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.remove",
+      "authority_action": "artifact.remove",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.remove",
+      "provider_contract": null
+    },
+    {
+      "operation": "sensor.open",
+      "primary_domain": 8,
+      "related_domains": [
+        8
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#sensor.open",
+      "authority_action": "sensor.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#sensor.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "sensor.take",
+      "primary_domain": 8,
+      "related_domains": [
+        8,
+        11,
+        22
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#sensor.take",
+      "authority_action": "sensor.take",
+      "secondary_actions": [
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#sensor.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "sensor.describe",
+      "primary_domain": 8,
+      "related_domains": [
+        8
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#sensor.describe",
+      "authority_action": "sensor.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#sensor.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "device.open",
+      "primary_domain": 7,
+      "related_domains": [
+        7
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#device.open",
+      "authority_action": "device.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#device.open",
+      "provider_contract": "robot-provider-contracts.json#device.open"
+    },
+    {
+      "operation": "device.submit",
+      "primary_domain": 7,
+      "related_domains": [
+        7,
+        9,
+        14,
+        22
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#device.submit",
+      "authority_action": "device.submit",
+      "secondary_actions": [
+        "device.stop",
+        "control.submit",
+        "resource.observe",
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#device.submit",
+      "provider_contract": "robot-provider-contracts.json#device.submit"
+    },
+    {
+      "operation": "device.result",
+      "primary_domain": 7,
+      "related_domains": [
+        7,
+        21
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#device.result",
+      "authority_action": "device.result",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#device.result",
+      "provider_contract": "robot-provider-contracts.json#device.result"
+    },
+    {
+      "operation": "device.stop",
+      "primary_domain": 7,
+      "related_domains": [
+        7,
+        21
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#device.stop",
+      "authority_action": "device.stop",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#device.stop",
+      "provider_contract": "robot-provider-contracts.json#device.stop"
+    },
+    {
+      "operation": "device.describe",
+      "primary_domain": 7,
+      "related_domains": [
+        7,
+        22
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#device.describe",
+      "authority_action": "device.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#device.describe",
+      "provider_contract": "robot-provider-contracts.json#device.describe"
+    },
+    {
+      "operation": "control.open",
+      "primary_domain": 14,
+      "related_domains": [
+        2,
+        14,
+        19,
+        20
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#control.open",
+      "authority_action": "control.open",
+      "secondary_actions": [
+        "device.submit",
+        "device.stop",
+        "resource.observe",
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#control.open",
+      "provider_contract": "robot-provider-contracts.json#control.open"
+    },
+    {
+      "operation": "control.sample",
+      "primary_domain": 14,
+      "related_domains": [
+        14,
+        20
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#control.sample",
+      "authority_action": "control.sample",
+      "secondary_actions": [
+        "device.submit",
+        "device.stop",
+        "resource.observe",
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#control.sample",
+      "provider_contract": "robot-provider-contracts.json#control.sample"
+    },
+    {
+      "operation": "control.submit",
+      "primary_domain": 14,
+      "related_domains": [
+        14,
+        16,
+        19,
+        20
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#control.submit",
+      "authority_action": "control.submit",
+      "secondary_actions": [
+        "device.submit",
+        "device.stop",
+        "resource.observe",
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#control.submit",
+      "provider_contract": "robot-provider-contracts.json#control.submit"
+    },
+    {
+      "operation": "control.result",
+      "primary_domain": 14,
+      "related_domains": [
+        14
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#control.result",
+      "authority_action": "control.result",
+      "secondary_actions": [
+        "device.submit",
+        "device.stop",
+        "resource.observe",
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#control.result",
+      "provider_contract": "robot-provider-contracts.json#control.result"
+    },
+    {
+      "operation": "control.stop",
+      "primary_domain": 14,
+      "related_domains": [
+        14,
+        20,
+        21
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#control.stop",
+      "authority_action": "control.stop",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#control.stop",
+      "provider_contract": "robot-provider-contracts.json#control.stop"
+    },
+    {
+      "operation": "media.open",
+      "primary_domain": 8,
+      "related_domains": [
+        8
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#media.open",
+      "authority_action": "media.open",
+      "secondary_actions": [
+        "buffer.read",
+        "data.export",
+        "buffer.create",
+        "buffer.write",
+        "buffer.seal"
+      ],
+      "semantics_source": "interface-catalogue.json#media.open",
+      "provider_contract": "robot-provider-contracts.json#media.open"
+    },
+    {
+      "operation": "media.submit",
+      "primary_domain": 8,
+      "related_domains": [
+        8,
+        11,
+        19
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#media.submit",
+      "authority_action": "media.submit",
+      "secondary_actions": [
+        "buffer.read",
+        "data.export",
+        "buffer.create",
+        "buffer.write",
+        "buffer.seal"
+      ],
+      "semantics_source": "interface-catalogue.json#media.submit",
+      "provider_contract": "robot-provider-contracts.json#media.submit"
+    },
+    {
+      "operation": "media.take",
+      "primary_domain": 8,
+      "related_domains": [
+        8,
+        19
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#media.take",
+      "authority_action": "media.take",
+      "secondary_actions": [
+        "buffer.read",
+        "data.export",
+        "buffer.create",
+        "buffer.write",
+        "buffer.seal"
+      ],
+      "semantics_source": "interface-catalogue.json#media.take",
+      "provider_contract": "robot-provider-contracts.json#media.take"
+    },
+    {
+      "operation": "media.close",
+      "primary_domain": 8,
+      "related_domains": [
+        8
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#media.close",
+      "authority_action": "media.close",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#media.close",
+      "provider_contract": "robot-provider-contracts.json#media.close"
+    },
+    {
+      "operation": "recording.open",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#recording.open",
+      "authority_action": "recording.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#recording.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "recording.append",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "recording_transaction",
+      "wire_source": "interface-catalogue.json#recording.append",
+      "authority_action": "recording.append",
+      "secondary_actions": [
+        "buffer.read",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#recording.append",
+      "provider_contract": null
+    },
+    {
+      "operation": "recording.checkpoint",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "recording_transaction",
+      "wire_source": "interface-catalogue.json#recording.checkpoint",
+      "authority_action": "recording.checkpoint",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#recording.checkpoint",
+      "provider_contract": null
+    },
+    {
+      "operation": "recording.stop",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "recording_transaction",
+      "wire_source": "interface-catalogue.json#recording.stop",
+      "authority_action": "recording.stop",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#recording.stop",
+      "provider_contract": null
+    },
+    {
+      "operation": "replay.open",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#replay.open",
+      "authority_action": "replay.open",
+      "secondary_actions": [
+        "resource.observe",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#replay.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "replay.read",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#replay.read",
+      "authority_action": "replay.read",
+      "secondary_actions": [
+        "resource.observe",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#replay.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "replay.seek",
+      "primary_domain": 25,
+      "related_domains": [
+        25
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#replay.seek",
+      "authority_action": "replay.seek",
+      "secondary_actions": [
+        "resource.observe",
+        "data.export"
+      ],
+      "semantics_source": "interface-catalogue.json#replay.seek",
+      "provider_contract": null
+    },
+    {
+      "operation": "model.open",
+      "primary_domain": 18,
+      "related_domains": [
+        2,
+        18
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#model.open",
+      "authority_action": "model.open",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#model.open",
+      "provider_contract": null
+    },
+    {
+      "operation": "model.submit",
+      "primary_domain": 18,
+      "related_domains": [
+        4,
+        11,
+        13,
+        15,
+        16,
+        18
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#model.submit",
+      "authority_action": "model.submit",
+      "secondary_actions": [
+        "buffer.read"
+      ],
+      "semantics_source": "interface-catalogue.json#model.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "model.take",
+      "primary_domain": 18,
+      "related_domains": [
+        18
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#model.take",
+      "authority_action": "model.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#model.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "model.cancel",
+      "primary_domain": 18,
+      "related_domains": [
+        18
+      ],
+      "behavior": "owned_cancellation",
+      "wire_source": "interface-catalogue.json#model.cancel",
+      "authority_action": "model.cancel",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#model.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "model.describe",
+      "primary_domain": 18,
+      "related_domains": [
+        18
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#model.describe",
+      "authority_action": "model.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#model.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "proposal.read",
+      "primary_domain": 18,
+      "related_domains": [
+        18
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#proposal.read",
+      "authority_action": "proposal.read",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#proposal.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "proposal.accept",
+      "primary_domain": 18,
+      "related_domains": [
+        15,
+        18
+      ],
+      "behavior": "proposal_pipeline",
+      "wire_source": "interface-catalogue.json#proposal.accept",
+      "authority_action": "proposal.accept",
+      "secondary_actions": [
+        "proposal.read"
+      ],
+      "semantics_source": "interface-catalogue.json#proposal.accept",
+      "provider_contract": null
+    },
+    {
+      "operation": "bridge.create",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#bridge.create",
+      "authority_action": "bridge.create",
+      "secondary_actions": [
+        "topic.reserve",
+        "topic.acknowledge",
+        "topic.release",
+        "topic.describe",
+        "data.export",
+        "topic.publish"
+      ],
+      "semantics_source": "interface-catalogue.json#bridge.create",
+      "provider_contract": "robot-provider-contracts.json#bridge.create"
+    },
+    {
+      "operation": "bridge.start",
+      "primary_domain": 5,
+      "related_domains": [
+        5,
+        23
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#bridge.start",
+      "authority_action": "bridge.start",
+      "secondary_actions": [
+        "topic.reserve",
+        "topic.acknowledge",
+        "topic.release",
+        "topic.describe",
+        "data.export",
+        "topic.publish"
+      ],
+      "semantics_source": "interface-catalogue.json#bridge.start",
+      "provider_contract": "robot-provider-contracts.json#bridge.start"
+    },
+    {
+      "operation": "bridge.stop",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#bridge.stop",
+      "authority_action": "bridge.stop",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#bridge.stop",
+      "provider_contract": "robot-provider-contracts.json#bridge.stop"
+    },
+    {
+      "operation": "bridge.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "robot_provider",
+      "wire_source": "interface-catalogue.json#bridge.describe",
+      "authority_action": "bridge.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#bridge.describe",
+      "provider_contract": "robot-provider-contracts.json#bridge.describe"
+    },
+    {
+      "operation": "log.emit",
+      "primary_domain": 24,
+      "related_domains": [
+        24
+      ],
+      "behavior": "bounded_logging",
+      "wire_source": "interface-catalogue.json#log.emit",
+      "authority_action": "log.emit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#log.emit",
+      "provider_contract": null
+    },
+    {
+      "operation": "diagnostic.read",
+      "primary_domain": 24,
+      "related_domains": [
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#diagnostic.read",
+      "authority_action": "diagnostic.read",
+      "secondary_actions": [
+        "resource.observe"
+      ],
+      "semantics_source": "interface-catalogue.json#diagnostic.read",
+      "provider_contract": null
+    },
+    {
+      "operation": "request.describe",
+      "primary_domain": 2,
+      "related_domains": [
+        2,
+        17,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#request.describe",
+      "authority_action": "request.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#request.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "request.release",
+      "primary_domain": 2,
+      "related_domains": [
+        2
+      ],
+      "behavior": "terminal_release",
+      "wire_source": "interface-catalogue.json#request.release",
+      "authority_action": "request.release",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#request.release",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.status",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#artifact.status",
+      "authority_action": "artifact.status",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.status",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.receipt",
+      "primary_domain": 3,
+      "related_domains": [
+        3
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#artifact.receipt",
+      "authority_action": "artifact.receipt",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#artifact.receipt",
+      "provider_contract": null
+    },
+    {
+      "operation": "artifact.publish",
+      "primary_domain": 3,
+      "related_domains": [
+        3,
+        9,
+        13,
+        26
+      ],
+      "behavior": "cache_transaction",
+      "wire_source": "interface-catalogue.json#artifact.publish",
+      "authority_action": "artifact.publish",
+      "secondary_actions": [
+        "artifact.begin",
+        "artifact.append",
+        "artifact.commit"
+      ],
+      "semantics_source": "interface-catalogue.json#artifact.publish",
+      "provider_contract": null
+    },
+    {
+      "operation": "proposal.capture",
+      "primary_domain": 18,
+      "related_domains": [
+        18
+      ],
+      "behavior": "proposal_pipeline",
+      "wire_source": "interface-catalogue.json#proposal.capture",
+      "authority_action": "proposal.capture",
+      "secondary_actions": [
+        "resource.observe",
+        "buffer.read"
+      ],
+      "semantics_source": "interface-catalogue.json#proposal.capture",
+      "provider_contract": null
+    },
+    {
+      "operation": "proposal.publish",
+      "primary_domain": 18,
+      "related_domains": [
+        11,
+        18
+      ],
+      "behavior": "proposal_pipeline",
+      "wire_source": "interface-catalogue.json#proposal.publish",
+      "authority_action": "proposal.publish",
+      "secondary_actions": [
+        "model.take"
+      ],
+      "semantics_source": "interface-catalogue.json#proposal.publish",
+      "provider_contract": null
+    },
+    {
+      "operation": "communication.open.take",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#communication.open.take",
+      "authority_action": "communication.open.take",
+      "secondary_actions": [
+        "node.open"
+      ],
+      "semantics_source": "interface-catalogue.json#communication.open.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "communication.open.cancel",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_cancellation",
+      "wire_source": "interface-catalogue.json#communication.open.cancel",
+      "authority_action": "communication.open.cancel",
+      "secondary_actions": [
+        "node.open"
+      ],
+      "semantics_source": "interface-catalogue.json#communication.open.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "capability.revoke",
+      "primary_domain": 1,
+      "related_domains": [
+        1
+      ],
+      "behavior": "capability_retirement",
+      "wire_source": "interface-catalogue.json#capability.revoke",
+      "authority_action": "capability.revoke",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#capability.revoke",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.reserve",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_reservation",
+      "wire_source": "interface-catalogue.json#topic.reserve",
+      "authority_action": "topic.reserve",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.reserve",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.acknowledge",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_acknowledgement",
+      "wire_source": "interface-catalogue.json#topic.acknowledge",
+      "authority_action": "topic.acknowledge",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.acknowledge",
+      "provider_contract": null
+    },
+    {
+      "operation": "topic.release",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_release",
+      "wire_source": "interface-catalogue.json#topic.release",
+      "authority_action": "topic.release",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#topic.release",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.reserve",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_reservation",
+      "wire_source": "interface-catalogue.json#service.reserve",
+      "authority_action": "service.reserve",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.reserve",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.acknowledge",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_acknowledgement",
+      "wire_source": "interface-catalogue.json#service.acknowledge",
+      "authority_action": "service.acknowledge",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.acknowledge",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.release",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "receive_release",
+      "wire_source": "interface-catalogue.json#service.release",
+      "authority_action": "service.release",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.release",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.exists",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#parameter.exists",
+      "authority_action": "parameter.exists",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.exists",
+      "provider_contract": null
+    },
+    {
+      "operation": "parameter.search",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#parameter.search",
+      "authority_action": "parameter.search",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#parameter.search",
+      "provider_contract": null
+    },
+    {
+      "operation": "action.cancel.set",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#action.cancel.set",
+      "authority_action": "action.cancel.set",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#action.cancel.set",
+      "provider_contract": null
+    },
+    {
+      "operation": "service.describe",
+      "primary_domain": 5,
+      "related_domains": [
+        5
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#service.describe",
+      "authority_action": "service.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#service.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "permission.report",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#permission.report",
+      "authority_action": "permission.report",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#permission.report",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.describe",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.describe",
+      "authority_action": "module.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.imports",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.imports",
+      "authority_action": "module.imports",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.imports",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.exports",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.exports",
+      "authority_action": "module.exports",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.exports",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.group",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.group",
+      "authority_action": "module.group",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.group",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.permission.report",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.permission.report",
+      "authority_action": "module.permission.report",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.permission.report",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.submit",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "owned_creation",
+      "wire_source": "interface-catalogue.json#module.call.submit",
+      "authority_action": "module.call.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.take",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#module.call.take",
+      "authority_action": "module.call.take",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.take",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.respond",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "callback_response",
+      "wire_source": "interface-catalogue.json#module.call.respond",
+      "authority_action": "module.call.respond",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.respond",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.result",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#module.call.result",
+      "authority_action": "module.call.result",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.result",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.acknowledge",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "receive_acknowledgement",
+      "wire_source": "interface-catalogue.json#module.call.acknowledge",
+      "authority_action": "module.call.acknowledge",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.acknowledge",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.call.cancel",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        2,
+        6
+      ],
+      "behavior": "owned_cancellation",
+      "wire_source": "interface-catalogue.json#module.call.cancel",
+      "authority_action": "module.call.cancel",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.call.cancel",
+      "provider_contract": null
+    },
+    {
+      "operation": "module.importers",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#module.importers",
+      "authority_action": "module.importers",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#module.importers",
+      "provider_contract": null
+    },
+    {
+      "operation": "vm.describe",
+      "primary_domain": 1,
+      "related_domains": [
+        1,
+        24
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#vm.describe",
+      "authority_action": "vm.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#vm.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "driver.connect",
+      "primary_domain": 6,
+      "related_domains": [
+        2,
+        6,
+        26
+      ],
+      "behavior": "local_mutation",
+      "wire_source": "interface-catalogue.json#driver.connect",
+      "authority_action": "driver.connect",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#driver.connect",
+      "provider_contract": null
+    },
+    {
+      "operation": "driver.submit",
+      "primary_domain": 6,
+      "related_domains": [
+        2,
+        6,
+        26
+      ],
+      "behavior": "keyed_effect",
+      "wire_source": "interface-catalogue.json#driver.submit",
+      "authority_action": "driver.submit",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#driver.submit",
+      "provider_contract": null
+    },
+    {
+      "operation": "driver.result",
+      "primary_domain": 6,
+      "related_domains": [
+        2,
+        6,
+        26
+      ],
+      "behavior": "consume_after_copy",
+      "wire_source": "interface-catalogue.json#driver.result",
+      "authority_action": "driver.result",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#driver.result",
+      "provider_contract": null
+    },
+    {
+      "operation": "driver.describe",
+      "primary_domain": 6,
+      "related_domains": [
+        2,
+        6,
+        26
+      ],
+      "behavior": "owned_observation",
+      "wire_source": "interface-catalogue.json#driver.describe",
+      "authority_action": "driver.describe",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#driver.describe",
+      "provider_contract": null
+    },
+    {
+      "operation": "driver.disconnect",
+      "primary_domain": 6,
+      "related_domains": [
+        2,
+        6,
+        26
+      ],
+      "behavior": "owned_close",
+      "wire_source": "interface-catalogue.json#driver.disconnect",
+      "authority_action": "driver.disconnect",
+      "secondary_actions": [],
+      "semantics_source": "interface-catalogue.json#driver.disconnect",
+      "provider_contract": null
+    }
+  ]
+}

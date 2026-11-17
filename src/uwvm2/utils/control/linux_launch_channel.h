@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # include <fast_io_dsal/array.h>
@@ -50,7 +52,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         ::pid_t receiver_pid{};
         launch_config options;
         launch_permit permit{};
-        ::std::unique_ptr<control_session> session{};
+        ::uwvm2::utils::container::std_unique_ptr<control_session> session{};
         bool authenticated{};
         ::fast_io::array<wire_byte, max_frame_bytes> packet{};
 
@@ -78,7 +80,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         linux_launch_channel(linux_launch_channel const&) = delete;
         linux_launch_channel& operator=(linux_launch_channel const&) = delete;
         ~linux_launch_channel() { close(); }
-        [[nodiscard]] static ::std::unique_ptr<linux_launch_channel> create(launch_config config, error& failure)
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<linux_launch_channel> create(launch_config config, error& failure)
         {
             // Peer fields are derived from this launch, not a caller's claimed
             // identity. Console qualification here only checks capabilities and
@@ -87,7 +89,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
             config.vm_process = static_cast<::std::uint64_t>(::uwvm2::utils::control::posix_abi::getpid_noexcept());
             failure = qualify(config);
             if(failure != error::none) { return {}; }
-            auto result{::std::unique_ptr<linux_launch_channel>{new linux_launch_channel{config}}};
+            auto result{::uwvm2::utils::container::std_unique_ptr<linux_launch_channel>{::uwvm2::utils::allocator::fast_io_strict::object<linux_launch_channel>([&](linux_launch_channel* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) linux_launch_channel{config}; })}};
             // Adopt the newly created exclusive FD before any later failure;
             // the result's native_file members unwind every partial creation.
             auto const opened_pidfd{::fast_io::system_call<SYS_pidfd_open, int>(result->creator_pid, 0u)};
@@ -146,7 +148,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
             receiver_pid = ::uwvm2::utils::control::posix_abi::getpid_noexcept();
             retire_file(launcher_fd);
             permit = ::std::move(grant);
-            session = ::std::make_unique<control_session>();
+            session = ::uwvm2::utils::container::make_unique<control_session>();
             selected = role::receiver;
             return error::none;
         }

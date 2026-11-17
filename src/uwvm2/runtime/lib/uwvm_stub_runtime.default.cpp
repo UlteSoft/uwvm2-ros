@@ -39,7 +39,8 @@ namespace uwvm2::runtime::lib
     extern "C++" ::uwvm2::runtime::diagnostic::wasm_coredump::result runtime_dump_stopped_guest_host_api(
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket const&,
         ::std::uint64_t, ::std::string_view, ::std::string_view, void*,
-        ::uwvm2::runtime::diagnostic::wasm_coredump::write_function) noexcept
+        ::uwvm2::runtime::diagnostic::wasm_coredump::write_function, unsigned, ::std::uint64_t, unsigned,
+        ::std::span<llvm_jit_checkpoint_thread_capture_owner const>) noexcept
     { return {.status=::uwvm2::runtime::diagnostic::wasm_coredump::error::unsupported_snapshot}; }
     extern "C++" bool replace_full_source_after_drain_host_api(
         bool (*initialize_source)(void*) noexcept, void* context) noexcept
@@ -55,6 +56,16 @@ namespace uwvm2::runtime::lib
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept { return false; }
     extern "C++" bool ros_caller_identity_host_api(ros_caller_identity& out, bool) noexcept { out = {}; return false; }
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept { out = {}; return false; }
+
+    // A frontend-only build has no authenticated execution or exchange owner.
+    // It must never invoke even a trusted carrier callback in this profile.
+    extern "C++" ::std::uint32_t with_ros_exchange_memory_host_api(ros_exchange_memory_callback,void*) noexcept { return 13; }
+    bool ros_exchange_memory_access::capture(::std::size_t,::std::uint64_t,::std::size_t,::std::uint64_t& normalized) noexcept
+    { normalized=0; return false; }
+    bool ros_exchange_memory_access::copy(::std::size_t,::std::uint64_t,void*,::std::size_t,bool) noexcept
+    { (void)memory_owner_; (void)memory_index_; return false; }
+    bool ros_exchange_memory_access::erase(::std::uint64_t,::std::uint64_t) noexcept { return false; }
+    extern "C++" bool ros_exchange_memory_erase_host_api(void const*,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t) noexcept { return false; }
 
     extern "C++" ::std::size_t preload_memory_descriptor_count_host_api() noexcept { return 0uz; }
 

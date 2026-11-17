@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Compiler-only tentative exact semantic site. Include after actual emit state,
 // execution-flag and dynamic-packet helpers. This is selected only by an immutable
 // checkpoint plan; ordinary engines emit no site, flag, callback or packet IR.
@@ -134,7 +135,7 @@ public:
        site.operand_count != state.operand_stack.size() ||
        (site.saved_parameter_count != 0u && state.checkpoint_observer_controls == nullptr))
     { return false; }
-    ::std::vector<::llvm::Value*> actual{}; actual.reserve(site.slots.size()-site.local_count);
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> actual{}; actual.reserve(site.slots.size()-site.local_count);
     for(::std::size_t i{}; i != state.operand_stack.size(); ++i)
     {
         // [actual pre-op physical operand handles0 ... i ... N] end

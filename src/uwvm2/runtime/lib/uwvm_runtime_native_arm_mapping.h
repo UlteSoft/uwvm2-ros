@@ -2,6 +2,7 @@
 // widens a function endpoint. Literal-pool bytes remain private data even when
 // a synthetic DWARF line happens to cover them.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <algorithm>
 #include <cstddef>
@@ -37,14 +38,14 @@ namespace uwvm2::runtime::lib::details::native_arm_mapping
            actual.getSize()!=0u || actual.getOther()!=0u) { return 0; }
         return name[1];
     }
-    [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,::std::vector<data_range>& output)
+    [[nodiscard]] inline bool collect(::llvm::object::ObjectFile const& object,::uwvm2::utils::container::std_vector<data_range>& output)
     {
         output.clear();
         if(object.getArch()!=::llvm::Triple::arm && object.getArch()!=::llvm::Triple::armeb) { return true; }
         if(!object.isRelocatableObject() || !::llvm::isa<::llvm::object::ELFObjectFileBase>(object) ||
            object.getData().size()>PTRDIFF_MAX) { return false; }
         struct marker { ::std::uint64_t section{},offset{},size{};char state{}; };
-        ::std::vector<marker> markers{};::std::size_t count{};
+        ::uwvm2::utils::container::std_vector<marker> markers{};::std::size_t count{};
         for(auto const& symbol:object.symbols())
         {
             if(++count>1'048'576u) { return false; }

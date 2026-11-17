@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "product_abi.h"
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #ifndef UWVM_MODULE
@@ -31,9 +32,9 @@ namespace uwvm2::uwvm::imported::ros
 #  error "The ROS VM requires Linux x86_64, i686, little-endian AArch64 or ARMv7 EABI soft/hard-float."
 # endif
 #endif
-    inline ::std::vector<::std::string> loaded_module_names()
+    inline ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> loaded_module_names()
     {
-        ::std::vector<::std::string> names{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> names{};
         auto append{[&](auto name)
         {
             if(!name.empty()) { names.emplace_back(reinterpret_cast<char const*>(name.data()), name.size()); }

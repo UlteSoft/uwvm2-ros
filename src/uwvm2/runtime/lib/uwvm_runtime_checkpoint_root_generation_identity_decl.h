@@ -2,6 +2,8 @@
 // only the real current materializer can seal it after actual source/native adoption.
 // A generation integer, copied epoch or staged listener never seals this owner.
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 class checkpoint_root_generation_identity final
 {
@@ -22,7 +24,7 @@ class checkpoint_root_generation_identity final
     ::llvm::LLVMContext const* context_{};
     full_code_publication const* publication_{}; // comparison only, owned by this publication
     ::std::size_t module_id_{SIZE_MAX};
-    ::std::vector<row> rows_{};
+    ::uwvm2::utils::container::std_vector<row> rows_{};
     ::std::uint_least64_t sealed_epoch_{},initializer_serial_{};
     checkpoint_root_generation_identity()=default;
 public:
@@ -42,7 +44,7 @@ private:
     [[nodiscard]] static bool matches_record(identity const&,compiled_module_record const&,
         ::std::size_t,bool) noexcept;
     [[nodiscard]] static bool matches_row(identity const&,compiled_module_record const&,::std::size_t,bool) noexcept;
-    [[nodiscard]] static ::std::unique_ptr<identity> prepare(compiled_module_record const&,::std::size_t) noexcept;
+    [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<identity> prepare(compiled_module_record const&,::std::size_t) noexcept;
     [[nodiscard]] static bool seal_actual_full(compiled_module_record&) noexcept;
     [[nodiscard]] static bool matches_private_prepared(compiled_module_record const&,::std::size_t) noexcept;
     [[nodiscard]] static constexpr ::std::size_t allocation_bytes() noexcept { return sizeof(identity); }

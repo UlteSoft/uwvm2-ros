@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include <mutex>
 #include "../policy/schema.h"
@@ -21,14 +22,14 @@ namespace uwvm2::imported::ros
             void const* owner{};
             ::std::uint64_t runtime_generation{};
             version ros_version{};
-            ::std::string resource{};
-            ::std::string backend_goal_id{};
+            ::uwvm2::utils::container::std_string resource{};
+            ::uwvm2::utils::container::std_string backend_goal_id{};
             ::std::uint32_t generation{1};
             goal_phase phase{goal_phase::pending};
             bool live{true};
         };
         ::std::mutex mutex{};
-        ::std::map<::std::uint32_t, goal> goals{};
+        ::uwvm2::utils::container::std_map<::std::uint32_t, goal> goals{};
         ::std::uint64_t next_slot{1};
         static bool terminal(goal_phase p) noexcept { return p == goal_phase::succeeded || p == goal_phase::aborted || p == goal_phase::cancelled; }
         goal* lookup(::std::uint64_t handle)
@@ -54,7 +55,7 @@ namespace uwvm2::imported::ros
             if(active >= maximum_active) { return quota_failure(errc::rate_limited,"explicit active goal limit exhausted","max-active-goals"); }
             if(next_slot > ::std::numeric_limits<::std::uint32_t>::max()) { return {errc::too_large, "goal namespace exhausted"}; }
             auto slot{static_cast<::std::uint32_t>(next_slot++)};
-            goals.emplace(slot, goal{owner, runtime_generation, v, ::std::string(resource), ::std::string(backend_goal_id)});
+            goals.emplace(slot, goal{owner, runtime_generation, v, ::uwvm2::utils::container::std_string(resource), ::uwvm2::utils::container::std_string(backend_goal_id)});
             handle = (1ULL << 32) | slot;
             return {};
         }

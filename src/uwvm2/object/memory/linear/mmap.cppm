@@ -20,6 +20,8 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
+#include <uwvm2/utils/allocator/sanitizer_mapping.h>
 
 // std
 #include <cstddef>
@@ -31,7 +33,7 @@ module;
 #include <atomic>
 #include <bit>
 #include <utility>
-#include <stop_token>
+#include <uwvm2/utils/thread/stop_token.h>
 #if defined(__linux__)
 #include <pthread.h>
 #include <sched.h>

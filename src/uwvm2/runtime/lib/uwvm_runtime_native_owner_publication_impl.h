@@ -4,7 +4,7 @@
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
 namespace details
 {
-    [[nodiscard]] ::std::unique_ptr<native_owner_publication_bridge::captured>
+    [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<native_owner_publication_bridge::captured>
     native_owner_publication_bridge::capture_actual_full(compiled_module_record& supplied,
         ::llvm::Module& actual_ir,::llvm::LLVMContext const& actual_context) noexcept
     {
@@ -33,7 +33,7 @@ namespace details
            rec.llvm_jit_compiled.local_funcs.size()!=count || rec.llvm_jit_debug_full_entry_generations.size()!=count ||
            rec.llvm_jit_debug_full_typed_entry_targets.size()!=count || publication->engine || publication->context ||
            actual_ir.getModuleFlag("uwvm.native.code-owner.table.version")!=nullptr) { return {}; }
-        auto payload{::std::unique_ptr<captured>{new captured{}}};
+        auto payload{::uwvm2::utils::container::std_unique_ptr<captured>{::uwvm2::utils::allocator::fast_io_strict::object<captured>([&](captured* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) captured{}; })}};
         payload->source_=publication->source;payload->record_=::std::addressof(rec);payload->publication_=publication;
         payload->module_=module;payload->module_id_=id;payload->epoch_=epoch;
         // First mark every genuine surviving defined Function as a non-guest
@@ -64,7 +64,7 @@ namespace details
             typed->addFnAttr("uwvm.native.code-owner.role","1");raw->addFnAttr("uwvm.native.code-owner.role","3");
             auto const ir_name{typed->getName()};
             if(ir_name.empty() || ir_name.size()>native_owner_table_format::max_name_bytes || ir_name.contains('\0')) { return {}; }
-            auto original{::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()})};
+            auto original{::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()})};
             if(payload->expected_.size()==native_owner_object_graph::detail::max_rows) { return {}; }
             payload->expected_.push_back({::std::move(original),id,index,generation,1u,plan});
             if(!publication->checkpoint_profile) { continue; }
@@ -73,8 +73,8 @@ namespace details
                publication->checkpoint_profile.owner_before(plan->get().profile)) { return {}; }
             if(plan->get().resume_abi_revision==0u) { continue; }
             if(plan->get().resume_abi_revision!=2u || plan->get().resume_sites.empty()) { return {}; }
-            auto resume_name{::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()},".checkpoint.resume.v2")};
-            auto* resume{actual_ir.getFunction(resume_name)};auto* adapter{actual_ir.getFunction(::fast_io::concat_std(resume_name,".raw"))};
+            auto resume_name{::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()},".checkpoint.resume.v2")};
+            auto* resume{actual_ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(resume_name))};auto* adapter{actual_ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(::uwvm2::utils::container::concat(resume_name,".raw")))};
             if(resume==nullptr || adapter==nullptr || resume==typed || resume==raw || resume==adapter ||
                resume->isDeclaration() || adapter->isDeclaration() || resume->getParent()!=::std::addressof(actual_ir) ||
                adapter->getParent()!=::std::addressof(actual_ir) || resume->getFunctionType()!=typed->getFunctionType() ||
@@ -93,7 +93,7 @@ namespace details
         }
         catch(...) { return {}; }
     }
-    [[nodiscard]] ::std::unique_ptr<native_owner_publication_bridge::pending>
+    [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<native_owner_publication_bridge::pending>
     native_owner_publication_bridge::observe_actual_full(::llvm::ExecutionEngine& engine,captured const& payload) noexcept
     {
         try
@@ -110,8 +110,8 @@ namespace details
            payload.source_.owner_before(publication->source) || publication->engine || publication->context) { return {}; }
         // Direct new is intentional: constructor is private to this actual TU
         // bridge. std::make_unique is not a friend and must not expose a factory.
-        auto observer{::std::unique_ptr<pending>{new pending{engine,publication,payload.source_,payload.module_,
-            payload.module_id_,payload.epoch_,payload.expected_}}};
+        auto observer{::uwvm2::utils::container::std_unique_ptr<pending>{::uwvm2::utils::allocator::fast_io_strict::object<pending>([&](pending* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) pending{engine,publication,payload.source_,payload.module_,
+            payload.module_id_,payload.epoch_,payload.expected_}; })}};
         if(!observer->valid_ || !observer->attached_ || observer->engine_!=::std::addressof(engine)) { return {}; }
         return observer;
         }
@@ -160,7 +160,7 @@ namespace details
         }
         return observer.seal_actual_adopted_owner(*publication->engine,publication,payload.epoch_);
     }
-    [[nodiscard]] ::std::unique_ptr<native_owner_publication_bridge::captured>
+    [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<native_owner_publication_bridge::captured>
     native_owner_publication_bridge::capture_actual_replacement(compiled_module_record& supplied,
         llvm_jit_debug_replace_transaction& transaction,::llvm::Module& actual_ir,
         ::llvm::LLVMContext const& actual_context,
@@ -206,7 +206,7 @@ namespace details
                expression_end-expression_begin!=transaction.debug_expression_size ||
                actual_local.code_begin!=reinterpret_cast<::std::byte const*>(transaction.code.body.expr_begin) ||
                actual_local.code_end!=reinterpret_cast<::std::byte const*>(transaction.code.body.code_end)) { return {}; }
-            auto payload{::std::unique_ptr<captured>{new captured{}}};
+            auto payload{::uwvm2::utils::container::std_unique_ptr<captured>{::uwvm2::utils::allocator::fast_io_strict::object<captured>([&](captured* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) captured{}; })}};
             payload->record_=::std::addressof(rec);payload->publication_=publication;payload->replacement_=::std::addressof(transaction);
             payload->source_=transaction.source;payload->module_=module;payload->module_id_=id;payload->epoch_=epoch;
             payload->expression_begin_=expression_begin;payload->expression_end_=expression_end;
@@ -228,7 +228,7 @@ namespace details
             auto const ir_name{typed->getName()};
             if(ir_name.empty() || ir_name.size()>native_owner_table_format::max_name_bytes || ir_name.contains('\0')) { return {}; }
             typed->addFnAttr("uwvm.native.code-owner.role","1");raw->addFnAttr("uwvm.native.code-owner.role","3");
-            payload->expected_.push_back({::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()}),
+            payload->expected_.push_back({::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()}),
                 id,transaction.function_index,generation,1u,plan});
             if(publication->checkpoint_profile)
             {
@@ -238,8 +238,8 @@ namespace details
                 if(plan->get().resume_abi_revision!=0u)
                 {
                     if(plan->get().resume_abi_revision!=2u || plan->get().resume_sites.empty()) { return {}; }
-                    auto resume_name{::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()},".checkpoint.resume.v2")};
-                    auto* resume{actual_ir.getFunction(resume_name)};auto* adapter{actual_ir.getFunction(::fast_io::concat_std(resume_name,".raw"))};
+                    auto resume_name{::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{ir_name.data(),ir_name.size()},".checkpoint.resume.v2")};
+                    auto* resume{actual_ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(resume_name))};auto* adapter{actual_ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(::uwvm2::utils::container::concat(resume_name,".raw")))};
                     if(resume==nullptr || adapter==nullptr || resume==typed || resume==raw || resume==adapter ||
                        resume->isDeclaration() || adapter->isDeclaration() || resume->getParent()!=::std::addressof(actual_ir) ||
                        adapter->getParent()!=::std::addressof(actual_ir) || resume->getFunctionType()!=typed->getFunctionType() ||
@@ -254,7 +254,7 @@ namespace details
         }
         catch(...) { return {}; }
     }
-    [[nodiscard]] ::std::unique_ptr<native_owner_publication_bridge::pending>
+    [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<native_owner_publication_bridge::pending>
     native_owner_publication_bridge::observe_actual_replacement(llvm_jit_debug_replace_transaction& transaction,
         captured const& payload) noexcept
     {
@@ -264,8 +264,8 @@ namespace details
                transaction.committed || payload.epoch_!=current_runtime_generation() || !transaction.engine || !transaction.context ||
                transaction.source.get()!=payload.source_.get() || transaction.source.owner_before(payload.source_) ||
                payload.source_.owner_before(transaction.source) || transaction.expected_generation==UINT64_MAX) { return {}; }
-            auto observer{::std::unique_ptr<pending>{new pending{*transaction.engine,::std::addressof(transaction),payload.source_,
-                payload.module_,payload.module_id_,payload.epoch_,payload.expected_}}};
+            auto observer{::uwvm2::utils::container::std_unique_ptr<pending>{::uwvm2::utils::allocator::fast_io_strict::object<pending>([&](pending* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) pending{*transaction.engine,::std::addressof(transaction),payload.source_,
+                payload.module_,payload.module_id_,payload.epoch_,payload.expected_}; })}};
             if(!observer->valid_ || !observer->attached_) { return {}; }
             return observer;
         }

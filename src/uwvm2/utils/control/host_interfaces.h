@@ -7,7 +7,7 @@
 #include <string_view>
 namespace uwvm2::utils::control::host_interfaces
 {
-    enum class family : unsigned char { wasip1, ros1, ros2 };
+    enum class family : unsigned char { wasip1, ros1, ros2, wasithread };
     enum class access : unsigned char { hidden, deny, allow };
     struct entry { family group; ::std::string_view name_space, function, key; };
     inline constexpr ::std::array catalogue{
@@ -107,10 +107,10 @@ namespace uwvm2::utils::control::host_interfaces
         entry{family::ros1,"uwvm_ros1_v1","capability_revoke","uwvm_ros1_v1.capability_revoke"},
         entry{family::ros1,"uwvm_ros1_v1","topic_publish","uwvm_ros1_v1.topic_publish"},
         entry{family::ros1,"uwvm_ros1_v1","topic_subscribe","uwvm_ros1_v1.topic_subscribe"},
-        entry{family::ros1,"uwvm_ros1_v1","event_poll","uwvm_ros1_v1.event_poll"},
-        entry{family::ros1,"uwvm_ros1_v1","event_watch","uwvm_ros1_v1.event_watch"},
-        entry{family::ros1,"uwvm_ros1_v1","event_poll_v1","uwvm_ros1_v1.event_poll_v1"},
-        entry{family::ros1,"uwvm_ros1_v1","event_ready","uwvm_ros1_v1.event_ready"},
+        entry{family::ros1,"uwvm_ros1_v1","message_poll","uwvm_ros1_v1.message_poll"},
+        entry{family::ros1,"uwvm_ros1_v1","event_stream_watch","uwvm_ros1_v1.event_stream_watch"},
+        entry{family::ros1,"uwvm_ros1_v1","event_stream_poll","uwvm_ros1_v1.event_stream_poll"},
+        entry{family::ros1,"uwvm_ros1_v1","event_stream_ready","uwvm_ros1_v1.event_stream_ready"},
         entry{family::ros1,"uwvm_ros1_v1","service_submit","uwvm_ros1_v1.service_submit"},
         entry{family::ros1,"uwvm_ros1_v1","service_call","uwvm_ros1_v1.service_call"},
         entry{family::ros1,"uwvm_ros1_v1","service_advertise","uwvm_ros1_v1.service_advertise"},
@@ -148,10 +148,10 @@ namespace uwvm2::utils::control::host_interfaces
         entry{family::ros2,"uwvm_ros2_v1","capability_revoke","uwvm_ros2_v1.capability_revoke"},
         entry{family::ros2,"uwvm_ros2_v1","topic_publish","uwvm_ros2_v1.topic_publish"},
         entry{family::ros2,"uwvm_ros2_v1","topic_subscribe","uwvm_ros2_v1.topic_subscribe"},
-        entry{family::ros2,"uwvm_ros2_v1","event_poll","uwvm_ros2_v1.event_poll"},
-        entry{family::ros2,"uwvm_ros2_v1","event_watch","uwvm_ros2_v1.event_watch"},
-        entry{family::ros2,"uwvm_ros2_v1","event_poll_v1","uwvm_ros2_v1.event_poll_v1"},
-        entry{family::ros2,"uwvm_ros2_v1","event_ready","uwvm_ros2_v1.event_ready"},
+        entry{family::ros2,"uwvm_ros2_v1","message_poll","uwvm_ros2_v1.message_poll"},
+        entry{family::ros2,"uwvm_ros2_v1","event_stream_watch","uwvm_ros2_v1.event_stream_watch"},
+        entry{family::ros2,"uwvm_ros2_v1","event_stream_poll","uwvm_ros2_v1.event_stream_poll"},
+        entry{family::ros2,"uwvm_ros2_v1","event_stream_ready","uwvm_ros2_v1.event_stream_ready"},
         entry{family::ros2,"uwvm_ros2_v1","service_submit","uwvm_ros2_v1.service_submit"},
         entry{family::ros2,"uwvm_ros2_v1","service_call","uwvm_ros2_v1.service_call"},
         entry{family::ros2,"uwvm_ros2_v1","service_advertise","uwvm_ros2_v1.service_advertise"},
@@ -227,11 +227,11 @@ namespace uwvm2::utils::control::host_interfaces
         entry{family::ros2,"uwvm_portable_robot_v1","close","uwvm_portable_robot_v1.close"},
         entry{family::wasip1,"wasi_snapshot_preview1","proc_exit","proc_exit"},
         entry{family::wasip1,"wasi_snapshot_preview1","proc_exit_wasm64","proc_exit_wasm64"},
-        entry{family::wasip1,"wasi","thread-spawn","thread-spawn"}
+        entry{family::wasithread,"wasi","thread-spawn","thread-spawn"}
     };
     inline constexpr auto invalid{catalogue.size()};
     constexpr ::std::string_view name(family value) noexcept
-    { return value==family::wasip1 ? "wasip1" : value==family::ros1 ? "ros1":"ros2"; }
+    { return value==family::wasip1 ? "wasip1" : value==family::ros1 ? "ros1":value==family::wasithread ? "wasithread":"ros2"; }
     template<typename Text>
     constexpr bool equal(Text const& value, ::std::string_view expected) noexcept
     {

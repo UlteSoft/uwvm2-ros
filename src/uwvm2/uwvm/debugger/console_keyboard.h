@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <cstddef>
@@ -237,7 +238,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_keyboard
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             try
             {
-                auto const path{::fast_io::concat_std("/proc/self/fd/", ::fast_io::mnp::dec(source.native_handle()))};
+                auto const path{::uwvm2::utils::container::concat("/proc/self/fd/", ::fast_io::mnp::dec(source.native_handle()))};
                 auto opened{::fast_io::posix_openat_nothrow(::fast_io::posix_at_entry{AT_FDCWD}, path.c_str(),
                     O_RDONLY | O_NONBLOCK | O_CLOEXEC | O_NOCTTY)};
                 if(!opened) { return opened; }

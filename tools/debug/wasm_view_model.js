@@ -34,7 +34,7 @@ function layout(document) {
     if(!stack.length && line<document.lineCount-2)throw new Error("Instructions follow the final function end.");
   }
   if(stack.length || !rows.length)throw new Error("The complete function end is unavailable.");
-  const model={rows,scopes,mnemonicWidth,operandWidth,maxDepth};
+  const model={rows,scopes:scopes.map((scope,id)=>({id,name:scope.name,start:scope.start,end:scope.end,parent:scope.parent})),mnemonicWidth,operandWidth,maxDepth};
   // Resolve labels only after the complete, validated control nesting is known.
   // These are document locations, never runtime addresses or execution requests.
   for(const row of rows)for(const token of row.tokens) {

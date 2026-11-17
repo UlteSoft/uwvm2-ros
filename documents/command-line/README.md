@@ -18,7 +18,9 @@ Build-time `xmake f ...` switches are documented separately in [`../xmake-option
 
 - [Parsing And Paths](parsing-and-paths.md): argument preprocessing, duplicate handling, `--run`, strict parsing, file path classes, and Windows NT `::NT::` paths.
 - [Operator Whitepaper](../user-whitepaper.md): build, deployment, authority, debugging, updates and exit status.
-- [Complete CLI Catalog](cli-catalog.md): every command advertised by the qualified integration binary.
+- [General and Legacy CLI Catalog](cli-catalog.md): the retained general/legacy help capture.
+- [ROSv2 CLI Catalog](ros-scene-cli-catalog.md): all 97 scene commands advertised by the current qualified scene cohort.
+- [ROSv2 Policy and Providers](ros-scene.md): authority, capacities, provider configuration and interface semantics.
 - [Crash Policy](crash-policy.md): immutable crash handling and dump boundaries.
 - [Global And Debug Commands](global-debug.md): `--help`, `--mode`, `--run`, `--version`, and `--debug-test`.
 - [Language Debugger Build Options](language-debug-build.md): independent language switches, macros, explicit selection and build validation.
@@ -30,10 +32,11 @@ Build-time `xmake f ...` switches are documented separately in [`../xmake-option
 
 ## Quick Availability Model
 
-The ROS build always includes WASI Preview 1 (memory32 and memory64), both
-socket ABI implementations, ROS1 and ROS2. Xmake rejects attempts to remove
-those interfaces. Whether a guest may import or call them is an explicit
-per-module runtime policy; a compiled interface is not a permission grant.
+The default ROS build includes WASI Preview 1 (memory32 and memory64), its
+socket ABI implementations and ROSv2. Deprecated ROS1/ROS2 host imports and
+unisolated native preloading require explicit build switches and are disabled
+by default; see [build options](../xmake-options.md). Whether a guest may import
+or call a compiled interface is an independent per-module runtime policy.
 
 Other command availability can depend on the optional interpreter, internal
 debug build hooks, preload support and platform-specific management transport.
@@ -49,6 +52,7 @@ uwvm2-ros --help debug
 uwvm2-ros --help update
 uwvm2-ros --help ros1
 uwvm2-ros --help ros2
+uwvm2-ros --help rosv2
 uwvm2-ros --help wasm
 uwvm2-ros --help runtime
 uwvm2-ros --help log

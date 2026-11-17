@@ -1,6 +1,8 @@
 // Host command callbacks, never Wasm/host-function pointers or a shell.
 // Included inside controller. Complete-list admission precedes every install.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
         [[nodiscard]] static bool admitted_callback(console_command const& command) noexcept
         {
             if(command.wait_for_event || command.run_from_entry || command.launch_action!=console_launch_action::none)
@@ -36,7 +38,7 @@
                     for(::std::uint64_t i{};i!=count;++i)
                     {
                         auto const& row{callback_history_[static_cast<::std::size_t>(first+i)]};
-                        auto const header{::fast_io::concat_std("callback ",first+i," breakpoint=",row.breakpoint," stop=",row.stop,
+                        auto const header{::uwvm2::utils::container::concat("callback ",first+i," breakpoint=",row.breakpoint," stop=",row.stop,
                             " status=",static_cast<unsigned>(row.status),"\n")};
                         auto const total{header.size()+row.text.size()};
                         auto byte_at{[&](::std::size_t index)->char { return index<header.size() ? header[index]:row.text[index-header.size()]; }};
@@ -69,7 +71,7 @@
                     }
                     if(first>point->callback_scripts.size() || !count || count>32u) { result.status=control_error::invalid_state;return result; }
                     count=(::std::min)(count,static_cast<::std::uint64_t>(point->callback_scripts.size())-first);
-                    ::fast_io::ostring_ref_std output{::std::addressof(result.callback_output)};
+                    ::uwvm2::utils::container::ostring_ref output{::std::addressof(result.callback_output)};
                     ::fast_io::io::print(output,"breakpoint ",point->identifier," callback commands=",point->callbacks.size(),"\n");
                     for(::std::uint64_t i{};i!=count;++i)
                     { ::fast_io::io::print(output,first+i,": ",::std::string_view{point->callback_scripts[static_cast<::std::size_t>(first+i)]},"\n"); }
@@ -79,8 +81,8 @@
                 if(text.empty() || text=="clear") { point->callbacks.clear();point->callback_scripts.clear();return result; }
                 bool const append{text.starts_with("append ")};
                 if(append) { text=text.subview(7u); }
-                auto next{append ? point->callbacks : ::std::vector<console_command>{}};
-                auto scripts{append ? point->callback_scripts : ::std::vector<::std::string>{}};
+                auto next{append ? point->callbacks : ::uwvm2::utils::container::std_vector<console_command>{}};
+                auto scripts{append ? point->callback_scripts : ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>{}};
                 ::std::size_t begin{};
                 for(::std::size_t i{};i<=text.size();++i)
                 {
@@ -150,7 +152,7 @@
             if(state!=control_error::none) { return state; }
             try
             {
-                ::std::string normalized{expression};
+                ::uwvm2::utils::container::std_string normalized{expression};
                 for(::std::size_t i{};i!=normalized.size();++i)
                 {
                     auto const byte{normalized[i]};
@@ -162,7 +164,7 @@
                     // Preserve token separation: p$c must never become pc.
                     normalized[i]=' ';
                 }
-                auto syntax{::std::make_shared<source_scalar_expression::program>()};
+                auto syntax{::uwvm2::utils::container::make_shared<source_scalar_expression::program>()};
                 auto const parsed{source_scalar_expression::parse(normalized,*syntax)};
                 if(parsed!=source_scalar_expression::error::none)
                 { return parsed==source_scalar_expression::error::allocation_failure ?
@@ -231,12 +233,12 @@
             matches=copied.source_object_type.front().bits!=0u;return control_error::none;
         }
         [[nodiscard]] bool run_breakpoint_callbacks_locked(::std::uint64_t identifier,
-            ::std::vector<console_command> const& commands,controller_reply& stopped,bool& continuing)
+            ::uwvm2::utils::container::std_vector<console_command> const& commands,controller_reply& stopped,bool& continuing)
         {
             continuing=false;
             if(commands.empty()) { return true; }
             callback_record event{};event.breakpoint=identifier;event.stop=stop_identifier_;
-            bool success{true};::fast_io::ostring_ref_std output{::std::addressof(event.text)};
+            bool success{true};::uwvm2::utils::container::ostring_ref output{::std::addressof(event.text)};
             // Reserve the durable result first. Allocation failure cannot run
             // a command without retaining its failure/success history.
             callback_history_.reserve(callback_history_.size()+1u);

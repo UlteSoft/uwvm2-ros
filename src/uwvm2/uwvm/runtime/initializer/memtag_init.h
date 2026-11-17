@@ -1,5 +1,6 @@
 // Included inside initializer::details, after native alias-resolution helpers.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 namespace mt_init
 {
     namespace mt=::uwvm2::extension::memtag;
@@ -39,8 +40,8 @@ template<initialization_purpose Purpose>
 {
     namespace mt=::uwvm2::extension::memtag;
     namespace rt_mt=::uwvm2::runtime::memtag;
-    ::std::vector<mt_init::memory_plan> memories{};
-    ::std::vector<mt_init::global_plan> globals{};
+    ::uwvm2::utils::container::std_vector<mt_init::memory_plan> memories{};
+    ::uwvm2::utils::container::std_vector<mt_init::global_plan> globals{};
     bool const execute{!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag};
     auto const delivery{mt::selected_fault_delivery.load(::std::memory_order_relaxed)};
     if(!execute && (mt::is_asynchronous(delivery) || mt::is_hardware(delivery)))
@@ -60,7 +61,7 @@ template<initialization_purpose Purpose>
         auto const& features{file->wasm_parameter.binfmt1_para};
         auto const& policy{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(features)};
         auto const count{runtime.imported_memory_vec_storage.size()+runtime.local_defined_memory_vec_storage.size()};
-        ::std::vector<mt::memory_usage> usage(count);
+        ::uwvm2::utils::container::std_vector<mt::memory_usage> usage(count);
         mt::usage_sink sink{.memories=usage};
         if(!::uwvm2::uwvm::runtime::validator::validate_all_wasm_code_for_module(
             module,features,file->file_name,name,::std::addressof(sink)) || !sink.valid) { return false; }
@@ -135,7 +136,7 @@ template<initialization_purpose Purpose>
     }
     if(!globals.empty())
     {
-        ::std::vector<mt::global_tag_range> global_ranges{};
+        ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
         global_ranges.reserve(globals.size());
         for(auto const& global:globals)
         {

@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Selected immutable full-JIT checkpoint profile only. Generates a separate
 // logical continuation entry from the one validated/translated body; cloning
 // LLVM IR does not decode or validate guest bytes a second time.
@@ -28,7 +29,7 @@
         // [compiler-owned five zero values0 ... i ... 5] end
         // [safe] i<5 before selecting either handle. Explicit instructions,
         // rather than shared constants, identify just these clone inputs.
-        placeholders[i] = builder.Insert(new ::llvm::FreezeInst(zero[i]), "checkpoint.normal.zero");
+        placeholders[i] = ::llvm::cast<::llvm::FreezeInst>(builder.CreateFreeze(zero[i], "checkpoint.normal.zero"));
     }
     auto const reject{::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.reject", state.llvm_function)};
     ::llvm::IRBuilder<> rejected{reject};
@@ -65,8 +66,8 @@
     if(site.opcode_offset != state.current_wasm_op_offset || site.operand_count != state.operand_stack.size() ||
        site.local_count > site.slots.size() || site.operand_count > site.slots.size()-site.local_count ||
        site.saved_parameter_count != site.slots.size()-site.local_count-site.operand_count) { return false; }
-    ::std::vector<::llvm::Value*> actual{}; actual.reserve(site.operand_count+site.saved_parameter_count);
-    ::std::vector<checkpoint::types::core_value_type> exact{}; exact.reserve(site.operand_count+site.saved_parameter_count);
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> actual{}; actual.reserve(site.operand_count+site.saved_parameter_count);
+    ::uwvm2::utils::container::std_vector<checkpoint::types::core_value_type> exact{}; exact.reserve(site.operand_count+site.saved_parameter_count);
     for(::std::size_t i{}; i != site.operand_count; ++i)
     {
         // [same-walk operand handles0 ... i ... N] [local-prefix+N slots] end
@@ -116,13 +117,17 @@
     if(resume.installed_sites.empty()) { return true; } // A legal empty/unreachable body is not rejected by instrumentation.
     auto& context{original->getContext()};
     auto const integer{::llvm::Type::getIntNTy(context, static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
-    ::std::vector<::llvm::Type*> parameters{};
+    ::uwvm2::utils::container::std_vector<::llvm::Type*> parameters{};
     parameters.reserve(original->arg_size());
     for(auto& argument : original->args()) { parameters.push_back(argument.getType()); }
     for(auto const placeholder : resume.placeholders)
     {
         if(placeholder == nullptr || placeholder->getFunction() != original) { return false; }
+        auto const zero{::llvm::dyn_cast<::llvm::Constant>(placeholder->getOperand(0u))};
+        if(zero == nullptr || !zero->isNullValue()) { return false; }
     }
+    if(resume.dispatch->getFunction() != original ||
+       resume.dispatch->getCondition() != resume.placeholders[0u]) { return false; }
     auto const original_name{original->getName()};
     // [LLVM-owned generated ASCII symbol name] name_end
     // [safe] StringRef owns the exact byte count; format that bounded view,
@@ -198,7 +203,11 @@
     auto const local{state.local_func_storage_ptr};
     if(local == nullptr || local->function_type_ptr == nullptr) { clone->eraseFromParent(); return false; }
     auto const abi{get_runtime_wasm_call_abi_layout(*local->function_type_ptr)};
-    if(!abi.valid || original->arg_size() != abi.parameter_count + (abi.result_count > 1u ? 1u : 0u))
+    // Compare the complete native signature, including the compiler-owned
+    // ROS provenance operand and the optional multi-result output address.
+    // Neither hidden operand belongs to the serialized Wasm locals packet.
+    if(!abi.valid || original->getFunctionType() !=
+        get_llvm_function_type_from_wasm_function_type(context, *local->function_type_ptr))
     { clone->eraseFromParent(); return false; }
     // Private native ABI only: void(site, payload, payload_bytes, flags,
     // flag_count, result_buffer_address, result_bytes). Native addresses are
@@ -253,7 +262,7 @@
         auto const initialized{builder.CreateLoad(builder.getInt8Ty(),flag)};initialized->setAlignment(::llvm::Align{1u});
         emit_llvm_conditional_trap(*module,builder,builder.CreateICmpNE(initialized,builder.getInt8(1u)));
     }
-    ::std::vector<::llvm::Value*> arguments{}; arguments.reserve(parameters.size());
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> arguments{}; arguments.reserve(parameters.size());
     for(::std::size_t i{}; i != abi.parameter_count; ++i)
     {
         // [actual canonical native packet ... i*16 ... P*16<=bytes] end
@@ -268,6 +277,23 @@
             builder.getInt64(i*checkpoint::native_slot_bytes))};
         auto const value{builder.CreateLoad(physical,slot)};value->setAlignment(::llvm::Align{1u});arguments.push_back(value);
     }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+    // Reconstruct provenance from the actual admitted runtime call chain.
+    // A saved payload may supply Wasm parameters, never a native permission
+    // token; the normal raw-entry ABI uses this same checked seed bridge.
+    if(local->module_id >= (SIZE_MAX >> 1u))
+    { raw->eraseFromParent(); clone->eraseFromParent(); return false; }
+    auto const provenance_type{::llvm::FunctionType::get(integer, {integer}, false)};
+    auto const provenance_bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
+        ::uwvm2::runtime::lib::llvm_jit_seed_ros_provenance>(builder, provenance_type)};
+    if(provenance_bridge == nullptr)
+    { raw->eraseFromParent(); clone->eraseFromParent(); return false; }
+    auto const provenance{builder.CreateCall(provenance_type, provenance_bridge,
+        {::llvm::ConstantInt::get(integer, (local->module_id + 1uz) << 1u)})};
+    provenance->setCallingConv(get_llvm_jit_host_calling_conv());
+    provenance->setDoesNotThrow();
+    arguments.push_back(provenance);
+#endif
     if(abi.result_count > 1u) { arguments.push_back(raw->getArg(5u)); }
     auto const call{builder.CreateCall(clone,arguments)};
     call->setCallingConv(clone->getCallingConv());
@@ -282,6 +308,26 @@
     ::uwvm2::runtime::compiler::llvm_jit::native_provenance::restrict_public_code(*clone);
     if(!verify_llvm_jit_function(*clone, true) || !verify_llvm_jit_function(*raw, true))
     { raw->eraseFromParent(); clone->eraseFromParent(); return false; }
+    // The ordinary entry always has the five literal-zero inputs. The clone
+    // above has its own authenticated inputs and retains every real landing.
+    // Fold only the ordinary selector BEFORE any optimization pass scans the
+    // shared checkpoint allocas. Leaving thousands of unreachable restore
+    // edges here makes InstCombine repeatedly traverse their users.
+    // No observer/capture call or reachable guest edge is removed.
+    for(auto& placeholder : resume.placeholders)
+    {
+        auto const zero{::llvm::cast<::llvm::Constant>(placeholder->getOperand(0u))};
+        placeholder->replaceAllUsesWith(zero);
+        placeholder->eraseFromParent();
+        placeholder = nullptr;
+    }
+    auto const dispatch_block{resume.dispatch->getParent()};
+    resume.dispatch = nullptr; // ConstantFoldTerminator retires this instruction.
+    state.ir_builder->ClearInsertionPoint(); // Emission is complete; dead blocks may retire.
+    if(!::llvm::ConstantFoldTerminator(dispatch_block, true)) { return false; }
+    static_cast<void>(::llvm::removeUnreachableBlocks(*original));
+    if(!verify_llvm_jit_function(*original, true)) { return false; }
+
     // This internal entry is also invoked through the runtime's exact typed
     // continuation ABI. NoInline/OptimizeNone do not prevent LLVM GlobalOpt
     // from changing C to fastcc, or IPO from removing unused ABI parameters.

@@ -2,6 +2,7 @@
 // canonical publications, the genuine before-park capture and the N GC gate.
 // This class is neither a restore issuer nor a public pointer/ID lookup service.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++"
 {
@@ -87,8 +88,8 @@ extern "C++"
         struct work
         {
             view output{};
-            ::std::vector<module_pin> modules{};
-            ::std::vector<pending_object> pending{};
+            ::uwvm2::utils::container::std_vector<module_pin> modules{};
+            ::uwvm2::utils::container::std_vector<pending_object> pending{};
             ::std::size_t members{}, records{};
             copy_status copy_error{copy_status::unavailable_gc_roots};
         };
@@ -118,8 +119,8 @@ extern "C++"
             // Whole-cohort admission has no policy quota. Keep representability
             // checks and let the caller report a real allocation failure.
             state.modules.reserve(count);
-            ::std::vector<module_type const*> module_addresses{};
-            ::std::vector<store_type const*> store_addresses{};
+            ::uwvm2::utils::container::std_vector<module_type const*> module_addresses{};
+            ::uwvm2::utils::container::std_vector<store_type const*> store_addresses{};
             module_addresses.reserve(count); store_addresses.reserve(count);
             for(::std::size_t id{}; id != count; ++id)
             {
@@ -878,7 +879,7 @@ extern "C++"
                     // Saved if parameters remain separate from current operands.
                     auto total{requested.selected == ws::selection::locals ? static_cast<::std::size_t>(site.local_count) :
                         requested.selected == ws::selection::saved_parameters ? site.saved_parameter_count : site.operand_count};
-                    ::std::vector<core_type> const* tuple{};
+                    ::uwvm2::utils::container::std_vector<core_type> const* tuple{};
                     if(requested.selected == ws::selection::controls) { total=site.controls.size(); }
                     else if(requested.selected == ws::selection::handlers) { total=site.handlers.size(); }
                     else if(ws::declaration_selection(requested.selected))

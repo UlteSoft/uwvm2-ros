@@ -1,4 +1,6 @@
-﻿/*************************************************************
+#include <uwvm2/utils/control/wasithread_diagnostics.h>
+#include <uwvm2/utils/container/unique.h>
+/*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
@@ -55,7 +57,13 @@
 # include <uwvm2/runtime/diagnostic/crash_policy.h>
 # include <uwvm2/runtime/diagnostic/crash_file.h>
 # include <uwvm2/runtime/diagnostic/wasm_coredump.h>
+# include <uwvm2/runtime/diagnostic/snapshot_archive.h>
+# include <uwvm2/runtime/diagnostic/snapshot_diagnostic.h>
+# include <uwvm2/runtime/diagnostic/snapshot_state.h>
+# include <uwvm2/uwvm/debugger/checkpoint_execution_replay.h>
+# include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 # include <uwvm2/runtime/memtag/host_access.h>
+# include <uwvm2/runtime/lib/uwvm_runtime_ros_exchange_frame.h>
 # include <uwvm2/runtime/memtag/host_fault.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_diagnostics.h>
@@ -81,6 +89,7 @@
 # include <utility>
 # include <uwvm2/utils/security/wsea.h>
 # include <uwvm2/utils/control/debug_permissions.h>
+# include <uwvm2/utils/control/dump_permissions.h>
 # include "uwvm_runtime_guest_exit.h"
 // macro
 # include <uwvm2/uwvm_predefine/utils/ansies/uwvm_color_push_macro.h>
@@ -103,8 +112,14 @@
 # include "uwvm_runtime_function_identity_cache.h"
 # if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #  include <uwvm2/imported/ros/common/management.h>
-#  include <uwvm2/imported/ros/common/synchronous_wait.h>
+#  include <uwvm2/imported/ros/common/checkpoint.h>
 #  include <uwvm2/imported/ros/common/buffer_audit.h>
+# endif
+# if defined(UWVM_IMPORT_ROSV2)
+#  include <uwvm2/imported/ros/scene/lifecycle.h>
+# endif
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+#  include <uwvm2/imported/ros/common/synchronous_wait.h>
 # endif
 # include <uwvm2/runtime/checkpoint/shadow_ledger.h>
 # include <uwvm2/runtime/checkpoint/dynamic_native_packet.h>
@@ -127,6 +142,7 @@
 #  include "uwvm_runtime_pending_code_ranges.h"
 #  include <uwvm2/runtime/compiler/shared/strict_float_jit.h>
 #  include "uwvm_runtime_llvm_expanded_lane_unroll_policy.h"
+# include "uwvm_runtime_llvm_gc_private_calls.h"
 #  include "uwvm_runtime_native_unwind_execution_gate.h"
 #  include "uwvm_runtime_native_function_address.h"
 # endif
@@ -154,6 +170,7 @@
 #  include <llvm/IR/Constants.h>
 #  include <llvm/IR/LegacyPassManager.h>
 #  include <llvm/IR/Module.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
 #  include <llvm/IR/PassManager.h>
 #  include <llvm/IR/Verifier.h>
 #  include <llvm/MC/TargetRegistry.h>
@@ -248,7 +265,7 @@
 #  if defined(UWVM_RUNTIME_LLVM_JIT)
 #   include "uwvm_runtime_threaded_llvm_headers.h"
 #  endif
-#  if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#  if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 #   include <uwvm2/imported/ros/ipc/cancellation_scope.h>
 #  endif
 # endif
@@ -351,12 +368,15 @@ namespace uwvm2::runtime::lib
 #include "uwvm_runtime_debug_source_binding.h"
 #include "uwvm_runtime_debug_activation_capture.h"
 #include "uwvm_runtime_checkpoint_host_admission.h"
+#include "uwvm_runtime_checkpoint_execution_replay_decl.h"
 #include "uwvm_runtime_checkpoint_retirement.h"
 #include "uwvm_runtime_checkpoint_guest_worker_registration.h"
 #include "uwvm_runtime_debug_shutdown.h"
 #include "uwvm_runtime_managed_fault.h"
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     extern "C++" { class runtime_checkpoint_continuation_dispatcher; }
+    extern "C++" void checkpoint_join_published_workers_after_drain(
+        ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
 #endif
 #if defined(UWVM_RUNTIME_LLVM_JIT)
     struct llvm_jit_unwind_entry
@@ -397,7 +417,7 @@ namespace uwvm2::runtime::lib
         // Actual same-engine loaded text identities, obtained only after the
         // real defined Function returned its callable. Never wire/PC inputs.
         ::std::array<::std::uintptr_t,4u> native_entry_code_addresses{};
-        ::std::vector<::std::byte> section_bytes{};
+        ::uwvm2::utils::container::std_vector<::std::byte> section_bytes{};
         ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_code_t code{};
         ::uwvm2::utils::container::vector<::std::uint_least8_t> debug_safe_point_bits{};
         ::std::size_t debug_expression_size{};
@@ -407,14 +427,14 @@ namespace uwvm2::runtime::lib
         // Borrow of THIS engine-owned original manager; selectable only under
         // actual publication + worker execution ownership, never a wire grant.
         ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager const* debug_cfi_manager{};
-        ::uwvm2::utils::container::delete_owned_ptr<::llvm::LLVMContext> context{};
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::context_owner context{};
         ::uwvm2::utils::container::delete_owned_ptr<::llvm::ExecutionEngine> engine{};
-        ::uwvm2::utils::container::delete_owned_ptr<::uwvm2::runtime::lib::details::pending_llvm_jit_code_ranges> pending_ranges{};
+        ::uwvm2::utils::container::std_unique_ptr<::uwvm2::runtime::lib::details::pending_llvm_jit_code_ranges> pending_ranges{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         // Attached observer dies BEFORE pending ranges/engine on any prepare
         // abort; only actual all-park committed generations become selectable.
-        ::std::unique_ptr<details::pending_actual_native_endpoints> actual_native_endpoints{};
+        ::uwvm2::utils::container::std_unique_ptr<details::pending_actual_native_endpoints> actual_native_endpoints{};
 #endif
         // Prepared outside the stopped-set lock; swapping these complete
         // arrays into the runtime cannot allocate or leave a partial map.
@@ -700,7 +720,7 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
             // Actual native binding, never the observer/staged IR bool. Reverse
             // release retires engine/CFI/context before this source/tag owner.
-            ::uwvm2::utils::container::delete_owned_ptr<owned_native_eh_private_leaf_publication> private_eh_leaf{};
+            ::uwvm2::utils::container::std_unique_ptr<owned_native_eh_private_leaf_publication> private_eh_leaf{};
 #endif
             // Dedicated metadata-only epoch; no numeric plan/admission is created.
             ::std::uint_least64_t debug_source_runtime_epoch{};
@@ -708,8 +728,8 @@ namespace uwvm2::runtime::lib
             // A mutable global enable flag or a serialized profile is no authority.
             ::uwvm2::runtime::checkpoint::compilation_profile::owner checkpoint_profile{};
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
-            ::std::unique_ptr<checkpoint_materialization_identity_data> checkpoint_compilation_identity{};
-            ::std::unique_ptr<checkpoint_root_generation_identity> checkpoint_root_identity{};
+            ::uwvm2::utils::container::std_unique_ptr<checkpoint_materialization_identity_data> checkpoint_compilation_identity{};
+            ::uwvm2::utils::container::std_unique_ptr<checkpoint_root_generation_identity> checkpoint_root_identity{};
 #endif
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             llvm_jit_debug_source_binding_owner debug_source_binding{};
@@ -719,7 +739,7 @@ namespace uwvm2::runtime::lib
                 ::uwvm2::runtime::checkpoint::sealed_function_plan::owner plan{};
                 ::std::uintptr_t address{}; // actual engine-resolved host ABI, never wire DATA
             };
-            ::std::vector<checkpoint_resume_entry> checkpoint_resume_entries{};
+            ::uwvm2::utils::container::std_vector<checkpoint_resume_entry> checkpoint_resume_entries{};
             ::std::atomic<unsigned> debug_shutdown_abi_revision{}; // actual optimized cleanup proof; cold commit may clear
             // Scalar native line data retires after the actual engine/context.
             ::uwvm2::runtime::lib::details::native_loaded_provenance::image native_provenance{};
@@ -727,13 +747,13 @@ namespace uwvm2::runtime::lib
             // Reverse destruction retires real engine/context before owned DATA.
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-            ::std::unique_ptr<::uwvm2::runtime::lib::details::pending_actual_native_endpoints> actual_native_endpoints{};
+            ::uwvm2::utils::container::std_unique_ptr<::uwvm2::runtime::lib::details::pending_actual_native_endpoints> actual_native_endpoints{};
 #endif
             // Actual same-engine manager borrow. It is never dereferenced after
             // engine retirement or independently selected by a numeric PC.
             ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager const* debug_cfi_manager{};
             // Reverse destruction: engine (native CFI), context, plan, source.
-            ::uwvm2::utils::container::delete_owned_ptr<::llvm::LLVMContext> context{};
+            ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::context_owner context{};
             ::uwvm2::utils::container::delete_owned_ptr<::llvm::ExecutionEngine> engine{};
             explicit full_code_publication(::uwvm2::uwvm::runtime::full::full_source_instance::owner pin)
                 : source{::std::move(pin)} {}
@@ -1005,7 +1025,7 @@ namespace uwvm2::runtime::lib
             // legacy callers retain the existing native loader/registry lifetime contract.
             ::uwvm2::utils::container::u8string_view module_name{};
             runtime_module_storage_t const* runtime_module{};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             // A trusted body replacement changes executable authority even
             // though memories and the compiler epoch stay unchanged. This bit
             // is monotonic for the actual module incarnation: no Guest or
@@ -1022,7 +1042,7 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::container::delete_owned_ptr<::llvm::TargetMachine> llvm_exception_target_machine{};
             llvm_jit_compiled_module_t llvm_jit_compiled{};
             // These owners must outlive every function address published into direct-call and call_indirect targets.
-            ::uwvm2::utils::container::delete_owned_ptr<full_code_publication> llvm_jit_full_publication{};
+            ::uwvm2::utils::container::std_unique_ptr<full_code_publication> llvm_jit_full_publication{};
             ::uwvm2::utils::container::vector<::std::uintptr_t> llvm_jit_local_entry_addresses{};
             ::uwvm2::utils::container::vector<::std::uintptr_t> llvm_jit_local_raw_entry_addresses{};
             // Debug-full only. The allocation is fixed before IR translation, and
@@ -1032,21 +1052,21 @@ namespace uwvm2::runtime::lib
             // Debug-full only: public Wasm function generation starts at one.
             // Host controller serializes replacement transactions; no generated
             // instruction loads this metadata on a guest hot path.
-            ::std::vector<::std::uint_least64_t> llvm_jit_debug_full_entry_generations{};
+            ::uwvm2::utils::container::std_vector<::std::uint_least64_t> llvm_jit_debug_full_entry_generations{};
             // Debug-full only: published expression offsets from actual LLVM
             // safe-point calls. Guest execution never reads this host table.
-            ::std::vector<llvm_jit_debug_safe_point_view> llvm_jit_debug_full_safe_points{};
-            ::std::vector<::std::unique_ptr<llvm_jit_debug_replace_transaction>> llvm_jit_debug_full_retained_generations{};
+            ::uwvm2::utils::container::std_vector<llvm_jit_debug_safe_point_view> llvm_jit_debug_full_safe_points{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> llvm_jit_debug_full_retained_generations{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
             // Cold fixed local slots contain only real retained-vector indices,
             // never caller opaque pointers. Root compiler capture allocates once.
-            ::std::vector<::std::size_t> actual_native_generation_positions{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> actual_native_generation_positions{};
 #endif
             // Selected-profile cold publication ONLY. Fixed local-function slots
             // borrow record-owned committed transactions until execution drains.
             // Ordinary code neither allocates this vector nor emits a read of it.
-            ::std::vector<llvm_jit_debug_replace_transaction const*> llvm_jit_checkpoint_generation_owners{};
+            ::uwvm2::utils::container::std_vector<llvm_jit_debug_replace_transaction const*> llvm_jit_checkpoint_generation_owners{};
             bool llvm_jit_ready{};
             bool llvm_jit_precise_gc_roots_emitted{};
             // Set only after all native-full bodies complete fused validation.
@@ -1108,6 +1128,9 @@ namespace uwvm2::runtime::lib
             // No caller owner, atomic<shared_ptr> support or extra read lock is needed.
             runtime_checkpoint_host_bridge::owner checkpoint_host_state{};
             ::std::atomic_bool checkpoint_host_enabled{};
+# if defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
+            ::std::shared_ptr<runtime_checkpoint_world_transaction> checkpoint_world{};
+# endif
 # endif
             ::uwvm2::runtime::wasm_threads::wait_domain thread_wait_domain{};
             ~runtime_global_state()
@@ -1121,18 +1144,17 @@ namespace uwvm2::runtime::lib
                 close_retained_runtime_debug_control(debug_pause_control, debug_observer);
 # endif
                 execution_domain.stop_and_drain();
+# if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
+                checkpoint_join_published_workers_after_drain(checkpoint_world);
+# endif
 # if defined(UWVM_RUNTIME_LLVM_JIT)
                 checkpoint_host_enabled.store(false, ::std::memory_order_release);
                 checkpoint_host_state.reset(); // Real generation already drained; no concurrent owner read.
 # endif
 # if defined(UWVM_RUNTIME_LLVM_JIT)
                 ::uwvm2::runtime::gc::managed_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 ::uwvm2::runtime::gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
                 ::uwvm2::runtime::gc::managed_page_borrow_callback.store(nullptr, ::std::memory_order_release);
                 ::uwvm2::runtime::gc::managed_page_boundary_callback.store(nullptr, ::std::memory_order_release);
@@ -1226,7 +1248,7 @@ namespace uwvm2::runtime::lib
         // Cold canonical-owner registry. Never trust or dereference a public
         // shared_ptr alias before a private minted control block matches here.
         ::std::mutex g_debug_activation_capture_mutex{};
-        ::std::vector<::std::weak_ptr<llvm_jit_debug_activation_capture const>> g_debug_activation_captures{};
+        ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_debug_activation_capture const>> g_debug_activation_captures{};
 
 
         struct debug_native_safe_point_site
@@ -1254,9 +1276,9 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::thread::cooperative_pause_domain::participant participant_{};
             ::std::shared_ptr<details::debug_activation::ledger> activation_{};
             ::std::optional<details::debug_native_stack::scope> native_stack_{};
-            ::std::unique_ptr<::uwvm2::runtime::checkpoint::shadow_ledger> checkpoint_{};
+            ::uwvm2::utils::container::std_unique_ptr<::uwvm2::runtime::checkpoint::shadow_ledger> checkpoint_{};
             details::debug_operand_workspace_stack operand_workspaces_{};
-            ::std::unique_ptr<details::checkpoint_entry_plan_cache> entry_plans_{};
+            ::uwvm2::utils::container::std_unique_ptr<details::checkpoint_entry_plan_cache> entry_plans_{};
             bool owns_operand_workspaces_{};
             bool owns_{};
             ::std::optional<::uwvm2::runtime::wasm_threads::wait_pause_policy> wait_pause_{};
@@ -1287,10 +1309,10 @@ namespace uwvm2::runtime::lib
                 // [safe                        ] clear TLS before this member releases admission.
                 g_debug_pause_participant = ::std::addressof(participant_);
 #ifdef UWVM_CPP_EXCEPTIONS
-                try { activation_ = ::std::make_shared<details::debug_activation::ledger>(g_runtime.debug_activation_storage_budget); }
+                try { activation_ = ::uwvm2::utils::container::make_shared<details::debug_activation::ledger>(g_runtime.debug_activation_storage_budget); }
                 catch(...) { activation_.reset(); } // debug identity unavailable; guest execution remains admitted.
 #else
-                activation_ = ::std::make_shared<details::debug_activation::ledger>(g_runtime.debug_activation_storage_budget);
+                activation_ = ::uwvm2::utils::container::make_shared<details::debug_activation::ledger>(g_runtime.debug_activation_storage_budget);
 #endif
                 // [scope-owned ledger] valid until this member's destructor.
                 // [safe              ] TLS borrows it only on this native thread;
@@ -1305,10 +1327,10 @@ namespace uwvm2::runtime::lib
                 if(g_runtime.checkpoint_profile && activation_)
                 {
 #ifdef UWVM_CPP_EXCEPTIONS
-                    try { checkpoint_ = ::std::make_unique<::uwvm2::runtime::checkpoint::shadow_ledger>(g_runtime.checkpoint_profile); }
+                    try { checkpoint_ = ::uwvm2::utils::container::make_unique<::uwvm2::runtime::checkpoint::shadow_ledger>(g_runtime.checkpoint_profile); }
                     catch(...) { checkpoint_.reset(); } // no complete capture capability on allocation failure
 #else
-                    checkpoint_ = ::std::make_unique<::uwvm2::runtime::checkpoint::shadow_ledger>(g_runtime.checkpoint_profile);
+                    checkpoint_ = ::uwvm2::utils::container::make_unique<::uwvm2::runtime::checkpoint::shadow_ledger>(g_runtime.checkpoint_profile);
 #endif
                 }
                 // [scope-owned ledger] construction completed before the TLS
@@ -1318,10 +1340,10 @@ namespace uwvm2::runtime::lib
                     ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values)
                 {
 #ifdef UWVM_CPP_EXCEPTIONS
-                    try { entry_plans_ = ::std::make_unique<details::checkpoint_entry_plan_cache>(); }
+                    try { entry_plans_ = ::uwvm2::utils::container::make_unique<details::checkpoint_entry_plan_cache>(); }
                     catch(...) {} // Cache allocation failure retains the fully checked path.
 #else
-                    entry_plans_ = ::std::make_unique<details::checkpoint_entry_plan_cache>();
+                    entry_plans_ = ::uwvm2::utils::container::make_unique<details::checkpoint_entry_plan_cache>();
 #endif
                 }
                 g_checkpoint_entry_plans = entry_plans_.get();
@@ -1329,7 +1351,8 @@ namespace uwvm2::runtime::lib
                 auto* const execution{::uwvm2::runtime::wasm_threads::current_execution};
                 if(execution != nullptr)
                 {
-                    wait_pause_.emplace(*g_runtime.debug_pause_control, participant_, debug_suspend_actual_wait);
+                    wait_pause_.emplace(*g_runtime.debug_pause_control, participant_, debug_suspend_actual_wait,
+                        checkpoint_replay_wait_registered,checkpoint_replay_wait_completed);
                     execution->pause = ::std::addressof(*wait_pause_);
                 }
                 runtime_checkpoint_guest_worker_bridge::scope_admitted(participant_);
@@ -1352,6 +1375,7 @@ namespace uwvm2::runtime::lib
                     // revive this departed physical scope when TID/session/code
                     // addresses are reused. Poison on the ACTUAL worker only,
                     // after native cancellation/ACK and before admission drops.
+                    checkpoint_replay_leave_worker(participant_.identifier());
                     if(activation_) { activation_->poison(); }
                     // Exact worker ACK precedes retirement. A retained capture
                     // keeps safe metadata, never the departed OS stack alive.
@@ -1474,7 +1498,7 @@ namespace uwvm2::runtime::lib
             // Store logical wasm identity instead of native return addresses so interpreter and JIT trap output share one format.
             ::std::size_t module_id{};
             ::std::size_t function_index{};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             // An ordinary Wasm call is not an explicit capability delegation. Preserve this ancestry
             // bit through tail replacement so A -> B -> ROS cannot acquire B's authority.
             bool ros_cross_module_ancestry{};
@@ -1506,7 +1530,7 @@ namespace uwvm2::runtime::lib
 
             using thread_local_allocator = ::fast_io::native_thread_local_allocator;
             ::uwvm2::utils::container::vector<call_stack_frame, thread_local_allocator> frames{};
-#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
             // Runtime-only transfer token between a genuine generated musttail edge and its next
             // actual function entry. No Guest address/handle, debugger DTO or native return PC issues it.
             // A private native-ABI value, published only at generated-to-host boundaries.
@@ -1578,7 +1602,7 @@ namespace uwvm2::runtime::lib
                 // The container's checked emplacement compares its write/end pointers directly and grows when full.
                 // Rechecking size() < capacity() here adds pointer-distance arithmetic on every generated Wasm call;
                 // constructing from the two identities also avoids copying a temporary frame. Preserve slow-path growth.
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 # if defined(UWVM_RUNTIME_LLVM_JIT)
                 if(ros_retired_tail_pending)
                 {
@@ -1605,7 +1629,7 @@ namespace uwvm2::runtime::lib
 #endif
             }
 
-#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
             inline constexpr void prepare_ros_tail(::std::size_t module_id, ::std::size_t function_index) noexcept
             {
                 // Constants come from the admitted outgoing function, not from Wasm operands.
@@ -1622,7 +1646,7 @@ namespace uwvm2::runtime::lib
 
             inline constexpr void pop() noexcept
             {
-#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
                 // Normal/exception returns cannot silently consume a tail transfer intended for another entry.
                 if(ros_retired_tail_pending) { ::fast_io::fast_terminate(); }
 #endif
@@ -1688,7 +1712,7 @@ namespace uwvm2::runtime::lib
             ::std::size_t module_id{invalid_module_id};
             preload_module_memory_attribute_t const* preload_module_memory_attribute{};
             capi_function_t const* capi_function{};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             bool trusted_ros_call{};
             local_imported_t const* ros_provider{};
             ::std::size_t ros_function_index{invalid_module_id};
@@ -1771,7 +1795,7 @@ namespace uwvm2::runtime::lib
             // Runtime reload must invalidate cached table/function pointers even when native TLS owns the storage for the
             // lifetime of the thread. Keeping the vector capacity is safe; every retained value is backend-neutral storage.
             g_call_stack.frames.clear();
-# if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+# if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
             g_call_stack.ros_native_provenance = 0u;
             g_call_stack.ros_retired_tail_pending = false;
             g_call_stack.ros_retired_tail_frame = {};
@@ -2085,7 +2109,7 @@ namespace uwvm2::runtime::lib
             inline explicit constexpr preload_call_context_guard(preload_module_memory_attribute_t const* attribute,
                                                                  capi_function_t const* function = nullptr,
                                                                  ::std::size_t caller_module_id = preload_call_context_t::invalid_module_id
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                                                                  , bool trusted_ros_call = false,
                                                                  local_imported_t const* ros_provider = nullptr,
                                                                  ::std::size_t ros_function_index = preload_call_context_t::invalid_module_id
@@ -2105,7 +2129,7 @@ namespace uwvm2::runtime::lib
                 }
                 ctx->preload_module_memory_attribute = attribute;
                 ctx->capi_function = function;
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                 ctx->trusted_ros_call = trusted_ros_call;
                 ctx->ros_provider = trusted_ros_call ? ros_provider : nullptr;
                 ctx->ros_function_index = trusted_ros_call ? ros_function_index : preload_call_context_t::invalid_module_id;
@@ -2346,7 +2370,7 @@ namespace uwvm2::runtime::lib
         inline void prepare_runtime_exception_diagnostic_symbols() UWVM_THROWS
         {
             namespace exn = ::uwvm2::runtime::exception;
-            ::std::vector<exn::diagnostic_module_symbols> snapshot{};
+            ::uwvm2::utils::container::std_vector<exn::diagnostic_module_symbols> snapshot{};
             snapshot.reserve(g_runtime.modules.size());
             for(auto const& module: g_runtime.modules)
             {
@@ -2401,7 +2425,7 @@ namespace uwvm2::runtime::lib
             // order; the published symbol owner replaces per-throw name lookup
             // and string copies. Names are materialized only for actual output.
             auto const& active{get_call_stack().frames};
-            ::std::vector<::uwvm2::runtime::exception::diagnostic_frame_index> indices{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::diagnostic_frame_index> indices{};
             indices.reserve(active.size());
             for(::std::size_t remaining{active.size()}; remaining != 0uz;)
             {
@@ -3236,7 +3260,7 @@ namespace uwvm2::runtime::lib
 # endif
                 if(tls.frames.size() > SIZE_MAX - backtrace.size) [[unlikely]]
                 { ::fast_io::fast_terminate(); }
-                ::std::vector<::uwvm2::runtime::exception::diagnostic_frame_index> identities{};
+                ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::diagnostic_frame_index> identities{};
                 identities.reserve(tls.frames.size() + backtrace.size);
                 auto const append_identity{[&](call_stack_frame const& frame) noexcept
                 {
@@ -3637,9 +3661,11 @@ namespace uwvm2::runtime::lib
         }
 #endif
 
-        inline constexpr void print_memory_out_of_bounds_trap(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
+        [[noreturn]] inline constexpr void memory_out_of_bounds_fatal(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
         {
-            // Report numeric Wasm memory evidence before terminal handling.
+            // Report numeric Wasm memory evidence before the shared terminal path.
+            // Explicit LLVM bounds checks, interpreter callbacks and observer-enabled
+            // entries must all publish the fault and honor the sealed launch policy.
 #if defined(__linux__)
             ::fast_io::io::perrln(runtime_fault_output(),u8"uwvm: [fatal] memory[",memerr.memory_idx,
                 u8"] access overflow: ",memerr.memory_static_offset,u8" (static) + ",
@@ -3648,11 +3674,7 @@ namespace uwvm2::runtime::lib
 #else
             ::uwvm2::object::memory::error::output_memory_error_line(memerr);
 #endif
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            if(!::std::is_constant_evaluated()) { finish_cli_guest_fault(trap_kind::memory_out_of_bounds); }
-#endif
-            print_trap_fatal_message(trap_kind::memory_out_of_bounds);
-            dump_call_stack_for_trap(trap_kind::memory_out_of_bounds);
+            trap_fatal(trap_kind::memory_out_of_bounds);
         }
 
 #if defined(UWVM_SUPPORT_MMAP)
@@ -4961,12 +4983,8 @@ namespace uwvm2::runtime::lib
                     // storage destructors, after the actual native lease drain.
                     // Later global cleanup is idempotent and holds no guest roots.
                     ::uwvm2::runtime::gc::managed_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 ::uwvm2::runtime::gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
                 ::uwvm2::runtime::gc::managed_page_borrow_callback.store(nullptr, ::std::memory_order_release);
                 ::uwvm2::runtime::gc::managed_page_boundary_callback.store(nullptr, ::std::memory_order_release);
@@ -5007,7 +5025,7 @@ namespace uwvm2::runtime::lib
 
         class runtime_execution_entry_scope
         {
-#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
             // A host callback can reenter Wasm repeatedly. Restore its actual suspended caller
             // even when a nested entry throws; ordinary Wasm calls need no TLS push or pop.
             ::std::uintptr_t const saved_ros_provenance{get_call_stack().ros_native_provenance};
@@ -5063,7 +5081,7 @@ namespace uwvm2::runtime::lib
             inline static thread_local runtime_execution_entry_scope* checkpoint_gc_entry_{};
 #endif
             [[maybe_unused]] ::uwvm2::runtime::lib::native_stack::scope native_stack_scope{};
-#if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING && defined(UWVM_RUNTIME_LLVM_JIT)
+#if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_SUPPORT_MMAP)
             ::uwvm2::runtime::lib::memory_guard_landing::scope memory_guard_scope{};
 #endif
             bool entered{};
@@ -5146,6 +5164,7 @@ namespace uwvm2::runtime::lib
                 if(depth == 0uz)
                 {
                     ::uwvm2::utils::control::debug_permissions::seal_default_before_execution();
+                    ::uwvm2::utils::control::dump_permissions::runtime_policy.seal_default_before_execution();
                     ::uwvm2::runtime::lib::guest_exit::clear();
                 }
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -5195,11 +5214,16 @@ namespace uwvm2::runtime::lib
                 if(!::uwvm2::runtime::lib::details::runtime_execution_entry_enter(depth, reentry)) [[unlikely]]
                 { ::fast_io::fast_terminate(); }
                 entered = true;
-#if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING && defined(UWVM_RUNTIME_LLVM_JIT)
+#if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_SUPPORT_MMAP)
                 if(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_compiler !=
                        ::uwvm2::uwvm::runtime::runtime_mode::runtime_compiler_t::uwvm_interpreter_only &&
                    !memory_guard_scope.enter(deliver_mmap_guard_fault))
                 {
+                    if(memory_guard_scope.resource_exhausted())
+                    {
+                        ::uwvm2::utils::allocator::resource::reject_allocation(
+                            "uwvm: [error] memory guard fault delivery: native allocation failed; check available host memory and virtual address space.\n");
+                    }
                     ::fast_io::io::perrln(runtime_fault_output(), u8"uwvm: [fatal] cannot establish memory guard fault delivery.");
                     ::std::_Exit(126);
                 }
@@ -5351,7 +5375,7 @@ namespace uwvm2::runtime::lib
                 { ::uwvm2::runtime::gc::flush_actual_entry_page(true); }
                 if(page_entry_scope == this) { page_entry_scope = nullptr; }
 #endif
-#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
                 get_call_stack().ros_native_provenance = saved_ros_provenance;
 #endif
                 // Never retain a pointer/reference to a map-backed node across erasure. A permitted nested raw call
@@ -5612,6 +5636,10 @@ namespace uwvm2::runtime::lib
                                                                                             ::uwvm2::utils::container::u8string_view& module_name) noexcept
         {
             // Recover the logical preload target for scoped WASI target reporting while invoking a C API function.
+# if !defined(UWVM_SUPPORT_PRELOAD_DL)
+            (void)target_kind;
+            (void)module_name;
+# endif
             if(!has_configured_wasip1_module_override_fast_path()) [[likely]] { return false; }
             auto const owner{::uwvm2::uwvm::wasm::storage::find_preload_capi_function_owner(function)};
             if(owner == nullptr) [[unlikely]] { return false; }
@@ -5645,11 +5673,11 @@ namespace uwvm2::runtime::lib
             if(::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire))
             { ::uwvm2::utils::thread::process_exit::request_process_exit(0u); }
 #endif
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             preload_module_memory_attribute_t ros_memory_attribute{};
             auto const name{module.get_module_name()};
             auto const ros_call{name == u8"uwvm_ros1_v1" || name == u8"uwvm_ros2_v1" ||
-                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1"};
+                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1" || name == u8"uwvm_ros_v2"};
             if(ros_call) { ros_memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy; }
             preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
                                                   ros_call, ::std::addressof(module), function_index};
@@ -5707,7 +5735,7 @@ namespace uwvm2::runtime::lib
                     return;
                 }
 #endif
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2))
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && (defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2))
                 if(ros_call)
                 {
                     ::uwvm2::imported::ros::synchronous_wait_context current_wait{
@@ -5828,11 +5856,11 @@ namespace uwvm2::runtime::lib
                                                                   ::std::byte* param_buffer,
                                                                   [[maybe_unused]] ::std::size_t caller_module_id) UWVM_THROWS
         {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             preload_module_memory_attribute_t ros_memory_attribute{};
             auto const name{module.get_module_name()};
             auto const ros_call{name == u8"uwvm_ros1_v1" || name == u8"uwvm_ros2_v1" ||
-                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1"};
+                                name == u8"uwvm_ros1_client_v1" || name == u8"uwvm_ros2_client_v1" || name == u8"uwvm_ros2_rmw_v1" || name == u8"uwvm_ros2_rmw_sub_v1" || name == u8"uwvm_ros2_rmw_srv_v1" || name == u8"uwvm_portable_robot_v1" || name == u8"uwvm_ros_v2"};
             if(ros_call) { ros_memory_attribute.memory_access_mode = ::uwvm2::uwvm::wasm::type::preload_module_memory_access_mode_t::copy; }
             preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
                                                   ros_call, ::std::addressof(module), function_index};
@@ -7359,7 +7387,7 @@ namespace uwvm2::runtime::lib
                 {
                     if(target_params != activation.argument_bytes || target_results != result_bytes ||
                        runtime_target == nullptr || compiled_target == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                     auto const& previous{call_stack.frames.index_unchecked(frame_index)};
                     frame.ros_cross_module_ancestry = previous.ros_cross_module_ancestry || previous.module_id != frame.module_id;
 #endif
@@ -7374,7 +7402,7 @@ namespace uwvm2::runtime::lib
                     if(target.param_bytes != activation.argument_bytes || target.result_bytes != result_bytes) [[unlikely]]
                     { ::fast_io::fast_terminate(); }
                     auto frame{target.frame};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                     auto const& previous{call_stack.frames.index_unchecked(frame_index)};
                     frame.ros_cross_module_ancestry = previous.ros_cross_module_ancestry || previous.module_id != frame.module_id;
 #endif
@@ -7608,7 +7636,7 @@ namespace uwvm2::runtime::lib
                     {
                         auto const local_imported_module{tgt->u.local_imported.module_ptr};
                         if(local_imported_module == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                         // Consume a genuine host-tail token before even proc_exit can propagate.
                         call_stack_guard g{call_stack, tgt->frame.module_id, tgt->frame.function_index};
 #endif
@@ -7616,7 +7644,7 @@ namespace uwvm2::runtime::lib
                         runtime_checkpoint_guest_worker_bridge::try_builtin_proc_exit(tgt->frame.module_id,
                             tgt->frame.function_index, tgt, param_buffer, param_bytes);
 #endif
-#if !defined(UWVM_IMPORT_ROS1) && !defined(UWVM_IMPORT_ROS2)
+#if !defined(UWVM_IMPORT_ROS1) && !defined(UWVM_IMPORT_ROS2) && !defined(UWVM_IMPORT_ROSV2)
                         call_stack_guard g{call_stack, tgt->frame.module_id, tgt->frame.function_index};
 #endif
                         call_local_imported_with_wasip1_env(*local_imported_module,
@@ -8538,7 +8566,7 @@ namespace uwvm2::runtime::lib
             namespace emit = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             // This explicit EngineBuilder overload owns strings, unlike setMAttrs.
             // Preserve every host feature (including VE -vpu) in the same order.
-            ::llvm::SmallVector<::std::string, 16> attributes{};
+            ::llvm::SmallVector<::std::string, 16> attributes{}; // Exact EngineBuilder external ABI.
             attributes.reserve(host_target_attribute_storage.size());
             for(auto const& attribute: host_target_attribute_storage)
             {
@@ -8548,6 +8576,7 @@ namespace uwvm2::runtime::lib
             auto triple{get_runtime_llvm_jit_mcjit_target_triple()};
             ::uwvm2::runtime::compiler::llvm_jit::details::llvm_jit_append_native_host_vector_features(
                 triple,emit::get_llvm_string_ref(host_cpu_name),attributes);
+            ::uwvm2::runtime::compiler::llvm_jit::details::llvm_jit_mcjit_append_call_range_features(triple, attributes);
             // RuntimeDyld has MIPS far-call stubs, but they jump through $at
             // without establishing the PIC host callee's required $t9/GP.
             // Generate full-width C-ABI register calls instead. O32/N32 ignore
@@ -8570,7 +8599,7 @@ namespace uwvm2::runtime::lib
             // Fail through the caller's normal materialization/probe handling
             // before LLVM aborts in an unsupported object/relocation path.
             // This gate is native-only: AOT inventories must remain unfiltered.
-            ::std::string error{};
+            ::std::string error{}; // LLVM allocates this output through its own ABI.
             // The empty-architecture overload preserves the explicit triple
             // and is also available before LLVM 23's two-argument API change.
             auto const target{::llvm::TargetRegistry::lookupTarget({}, triple, error)};
@@ -8846,12 +8875,32 @@ namespace uwvm2::runtime::lib
             function_pass_manager.add(::llvm::createInstSimplifyLegacyPass());
             function_pass_manager.add(::llvm::createDeadCodeEliminationPass());
 
+            // Recorded/observed entries can contain thousands of identical
+            // checkpoint packet addresses and restore-only CFG edges. Fold
+            // the CFG and common expressions before InstCombine visits the
+            // shared allocas; otherwise every local rewrite requeues a very
+            // large use list. This prefix is absent from ordinary execution
+            // modules and never runs on the preserved multi-entry clone.
+            ::std::optional<::llvm::legacy::FunctionPassManager> checkpoint_prefix{};
             function_pass_manager.doInitialization();
             for(auto& function: module)
             {
                 if(function.isDeclaration()) { continue; }
+                if(function.hasFnAttribute("uwvm.checkpoint.typed-entry-v1") && !function.hasOptNone())
+                {
+                    if(!checkpoint_prefix)
+                    {
+                        checkpoint_prefix.emplace(::std::addressof(module));
+                        checkpoint_prefix->add(::llvm::createTargetTransformInfoWrapperPass(target_machine.getTargetIRAnalysis()));
+                        checkpoint_prefix->add(::llvm::createCFGSimplificationPass());
+                        checkpoint_prefix->add(::llvm::createEarlyCSEPass());
+                        checkpoint_prefix->doInitialization();
+                    }
+                    checkpoint_prefix->run(function);
+                }
                 function_pass_manager.run(function);
             }
+            if(checkpoint_prefix) { checkpoint_prefix->doFinalization(); }
             function_pass_manager.doFinalization();
         }
 
@@ -8931,35 +8980,15 @@ namespace uwvm2::runtime::lib
             return true;
         }
 
-        [[nodiscard]] inline constexpr bool
-            runtime_llvm_jit_function_name_in_range(::llvm::StringRef name,
-                                                    ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> const& function_names,
-                                                    ::std::size_t begin,
-                                                    ::std::size_t end) noexcept
-        {
-            // Linear lookup is fine here because this helper runs during object partitioning, not on execution hot paths.
-            for(::std::size_t i{begin}; i != end; ++i)
-            {
-                auto const& curr{function_names.index_unchecked(i)};
-                if(name.size() != curr.size()) { continue; }
-                if(name.size() == 0u) { return true; }
-                if(::std::memcmp(name.data(), curr.data(), name.size()) == 0) { return true; }
-            }
-            return false;
-        }
+#include "uwvm_runtime_llvm_partition_layout.h"
 
-        [[nodiscard]] inline constexpr bool
-            runtime_llvm_jit_name_in_list(::llvm::StringRef name, ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> const& names) noexcept
-        {
-            // Check whether a symbol name was collected as a cross-partition dependency.
-            for(auto const& curr: names)
-            {
-                if(name.size() != curr.size()) { continue; }
-                if(name.size() == 0u) { return true; }
-                if(::std::memcmp(name.data(), curr.data(), name.size()) == 0) { return true; }
-            }
-            return false;
-        }
+        // Frozen before workers start. Keys borrow the function-name vector or
+        // the original optimized Module, both of which outlive the joined batch.
+        // These fast_io-backed indexes are compilation-only state.
+        using runtime_llvm_jit_partition_function_map = ::uwvm2::utils::container::unordered_flat_map<
+            ::uwvm2::utils::container::u8string_view, ::std::size_t>;
+        using runtime_llvm_jit_partition_exposed_name_set = ::uwvm2::utils::container::unordered_flat_set<
+            ::uwvm2::utils::container::u8string_view>;
 
         inline constexpr void collect_runtime_llvm_jit_parallel_object_function_names(
             ::llvm::Module& module,
@@ -9006,8 +9035,8 @@ namespace uwvm2::runtime::lib
 
         inline constexpr void collect_runtime_llvm_jit_partition_exposed_symbol_from_value(::llvm::Value const* value,
                                                                                            ::std::size_t source_task_index,
-                                                                                           ::llvm::StringMap<::std::size_t> const& function_task_indices,
-                                                                                           ::llvm::StringMap<char>& exposed_symbol_names) noexcept
+                                                                                           runtime_llvm_jit_partition_function_map const& function_task_indices,
+                                                                                           runtime_llvm_jit_partition_exposed_name_set& exposed_symbol_names) noexcept
         {
             // Walk constants and instruction operands to find non-local symbols a partition must keep externally visible.
             if(value == nullptr) { return; }
@@ -9017,15 +9046,15 @@ namespace uwvm2::runtime::lib
             {
                 if(global_value->isDeclaration()) { return; }
 
-                auto const name{global_value->getName()};
+                auto const name{::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::get_uwvm_u8string_view(global_value->getName())};
                 if(name.empty()) { return; }
 
                 if(::llvm::isa<::llvm::Function>(global_value))
                 {
                     auto const target_task_it{function_task_indices.find(name)};
-                    if(target_task_it != function_task_indices.end() && target_task_it->getValue() != source_task_index) { exposed_symbol_names[name] = 0; }
+                    if(target_task_it != function_task_indices.end() && target_task_it->second != source_task_index) { exposed_symbol_names.emplace(name); }
                 }
-                else if(source_task_index != 0uz) { exposed_symbol_names[name] = 0; }
+                else if(source_task_index != 0uz) { exposed_symbol_names.emplace(name); }
                 return;
             }
 
@@ -9042,26 +9071,29 @@ namespace uwvm2::runtime::lib
             ::llvm::Module& module,
             ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> const& function_names,
             ::std::size_t functions_per_task,
-            ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string>& exposed_symbol_names) noexcept
+            runtime_llvm_jit_partition_function_map& function_task_indices,
+            runtime_llvm_jit_partition_exposed_name_set& exposed_symbol_names) noexcept
         {
             // Determine which function/global names are referenced across object partitions before each worker deletes bodies it
             // does not own.
-            ::llvm::StringMap<::std::size_t> function_task_indices{};
+            function_task_indices.clear();
+            function_task_indices.reserve(function_names.size());
+            exposed_symbol_names.clear();
             for(::std::size_t function_index{}; function_index != function_names.size(); ++function_index)
             {
                 auto const& function_name{function_names.index_unchecked(function_index)};
                 auto task_index{function_index / functions_per_task};
-                function_task_indices[::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::get_llvm_string_ref(function_name)] = task_index;
+                function_task_indices.emplace(::uwvm2::utils::container::u8string_view{function_name.data(), function_name.size()}, task_index);
             }
 
-            ::llvm::StringMap<char> exposed_symbol_name_map{};
             for(auto const& function: module)
             {
                 if(function.isDeclaration()) { continue; }
 
-                auto const source_task_it{function_task_indices.find(function.getName())};
+                auto const source_task_it{function_task_indices.find(
+                    ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::get_uwvm_u8string_view(function.getName()))};
                 if(source_task_it == function_task_indices.end()) { continue; }
-                auto const source_task_index{source_task_it->getValue()};
+                auto const source_task_index{source_task_it->second};
 
                 for(auto const& basic_block: function)
                 {
@@ -9072,7 +9104,7 @@ namespace uwvm2::runtime::lib
                             collect_runtime_llvm_jit_partition_exposed_symbol_from_value(operand.get(),
                                                                                          source_task_index,
                                                                                          function_task_indices,
-                                                                                         exposed_symbol_name_map);
+                                                                                         exposed_symbol_names);
                         }
                     }
                 }
@@ -9084,16 +9116,10 @@ namespace uwvm2::runtime::lib
                 collect_runtime_llvm_jit_partition_exposed_symbol_from_value(global_variable.getInitializer(),
                                                                              0uz,
                                                                              function_task_indices,
-                                                                             exposed_symbol_name_map);
+                                                                             exposed_symbol_names);
             }
 
-            exposed_symbol_names.clear();
-            exposed_symbol_names.reserve(exposed_symbol_name_map.size());
-            for(auto const& exposed_symbol_name: exposed_symbol_name_map)
-            {
-                auto const key{exposed_symbol_name.getKey()};
-                exposed_symbol_names.emplace_back(::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::get_uwvm_u8string_view(key));
-            }
+
         }
 
         struct runtime_llvm_jit_parallel_object_emit_failure_state
@@ -9105,10 +9131,8 @@ namespace uwvm2::runtime::lib
 
         inline ::uwvm2::utils::thread::scheduled_task make_runtime_llvm_jit_parallel_object_emit_task(
             ::uwvm2::utils::container::u8string const& source_bitcode,
-            ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> const& function_names,
-            ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> const& exposed_symbol_names,
-            ::std::size_t begin,
-            ::std::size_t end,
+            runtime_llvm_jit_partition_function_map const& function_task_indices,
+            runtime_llvm_jit_partition_exposed_name_set const& exposed_symbol_names,
             bool owns_global_definitions,
             ::uwvm2::utils::container::u8string const& host_cpu_name,
             ::uwvm2::utils::container::u8string const& host_tune_cpu_name,
@@ -9176,10 +9200,12 @@ namespace uwvm2::runtime::lib
                     }
                     if(function.isDeclaration()) { continue; }
 
-                    if(runtime_llvm_jit_function_name_in_range(function_name, function_names, begin, end))
+                    auto const name{llvm_jit_translate_details::get_uwvm_u8string_view(function_name)};
+                    auto const owner{function_task_indices.find(name)};
+                    if(owner != function_task_indices.end() && owner->second == partition_index)
                     {
                         if(!materialize_function(function)) { co_return; }
-                        if(runtime_llvm_jit_name_in_list(function_name, exposed_symbol_names)) { expose_runtime_llvm_jit_partition_symbol(function); }
+                        if(exposed_symbol_names.contains(name)) { expose_runtime_llvm_jit_partition_symbol(function); }
                     }
                     else
                     {
@@ -9192,7 +9218,8 @@ namespace uwvm2::runtime::lib
                 {
                     if(owns_global_definitions)
                     {
-                        if(!global_variable.isDeclaration() && runtime_llvm_jit_name_in_list(global_variable.getName(), exposed_symbol_names))
+                        if(!global_variable.isDeclaration() && exposed_symbol_names.contains(
+                            llvm_jit_translate_details::get_uwvm_u8string_view(global_variable.getName())))
                         {
                             expose_runtime_llvm_jit_partition_symbol(global_variable);
                         }
@@ -9326,17 +9353,19 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> function_names{};
             collect_runtime_llvm_jit_parallel_object_function_names(module, function_names);
             defined_function_count = function_names.size();
-            auto const task_count{runtime_llvm_jit_parallel_object_task_count(function_names.size(), extra_compile_threads)};
-            if(task_count == 0uz) { return runtime_llvm_jit_parallel_object_emit_result::not_applicable; }
-
+            auto const requested_task_count{runtime_llvm_jit_parallel_object_task_count(function_names.size(), extra_compile_threads)};
+            if(requested_task_count == 0uz) { return runtime_llvm_jit_parallel_object_emit_result::not_applicable; }
+            auto const layout{llvm_jit_partitioning::make_layout(function_names.size(), requested_task_count)};
+            auto const task_count{layout.task_count};
             auto const effective_extra_threads{task_count - 1uz};
 
             ::uwvm2::utils::container::u8string source_bitcode{};
             if(!serialize_runtime_llvm_jit_module_bitcode(module, source_bitcode)) [[unlikely]] { return runtime_llvm_jit_parallel_object_emit_result::failed; }
 
-            auto const functions_per_task{function_names.size() / task_count + static_cast<::std::size_t>(function_names.size() % task_count != 0uz)};
-            ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> exposed_symbol_names{};
-            collect_runtime_llvm_jit_partition_exposed_symbols(module, function_names, functions_per_task, exposed_symbol_names);
+            auto const functions_per_task{layout.functions_per_task};
+            runtime_llvm_jit_partition_function_map function_task_indices{};
+            runtime_llvm_jit_partition_exposed_name_set exposed_symbol_names{};
+            collect_runtime_llvm_jit_partition_exposed_symbols(module, function_names, functions_per_task, function_task_indices, exposed_symbol_names);
             object_outputs.resize(task_count);
 
             ::uwvm2::utils::thread::scheduled_task_batch task_batch{task_count};
@@ -9344,15 +9373,9 @@ namespace uwvm2::runtime::lib
             for(::std::size_t task_index{}; task_index != task_count; ++task_index)
             {
                 // The first partition keeps global definitions; later partitions expose references and drop duplicate definitions.
-                auto const begin{task_index * functions_per_task};
-                auto end{begin + functions_per_task};
-                if(end > function_names.size()) { end = function_names.size(); }
-
                 auto task{make_runtime_llvm_jit_parallel_object_emit_task(source_bitcode,
-                                                                          function_names,
+                                                                          function_task_indices,
                                                                           exposed_symbol_names,
-                                                                          begin,
-                                                                          end,
                                                                           task_index == 0uz,
                                                                           host_cpu_name,
                                                                           host_tune_cpu_name,
@@ -9679,7 +9702,7 @@ namespace uwvm2::runtime::lib
             rec.llvm_jit_local_raw_entry_addresses.clear();
             if(!rec.llvm_jit_full_publication)
             {
-                rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_delete_owned<full_code_publication>(
+                rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_unique<full_code_publication>(
                     ::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin());
             }
             // Existing materialization administration excludes target readers.
@@ -9926,6 +9949,9 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string> parallel_object_outputs{};
             ::std::size_t parallel_object_defined_function_count{};
             bool use_parallel_objects{};
+            // Compile-time-only specialization. Each private native alias is
+            // resolved and authenticated below before any code is published.
+            auto gc_private_clones=details::specialize_runtime_llvm_jit_gc_private_calls(*merged_module);
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
             // A genuine optimized Module and its actual owner-table listener
@@ -9971,6 +9997,8 @@ namespace uwvm2::runtime::lib
                     }
                     return false;
                 }
+                if(!details::outline_runtime_llvm_jit_gc_private_fallbacks(*merged_module,gc_private_clones))
+                { return false; }
                 llvm_jit_materialize_runtime_log_line(u8"optimize-end module=\"",
                                                       rec.module_name,
                                                       u8"\" time=",
@@ -10029,7 +10057,7 @@ namespace uwvm2::runtime::lib
 
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-            ::std::unique_ptr<details::native_owner_publication_bridge::captured> actual_native_declarations{};
+            ::uwvm2::utils::container::std_unique_ptr<details::native_owner_publication_bridge::captured> actual_native_declarations{};
             if(g_runtime.debug_pause_control)
             {
                 // Genuine optimized Module is still alive. Capture closed actual
@@ -10158,7 +10186,7 @@ namespace uwvm2::runtime::lib
             }};
 
             auto memory_manager{
-                ::uwvm2::utils::container::make_delete_owned<
+                ::uwvm2::utils::container::make_unique<
                     ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
             auto const memory_manager_observer{memory_manager.get()};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
@@ -10185,7 +10213,7 @@ namespace uwvm2::runtime::lib
             if(use_parallel_objects)
             {
                 // When objects were emitted externally, create an empty engine module that only hosts the MCJIT engine and object loader.
-                auto engine_module{::uwvm2::utils::container::make_delete_owned<::llvm::Module>(merged_module->getName(), *llvm_context_holder)};
+                auto engine_module{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_module(merged_module->getName(), *llvm_context_holder)};
                 if(engine_module == nullptr) [[unlikely]]
                 {
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
@@ -10233,7 +10261,7 @@ namespace uwvm2::runtime::lib
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
             // Local observer is declared AFTER the actual engine, so every
             // abort unregisters the still-live engine before engine destruction.
-            ::std::unique_ptr<details::pending_actual_native_endpoints> actual_native_observer{};
+            ::uwvm2::utils::container::std_unique_ptr<details::pending_actual_native_endpoints> actual_native_observer{};
             if(actual_native_declarations)
             {
                 actual_native_observer=details::native_owner_publication_bridge::observe_actual_full(
@@ -10262,7 +10290,7 @@ namespace uwvm2::runtime::lib
                    +[]() UWVM_THROWS
                    {
                        return ::uwvm2::runtime::exception::guest_exception{
-                           ::uwvm2::runtime::exception::value::make(::std::make_shared<unsigned char const>(0), {})};
+                           ::uwvm2::runtime::exception::value::make(::uwvm2::utils::container::make_shared<unsigned char const>(0), {})};
                    }
 #if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && \
     defined(UWVM_CPP_EXCEPTIONS) && defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && \
@@ -10291,7 +10319,7 @@ namespace uwvm2::runtime::lib
                 // the explicit debug session; ordinary instruction JITs retain
                 // their existing materialization path and cost.
                 *llvm_jit_engine, runtime_llvm_jit_unwind_call_stack_requested() ||
-                                      g_runtime.debug_pause_control != nullptr, private_binding != nullptr};
+                                      !gc_private_clones.empty() || g_runtime.debug_pause_control != nullptr, private_binding != nullptr};
 #else
             ::uwvm2::runtime::lib::details::pending_llvm_jit_code_ranges pending_code_ranges{
                 // A debug-full machine step authenticates the exact loaded JIT
@@ -10300,7 +10328,7 @@ namespace uwvm2::runtime::lib
                 // the explicit debug session; ordinary instruction JITs retain
                 // their existing materialization path and cost.
                 *llvm_jit_engine, runtime_llvm_jit_unwind_call_stack_requested() ||
-                                      g_runtime.debug_pause_control != nullptr};
+                                      !gc_private_clones.empty() || g_runtime.debug_pause_control != nullptr};
 #endif
             pending_code_ranges.configure_debug_full_capture(g_runtime.debug_pause_control != nullptr);
             if(use_parallel_objects)
@@ -10496,6 +10524,16 @@ namespace uwvm2::runtime::lib
                 { if(address == 0u) [[unlikely]] { return false; } }
             }
 
+            for(auto& clone: gc_private_clones)
+            {
+                if(clone.function_index<import_func_count ||
+                   clone.function_index-import_func_count>=local_func_count ||
+                   materialized_module_id==::std::numeric_limits<::std::size_t>::max()) { return false; }
+                clone.loaded_address=static_cast<::std::uintptr_t>(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::function_address(*llvm_jit_engine,clone.name));
+                // Only an actual exact function start inside this pending
+                // engine's observed RX extent may become a diagnostic alias.
+                if(!pending_code_ranges.owns_pending_loaded_function_entry(clone.loaded_address)) { return false; }
+            }
             // A symbol lookup can demand another object. Recheck before any
             // actual source/native-owner seal or owning engine adoption.
             if(pending_code_ranges.has_observation_failure()) [[unlikely]]
@@ -10574,6 +10612,8 @@ namespace uwvm2::runtime::lib
             // and complete symbol resolution; no LLVM/ObjectFile borrow escapes.
             rec.llvm_jit_full_publication->native_provenance =
                 pending_code_ranges.take_debug_full_capture(current_runtime_generation());
+            for(auto const& clone: gc_private_clones)
+            { record_llvm_jit_unwind_entry(materialized_module_id,clone.function_index,clone.loaded_address,false,clone.wrapper_entry); }
             if(materialized_module_id != ::std::numeric_limits<::std::size_t>::max())
             {
                 for(::std::size_t local_index{}; local_index != local_func_count; ++local_index)
@@ -10747,7 +10787,7 @@ namespace uwvm2::runtime::lib
 
         UWVM2_RUNTIME_INTERPRETER_CALLBACK_FUNC_ATTR inline constexpr void
             trap_memory_out_of_bounds(::uwvm2::object::memory::error::memory_error_t const& memerr) noexcept
-        { print_memory_out_of_bounds_trap(memerr); }
+        { memory_out_of_bounds_fatal(memerr); }
 
         template <typename... Args>
         UWVM_ALWAYS_INLINE inline constexpr void execute_defined_for_bridge(Args&&... args) UWVM_THROWS
@@ -12214,7 +12254,7 @@ namespace uwvm2::runtime::lib
                                    plan->function_count != numeric_compile_plan->function_count)
                                 { ::fast_io::fast_terminate(); }
                                 if(!rec.llvm_jit_full_publication)
-                                { rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_delete_owned<full_code_publication>(owned_source); }
+                                { rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_unique<full_code_publication>(owned_source); }
                                 rec.llvm_jit_full_publication->plan = ::std::move(plan);
                                 rec.llvm_jit_full_publication->runtime_epoch = current_runtime_generation();
                                 owned_source->bind_numeric_plan_lifetime_after_actual_validation(rec.llvm_jit_full_publication->plan);
@@ -12229,7 +12269,7 @@ namespace uwvm2::runtime::lib
                                 // ordinary native lowering, without publishing a candidate.
                                 llvm_jit_opt.pending_numeric_plan = nullptr;
                                 if(!rec.llvm_jit_full_publication)
-                                { rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_delete_owned<full_code_publication>(owned_source); }
+                                { rec.llvm_jit_full_publication = ::uwvm2::utils::container::make_unique<full_code_publication>(owned_source); }
                                 rec.llvm_jit_full_publication->numeric_body_fallback = true;
                                 rec.llvm_jit_full_publication->plan.reset();
                                 owned_source->clear_numeric_plan_lifetime_after_drain();
@@ -12328,7 +12368,7 @@ namespace uwvm2::runtime::lib
 
                 if(compile_llvm_jit_translation)
                 {
-# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+# if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                     // The ordinary LLVM full path with host imports cannot use
                     // the numeric plan. Publish its completed fused validation
                     // from the actual compiler result too, before materialization.
@@ -12684,7 +12724,7 @@ namespace uwvm2::runtime::lib
 
                     auto const& function_type{info.function_type};
                     auto const copy_range{
-                        [](auto const& values, ::std::vector<::std::uint_least8_t>& types_out) noexcept
+                        [](auto const& values, ::uwvm2::utils::container::std_vector<::std::uint_least8_t>& types_out) noexcept
                         {
                             if(values.begin == nullptr || values.end == nullptr)
                             {
@@ -13158,18 +13198,10 @@ namespace uwvm2::runtime::lib
             .memory_length = memory_length,
             .memory_type_size = memory_type_size
         };
-        print_memory_out_of_bounds_trap(memerr);
-# if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-        debug_observe_actual_trap(trap_kind::memory_out_of_bounds);
-# endif
-
-        using terminate_func_t = void (*)() noexcept;
-        terminate_func_t volatile terminate_func{::fast_io::fast_terminate};
-        terminate_func();
-        ::std::atomic_signal_fence(::std::memory_order_seq_cst);
+        memory_out_of_bounds_fatal(memerr);
     }
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     extern "C++" void llvm_jit_publish_ros_provenance(::std::uintptr_t provenance) noexcept
     {
         // Only the generated private ABI supplies this value. The enclosing native execution
@@ -13202,7 +13234,7 @@ namespace uwvm2::runtime::lib
 
     extern "C++" void llvm_jit_prepare_tail_call_stack_frame(::std::size_t module_id, ::std::size_t function_index) noexcept
     {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         get_call_stack().prepare_ros_tail(module_id, function_index);
 #else
         // Non-ROS code generation retains its existing pop-only lowering.
@@ -13326,7 +13358,6 @@ namespace uwvm2::runtime::lib
         g_runtime.gc_collection.allocation_poll(module_address);
 #endif
     }
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
     inline void runtime_gc_managed_array_allocation_poll(::std::uintptr_t module_address,
         ::std::size_t length) noexcept
     {
@@ -13344,7 +13375,6 @@ namespace uwvm2::runtime::lib
         g_runtime.gc_collection.allocation_poll_large_array(module_address,length);
 #endif
     }
-#endif
     inline void runtime_gc_prepare_full_cohort() noexcept
     {
         namespace gc = ::uwvm2::runtime::gc;
@@ -13477,9 +13507,7 @@ namespace uwvm2::runtime::lib
         // reuse already-published roots-disabled code after stage completion.
         if(!g_runtime.gc_collection.request_cli(serial)) { return result::unowned_or_uninitialized; }
         gc::managed_allocation_poll_callback.store(::std::addressof(runtime_gc_managed_allocation_poll), ::std::memory_order_release);
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
         gc::managed_array_allocation_poll_callback.store(::std::addressof(runtime_gc_managed_array_allocation_poll), ::std::memory_order_release);
-#endif
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
         gc::managed_page_borrow_callback.store(&runtime_gc_borrow_actual_numeric_page, ::std::memory_order_release);
         gc::managed_page_boundary_callback.store(&runtime_gc_numeric_page_boundary, ::std::memory_order_release);
@@ -14131,6 +14159,7 @@ namespace uwvm2::runtime::lib
             }
             retired_profile = ::std::move(g_runtime.checkpoint_profile);
             g_runtime.checkpoint_host_enabled.store(false, ::std::memory_order_release);
+        checkpoint_replay_reset();
             retired_state = ::std::exchange(g_runtime.checkpoint_host_state, runtime_checkpoint_host_bridge::owner{});
             retired_control = ::std::move(g_runtime.debug_pause_control);
             retired_observer = ::std::move(g_runtime.debug_observer);
@@ -14622,7 +14651,7 @@ namespace uwvm2::runtime::lib
             if(global_binding && (!production_update || global_binding->module() != runtime_module))
             { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
             immutable::compilation_scope immutable_scope{global_binding.get()};
-            auto transaction{::std::make_unique<llvm_jit_debug_replace_transaction>()};
+            auto transaction{::uwvm2::utils::container::make_unique<llvm_jit_debug_replace_transaction>()};
             transaction->immutable_global_binding = ::std::move(global_binding);
             transaction->module_id = static_cast<::std::size_t>(module_index);
             transaction->function_index = static_cast<::std::size_t>(function_index);
@@ -14791,7 +14820,7 @@ namespace uwvm2::runtime::lib
 
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-            ::std::unique_ptr<details::native_owner_publication_bridge::captured> actual_native_declarations{};
+            ::uwvm2::utils::container::std_unique_ptr<details::native_owner_publication_bridge::captured> actual_native_declarations{};
             {
                 // Private replacement IR/body/plan already passed SAME fused
                 // validation+translation and optimization. Preserve the NEW
@@ -14825,7 +14854,7 @@ namespace uwvm2::runtime::lib
             else if(native_imports_requested)
             { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
 
-            ::std::vector<::std::pair<::llvm::GlobalVariable*, void const*>> immutable_mappings;
+            ::uwvm2::utils::container::std_vector<::std::pair<::llvm::GlobalVariable*, void const*>> immutable_mappings;
             if(transaction->immutable_global_binding)
             {
                 immutable_mappings.reserve(transaction->immutable_global_binding->slots().size());
@@ -14852,7 +14881,7 @@ namespace uwvm2::runtime::lib
                     immutable_mappings.emplace_back(global, slot.address());
                 }
             }
-            auto memory_manager{::uwvm2::utils::container::make_delete_owned<
+            auto memory_manager{::uwvm2::utils::container::make_unique<
                 ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
             if(memory_manager == nullptr)
             { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
@@ -14892,7 +14921,7 @@ namespace uwvm2::runtime::lib
                    +[]() UWVM_THROWS
                    {
                        return ::uwvm2::runtime::exception::guest_exception{
-                           ::uwvm2::runtime::exception::value::make(::std::make_shared<unsigned char const>(0), {})};
+                           ::uwvm2::runtime::exception::value::make(::uwvm2::utils::container::make_shared<unsigned char const>(0), {})};
                    }
 #if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && \
     defined(UWVM_CPP_EXCEPTIONS) && defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && \
@@ -14903,7 +14932,7 @@ namespace uwvm2::runtime::lib
             { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
             // Debug-full embeds process-local observer/slot addresses: replacement
             // objects must never enter a persistent or cross-process JIT cache.
-            transaction->pending_ranges = ::uwvm2::utils::container::make_delete_owned<
+            transaction->pending_ranges = ::uwvm2::utils::container::make_unique<
                 ::uwvm2::runtime::lib::details::pending_llvm_jit_code_ranges>(
                     *transaction->engine, true);
             if(transaction->pending_ranges == nullptr)
@@ -15145,7 +15174,7 @@ namespace uwvm2::runtime::lib
         // code and CFI even if a later publication step cannot complete.
         rec.llvm_jit_debug_full_retained_generations.emplace_back(transaction);
         transaction->committed = true;
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         // All rejection paths precede adoption. Retire authority before ANY
         // new entry address becomes visible, without waiting on Host locks
         // under the pause-domain mutex. The controller drains the local Host
@@ -15221,7 +15250,7 @@ namespace uwvm2::runtime::lib
 # if defined(UWVM_RUNTIME_LLVM_JIT)
         if(transaction != nullptr)
         {
-            if(!transaction->committed) { delete transaction; }
+            if(!transaction->committed) { ::uwvm2::utils::allocator::fast_io_strict::destroy_object(transaction); }
             else
             {
                 // After stopped-set publication the token is record-owned.
@@ -15400,7 +15429,7 @@ namespace uwvm2::runtime::lib
         {
             try
             {
-                auto domain = ::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>();
+                auto domain = ::uwvm2::utils::container::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>();
                 if(configure_native_guest_control(::std::move(domain), {}, llvm_jit_debug_safe_point_granularity::entry_loop, true) !=
                     llvm_jit_debug_configure_result::ok) { return false; }
                 return prepare_native_guest_control();
@@ -15731,6 +15760,9 @@ namespace uwvm2::runtime::lib
             ::uwvm2::imported::ros::management::transition::runtime_retirement,
             nullptr, current_runtime_generation());
 #endif
+#if defined(UWVM_IMPORT_ROSV2)
+        ::uwvm2::imported::ros::scene::lifecycle::retire(nullptr,current_runtime_generation(),true);
+#endif
         {
             runtime_state_publication_guard runtime_state_guard{};
             // Execution admission is closed and outermost host entries have drained.
@@ -15738,12 +15770,8 @@ namespace uwvm2::runtime::lib
             // still require host synchronization; they do not own execution leases.
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             ::uwvm2::runtime::gc::managed_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
                 ::uwvm2::runtime::gc::managed_array_allocation_poll_callback.store(nullptr, ::std::memory_order_release);
-#endif
 #if defined(UWVM_EXPERIMENTAL_MANAGED_NUMERIC_PAGE)
                 ::uwvm2::runtime::gc::managed_page_borrow_callback.store(nullptr, ::std::memory_order_release);
                 ::uwvm2::runtime::gc::managed_page_boundary_callback.store(nullptr, ::std::memory_order_release);
@@ -15757,6 +15785,9 @@ namespace uwvm2::runtime::lib
 #endif
 #endif
             g_runtime.gc_collection.reset_after_execution_drain();
+# if defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
+            checkpoint_join_published_workers_after_drain(g_runtime.checkpoint_world);
+# endif
 #endif
             advance_runtime_generation();
 
@@ -15796,8 +15827,12 @@ namespace uwvm2::runtime::lib
             g_runtime.debug_granularity = {};
             g_runtime.debug_activation_storage_budget = details::debug_activation::default_storage_budget;
             g_runtime.checkpoint_host_enabled.store(false, ::std::memory_order_release);
+        checkpoint_replay_reset();
             g_runtime.checkpoint_host_state.reset(); // Real generation already drained; no concurrent owner read.
             g_runtime.checkpoint_profile.reset();
+# if defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
+            g_runtime.checkpoint_world.reset();
+# endif
 # endif
 
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
@@ -16148,7 +16183,14 @@ namespace uwvm2::runtime::lib
            compiled_generation == 0u ||
            rec.llvm_jit_debug_full_entry_generations[function_index - imports] != compiled_generation)
         { ledger->poison(); return 0u; }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+        auto const provenance{get_call_stack().ros_native_provenance};
+        if(module_id >= (SIZE_MAX >> 1u) || provenance < 2u ||
+           (provenance >> 1u) != module_id + 1u) { ledger->poison(); return 0u; }
+        return ledger->enter(module_id, function_index, compiled_generation, current_runtime_generation(), (provenance & 1u) != 0u);
+#else
         return ledger->enter(module_id, function_index, compiled_generation, current_runtime_generation());
+#endif
 # else
         (void)module_id; (void)function_index; (void)compiled_generation; return 0u;
 # endif
@@ -16358,7 +16400,7 @@ namespace uwvm2::runtime::lib
                 debug_capture_actual_park(participant, point.location, point.local_snapshot, point.captured_local_count, true);
             });
         }
-        bool debug_suspend_actual_wait(::uwvm2::utils::thread::keyed_wait_set::suspension_borrow const&) noexcept
+        bool debug_suspend_actual_wait(::uwvm2::utils::thread::keyed_wait_set::suspension_borrow const& borrow) noexcept
         {
             auto const point{g_debug_wait_point}; auto const participant{g_debug_pause_participant};
             auto const ledger{g_debug_activation_ledger};
@@ -16373,8 +16415,11 @@ namespace uwvm2::runtime::lib
             // This is an in-flight wait, not a generated native instruction
             // landing. Never publish the VM helper's PC as an asmdbg endpoint.
             if(g_debug_native_safe_point_site.return_pc != 0u) { return false; }
+            auto const* previous=checkpoint_actual_wait_borrow;
+            checkpoint_actual_wait_borrow=::std::addressof(borrow);
             participant->poll(point.location, [&]() noexcept
             { debug_capture_actual_park(participant, point.location, point.local_snapshot, point.captured_local_count, true); });
+            checkpoint_actual_wait_borrow=previous;
             return !g_runtime.debug_pause_control->is_closed();
         }
     }
@@ -16482,6 +16527,14 @@ namespace uwvm2::runtime::lib
         auto const incarnation{ledger != nullptr && ledger->valid() && ledger->count() != 0u ?
             ledger->data()[ledger->count() - 1u].incarnation : 0u};
         g_debug_wait_point = {location, local_snapshot, captured_local_count, true, incarnation};
+        // A real debugger stop is a delivery boundary. Drain prior asynchronous
+        // MTE evidence on its owning worker before exposing a resumable image;
+        // snapshots never silently discard an in-flight tag fault. This bridge
+        // is absent from ordinary, uninstrumented execution.
+        if(::uwvm2::extension::memtag::asynchronous_requested())
+            ::uwvm2::runtime::memtag::deferred::poll(true);
+
+        checkpoint_replay_probe_opcode(location,participant->identifier());
         auto const& observer{g_runtime.debug_observer};
         if(observer.on_safe_point != nullptr)
         {
@@ -16500,6 +16553,10 @@ namespace uwvm2::runtime::lib
         // real park and never publishes VM native state.
         if(::uwvm2::uwvm::debugger::native_step::skip_pause_for_continuation())
         {
+            // Native NI/finish can cross whole guest functions while avoiding
+            // the cooperative park. The opcode still executes: record/verify
+            // it exactly once, just as on the ordinary post-poll path below.
+            checkpoint_replay_enter_opcode(location,participant->identifier());
             g_debug_native_safe_point_site = {};
 #  if defined(__linux__) && defined(__x86_64__) && UWVM2_RUNTIME_NATIVE_STEP_ASM_BRIDGE
             return 0;
@@ -16510,6 +16567,7 @@ namespace uwvm2::runtime::lib
 #  endif
         participant->poll(location, [&]() noexcept
         { debug_capture_actual_park(participant, location, local_snapshot, captured_local_count, false); });
+        checkpoint_replay_enter_opcode(location,participant->identifier());
 #  if UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE
         // The real noinline return edge was captured above. Installing an
         // owned software breakpoint needs no CPU flag in the VM epilogue.
@@ -16806,7 +16864,7 @@ namespace uwvm2::runtime::lib
         // [safe                                                           ] only the validated emitter supplies this address.
         // ^^ tuple borrows it synchronously; all payload bits are copied before unwinding this frame.
         ::std::span<::std::byte const> tuple{reinterpret_cast<::std::byte const*>(buffer_address), bytes};
-        ::std::vector<::uwvm2::runtime::exception::payload_field> fields{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
         fields.reserve(count);
         ::std::size_t offset{};
         for(::std::size_t i{}; i != count; ++i)
@@ -16912,7 +16970,7 @@ namespace uwvm2::runtime::lib
         // [generated private alloca: exactly bytes initialized tuple bytes] end
         // [safe                                                      ] the validated emitter supplies this native address.
         ::std::span<::std::byte const> tuple{reinterpret_cast<::std::byte const*>(buffer_address), bytes};
-        ::std::vector<::uwvm2::runtime::exception::payload_field> fields{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
         fields.reserve(count);
         ::std::size_t offset{};
         for(::std::size_t i{}; i != count; ++i)
@@ -17502,7 +17560,7 @@ namespace uwvm2::runtime::lib
     // - mmap descriptors expose direct views only when rights and backend state allow it.
     extern "C++" bool ros_execution_backend_supported_host_api() noexcept
     {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 # if UWVM2_HAS_THREADED_PROFILE_HOST_API
         if(threaded_profile::has_active_host_call())
         { ros_caller_identity actual{}; return threaded_profile::observed_caller(actual); }
@@ -17527,7 +17585,7 @@ namespace uwvm2::runtime::lib
     extern "C++" bool builtin_observed_caller_identity_host_api(host_observer_caller_identity& out) noexcept
     {
         out = {};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         // These builds publish a private context for every builtin import. A
         // preload C API cannot be attributed as an ordinary builtin Wasm call.
         auto const& context{get_preload_call_context()};
@@ -17553,10 +17611,32 @@ namespace uwvm2::runtime::lib
 #endif
     }
 
+    extern "C++" ::std::int32_t runtime_threaded_spawn_unavailable_host_api() noexcept
+    {
+        namespace i1t=::uwvm2::utils::control::wasithread;
+        host_observer_caller_identity caller{};
+        i1t::policy::admission refusal{};
+        ::std::u8string_view module{};
+        if(builtin_observed_caller_identity_host_api(caller))
+        {
+            module={caller.module_name.data(),caller.module_name.size()};
+            refusal.source=i1t::runtime_policy().effective(module);
+            refusal.reason=!refusal.source.exists?i1t::failure::unbound:
+                !refusal.source.enabled?i1t::failure::disabled:
+                refusal.source.interface==i1t::exposure::hidden?i1t::failure::hidden:
+                refusal.source.interface==i1t::exposure::deny?i1t::failure::denied:i1t::failure::execution_profile;
+        }
+        else refusal.reason=i1t::failure::unbound;
+        // Observation contributes labels only. This path never reserves a slot,
+        // seals authority, or invokes a provider, irrespective of the label.
+        i1t::diagnose(refusal,module);
+        return -1;
+    }
+
     extern "C++" bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept
     {
         out = {};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         auto const& context{get_preload_call_context()};
         if(!context.trusted_ros_call || context.capi_function != nullptr) { return false; }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
@@ -17600,7 +17680,7 @@ namespace uwvm2::runtime::lib
             out = {};
             return false;
         }
-    #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         auto const module_id{get_preload_call_context().module_id};
         if(module_id >= g_runtime.modules.size() ||
            ::std::atomic_ref<bool>{g_runtime.modules.index_unchecked(module_id).ros_authority_retired}.load(::std::memory_order_acquire))
@@ -17614,10 +17694,11 @@ namespace uwvm2::runtime::lib
 
 
 #include "uwvm_runtime_ros_source_facts.h"
+#include "uwvm_runtime_ros_exchange.h"
 
     extern "C++" void ros_retire_replaced_module_host_api(::std::size_t module_id) noexcept
     {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         // A management-thread callback has no active Guest entry on its TLS.
         // Parked Guest threads may still own execution leases. Do not require
         // their global retirement or wait while holding the pause-domain lock.
@@ -17640,8 +17721,13 @@ namespace uwvm2::runtime::lib
         // The opaque key is compared with the original epoch; it is never
         // dereferenced by cleanup. A later incarnation cannot be selected by
         // address reuse. No Host lease is acquired under publication above.
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
         ::uwvm2::imported::ros::management::retire(
             ::uwvm2::imported::ros::management::transition::function_replacement, object, epoch);
+#endif
+#if defined(UWVM_IMPORT_ROSV2)
+        ::uwvm2::imported::ros::scene::lifecycle::retire(object,epoch,false);
+#endif
 #else
         (void)module_id;
 #endif
@@ -17669,6 +17755,11 @@ namespace uwvm2::runtime::lib
         ::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size,
         ::std::uint64_t& normalized) noexcept
     {
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        checkpoint_replay_host_memory_scope journal{0u,memory_index,offset,size};
+#endif
+        auto const accepted=[&]() noexcept
+        {
         normalized=0u;
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         if(threaded_profile::has_active_host_call())
@@ -17687,6 +17778,12 @@ namespace uwvm2::runtime::lib
         ::std::size_t checked{};
         if(!validate_preload_copy_range(resolved.byte_length,offset,size,checked)) { return false; }
         normalized=checked;return true;
+        }();
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        return journal.finish(accepted);
+#else
+        return accepted;
+#endif
     }
     extern "C++" [[nodiscard]] bool preload_memory_range_host_api(
         ::std::size_t memory_index, ::std::uint_least64_t offset, ::std::size_t size) noexcept
@@ -17698,21 +17795,43 @@ namespace uwvm2::runtime::lib
     extern "C++" [[nodiscard]] bool
         preload_memory_read_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void* destination, ::std::size_t size) noexcept
     {
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        checkpoint_replay_host_memory_scope journal{1u,memory_index,offset,size};
+#endif
+        auto const accepted=[&]() noexcept
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         if(threaded_profile::has_active_host_call()) { return threaded_profile::memory_copy(memory_index, offset, destination, size, false); }
 #endif
         // Copy from a selected preload memory after backend-specific bounds and rights checks.
         return preload_memory_read_impl(memory_index, offset, destination, size);
+        }();
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        return journal.finish(accepted);
+#else
+        return accepted;
+#endif
     }
 
     extern "C++" [[nodiscard]] bool
         preload_memory_write_host_api(::std::size_t memory_index, ::std::uint_least64_t offset, void const* source, ::std::size_t size) noexcept
     {
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        checkpoint_replay_host_memory_scope journal{2u,memory_index,offset,size};
+#endif
+        auto const accepted=[&]() noexcept
+        {
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         if(threaded_profile::has_active_host_call()) { return threaded_profile::memory_copy(memory_index, offset, const_cast<void*>(source), size, true); }
 #endif
         // Copy into a selected preload memory after backend-specific bounds and rights checks.
         return preload_memory_write_impl(memory_index, offset, source, size);
+        }();
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+        return journal.finish(accepted);
+#else
+        return accepted;
+#endif
     }
 
 #include "uwvm_runtime_checkpoint_host_admission_api.h"
@@ -17720,6 +17839,7 @@ namespace uwvm2::runtime::lib
 // these private leaves; no guest instruction or bridge selects this query.
 // Selected resumable imports classify/count their actual final host leaf.
 // All old dispatch/cache/publication/TLS implementations are already defined.
+#include "uwvm_runtime_checkpoint_execution_replay_impl.h"
 #include "uwvm_runtime_checkpoint_effect_hooks.h"
 #include "uwvm_runtime_checkpoint_observation_calls.h"
 #include "uwvm_runtime_checkpoint_thread_capture.h"
@@ -17733,6 +17853,8 @@ namespace uwvm2::runtime::lib
 #include "uwvm_runtime_checkpoint_guest_worker_registration_impl.h"
 #include "uwvm_runtime_checkpoint_coherent_data_manager.h"
 #include "uwvm_runtime_checkpoint_cold_resource_api.h"
+#include "uwvm_runtime_checkpoint_execution_replay_api.h"
+#include "uwvm_runtime_checkpoint_pending_import_api.h"
 #include "uwvm_runtime_debug_source_memory_transaction.h"
 #include "uwvm_runtime_debug_source_caller_frame.h"
 #include "uwvm_runtime_crash_dump_impl.h"
@@ -17743,7 +17865,10 @@ namespace uwvm2::runtime::lib
 #include "uwvm_runtime_checkpoint_continuation_dispatcher.h"
 #include "uwvm_runtime_checkpoint_staged_llvm_full_engine.h"
 #include "uwvm_runtime_checkpoint_world_resources.h"
+#include "uwvm_runtime_checkpoint_world_wasip1_api.h"
+#include "uwvm_runtime_checkpoint_world_execution_api.h"
 #include "uwvm_runtime_checkpoint_world_preparation_api.h"
+#include "uwvm_runtime_checkpoint_world_publication_api.h"
 #include "uwvm_runtime_checkpoint_native_retirement_api.h"
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
 #include "uwvm_runtime_threaded_wasip1_adapter.h"

@@ -150,6 +150,15 @@ establish lifetime protection. The owner lease and complete-operation helpers
 address this interval on migrated paths; raw provider spans and tag reuse
 require separate qualification.
 
+Owner-created shared shadow views also acquire the owner's exclusive tag gate
+for tag stores. A direct borrowed-view write therefore cannot bypass an active
+checked access. Complete MTE instructions use the internal already-leased view
+while retaining the gate through both tag publication and zeroing. Private
+(non-shared) views introduce no locking. Raw tag-array views remain caller-owned
+and do not prove native memory lifetime; a standalone `check` is not an access
+lease. The deterministic `logical_retag_window.cc` regression covers direct
+owner-view and actual instruction retags for both address widths.
+
 The merged lease implementation has passed bounded interpreter/JIT, host-buffer,
 metadata and DEV replacement regressions on all five targets. A separate native
 embedding matrix exercises atomic wait32/wait64, both engines, and subsequent
@@ -468,6 +477,23 @@ disabled-mode code equivalence; and measured SDK-level overhead.
 
 All language runtimes and allocators need an auditable instrumentation path.
 Mandatory SDK MTE builds must follow those results, rather than replace them.
+
+## Atomic access failures
+
+Tagged atomic loads, stores, read-modify-write operations, waits and notifications
+reject natural misalignment before consulting linear-memory bounds or allocation
+tags. Interpreter and LLVM paths use the same order for memory32 and memory64,
+including shared memories. Tag bits occupy the high address bits and do not affect
+natural alignment. This early rejection neither forms a host pointer nor accesses
+memory; aligned operations still require their complete bounds and tag checks.
+Report-only MTE does not permit an unaligned atomic operation to continue, and an
+access rejected for misalignment does not produce a tag-violation report.
+
+LLVM must retain potentially faulting atomic accesses even when their return
+values are dropped or their operands leave the stored bits unchanged. A memory
+guard can enforce a Wasm trap only if the generated machine code performs the
+access. Guest atomic instructions therefore preserve both volatile observability
+and sequentially consistent ordering.
 
 ## GC and tagged linear addresses
 

@@ -1,12 +1,16 @@
 // Included in the runtime aggregation TU, after private replacement compilation.
 // The production publisher never calls a debugger mutation entry point.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 namespace production_update_detail
 {
     namespace update = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace immutable_globals = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
-    inline void append_execution_safety_policy(::std::vector<unsigned char>& material)
+    inline void append_execution_safety_policy(::uwvm2::utils::container::std_vector<unsigned char>& material)
     {
     // The issuer authorizes this execution-safety contract, separately
     // from debugger permissions. Diagnostic continuation must never
@@ -21,7 +25,7 @@ namespace production_update_detail
     {
         try
         {
-            ::std::vector<unsigned char> material;
+            ::uwvm2::utils::container::std_vector<unsigned char> material;
             append_execution_safety_policy(material);
             auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
             update::append_u64(material, file.module_name.size());
@@ -107,20 +111,20 @@ namespace production_update_detail
         update::protocol protocol{};
         update::digest policy_fingerprint{};
         ::std::thread::id management_thread{::std::this_thread::get_id()};
-        ::std::vector<unsigned char> installed{}, target{};
-        ::std::vector<::std::unique_ptr<llvm_jit_debug_replace_transaction>> functions{};
-        ::std::vector<update::scalar_reset_record> scalar_resets{};
+        ::uwvm2::utils::container::std_vector<unsigned char> installed{}, target{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> functions{};
+        ::uwvm2::utils::container::std_vector<update::scalar_reset_record> scalar_resets{};
         immutable_globals::owner current_global_binding{}, pending_global_binding{};
-        ::std::unique_ptr<update::module_transition_plan> module_plan{};
-        ::std::shared_ptr<::std::vector<unsigned char> const> current_data_image{}, pending_data_image{};
+        ::uwvm2::utils::container::std_unique_ptr<update::module_transition_plan> module_plan{};
+        ::std::shared_ptr<::uwvm2::utils::container::std_vector<unsigned char> const> current_data_image{}, pending_data_image{};
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         using policy_plan_type = update::prepared_wasi_policy<::uwvm2::object::memory::linear::native_memory_t>;
-        ::std::unique_ptr<policy_plan_type> policy_plan{};
+        ::uwvm2::utils::container::std_unique_ptr<policy_plan_type> policy_plan{};
 #endif
         update::digest pending_contract{}, pending_policy_fingerprint{}, pending_state_measurement{};
         ::std::uint64_t pending_policy_generation{}, pending_revocation_generation{};
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        ::std::unique_ptr<threaded_management_exclusion> threaded_exclusion{};
+        ::uwvm2::utils::container::std_unique_ptr<threaded_management_exclusion> threaded_exclusion{};
 #endif
         ::uwvm2::utils::thread::execution_domain::maintenance_transition maintenance{};
         ::uwvm2::utils::thread::execution_domain::private_generation_gate fence{};
@@ -176,7 +180,7 @@ namespace production_update_detail
     };
     // Destroyed before g_runtime. Pending ownership closes admission on detach;
     // no destructor resumes old code or rolls back an authenticated COMMIT.
-    inline ::std::unique_ptr<session> current{};
+    inline ::uwvm2::utils::container::std_unique_ptr<session> current{};
     [[nodiscard]] inline bool available() noexcept
     {
         if(!current || !current->same_thread() || current->runtime_generation != current_runtime_generation()) { return false; }
@@ -238,7 +242,7 @@ namespace production_update_detail
     {
         s.pending_global_binding = s.current_global_binding;
         bool changed{};
-        auto values{s.current_global_binding ? s.current_global_binding->values() : ::std::vector<immutable_globals::value>{}};
+        auto values{s.current_global_binding ? s.current_global_binding->values() : ::uwvm2::utils::container::std_vector<immutable_globals::value>{}};
         for(auto const& change : s.scalar_resets)
         {
             if(!change.immutable) { continue; }
@@ -299,7 +303,7 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
        !::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty()) { return u::status::unsupported; }
     try
     {
-        auto state{::std::make_unique<production_update_detail::session>()};
+        auto state{::uwvm2::utils::container::make_unique<production_update_detail::session>()};
         auto const* first{reinterpret_cast<unsigned char const*>(file.source_cbegin())};
         state->installed.assign(first, first + file.source_size()); u::digest base{};
         if(!u::hash(state->installed, base)) { return u::status::unsupported; }
@@ -309,13 +313,13 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
         ::std::copy(state->policy_fingerprint.begin(), state->policy_fingerprint.end(), policy.begin()+32);
         if(!u::hash(policy, measured_config.contract)) { return u::status::unsupported; }
         if(auto result{state->protocol.configure(measured_config, base)}; result != u::status::ok) { return result; }
-        auto domain{::std::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>()};
+        auto domain{::uwvm2::utils::container::make_shared<::uwvm2::utils::thread::cooperative_pause_domain>()};
         bool configured{};
         if(get_runtime_execution_entry_depth() != 0 || get_runtime_state_publication_depth() != 0 ||
            get_runtime_compilation_metadata_callback_depth() != 0) { return u::status::invalid_state; }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        state->threaded_exclusion.reset(new threaded_management_exclusion{
-            runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)});
+        state->threaded_exclusion.reset(::uwvm2::utils::allocator::fast_io_strict::object<threaded_management_exclusion>([&](threaded_management_exclusion* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) threaded_management_exclusion{
+            runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)}; }));
         if(!*state->threaded_exclusion) { return u::status::busy; }
 #endif
         state->maintenance = g_runtime.execution_domain.try_maintenance_transition();
@@ -423,22 +427,22 @@ static ::uwvm2::utils::update::status prepare_update_internal(
     {
         // Copy once. Hash, scope validation, compile and activation use this owner.
         s.target.assign(target.begin(), target.end()); u::digest actual{}, scope{};
-        ::std::vector<unsigned char> indices; indices.reserve(functions.size() * 8);
+        ::uwvm2::utils::container::std_vector<unsigned char> indices; indices.reserve(functions.size() * 8);
         for(auto index : functions) { u::append_u64(indices, index); }
         if(!u::hash(s.target, actual) || actual != permit.target || !u::hash(declaration.empty() ? ::std::span<unsigned char const>{indices} : declaration, scope) || scope != permit.functions) { return fail(u::status::unauthorized); }
-        ::std::vector<u::function_body> bodies;
+        ::uwvm2::utils::container::std_vector<u::function_body> bodies;
         if(transition && (transition->module_reset || transition->module_preserve || transition->module_migrate))
         {
-            s.module_plan = ::std::make_unique<u::module_transition_plan>();
+            s.module_plan = ::uwvm2::utils::container::make_unique<u::module_transition_plan>();
             if(auto checked{u::compare_module_transition(s.installed, s.target, functions, transition->module_reset || transition->module_migrate, *s.module_plan)}; checked != u::status::ok) { return fail(checked); }
             bodies = ::std::move(s.module_plan->bodies); s.scalar_resets = ::std::move(s.module_plan->scalars);
-            if(s.module_plan->reset_state && !s.module_plan->data_segments.empty()) { s.pending_data_image = ::std::make_shared<::std::vector<unsigned char> const>(s.target); }
+            if(s.module_plan->reset_state && !s.module_plan->data_segments.empty()) { s.pending_data_image = ::uwvm2::utils::container::make_shared<::uwvm2::utils::container::std_vector<unsigned char> const>(s.target); }
         }
         else if(functions.empty())
         { if(s.installed != s.target) { return fail(u::status::scope_mismatch); } }
         else if(auto checked{u::compare_scope(s.installed, s.target, functions, bodies, s.scalar_resets)}; checked != u::status::ok) { return fail(checked); }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
-        s.threaded_exclusion.reset(new threaded_management_exclusion{runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)});
+        s.threaded_exclusion.reset(::uwvm2::utils::allocator::fast_io_strict::object<threaded_management_exclusion>([&](threaded_management_exclusion* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) threaded_management_exclusion{runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)}; }));
         if(!*s.threaded_exclusion) { return fail(u::status::busy); }
 #endif
         s.maintenance = g_runtime.execution_domain.try_maintenance_transition();

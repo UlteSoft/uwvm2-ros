@@ -63,13 +63,18 @@ template<::std::uint_least32_t FixedOpcode = 0xffff'ffffu, ::std::size_t FixedIn
     }
     constexpr auto small_count{fixed ? (FixedInputs == 0uz ? 1uz : FixedInputs) : 8uz};
     value small[small_count]{};
-    ::std::unique_ptr<value[]> large{};
+    ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> input_charge{};
+    ::uwvm2::utils::container::std_unique_ptr<value[]> large{};
     auto* inputs{small};
     if constexpr(!fixed)
     {
         if(input_count > 8uz)
         {
-            large.reset(new(::std::nothrow) value[input_count]{});
+            constexpr auto input_prefix{::uwvm2::utils::allocator::fast_io_strict::array_prefix<value>};
+            if(input_count > (SIZE_MAX-input_prefix)/sizeof(value) ||
+               !input_charge.resize(input_prefix+input_count*sizeof(value)))
+            { return static_cast<::std::uint_least32_t>(status::out_of_memory); }
+            large.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<value>(input_count, true));
             if(!large) { return static_cast<::std::uint_least32_t>(status::out_of_memory); }
             // [complete input_count-element owning allocation] replaces the
             // local buffer only after the native allocation succeeds.
@@ -294,7 +299,6 @@ template<::std::uint_least32_t Opcode, ::std::size_t Inputs>
     static_assert(Opcode == 0u || Opcode == 1u || (Opcode >= 6u && Opcode <= 10u));
     static_assert(Opcode != 6u || Inputs == 2uz);
     static_assert(Opcode != 7u || Inputs == 1uz);
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
     if constexpr(Opcode == 1u)
     {
         // Default constructors have no input carriers. Charge their immutable
@@ -336,7 +340,6 @@ template<::std::uint_least32_t Opcode, ::std::size_t Inputs>
         ::uwvm2::runtime::gc::poll_before_managed_array_allocation(module_address,length);
     }
     else
-#endif
     { ::uwvm2::runtime::gc::poll_before_managed_aggregate_allocation(module_address); }
     return llvm_jit_gc_aggregate_fixed_bridge<Opcode, Inputs>(module_address,
         first, second, input_address, output_address);
@@ -349,7 +352,6 @@ template<::std::uint_least32_t Opcode, ::std::size_t Inputs>
 {
     if(opcode != 0u && opcode != 1u && (opcode < 6u || opcode > 10u))
     { return static_cast<::std::uint_least32_t>(::uwvm2::uwvm::runtime::storage::gc_object_status::invalid_value); }
-#if defined(UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE) && UWVM_EXPERIMENTAL_GC_ARRAY_BYTE_PRESSURE == 1
     if((opcode == 0u || opcode == 8u) && input_count > 8uz)
     {
         // The validated generated buffer contains input_count full 16-byte
@@ -398,7 +400,6 @@ template<::std::uint_least32_t Opcode, ::std::size_t Inputs>
         ::uwvm2::runtime::gc::poll_before_managed_array_allocation(module_address,length);
     }
     else
-#endif
     { ::uwvm2::runtime::gc::poll_before_managed_aggregate_allocation(module_address); }
     return llvm_jit_gc_aggregate_bridge<>(module_address, opcode,
         first, second, input_address, input_count, output_address);
@@ -471,14 +472,14 @@ inline thread_local llvm_jit_gc_input_scratch_t llvm_jit_gc_input_scratch{};
         scratch.borrowed = true;
         return reinterpret_cast<::std::uintptr_t>(scratch.bytes);
     }
-    return reinterpret_cast<::std::uintptr_t>(::operator new(bytes, ::std::nothrow));
+    return reinterpret_cast<::std::uintptr_t>(::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::allocate(bytes));
 }
 inline void llvm_jit_gc_input_free_bridge(::std::uintptr_t address) noexcept
 {
     auto& scratch{llvm_jit_gc_input_scratch};
     if(address == reinterpret_cast<::std::uintptr_t>(scratch.bytes))
     { scratch.borrowed = false; return; }
-    ::operator delete(reinterpret_cast<void*>(address));
+    ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate(reinterpret_cast<void*>(address));
 }
 
 [[nodiscard]] inline ::std::uint32_t llvm_jit_gc_ref_test_bridge(
@@ -753,7 +754,7 @@ inline void llvm_jit_gc_input_free_bridge(::std::uintptr_t address) noexcept
     // A br_on_cast carries its reference on both edges. The validator has
     // proved the target tuple and its refined heap type; the machine ABI does
     // not change when a reference gains a more specific static type.
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
     if(!try_get_runtime_local_func_llvm_jit_branch_values(state, target->params, values)) { return false; }
     auto* tested{emit_runtime_local_func_llvm_jit_gc_reference_test(state, decoded.to)};
     if(tested == nullptr) { return false; }

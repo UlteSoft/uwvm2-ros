@@ -58,10 +58,42 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         if(op>=0x10000u) { return ins.simd_handler?ins.simd_handler(*this,ins):fail(status::invariant_failure); }
         if(op>=0x800u) { return gc_operation(ins); }
         if(op>=0x400u) { return memtag_operation(ins); }
+        if((op>=0x30cu&&op<=0x311u)||op==0x25u||op==0x26u)
+        {
+            using operations=::uwvm2::uwvm::runtime::initializer::threaded_table_operations;
+            operations table{*world_,frame.module};using result=operations::status;
+            auto check=[&](result r){return r==result::ok||fail(r==result::bounds?status::trap_table:status::invariant_failure);};
+            auto address=[&](::std::uint64_t bits,::std::size_t index)
+            {return storage::runtime_table_is_address64(*instance,index)?bits:static_cast<::std::uint64_t>(static_cast<::std::uint32_t>(bits));};
+            auto const index=static_cast<::std::size_t>(ins.immediate);stack_value v{};storage::gc_reference ref{};
+            if(op==0x30du)return check(table.drop(index));
+            if(op==0x310u)
+            {auto const* t=world_->table(frame.module,index);return t?push(t->elems.size()):fail(status::invariant_failure);}
+            if(op==0x25u)
+            {if(!pop(a)||!check(table.get(index,address(a,index),ref)))return false;::std::memcpy(&v,&ref,sizeof(ref));return push(v);}
+            if(op==0x26u)
+            {if(!pop(v)||!pop(a))return false;::std::memcpy(&ref,&v,sizeof(ref));return check(table.fill(index,address(a,index),1u,ref));}
+            if(op==0x30fu||op==0x311u)
+            {
+                if(!pop(c)||!pop(v))return false;::std::memcpy(&ref,&v,sizeof(ref));
+                if(op==0x30fu)
+                {
+                    auto const* actual=world_->table(frame.module,index);if(!actual)return fail(status::invariant_failure);
+                    auto const n=threads::journal_table_grow(static_cast<::std::uint32_t>(index),address(c,index),actual->elems.size(),
+                        [&]() noexcept{return table.grow(index,address(c,index),ref);});return push(address(n,index));
+                }
+                if(!pop(a))return false;return check(table.fill(index,address(a,index),address(c,index),ref));
+            }
+            ::std::uint64_t source{};if(!pop(c)||!pop(source)||!pop(a))return false;
+            if(op==0x30cu)return check(table.init(ins.target,index,address(a,ins.target),static_cast<::std::uint32_t>(source),static_cast<::std::uint32_t>(c)));
+            auto const count=storage::runtime_table_is_address64(*instance,index)&&storage::runtime_table_is_address64(*instance,ins.target)?c:static_cast<::std::uint32_t>(c);
+            return check(table.copy(index,ins.target,address(a,index),address(source,ins.target),count));
+        }
         if(op>=0x300u) { return bulk_memory(lease,ins); }
         if(op>=0x200u) { return floating(op); }
-        if(op>=0x100u) { return atomic(ins,*bound.memory); }
-        if(op>=0x28u&&op<=0x3eu) { return memory_access(ins,*bound.memory); }
+        if(op==0x103u) { ::std::atomic_thread_fence(::std::memory_order_seq_cst);return true; }
+        if(op>=0x100u) { return atomic(ins,*bound.memories[ins.target].memory); }
+        if(op>=0x28u&&op<=0x3eu) { return memory_access(ins,*bound.memories[ins.target].memory); }
         if((op>=0x45u&&op<=0x5au)||(op>=0x67u&&op<=0x8au)) { return arithmetic(op); }
         if((op>=0x5bu&&op<=0x66u)||(op>=0x8bu&&op<=0xa6u)||(op>=0xa8u&&op<=0xabu)||(op>=0xaeu&&op<=0xbfu)) { return floating(op); }
         switch(op)
@@ -78,7 +110,14 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             }
             case 0x05:frame.pc=ins.target;return true;
             case 0x08:return throw_tag(lease,static_cast<::std::size_t>(ins.immediate));
-            case 0x0a:if(!pop(a)) { return false; }return raise(lease,a);
+            case 0x0a:
+            {
+                stack_value value{};if(!pop(value))return false;
+                storage::gc_reference ref{};::std::memcpy(&ref,&value,sizeof(ref));
+                if(ref.kind==::uwvm2::object::global::wasm_ref_kind::wasm_null||
+                   (ref.kind==::uwvm2::object::global::wasm_ref_kind::wasm_exn&&!ref.storage.ptr))return fail(status::trap_null);
+                auto const token=exception_token(ref);return token?raise(lease,token):fail(status::invariant_failure);
+            }
             case 0x0b:
             {
                 if(control_top_<=frame.controls) { return fail(status::invariant_failure); }
@@ -101,20 +140,26 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             case 0x11:case 0x13:
             {
                 if(!pop(a)) { return false; }
-                if(ins.target>=instance->local_defined_table_vec_storage.size() || ins.immediate>=instance->type_section_storage.type_section_count)
-                { return fail(status::trap_table); }
-                auto const& table{instance->local_defined_table_vec_storage.index_unchecked(ins.target)};
-                auto const index{static_cast<::std::size_t>(static_cast<::std::uint32_t>(a))};
-                if(index>=table.elems.size()) { return fail(status::trap_table); }
-                auto const& slot{table.elems.index_unchecked(index)};
-                if(slot.type==storage::local_defined_table_elem_storage_type_t::func_ref_imported && !slot.storage.imported_ptr)
-                { return fail(status::trap_null); }
-                if(slot.type!=storage::local_defined_table_elem_storage_type_t::func_ref_defined) { return fail(status::trap_signature); }
-                if(!slot.storage.defined_ptr) { return fail(status::trap_null); }
-                target target{};if(!defined_target(slot.storage.defined_ptr,target)) { return fail(status::trap_signature); }
-                auto const* expected{instance->type_section_storage.type_section_begin+ins.immediate};
-                if(!detail::equal_signature(expected,target.type)) { return fail(status::trap_signature); }
-                return op==0x13u?tail_enter(lease,target):enter(target);
+                using operations=::uwvm2::uwvm::runtime::initializer::threaded_table_operations;
+                operations table{*world_,frame.module};storage::gc_reference reference{};
+                auto const index=storage::runtime_table_is_address64(*instance,ins.target)?a:static_cast<::std::uint64_t>(static_cast<::std::uint32_t>(a));
+                auto const result=table.get(ins.target,index,reference);
+                if(result!=operations::status::ok)return fail(result==operations::status::bounds?status::trap_table:status::invariant_failure);
+                if(reference.kind==::uwvm2::object::global::wasm_ref_kind::wasm_null)return fail(status::trap_null);
+                target callee{};
+                if(ins.immediate>=instance->type_section_storage.type_section_count||!reference_target(reference,callee)||
+                   !type_matches(frame.module,instance->type_section_storage.type_section_begin+ins.immediate,callee))return fail(status::trap_signature);
+                return op==0x13u?tail_enter(lease,callee):callee.host?host_call(lease,callee):enter(callee);
+            }
+            case 0x14:case 0x15:
+            {
+                stack_value value{};if(!pop(value))return false;
+                storage::gc_reference reference{};::std::memcpy(&reference,&value,sizeof(reference));
+                if(reference.kind==::uwvm2::object::global::wasm_ref_kind::wasm_null)return fail(status::trap_null);
+                target callee{};
+                if(ins.immediate>=instance->type_section_storage.type_section_count||!reference_target(reference,callee)||
+                   !type_matches(frame.module,instance->type_section_storage.type_section_begin+ins.immediate,callee))return fail(status::trap_signature);
+                return op==0x15u?tail_enter(lease,callee):callee.host?host_call(lease,callee):enter(callee);
             }
             case 0x1a:return pop(a);
             case 0x1b:case 0x1c:
@@ -130,6 +175,22 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(ins.immediate>=bound.globals.size()) { return fail(status::invariant_failure); }
                 auto* global{bound.globals[ins.immediate]};
                 using k=::uwvm2::object::global::global_type;
+                if(global->kind==k::wasm_ref)
+                {
+                    stack_value value{};
+                    if(op==0x23u)
+                    {::std::memcpy(&value,&global->storage.ref,sizeof(storage::gc_reference));return push(value);}
+                    if(!global->is_mutable||!pop(value))return fail(status::invariant_failure);
+                    storage::gc_reference reference{};::std::memcpy(&reference,&value,sizeof(reference));
+                    auto const* store=static_cast<storage::gc_object_store const*>(global->ref_lease_store);
+                    bool owned{};
+                    for(::std::size_t m{};m<world_->module_count();++m)
+                        if(store && store==world_->module(m)->gc_store.get()){owned=true;break;}
+                    if(!owned||
+                       storage::uwvm2_gc_retain_reference(store,&reference)!=storage::gc_object_status::ok)
+                        return fail(status::invariant_failure);
+                    global->storage.ref=reference;return true;
+                }
                 bool const wide{global->kind==k::wasm_i64 || global->kind==k::wasm_f64};
                 void* cell{};
                 switch(global->kind)
@@ -148,14 +209,43 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             }
             case 0x3f:
             {
-                ::std::size_t length{};if(!threads::details::access(*bound.memory,0,0,length,[](::std::byte*) noexcept{})) { return fail(status::trap_memory); }
-                return push(static_cast<::std::uint32_t>(length>>16u));
+                ::std::size_t length{};if(!threads::details::access(*bound.memories[ins.immediate].memory,0,0,length,[](::std::byte*) noexcept{})) { return fail(status::trap_memory); }
+                return push(length>>16u);
             }
-            case 0x40:return grow_memory(lease,*bound.memory,bound.maximum_memory_bytes);
+            case 0x40:return grow_memory(lease,*bound.memories[ins.immediate].memory,bound.memories[ins.immediate].maximum);
             case 0x41:return push(static_cast<::std::uint32_t>(ins.immediate));
             case 0x42:case 0x44:return push(ins.immediate);
             case 0x43:return push(static_cast<::std::uint32_t>(ins.immediate));
             case 0xd0:return push(0u);
+            case 0xd2:
+            {
+                storage::gc_reference reference{};using kind=::uwvm2::object::global::wasm_ref_kind;
+                auto const imports=instance->imported_function_vec_storage.size();
+                if(ins.immediate<imports)
+                {reference.kind=kind::wasm_func_imported;reference.storage.ptr=const_cast<storage::imported_function_storage_t*>(&instance->imported_function_vec_storage.index_unchecked(ins.immediate));}
+                else
+                {
+                    auto const local=ins.immediate-imports;if(local>=instance->local_defined_function_vec_storage.size())return fail(status::invariant_failure);
+                    reference.kind=kind::wasm_func_defined;reference.storage.ptr=const_cast<storage::local_defined_function_storage_t*>(&instance->local_defined_function_vec_storage.index_unchecked(local));
+                }
+                stack_value value{};::std::memcpy(&value,&reference,sizeof(reference));return push(value);
+            }
+            case 0xd3:
+            {
+                stack_value right{},left{};if(!pop(right)||!pop(left))return false;
+                storage::gc_reference lhs{},rhs{};
+                ::std::memcpy(&lhs,&left,sizeof(lhs));::std::memcpy(&rhs,&right,sizeof(rhs));
+                using kind=::uwvm2::object::global::wasm_ref_kind;
+                bool equal=lhs.kind==rhs.kind;
+                if(equal)switch(lhs.kind)
+                {
+                    case kind::wasm_null:break;
+                    case kind::wasm_i31:equal=lhs.storage.wasm_i31.get_u()==rhs.storage.wasm_i31.get_u();break;
+                    case kind::wasm_struct:case kind::wasm_array:equal=lhs.storage.ptr==rhs.storage.ptr;break;
+                    default:return fail(status::invariant_failure); // The validated ref.eq operands must be eqref.
+                }
+                return push(static_cast<::std::uint32_t>(equal));
+            }
             case 0xd1:case 0xd4:case 0xd5:case 0xd6:
             {
                 stack_value reference{};if(!pop(reference)) { return false; }

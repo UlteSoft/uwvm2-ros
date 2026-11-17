@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "materialization.h"
 # include <array>
@@ -35,7 +36,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         activation_identity identity{};
         sealed_function_plan::owner plan{};
         ::std::uint64_t site{};
-        ::std::vector<native_value> values{};
+        ::uwvm2::utils::container::std_vector<native_value> values{};
         bool materialized{};
         // Owned numeric DATA, never native addresses or roots. Small, completely
         // initialized numeric packets need no per-slot type expansion until an
@@ -51,17 +52,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     class shadow_ledger
     {
         compilation_profile::owner profile_{};
-        ::std::vector<logical_frame> frames_{};
+        ::uwvm2::utils::container::std_vector<logical_frame> frames_{};
         // Private borrows into separately owned native activation storage.
         // Never copied into logical_frame/captures or retained after release.
-        ::std::vector<::std::span<::std::byte>> observer_storage_{};
+        ::uwvm2::utils::container::std_vector<::std::span<::std::byte>> observer_storage_{};
         // Storage follows the deepest actual activation. A bounded private
         // observer cache may retain immutable plan DATA only. Retired slots
         // have no identity, values, borrow or availability and are never exposed.
         // Reuse their already constructed numeric byte storage without treating
         // any previous bytes as initialized state in the next activation.
         ::std::size_t active_frame_count_{};
-        ::std::vector<::std::uint8_t> compiler_metadata_reuse_{};
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> compiler_metadata_reuse_{};
         ::std::size_t retained_metadata_count_{};
         inline static constexpr ::std::size_t retained_metadata_limit{32u};
         [[nodiscard]] bool active_frames_empty() const noexcept { return active_frame_count_ == 0u; }
@@ -72,14 +73,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         // Empty value storage only. Plans, identities, materialized state and
         // reference cells never survive retirement. Bound cached capacity to
         // 32 * 16 KiB per owning thread; larger/deeper frames free normally.
-        ::std::array<::std::vector<native_value>,32u> recycled_values_{};
+        ::std::array<::uwvm2::utils::container::std_vector<native_value>,32u> recycled_values_{};
         ::std::size_t recycled_count_{};
-        void recycle_values(::std::vector<native_value>& values) noexcept
+        void recycle_values(::uwvm2::utils::container::std_vector<native_value>& values) noexcept
         {
             if(values.capacity() != 0u && values.capacity() <= 16384u / sizeof(native_value) && recycled_count_ != recycled_values_.size())
             { values.clear(); values.swap(recycled_values_[recycled_count_++]); }
         }
         status failure_{status::ok};
+        // A builtin may change external state without invalidating the live
+        // typed frame producer. Keep that history gap permanent and separate
+        // from malformed/unknown-provider recording failures. It cannot turn
+        // a binding-only host_resource into a deterministic replay adapter.
+        status replay_failure_{status::ok};
         ::std::uint64_t pending_tail_continuation_{}, pending_tail_parent_{};
         void fail(status result) noexcept { if(failure_ == status::ok) { failure_ = result; } }
         static void retain_numeric_packet(logical_frame& frame, ::std::uint64_t site,
@@ -313,7 +319,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         }
         [[nodiscard]] static status decode_compiler_packet_impl(sealed_function_plan::owner const& plan, ::std::uint64_t site,
             ::std::span<::std::byte const> payload, ::std::span<::std::uint8_t const> actual_local_flags,
-            ::std::vector<native_value>& values, bool retain_local_types)
+            ::uwvm2::utils::container::std_vector<native_value>& values, bool retain_local_types)
         {
             auto const checked{validate_compiler_packet_impl(plan,site,payload,actual_local_flags)};
             if(checked != status::ok) { return checked; }
@@ -353,13 +359,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     public:
         [[nodiscard]] static status decode_compiler_packet(sealed_function_plan::owner const& plan, ::std::uint64_t site,
             ::std::span<::std::byte const> payload, ::std::span<::std::uint8_t const> actual_local_flags,
-            ::std::vector<native_value>& values)
+            ::uwvm2::utils::container::std_vector<native_value>& values)
         { return decode_compiler_packet_impl(plan,site,payload,actual_local_flags,values,false); }
         explicit shadow_ledger(compilation_profile::owner profile) : profile_{::std::move(profile)}
         { if(!profile_) { failure_ = status::invalid_profile; } }
         shadow_ledger(shadow_ledger const&) = delete;
         shadow_ledger& operator=(shadow_ledger const&) = delete;
         [[nodiscard]] status failure() const noexcept { return failure_; }
+        [[nodiscard]] status replay_failure() const noexcept
+        { return failure_ == status::ok ? replay_failure_ : failure_; }
+        void note_unrecorded_builtin_effect() noexcept
+        { replay_failure_ = status::non_replayable_import; }
         // Native runtime reports a failed actual owner/ABI/allocation check;
         // poisoning closes capture and can never mint pause/restore authority.
         void poison(status reason) noexcept { fail(reason == status::ok ? status::invalid_activation : reason); }
@@ -654,7 +664,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             // All types/actual initialized states/counts are checked before one
             // detached allocation/copy. Failure leaves the old frame untouched;
             // recording failure is sticky and cannot mint a new stop capability.
-            ::std::vector<native_value> detached{values.begin(), values.end()};
+            ::uwvm2::utils::container::std_vector<native_value> detached{values.begin(), values.end()};
             frame.values.swap(detached); frame.site = site_id; frame.materialized = true; frame.numeric_packet_pending = false;
             return status::ok;
         }
@@ -715,7 +725,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             // Large values or a full capacity cache must still release their
             // allocation immediately, as pop_back did. References, identity,
             // borrowed storage and availability retire before reducing the range.
-            if(retired.values.capacity() != 0u) { ::std::vector<native_value>{}.swap(retired.values); }
+            if(retired.values.capacity() != 0u) { ::uwvm2::utils::container::std_vector<native_value>{}.swap(retired.values); }
             // At most 32 inactive plans, each with <=16 KiB of immutable
             // owned metadata payload (allocator overhead excluded). This is
             // scope-local DATA: no code lease, native carrier or authority.

@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <fast_io.h>
 # include <algorithm>
@@ -92,6 +93,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         // scalar line-table metadata, not a native address or a stop authority.
         ::std::uint64_t discriminator{};
         bool prologue_end{}, epilogue_begin{};
+        bool statement_start{}; // Exact DWARF row start; display metadata only.
     };
 
     namespace source_map_details
@@ -239,9 +241,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         // Lexical comparison of producer paths only: no filesystem lookup,
         // symlink resolution, cwd dependence or source-file read authority.
-        [[nodiscard]] inline ::std::string normalized_path(::std::string_view path)
+        [[nodiscard]] inline ::uwvm2::utils::container::std_string normalized_path(::std::string_view path)
         {
-            ::std::vector<::std::string_view> parts{}; ::std::size_t cursor{};
+            ::uwvm2::utils::container::std_vector<::std::string_view> parts{}; ::std::size_t cursor{};
             ::std::string_view prefix{};
             if(path.size() >= 2u && path[1u] == ':')
             { prefix = path.substr(0u,2u); cursor = 2u; }
@@ -259,8 +261,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // The normalized result cannot exceed its producer path. Reserve
             // once and append through fast_io instead of copying the entire
             // accumulated path for every component of a deep source tree.
-            ::std::string result{}; result.reserve(path.size());
-            ::fast_io::ostring_ref_std output{::std::addressof(result)};
+            ::uwvm2::utils::container::std_string result{}; result.reserve(path.size());
+            ::uwvm2::utils::container::ostring_ref output{::std::addressof(result)};
             ::fast_io::io::print(output, prefix, rooted ? ::std::string_view{"/"} : ::std::string_view{});
             for(auto component : parts)
             { ::fast_io::io::print(output, !result.empty() && result.back() != '/' && result.back() != ':' ? ::std::string_view{"/"} : ::std::string_view{}, component); }
@@ -349,7 +351,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
 
         [[nodiscard]] inline source_map_error read_formats(reader& r,
-            ::std::vector<entry_format>& formats)
+            ::uwvm2::utils::container::std_vector<entry_format>& formats)
         {
             ::std::uint8_t count{};
             if(!r.byte(count) || count > 64u) { return source_map_error::malformed; }
@@ -362,7 +364,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             return source_map_error::none;
         }
         [[nodiscard]] inline source_map_error read_v5_entry(reader& r,
-            ::std::vector<entry_format> const& formats, source_map_sections const& sections,
+            ::uwvm2::utils::container::std_vector<entry_format> const& formats, source_map_sections const& sections,
             source_map_limits const& limits, ::std::size_t offset_width,
             ::std::size_t address_width, file_entry& out, bool allow_empty_path = false)
         {
@@ -463,8 +465,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             bool prologue_end{}, epilogue_begin{};
         };
         ::std::uint64_t module_{}, code_size_{};
-        ::std::vector<::std::string> files_{};
-        ::std::vector<range> ranges_{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> files_{};
+        ::uwvm2::utils::container::std_vector<range> ranges_{};
         ::std::size_t ambiguous_interval_count_{};
 
         [[nodiscard]] static source_map_error parse_unit(
@@ -526,7 +528,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
            opcode_base == 0u || default_stmt > 1u)
         { return source_map_error::malformed; }
         auto const line_base{static_cast<::std::int64_t>(static_cast<::std::int8_t>(line_base_byte))};
-        ::std::vector<::std::uint8_t> standard_lengths;
+        ::uwvm2::utils::container::std_vector<::std::uint8_t> standard_lengths;
         standard_lengths.reserve(opcode_base - 1u);
         for(unsigned i{1u}; i != opcode_base; ++i)
         {
@@ -534,9 +536,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             if(!header.byte(operands)) { return source_map_error::malformed; }
             standard_lengths.push_back(operands);
         }
-        ::std::vector<::std::string_view> directories;
-        ::std::vector<file_entry> file_entries;
-        ::std::vector<entry_format> file_formats;
+        ::uwvm2::utils::container::std_vector<::std::string_view> directories;
+        ::uwvm2::utils::container::std_vector<file_entry> file_entries;
+        ::uwvm2::utils::container::std_vector<entry_format> file_formats;
         if(version == 4u)
         {
             for(;;)
@@ -561,7 +563,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         else
         {
-            ::std::vector<entry_format> directory_formats;
+            ::uwvm2::utils::container::std_vector<entry_format> directory_formats;
             auto error{source_map_details::read_formats(header, directory_formats)};
             if(error != source_map_error::none) { return error; }
             ::std::uint64_t count{};
@@ -606,7 +608,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 directory = directories[static_cast<::std::size_t>(entry.directory)];
             }
             else if(entry.directory != 0u) { return source_map_error::malformed; }
-            ::std::string path;
+            ::uwvm2::utils::container::std_string path;
             if(!source_map_details::absolute_path(entry.name) && !directory.empty())
             {
                 path.assign(directory);
@@ -614,7 +616,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             path.append(entry.name);
             if(!source_map_details::absolute_path(path) && !compilation_directory.empty())
-            { path = ::fast_io::concat_std(compilation_directory, "/", path); }
+            { path = ::uwvm2::utils::container::concat(compilation_directory, "/", path); }
             path = source_map_details::normalized_path(path);
             if(path.size() > limits.max_path_bytes || path_bytes > limits.max_total_path_bytes ||
                path.size() > limits.max_total_path_bytes - path_bytes)
@@ -882,8 +884,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             {
                 auto const name{source_map_v3::view(entry)};auto const root{source_map_v3::view(mapped.source_root)};
                 auto const absolute{[](auto text) { return !text.empty() && (text[0]=='/' || (text.size()>1u && text[1]==':')); }};
-                auto path{absolute(name)?::fast_io::concat_std(name):absolute(root)?::fast_io::concat_std(root,"/",name):
-                    ::fast_io::concat_std(sections.source_map_directory,"/",root,"/",name)};
+                auto path{absolute(name)?::uwvm2::utils::container::concat(name):absolute(root)?::uwvm2::utils::container::concat(root,"/",name):
+                    ::uwvm2::utils::container::concat(sections.source_map_directory,"/",root,"/",name)};
                 path=source_map_details::normalized_path(path);
                 if(path.size()>limits.max_path_bytes || paths>limits.max_total_path_bytes || path.size()>limits.max_total_path_bytes-paths)
                 { return source_map_error::limit_exceeded; }paths+=path.size();candidate.files_.push_back(::std::move(path));
@@ -963,7 +965,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             // Count+xor retains the sole active row without an attacker-sized
             // ordered set or a quadratic scan through overlapping CUs.
             struct endpoint { ::std::uint64_t address{};::std::size_t encoded{}; };
-            ::std::vector<endpoint> endpoints{};
+            ::uwvm2::utils::container::std_vector<endpoint> endpoints{};
             // Every accepted range contributes exactly two owned endpoints.
             // Check actual container representability before doubling; a
             // default unlimited user quota must never itself be multiplied.
@@ -977,7 +979,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             ::std::sort(endpoints.begin(),endpoints.end(),
                 [](endpoint const& a,endpoint const& b) {return a.address<b.address;});
-            ::std::vector<range> unique{};unique.reserve(result.ranges_.size());
+            ::uwvm2::utils::container::std_vector<range> unique{};unique.reserve(result.ranges_.size());
             ::std::size_t active{},sole{},i{};
             while(i<endpoints.size())
             {
@@ -1014,6 +1016,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         auto const& found{*(it - 1u)};
         if(code_section_content_offset >= found.end || found.line == 0u) { return ::std::nullopt; }
         return source_location{module_, code_section_content_offset,
-            files_[found.file], found.line, found.column, found.is_statement, found.discriminator, found.prologue_end, found.epilogue_begin};
+            files_[found.file], found.line, found.column, found.is_statement, found.discriminator, found.prologue_end, found.epilogue_begin,
+            found.is_statement && !found.epilogue_begin && code_section_content_offset == found.begin};
     }
 }

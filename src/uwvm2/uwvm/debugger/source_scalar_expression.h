@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #include "language_debug_features.h"
 #ifndef UWVM_MODULE
 # include "source_dwarf_expression.h"
@@ -43,7 +45,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         unsigned utf_character_width{}; // owned C++ char8/16/32 syntax, never a language grant
         bool rust_character{}, rust_cast_as{};
         bool rust_numeric_literal{}, rust_numeric_suffix{};
-        ::std::string rust_numeric_text{}; // owned Rust float syntax; never CU authority
+        ::uwvm2::utils::container::std_string rust_numeric_text{}; // owned Rust float syntax; never CU authority
         bool logical_keyword{}; // owned Zig and/or spelling, never language authority
     };
     // Explicit producer/syntax type identity. The default preserves old
@@ -75,8 +77,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
     };
     struct program
     {
-        ::std::vector<node> nodes{}; ::std::size_t root{};
-        ::std::string original{}; // owned syntax bytes, never a frame/location grant.
+        ::uwvm2::utils::container::std_vector<node> nodes{}; ::std::size_t root{};
+        ::uwvm2::utils::container::std_string original{}; // owned syntax bytes, never a frame/location grant.
         language_semantics syntax_language{language_semantics::shared_numeric};
     };
     // Only an actual selected-frame CU supplies these metadata bits. This
@@ -135,6 +137,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         struct continuation_owner;
         struct continuation_promise
         {
+            // Coroutine frames otherwise use an implicit global operator new.
+            // Keep expression-allocation failure recoverable by the existing
+            // compile/evaluate boundary, using the strict fast_io backend.
+            [[nodiscard]] static void* operator new(::std::size_t bytes)
+            {
+                auto* p=::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::allocate(bytes);
+                if(p==nullptr) { ::uwvm2::utils::allocator::fast_io_strict::allocation_failed(); }
+                return p;
+            }
+            static void operator delete(void* p) noexcept
+            { ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate(p); }
+            static void operator delete(void* p,::std::size_t bytes) noexcept
+            { ::uwvm2::utils::allocator::fast_io_strict::native_strict_global_allocator::deallocate_n(p,bytes); }
             continuation_owner* owner{};
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             ::std::exception_ptr failure{};
@@ -153,10 +168,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         };
         struct continuation_owner
         {
-            ::std::vector<continuation_frame> work{};
+            ::uwvm2::utils::container::std_vector<continuation_frame> work{};
             expression_limits cap{};
             program const* memo_program{};
-            ::std::vector<node_memo> memo{};
+            ::uwvm2::utils::container::std_vector<node_memo> memo{};
             bool bind(program const& code)
             {
                 if(memo_program) { return memo_program==::std::addressof(code); }
@@ -262,7 +277,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         // Validate the complete owned graph before any type or value callback,
         // including unreachable nodes. Forward edges and shared acyclic nodes
         // are valid; cycles, invalid operations and bad indices are refused.
-        inline error validate_graph(program const& code, expression_limits const& cap, ::std::vector<::std::size_t>& postorder)
+        inline error validate_graph(program const& code, expression_limits const& cap, ::uwvm2::utils::container::std_vector<::std::size_t>& postorder)
         {
             if(code.nodes.empty() || code.nodes.size()>cap.max_nodes || code.original.size()>cap.max_expression_bytes || !cap.max_nesting)
             { return error::limit_exceeded; }
@@ -275,9 +290,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                 { if(child_index(n,child)>=code.nodes.size()) { return error::malformed; } }
             }
             struct frame { ::std::size_t index{};unsigned next{}; };
-            ::std::vector<unsigned char> color(code.nodes.size());
-            ::std::vector<::std::size_t> height(code.nodes.size());
-            ::std::vector<frame> work{};postorder.clear();postorder.reserve(code.nodes.size());
+            ::uwvm2::utils::container::std_vector<unsigned char> color(code.nodes.size());
+            ::uwvm2::utils::container::std_vector<::std::size_t> height(code.nodes.size());
+            ::uwvm2::utils::container::std_vector<frame> work{};postorder.clear();postorder.reserve(code.nodes.size());
             for(::std::size_t start{};start!=code.nodes.size();++start)
             {
                 if(color[start]) { continue; }
@@ -613,7 +628,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                     base = prefix == 'x' ? 16u : prefix == 'o' ? 8u : prefix == 'b' ? 2u : 10u;
                     if(base != 10u) { cursor += 2u; }
                 }
-                ::std::string normalized{}; ::std::size_t count{};
+                ::uwvm2::utils::container::std_string normalized{}; ::std::size_t count{};
                 auto put{[&](char c) { normalized.push_back(c);++count; }};
                 auto digits{[&](unsigned radix)
                 {
@@ -825,7 +840,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                         // in each significand/exponent segment, never beside . or a sign.
                         // Normalize owned syntax for fast_io; the integer path below
                         // keeps its existing base-prefix and candidate-type rules.
-                        ::std::string normalized{}; ::std::size_t count{}; bool bad_separator{};
+                        ::uwvm2::utils::container::std_string normalized{}; ::std::size_t count{}; bool bad_separator{};
                         auto const put{[&](char c)
                         {
                             normalized.push_back(c);++count;
@@ -894,7 +909,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
                         cursor += 2u;
                         if(cursor < text.size() && text[cursor] == '_') { ++cursor; }
                     }
-                    ::std::string normalized{}; ::std::size_t count{}; bool separator{};
+                    ::uwvm2::utils::container::std_string normalized{}; ::std::size_t count{}; bool separator{};
                     while(cursor < text.size())
                     {
                         auto const c{text[cursor]};
@@ -1700,7 +1715,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         struct rust_type_constraints
         {
             struct group { ::std::size_t parent{}; unsigned hint{}; integer type{0u,0u,false}; };
-            ::std::vector<group> groups{};
+            ::uwvm2::utils::container::std_vector<group> groups{};
             ::std::size_t count{};
             ::std::size_t find(::std::size_t i) noexcept
             {
@@ -1731,7 +1746,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
         };
         template<typename TypeResolver>
         error prepare_rust_types(program const& code, program& prepared, integer& root_type, unsigned guest_bits,
-            TypeResolver& resolve_type, ::std::size_t& budget, ::std::vector<::std::size_t> const& postorder, expression_limits const& cap)
+            TypeResolver& resolve_type, ::std::size_t& budget, ::uwvm2::utils::container::std_vector<::std::size_t> const& postorder, expression_limits const& cap)
         {
             rust_type_constraints plan{};plan.count=code.nodes.size();plan.groups.resize(plan.count);
             for(::std::size_t i{};i!=plan.count;++i) { plan.groups[i].parent=i; }
@@ -2184,7 +2199,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_scalar_expression
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try {
 #endif
-            ::std::vector<::std::size_t> postorder{};
+            ::uwvm2::utils::container::std_vector<::std::size_t> postorder{};
             auto const graph_status{details::validate_graph(code,cap,postorder)};
             if(graph_status!=error::none) { return graph_status; }
             if(guest_address_bits != 32u && guest_address_bits != 64u) { return error::unavailable; }

@@ -1,5 +1,7 @@
 // Licensed under the APL-2.0 License (see LICENSE file).
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 #include <algorithm>
 #include <array>
@@ -42,21 +44,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
         std::uint32_t memory{};
         std::uint64_t offset{};
         bool output{},snapshot{};
-        std::vector<std::byte> bytes;
+        ::uwvm2::utils::container::std_vector<std::byte> bytes;
     };
     struct record
     {
         std::uint64_t id{},participant{},module{},generation{},environment{},started{},duration{},result{};
         channel family{};
-        std::string name_space,name,module_name;
+        ::uwvm2::utils::container::std_string name_space,name,module_name;
         std::array<std::uint64_t,16> arguments{};
         std::array<unsigned char,16> widths{};
         std::size_t count{};
         bool returned{},has_result{},timed{},incomplete{};
-        std::vector<segment> segments;
+        ::uwvm2::utils::container::std_vector<segment> segments;
     };
     inline std::mutex mutex;
-    inline std::vector<std::shared_ptr<record>> records;
+    inline ::uwvm2::utils::container::std_vector<std::shared_ptr<record>> records;
     inline std::uint64_t sequence{},epoch{1},cleared_through{};
     inline std::atomic<std::uint64_t> allocation_failures{},invalid_ranges{},sequence_failures{};
     inline thread_local record* active{};
@@ -98,7 +100,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
             try
 #endif
             {
-                value=std::make_shared<record>();value->family=c;
+                value=::uwvm2::utils::container::make_shared<record>();value->family=c;
                 value->name_space=ns;value->name=name;
                 std::lock_guard lock{mutex};
                 if(sequence==UINT64_MAX) {increment(sequence_failures);value.reset();return;}

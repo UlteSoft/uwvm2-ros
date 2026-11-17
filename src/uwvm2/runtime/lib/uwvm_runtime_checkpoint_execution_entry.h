@@ -58,6 +58,11 @@ inline explicit runtime_execution_entry_scope(restored_try_entry,::uwvm2::utils:
         // still CLOSED. Never call ordinary try_enter(), accept a fake ACK, or
         // replace a missing/stopped token with a fresh unrelated lifetime.
         if(!execution_lease || execution_lease.stop_requested()) { gc_admission.reset();return; }
+        // Restored OS workers need the same native MTE admission as original
+        // entries. Saved tags alone do not initialize TLS delivery or TCF.
+        if(!::uwvm2::runtime::memtag::prepare_hardware_thread())return;
+        ::uwvm2::runtime::memtag::deferred::deliver_callback.store(deliver_deferred_memtag_fault,::std::memory_order_release);
+        if(!memtag_delivery.enter())return;
         // Actual execution admission now pins immutable selected configuration.
         // An ordinary/foreign execution cannot be relabelled as a restored one.
         if(!g_runtime.checkpoint_profile || !g_runtime.debug_pause_control ||

@@ -65,7 +65,10 @@ case static_cast<wasm1_code>(0xfbu):
         // Element segments and extern bridges can import pre-existing objects.
         // All other admitted aggregate/i31/cast operations preserve provenance.
         if(decoded.opcode==10u || decoded.opcode==19u || decoded.opcode==26u || decoded.opcode==27u || decoded.opcode>30u)
+        {
             llvm_jit_emit_state.gc_private_function_safe=false;
+            llvm_jit_emit_state.gc_private_call_graph_safe=false;
+        }
     }
     struct local_witness_instruction
     {

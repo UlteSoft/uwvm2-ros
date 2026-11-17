@@ -1,5 +1,6 @@
 // APL-2.0. Diagnostics do not grant authority or alter ABI errno.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/control/host_diagnostics.h>
 namespace uwvm2::imported::wasi::wasip1::environment
 {
@@ -17,19 +18,18 @@ namespace uwvm2::imported::wasi::wasip1::environment
         try
 #endif
         {
-            std::string remedy;
+            ::uwvm2::utils::container::std_string remedy;
             if(!interface)
             {
                 auto function=api::catalogue[id].function;
                 if(function.ends_with("_wasm64"))function.remove_suffix(7);
-                std::string permission;
+                ::uwvm2::utils::container::std_string permission;
                 if(function.starts_with("args_"))permission="args";
                 else if(function.starts_with("environ_"))permission="environ";
                 else if(function=="random_get")permission="random";
                 else if(function=="proc_exit")permission="proc-exit";
                 else if(function=="proc_raise")permission="proc-raise";
                 else if(function=="sched_yield")permission="sched-yield";
-                else if(function=="thread-spawn")permission="thread-spawn";
                 else if(function=="fd_write" && first==1)permission="stdout.write";
                 else if(function=="fd_write" && first==2)permission="stderr.write";
                 else if(function=="fd_read" && first==0)permission="stdin.read";
@@ -59,7 +59,7 @@ namespace uwvm2::imported::wasi::wasip1::environment
                 }
                 else remedy="--help wasi; configure the exact socket/preopen rights required by this call";
             }
-            std::string reason=interface?"interface calls are not allowed":"operation or resource authority was not granted";
+            ::uwvm2::utils::container::std_string reason=interface?"interface calls are not allowed":"operation or resource authority was not granted";
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             if(!interface && first<=INT32_MAX)
             {
@@ -94,9 +94,9 @@ namespace uwvm2::imported::wasi::wasip1::environment
                     }
                     else if(socket_slot>=0)
                     {
-                        reason="socket rights for initial fd "+std::to_string(socket_slot)+" were not granted";
+                        reason="socket rights for initial fd "+::uwvm2::utils::container::to_string(socket_slot)+" were not granted";
                         remedy=host_diagnostic::command(api::family::wasip1,diagnostic_scope(env),diagnostic_target(env),"socket-rights")+
-                            " "+std::to_string(socket_slot)+" <approved-base:csv|none> <approved-accepted-child:csv|none>";
+                            " "+::uwvm2::utils::container::to_string(socket_slot)+" <approved-base:csv|none> <approved-accepted-child:csv|none>";
                     }
                 }
             }

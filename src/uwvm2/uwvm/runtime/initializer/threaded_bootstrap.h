@@ -60,7 +60,7 @@ namespace uwvm2::uwvm::runtime::initializer
             return source_type::has_canonical_owner(source_) &&
                 source_->bound_initialized_module_id(module_) == module_id_ &&
                 source_->bound_initialized_file(module_id_, module_) == file_ &&
-                module_->local_defined_memory_vec_storage.size() == 1uz &&
+                !module_->local_defined_memory_vec_storage.empty() &&
                 &module_->local_defined_memory_vec_storage.index_unchecked(0uz) == memory_;
         }
         [[nodiscard]] static ::std::optional<ThreadedMemoryProvider> inspect(source_type::owner const& source,
@@ -94,17 +94,22 @@ namespace uwvm2::uwvm::runtime::initializer
                 file->wasm_module_storage.wasm_binfmt_ver1_storage.sections)};
             if(start.sec_span.sec_begin != nullptr) { return {}; }
             error = threaded_provider_error::unsupported_memory;
-            if(m.local_defined_memory_vec_storage.size() != 1uz) { return {}; }
-            auto const& leaf{m.local_defined_memory_vec_storage.index_unchecked(0uz)};
-            auto const* type{leaf.memory_type_ptr};
-            if(type == nullptr || !details::wasm_memory_is_shared(*type) || details::wasm_memory_is_address64(*type) ||
-               !type->limits.present_max || !leaf.effective_limits.present_max || !stable_shared(leaf.memory)) { return {}; }
-            if(type->limits.min != leaf.effective_limits.min || type->limits.max != leaf.effective_limits.max) { return {}; }
-            error = threaded_provider_error::memory_limit;
-            auto const maximum{static_cast<::std::uint_least64_t>(leaf.effective_limits.max)};
-            if(maximum_shared_bytes == 0uz || maximum > maximum_shared_bytes / 65536u) { return {}; }
-            auto const bytes{leaf.memory.memory_length_p->load(::std::memory_order_seq_cst)};
-            if(bytes > maximum * 65536u || bytes < static_cast<::std::uint_least64_t>(type->limits.min) * 65536u) { return {}; }
+            if(m.local_defined_memory_vec_storage.empty()) { return {}; }
+            auto const& leaf=m.local_defined_memory_vec_storage.index_unchecked(0u);
+            ::std::uint64_t total{};
+            for(auto const& memory:m.local_defined_memory_vec_storage)
+            {
+                auto const* type=memory.memory_type_ptr;
+                if(!type||!details::wasm_memory_is_shared(*type)||!type->limits.present_max||
+                   !memory.effective_limits.present_max||!stable_shared(memory.memory))return {};
+                if(type->limits.min!=memory.effective_limits.min||type->limits.max!=memory.effective_limits.max)return {};
+                error=threaded_provider_error::memory_limit;
+                auto const maximum=static_cast<::std::uint64_t>(memory.effective_limits.max);
+                if(total>maximum_shared_bytes||maximum>(maximum_shared_bytes-total)/65536u)return {};
+                total+=maximum*65536u;
+                auto const pages=memory.memory.get_page_size();
+                if(pages>maximum||pages<static_cast<::std::uint64_t>(type->limits.min))return {};
+            }
             // Read actual parser declarations, including exports; runtime count
             // metadata alone cannot admit an unexamined effectful module.
             bool const declarations{[&]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(
@@ -130,13 +135,15 @@ namespace uwvm2::uwvm::runtime::initializer
                    !absent.template operator()<w11::tag_section_storage_t<Fs...>>() ||
                    !absent.template operator()<w11::data_count_section_storage_t<Fs...>>()) { return false; }
                 auto const& memories{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<memory_section>(sections)};
-                if(memories.memories.size() != 1uz || &memories.memories.index_unchecked(0uz) != type) { return false; }
+                if(memories.memories.size()!=m.local_defined_memory_vec_storage.size())return false;
+                for(::std::size_t n{};n<memories.memories.size();++n)
+                    if(&memories.memories.index_unchecked(n)!=m.local_defined_memory_vec_storage.index_unchecked(n).memory_type_ptr)return false;
                 auto const& exports{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<export_section>(sections)};
                 if(exports.exports.empty()) { return false; }
                 for(auto const& item : exports.exports)
                 {
                     if(item.exports.type != ::uwvm2::parser::wasm::standard::wasm1::type::external_types::memory ||
-                       item.exports.storage.memory_idx != 0u) { return false; }
+                       item.exports.storage.memory_idx >= memories.memories.size()) { return false; }
                 }
                 return true;
             }(::uwvm2::uwvm::wasm::feature::wasm_binfmt1_features)};

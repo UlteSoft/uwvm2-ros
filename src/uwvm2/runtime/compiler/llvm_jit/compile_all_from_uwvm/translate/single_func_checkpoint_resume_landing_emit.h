@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Real LLVM logical-site landing helper selected by shared compilation.
 // The native manager must provide a previously fully
 // validated, immutable typed packet under its actual continuation authority.
@@ -13,7 +14,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
     // Actual SSA PHIs for operands followed by saved control parameters. The
     // fused compiler must replace corresponding live handles with these; their
     // exact Core3 declarations stay independent of these physical carriers.
-    ::std::vector<::llvm::Value*> actual_nonlocals{};
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> actual_nonlocals{};
     // Restore-only waiting call path: caller owns this open LLVM block and
     // must invoke the actual child before merging into its post-call edge.
     ::llvm::BasicBlock* restored_predecessor{};
@@ -187,7 +188,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
     // Actual immutable native ownership is a separate prerequisite of the
     // private runtime dispatcher; arithmetic alone is not pointer permission.
     restore.CreateCondBr(extent, flags_checked, resume.reject); restore.SetInsertPoint(flags_checked);
-    ::std::vector<::llvm::Value*> markers{}; markers.reserve(site.local_count);
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> markers{}; markers.reserve(site.local_count);
     ::llvm::Value* canonical{restore.getTrue()};
     for(::std::size_t i{}; i != site.local_count; ++i)
     {
@@ -233,7 +234,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
         restore.CreateStore(value, state.local_pointers.index_unchecked(i));
         if(next != nullptr) { restore.CreateBr(next); restore.SetInsertPoint(next); }
     }
-    ::std::vector<::llvm::Value*> restored{}; restored.reserve(actual_nonlocals.size());
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> restored{}; restored.reserve(actual_nonlocals.size());
     for(::std::size_t i{}; i != actual_nonlocals.size(); ++i)
     {
         auto const index{site.local_count + i};

@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/container/shared.h>
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS) && UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS == 1
 #include <cstddef>
 #include <exception>

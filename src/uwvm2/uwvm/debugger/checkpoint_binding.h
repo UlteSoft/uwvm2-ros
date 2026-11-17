@@ -1,6 +1,7 @@
 // PRIVATE PROPOSAL: typed identity DATA, never a stop/restore capability.
 // The CLI debugger includes this DATA contract; it grants no runtime authority.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <climits>
@@ -33,7 +34,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::binding
         wasm_mismatch, replacement_mismatch, cache_mode_mismatch, cache_mismatch,
         quota_exceeded
     };
-    inline constexpr ::std::uint32_t identity_revision{2u}, envelope_version{4u}, state_version{7u};
+    inline constexpr ::std::uint32_t identity_revision{2u}, envelope_version{4u}, state_version{10u};
     inline constexpr ::std::uint32_t cache_format_revision{8u};
     inline constexpr ::std::uint32_t canonical_byte_order{1u}; // canonical LE on LE AND BE native hosts
     struct build
@@ -79,8 +80,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::binding
         cache_off_reason off_reason{cache_off_reason::explicit_user};
         // Meaning is actual observed completeness, not a restoration credential.
         // Production may only fill these under its private full census producer.
-        ::std::vector<module> modules{};
-        ::std::vector<cache_object> objects{};
+        ::uwvm2::utils::container::std_vector<module> modules{};
+        ::uwvm2::utils::container::std_vector<cache_object> objects{};
         friend bool operator==(manifest const&, manifest const&) = default;
         [[nodiscard]] constexpr bool grants_restore_authority() const noexcept { return false; }
     };

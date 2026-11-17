@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -180,7 +182,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
                 // If control-block allocation fails, shared_ptr deletes its fully
                 // owned entry (and closes the moved file); no partial token escapes.
                 ::std::shared_ptr<protected_asset_details::entry> fresh{
-                    new protected_asset_details::entry{::std::move(file), identity, role, next_incarnation_}};
+                    ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<protected_asset_details::entry>([&](protected_asset_details::entry* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) protected_asset_details::entry{::std::move(file), identity, role, next_incarnation_}; }))};
                 // Publishing a fully constructed cell transfers exactly one
                 // native owner, before its private token is issued. No guest
                 // may inspect/mutate this array during the real closed guard.

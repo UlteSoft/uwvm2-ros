@@ -136,6 +136,18 @@
                         case provenance::status::unknown: candidate.status = llvm_jit_debug_native_position_status::unknown; break;
                         default: break;
                     }
+                    // The sealed checkpoint return site is an independent exact
+                    // code mapping. LLVM may emit line zero for the reloads at
+                    // this landing. Join the actual owned PC to that private
+                    // site, never to the debugger's last displayed location.
+                    // This grants display provenance only, not stale values.
+                    if(candidate.status == llvm_jit_debug_native_position_status::unknown &&
+                       pc == site.return_pc && canonical->snapshot_.location.offset < expression_size)
+                    {
+                        candidate.status = llvm_jit_debug_native_position_status::exact;
+                        candidate.wasm_offset = canonical->snapshot_.location.offset;
+                        candidate.row_begin = pc; candidate.row_end = pc + 1u;
+                    }
                     candidate.numeric_location_count = rows->numeric_locations(pc, owner_begin, owner_end,
                         {identity.data(), identity.size()}, expression_size, actual.code_generation,
                         candidate.numeric_locations, 64u);

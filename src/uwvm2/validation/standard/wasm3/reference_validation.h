@@ -44,7 +44,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     // validator. The concrete implementation supports standalone consumers and conformance fixtures.
     class core3_operand_stack
     {
-        ::uwvm2::utils::container::vector<core3_operand> values_{};
+        ::uwvm2::utils::container::validation_vector<core3_operand> values_{};
         ::std::size_t height_{};
         bool unreachable_{};
     public:

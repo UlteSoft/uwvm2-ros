@@ -3,6 +3,7 @@
  * Private source-only candidate; not a product allocator.
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
@@ -48,7 +49,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         };
         static_assert(::std::is_standard_layout_v<cell>);
         static_assert(::std::is_trivially_destructible_v<cell>);
-        ::std::unique_ptr<cell[]> cells_{};
+        ::uwvm2::utils::allocator::resource::owned_array<cell, ::uwvm2::utils::allocator::resource::pool::gc> cells_{};
         ::std::size_t count_{};
         [[nodiscard]] ::std::uint32_t const* address_of_cell(::std::size_t index) const noexcept
         {
@@ -80,7 +81,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(count == 0uz || count > maximum_count) { return compact_numeric_status::size_overflow; }
             // [0,count) real cell objects, each initialized by the array-new.
             // No byte[] cast or fabricated C++ array lifetime is used.
-            ::std::unique_ptr<cell[]> replacement{new(::std::nothrow) cell[count]{}};
+            ::uwvm2::utils::allocator::resource::owned_array<cell, ::uwvm2::utils::allocator::resource::pool::gc> replacement{::uwvm2::utils::allocator::resource::try_array<cell, ::uwvm2::utils::allocator::resource::pool::gc>(count)};
             if(!replacement) { return compact_numeric_status::out_of_memory; }
             // [old owned array] retires only after the new allocation succeeded.
             cells_.swap(replacement);

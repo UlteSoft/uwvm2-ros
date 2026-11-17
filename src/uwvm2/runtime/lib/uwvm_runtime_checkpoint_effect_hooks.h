@@ -26,7 +26,7 @@ extern "C++" void uwvm2test_checkpoint_before_native_effect(unsigned, bool) noex
 namespace
 {
     enum class checkpoint_resolved_effect : unsigned char
-    { defined_wasm, unadapted_host, invalid_actual_owner };
+    { defined_wasm, unadapted_host, invalid_actual_owner, checkpoint_builtin_host };
 
     [[nodiscard]] bool checkpoint_effect_actual_full_owner(::std::size_t module_id, bool require_checkpoint = true) noexcept
     {
@@ -53,14 +53,52 @@ namespace
     }
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_cached_leaf(
-        cached_import_target const& target, bool require_checkpoint = true) noexcept
+        cached_import_target const& target, bool require_checkpoint = true,
+        ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data* builtin = nullptr) noexcept
     {
         // Only an actual cache member may reach this helper. The cache owns the
         // final leaf; an import name, user enum or replay-adapter boolean is not
         // accepted. No arbitrary host callback currently has a replay adapter.
+        // A genuine stable builtin has a current-state adapter, independently
+        // of its unavailable external-effect replay history.
         switch(target.k)
         {
             case cached_import_target::kind::local_imported:
+            {
+                if(!require_checkpoint || target.frame.module_id != target.origin_module_id ||
+                   !checkpoint_effect_actual_full_owner(target.origin_module_id))
+                { return checkpoint_resolved_effect::unadapted_host; }
+                auto const& record{g_runtime.modules.index_unchecked(target.origin_module_id)};
+                auto const module{record.runtime_module};
+                if(target.frame.function_index >= module->imported_function_vec_storage.size())
+                { return checkpoint_resolved_effect::invalid_actual_owner; }
+                auto const& original{module->imported_function_vec_storage.index_unchecked(target.frame.function_index)};
+                auto const leaf{resolve_import_leaf_assuming_initialized(::std::addressof(original))};
+                auto const location{details::find_runtime_imported_function_location(g_runtime.modules,leaf)};
+                if(!location.found || !checkpoint_effect_actual_full_owner(location.module_id))
+                { return checkpoint_resolved_effect::invalid_actual_owner; }
+                auto const& provider{g_runtime.modules.index_unchecked(location.module_id)};
+                // Locate the genuine final import in its owning module before
+                // reading it. Forwarding an import does not change the caller's
+                // independently selected WASI/ROS environment in normal dispatch.
+                auto const& final{provider.runtime_module->imported_function_vec_storage.index_unchecked(location.function_index)};
+                using link = ::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
+                if(final.link_kind != link::local_imported ||
+                   final.target.local_imported.module_ptr != target.u.local_imported.module_ptr ||
+                   final.target.local_imported.index != target.u.local_imported.index ||
+                   target.reference_params || target.reference_results)
+                { return checkpoint_resolved_effect::unadapted_host; }
+                ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data data{};
+                auto const& source{provider.llvm_jit_full_publication->source};
+                if(!source->actual_checkpoint_builtin_function(location.module_id,current_runtime_generation(),
+                    provider.runtime_module,location.function_index,data))
+                { return checkpoint_resolved_effect::unadapted_host; }
+                // Canonical loader identity, concrete original wrapper, native
+                // vector membership and source epoch are checked above. No
+                // import spelling, file flag or guest-supplied pointer suffices.
+                if(builtin)*builtin=data;
+                return checkpoint_resolved_effect::checkpoint_builtin_host;
+            }
             case cached_import_target::kind::dl:
                 return checkpoint_resolved_effect::unadapted_host;
             case cached_import_target::kind::defined:
@@ -86,7 +124,7 @@ namespace
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_import(
         ::std::uintptr_t module_address, ::std::uintptr_t function_index,
-        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true) noexcept
+        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true, cached_import_target const** selected = nullptr) noexcept
     {
         // [comparison-only native address] no object permission from arithmetic
         // [safe                          ] resolve actual registry membership
@@ -111,12 +149,13 @@ namespace
         auto const& target{cache.index_unchecked(function_index)};
         if(target.origin_module_id != module_id || target.param_bytes != parameter_bytes || target.result_bytes != result_bytes)
         { return checkpoint_resolved_effect::invalid_actual_owner; }
+        if(selected)*selected=::std::addressof(target);
         return checkpoint_effect_actual_cached_leaf(target,require_checkpoint);
     }
 
     [[nodiscard]] checkpoint_resolved_effect checkpoint_effect_actual_raw_target(
         ::std::uintptr_t entry_address, ::std::uintptr_t context_address,
-        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true) noexcept
+        ::std::size_t parameter_bytes, ::std::size_t result_bytes, bool require_checkpoint = true, cached_import_target const** selected = nullptr) noexcept
     {
         if(entry_address == reinterpret_cast<::std::uintptr_t>(llvm_jit_raw_call_cached_import_entry))
         {
@@ -142,7 +181,8 @@ namespace
                 auto const& target{cache.index_unchecked(index)};
                 if(target.origin_module_id != module_id || target.param_bytes != parameter_bytes || target.result_bytes != result_bytes)
                 { return checkpoint_resolved_effect::invalid_actual_owner; }
-                return checkpoint_effect_actual_cached_leaf(target,require_checkpoint);
+                if(selected)*selected=::std::addressof(target);
+        return checkpoint_effect_actual_cached_leaf(target,require_checkpoint);
             }
             return checkpoint_resolved_effect::invalid_actual_owner;
         }
@@ -181,6 +221,12 @@ namespace
         switch(effect)
         {
             case checkpoint_resolved_effect::defined_wasm: return true;
+            case checkpoint_resolved_effect::checkpoint_builtin_host:
+                // Retain the history gap BEFORE calling the provider. Genuine
+                // host admission/island scopes still exclude in-flight captures;
+                // only a fresh, complete post-return stop can save live state.
+                // Unknown providers keep the stronger sticky poison below.
+                shadow->note_unrecorded_builtin_effect(); return true;
             case checkpoint_resolved_effect::unadapted_host:
                 // Sticky BEFORE the actual provider. Later host returns,
                 // exceptions and reentry cannot turn this into replay authority.
@@ -190,6 +236,7 @@ namespace
         }
         shadow->poison(cp::status::invalid_activation); return false;
     }
+#include "uwvm_runtime_checkpoint_execution_replay_import.h"
 #if defined(UWVM2_TEST_CHECKPOINT_HOST_EFFECT_PRECALL) && UWVM2_TEST_CHECKPOINT_HOST_EFFECT_PRECALL == 1
     // Private test build only. The actual selected bridge invokes this AFTER
     // successful real foreign-operation admission and BEFORE provider entry.
@@ -204,13 +251,39 @@ namespace
 }
 #endif
 
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+extern "C++"
+{
+    checkpoint_replay_host_memory_scope::checkpoint_replay_host_memory_scope(unsigned operation,
+        ::std::size_t memory,::std::uint64_t offset,::std::size_t size) noexcept
+    {
+        if(auto* actual=checkpoint_replay_import::active_memory_producer())
+        {actual_=actual;actual->enter_memory(operation,memory,offset,size);}
+    }
+    bool checkpoint_replay_host_memory_scope::finish(bool accepted) noexcept
+    {
+        if(actual_)
+        {
+            auto* actual=checkpoint_replay_import::active_memory_producer();
+            if(actual!=actual_)::fast_io::fast_terminate();
+            actual->leave_memory(accepted);actual_=nullptr;
+        }
+        return accepted;
+    }
+    checkpoint_replay_host_memory_scope::~checkpoint_replay_host_memory_scope()
+    {if(actual_)::fast_io::fast_terminate();}
+}
+#endif
+
 extern "C++" void details::llvm_jit_debug_classified_import_abi_bridge(
     ::std::uintptr_t module, ::std::uintptr_t function, ::std::uintptr_t result,
     ::std::size_t result_bytes, ::std::uintptr_t parameters, ::std::size_t parameter_bytes) UWVM_THROWS
 {
     if(get_llvm_jit_generated_bridge_scope_depth()==0u) { ::fast_io::fast_terminate(); }
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-    auto const effect{checkpoint_effect_actual_import(module,function,parameter_bytes,result_bytes,false)};
+    cached_import_target const* replay_target{};
+    auto const effect{checkpoint_effect_actual_import(module,function,parameter_bytes,result_bytes,
+        checkpoint_replay_selected.load(::std::memory_order_acquire),::std::addressof(replay_target))};
     if(effect==checkpoint_resolved_effect::invalid_actual_owner) { ::fast_io::fast_terminate(); }
     if(effect==checkpoint_resolved_effect::defined_wasm)
     {
@@ -219,6 +292,10 @@ extern "C++" void details::llvm_jit_debug_classified_import_abi_bridge(
         return;
     }
 #endif
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    checkpoint_replay_import journal{replay_target,parameters,parameter_bytes,result,result_bytes};
+    if(journal.replayed())return;
+#endif
     deferred_builtin_memtag_fault fault{};
     {
         details::llvm_jit_debug_host_scope scope{};
@@ -226,6 +303,9 @@ extern "C++" void details::llvm_jit_debug_classified_import_abi_bridge(
             module,function,result,result_bytes,parameters,parameter_bytes);
     }
     fault.finish();
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    journal.finish();
+#endif
 }
 extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
     ::std::uintptr_t entry_address, ::std::uintptr_t context, ::std::uintptr_t result,
@@ -236,10 +316,16 @@ extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
         ::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
     auto const entry{reinterpret_cast<entry_type>(entry_address)};
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-    auto const effect{checkpoint_effect_actual_raw_target(entry_address,context,parameter_bytes,result_bytes,false)};
+    cached_import_target const* replay_target{};
+    auto const effect{checkpoint_effect_actual_raw_target(entry_address,context,parameter_bytes,result_bytes,
+        checkpoint_replay_selected.load(::std::memory_order_acquire),::std::addressof(replay_target))};
     if(effect==checkpoint_resolved_effect::invalid_actual_owner) { ::fast_io::fast_terminate(); }
     if(effect==checkpoint_resolved_effect::defined_wasm)
     { entry(context,result,result_bytes,parameters,parameter_bytes);return; }
+#endif
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    checkpoint_replay_import journal{replay_target,parameters,parameter_bytes,result,result_bytes};
+    if(journal.replayed())return;
 #endif
     deferred_builtin_memtag_fault fault{};
     {
@@ -247,6 +333,9 @@ extern "C++" void details::llvm_jit_debug_classified_raw_target_abi_bridge(
         entry(context,result,result_bytes,parameters,parameter_bytes);
     }
     fault.finish();
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    journal.finish();
+#endif
 }
 
 extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_bridge(
@@ -256,10 +345,13 @@ extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_
 {
     if(get_llvm_jit_generated_bridge_scope_depth() == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-    auto const effect{checkpoint_effect_actual_import(module_address, function_index, parameter_bytes, result_bytes)};
+    cached_import_target const* replay_target{};
+    auto const effect{checkpoint_effect_actual_import(module_address,function_index,parameter_bytes,result_bytes,true,::std::addressof(replay_target))};
     if(!checkpoint_record_actual_effect(effect)) [[unlikely]] { ::fast_io::fast_terminate(); }
     if(effect != checkpoint_resolved_effect::defined_wasm)
     {
+        checkpoint_replay_import journal{replay_target,parameters,parameter_bytes,result,result_bytes};
+        if(journal.replayed())return;
         // Private retained entry/generation/profile/control issues the counted
         // scope. The classification enum does NOT admit a host operation, and
         // a typed-tail caller need not have a fabricated top activation here.
@@ -278,6 +370,7 @@ extern "C++" void details::llvm_jit_checkpoint_call_raw_from_generated_wasm_abi_
             module_address, function_index, result, result_bytes, parameters, parameter_bytes);
         } // actual provider/island/admission guards have all left
         fault.finish();
+        journal.finish();
         return;
     }
 #endif
@@ -297,7 +390,8 @@ extern "C++" void details::llvm_jit_checkpoint_raw_target_abi_bridge(
     if(entry_address == 0u || get_llvm_jit_generated_bridge_scope_depth() == 0u) [[unlikely]]
     { ::fast_io::fast_terminate(); }
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-    auto const effect{checkpoint_effect_actual_raw_target(entry_address, context, parameter_bytes, result_bytes)};
+    cached_import_target const* replay_target{};
+    auto const effect{checkpoint_effect_actual_raw_target(entry_address,context,parameter_bytes,result_bytes,true,::std::addressof(replay_target))};
     if(!checkpoint_record_actual_effect(effect)) [[unlikely]] { ::fast_io::fast_terminate(); }
     if(effect == checkpoint_resolved_effect::defined_wasm)
     {
@@ -311,6 +405,10 @@ extern "C++" void details::llvm_jit_checkpoint_raw_target_abi_bridge(
         entry(context, result, result_bytes, parameters, parameter_bytes); return;
     }
 #endif
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    checkpoint_replay_import journal{replay_target,parameters,parameter_bytes,result,result_bytes};
+    if(journal.replayed())return;
+#endif
     // An unadapted/unknown host keeps the existing qualified forwarding scope.
     // Recording was invalidated before this possible native side effect.
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -320,6 +418,19 @@ extern "C++" void details::llvm_jit_checkpoint_raw_target_abi_bridge(
     checkpoint_effect_before_actual_native_provider(host_operation.admitted());
 #endif
 #endif
-    details::llvm_jit_debug_raw_target_abi_bridge(entry_address, context, result, result_bytes, parameters, parameter_bytes);
+    // The checked raw leaf above is already authenticated. Invoke it once;
+    // routing through the observation wrapper would journal this call twice.
+    using entry_type=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(
+        ::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
+    auto const entry=reinterpret_cast<entry_type>(entry_address);
+    deferred_builtin_memtag_fault fault{};
+    {
+        details::llvm_jit_debug_host_scope debug_host_operation{};
+        entry(context,result,result_bytes,parameters,parameter_bytes);
+    }
+    fault.finish();
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+    journal.finish();
+#endif
 }
 #endif

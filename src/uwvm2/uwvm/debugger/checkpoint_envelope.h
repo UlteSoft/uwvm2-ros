@@ -1,5 +1,6 @@
 // Identity-bound canonical file DATA. No checkpoint/restore authority is issued.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <climits>
@@ -58,8 +59,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
         binding::sha256 target_and_execution_abi{}, source_link_closure{};
         binding::cache_mode caching{binding::cache_mode::off};
         binding::cache_off_reason off_reason{binding::cache_off_reason::explicit_user};
-        ::std::vector<binding::module> modules{};
-        ::std::vector<binding::cache_object> objects{};
+        ::uwvm2::utils::container::std_vector<binding::module> modules{};
+        ::uwvm2::utils::container::std_vector<binding::cache_object> objects{};
     };
     struct decoded_file_data
     {
@@ -158,7 +159,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
             }
             return in.remaining() == 0u;
         }
-        [[nodiscard]] inline error canonical_state(checkpoint::state const& state, bounds const& cap, ::std::vector<::std::byte>& bytes)
+        [[nodiscard]] inline error canonical_state(checkpoint::state const& state, bounds const& cap, ::uwvm2::utils::container::std_vector<::std::byte>& bytes)
         {
             if(auto valid{validate_graph(state, cap.state)}; valid != error::none) { return valid; }
             ::std::uint64_t payload{};
@@ -167,7 +168,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
                 payload > static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) - header_bytes - footer_bytes)
             { return error::limit_exceeded; }
             auto const count{static_cast<::std::size_t>(payload + header_bytes + footer_bytes)};
-            ::std::vector<::std::byte> candidate(count);
+            ::uwvm2::utils::container::std_vector<::std::byte> candidate(count);
             // [actual owned canonical-state output: count>0 <=PTRDIFF_MAX] end
             // [safe] full measured/validated extent BEFORE first+count.
             auto* first{reinterpret_cast<unsigned char*>(candidate.data())};
@@ -240,7 +241,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
         if(shape != binding::status::identical_data) { return {status::invalid_identity, shape}; }
         ::std::uint64_t identity_count{};
         if(!details::identity_extent(identity.modules.size(), identity.objects.size(), cap, identity_count)) { return {status::limit_exceeded}; }
-        ::std::vector<::std::byte> state_bytes{};
+        ::uwvm2::utils::container::std_vector<::std::byte> state_bytes{};
         auto const state_error{details::canonical_state(saved, cap, state_bytes)};
         if(state_error != error::none) { return {status::invalid_state, shape, state_error}; }
         auto const sources{details::compare_embedded_sources(saved, identity)};
@@ -253,7 +254,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
         if(cap.max_file_bytes < header_size + footer_size || identity_count > cap.max_file_bytes - header_size - footer_size ||
             state_bytes.size() > cap.max_file_bytes - header_size - footer_size - identity_count)
         { return {status::limit_exceeded}; }
-        ::std::vector<::std::byte> identity_bytes(static_cast<::std::size_t>(identity_count));
+        ::uwvm2::utils::container::std_vector<::std::byte> identity_bytes(static_cast<::std::size_t>(identity_count));
         // [complete fixed measured identity owner, count>=484 <=PTRDIFF] end
         // [safe] count bound BEFORE output cursor/end formation.
         auto* first{reinterpret_cast<unsigned char*>(identity_bytes.data())};
@@ -288,7 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
         if(bytes.size() < 8u) { return {status::truncated}; }
         codec_details::reader in{bytes}; ::std::uint64_t file_magic{};
         if(!in.get<64>(file_magic)) { return {status::truncated}; }
-        if(file_magic == database_magic || file_magic == legacy_database_magic5 || file_magic == legacy_database_magic4 || file_magic == legacy_database_magic3) { return {status::legacy_unbound_state_data}; }
+        if(file_magic == database_magic || file_magic == legacy_database_magic8 || file_magic == legacy_database_magic7 || file_magic == legacy_database_magic6 || file_magic == legacy_database_magic5 || file_magic == legacy_database_magic4 || file_magic == legacy_database_magic3) { return {status::legacy_unbound_state_data}; }
         if(file_magic != magic) { return {status::malformed}; }
         if(bytes.size() < header_size + footer_size) { return {status::truncated}; }
         ::std::uint16_t version{}, header{}; ::std::uint32_t endian{};
@@ -327,7 +328,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
         if(candidate.identity.canonical_state_body != actual_state.digest) { return {status::identity_body_mismatch}; }
         auto const decoded{decode_database({state_begin, body_count}, candidate.saved, cap.state)};
         if(decoded != error::none) { return {status::invalid_state, identity_shape, decoded}; }
-        ::std::vector<::std::byte> canonical{};
+        ::uwvm2::utils::container::std_vector<::std::byte> canonical{};
         auto const reencoded{details::canonical_state(candidate.saved, cap, canonical)};
         if(reencoded != error::none || canonical.size() != body_count || binding::hash_bytes(canonical).digest != actual_state.digest)
         { return {status::noncanonical_state, identity_shape, reencoded}; }
@@ -349,7 +350,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::envelope
     // the complete parse even if the original pathname is later overwritten or
     // truncated. This helper cannot isolate output files from guest FD/preopens,
     // authorize management, save an instance, or publish a restore credential.
-    [[nodiscard]] inline file_result load_file(::std::u8string path, target_environment_data const& target,
+    [[nodiscard]] inline file_result load_file(::uwvm2::utils::container::std_u8string path, target_environment_data const& target,
         decoded_file_data& output, bounds const& cap = {})
     {
         if(cap.max_file_bytes == 0u || cap.max_file_bytes > ::uwvm2::utils::control::owned_file_image::maximum_bytes)

@@ -20,6 +20,9 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -75,6 +78,12 @@ namespace uwvm2::uwvm::run
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
 {
+    struct builtin_checkpoint_function_data : builtin_wasip1_function_data
+    {
+        // Zero is WASIp1; 1..4 are the original ROS1/client/ROS2/client v1
+        // concrete tuples. This label is DATA, not native provider authority.
+        unsigned ros_family{};
+    };
 
     // Native storage owner. It exists before load_wasm_file constructs parser
     // objects; neither the file nor its inline Core3 context is ever moved.
@@ -99,7 +108,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
     // move into the final source owner BEFORE any new parser view is created.
     struct full_preload_input
     {
-        ::std::u8string file_name{}, module_name{};
+        ::uwvm2::utils::container::std_u8string file_name{}, module_name{};
         ::uwvm2::uwvm::wasm::type::wasm_parameter_t parameters{};
         ::uwvm2::utils::control::owned_file_image::owner image{};
     };
@@ -135,18 +144,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             ::std::shared_ptr<full_source_destruction_completion> actual;
             void operator()(full_source_instance* instance) const noexcept
             {
-                delete instance; // ALL members, including registry/mmap owners, finish here.
+                ::uwvm2::utils::allocator::fast_io_strict::destroy_object(instance); // ALL members, including registry/mmap owners, finish here.
                 actual->complete_.store(true, ::std::memory_order_release);
             }
         };
-        ::std::u8string file_name_storage_;
-        ::std::u8string rename_storage_;
+        ::uwvm2::utils::container::std_u8string file_name_storage_;
+        ::uwvm2::utils::container::std_u8string rename_storage_;
         ::uwvm2::uwvm::wasm::type::wasm_file_t file_{};
         // These arrays reach their FINAL extent before parsing. No later growth,
         // relocation, reassignment of names or parser files is allowed. An old
         // prepared code owner therefore retains its original parser/store graph
         // even after the selected source is retired and replaced.
-        ::std::vector<full_preload_input> preload_inputs_{};
+        ::uwvm2::utils::container::std_vector<full_preload_input> preload_inputs_{};
         ::uwvm2::utils::container::vector<::uwvm2::uwvm::wasm::type::wasm_file_t> preload_files_{};
         struct preload_binding
         {
@@ -154,7 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             ::std::size_t id{(::std::numeric_limits<::std::size_t>::max)()};
             ::std::uint_least64_t validation_epoch{};
         };
-        mutable ::std::vector<preload_binding> preload_bindings_{};
+        mutable ::uwvm2::utils::container::std_vector<preload_binding> preload_bindings_{};
         // Actual final source owns isolated declaration/export and rewritten-name
         // buffers beyond context teardown; maps are not global-selector credentials.
         decltype(::uwvm2::uwvm::wasm::storage::all_module) checkpoint_declarations_{};
@@ -200,8 +209,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         mutable ::std::uint_least64_t validation_epoch_{};
         mutable ::std::weak_ptr<numeric_plan_lifetime const> numeric_plan_{};
 
-        explicit full_source_instance(::std::u8string file_name, ::std::u8string rename,
-            ::std::vector<full_preload_input> inputs, ::std::shared_ptr<full_source_destruction_completion> completion)
+        explicit full_source_instance(::uwvm2::utils::container::std_u8string file_name, ::uwvm2::utils::container::std_u8string rename,
+            ::uwvm2::utils::container::std_vector<full_preload_input> inputs, ::std::shared_ptr<full_source_destruction_completion> completion)
             : destruction_completion_{::std::move(completion)}, file_name_storage_{::std::move(file_name)},
               rename_storage_{::std::move(rename)}, preload_inputs_{::std::move(inputs)}
         {
@@ -235,14 +244,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         full_source_instance& operator=(full_source_instance&&) = delete;
         ~full_source_instance() = default;
 
-        [[nodiscard]] static mutable_owner create_unparsed(::std::u8string file_name, ::std::u8string rename = {},
-            ::std::vector<full_preload_input> inputs = {})
+        [[nodiscard]] static mutable_owner create_unparsed(::uwvm2::utils::container::std_u8string file_name, ::uwvm2::utils::container::std_u8string rename = {},
+            ::uwvm2::utils::container::std_vector<full_preload_input> inputs = {})
         {
             // Real nonconst allocation, including both file/map objects. Bind the
             // weak control-block identity before any const owner is published.
-            auto completion{::std::shared_ptr<full_source_destruction_completion>{new full_source_destruction_completion{}}};
-            mutable_owner result{new full_source_instance{::std::move(file_name), ::std::move(rename), ::std::move(inputs), completion},
-                delete_and_publish_completion{completion}};
+            auto completion{::std::shared_ptr<full_source_destruction_completion>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<full_source_destruction_completion>([&](full_source_destruction_completion* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) full_source_destruction_completion{}; }))}};
+            mutable_owner result{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<full_source_instance>([&](full_source_instance* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) full_source_instance{::std::move(file_name), ::std::move(rename), ::std::move(inputs), completion}; }),
+                delete_and_publish_completion{completion})};
             result->canonical_owner_ = result;
             return result;
         }
@@ -531,6 +540,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             }
             return true;
         }
+        [[nodiscard]] bool actual_checkpoint_builtin_provider_census(::std::size_t id,
+            ::std::uint_least64_t epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module) const noexcept
+        {
+            if(!actual_debug_memory_provider_census(id,epoch,module))return false;
+            // Stable v1 only. RMW/portable/scene providers keep their existing
+            // behavior and need independent executable-snapshot adapters.
+            for(::std::size_t n{4u};n<debug_ros_identities_.size();++n)
+                if(debug_ros_identities_[n])return false;
+            return true;
+        }
+        [[nodiscard]] bool actual_checkpoint_builtin_function(::std::size_t id,
+            ::std::uint_least64_t epoch,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module,
+            ::std::size_t imported,builtin_checkpoint_function_data& output) const noexcept
+        {
+            builtin_checkpoint_function_data candidate{};
+            if(actual_builtin_wasip1_function(id,epoch,module,imported,candidate))
+                {output=candidate;return true;}
+            builtin_ros_function_data ros{};
+            if(!actual_builtin_ros_function(id,epoch,module,imported,ros) ||
+               static_cast<unsigned>(ros.kind)>=4u)return false;
+            candidate.ros_family=static_cast<unsigned>(ros.kind)+1u;
+            candidate.function_index=ros.function_index;candidate.interface_sha256=ros.interface_sha256;
+            candidate.parameter_count=ros.parameter_count;candidate.result_count=ros.result_count;
+            candidate.parameters=ros.parameters;candidate.results=ros.results;output=candidate;return true;
+        }
         // Cold lexical builtin binding, not an external-resource restorer.
         // The caller must retain genuine maintenance/ONE-hostclose/N/epoch
         // protection. Only DATA is returned; no host pointer survives here.
@@ -594,7 +630,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                    builtin_wasip1_identity_->current_member()!=builtin_wasip1_member_) {return false;}
                 wasi=builtin_wasip1_member_;
             }
-            ::std::array<::uwvm2::uwvm::wasm::type::local_imported_t const*,8u> ros{};
+            ::std::array<::uwvm2::uwvm::wasm::type::local_imported_t const*,
+                ::std::tuple_size_v<decltype(debug_ros_identities_)>> ros{};
             for(::std::size_t i{};i!=debug_ros_identities_.size();++i)
             {
                 auto const& identity{debug_ros_identities_[i]};if(!identity) {continue;}

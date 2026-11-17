@@ -50,7 +50,8 @@
             if(frame == 0u || !state.append_link(thread, frame) || !state.append_link(frame, function)) { return false; }
             state.object(frame)->flags = static_cast<::std::uint16_t>(site.phase);
             state.object(frame)->words = {site.opcode_offset, site.local_count, site.operand_count,
-                site.controls.size(), site.handlers.size(), activation.function_generation, site.caller_return_offset, 0u};
+                site.controls.size(), site.handlers.size(), activation.function_generation, site.caller_return_offset,
+                static_cast<::std::uint64_t>(activation.ros_cross_module_ancestry)};
             auto const live{site.local_count + site.operand_count}; // Both bounded by values before sum.
             for(::std::size_t slot{}; slot != live; ++slot)
             {
@@ -102,6 +103,38 @@
                 // native catch owner. exception_continuation remains refused by
                 // the genuine producer until its owned caught-value exists.
             }
+        }
+        if(actual->wait_borrow_ || actual->virtual_wait_)
+        {
+            auto const& operation=actual->wait_operation_;
+            if(!actual->suspended_wait_ || operation.operation<1u || operation.operation>2u ||
+                (operation.bits!=32u && operation.bits!=64u))return state.fail(census_error::incompatible_type);
+            ::uwvm2::uwvm::debugger::checkpoint::object_id memory_id{};
+            for(::std::size_t owner{};owner<state.actual.modules.size();++owner)
+            {
+                auto const& module=*state.actual.modules[owner].module;
+                for(::std::size_t local{};local<module.local_defined_memory_vec_storage.size();++local)
+                    if(reinterpret_cast<::std::uintptr_t>(::std::addressof(module.local_defined_memory_vec_storage.index_unchecked(local).memory))==operation.owner)
+                        memory_id=state.memory_ids[owner][module.imported_memory_vec_storage.size()+local];
+            }
+            if(!memory_id || state.object(memory_id)->words[0]!=operation.bits)return state.fail(census_error::unavailable_capability);
+            ::uwvm2::utils::thread::keyed_wait_set::suspension_snapshot waited{};
+            if(actual->virtual_wait_)
+            {
+                waited=actual->virtual_wait_data_;
+                if(!checkpoint_replay_refresh_virtual_wait(actual->participant_,operation,actual->location_.code_generation,waited))
+                    return state.fail(census_error::stale_generation);
+            }
+            else if(!actual->wait_borrow_->inspect_resource(reinterpret_cast<void const*>(operation.owner),[&](auto const& saved) noexcept{waited=saved;}))
+                return state.fail(census_error::stale_generation);
+            if(waited.cancelled || waited.closed || (waited.notified && waited.timed_out))return state.fail(census_error::stale_generation);
+            auto const wait=state.allocate(census_object_kind::atomic_wait);
+            if(!wait || !state.append_link(thread,wait) || !state.append_link(wait,memory_id))return false;
+            state.object(thread)->flags=2u;
+            state.object(wait)->flags=waited.timed_out?2u:waited.notified?1u:0u;
+            state.object(wait)->words={waited.position,operation.operation==1u?4u:8u,operation.expected,
+                static_cast<::std::uint64_t>(waited.remaining_nanoseconds),(waited.notified || waited.timed_out)?UINT64_MAX:waited.pending_predecessors,
+                operation.address,operation.offset,operation.bits};
         }
     }
     return current_scope() || state.fail(census_error::stale_generation);

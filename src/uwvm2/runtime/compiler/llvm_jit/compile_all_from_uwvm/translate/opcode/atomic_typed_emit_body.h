@@ -15,7 +15,8 @@
         // overwrite one another in MCJIT's global symbol registry. FE opcode is
         // the complete stable operation/width identity; no process address enters
         // this cache-visible key. Ordinary directly lowered atomics emit no bridge.
-        auto const atomic_bridge_identity{::uwvm2::utils::container::u8concat_uwvm(address64 ? ::uwvm2::utils::container::u8string_view{u8"threads-fe-v3-memory64-"} :
+        auto const atomic_bridge_identity{::uwvm2::utils::container::u8concat_uwvm(state.debug_activation_enabled ?
+            (address64 ? ::uwvm2::utils::container::u8string_view{u8"threads-fe-v4-journal64-"} : ::uwvm2::utils::container::u8string_view{u8"threads-fe-v4-journal32-"}) : address64 ? ::uwvm2::utils::container::u8string_view{u8"threads-fe-v3-memory64-"} :
             ::uwvm2::utils::container::u8string_view{u8"threads-fe-v2-native-scalars-"}, instruction.opcode)};
         auto const atomic_bridge_discriminator{::uwvm2::utils::container::u8string_view{
             atomic_bridge_identity.data(), atomic_bridge_identity.size()}};
@@ -53,14 +54,19 @@
                     ir_builder.CreateZExtOrTrunc(address.value,wide),ir_builder.CreateZExtOrTrunc(expected.value,wide),
                     waiting ? timeout.value : ir_builder.getInt64(0)};
                 bool const shared{selected_memory_access_info.memory_p->memtag_shadow.shared()};
-                auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-wait-v1-",instruction.opcode,
+                auto const identity{::uwvm2::utils::container::u8concat_uwvm(state.debug_activation_enabled ? ::uwvm2::utils::container::u8string_view{u8"memtag-wait-v2-journal-"} : ::uwvm2::utils::container::u8string_view{u8"memtag-wait-v1-"},instruction.opcode,
                     u8"-",address64,u8"-",shared)};
                 auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
                 auto emit{[&]<unsigned Operation>() noexcept -> ::llvm::CallInst*
                 {
                     auto typed{[&]<typename Address,bool Shared>() noexcept
-                    { return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared>,
-                        llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,true>>(signature,args,discriminator); }};
+                    {
+                        if(state.debug_activation_enabled)
+                            return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,false,true>,
+                                llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,true,true>>(signature,args,discriminator);
+                        return emit_memtag_bridge_call.template operator()<llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared>,
+                            llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,true>>(signature,args,discriminator);
+                    }};
                     if(address64) { return shared ? typed.template operator()<::std::uint64_t,true>() : typed.template operator()<::std::uint64_t,false>(); }
                     return shared ? typed.template operator()<::std::uint32_t,true>() : typed.template operator()<::std::uint32_t,false>();
                 }};
@@ -75,28 +81,20 @@
                  ir_builder.getInt64Ty(), ir_builder.getInt64Ty()}, false)};
             auto bridge{[&]<unsigned Operation>() noexcept -> ::llvm::CallBase*
             {
-#if defined(UWVM_CPP_EXCEPTIONS) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
-                if constexpr(Operation != 0u)
+                if(state.emit_debug_safe_points && state.debug_activation_enabled)
                 {
-                    if(state.emit_debug_safe_points && state.debug_activation_enabled && state.native_guest_exceptions)
-                    {
-                        // Cancellation is a private foreign unwind after the
-                        // linked node is unregistered, never a fourth Wasm wait
-                        // result. The real Invoke bypasses Wasm handlers and
-                        // retires the current activation/GC/native frame.
-                        auto const target{address64 ?
-                            get_llvm_runtime_bridge_function_symbol_value<llvm_jit_memory64_wait_notify_bridge<Operation, true>>(
-                                ir_builder, bridge_type, atomic_bridge_discriminator) :
-                            get_llvm_runtime_bridge_function_symbol_value<llvm_jit_atomic_wait_notify_bridge<Operation, true>>(
-                                ir_builder, bridge_type, atomic_bridge_discriminator)};
-                        if(target == nullptr) { return nullptr; }
-                        return apply_llvm_jit_host_calling_conv(emit_runtime_local_func_llvm_jit_may_throw_call(state,
-                            bridge_type, target, {owner, ::llvm::ConstantInt::get(llvm_guest_address_type, instruction.memory.offset),
-                                ir_builder.CreateZExtOrTrunc(address.value, llvm_guest_address_type),
-                                ir_builder.CreateZExtOrTrunc(expected.value, ir_builder.getInt64Ty()), timeout.value}, false));
-                    }
+                    auto const target{address64 ?
+                        get_llvm_managed_helper_symbol<llvm_jit_memory64_wait_notify_bridge<Operation,false,true>,
+                            llvm_jit_memory64_wait_notify_bridge<Operation,true,true>>(ir_builder,bridge_type,atomic_bridge_discriminator) :
+                        get_llvm_managed_helper_symbol<llvm_jit_atomic_wait_notify_bridge<Operation,false,true>,
+                            llvm_jit_atomic_wait_notify_bridge<Operation,true,true>>(ir_builder,bridge_type,atomic_bridge_discriminator)};
+                    if(!target)return nullptr;
+                    ::llvm::Value* args[]{owner,::llvm::ConstantInt::get(llvm_guest_address_type,instruction.memory.offset),
+                        ir_builder.CreateZExtOrTrunc(address.value,llvm_guest_address_type),
+                        ir_builder.CreateZExtOrTrunc(expected.value,ir_builder.getInt64Ty()),waiting?timeout.value:ir_builder.getInt64(0)};
+                    return apply_llvm_jit_host_calling_conv(emit_runtime_local_func_llvm_jit_may_throw_call(state,
+                        bridge_type,target,args,false));
                 }
-#endif
                 if(address64)
                 {
                     return emit_runtime_bridge_call.template operator()<llvm_jit_memory64_wait_notify_bridge<Operation>>(

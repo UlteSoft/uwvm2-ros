@@ -1,6 +1,7 @@
 // Cold runtime-private actual object-load observation. No public serialized
 // image, table field or nominal function range is an executable permission.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "uwvm_runtime_native_owner_function_claims.h"
 #ifndef UWVM_MODULE
 #include <memory>
@@ -25,7 +26,7 @@ namespace uwvm2::runtime::lib::details
         friend class ::uwvm2::runtime::lib::runtime_checkpoint_world_transaction;
         struct expected_function
         {
-            ::std::string original_ir_name{};
+            ::uwvm2::utils::container::std_string original_ir_name{};
             ::std::size_t module{}, function{};
             ::std::uint_least64_t generation{};
             unsigned role{};
@@ -33,7 +34,7 @@ namespace uwvm2::runtime::lib::details
         };
         struct loaded_body
         {
-            ::std::string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
+            ::uwvm2::utils::container::std_string original_ir_name{}, entry_object_name{}, local_entry_object_name{};
             ::std::uintptr_t code_begin{}, code_end{}, callable_entry{};
             ::std::uint64_t object_key{}, section{};
             ::std::size_t expected_index{(::std::numeric_limits<::std::size_t>::max)()};
@@ -45,13 +46,13 @@ namespace uwvm2::runtime::lib::details
         ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module_{};
         ::std::size_t module_id_{(::std::numeric_limits<::std::size_t>::max)()};
         ::std::uint_least64_t runtime_epoch_{};
-        ::std::vector<expected_function> expected_{};
-        ::std::vector<unsigned> seen_{};
-        ::std::vector<loaded_body> bodies_{};
-        ::std::vector<::std::uint64_t> objects_{};
+        ::uwvm2::utils::container::std_vector<expected_function> expected_{};
+        ::uwvm2::utils::container::std_vector<unsigned> seen_{};
+        ::uwvm2::utils::container::std_vector<loaded_body> bodies_{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> objects_{};
         // Retain the complete actual function/unknown/zero symbol ledger DATA.
         // Consumers cannot silently drop aliases by accepting only named rows.
-        ::std::vector<native_owner_function_claims::image> claims_{};
+        ::uwvm2::utils::container::std_vector<native_owner_function_claims::image> claims_{};
         ::std::size_t total_symbols_{},total_object_bytes_{};
         bool valid_{}, attached_{}, sealed_{};
         // Staged observation is distinct from the LIVE publication seal.
@@ -65,7 +66,7 @@ namespace uwvm2::runtime::lib::details
         pending_actual_native_endpoints(::llvm::ExecutionEngine&,void const*,
             ::uwvm2::uwvm::runtime::initializer::staged_compiler_module_owner const&,
             ::uwvm2::runtime::checkpoint::compilation_profile::owner,::std::size_t,
-            ::std::vector<expected_function>,void*,staged_native_charge);
+            ::uwvm2::utils::container::std_vector<expected_function>,void*,staged_native_charge);
 #endif
         inline static constexpr ::std::size_t max_objects{4096u};
         // Objects already belong to the actual LLVM loader. Account their total
@@ -80,7 +81,7 @@ namespace uwvm2::runtime::lib::details
         pending_actual_native_endpoints(::llvm::ExecutionEngine& actual_engine,void const* actual_code_owner,
             ::uwvm2::uwvm::runtime::full::full_source_instance::owner source,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
-            ::std::size_t actual_id,::std::uint_least64_t actual_epoch,::std::vector<expected_function> expected)
+            ::std::size_t actual_id,::std::uint_least64_t actual_epoch,::uwvm2::utils::container::std_vector<expected_function> expected)
             : engine_{::std::addressof(actual_engine)},code_publication_{actual_code_owner},source_{::std::move(source)},
               module_{actual_module},module_id_{actual_id},runtime_epoch_{actual_epoch},expected_{::std::move(expected)}
         {
@@ -147,7 +148,7 @@ namespace uwvm2::runtime::lib::details
                total_object_bytes_>max_total_object_bytes || object.getData().size()>max_total_object_bytes-total_object_bytes_)
             { return false; }
             struct loaded_section { ::std::uint64_t index{},size{},load{};bool text{}; };
-            ::std::vector<loaded_section> sections{};
+            ::uwvm2::utils::container::std_vector<loaded_section> sections{};
             for(auto const& section:object.sections())
             {
                 if(sections.size()==native_owner_object_graph::detail::max_sections) { return false; }
@@ -164,7 +165,7 @@ namespace uwvm2::runtime::lib::details
                 // [safe] sentinel/index check BEFORE taking its synchronous address.
                 return ::std::addressof(*found);
             };
-            ::std::vector<::std::size_t> claim_indices{};claim_indices.reserve(claims.claims.size());
+            ::uwvm2::utils::container::std_vector<::std::size_t> claim_indices{};claim_indices.reserve(claims.claims.size());
             for(::std::size_t i{};i<claims.claims.size();++i) { claim_indices.push_back(i); }
             ::std::sort(claim_indices.begin(),claim_indices.end(),[&](auto a,auto b)
                 { return claims.claims[a].name<claims.claims[b].name; });

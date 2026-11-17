@@ -24,11 +24,24 @@ module;
 
 /// @note   To maintain compatibility with fast_io, the fast_io style of writing is adopted here.
 #include "impl.h"
+#include "object.h"
+#include "std_allocator.h"
 
 export module uwvm2.utils.allocator.fast_io_strict;
 
 export namespace uwvm2::utils::allocator::fast_io_strict
 {
+    using ::uwvm2::utils::allocator::fast_io_strict::native_std_allocator;
+    using ::uwvm2::utils::allocator::fast_io_strict::allocation_failed;
+    using ::uwvm2::utils::allocator::fast_io_strict::try_object;
+    using ::uwvm2::utils::allocator::fast_io_strict::object;
+    using ::uwvm2::utils::allocator::fast_io_strict::destroy_object;
+    using ::uwvm2::utils::allocator::fast_io_strict::array_alignment;
+    using ::uwvm2::utils::allocator::fast_io_strict::array_prefix;
+    using ::uwvm2::utils::allocator::fast_io_strict::try_array;
+    using ::uwvm2::utils::allocator::fast_io_strict::array;
+    using ::uwvm2::utils::allocator::fast_io_strict::destroy_array;
+
     using ::uwvm2::utils::allocator::fast_io_strict::fast_io_allocator_to_strict;
 
     using ::uwvm2::utils::allocator::fast_io_strict::fast_io_strict_generic_allocator_adapter;

@@ -105,11 +105,19 @@ function def_build(opt)
 		add_defines("UWVM2_BUILD_SOURCE_ID=u8\"" .. build_source_id .. "\"")
 	end
 
-	-- The mandatory product check rejects all interface-removal options.
-	-- Compilation always includes both audited bridges; it grants no authority.
-	-- The product admission checks architecture after Xmake resolves options;
-	-- declarative menu loading has no selected architecture yet.
-	add_defines("UWVM_IMPORT_ROS1", "UWVM_IMPORT_ROS2")
+	-- Compile the independent ROSv2 host by default. Deprecated ROSv1 and
+	-- in-process native preloading require explicit build opt-ins. Apply the
+	-- same choices to runtime, CLI, named modules and test translation units.
+	if get_config("import-u2rosv2") then
+        add_defines("UWVM_IMPORT_ROSV2", "UWVM_ROS_ATTACHMENT_OPENSSL")
+        uwvm_add_openssl()
+    end
+	for _, ros_version in ipairs({1, 2}) do
+		if get_config("import-u2rosv1-ros" .. ros_version) then
+			add_defines("UWVM_IMPORT_ROS" .. ros_version)
+		end
+	end
+	if get_config("enable-preload-dl") then add_defines("UWVM_ENABLE_PRELOAD_DL=1") end
 	-- @brief Apply the selected SDK registry capacities to every translation unit.
 	-- @details Runtime, CLI and test targets must share these compile-time limits.
 	-- Vendor catalogs can exceed the defaults; option declarations alone do not
@@ -121,7 +129,7 @@ function def_build(opt)
 	add_defines("UWVM_ROS_MAX_CUSTOM_CELLS=" .. tostring(ros_registry_cells))
 	local custom_ros_registry = uwvm_ros_selected_vendor_registry()
 	if custom_ros_registry and custom_ros_registry ~= "none" then
-		if not (get_config("import-ros1") or get_config("import-ros2")) then
+		if not (get_config("import-u2rosv1-ros1") or get_config("import-u2rosv1-ros2")) then
 			error("--ros-custom-registry-header requires an explicit ROS host import")
 		end
 		-- Select trusted generated source at build time. This option does not
@@ -134,8 +142,8 @@ function def_build(opt)
 
 	local original_control_registry = get_config("ros-original-control-manifest-header")
 	if original_control_registry and original_control_registry ~= "none" then
-		if not get_config("import-ros2") then
-			error("--ros-original-control-manifest-header requires explicit --import-ros2=y")
+		if not get_config("import-u2rosv1-ros2") then
+			error("--ros-original-control-manifest-header requires explicit --import-u2rosv1-ros2=y")
 		end
 		-- This is reviewed compiled schema source, not a permission/profile file.
 		-- Its independent namespace coexists with the ordinary vendor manifest.
@@ -145,8 +153,8 @@ function def_build(opt)
 		add_defines('UWVM_ROS_ORIGINAL_CONTROL_MANIFEST=\"' .. path.absolute(original_control_registry):gsub("\\", "/") .. '\"')
 	end
 
-	-- Two explicit ROS categories enlarge the existing constexpr alias table.
-	if (get_config("import-ros1") or get_config("import-ros2")) and get_config("use-llvm-compiler") then
+	-- ROS categories enlarge the existing constexpr alias table.
+	if (get_config("import-u2rosv2") or get_config("import-u2rosv1-ros1") or get_config("import-u2rosv1-ros2")) and get_config("use-llvm-compiler") then
 		add_cxxflags("-fconstexpr-steps=8388608", {force = true})
 	end
 
@@ -559,6 +567,7 @@ local function uwvm_add_runtime_interface_module_files(is_public)
 	-- second runtime implementation TU or a foreign backend's partitions.
 	add_files("src/uwvm2/runtime/lib/**.cppm", { public = is_public })
 	add_files("src/uwvm2/runtime/exception/**.cppm", { public = is_public })
+	add_files("src/uwvm2/runtime/diagnostic/**.cppm", { public = is_public })
 	add_files("src/uwvm2/runtime/gc/**.cppm", { public = is_public })
 	add_files("src/uwvm2/runtime/checkpoint/**.cppm", { public = is_public })
 	add_files("src/uwvm2/runtime/wasm_threads/**.cppm", { public = is_public })
@@ -599,13 +608,12 @@ local function uwvm_add_frontend_module_files(is_public)
 	end
 end
 
-if (uwvm_uses_llvm_jit or (get_config("enable-wsea") and
+if (uwvm_uses_llvm_jit or get_config("import-u2rosv2") or (get_config("enable-wsea") and
 	is_plat("linux", "macosx", "unix", "bsd", "freebsd", "dragonflybsd", "netbsd", "openbsd", "sun"))) and get_config("openssl-root") == "default" and get_config("openssl-provider") == "package" then
-	add_requires("openssl >=3.0.0", {configs = {shared = false}})
+	add_requires(get_config("import-u2rosv2") and "openssl >=3.2.0" or "openssl >=3.0.0", {configs = {shared = false}})
 end
 
-function uwvm_add_llvm_jit_cache_openssl()
-	add_defines("UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519")
+function uwvm_add_openssl()
 	local openssl_root = get_config("openssl-root")
 	if openssl_root and openssl_root ~= "default" then
 		add_rules("uwvm.prebuilt-openssl")
@@ -614,6 +622,11 @@ function uwvm_add_llvm_jit_cache_openssl()
 	else
 		add_rules("uwvm.bundled-openssl")
 	end
+end
+
+function uwvm_add_llvm_jit_cache_openssl()
+	add_defines("UWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519")
+	uwvm_add_openssl()
 end
 
 includes("xmake/openssl.lua")
@@ -637,13 +650,6 @@ target("uwvm2-ros")
 	set_fpmodels("precise") 
 
 	local is_debug_mode = is_mode("debug")  -- public all modules in debug mode
-	for _, ros_version in ipairs({1, 2}) do
-		if get_config("import-ros" .. ros_version) then
-			-- Linux-only admission is enforced by the mandatory sandbox policy.
-			add_defines("UWVM_IMPORT_ROS" .. ros_version)
-		end
-	end
-
 	local enable_cxx_module = get_config("use-cxx-module")
 
 	-- third-parties/fast_io
@@ -874,13 +880,6 @@ for _, file in ipairs(os.files("test/**.cc")) do
 		set_fpmodels("precise")
 
 		set_default(false)
-
-		for _, ros_version in ipairs({1, 2}) do
-		if get_config("import-ros" .. ros_version) then
-			-- Linux-only admission is enforced by the mandatory sandbox policy.
-			add_defines("UWVM_IMPORT_ROS" .. ros_version)
-		end
-	end
 
 	local enable_cxx_module = get_config("use-cxx-module")
 		-- Runtime-backed tests consume the same public interfaces as the CLI.
@@ -1406,7 +1405,7 @@ end
 -- Explicit, non-default source/link/value contract for the real module graph.
 -- Future invocation is separate from Source review and Native/Guest credit.
 if get_config("use-cxx-module") and is_plat("linux") and uwvm_has_runtime_backend and
-    (get_config("import-ros1") or get_config("import-ros2")) then
+    (get_config("import-u2rosv1-ros1") or get_config("import-u2rosv1-ros2")) then
     target("named_module_threaded_contract")
         set_kind("binary")
         set_default(false)

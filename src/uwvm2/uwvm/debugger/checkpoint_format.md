@@ -1,10 +1,23 @@
-# UWVM checkpoint state database format 7
+> Current executable-state format: **State10** (`UWCPSTA`, version 10).
+> State9 and earlier files are rejected; missing continuation and wait metadata is never guessed.
+> Frame word 7 is the compiler-observed ROS cross-module-ancestry bit (0 or 1).
+> This includes eliminated tail callers. Restoring it never clears a live
+> caller's crossing restriction, restores permissions, or resets quota usage.
+> Parent-to-child crossings must remain marked. All native identities and
+> addresses are reconstructed from the current admitted source and code owners.
+
+# UWVM checkpoint state database format 9
 
 This document specifies the portable state/database and replay component contracts.
 It is not evidence that whole-VM save, restore or reverse execution has passed.
-The current LLVM full compiler has observation safepoints, not complete portable
-locals/operand/exception continuations. The runtime integration below must be
-implemented and qualified before the controller advertises those capabilities.
+LLVM full now supports typed continuation capture and joint Wasm/WASIp1/stable
+ROS v1 restoration at qualified cooperative stops. The current implementation
+and its boundaries are described in [Unified snapshots](../../../../documents/runtime/unified-snapshot.md).
+Explicit execution replay supports a captured native worker cohort, shared
+memory, pending atomic waits and active MTE. Dynamic WASI Threads child worlds,
+concurrent blocking host-operation scheduling and virtual host-resource
+inspection remain separate unfinished adapters; neither format validation nor
+ordinary restoration is evidence of replay acceptance.
 
 Only LLVM JIT full may enable checkpoint instrumentation. Both repositories use
 the same schema. Ordinary full, lazy, interpreter and tiered code must execute no
@@ -77,19 +90,19 @@ v128 low/high words preserve Wasm lane byte order. i8/i16 are packed storage
 values, never general locals or globals. i31 is an immediate unsigned 31-bit
 payload and does not allocate a logical object.
 
-State7 uses distinct magic `UWCPST7\0` and commit marker `UWCPSTE7`.
+State10 uses distinct magic `UWCPSTA\0` and commit marker `UWCPSTEA`.
 The outer identity envelope keeps `UWCPDB4\0` / `UWCPEND4`, version4 and its
 160-byte header; inner and outer documents are never selected by guessing header
-lengths. State schema7 is also the third field of the actual per-engine checkpoint
+lengths. State schema8 is also the third field of the actual per-engine checkpoint
 profile/cache tuple. Binding identity revision2 stays unchanged; the native continuation ABI is
-independently recorded by the actual compiler profile and binary build; old schema6/5/4/3 profile/cache contexts cannot admit schema7 state.
+independently recorded by the actual compiler profile and binary build; old schema7/6/5/4/3 profile/cache contexts cannot admit schema8 state.
 
 Header length is 128 bytes. In order:
 
 | Field | Encoding |
 | --- | --- |
-| magic | 8 bytes `UWCPST7\0` |
-| format version, header bytes | u16 7, u16 128 |
+| magic | 8 bytes `UWCPSTA\0` |
+| format version, header bytes | u16 9, u16 128 |
 | endian sentinel | u32 `0x04030201`, bytes `01 02 03 04` |
 | flags | u64 zero, reserved |
 | recording identifier | 16 opaque nonzero bytes, not authentication |
@@ -131,7 +144,7 @@ from an unset alloca; the conservative source-display availability packet cannot
 substitute for the complete runtime state. Versions 1 through 3 are preserved as
 immutable development artifacts and are not migrated by guessing missing state.
 
-The footer occupies 48 bytes: magic `UWCPSTE7`, u64 body count, and SHA-256 of the
+The footer occupies 48 bytes: magic `UWCPSTEA`, u64 body count, and SHA-256 of the
 exact header plus body using `fast_io::sha256_context`. Missing/footer mismatch,
 extra bytes, corruption and reserved fields fail. SHA-256 detects corruption; it
 is not management authentication or proof of mmap immutability. Decode builds
@@ -151,7 +164,7 @@ listed order, not sorted when their order is semantically significant.
 
 | Kind | Flags / words | Links / values / bytes |
 | --- | --- | --- |
-| module | flags 0 legacy detached DATA, all words zero; flags 1 actual resolved syntax policy: revision 1, CLI mode 0..4, nineteen disable bits, two controllable bits | Original validated Wasm bytes, including recursive type groups, all declarations, custom/debug sections and immutable initialization metadata. No links or values. |
+| module | flags 0 legacy detached DATA, all words zero; flags 1 actual resolved syntax policy: revision 3, CLI mode 0..5, twenty disable bits, two controllable bits | Original validated Wasm bytes, including recursive type groups, all declarations, custom/debug sections and immutable initialization metadata. No links or values. |
 | instance | flags 0; counts of functions, tables, memories, globals, tags, data, elements | Module ID followed by those seven ordered index-to-store maps. Imported aliases use the same object IDs. No values/bytes. |
 | function | flags 0 Wasm / 1 host; local function index, body generation, type index | Instance ID; host additionally has adapter/resource ID. Original Wasm body uses the module; a replacement has its exact validated local-declaration/body bytes. Never native code. |
 | memory | flags 0 private / 1 shared; address bits 32/64, current pages, minimum, maximum, allocation tag bits 0/4/8 | Byte pages are represented by memory chunks, omitted data bytes explicitly zero. Tag bits 0 requires an empty byte payload; 4 is valid only for memory32 and 8 only for memory64. Enabled memory carries exactly current pages × 4096 tag bytes, one per 16-byte granule, in ascending address order. Four-bit values must be at most 15; all eight software bits are preserved for memory64. No pointers or mmap layout. |
@@ -170,9 +183,9 @@ listed order, not sorted when their order is semantically significant.
 | frame | flags 0 before-opcode / 1 awaiting call return / 2 EH continuation; opcode offset, local count, operand count, control count, handler count, function generation, caller return offset | Function ID then outer-to-inner controls then handlers; exact locals followed by operand values. No native PC/SP/register bits. These must be real compiler materializations, not DWARF guesses. |
 | control | flags 0 block / 1 loop / 2 if / 3 function label; entry offset, end offset, captured parameter count, result arity | Actual captured entry values. Label/control types and stack heights come from the exact validated compiler continuation metadata. Result values are not fabricated before execution. |
 | handler | flags 0 catch / 1 catch_ref / 2 catch_all / 3 catch_all_ref; label depth, target offset, in-flight exception ID or zero | Catch/catch_ref has exact tag ID. A live exception reference is retained and re-published, not a C++ unwinder stack blob. |
-| atomic wait | flags 0 finite deadline / 1 infinite; aligned byte offset, width 4/8, expected bits, virtual deadline | One shared memory ID; actual scheduler queue/order and typed suspended atomic continuation are required. |
+| atomic wait | flags 0 pending / 1 notified / 2 timed out; words: effective byte offset, width 4/8, expected bits, remaining monotonic nanoseconds (`UINT64_MAX` = infinite), pending FIFO rank (`UINT64_MAX` when completed), original tagged address, static offset, address bits 32/64 | One shared memory ID; native capture proves the actual queue node. The new compiler-sealed opcode, operands, alias and FIFO geometry are checked before retirement. |
 | host resource | flags 0 pure / 1 replay input / 2 virtualized side effect / 3 original builtin binding DATA; adapter ID, version, logical resource ID | Approved adapter snapshot bytes. OS descriptors/HANDLEs, absolute host paths or network connections are not restored from wire values. |
-| event | flags 0 import / 1 clock / 2 random / 3 scheduler / 4 wait-notify / 5 allocation outcome / 6 floating-point result / 7 extern adapter / 8 effect; sequence, logical instruction, logical thread, adapter operation, argument count, result count, error bits, effect ordinal | Exact capability object IDs, typed arguments/results, approved adapter payload. Sequences strictly increase. Interpreter opcode observations cannot act as these actual event witnesses. |
+| event | execution-journal flags 1 result delivery / 2 wait begin / 3 worker exit / 4 tag guard / 5 tag entropy / 6 endpoint / 7 import / 8 instruction / 9 wait endpoint / 10 wait readiness; sequence, logical instruction, logical thread, adapter operation, argument count, result count, error bits, effect ordinal | Exact capability object IDs, typed arguments/results, approved adapter payload. Sequences strictly increase. Interpreter opcode observations cannot act as these actual event witnesses. |
 | exception trace | flags 0 complete / 1 explicitly truncated; words zero | Actual logical function IDs and same-length i64 Wasm offsets, retaining original throw provenance for detailed uncaught diagnostics. |
 
 Mutable continuation records have one owner: every frame and atomic-wait record
@@ -352,17 +365,18 @@ The required-features mask is the union of compatibility requirements derived
 from each actual owned module's resolved enabled policy. Disabled GC/threads do
 not become requirements just because the product implements them. This mask
 cannot reproduce validation policy: the actual module flags1 tuple records CLI
-mode (MVP grammar selection), nineteen disable flags and both legacy controllable
+mode (including explicit Core 3.0), twenty disable flags and both legacy controllable
 restrictions. It is copied from that module's immutable parser parameters after
 real source/member/epoch proof and is independently serialized with fast_io into
 the actual full/partition cache context. Its real original publication identity
 remains owned while replacements are validated under the same source policy;
 replacement generation/body ownership is authenticated independently.
-Nineteen disable bits, in increasing order, are multi-value, reference types,
+Twenty disable bits, in increasing order, are multi-value, reference types,
 table instructions, multiple tables, bulk memory, sign extension, nontrapping
 float conversion, SIMD, extended constants, table initializer, relaxed SIMD,
 multiple memories, tail call, memory64, table64, function references, GC,
-exceptions and threads. Controllable bit0 restricts multi-result vectors and bit1
+exceptions, threads and the nonstandard memtag extension. Compatibility bit 18
+records the memtag extension independently of Core features. Controllable bit0 restricts multi-result vectors and bit1
 restricts multiple tables. Ordinary CLI ownership bookkeeping is not executable
 validation policy. Parser quotas remain a separate trusted source-preparation
 policy; this tuple does not claim to serialize them. A future fresh-world issuer
@@ -377,7 +391,7 @@ State7 original builtin import binding (DATA only)
 
 `host_resource.flags == 3` records the original builtin code ABI, not a pure
 import, replay input, virtualized effect, host lifetime or restoration adapter.
-Its only recognized kind is `0x3150495341575755` (LE word UWWASIP1), revision1,
+The WASIp1 kind is `0x3150495341575755` (LE word UWWASIP1), revision1,
 and original known-function index+1 (index0..127). Every unused word is zero.
 There are no links/values. Exactly108 bytes are: ASCII `UWVMWASIP1B1` (12),
 function index LEu64, interface revision LEu64=1, whole ordered builtin-interface
@@ -385,14 +399,27 @@ SHA256 (32), parameter count LEu64, result count LEu64,16 parameter type bytes,
 16 result type bytes. Counts are0..16; active types are i32=0x7f/i64=0x7e,
 unused types are zero. A nonzero hash is a structural DATA check only.
 
+Stable ROS v1 bindings use kind `0x3156534f52575755`, the same 108-byte layout,
+and magic `UWVMROSV1B01`. Word 1 and the second LEu64 field instead carry a
+family selector: 1 ROS1 v1, 2 ROS1 client v1, 3 ROS2 v1, 4 ROS2 client v1.
+The ordinal is bounded to 0..63 and is independently authenticated against the
+actual immutable concrete tuple. No later RMW/portable/scene family is accepted
+by this schema. These binding records grant neither saved ROS state nor replay
+authority; executable restoration still needs the current native environment
+transaction and the matching outer ROS completeness markers.
+
 The genuine producer proves the original immutable import declaration, any real
 initializer-owned name rewrite with the same original type, the exact terminal
 import member, current validated source epoch and actual final builtin loader
 wrapper/known tuple before copying this descriptor. Imported functions use
-flags1, original generation1, original terminal public index/type, and the real
-terminal receiving-instance ID plus this binding-resource ID. Exact alias
-chains may reuse that terminal function; different terminal direct imports in
-different instances remain different functions even when descriptors match.
+flags1, original generation1, the declared import index/type, and that import's
+actual receiving-instance ID plus this binding-resource ID. A builtin re-export
+keeps the receiving wrapper distinct from the terminal provider import. Runtime
+dispatch binds memory and policy through this wrapper, so collapsing it would
+redirect indirect-call outputs after restoration. The terminal loader binding is
+authenticated separately through the genuine original and replacement chains.
+The restore preflight rejects older graphs that collapse distinct builtin
+receivers; it never repairs them by guessing a receiver from a signature.
 Unknown DL/native providers still require their genuine adapters and are denied.
 
 State7 function-generation semantic identity includes the exact binding bytes,
@@ -408,3 +435,141 @@ envelope4 and cache5 remain independent and unchanged.
 ## State7 allocation tags
 
 State7 is incompatible with earlier state files and rejects them explicitly. The complete allocation-tag image is charged against payload and native restoration quotas. Untagged memory retains the full standard address domain. Tagged images must fit the selected 28-bit or 56-bit byte-address domain and have exact tag geometry, including zero tags. Restore initializes a private owner, restores data and allocation tags, then activates any supported hardware mirror before compilation and publication. Hardware mapping addresses and thread controls are not serialized. Imported aliases retain one logical memory ID and therefore one tag image. A restore request that disables required tag enforcement is rejected.
+
+### Stable ROS v1 local environment archive
+
+The unified container's ROS1/ROS2 schema-2 partial records contain detached local
+state captured under the same real closed cohort as the Wasm graph and WASI
+capsules. `imported/ros/common/checkpoint_environment.h` defines the DATA fields;
+`runtime/diagnostic/snapshot_ros.h` defines their canonical wire order and bounded
+reader. `tools/debug/snapshot.py` independently decodes this schema for inspection.
+
+No transport credential, OS descriptor, native pointer, waiter, registration
+owner or permission token is encoded. Quota observations are never applied to
+live accounts. Queue capture does not peek, promote or commit the front item.
+External ROS peers/effects are not part of this record, so the outer completeness
+remains partial. Explicit current-environment restoration preserves the real
+current session and queues. Recorded-environment restoration may reconstruct
+local delivery only after matching current group membership, configuration,
+capability/handle generations, revocations, session identity, external input
+cursor and outstanding requests. A closed handle or consumed service response
+cannot be resurrected. Queues are prepared privately with the current genuine
+native bindings; all sessions are revalidated and locked before registry/queue
+publication. Current quota accounts, audit history and request-ID high-water marks
+are not rolled back. Both modes require the independent real-world stop and
+physical worker retirement transaction.
+
+The local queue image is not a deterministic external-event log. Ordinary
+restoration rejects replay events before retirement. A known builtin may leave a
+permanent replay-history gap while its fresh live typed frames remain capturable
+after return; unknown native providers still poison executable recording. No gap
+or structural failure is cleared. An explicit execution recording starts a new
+interval at an authenticated complete cooperative stop.
+
+### Executable instruction/import journal
+
+The opt-in execution adapter appends event objects after all objects of its
+origin graph. It requires the origin counters `logical_instruction` and
+`replay_event_cursor` to be zero. Its event meanings are qualified by this
+adapter. The `UWEXRLP2` encoding appends an unsigned little-endian 64-bit
+recording-relative monotonic nanosecond timestamp to **every** event payload.
+Timestamps never decrease and cannot exceed `INT64_MAX`. Payload descriptions
+below exclude this common eight-byte trailer. The decoder verifies and separates
+the trailer before delivering event DATA to the execution adapter. Older
+unstamped journals are refused. Recording samples `fast_io::posix_clock_gettime`
+through the host monotonic-clock adapter; replay uses recorded time, not host
+wall-clock changes or time spent inspecting a paused replay.
+
+
+- Flag 15 is a coherent historical environment sample. Words are sequence,
+  current instruction ordinal, a live logical thread, zero, zero, zero, the
+  execution schema, and zero. Values and links are empty. The payload is a
+  complete full-disclosure snapshot archive containing only WASIp1 and stable
+  ROS v1 environment records. Each record uses its own validated codec and the
+  origin's recording label. Sampling requires a genuine complete stop with host
+  admission closed. It grants no native resource, restore or provider authority.
+  Replay exposes the latest consumed sample through the separate history view;
+  it does not overwrite current permissions, quotas, descriptors or sessions.
+- Flag 14 records a log-only MTE violation inside a phased native import. Words
+  are sequence, current instruction ordinal, logical thread, packed module/import,
+  ten input values, zero results, the execution schema, and the exact import-begin
+  sequence. The ten initialized i64 values are effective address, mismatch
+  granule, raw guest pointer, memory index, logical source module, source function,
+  source offset, pointer tag, allocation tag, and asynchronous-delivery boolean.
+  Unknown source coordinates use `UINT64_MAX`; known module IDs belong to the
+  origin, and known functions/offsets fit u32. Tags fit u8 and differ. Links and
+  payload are empty. This event conveys diagnostic data only. The current host
+  must independently permit log-only MTE; replay never changes its report policy
+  or obtains a native log descriptor from the file.
+- Flag 11 starts a phased import with the flag-7 input layout and no results.
+  Its memory payload is immutable: the begin event cannot perform guest writes.
+  Other workers may execute between subsequent provider memory phases.
+- Flag 12 records an actual guest-memory operation of that import. Word 7 is
+  the exact begin sequence; four i64 inputs identify operation (0/1/2), memory
+  index, guest offset and length, followed by a boolean success result. The
+  memory payload uses `UWRMEM1`. A read-only or failed operation cannot apply
+  writes. Allocation-tag guard events retain their normal meaning.
+- Flag 13 returns the exact typed numeric results of the corresponding flag-11
+  import. Word 7 names its begin sequence. Inputs, memory links and payload are
+  empty. Only this return closes the in-flight import in the journal.
+- Flag 8 is an instruction boundary. Words are the consecutive event sequence
+  (starting at 1), consecutive instruction ordinal (starting at 1), logical
+  thread ID, function index, zero, zero, logical module index and Wasm expression
+  byte offset. Links, values and payload are empty.
+- Flag 7 is a returning native import. Words are the event sequence, ordinal of
+  the preceding instruction, logical thread ID, `(module << 32) | import`,
+  argument count, result count, schema `0x32504c5258455755`, and zero. Values are
+  the exact initialized numeric arguments followed by results. Links are the
+  strictly increasing IDs of distinct owned linear memories. The `UWRMEM1`
+  payload validates all memories and stages all patches before any write.
+- Flag 6 is the final stopped boundary. It has the instruction-boundary layout
+  and the next instruction ordinal, but that instruction has not executed.
+  Every surviving worker has exactly one endpoint. Endpoints form a suffix;
+  no instruction, import or wait completion can follow that suffix.
+- Flag 5 supplies one raw entropy byte and a success bit to the exact validated
+  random-tag operation, memory ID and address width. No native RNG state is saved.
+- Flag 4 verifies the allocation-tag images before an imported memory effect.
+  Links are ordered memory IDs; payload contains one SHA-256 per tag image.
+- Flag 3 records actual worker exit. That worker has no later event or endpoint.
+- Flag 2 begins atomic wait/notify: operation 0/1/2, four i64 inputs (static
+  offset, original address, expected value/count, signed timeout), memory ID,
+  schema and address width. Scheduling is released only after real enqueue.
+  Its 32-byte payload contains four little-endian u64 words: current memory
+  length, effective byte offset, atomic word value, and tag state (bit 0 means
+  tagging is active; bits 8..15 hold the allocation tag; other bits are zero).
+  Neither a native address nor a hardware checking control is serialized.
+- Flag 10 records the actual native wait becoming ready (notified, unequal or
+  timed out), before its queue node is removed. Notification is recorded even
+  when the waiting worker is parked and cannot return yet. Word 7 names the
+  wait-begin sequence or `UINT64_MAX` for an origin wait. There is exactly one
+  completion per pending wait, and its i32 result must agree with flag 1.
+- Flag 1 delivers that operation's one i32 result after the worker regains its
+  recorded instruction turn. Word 7 names its begin
+  sequence, or `UINT64_MAX` for a waiter already present in the origin graph.
+  A resumed origin waiter does not generate another instruction/begin event.
+- Flag 9 is a pending-wait endpoint. It uses the endpoint source coordinates,
+  one memory link, and nine i64 inputs: the atomic-wait object's eight words
+  followed by its flags. Replay parks a virtual waiter at this endpoint; it
+  does not enter the native wait set or notify a live worker.
+  It carries the same 32-byte current memory/tag proof as flag 2. A wait in a
+  memory grown during recording must still fit its declared maximum and the
+  live extent reconstructed by replay.
+
+The scheduler resolves actual native participants to logical IDs. Pending wait
+origins, intermediate pauses and endpoints retain their queue state through
+repeated captures and restorations. Virtual waits participate in the same real
+all-participant pause as instruction workers. Completed timeouts carry flag 2,
+zero remaining time and no pending FIFO rank; restoration cannot requeue them
+or repeat their earlier memory comparison. An archive flag cannot authorize a native source, worker or memory
+owner. A current authenticated builtin
+provider is resolved again for every replayed import, including indirect calls.
+No native import runs when consuming a recorded result. Exhaustion or divergence
+cannot switch to live execution. Returning to live execution requires explicit
+ordinary restoration.
+
+`UWRMEM1` transaction details are in `documents/runtime/unified-snapshot.md`.
+Ordinary restoration rejects both outer replay records and typed graph event
+objects; the direct native preparation API repeats that check. Only explicit
+replay preparation separates a validated origin from the journal and installs
+the session after physical worker retirement and generation publication.
+Unknown or unconsumed history must never become fresh native I/O.

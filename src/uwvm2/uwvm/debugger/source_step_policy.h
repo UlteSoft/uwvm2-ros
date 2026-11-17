@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_types.h"
 # include <string_view>
@@ -78,9 +79,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
         ::std::uint64_t module{}, function{}, runtime_epoch{}, function_generation{};
         // First key is the concrete physical subprogram; remaining keys are
         // concrete inline DIE instances, not names or abstract-origin keys.
-        ::std::vector<source_dwarf::die_key> scope_path{};
+        ::uwvm2::utils::container::std_vector<source_dwarf::die_key> scope_path{};
         mapping_kind mapping{mapping_kind::dwarf_scope};
-        ::std::string file{};
+        ::uwvm2::utils::container::std_string file{};
         ::std::uint64_t line{}, column{}, discriminator{};
         bool is_statement{};
         ::std::size_t physical_depth{};
@@ -130,7 +131,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
         action result{action::decline}; error reason{error::unmapped};
         // Owned bounded metadata labels for a stop only. These tokens never
         // become DAP references or credentials for reading another frame.
-        ::std::vector<source_dwarf::die_key> stopped_path{};
+        ::uwvm2::utils::container::std_vector<source_dwarf::die_key> stopped_path{};
     };
     struct origin
     {
@@ -139,7 +140,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
         bool ready{}; // Only indicates bounded metadata setup, NOT authority.
         bool seeking_source{}; // Began at a genuine activation without a source row.
         destination_policy destination{};
-        ::std::string destination_file{};
+        ::uwvm2::utils::container::std_string destination_file{};
         ::std::uint64_t destination_line{};
         // A genuinely observed return can precede a source row. The controller
         // retains THAT complete ancestor chain separately and compares every
@@ -250,7 +251,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_step
         try
         {
 #endif
-            out.destination_file = ::fast_io::concat_std(file);
+            out.destination_file = ::uwvm2::utils::container::concat(file);
             out.destination_line = line; out.destination = requested; return error::none;
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         }

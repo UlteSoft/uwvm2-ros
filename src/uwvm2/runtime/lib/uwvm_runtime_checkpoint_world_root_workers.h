@@ -2,6 +2,10 @@
 // Actual FastIO native workers own their own TLS roots; the caller never
 // supplies a body, native pointer, thread ID, root record or startup permission.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include "uwvm_runtime_checkpoint_world_worker_wasip1.h"
 class prepared_world_root_workers final
 {
@@ -11,11 +15,11 @@ class prepared_world_root_workers final
     struct packet final
     {
         prepared_world_thread* thread{};
-        ::std::unique_ptr<::fast_io::native_thread> native{};
+        ::uwvm2::utils::container::std_unique_ptr<::fast_io::native_thread> native{};
         ::std::atomic<unsigned char> arrival{};
         pause_domain::participant participant{};
         ::std::shared_ptr<activation_ledger> activation{};
-        ::std::unique_ptr<shadow_ledger> checkpoint{};
+        ::uwvm2::utils::container::std_unique_ptr<shadow_ledger> checkpoint{};
         details::debug_operand_workspace_stack workspaces{};
         ::std::uint_least64_t participant_id{}; // Private comparison, never returned.
         bool debug_installed{}, debug_restored{};
@@ -28,8 +32,8 @@ class prepared_world_root_workers final
     runtime_checkpoint_world_transaction& world_;
     // Destruction order: joined packet/TLS owners retire BEFORE this private
     // controller. The real currently paused runtime controller is untouched.
-    ::std::unique_ptr<pause_domain> control_{};
-    ::std::vector<::std::unique_ptr<packet>> packets_{};
+    ::uwvm2::utils::container::std_unique_ptr<pause_domain> control_{};
+    ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<packet>> packets_{};
     ::std::atomic<bool> release_{};
     ::std::size_t started_{},joined_{};
     ::std::size_t expected_wasip1_workers_{},expected_wasip1_visits_{};
@@ -150,12 +154,12 @@ public:
         if(count==0u || count>maximum_workers || count>packets_.max_size() ||
            control_bytes==SIZE_MAX || !world_.actual_prepared_profile_ ||
            !world_.charge_native(1u,control_bytes) ||
-           !world_.charge_native(count,sizeof(::std::unique_ptr<packet>)+sizeof(packet)+sizeof(::fast_io::native_thread)+
+           !world_.charge_native(count,sizeof(::uwvm2::utils::container::std_unique_ptr<packet>)+sizeof(packet)+sizeof(::fast_io::native_thread)+
                 sizeof(activation_ledger)+sizeof(shadow_ledger)+sizeof(prepared_world_worker_wasip1_scope))) { return false; }
         // Allocate ALL stable records before any OS launch. The candidate world
         // keeps carriers, staged stores, source and engines alive through join.
         packets_.reserve(count);
-        control_=::std::make_unique<pause_domain>(count);
+        control_=::uwvm2::utils::container::make_unique<pause_domain>(count);
         for(auto& thread:world_.prepared_threads_)
         {
             if(!prepared_world_worker_wasip1_scope::preflight(world_,thread)) { return false; }
@@ -163,9 +167,9 @@ public:
             if(visits>SIZE_MAX-expected_wasip1_visits_) { return false; }
             expected_wasip1_visits_+=visits;
             expected_wasip1_workers_+=prepared_world_worker_wasip1_scope::expects_held(world_,thread)?1u:0u;
-            auto owned{::std::make_unique<packet>()};owned->thread=::std::addressof(thread);
-            owned->activation=::std::make_shared<activation_ledger>(g_runtime.debug_activation_storage_budget);
-            owned->checkpoint=::std::make_unique<shadow_ledger>(world_.actual_prepared_profile_);
+            auto owned{::uwvm2::utils::container::make_unique<packet>()};owned->thread=::std::addressof(thread);
+            owned->activation=::uwvm2::utils::container::make_shared<activation_ledger>(g_runtime.debug_activation_storage_budget);
+            owned->checkpoint=::uwvm2::utils::container::make_unique<shadow_ledger>(world_.actual_prepared_profile_);
             if(!owned->activation->ready_for_root_entry() ||
                owned->checkpoint->failure()!=::uwvm2::runtime::checkpoint::status::ok) { return false; }
             packets_.push_back(::std::move(owned));
@@ -184,7 +188,7 @@ public:
                 // No fallible statement follows successful OS ownership before
                 // recording started_. A later create failure releases and joins
                 // the actual prefix; it cannot destroy a live borrowed packet.
-                owned->native.reset(new ::fast_io::native_thread{[this,actual=owned.get()]() noexcept { run(*actual); }});
+                owned->native.reset(::uwvm2::utils::allocator::fast_io_strict::object<::fast_io::native_thread>([&](::fast_io::native_thread* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ::fast_io::native_thread{[this,actual=owned.get()]() noexcept { run(*actual); }}; }));
                 ++started_;
             }
             all=started_==packets_.size();
@@ -280,7 +284,10 @@ public:
     }
     [[nodiscard]] bool cancel_and_join() noexcept
     {
-        release_and_join();
+        release_and_join();return joined_actual_cohort();
+    }
+    [[nodiscard]] bool joined_actual_cohort() const noexcept
+    {
         if(joined_!=started_) { return false; }
         for(::std::size_t n{};n<started_;++n)
         {
@@ -293,13 +300,13 @@ public:
 };
 // Declared after every borrowed world resource: reverse destruction joins ALL
 // held OS/TLS workers before caches, frames, code, GC stores or source retire.
-::std::unique_ptr<prepared_world_root_workers> private_closed_workers_{};
+::uwvm2::utils::container::std_unique_ptr<prepared_world_root_workers> private_closed_workers_{};
 [[nodiscard]] bool prepare_private_closed_workers(::std::size_t maximum_workers,
     llvm_jit_checkpoint_prepare_result& out)
 {
     if(phase_!=preparation_status::resources_prepared || private_closed_workers_ ||
        !full_code_handoff_complete_ || !charge_native(1u,sizeof(prepared_world_root_workers))) { return false; }
-    auto actual{::std::make_unique<prepared_world_root_workers>(*this)};
+    auto actual{::uwvm2::utils::container::make_unique<prepared_world_root_workers>(*this)};
     if(!actual->prepare(maximum_workers)) { out.native_payload_bytes=native_bytes_;return false; }
     out.native_payload_bytes=native_bytes_;
     if(!actual->start_closed_cohort(out)) { return false; }

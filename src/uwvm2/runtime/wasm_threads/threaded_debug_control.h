@@ -34,19 +34,33 @@ namespace uwvm2::runtime::wasm_threads
         ::std::uint64_t wasm_offset{UINT64_MAX};
         debug_backend backend{};
         debug_stop_site site{debug_stop_site::native_boundary};
+        bool retained_host{};
         // Only before_instruction has an exact logical position. None of these
         // rows claims a source line, locals, unwind or a saved machine context.
+    };
+    // Detached lifecycle DATA from one genuine all-stop. Returned child rows
+    // retain their real World/native owner until physical join, but have no
+    // executable participant/PC. Neither these identities nor start arguments
+    // grant spawn, checkpoint restoration or access to another thread group.
+    struct debug_retained_worker
+    {
+        ::std::uint32_t tid{}, start_argument{};
+        ::std::uint64_t incarnation{}, source_generation{}, validation_epoch{};
+        ::std::size_t slot{}, source_module{};
+        debug_backend backend{};
+        bool initial_main{}, body_returned{};
     };
     class threaded_debug_all_stop final
     {
         friend class ThreadedGroup;
+        friend class ::uwvm2::runtime::lib::runtime_threaded_profile_bridge;
         friend class threaded_debug_control_session;
         // Observer identity only. The real Root/native/compiler owners retain
         // live code/World/Source until physical join. Never keep a provider
         // generation lease across a later public stop/drain through this guard.
         ::std::weak_ptr<ThreadedGroup> group_;
         ::std::weak_ptr<ThreadedSpawnAdmission const> admission_;
-        ::std::uint64_t serial_{};
+        ::std::uint64_t serial_{}, native_process_{};
         ::uwvm2::utils::thread::cooperative_pause_domain::pause_ticket ticket_;
         ::std::thread::id owner_{};
     public:
@@ -58,14 +72,25 @@ namespace uwvm2::runtime::wasm_threads
         ~threaded_debug_all_stop();
         void reset() noexcept;
         [[nodiscard]] debug_stop_status read(::std::span<debug_stopped_worker>, ::std::size_t& needed) const noexcept;
+        // Includes both the live pause cohort and actual returned children
+        // awaiting join. Count-only queries write no rows; stale/busy guards
+        // never return a previous lifecycle selection.
+        [[nodiscard]] debug_stop_status read_retained(::std::span<debug_retained_worker>, ::std::size_t& needed) const noexcept;
+        // One actual worker advances to its next cooperative boundary while
+        // all others remain parked. A timeout retains the pending transfer;
+        // repeat with the SAME participant to wait, or reset to resume normally.
+        // A host/atomic-wait boundary is not claimed as a completed Wasm opcode.
+        [[nodiscard]] debug_stop_status advance_until(::std::uint64_t participant,
+            ::std::chrono::steady_clock::time_point) noexcept;
     };
     class threaded_debug_control_session final
     {
         friend class ThreadedGroup;
         ::std::weak_ptr<ThreadedGroup> group_;
-        ::std::uint64_t epoch_{};
-        threaded_debug_control_session(::std::weak_ptr<ThreadedGroup> group, ::std::uint64_t epoch) noexcept
-            : group_{::std::move(group)}, epoch_{epoch} {}
+        ::std::uint64_t epoch_{}, native_process_{};
+        threaded_debug_control_session(::std::weak_ptr<ThreadedGroup> group, ::std::uint64_t epoch,
+            ::std::uint64_t native_process) noexcept
+            : group_{::std::move(group)}, epoch_{epoch}, native_process_{native_process} {}
     public:
         threaded_debug_control_session() noexcept = default;
         // Deadline bounds cooperative waiting, with a final elapsed recheck.

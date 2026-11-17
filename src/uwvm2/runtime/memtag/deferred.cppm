@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <array>
 #include <atomic>
 #include <condition_variable>

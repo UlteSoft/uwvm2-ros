@@ -5,6 +5,8 @@ module;
 #include <cstdlib>
 #if defined(__linux__)
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <signal.h>
 #include <cerrno>
 #include <poll.h>

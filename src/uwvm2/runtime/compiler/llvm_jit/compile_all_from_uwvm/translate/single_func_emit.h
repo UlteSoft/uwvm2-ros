@@ -865,7 +865,7 @@ inline constexpr CallSite* apply_llvm_jit_calling_conv(CallSite* call_inst, ::ll
     return call_inst;
 }
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 // Only compiler-owned native arguments and metadata carry ROS provenance.
 // Derive it at each IR insertion point: debug/GC prologues can insert host calls
 // before ordinary body initialization. An entry-body SSA value would not
@@ -923,7 +923,7 @@ template <typename CallSite>
     requires ::std::derived_from<CallSite, ::llvm::CallBase>
 inline constexpr CallSite* apply_llvm_jit_host_calling_conv(CallSite* call_inst) noexcept
 {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     publish_llvm_jit_ros_host_call(call_inst);
 #endif
     return apply_llvm_jit_calling_conv(call_inst, get_llvm_jit_host_calling_conv());
@@ -963,7 +963,7 @@ template <typename CallSite>
     requires ::std::derived_from<CallSite, ::llvm::CallBase>
 inline constexpr CallSite* apply_llvm_jit_raw_entry_calling_conv(CallSite* call_inst) noexcept
 {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     publish_llvm_jit_ros_host_call(call_inst);
 #endif
     auto ret{apply_llvm_jit_calling_conv(call_inst, get_llvm_jit_raw_entry_calling_conv())};
@@ -2328,7 +2328,7 @@ template <typename Element>
         llvm_parameter_types.push_back(llvm_parameter_type);
     }
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     // This hidden native register is separate from the public Wasm signature and raw byte buffers.
     llvm_parameter_types.push_back(::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT)));
 #endif
@@ -2644,7 +2644,7 @@ template<typename EmitCall>
     if(!layout.valid || type == nullptr || callee == nullptr || arguments.size() != layout.parameter_count) { return nullptr; }
     ::uwvm2::utils::container::vector<::llvm::Value*> native_arguments{};
     for(auto argument: arguments) { native_arguments.push_back(argument); }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     if(!append_llvm_jit_ros_provenance(builder, native_arguments)) { return nullptr; }
 #endif
     arguments = {native_arguments.data(), native_arguments.size()};
@@ -2888,6 +2888,9 @@ struct runtime_global_access_info_t
     // Direct storage address for globals owned by this runtime instance.
     ::uwvm2::object::global::wasm_global_storage_t* storage_ptr{};
 
+    // Concrete defining record, shared by every imported alias of the same global.
+    ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t const* defined_storage_ptr{};
+
     // Provider module for local-imported globals that cannot be addressed directly.
     ::uwvm2::uwvm::wasm::type::local_imported_t* local_imported_module_ptr{};
 
@@ -2940,6 +2943,7 @@ struct runtime_global_access_info_t
                 {
                     auto defined_global{curr->target.defined_ptr};
                     if(defined_global == nullptr) [[unlikely]] { return {}; }
+                    result.defined_storage_ptr = defined_global;
                     result.storage_ptr = const_cast<::uwvm2::object::global::wasm_global_storage_t*>(::std::addressof(defined_global->global));
                     return result;
                 }
@@ -2966,6 +2970,7 @@ struct runtime_global_access_info_t
 
     result.value_type = static_cast<runtime_operand_stack_value_type>(global_type_ptr->type);
     result.is_mutable = global_type_ptr->is_mutable;
+    result.defined_storage_ptr = ::std::addressof(local_global_rec);
     result.storage_ptr = const_cast<::uwvm2::object::global::wasm_global_storage_t*>(::std::addressof(local_global_rec.global));
     return result;
 }
@@ -3031,7 +3036,7 @@ struct runtime_global_access_info_t
         {
             // [complete current LLVM module][external exact numeric declaration]
             // [safe] host field addresses are absent from this generated IR.
-            global = new ::llvm::GlobalVariable(*module, llvm_value_type, false,
+            global = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*module, llvm_value_type, false,
                 ::llvm::GlobalValue::ExternalLinkage, nullptr, get_llvm_string_ref(name));
         }
         global->setAlignment(get_llvm_global_storage_alignment());
@@ -3087,7 +3092,36 @@ struct runtime_global_access_info_t
         }
     }
 
-    auto const symbol_name{get_llvm_global_storage_symbol_name(runtime_module, global_index)};
+    auto const* symbol_owner{::std::addressof(runtime_module)};
+    auto symbol_index{global_index};
+    if(static_cast<::std::size_t>(global_index) < runtime_module.imported_global_vec_storage.size())
+    {
+        // Distinct LLVM globals denote distinct objects. Import names are aliases,
+        // so use the defining module/index rather than the consumer's import index.
+        // This is translation-only: emitted loads/stores retain ordinary optimization.
+        auto const resolved{resolve_runtime_global_access_info(runtime_module, global_index)};
+        auto const* record{resolved.defined_storage_ptr};
+        if(record == nullptr || resolved.storage_ptr != global_storage_ptr || resolved.value_type != value_type ||
+           record->owner_module_rt_ptr == nullptr) { return nullptr; }
+        symbol_owner = record->owner_module_rt_ptr;
+        auto const& definitions{symbol_owner->local_defined_global_vec_storage};
+        auto const first{reinterpret_cast<::std::uintptr_t>(definitions.cbegin())};
+        auto const address{reinterpret_cast<::std::uintptr_t>(record)};
+        if(address < first) { return nullptr; }
+        auto const displacement{address - first};
+        using record_type = ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t;
+        if(displacement % sizeof(record_type) != 0uz) { return nullptr; }
+        auto const local_index{displacement / sizeof(record_type)};
+        if(local_index >= definitions.size()) { return nullptr; }
+        // [actual owner definitions][one-past] The aligned index above selects
+        // the exact imported record, never a guest-provided native address.
+        if(::std::addressof(definitions.index_unchecked(local_index)) != record) { return nullptr; }
+        auto const imported_count{symbol_owner->imported_global_vec_storage.size()};
+        constexpr auto maximum{(::std::numeric_limits<validation_module_traits_t::wasm_u32>::max)()};
+        if(imported_count > maximum || local_index > maximum - imported_count) { return nullptr; }
+        symbol_index = static_cast<validation_module_traits_t::wasm_u32>(imported_count + local_index);
+    }
+    auto const symbol_name{get_llvm_global_storage_symbol_name(*symbol_owner, symbol_index)};
     auto pointer{get_llvm_external_host_object_pointer(ir_builder,
                                                      storage_address,
                                                      llvm_value_type,
@@ -3995,12 +4029,21 @@ using llvm_jit_atomic_value_carrier_t = ::std::conditional_t<(sizeof(ValueType) 
 // Waiting bridges retain only the native owner identity across suspension. The
 // VM entry lease owns that object; no pointer into a relocatable allocation is
 // retained. Cancellation is a host trap, never a fourth WebAssembly return value.
-template<unsigned Operation, bool ManagedShutdown = false>
+template<unsigned Operation, bool ManagedShutdown = false,bool Journal=false>
 [[nodiscard]] inline llvm_jit_atomic_address_carrier_t llvm_jit_atomic_wait_notify_bridge(::std::uintptr_t memory_address,
     llvm_jit_atomic_address_carrier_t offset, llvm_jit_atomic_address_carrier_t address,
     ::std::uint64_t expected, runtime_wasm_i64 timeout) noexcept(!ManagedShutdown)
 {
     static_assert(Operation <= 2u);
+    if constexpr(Journal)
+    {
+        struct arguments {::std::uintptr_t memory;decltype(offset) offset;decltype(address) address;::std::uint64_t expected;runtime_wasm_i64 timeout;};
+        arguments args{memory_address,offset,address,expected,timeout};
+        return static_cast<llvm_jit_atomic_address_carrier_t>(::uwvm2::runtime::lib::llvm_jit_checkpoint_wait(
+            memory_address,Operation,32u,offset,address,expected,timeout,::std::addressof(args),+[](void* opaque)->::std::uint64_t
+            {auto const& args=*static_cast<arguments*>(opaque);return llvm_jit_atomic_wait_notify_bridge<Operation,ManagedShutdown,false>(
+                args.memory,args.offset,args.address,args.expected,args.timeout);}));
+    }
     // [live native owner] embedded by translation; guest addresses cannot select
     // a native object, wait domain, cancellation token or callback.
     auto const memory{reinterpret_cast<runtime_native_memory_t*>(memory_address)};
@@ -4041,12 +4084,21 @@ template<unsigned Operation, bool ManagedShutdown = false>
 
 // Memory64 waiting uses exact i64 address/immediate arguments on every host
 // ABI. Only the i32 return carrier follows the platform extension convention.
-template<unsigned Operation, bool ManagedShutdown = false>
+template<unsigned Operation, bool ManagedShutdown = false,bool Journal=false>
 [[nodiscard]] inline llvm_jit_atomic_address_carrier_t llvm_jit_memory64_wait_notify_bridge(::std::uintptr_t memory_address,
     ::std::uint64_t offset, ::std::uint64_t address,
     ::std::uint64_t expected, runtime_wasm_i64 timeout) noexcept(!ManagedShutdown)
 {
     static_assert(Operation <= 2u);
+    if constexpr(Journal)
+    {
+        struct arguments {::std::uintptr_t memory;decltype(offset) offset;decltype(address) address;::std::uint64_t expected;runtime_wasm_i64 timeout;};
+        arguments args{memory_address,offset,address,expected,timeout};
+        return static_cast<llvm_jit_atomic_address_carrier_t>(::uwvm2::runtime::lib::llvm_jit_checkpoint_wait(
+            memory_address,Operation,64u,offset,address,expected,timeout,::std::addressof(args),+[](void* opaque)->::std::uint64_t
+            {auto const& args=*static_cast<arguments*>(opaque);return llvm_jit_memory64_wait_notify_bridge<Operation,ManagedShutdown,false>(
+                args.memory,args.offset,args.address,args.expected,args.timeout);}));
+    }
     // [live native owner] embedded by translation; guest addresses cannot select
     // a native object, wait domain, cancellation token or callback.
     auto const memory{reinterpret_cast<runtime_native_memory_t*>(memory_address)};
@@ -4091,6 +4143,21 @@ template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_w
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<2u, true>>{true};
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<1u, true>>{true};
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<2u, true>>{true};
+
+// Journal wrappers are still VM-owned blocking control leaves, never foreign
+// host islands. Their real generated activation remains inspectable while waiting.
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<0u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<0u,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<1u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<1u,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<2u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_atomic_wait_notify_bridge<2u,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<0u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<0u,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<1u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<1u,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<2u,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memory64_wait_notify_bridge<2u,true,true>>{true};
 
 // Function-template values can have identical __PRETTY_FUNCTION__ spellings
 // on Clang despite different non-type arguments. Include the guest operation
@@ -6750,7 +6817,7 @@ template<> struct llvm_jit_managed_memory_target<llvm_jit_table_copy_bridge<runt
 [[nodiscard]] inline constexpr bool emit_runtime_local_func_llvm_jit_call_stack_tail(
     ::llvm::IRBuilder<>& ir_builder, ::std::size_t module_id, ::std::size_t function_index) noexcept
 {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     auto& context{ir_builder.getContext()};
     auto const size_type{::llvm::Type::getIntNTy(context, static_cast<unsigned>(sizeof(::std::size_t) * 8u))};
     auto const type{::llvm::FunctionType::get(::llvm::Type::getVoidTy(context), {size_type, size_type}, false)};
@@ -6893,7 +6960,7 @@ struct llvm_jit_exception_handler_t
 
 struct llvm_jit_checkpoint_control_prefix_t
 {
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> entry{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> entry{};
     ::uwvm2::utils::container::vector<::llvm::PHINode*> end_phis{};
     ::uwvm2::utils::container::vector<::llvm::PHINode*> loop_phis{};
     ::llvm::BasicBlock* loop_block{};
@@ -6924,7 +6991,7 @@ struct llvm_jit_control_context_t
     ::std::size_t outer_stack_size{};
 
     // Original block-start values. If/else restores this tuple for the else arm; other contexts leave it empty.
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> entry_params{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> entry_params{};
     // Compiler-owned offset into the selected resumable function's saved-if
     // array; no native address or authority is serialized with control DATA.
     ::std::size_t checkpoint_saved_parameter_first{SIZE_MAX};
@@ -6938,6 +7005,10 @@ struct llvm_jit_control_context_t
 
     // True once at least one branch/fallthrough reaches `end_block`.
     bool end_block_has_incoming{};
+
+    // Only private threaded instruction control uses this actual then-arm
+    // terminator. Its lexical end offset is known later, when `end` is decoded.
+    ::llvm::Instruction* threaded_then_end{};
 
     // Lexical clause order is retained; every throwing call searches inner to
     // outer contexts. These are compile-time records, never a TLS handler stack.
@@ -7260,6 +7331,11 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // Finalized whole-function proof: no incoming or published heap reference,
     // no callbacks/EH/extern conversion. Unknown instructions revoke the proof.
     bool gc_private_function_safe{true};
+    // Closed caller proof, finalized by the same authoritative opcode walk.
+    // Direct calls are admitted only after ALL their validated targets have a
+    // complete no-safepoint leaf proof in the fused module. Includes dead code.
+    bool gc_private_call_graph_safe{};
+    ::llvm::SmallVector<::llvm::Metadata*, 8u> gc_private_callees{};
     // A distinct proof: a leaf may receive shared references and KEEP object
     // locks, yet have no possible collection/observer point in its whole body.
     // Never reuse the private-object proof to remove synchronization.
@@ -7354,7 +7430,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
         ::llvm::WeakTrackingVH value{};
         unsigned kind{};
     };
-    ::std::vector<debug_numeric_definition> debug_native_numeric_definitions{};
+    ::uwvm2::utils::container::std_vector<debug_numeric_definition> debug_native_numeric_definitions{};
     ::llvm::BasicBlock* debug_native_numeric_block{};
     unsigned debug_native_numeric_line{};
     // Private compiler SSA for the process-lifetime hint array. It is never
@@ -7376,7 +7452,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // can replace sync/log provenance calls at this exact source instruction
     // with constants on its cold mismatch edge. Fallback/async calls stay live.
     ::std::size_t memtag_direct_origin_offset{SIZE_MAX};
-    ::std::vector<::llvm::WeakTrackingVH> memtag_direct_origin_calls{};
+    ::uwvm2::utils::container::std_vector<::llvm::WeakTrackingVH> memtag_direct_origin_calls{};
     ::llvm::WeakTrackingVH memtag_pending_flag{};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
     // A compile-local observer borrow, not a runtime entry or guest capability.
@@ -7410,7 +7486,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::llvm::Function* llvm_public_entry_function{};
 
     // Primary IRBuilder for body emission.
-    ::uwvm2::utils::container::delete_owned_ptr<::llvm::IRBuilder<>> ir_builder{};
+    ::uwvm2::utils::container::std_unique_ptr<::llvm::IRBuilder<>> ir_builder{};
 
     // Entry-block allocas for every local slot.
     ::uwvm2::utils::container::vector<::llvm::AllocaInst*> local_pointers{};
@@ -7462,7 +7538,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::llvm::Value* checkpoint_observer_nonlocal_workspace{};
     ::llvm::Instruction* checkpoint_observer_nonlocal_anchor{};
     ::std::size_t checkpoint_observer_nonlocal_locals{};
-    ::std::vector<::llvm::Value*> checkpoint_observer_nonlocals{};
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> checkpoint_observer_nonlocals{};
     ::std::uint64_t checkpoint_current_site{};
     llvm_jit_checkpoint_resume_dispatch_emit_state checkpoint_resume{};
     llvm_jit_checkpoint_call_emit_state checkpoint_call{};
@@ -7483,10 +7559,10 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::uwvm2::utils::container::vector<::llvm::PHINode*> return_phis{};
 
     // Transient Wasm operand stack represented as typed LLVM SSA values.
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> operand_stack{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> operand_stack{};
 
     // Structured control stack and its flattened branch-target view.
-    ::uwvm2::utils::container::vector<llvm_jit_control_context_t> control_stack{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_control_context_t> control_stack{};
     ::uwvm2::utils::container::vector<llvm_jit_branch_target_t> branch_target_stack{};
 
     // Nested structured-control depth being skipped inside an unreachable context.
@@ -7568,12 +7644,12 @@ struct runtime_local_func_llvm_jit_emit_state_t
 {
     static_cast<void>(emit_unwind_call_stack_frames);
     module_storage = {};
-    module_storage.llvm_context_holder = ::uwvm2::utils::container::make_delete_owned<::llvm::LLVMContext>();
+    module_storage.llvm_context_holder = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_context();
     if(module_storage.llvm_context_holder == nullptr) [[unlikely]] { return false; }
 
     auto const llvm_module_name{get_llvm_wasm_ir_module_name(runtime_module)};
     module_storage.llvm_module =
-        ::uwvm2::utils::container::make_delete_owned<::llvm::Module>(get_llvm_string_ref(llvm_module_name), *module_storage.llvm_context_holder);
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_module(get_llvm_string_ref(llvm_module_name), *module_storage.llvm_context_holder);
     // Address widening and SIMD lane byte order are decided during IR emission, before MCJIT installs its complete
     // target-machine layout. An empty LLVM layout defaults to little-endian/64-bit, which is wrong on BE and ISA32.
     // This is a native JIT; publish the native ABI essentials now, and replace them with the full layout at materialization.
@@ -7867,7 +7943,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     }
     ::llvm::BasicBlock* observation_resume{};
     ::llvm::BasicBlock* observation_bypass{};
-    ::std::vector<::llvm::Value*> original_operands;
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> original_operands;
     original_operands.reserve(state.operand_stack.size());
     for(auto const& operand:state.operand_stack) { original_operands.push_back(operand.value); }
     ::llvm::Value* post_packet_demand{};
@@ -8154,7 +8230,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
                 auto const value{builder.CreateLoad(type,cell)};value->setAlignment(::llvm::Align{1u});
                 builder.CreateStore(value,state.local_pointers.index_unchecked(i));
             }
-            ::std::vector<::llvm::Value*> edited;edited.reserve(site.operand_count);
+            ::uwvm2::utils::container::std_vector<::llvm::Value*> edited;edited.reserve(site.operand_count);
             for(::std::size_t i{};i!=site.operand_count;++i)
             {
                 auto const cell{builder.CreateInBoundsGEP(builder.getInt8Ty(),payload,
@@ -8348,6 +8424,8 @@ struct runtime_local_func_llvm_jit_emit_state_t
     return true;
 }
 
+#include "single_func_threaded_instruction_emit.h"
+
 // Source-level instruction points are a compile-time choice. Inline opcode
 // handlers can delegate to the generic emitter; this offset deduplication keeps
 // one IR call per source opcode and adds no guest-execution state or checks.
@@ -8355,6 +8433,8 @@ struct runtime_local_func_llvm_jit_emit_state_t
     runtime_local_func_llvm_jit_emit_state_t& state, bool local_typed_call_demand = false,
     ::llvm::Value* local_reference_target = nullptr) noexcept
 {
+    if(threaded_host_emission_scope::instruction_target()!=0u)
+    {return emit_runtime_private_threaded_instruction_point(state);}
     if(!state.emit_debug_safe_points || state.debug_safe_point_granularity != llvm_jit_debug_safe_point_granularity::instruction)
     { return true; }
     if(!state.valid || state.ir_builder == nullptr || state.local_func_storage_ptr == nullptr || state.control_stack.empty())
@@ -8533,6 +8613,10 @@ namespace sealed_compact_codegen {
            kind!=runtime_operand_stack_value_type::v128) { state.gc_private_function_safe=false; }
     }
 
+    state.gc_private_call_graph_safe = state.gc_private_function_safe &&
+        !state.route_wasm_calls_through_runtime_bridge &&
+        state.debug_full_patchable_typed_target_base_address == 0u;
+
     auto const func_result_count_uz{func_result_begin == nullptr ? 0uz : static_cast<::std::size_t>(func_result_end - func_result_begin)};
     auto const defined_local_count_uz{static_cast<::std::size_t>(wasm_code_ptr->all_local_count)};
     // This total drives vector reservations, alloca creation, and local byte layout; reject wraparound before
@@ -8673,8 +8757,8 @@ namespace sealed_compact_codegen {
     ::llvm::BasicBlock* body_init_block{entry_block};
 
 
-    state.ir_builder = ::uwvm2::utils::container::make_delete_owned<::llvm::IRBuilder<>>(body_init_block);
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+    state.ir_builder = ::uwvm2::utils::container::make_unique<::llvm::IRBuilder<>>(body_init_block);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     if(state.local_func_storage_ptr->module_id >= (SIZE_MAX >> 1u)) { return false; }
     auto& ros_builder{*state.ir_builder};
     auto const ros_intptr{ros_builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
@@ -8830,6 +8914,20 @@ namespace sealed_compact_codegen {
     }
 
     if(!state.control_stack.empty()) [[unlikely]] { return false; }
+    // Compiler-owned evidence only; never inferred from symbol visibility or
+    // a runtime observation that an object happened not to be contended.
+    if(state.gc_private_call_graph_safe && state.gc_no_safepoint_body_observed)
+    {
+        state.llvm_function->setMetadata("uwvm.gc.closed.caller.v1",
+            ::llvm::MDNode::get(*state.llvm_context_holder, state.gc_private_callees));
+    }
+    if(state.gc_no_safepoint_leaf && state.gc_no_safepoint_body_observed)
+    {
+        auto const index=state.local_func_storage_ptr->function_index;
+        state.llvm_function->setMetadata("uwvm.gc.numeric.leaf.v1", ::llvm::MDNode::get(
+            *state.llvm_context_holder, ::llvm::ConstantAsMetadata::get(::llvm::ConstantInt::get(
+                ::llvm::Type::getInt64Ty(*state.llvm_context_holder), index))));
+    }
     if(state.gc_loop_roots_decision!=nullptr)
     {
         // Only a fully validated closed ordinary function may omit the loop
@@ -9054,7 +9152,7 @@ namespace sealed_compact_codegen {
                 param_offset += abi_size;
             }
 
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             auto const provenance_type{::llvm::FunctionType::get(llvm_intptr_type, {llvm_intptr_type}, false)};
             auto const provenance_bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
                 ::uwvm2::runtime::lib::llvm_jit_seed_ros_provenance>(raw_ir_builder, provenance_type)};
@@ -9134,7 +9232,7 @@ inline constexpr void mark_runtime_local_func_llvm_jit_branch_target_has_incomin
 [[nodiscard]] inline constexpr bool try_get_runtime_local_func_llvm_jit_branch_values(
     runtime_local_func_llvm_jit_emit_state_t const& state,
     runtime_block_result_type params,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t>& branch_values) noexcept
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t>& branch_values) noexcept
 {
     auto const arity{get_runtime_block_result_count(params)};
     branch_values.clear();
@@ -9154,7 +9252,7 @@ inline constexpr void mark_runtime_local_func_llvm_jit_branch_target_has_incomin
 [[nodiscard]] inline constexpr bool try_add_runtime_local_func_llvm_jit_branch_target_incoming(
     runtime_local_func_llvm_jit_emit_state_t& state,
     llvm_jit_branch_target_t const& target,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> const& branch_values,
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> const& branch_values,
     ::llvm::BasicBlock* predecessor) noexcept
 {
     auto const arity{get_runtime_block_result_count(target.params)};
@@ -9185,7 +9283,7 @@ inline constexpr void mark_runtime_local_func_llvm_jit_branch_target_has_incomin
     auto current_block{ir_builder.GetInsertBlock()};
     if(current_block == nullptr || llvm_jit_basic_block_has_terminator(current_block)) [[unlikely]] { return false; }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> branch_values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> branch_values{};
     if(!try_get_runtime_local_func_llvm_jit_branch_values(state, target.params, branch_values) ||
        !try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, target, branch_values, current_block)) [[unlikely]]
     {
@@ -9220,7 +9318,7 @@ inline constexpr void truncate_runtime_local_func_llvm_jit_operand_stack_to(runt
 [[nodiscard]] inline constexpr bool try_get_runtime_local_func_llvm_jit_block_entry_params(
     runtime_local_func_llvm_jit_emit_state_t const& state,
     runtime_block_result_type param_types,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t>& params,
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t>& params,
     ::std::size_t& outer_stack_size) noexcept
 {
     auto const param_count{get_runtime_block_result_count(param_types)};
@@ -9239,7 +9337,7 @@ inline constexpr void truncate_runtime_local_func_llvm_jit_operand_stack_to(runt
 
 inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     runtime_local_func_llvm_jit_emit_state_t& state,
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> const& values) noexcept
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> const& values) noexcept
 {
     for(auto const& value: values) { state.operand_stack.push_back(value); }
 }
@@ -9300,7 +9398,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
         return true;
     }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> entry_params{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> entry_params{};
     ::std::size_t outer_stack_size{};
     if(!try_get_runtime_local_func_llvm_jit_block_entry_params(state, block_signature.params, entry_params, outer_stack_size)) [[unlikely]] { return false; }
 
@@ -9363,7 +9461,14 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     auto current_block{ir_builder.GetInsertBlock()};
     if(current_block == nullptr || llvm_jit_basic_block_has_terminator(current_block)) [[unlikely]] { return false; }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> entry_params{};
+    // The private threaded instruction timeline follows executed Wasm opcodes.
+    // `loop` executes on entry; br to its label enters the BODY, not the loop
+    // opcode again. Emit its point before creating the backedge destination.
+    // Ordinary debug/checkpoint loop publication below keeps its existing ABI.
+    if(threaded_host_emission_scope::instruction_target()!=0u &&
+       !emit_runtime_private_threaded_instruction_point(state))return false;
+
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> entry_params{};
     ::std::size_t outer_stack_size{};
     if(!try_get_runtime_local_func_llvm_jit_block_entry_params(state, block_signature.params, entry_params, outer_stack_size)) [[unlikely]] { return false; }
 
@@ -9486,7 +9591,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     state.operand_stack.pop_back();
     if(condition.type != runtime_operand_stack_value_type::i32 || condition.value == nullptr) [[unlikely]] { return false; }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> entry_params{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> entry_params{};
     ::std::size_t outer_stack_size{};
     if(!try_get_runtime_local_func_llvm_jit_block_entry_params(state, block_signature.params, entry_params, outer_stack_size)) [[unlikely]] { return false; }
 
@@ -9550,6 +9655,13 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     auto& current_context{state.control_stack.back()};
     if(current_context.type != llvm_jit_control_context_type::if_then || current_context.else_block == nullptr) [[unlikely]] { return false; }
 
+    bool const threaded_instruction=threaded_host_emission_scope::instruction_target()!=0u;
+    // On the threaded interpreter's executed-opcode timeline, the then arm
+    // executes `else`; the false arm starts AFTER it. This point carries only
+    // authenticated identity, never an ordinary resumable value packet.
+    if(threaded_instruction&&current_context.is_reachable&&
+       !emit_runtime_private_threaded_instruction_point(state))return false;
+
     auto const branch_target{
         llvm_jit_branch_target_t{.params = current_context.result,
                                  .block = current_context.end_block,
@@ -9557,6 +9669,9 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
                                  .control_stack_index = current_control_stack_index}
     };
     if(current_context.is_reachable && !try_emit_runtime_local_func_llvm_jit_branch_to_target(state, branch_target)) [[unlikely]] { return false; }
+
+    if(threaded_instruction&&current_context.is_reachable)
+        current_context.threaded_then_end=state.ir_builder->GetInsertBlock()->getTerminator();
 
     truncate_runtime_local_func_llvm_jit_operand_stack_to(state, current_context.outer_stack_size);
     state.ir_builder->SetInsertPoint(current_context.else_block);
@@ -9573,7 +9688,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     current_context.is_reachable = true;
     // Only the false arm reaches the lexical else point. The then arm already
     // branches to its merge, so this call cannot be attached to that predecessor.
-    return emit_runtime_local_func_llvm_jit_instruction_debug_safe_point(state);
+    return threaded_instruction||emit_runtime_local_func_llvm_jit_instruction_debug_safe_point(state);
 }
 
 // Lower Wasm `end` for blocks, loops, ifs, and the implicit function context.  This seals the current structured context,
@@ -9590,6 +9705,20 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
 
     auto const current_control_stack_index{state.control_stack.size() - 1uz};
     auto& current_context{state.control_stack.back()};
+
+    bool const threaded_instruction=threaded_host_emission_scope::instruction_target()!=0u;
+    if(threaded_instruction)
+    {
+        // A branch to a block's label skips its lexical end. Publish ONLY on
+        // actual fallthrough predecessors, not in the common merge block.
+        if(current_context.is_reachable&&!emit_runtime_private_threaded_instruction_point(state))return false;
+        if(current_context.threaded_then_end)
+        {
+            ::llvm::IRBuilder<>::InsertPointGuard edge{*state.ir_builder};
+            state.ir_builder->SetInsertPoint(current_context.threaded_then_end);
+            if(!emit_runtime_private_threaded_instruction_point(state,true))return false;
+        }
+    }
 
     auto const branch_target{
         llvm_jit_branch_target_t{.params = current_context.result,
@@ -9634,6 +9763,13 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
         if(prefix.end_phis.size() != prefix.entry.size()) { return false; }
         for(::std::size_t i{};i != prefix.entry.size();++i)
         { prefix.end_phis.index_unchecked(i)->addIncoming(prefix.entry.index_unchecked(i).value,current_context.else_block); }
+        if(threaded_instruction)
+        {
+            // A false `if` without else still executes its lexical end.
+            ::llvm::IRBuilder<>::InsertPointGuard edge{*state.ir_builder};
+            state.ir_builder->restoreIP(else_builder.saveIP());
+            if(!emit_runtime_private_threaded_instruction_point(state,true))return false;
+        }
         else_builder.CreateBr(current_context.end_block);
         current_context.end_block_has_incoming = true;
     }
@@ -9686,7 +9822,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     // Forward branches and exception handlers can enter this merge without
     // executing its lexical predecessor. Emit after PHIs so all live incoming
     // paths report the same checked structural-end source position.
-    return emit_runtime_local_func_llvm_jit_instruction_debug_safe_point(state);
+    return threaded_instruction||emit_runtime_local_func_llvm_jit_instruction_debug_safe_point(state);
 }
 
 // Lower Wasm `br` to an unconditional branch and enter unreachable/polymorphic state for the remainder of the source
@@ -9734,7 +9870,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     state.operand_stack.pop_back();
     if(condition.type != runtime_operand_stack_value_type::i32 || condition.value == nullptr) [[unlikely]] { return false; }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> branch_values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> branch_values{};
     if(!try_get_runtime_local_func_llvm_jit_branch_values(state, branch_target->params, branch_values)) [[unlikely]] { return false; }
 
     auto current_block{ir_builder.GetInsertBlock()};
@@ -9768,7 +9904,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     auto const null_value{emit_llvm_jit_ref_is_null(builder, reference.value, module->getDataLayout().isLittleEndian())};
     if(null_value == nullptr) { return false; }
     if(!non_null) { state.operand_stack.pop_back(); }
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
     if(!try_get_runtime_local_func_llvm_jit_branch_values(state, target->params, values) ||
        !try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, *target, values, current)) { return false; }
     auto const continuation{::llvm::BasicBlock::Create(state.llvm_function->getContext(), get_llvm_string_ref(u8"br_on_ref.cont"), state.llvm_function)};
@@ -9835,7 +9971,7 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     state.operand_stack.pop_back();
     if(condition.type != runtime_operand_stack_value_type::i32 || condition.value == nullptr) [[unlikely]] { return false; }
 
-    ::uwvm2::utils::container::vector<llvm_jit_stack_value_t> branch_values{};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> branch_values{};
     if(!try_get_runtime_local_func_llvm_jit_branch_values(state, expected_signature, branch_values)) [[unlikely]] { return false; }
 
     auto current_block{ir_builder.GetInsertBlock()};
@@ -9901,6 +10037,10 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     // BEFORE pop removes typed descriptors. A later bare LLVM argument list
     // cannot distinguish numeric bits from reference carriers.
     if(!snapshot_runtime_local_func_llvm_jit_gc_roots(state, extra_roots)) { return prepared; }
+    // The direct-call dispatch retained logical value identities only for
+    // the snapshot. Neither those identities nor an authenticated object
+    // witness may cross a call, including imported and callback-capable calls.
+    state.clear_gc_local_access();
 
     auto const parameter_begin{wasm_function_type.parameter.begin};
     prepared.arguments.resize(prepared.abi_layout.parameter_count);
@@ -10075,9 +10215,11 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
     if(callee_function == nullptr) [[unlikely]] { return nullptr; }
     return emit_llvm_jit_typed_wasm_call(ir_builder, wasm_function_type, callee_function->getFunctionType(), callee_function, call_arguments,
         [&](::llvm::FunctionType* type, ::llvm::Value* callee, ::llvm::ArrayRef<::llvm::Value*> arguments) noexcept
-#if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
         {
             auto* const called{emit_runtime_local_func_llvm_jit_may_throw_call(state, type, callee, arguments)};
+            if(called != nullptr && state.gc_private_call_graph_safe)
+            { called->setMetadata("uwvm.gc.direct.call.v1", ::llvm::MDNode::get(llvm_context, {})); }
+#if defined(UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER) && UWVM_EXPERIMENTAL_NATIVE_EH_LEAF_OBSERVER == 1
             if(state.native_eh_leaf_work)
             {
                 // [actual current typed declaration/call/caller] live LLVM fragment.
@@ -10085,11 +10227,9 @@ inline constexpr void push_runtime_local_func_llvm_jit_tuple(
                 // outer typed-call helper has applied its calling convention.
                 state.native_eh_leaf_work->fragment_call(called, callee_function, state.llvm_function, runtime_module, func_index);
             }
+#endif
             return called;
         });
-#else
-        { return emit_runtime_local_func_llvm_jit_may_throw_call(state, type, callee, arguments); });
-#endif
 }
 
 // Emit a call to a C++ runtime bridge function using the host calling convention.
@@ -10834,7 +10974,7 @@ template <bool DirectImport = false>
     // host adapter and applies the same entry/stop/frame proof as a Wasm body.
     adapter->setMetadata("uwvm.wasm.tail.adapter.owner", ::llvm::MDNode::get(
         context, ::llvm::ValueAsMetadata::get(state.llvm_function)));
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     adapter->getArg(layout.parameter_count + 2uz)->setName("uwvm.ros.provenance");
 #endif
     adapter->addFnAttr(::llvm::Attribute::NoInline);
@@ -10943,7 +11083,7 @@ template <bool DirectImport = false>
        type->getReturnType() != state.llvm_function->getReturnType()) { return false; }
     auto prepared{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *wasm_type)};
     if(!prepared.valid) { return false; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
 #endif
     if(prepared.abi_layout.result_count > 1uz)
@@ -11036,7 +11176,7 @@ template <bool DirectImport = false>
     for(auto const type: callee->getFunctionType()->params()) { if(type->isAggregateType()) { return false; } }
     auto prepared{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *target.function_type_ptr)};
     if(!prepared.valid) { return false; }
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
     if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
 #endif
     if(prepared.abi_layout.result_count > 1uz)
@@ -11231,7 +11371,7 @@ template <bool Tail = false>
     ::llvm::LoadInst* context_address{};
     ::llvm::LoadInst* encoded_type_id{};
     ::llvm::LoadInst* typed_entry_address{};
-    if(state.emit_debug_safe_points)
+    if(state.emit_debug_safe_points || threaded_host_emission_scope::selected())
     {
         // Debug-full compiles before ordered active segments run. A compact
         // snapshot made now can contain null entries that become live later;
@@ -11366,7 +11506,7 @@ template <bool Tail = false>
 
     if constexpr(Tail)
     {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared_call.arguments)) { return false; }
 #endif
         if(abi_layout.result_count > 1uz)
@@ -11668,7 +11808,7 @@ template <bool Tail = false>
 
     if constexpr(Tail)
     {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
         if(!append_llvm_jit_ros_provenance(*state.ir_builder, prepared.arguments)) { return false; }
 #endif
         if(state.llvm_function == nullptr) [[unlikely]] { return false; }
@@ -14373,6 +14513,17 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                          operand_stack.pop_back();
                                          if(delta.type != (selected_memory_is_address64() ? runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32) || delta.value == nullptr) [[unlikely]] { return false; }
 
+                                         // Controlled private workers journal every grow outcome,
+                                         // including zero and a known limit failure. The selected
+                                         // private bridge still enforces the real provider maximum.
+                                         // Ordinary generated code retains its inline fast paths.
+                                         if(threaded_host_emission_scope::instruction_target()!=0u)
+                                         {
+                                             auto result{emit_memory_grow_bridge_call(delta.value)};
+                                             if(result==nullptr) { return false; }
+                                             push_operand(selected_memory_is_address64() ? runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32,result);
+                                             return true;
+                                         }
                                          auto llvm_intptr_type{::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
                                          auto current_page_count{emit_memory_page_count_value()};
                                          if(current_page_count == nullptr) [[unlikely]] { return false; }
@@ -14789,13 +14940,19 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                         ::std::array<::llvm::Value*,5> call_arguments{owner,ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0)};
                         for(::std::size_t index{};index!=operands.size();++index)
                         { call_arguments[index+1u]=ir_builder.CreateZExtOrTrunc(operands[index],wide); }
-                        auto const identity{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-operation-v1-",
+                        auto const identity{::uwvm2::utils::container::u8concat_uwvm(
+                            state.debug_activation_enabled ? ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v2-journal-"} : ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v1-"},
                             static_cast<unsigned>(operation),u8"-",address_type->getBitWidth(),u8"-",shadow.shared())};
                         auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
                         auto emit{[&]<mt::opcode Operation>() noexcept -> ::llvm::Value*
                         {
                             auto choose{[&]<typename Address,bool Shared>() noexcept
                             {
+                                if(state.debug_activation_enabled)
+                                    return get_llvm_managed_helper_symbol<
+                                        llvm_jit_memtag_operation_bridge<Operation,Address,Shared,false,true>,
+                                        llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true,true>>(
+                                            ir_builder,signature,discriminator);
                                 return get_llvm_managed_helper_symbol<
                                     llvm_jit_memtag_operation_bridge<Operation,Address,Shared>,
                                     llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true>>(

@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/utils/container/shared.h>
 #include <cstddef>
 #include <cstdint>
 #include <limits>

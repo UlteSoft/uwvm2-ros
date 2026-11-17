@@ -20,7 +20,7 @@
  ****************************************/
 
 module;
-
+#include <uwvm2/utils/container/standard.h>
 // std
 #include <array>
 #include <atomic>
@@ -41,6 +41,8 @@ export import :threaded_profile;
 
 import uwvm2.extension.memtag.debug_types;
 export import uwvm2.runtime.diagnostic.wasm_coredump;
+export import uwvm2.runtime.diagnostic.snapshot_wasip1;
+export import uwvm2.runtime.diagnostic.snapshot_ros;
 export import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.utils.container;
 import uwvm2.utils.thread;

@@ -1,4 +1,7 @@
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #if defined(_WIN32) && !defined(__CYGWIN__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <array>

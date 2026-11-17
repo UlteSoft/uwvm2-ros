@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 // An actual same-module function record is an identity, never a code pointer.
 // Authenticate its whole native range and exact record stride before indexing
@@ -57,8 +58,8 @@ public:
     if(proof == nullptr || current == nullptr || function == nullptr ||
        proof->getParent() != function || current->getParent() != function) { return false; }
     struct visit { ::llvm::BasicBlock* block; bool exit; };
-    ::std::vector<visit> pending{{current,false}};
-    ::std::vector<::llvm::BasicBlock*> active{},complete{};
+    ::uwvm2::utils::container::std_vector<visit> pending{{current,false}};
+    ::uwvm2::utils::container::std_vector<::llvm::BasicBlock*> active{},complete{};
     auto const contains{[](auto const& values,auto value)
     { for(auto actual:values) { if(actual == value) { return true; } } return false; }};
     ::std::size_t visited{};
@@ -145,7 +146,7 @@ public:
         admitted.push_back(valid ? 1u:0u);
     }
     auto const bitmap_type{::llvm::ArrayType::get(builder.getInt8Ty(),count)};
-    auto const bitmap{new ::llvm::GlobalVariable(*state.llvm_module,bitmap_type,true,::llvm::GlobalValue::PrivateLinkage,
+    auto const bitmap{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_global(*state.llvm_module,bitmap_type,true,::llvm::GlobalValue::PrivateLinkage,
         ::llvm::ConstantDataArray::get(context,::llvm::ArrayRef<::std::uint8_t>{admitted.data(),admitted.size()}),
         ::llvm::Twine{state.llvm_function->getName()}+".call_ref.admitted")};
     bitmap->setUnnamedAddr(::llvm::GlobalValue::UnnamedAddr::Global);bitmap->setAlignment(::llvm::Align{1u});

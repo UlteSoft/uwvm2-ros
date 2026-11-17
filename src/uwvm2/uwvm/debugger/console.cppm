@@ -1,4 +1,6 @@
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #include <algorithm>
@@ -31,6 +33,7 @@ import uwvm2.utils.control;
 import uwvm2.utils.thread;
 import uwvm2.runtime;
 import uwvm2.runtime.exception;
+import uwvm2.uwvm.wasm.storage;
 import :command;
 import :management_wait_interrupt;
 import :controller;
@@ -49,10 +52,13 @@ import uwvm2.uwvm.debugger.wasm_state;
 import uwvm2.uwvm.debugger.wasm_mutation;
 import uwvm2.uwvm.debugger.wasip1_state;
 import uwvm2.uwvm.debugger.ros_state;
+import uwvm2.uwvm.debugger.scene_state;
+import uwvm2.uwvm.debugger.wasithread_state;
 import uwvm2.uwvm.debugger.wasip1_calls;
 import :native_registers;
 import :source_dwarf_objects;
 import :source_scalar_expression;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
+#include "host_interfaces.h"
 #include "console.h"

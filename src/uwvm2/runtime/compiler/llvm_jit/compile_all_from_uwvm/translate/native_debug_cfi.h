@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "native_debug_cfi_types.h"
 #include "native_debug_cfi_arm.h"
 
@@ -36,10 +37,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
         struct function
         {
             ::std::uintptr_t begin{}, end{};
-            ::std::vector<native_debug_cfi_row> rows{};
+            ::uwvm2::utils::container::std_vector<native_debug_cfi_row> rows{};
             ::std::uintptr_t arm_retired_frame_begin{};
         };
-        ::std::vector<function> functions_{};
+        ::uwvm2::utils::container::std_vector<function> functions_{};
         ::llvm::Triple::ArchType arch_{::llvm::Triple::UnknownArch};
         unsigned address_size_{};
         ::std::size_t row_count_{}, observed_bytes_{};
@@ -135,7 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                 if(!contents) { ::llvm::consumeError(contents.takeError()); retire(); return; }
                 if(contents->empty() || contents->size() > 1024uz * 1024uz ||
                     contents->size() != selected->getSize()) { retire(); return; }
-                ::std::vector<::std::uint8_t> bytes(contents->begin(), contents->end());
+                ::uwvm2::utils::container::std_vector<::std::uint8_t> bytes(contents->begin(), contents->end());
                 auto const read32{[&](::std::size_t offset) noexcept
                 {
                     return static_cast<::std::uint32_t>(bytes[offset]) |
@@ -148,9 +149,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                     struct arm_restore { ::std::uintptr_t pc{}; ::std::uint32_t instruction{}; };
                     ::std::size_t offset{}; bool cie{}, cie_relocated{}, text_relocated{};
                     ::std::uintptr_t retired_frame_begin{};
-                    ::std::vector<arm_restore> frame_restores{};
+                    ::uwvm2::utils::container::std_vector<arm_restore> frame_restores{};
                 };
-                ::std::vector<record> records{};
+                ::uwvm2::utils::container::std_vector<record> records{};
                 for(::std::size_t offset{}; offset != bytes.size();)
                 {
                     if(bytes.size()-offset < 8uz || records.size() == 8192uz) { retire(); return; }
@@ -179,7 +180,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::details
                 // A32 instruction words require the original ELF mapping
                 // symbols too. Object Arch=arm alone also admits Thumb/data.
                 struct mapping { ::std::uint64_t section{}, offset{}; char kind{}; };
-                ::std::vector<mapping> mappings{};
+                ::uwvm2::utils::container::std_vector<mapping> mappings{};
                 unsigned symbols{};
                 for(auto const& symbol: object.symbols())
                 {

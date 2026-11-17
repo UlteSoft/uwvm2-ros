@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 #ifndef UWVM_MODULE
 # include <array>
@@ -31,6 +32,24 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
     namespace storage = ::uwvm2::uwvm::imported::ros;
     enum class action { interface, create, add_module, bind_global_module, enable, disable, connection, grant, set, check, dump };
     using status = ::uwvm2::utils::cmdline::parameter_return_type;
+    /** @brief Diagnose an explicit legacy enable request before changing its policy.
+     * @details Both ROS1 and ROS2 legacy VM families share the deprecated-ros
+     * warning category. Warning promotion rejects enablement before any grant,
+     * provider connection or policy mutation; no allocation or guest input is
+     * required to construct this diagnostic. ROSv2 migration remains explicit.
+     */
+    inline bool legacy_enable_warning() noexcept
+    {
+        if(!::uwvm2::uwvm::io::show_deprecated_ros_warning) { return true; }
+        auto const fatal{::uwvm2::uwvm::io::deprecated_ros_warning_fatal};
+        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+            fatal ? ::uwvm2::utils::container::u8string_view{u8"uwvm: [error] "} :
+                    ::uwvm2::utils::container::u8string_view{u8"uwvm: [warning] "},
+            u8"Legacy ROS VM interfaces are deprecated and govern ROS communication capabilities. "
+            u8"Migrate robot workflows to uwvm_ros_v2 with explicit --ros-scene-* authority; verify provider coverage before migration. "
+            u8"(deprecated-ros)");
+        return !fatal;
+    }
     template<model::scope Scope>
     inline void set_pretreatment(char8_t const* const*& argv_curr,
                                 char8_t const* const* argv_end,
@@ -139,7 +158,7 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
         try
         {
 #endif
-            ::std::array<::std::string,2> arguments{};
+            ::std::array<::uwvm2::utils::container::std_string,2> arguments{};
             for(::std::size_t i{};i!=arguments.size();++i)
             {
                 if(static_cast<::std::size_t>(end-current-1)<=i||current[i+1].type!=::uwvm2::utils::cmdline::parameter_parsing_results_type::arg)
@@ -170,7 +189,7 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
                 { return error(*current->para,"portable deployment needs adapter path/SHA and separate policy path/SHA"); }
                 auto const text{current[i+1].str};arguments[i]={reinterpret_cast<char const*>(text.data()),text.size()};
             }
-            auto result{model::portable::deployment_selection::configure(::std::string{arguments[0]},arguments[1],::std::string{arguments[2]},arguments[3])};
+            auto result{model::portable::deployment_selection::configure(::uwvm2::utils::container::std_string{arguments[0]},arguments[1],::uwvm2::utils::container::std_string{arguments[2]},arguments[3])};
             if(result!=model::portable::error::ok) { return error(*current->para,"portable deployment bytes, schema, mapping or separate grant refused"); }
             for(::std::size_t i{};i!=arguments.size();++i) { current[i+1].type=::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg; }
             storage::policy_configured=true;return status::def;
@@ -204,6 +223,8 @@ namespace uwvm2::uwvm::cmdline::params::details::ros_details
         else if constexpr(Action == action::add_module) { result = storage::runtime_policy.bind_module(Version, name, args[1]); }
         else if constexpr(Action == action::enable || Action == action::disable)
         {
+            if constexpr(Action == action::enable)
+            { if(!legacy_enable_warning()) { return status::return_m1_imme; } }
             result = storage::runtime_policy.set_enabled(Version, Scope, name, Action == action::enable);
             if(result)
             {

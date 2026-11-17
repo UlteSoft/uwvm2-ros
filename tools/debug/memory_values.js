@@ -43,7 +43,7 @@
     if(scientific>=-6 && scientific<21) {
       text=point<=0?"0."+"0".repeat(-point)+digits:point>=digits.length?digits+"0".repeat(point-digits.length):digits.slice(0,point)+"."+digits.slice(point);
     } else text=digits[0]+(digits.length>1?"."+digits.slice(1):"")+"e"+(scientific>=0?"+":"")+scientific;
-    return {value:(rounded?"≈ ":"")+sign+text,rounded};
+    return {value:sign+text,rounded};
   }
   function binaryValue(negative,significand,power,precision,rounding) {
     if(significand===0n)return {value:negative?"-0":"0",exact:(negative?"-":"")+"0x0p+0",hexfloat:(negative?"-":"")+"0x0p+0"};
@@ -105,25 +105,34 @@
     if(!Array.isArray(input)||!input.length||input.some(v=>!Number.isInteger(v)||v<0||v>255))return [];
     const bytes=Uint8Array.from(input),size=bytes.length,rows=[],suffix=order==="little"?"":"."+(order==="big"?"be":"pdp");
     const add=(name,value,endian=false)=>rows.push({name:name+(endian&&size>1?suffix:""),...(typeof value==="object"?value:{value:String(value)})});
-    const controls={0:"nul",8:"backspace",9:"tab",10:"line feed",11:"vertical tab",12:"form feed",13:"carriage return",27:"escape",32:"space",127:"delete"};
-    const quoted=value=>Array.from(value,char=>{
+    // Characters: 'a' 'b' 'c' nul tab — printable characters in single
+    // quotes, control characters by their short ASCII names. Each row also
+    // carries parts so the view can colour quotes, characters and names.
+    const C0=["nul","soh","stx","etx","eot","enq","ack","bel","bs","tab","lf","vt","ff","cr","so","si",
+      "dle","dc1","dc2","dc3","dc4","nak","syn","etb","can","em","sub","esc","fs","gs","rs","us"];
+    const charParts=value=>Array.from(value,char=>{
       const code=char.codePointAt(0);
-      if(Object.hasOwn(controls,code))return "("+controls[code]+")";
-      if(code<32 || code>=128 && code<160)return "(control U+"+code.toString(16).padStart(4,"0")+")";
-      return "('"+char+"')";
-    }).join(" ");
+      if(code<32)return {kind:"control",text:C0[code]};
+      if(code===127)return {kind:"control",text:"del"};
+      if(code>=128 && code<160)return {kind:"control",text:"u+"+code.toString(16).padStart(4,"0")};
+      if(char==="'")return {kind:"char",text:"\\'"};
+      if(char==="\\")return {kind:"char",text:"\\\\"};
+      return {kind:"char",text:char};
+    });
+    const partsText=parts=>parts.map(part=>part.kind==="char"?"'"+part.text+"'":part.text).join(" ");
+    const quoted=value=>{const parts=charParts(value);return {value:partsText(parts),parts};};
     if([1,2,4,8,16].includes(size)) {
       const value=integer(bytes,order),bits=BigInt(size*8),sign=1n<<(bits-1n);
       add("u"+size*8,value.toString(),true);add("i"+size*8,(value&sign?value-(1n<<bits):value).toString(),true);
       add("Hex","0x"+value.toString(16).padStart(size*2,"0"),true);
-      add("Binary",value.toString(2).padStart(size*8,"0"),true);
+      add("Bin","0b"+value.toString(2).padStart(size*8,"0"),true);
     }
     if(size===1) {
-      add("Char (default)",bytes[0]<128?quoted(String.fromCharCode(bytes[0])):"(byte 0x"+bytes[0].toString(16).padStart(2,"0")+"; not ASCII)");
+      add("Char (default)",bytes[0]<128?quoted(String.fromCharCode(bytes[0])):"not ASCII (byte 0x"+bytes[0].toString(16).padStart(2,"0")+")");
       if(bytes[0]<2)add("Bool",bytes[0]?"true":"false");
     }
     if(bytes.every(n=>n<128))add("ASCII",quoted(Array.from(bytes,byte=>String.fromCharCode(byte)).join("")));
-    function decode(label,encoding) {try{const text=new TextDecoder(encoding,{fatal:true,ignoreBOM:true}).decode(bytes);add(label,quoted(text));return text;}catch(_){add(label,"(invalid or incomplete "+label+"; inspect Hex bytes)");return undefined;}}
+    function decode(label,encoding) {try{const text=new TextDecoder(encoding,{fatal:true,ignoreBOM:true}).decode(bytes);add(label,quoted(text));return text;}catch(_){add(label,"invalid or incomplete "+label);return undefined;}}
     decode("UTF-8","utf-8");
     if(size%2===0) {
       const text=decode("UTF-16"+suffix,order==="big"?"utf-16be":"utf-16le");

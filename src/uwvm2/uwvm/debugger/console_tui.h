@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "console_memory.h"
 #include "console_layout.h"
 #ifndef UWVM_MODULE
@@ -271,7 +272,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
             bool operator==(cell const& other) const noexcept
             { return text==other.text && foreground==other.foreground && background==other.background && reverse==other.reverse && bold==other.bold && width==other.width; }
         };
-        ::std::vector<cell> next_{},previous_{};
+        ::uwvm2::utils::container::std_vector<cell> next_{},previous_{};
         ::std::size_t columns_{},rows_{},x_{},y_{},cursor_x_{},cursor_y_{};
         cell style_{};bool invalid_{true};
     public:
@@ -389,7 +390,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_tui
         mutable bool drawing_tooltip_{};
         mutable ::fast_io::array<::fast_io::string,100u> painted_rows_{};
         mutable ::fast_io::array<::std::size_t,100u> painted_columns_{};
-        ::std::vector<::std::byte> memory_bytes_{},memory_tags_{};
+        ::uwvm2::utils::container::std_vector<::std::byte> memory_bytes_{},memory_tags_{};
         ::std::uint64_t memory_first_granule_{};
         ::std::uint64_t memory_offset_{},memory_stop_{},memory_epoch_{};
         ::std::size_t memory_first_{},memory_last_{};

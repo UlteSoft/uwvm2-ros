@@ -73,7 +73,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
 
         [[nodiscard]] static inline ::std::shared_ptr<native_exception_root_domain> make()
         {
-            auto owner{::std::make_shared<native_exception_root_domain>()};
+            auto owner{::uwvm2::utils::container::make_shared<native_exception_root_domain>()};
             // [fully constructed domain][its own actual control block]
             // [safe ] initialize immutable weak identity before publication.
             owner->canonical_owner_ = owner;

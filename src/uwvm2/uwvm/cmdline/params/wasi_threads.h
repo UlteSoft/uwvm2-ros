@@ -17,6 +17,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     namespace details
     {
         inline bool wasi_threads_existed{};
+        inline bool debug_thread_history_exists{};
+        inline unsigned debug_thread_history_mode{};
+        inline ::std::size_t debug_thread_history_control_bytes{};
+        inline ::uwvm2::utils::container::u8string_view debug_thread_history_path{};
+#if defined(UWVM_MODULE)
+        extern "C++"
+#else
+        inline
+#endif
+        ::uwvm2::utils::cmdline::parameter_return_type debug_thread_history_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
         #if defined(UWVM_MODULE)
         extern "C++"
 #else
@@ -38,6 +51,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wbraced-scalar-init"
 # endif
+    inline constexpr ::uwvm2::utils::cmdline::parameter debug_thread_history{
+        .name{u8"--debug-thread-history"},
+        .describe{u8"Record a complete private WASI Threads execution to a unified snapshot, or replay it without real WASI/ROS I/O. Requires full debug and full dump permissions. Original source must match. Control storage is an explicit native resource budget; history has no implicit quota."},
+        .usage{u8"<record|replay> <path> <control-storage-bytes>"},
+        .handle{::std::addressof(details::debug_thread_history_callback)},
+        .pretreatment{::std::addressof(details::wasi_threads_pretreatment)},
+        .is_exist{::std::addressof(details::debug_thread_history_exists)},
+        .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter wasi_threads{
         .name{u8"--wasi-threads"},
         .describe{u8"Select WASI Threads; max-active/max-spawns accept unlimited. Four finite storage capacities bound each Guest/compiler mapping, including guards."},

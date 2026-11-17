@@ -2,6 +2,7 @@
  * UWVM2 generation-bound service availability history. APL-2.0.*
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "service_availability.h"
 #include <cstddef>
 #include <cstdint>
@@ -23,12 +24,12 @@ namespace uwvm2::imported::ros
         using retirement=ipc::client_availability::retirement;
         struct entry
         {
-            context binding{};std::string availability_alias{},source_alias{};
+            context binding{};::uwvm2::utils::container::std_string availability_alias{},source_alias{};
             std::uint64_t native_session{};
             bool retired{},source_retired{},availability_revoked{},source_revoked{};
         };
     private:
-        std::map<std::uint64_t,entry> rows_;
+        ::uwvm2::utils::container::std_map<std::uint64_t,entry> rows_;
         std::uint64_t instance_{},runtime_generation_{};unsigned backend_{};bool sealed_{};
     public:
         auto const& rows() const noexcept{return rows_;}
@@ -66,7 +67,7 @@ namespace uwvm2::imported::ros
             try
 #endif
             {
-                entry value{c,std::string{a},std::string{s},native_session};
+                entry value{c,::uwvm2::utils::container::std_string{a},::uwvm2::utils::container::std_string{s},native_session};
                 auto inserted{rows_.emplace(c.availability,std::move(value))};if(!inserted.second){return 17;}
                 instance_=c.instance;runtime_generation_=c.runtime_generation;backend_=c.backend;
                 output=&inserted.first->second;return 0;

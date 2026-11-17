@@ -2,6 +2,7 @@
 // carriers are preparation DATA. The separate private cold root scope can
 // install/remove genuine TLS records without fabricating a guest activation.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 using frame_checkpoint = ::uwvm2::runtime::checkpoint::native_value;
 struct prepared_world_frame
 {
@@ -10,27 +11,31 @@ struct prepared_world_frame
     ::uwvm2::runtime::checkpoint::sealed_function_plan::owner plan{};
     ::uwvm2::runtime::checkpoint::caller_return_projection::owner child_projection{};
     ::std::uint64_t site{};
+    bool ros_cross_module_ancestry{};
     ::std::uintptr_t entry{}; // private exact fresh-engine entry; never returned
-    ::std::vector<frame_checkpoint> values{};
-    ::std::vector<::std::byte> payload{}, output{};
-    ::std::vector<::std::uint8_t> flags{};
-    ::std::vector<::std::size_t> result_offsets{}, result_widths{};
-    ::std::vector<core_type> result_types{};
-    ::std::vector<reference> input_roots{}, result_roots{};
-    ::std::vector<::uwvm2::runtime::exception::instance_root> input_root_owners{};
+    ::uwvm2::utils::container::std_vector<frame_checkpoint> values{};
+    ::uwvm2::utils::container::std_vector<::std::byte> payload{}, output{};
+    ::uwvm2::utils::container::std_vector<::std::uint8_t> flags{};
+    ::uwvm2::utils::container::std_vector<::std::size_t> result_offsets{}, result_widths{};
+    ::uwvm2::utils::container::std_vector<core_type> result_types{};
+    ::uwvm2::utils::container::std_vector<reference> input_roots{}, result_roots{};
+    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::instance_root> input_root_owners{};
 };
 struct prepared_world_thread
 {
-    object_id wire{};
-    ::std::vector<prepared_world_frame> frames{};
-    ::std::vector<::uwvm2::runtime::gc::root_frame> root_records{};
+    object_id wire{},wait_wire{};
+    checkpoint_restored_wait_state pending_wait{};
+    ::uwvm2::utils::container::std_vector<prepared_world_frame> frames{};
+    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::gc::root_frame> root_records{};
 };
 // Declared after engines: these borrowed plans/entries/carriers die first,
 // before pending ranges, engines, staged GC shells and source/type owners.
-::std::vector<prepared_world_thread> prepared_threads_{};
-::std::vector<reference> retained_roots_{};
-::std::vector<::uwvm2::runtime::exception::instance_root> retained_root_owners_{};
+::uwvm2::utils::container::std_vector<prepared_world_thread> prepared_threads_{};
+::uwvm2::utils::container::std_vector<reference> retained_roots_{};
+::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::instance_root> retained_root_owners_{};
 ::std::size_t prepared_frames_{}, prepared_root_carriers_{};
+::uwvm2::utils::container::std_unique_ptr<::uwvm2::utils::thread::keyed_wait_set::prepared_wait_batch> prepared_waits_{};
+
 
 [[nodiscard]] bool prepare_frame_value(checkpoint_world_data::cp::value const& saved,
     ::std::size_t owner, ::uwvm2::runtime::checkpoint::typed_slot expected,
@@ -116,6 +121,7 @@ struct prepared_world_thread
        !charge_native(site.local_count,1u) || !charge_native(abi.result_bytes,1u) ||
        !charge_native(results.size(),sizeof(core_type)+2u*sizeof(::std::size_t)+sizeof(reference))) { return false; }
     next.wire=id;next.owner=owner;next.plan=plan;next.site=site_id;next.entry=engine.entries_[local].resume_raw;
+    next.ros_cross_module_ancestry=frame->words[7u]!=0u;
     next.values.resize(site.slots.size());next.payload.resize(site.slots.size()*ck::native_slot_bytes);
     next.flags.resize(site.local_count);next.output.resize(abi.result_bytes);next.input_roots.reserve(site.slots.size());
     next.input_root_owners.reserve(site.slots.size());
@@ -174,7 +180,7 @@ struct prepared_world_thread
            after.operand_count-site.operand_count>after.slots.size()-live) { return fail(preparation_status::type_mismatch); }
         auto const count{after.operand_count-site.operand_count};
         if(!charge_native(1u,sizeof(ck::caller_return_projection)) || !charge_native(count,2u*sizeof(core_type))) { return false; }
-        ::std::vector<core_type> expected{};expected.reserve(count);
+        ::uwvm2::utils::container::std_vector<core_type> expected{};expected.reserve(count);
         for(::std::size_t n{};n<count;++n) { expected.push_back(after.slots[live+n].type); }
         next.child_projection=ck::caller_return_projection::seal_compiler_data(plan,site_id,site_id+1u,expected);
         if(!next.child_projection) { return fail(preparation_status::unavailable_adapter); }
@@ -194,19 +200,23 @@ struct prepared_world_thread
     for(::std::size_t index{};index<saved_.objects.size();++index)
     {
         auto const& thread{saved_.objects[index]};if(thread.kind!=cp::object_kind::thread) { continue; }
-        if(thread.flags!=0u || thread.links.empty() || thread.links.size()>actual_prepared_profile_->limits().frames ||
+        auto const frame_count=thread.links.size()-(thread.flags==2u && !thread.links.empty()?1u:0u);
+        if((thread.flags!=0u && thread.flags!=2u) || !frame_count || (actual_prepared_profile_->limits().frames!=0u && frame_count>actual_prepared_profile_->limits().frames) ||
            thread.words[0u]!=prepared_threads_.size()+1u || thread.words[1u]!=prepared_threads_.size())
         { return fail(preparation_status::unavailable_adapter); }
         if(!charge_native(thread.links.size(),sizeof(prepared_world_frame))) { return false; }
-        prepared_threads_.emplace_back();auto& next{prepared_threads_.back()};next.wire=index+1u;next.frames.resize(thread.links.size());
-        for(::std::size_t n{};n<thread.links.size();++n)
-        { if(!prepare_one_world_frame(thread.links[n],n+1u<thread.links.size(),next.frames[n])) { return false; } }
+        prepared_threads_.emplace_back();auto& next{prepared_threads_.back()};next.wire=index+1u;next.frames.resize(frame_count);
+        if(thread.flags==2u)next.wait_wire=thread.links.back();
+        for(::std::size_t n{};n<frame_count;++n)
+        { if(!prepare_one_world_frame(thread.links[n],n+1u<frame_count,next.frames[n])) { return false; } }
         if(next.frames.size()>(SIZE_MAX-1u)/2u ||
            !charge_native(1u+2u*next.frames.size(),sizeof(::uwvm2::runtime::gc::root_frame))) { return fail(preparation_status::quota_exceeded); }
         next.root_records.resize(1u+2u*next.frames.size()); // Fixed native lifetime before any TLS publication.
         for(::std::size_t n{};n+1u<next.frames.size();++n)
         {
             auto const& parent{next.frames[n]};auto const& child{next.frames[n+1u]};
+            if((parent.ros_cross_module_ancestry || parent.owner!=child.owner) && !child.ros_cross_module_ancestry)
+            { return fail(preparation_status::type_mismatch); }
             if(!parent.child_projection || parent.child_projection->result_types().size()!=child.result_types.size())
             { return fail(preparation_status::type_mismatch); }
             auto const expected{parent.child_projection->result_types()};
@@ -228,6 +238,71 @@ struct prepared_world_thread
         auto const ref{relocated.template as<reference>()};::uwvm2::runtime::exception::instance_root root{};
         if(!staged_gc_.pending_reference_root(modules_[0u].actual->gc_store,ref,root)) { return fail(preparation_status::type_mismatch); }
         retained_roots_.push_back(ref);retained_root_owners_.push_back(::std::move(root));
+    }
+    // Rebuild actual queue nodes before any new guest worker can run. The
+    // saved FIFO rank is relative to its memory/address, not an OS thread ID.
+    using wait_set=::uwvm2::utils::thread::keyed_wait_set;
+    ::uwvm2::utils::container::std_vector<::std::size_t> wait_order{};
+    for(::std::size_t n{};n<prepared_threads_.size();++n)if(prepared_threads_[n].wait_wire)wait_order.push_back(n);
+    ::std::sort(wait_order.begin(),wait_order.end(),[&](auto a,auto b)
+    {
+        auto const& x=*lookup(prepared_threads_[a].wait_wire);auto const& y=*lookup(prepared_threads_[b].wait_wire);
+        if(x.links[0]!=y.links[0])return x.links[0]<y.links[0];
+        if(x.words[0]!=y.words[0])return x.words[0]<y.words[0];
+        return x.words[4]<y.words[4];
+    });
+    ::uwvm2::utils::container::std_vector<wait_set::prepared_wait_spec> specifications{};
+    for(auto index:wait_order)
+    {
+        auto& thread=prepared_threads_[index];auto const* saved=lookup(thread.wait_wire);
+        if(!saved || saved->kind!=cp::object_kind::atomic_wait || saved->links.size()!=1u)return fail(preparation_status::type_mismatch);
+        auto const* actual=native(saved->links[0]);
+        if(!actual || actual->owner>=modules_.size() || actual->local>=modules_[actual->owner].actual->local_defined_memory_vec_storage.size())
+            return fail(preparation_status::source_mismatch);
+        auto const* memory=::std::addressof(modules_[actual->owner].actual->local_defined_memory_vec_storage.index_unchecked(actual->local).memory);
+        auto& pending=thread.pending_wait;
+        pending.operation={reinterpret_cast<::std::uintptr_t>(memory),saved->words[1]==4u?1u:2u,static_cast<unsigned>(saved->words[7]),
+            saved->words[6],saved->words[5],saved->words[2],static_cast<::std::int64_t>(saved->words[3])};
+        pending.position=saved->words[0];pending.index=specifications.size();
+        auto const& leaf=thread.frames.back();auto const& site=leaf.plan->get().sites[leaf.site-1u];
+        auto const* frame=lookup(leaf.wire);auto const* function=native(frame->links[0]);
+        auto const dense=modules_[leaf.owner].new_actual_id;
+        if(!function || dense>=engines_.size() || !engines_[dense] || function->local>=engines_[dense]->locals_.size() ||
+            site.operand_count<3u || frame->values.size()<3u)return fail(preparation_status::type_mismatch);
+        auto const& compiled=engines_[dense]->locals_[function->local];
+        if(!compiled.code_begin || compiled.code_end<=compiled.code_begin ||
+            site.opcode_offset>=static_cast<::std::size_t>(compiled.code_end-compiled.code_begin) ||
+            compiled.code_begin[site.opcode_offset]!=::std::byte{0xfe})return fail(preparation_status::type_mismatch);
+        auto cursor=compiled.code_begin+site.opcode_offset+1u;
+        namespace atomic=::uwvm2::validation::standard::wasm3;
+        auto const instruction=atomic::scan_atomic_instruction64(cursor,compiled.code_end,true,true);
+        auto const* instance=lookup(modules_[leaf.owner].instance);
+        auto const first_memory=1u+instance->words[0]+instance->words[1];
+        if(instruction.error!=atomic::atomic_immediate_error::ok || instruction.opcode!=pending.operation.operation ||
+            instruction.memory.offset!=pending.operation.offset || instruction.memory.memory_index>=instance->words[2] ||
+            instance->links[first_memory+instruction.memory.memory_index]!=saved->links[0])return fail(preparation_status::type_mismatch);
+        auto const& address=frame->values[frame->values.size()-3u];auto const& expected=frame->values[frame->values.size()-2u];
+        if(address.type.kind!=(pending.operation.bits==32u?cp::value_kind::i32:cp::value_kind::i64) ||
+            expected.type.kind!=(pending.operation.operation==1u?cp::value_kind::i32:cp::value_kind::i64) ||
+            frame->values.back().type.kind!=cp::value_kind::i64 || address.low_bits!=pending.operation.address ||
+            expected.low_bits!=pending.operation.expected)return fail(preparation_status::type_mismatch);
+        auto const* memory_data=lookup(saved->links[0]);
+        auto const mask=memory_data->words[4]?(pending.operation.bits==32u?UINT64_C(0x0fffffff):UINT64_C(0x00ffffffffffffff)):
+            (pending.operation.bits==32u?UINT64_C(0xffffffff):UINT64_MAX);
+        auto const untagged=address.low_bits&mask;
+        if(pending.operation.offset>UINT64_MAX-untagged || untagged+pending.operation.offset!=pending.position)
+            return fail(preparation_status::type_mismatch);
+        pending.location.code_unit=modules_[leaf.owner].new_actual_id;
+        pending.location.function=leaf.plan->get().function;pending.location.offset=site.opcode_offset;
+        specifications.push_back({{memory,pending.position},pending.operation.timeout,saved->words[4],
+            saved->flags==2u?wait_set::prepared_wait_completion::timed_out:
+            saved->flags==1u?wait_set::prepared_wait_completion::notified:wait_set::prepared_wait_completion::pending});
+    }
+    if(!specifications.empty())
+    {
+        prepared_waits_=g_runtime.thread_wait_domain.waiters.prepare_ordered_waits(specifications);
+        if(!prepared_waits_)return fail(preparation_status::unavailable_adapter);
+        for(auto index:wait_order)prepared_threads_[index].pending_wait.batch=prepared_waits_.get();
     }
     // Complete counters only after EVERY packet, edge and retained root passed.
     prepared_root_carriers_=retained_roots_.size();

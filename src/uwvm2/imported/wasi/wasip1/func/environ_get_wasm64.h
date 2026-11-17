@@ -22,6 +22,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -144,6 +145,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         if(!::uwvm2::imported::wasi::wasip1::func::check_wasip1_memory_bounds_wasm64(memory, environ_buf_ptrsz, curr_environ_size_bytes))
             { return ::uwvm2::imported::wasi::wasip1::abi::errno_t::efault; }
 
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
         auto environ_curr_size{environ_ptrsz};
         auto environ_buff_curr_size{environ_buf_ptrsz};
         for(auto const curr_environ: env.envs)

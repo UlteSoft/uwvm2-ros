@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Include only after actual native may-throw/cleanup emitters. This is a second
 // selector edge of the SAME validated LLVM body, never a second bytecode pass.
 [[nodiscard]] inline bool emit_runtime_local_func_llvm_jit_checkpoint_nested_child_path(
@@ -36,7 +37,7 @@
        after.saved_parameter_count != after.slots.size()-after.local_count-after.operand_count ||
        after.saved_parameter_count != waiting.saved_parameter_count || waiting.caller_return_offset != after.opcode_offset)
     { return false; }
-    ::std::vector<::llvm::Value*> prefix{}; ::std::vector<cp::types::core_value_type> exact{};
+    ::uwvm2::utils::container::std_vector<::llvm::Value*> prefix{}; ::uwvm2::utils::container::std_vector<cp::types::core_value_type> exact{};
     prefix.reserve(call.prefix_operands); exact.reserve(call.prefix_operands);
     for(::std::size_t i{}; i != call.prefix_operands; ++i)
     {
@@ -103,8 +104,17 @@
         auto const width{get_runtime_wasm_value_type_abi_size(physical)};
         auto const declared{after.slots[after.local_count+call.prefix_operands+i].type};
         auto const native{get_llvm_type_from_wasm_value_type(builder.getContext(), physical)};
-        if(native == nullptr || width == 0u || width > cp::native_slot_bytes ||
-           checkpoint_packet_physical_carrier(declared) != static_cast<runtime_operand_stack_value_type>(physical) ||
+        // The packet canonicalizes every reference to one physical carrier.
+        // Compare carrier classes on BOTH sides: externref/exnref retain their
+        // distinct exact Core declarations and root owners, but share the tagged
+        // native ABI with funcref/GC references. Raw enum equality rejects legal
+        // child returns; native integer width alone could admit a scalar instead.
+        auto const physical_kind{::uwvm2::validation::standard::wasm3::core3_legacy_carrier_type(physical).kind};
+        auto const packet_carrier{checkpoint_packet_physical_carrier(declared)};
+        if(!cp::known_type(declared) || declared.kind != physical_kind ||
+           native == nullptr || width == 0u || width > cp::native_slot_bytes ||
+           get_llvm_type_from_wasm_value_type(builder.getContext(), packet_carrier) != native ||
+           get_runtime_wasm_value_type_abi_size(packet_carrier) != width ||
            offset > abi.result_bytes || width > abi.result_bytes-offset) { return false; }
         // [genuine child normal-return owned output0 ... offset ... bytes] end
         // [safe] the private canonical TLS bridge proved exact child result
@@ -129,7 +139,7 @@
     // its OWN native precise roots. No guest allocation/debug callback intervenes.
     // Compiler-only extra roots do not change the lexical operand model or its
     // separately owned saved-if suffix. Normal-path original arguments stay intact.
-    ::std::vector<llvm_jit_stack_value_t> returned_roots{};
+    ::uwvm2::utils::container::std_vector<llvm_jit_stack_value_t> returned_roots{};
     returned_roots.reserve(abi.result_count);
     if(call.prefix_operands > call.nested_after_values.size() ||
        abi.result_count != call.nested_after_values.size()-call.prefix_operands) { return false; }

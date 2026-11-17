@@ -6,6 +6,7 @@
  * permits the same full source handle to create a second native object.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "../ipc/rmw_endpoint.h"
 #include <functional>
 #include <map>
@@ -25,7 +26,7 @@ namespace uwvm2::imported::ros
         struct entry
         {
             packet observed{};
-            std::string alias;
+            ::uwvm2::utils::container::std_string alias;
             phase state{phase::reserved};
             std::uint32_t retirement_reason{};
             bool cleanup_attempted{};
@@ -37,8 +38,8 @@ namespace uwvm2::imported::ros
         };
         static constexpr std::size_t maximum_entries{SIZE_MAX};
     private:
-        std::map<std::uint64_t,entry> entries_;
-        std::map<std::string,std::size_t,std::less<>> active_by_alias_;
+        ::uwvm2::utils::container::std_map<std::uint64_t,entry> entries_;
+        ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,std::size_t,std::less<>> active_by_alias_;
         std::uint64_t instance_{},generation_{},next_incarnation_{1};
         bool sealed_{};
         static bool same_snapshot(packet const& left,packet const& right) noexcept
@@ -82,7 +83,7 @@ namespace uwvm2::imported::ros
             try
 #endif
             {
-                entry value{request,std::string{alias}};
+                entry value{request,::uwvm2::utils::container::std_string{alias}};
                 auto count{active_by_alias_.emplace(value.alias,0)};
                 decltype(entries_)::iterator stored;
 #if defined(__cpp_exceptions)

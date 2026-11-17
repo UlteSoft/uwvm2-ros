@@ -14,6 +14,7 @@
 # include <type_traits>
 # include <uwvm2/utils/macro/push_macros.h>
 # include "hardware_mte.h"
+# include <uwvm2/utils/mutex/rw_spin_lock.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -45,11 +46,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     // Imported aliases borrow the same owner; independent memories never share
     // a shadow. Growth publishes initialized shadow before the enlarged length.
     //
-    // Shared=true uses atomic byte reads/writes to avoid a native data race on
-    // allocation tags. A software precheck and the later data access are not
-    // atomic with respect to concurrent retagging: this differs from a hardware
-    // check coupled to the physical access. Allocator retirement/reuse requires
-    // separate synchronization. An observed mismatch ALWAYS rejects the access.
+    // Owner-created shared views serialize tag writes with complete checked
+    // accesses. A standalone check is still only a snapshot: callers must keep
+    // the owner's access lease through the actual byte operation. Bare views
+    // constructed over a raw tag array have no owner lifetime or locking proof.
     template<::std::unsigned_integral Address, bool Shared = false>
     class shadow_view
     {
@@ -64,8 +64,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         static constexpr ::std::uint8_t maximum_tag{static_cast<::std::uint8_t>((1u << TagBits) - 1u)};
 
         constexpr shadow_view(tag_type* tags, ::std::size_t tag_count, ::std::uint64_t memory_bytes,
-                              ::std::byte* hardware_base = nullptr) noexcept
-            : tags_{tags}, count_{tag_count}, memory_bytes_{memory_bytes}
+                              ::std::byte* hardware_base = nullptr,
+                              ::uwvm2::utils::mutex::rwlock_t* tag_write_gate = nullptr) noexcept
+            : tags_{tags}, count_{tag_count}, memory_bytes_{memory_bytes}, tag_write_gate_{tag_write_gate}
 #if defined(__linux__) && defined(__aarch64__)
             , hardware_base_{hardware_base}
 #endif
@@ -156,6 +157,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // No partial update is permitted when any part of the range is invalid.
         [[nodiscard]] access_result store(Address pointer, ::std::uint64_t bytes) const noexcept
         {
+            if constexpr(Shared)
+            {
+                if(tag_write_gate_ != nullptr)
+                {
+                    ::uwvm2::utils::mutex::rw_fair_unique_guard_t held{*tag_write_gate_};
+                    return store_under_lease(pointer, bytes);
+                }
+            }
+            return store_under_lease(pointer, bytes);
+        }
+
+    private:
+        [[nodiscard]] access_result store_under_lease(Address pointer, ::std::uint64_t bytes) const noexcept
+        {
             auto result{bounds(pointer, 0u, bytes)};
             if(!result || bytes == 0u) { return result; }
             auto const first{static_cast<::std::size_t>(result.address >> 4u)};
@@ -177,6 +192,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return result;
         }
 
+    public:
         [[nodiscard]] access_result load(Address pointer) const noexcept
         {
             auto result{bounds(pointer, 0u, 1u)};
@@ -193,6 +209,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         tag_type* tags_{};
         ::std::size_t count_{};
         ::std::uint64_t memory_bytes_{};
+        ::uwvm2::utils::mutex::rwlock_t* tag_write_gate_{};
 #if defined(__linux__) && defined(__aarch64__)
         ::std::byte* hardware_base_{};
 #endif

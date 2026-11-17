@@ -74,10 +74,12 @@ module;
 #  include <llvm/IR/LLVMContext.h>
 #  include <llvm/IR/Metadata.h>
 #  include <llvm/IR/Module.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
 #  include <llvm/IR/Type.h>
 #  include <llvm/IR/Value.h>
 #  include <llvm/IR/Verifier.h>
 #  include <llvm/Transforms/Utils/Cloning.h>
+#  include <llvm/Transforms/Utils/Local.h>
 #  include <llvm/Transforms/Utils/ModuleUtils.h>
 #  include <llvm/Analysis/ValueTracking.h>
 #  include <llvm/Support/KnownBits.h>

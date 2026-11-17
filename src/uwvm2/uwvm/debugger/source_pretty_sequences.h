@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #if UWVM_DEBUG_LANGUAGE_CPP
 #ifndef UWVM_MODULE
@@ -97,7 +98,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             for(::std::size_t i{};i!=bytes.size() && i<8u;++i)
             { result|=static_cast<::std::uint64_t>(::std::to_integer<unsigned char>(bytes[i]))<<(i*8u); }return result;
         }
-        template<class Session> [[nodiscard]] bool append_bit(Session& work,::std::vector<dwarf::object_node>& tree,
+        template<class Session> [[nodiscard]] bool append_bit(Session& work,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,
             ::std::uint64_t index,bool value,::std::size_t depth)
         {
             if(work.elements>=work.cap.max_elements || work.nodes>=work.cap.max_nodes || tree.size()>=work.cap.max_nodes || depth>work.cap.max_depth)
@@ -107,16 +108,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             node.scalar_bytes=1u;node.byte_size=1u;node.bits=value;node.value_available=true;node.detached_copy=true;
             tree.push_back(::std::move(node));++work.elements;++work.nodes;return true;
         }
-        inline void add_preview(::std::vector<dwarf::object_node> const& tree,::std::size_t before,::std::uint64_t index,::std::string& text)
+        inline void add_preview(::uwvm2::utils::container::std_vector<dwarf::object_node> const& tree,::std::size_t before,::std::uint64_t index,::uwvm2::utils::container::std_string& text)
         { if(index<8u && text.size()<3000u) { if(index!=0u) { text+=", "; }scalar_text(tree[before],text); } }
-        inline void finish(::std::vector<dwarf::object_node>& tree,::std::string_view profile,::std::string text,
+        inline void finish(::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::string_view profile,::uwvm2::utils::container::std_string text,
             ::std::uint64_t count,::std::uint64_t shown)
         {
             if(shown<count || shown>8u) { if(shown!=0u) { text+=", "; }text+="..."; }text+=']';
             summary(tree[0u],profile,::std::move(text),count-shown);
         }
         template<class Session> [[nodiscard]] outcome static_span(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             ::std::uint64_t count{};
             if(!template_count(work.types,root,1u,work.width,count)) { return outcome::not_matched; }
@@ -127,24 +128,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             auto const& t{work.types[element]};
             ::std::uint64_t address{};
             if(!pointer_bits(work,data,bytes,known,eligible,address) || !range(address,count,t.byte_size,work.width)) { return outcome::unavailable; }
-            ::std::string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
+            ::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
             auto const remaining{(std::min)(work.elements<work.cap.max_elements ? work.cap.max_elements-work.elements : 0u,
                 work.nodes<work.cap.max_nodes ? work.cap.max_nodes-work.nodes : 0u)};
             auto const available{work.copied<work.cap.max_bytes ? work.cap.max_bytes-work.copied : 0u};
             auto const planned{(std::min)(count,static_cast<::std::uint64_t>((std::min)(remaining,static_cast<::std::size_t>(available/t.byte_size))))};
-            ::std::vector<::std::byte> copied{};
+            ::uwvm2::utils::container::std_vector<::std::byte> copied{};
             if(planned!=0u && !work.read(address,static_cast<::std::size_t>(planned*t.byte_size),copied))
             { if(!work.limited) { return outcome::unavailable; } }
             else for(;shown<planned && work.elements<work.cap.max_elements;++shown)
             {
-                ::std::string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
+                ::uwvm2::utils::container::std_string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
                 if(!work.append(tree,element,::std::span<::std::byte const>{copied}.subspan(static_cast<::std::size_t>(shown*t.byte_size),static_cast<::std::size_t>(t.byte_size)),::std::move(name),depth)) { break; }
                 add_preview(tree,before,shown,text);
             }
             finish(tree,"C++ static span",::std::move(text),count,shown);return outcome::formatted;
         }
         template<class Session> [[nodiscard]] outcome bitset(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             ::std::uint64_t count{};
             if(!template_count(work.types,root,0u,work.width,count)) { return outcome::unavailable; }
@@ -162,7 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             auto const extent{work.types[word].byte_size};auto const word_bits{extent*8u};
             if((count-1u)/word_bits+1u!=words || !t.size_known || words>t.byte_size/extent || words*extent!=t.byte_size ||
                storage.offset>bytes.size() || t.byte_size>bytes.size()-storage.offset) { return outcome::unavailable; }
-            ::std::string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
+            ::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
             while(shown<count && work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
                 auto const at{static_cast<::std::size_t>(storage.offset+shown/8u)};auto const mask{1u<<(shown%8u)};
@@ -173,7 +174,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             finish(tree,"C++ bitset",::std::move(text),count,shown);return outcome::formatted;
         }
         template<class Session> [[nodiscard]] outcome vector_bool(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             field start{},finish_pointer{},start_bit{},finish_bit{},capacity{};
             if(!path(work.types,root,"_M_impl._M_start._M_p",start) || !path(work.types,root,"_M_impl._M_start._M_offset",start_bit) ||
@@ -194,7 +195,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             auto const words{(end-address)/extent};
             if(words>(~::std::uint64_t{}-last_offset)/width) { return outcome::unavailable; }
             auto const total{words*width+last_offset};if(total<first_offset) { return outcome::unavailable; }auto const count{total-first_offset};
-            ::std::string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
+            ::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
             auto const remaining{(std::min)(work.elements<work.cap.max_elements ? work.cap.max_elements-work.elements : 0u,
                 work.nodes<work.cap.max_nodes ? work.cap.max_nodes-work.nodes : 0u)};
             auto planned{(std::min)(count,static_cast<::std::uint64_t>(remaining))};
@@ -202,7 +203,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             auto const max_words{available/extent};
             if(planned!=0u && ((first_offset+planned-1u)/width+1u)>max_words)
             { planned=max_words==0u ? 0u : (std::min)(planned,max_words*width-first_offset); }
-            ::std::vector<::std::byte> data{};
+            ::uwvm2::utils::container::std_vector<::std::byte> data{};
             auto const copied_words{planned==0u ? 0u : (first_offset+planned-1u)/width+1u};
             if(copied_words!=0u && (!range(address,copied_words,extent,work.width) || !work.read(address,static_cast<::std::size_t>(copied_words*extent),data)))
             { if(!work.limited) { return outcome::unavailable; } }
@@ -232,7 +233,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             return found ? member_lookup::found : member_lookup::absent;
         }
         template<class Session> [[nodiscard]] outcome forward_list(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]};field head{};
             if(type.template_types.empty() || type.template_types[0u]>=work.types.size() ||
@@ -271,22 +272,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 payload={element,data.offset};
             }
             if(payload.offset>work.types[node].byte_size || value_type.byte_size>work.types[node].byte_size-payload.offset) { return outcome::unavailable; }
-            ::std::vector<::std::uint64_t> visited{};::std::uint64_t shown{};::std::string text{"["};bool incomplete{};
+            ::uwvm2::utils::container::std_vector<::std::uint64_t> visited{};::std::uint64_t shown{};::uwvm2::utils::container::std_string text{"["};bool incomplete{};
             while(current!=0u && work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
                 if(::std::find(visited.begin(),visited.end(),current)!=visited.end()) { return outcome::unavailable; }
-                ::std::vector<::std::byte> copied{};
+                ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                 if(!work.read(current,static_cast<::std::size_t>(work.types[node].byte_size),copied))
                 { if(work.limited) { break; }return outcome::unavailable; }
                 visited.push_back(current);if(!bits(work.types,next,copied,{},current)) { return outcome::unavailable; }
-                ::std::string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
+                ::uwvm2::utils::container::std_string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
                 if(!work.append(tree,element,::std::span<::std::byte const>{copied}.subspan(static_cast<::std::size_t>(payload.offset),static_cast<::std::size_t>(value_type.byte_size)),::std::move(name),depth)) { incomplete=true;break; }
                 add_preview(tree,before,shown,text);++shown;
             }
             if(current!=0u && ::std::find(visited.begin(),visited.end(),current)!=visited.end()) { return outcome::unavailable; }
             incomplete=incomplete || current!=0u;
             if(incomplete || shown>8u) { if(shown!=0u) { text+=", "; }text+="..."; }text+=']';
-            ::std::string summary_text{!incomplete ? "size=" : "size=unknown (copied prefix) "};
+            ::uwvm2::utils::container::std_string summary_text{!incomplete ? "size=" : "size=unknown (copied prefix) "};
             if(!incomplete) { number(summary_text,shown);summary_text+=' '; }summary_text+=text;
             summary(tree[0u],"libstdc++ forward_list",::std::move(summary_text));tree[0u].pretty_truncated|=incomplete;return outcome::formatted;
         }
@@ -297,7 +298,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             ::std::size_t element,deque_iterator& out)
         {
             auto select{[&](::std::string_view name,field& value)
-            { ::std::string path_name{prefix};path_name+=name;return path(work.types,root,path_name,value); }};
+            { ::uwvm2::utils::container::std_string path_name{prefix};path_name+=name;return path(work.types,root,path_name,value); }};
             if(!select("._M_cur",out.cur) || !select("._M_first",out.first) || !select("._M_last",out.last) || !select("._M_node",out.node)) { return false; }
             for(auto pointer_field:{out.cur,out.first,out.last})
             { if(!pointer(work.types,pointer_field,work.width) || work.types[pointer_field.type].referenced_type!=element) { return false; } }
@@ -308,7 +309,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 pointer_bits(work,out.last,bytes,known,eligible,out.l) && pointer_bits(work,out.node,bytes,known,eligible,out.n);
         }
         template<class Session> [[nodiscard]] outcome deque(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]};field map{},map_size{};
             if(type.template_types.empty() || type.template_types[0u]>=work.types.size() ||
@@ -337,23 +338,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             auto count{distance*block_elements};
             if(count<start_index) { if(distance!=0u || finish_index<start_index) { return outcome::unavailable; } count=finish_index-start_index; }
             else { count-=start_index;if(finish_index>(~::std::uint64_t{})-count) { return outcome::unavailable; }count+=finish_index; }
-            ::std::string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
+            ::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";::std::uint64_t shown{};
             if(count==0u) { finish(tree,"libstdc++ deque",::std::move(text),0u,0u);return outcome::formatted; }
             bool last_verified{};
             if(first.n!=last.n && work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
-                ::std::vector<::std::byte> entry{};
+                ::uwvm2::utils::container::std_vector<::std::byte> entry{};
                 if(!work.read(last.n,work.width,entry))
                 { if(!work.limited) { return outcome::unavailable; }finish(tree,"libstdc++ deque",::std::move(text),count,0u);return outcome::formatted; }
                 if(little(entry)!=last.f) { return outcome::unavailable; }last_verified=true;
             }
-            ::std::uint64_t current_node{first.n},index{start_index};::std::vector<::std::uint64_t> visited{};
+            ::std::uint64_t current_node{first.n},index{start_index};::uwvm2::utils::container::std_vector<::std::uint64_t> visited{};
             while(shown<count && work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
                 ::std::uint64_t address{last.f};
                 if(current_node!=last.n || !last_verified)
                 {
-                    ::std::vector<::std::byte> entry{};
+                    ::uwvm2::utils::container::std_vector<::std::byte> entry{};
                     if(!work.read(current_node,work.width,entry)) { if(work.limited) { break; }return outcome::unavailable; }
                     address=little(entry);
                 }
@@ -365,13 +366,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 auto const available{work.copied<work.cap.max_bytes ? work.cap.max_bytes-work.copied : 0u};
                 auto batch{(std::min)(block_elements-index,count-shown)};
                 batch=(std::min)(batch,static_cast<::std::uint64_t>((std::min)(remaining,static_cast<::std::size_t>(available/t.byte_size))));
-                if(batch==0u) { work.limited=true;break; }::std::vector<::std::byte> data{};
+                if(batch==0u) { work.limited=true;break; }::uwvm2::utils::container::std_vector<::std::byte> data{};
                 if(!work.read(address+index*t.byte_size,static_cast<::std::size_t>(batch*t.byte_size),data))
                 { if(work.limited) { break; }return outcome::unavailable; }
                 ::std::uint64_t consumed{};
                 for(;consumed<batch && work.elements<work.cap.max_elements;++consumed)
                 {
-                    ::std::string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
+                    ::uwvm2::utils::container::std_string name{"["};number(name,shown);name+=']';auto const before{tree.size()};++work.elements;
                     if(!work.append(tree,element,::std::span<::std::byte const>{data}.subspan(static_cast<::std::size_t>(consumed*t.byte_size),static_cast<::std::size_t>(t.byte_size)),::std::move(name),depth)) { break; }
                     add_preview(tree,before,shown,text);++shown;
                 }
@@ -381,7 +382,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             finish(tree,"libstdc++ deque",::std::move(text),count,shown);return outcome::formatted;
         }
         template<class Session> [[nodiscard]] outcome libcxx_packed(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             field data{},size{},cap{};
             if(!path(work.types,root,"__begin_",data) || !path(work.types,root,"__size_",size) ||
@@ -396,8 +397,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 work.nodes<work.cap.max_nodes ? work.cap.max_nodes-work.nodes : 0u)};
             auto planned{(std::min)(count,static_cast<::std::uint64_t>(remaining))};auto const available{work.copied<work.cap.max_bytes ? work.cap.max_bytes-work.copied : 0u};
             planned=(std::min)(planned,static_cast<::std::uint64_t>(available/extent)*word_bits);
-            auto const copy_words{planned==0u ? 0u : (planned-1u)/word_bits+1u};::std::vector<::std::byte> copied{};::std::uint64_t shown{};
-            ::std::string text{"size="};number(text,count);text+=" [";
+            auto const copy_words{planned==0u ? 0u : (planned-1u)/word_bits+1u};::uwvm2::utils::container::std_vector<::std::byte> copied{};::std::uint64_t shown{};
+            ::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";
             if(copy_words!=0u && !work.read(address,static_cast<::std::size_t>(copy_words*extent),copied))
             { if(!work.limited) { return outcome::unavailable; } }
             else while(shown<planned)
@@ -459,7 +460,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             return found;
         }
         template<class Session> [[nodiscard]] outcome libcxx_deque(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
-            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]};field first{},begin{},end{},capacity{},start{},size{};
             if(type.template_types.empty() || type.template_types[0u]>=work.types.size() ||
@@ -487,22 +488,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
             ::std::uint64_t block{};
             if(!libcxx_block_count(work,root,element,block) || slots>(~::std::uint64_t{})/block ||
                count>=slots*block || offset>=slots*block-count || !range(map,slots,work.width,work.width)) { return outcome::unavailable; }
-            ::std::uint64_t shown{},logical{offset};::std::string text{"size="};number(text,count);text+=" [";::std::vector<::std::uint64_t> visited{};
+            ::std::uint64_t shown{},logical{offset};::uwvm2::utils::container::std_string text{"size="};number(text,count);text+=" [";::uwvm2::utils::container::std_vector<::std::uint64_t> visited{};
             while(shown<count && work.elements<work.cap.max_elements && work.nodes<work.cap.max_nodes)
             {
-                auto const map_index{logical/block};auto const in_block{logical%block};::std::vector<::std::byte> entry{};
+                auto const map_index{logical/block};auto const in_block{logical%block};::uwvm2::utils::container::std_vector<::std::byte> entry{};
                 if(!work.read(map+map_index*work.width,work.width,entry)) { if(work.limited) { break; }return outcome::unavailable; }
                 auto const address{little(entry)};
                 if(!range(address,block,extent,work.width) || ::std::find(visited.begin(),visited.end(),address)!=visited.end()) { return outcome::unavailable; }visited.push_back(address);
                 auto const remaining{work.elements<work.cap.max_elements ? work.cap.max_elements-work.elements : 0u};
                 auto const available{work.copied<work.cap.max_bytes ? work.cap.max_bytes-work.copied : 0u};
                 auto batch{(std::min)(block-in_block,count-shown)};batch=(std::min)(batch,static_cast<::std::uint64_t>((std::min)(remaining,static_cast<::std::size_t>(available/extent))));
-                if(batch==0u) { work.limited=true;break; }::std::vector<::std::byte> copied{};
+                if(batch==0u) { work.limited=true;break; }::uwvm2::utils::container::std_vector<::std::byte> copied{};
                 if(!work.read(address+in_block*extent,static_cast<::std::size_t>(batch*extent),copied)) { if(work.limited) { break; }return outcome::unavailable; }
                 ::std::uint64_t used{};
                 for(;used<batch && work.elements<work.cap.max_elements;++used)
                 {
-                    ::std::string label{"["};number(label,shown);label+=']';auto const before{tree.size()};++work.elements;
+                    ::uwvm2::utils::container::std_string label{"["};number(label,shown);label+=']';auto const before{tree.size()};++work.elements;
                     if(!work.append(tree,element,::std::span<::std::byte const>{copied}.subspan(static_cast<::std::size_t>(used*extent),static_cast<::std::size_t>(extent)),::std::move(label),depth)) { break; }
                     add_preview(tree,before,shown,text);++shown;++logical;
                 }
@@ -513,7 +514,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
     }
     template<class Session> [[nodiscard]] outcome extended_sequences(Session& work,::std::size_t root,
         ::std::span<::std::byte const> bytes,::std::span<::std::byte const> known,::std::span<::std::byte const> pointer_known,
-        ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
     {
         if(root>=work.types.size() || tree.empty() || tree[0u].type!=root || (work.width!=4u && work.width!=8u) ||
            (!known.empty() && known.size()!=bytes.size()) || (!pointer_known.empty() && pointer_known.size()!=bytes.size())) { return outcome::unavailable; }

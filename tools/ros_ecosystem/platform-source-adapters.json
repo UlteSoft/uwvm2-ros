@@ -1,0 +1,17 @@
+{
+  "scope": "Reviewed repository locators for SDK locks that omit their repository. These are acquisition provenance, not runtime registrations.",
+  "repositories": [
+    {
+      "platform": "boston_dynamics",
+      "repository": "https://github.com/boston-dynamics/spot-sdk",
+      "revision_key": "spot_commit",
+      "primary_evidence": "https://github.com/boston-dynamics/spot-sdk/blob/master/docs/python/quickstart.md"
+    },
+    {
+      "platform": "leju",
+      "repository": "https://github.com/LejuRobotics/kuavo-ros-opensource",
+      "revision_key": "commit",
+      "primary_evidence": "https://github.com/LejuRobotics/kuavo-ros-opensource"
+    }
+  ]
+}

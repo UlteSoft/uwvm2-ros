@@ -1,11 +1,13 @@
 // Private member fragment of the coherent manager. A canonical operation owns
 // the SAME retired cohort and prepared lifetime across deadline/pending returns.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/shared.h>
 struct native_retirement_state
 {
     using execution = ::uwvm2::utils::thread::execution_domain;
     ::std::shared_ptr<llvm_jit_checkpoint_native_retirement> token{
-        new llvm_jit_checkpoint_native_retirement{}};
+        ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_checkpoint_native_retirement>([&](llvm_jit_checkpoint_native_retirement* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_checkpoint_native_retirement{}; }))};
     runtime_checkpoint_guest_worker_bridge::pending_join_owner joined{};
     execution::prepared_generation generation{};
     retirement::owner request{};
@@ -14,6 +16,7 @@ struct native_retirement_state
     ::std::chrono::steady_clock::time_point deadline{};
     llvm_jit_checkpoint_native_retirement_result result{};
     bool activated{};
+    bool publication_committed{};
     bool prepare_candidate{};
     llvm_jit_checkpoint_prepare_request preparation_request{};
     ::std::shared_ptr<runtime_checkpoint_world_transaction> candidate{};
@@ -36,11 +39,14 @@ inline static llvm_jit_checkpoint_native_retirement_result completed_native_reti
     ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
 [[nodiscard]] static bool cancel_actual_candidate_workers(
     ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
+static void finish_published_failure_until(native_retirement_state&,
+    ::uwvm2::utils::thread::execution_domain::maintenance_transition const&) noexcept;
 static void finish_native_retirement_until(native_retirement_state& actual,
     ::uwvm2::utils::thread::execution_domain::maintenance_transition const& maintenance) noexcept
 {
     using execution = ::uwvm2::utils::thread::execution_domain;
     using outcome = llvm_jit_checkpoint_native_retirement_status;
+    if(actual.publication_committed) { finish_published_failure_until(actual,maintenance);return; }
     if(!actual.activated || !actual.request || !actual.generation ||
        actual.result.runtime_epoch != current_runtime_generation() ||
        !same_owner(actual.source, ::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()) ||
@@ -101,7 +107,9 @@ static void finish_native_retirement_until(native_retirement_state& actual,
 static void release_completed_native_retirement(::std::unique_lock<::std::mutex>& lock,
     ::std::shared_ptr<native_retirement_state>& actual) noexcept
 {
-    if(actual->result.status == llvm_jit_checkpoint_native_retirement_status::retired_and_joined)
+    if(actual->result.status == llvm_jit_checkpoint_native_retirement_status::retired_and_joined ||
+       actual->result.status == llvm_jit_checkpoint_native_retirement_status::restored_execution_started ||
+       actual->result.status == llvm_jit_checkpoint_native_retirement_status::restored_startup_failed)
     {
         completed_native_retirement_ = actual->token;
         completed_native_retirement_result_ = actual->result;
@@ -132,7 +140,8 @@ public:
     if(preparing)
     {
         bool label{};for(auto b:preparing->recording_label) { label=label || b!=::std::byte{}; }
-        if(!label || preparing->maximum_native_payload_bytes==0u || preparing->maximum_original_source_bytes==0u)
+        if(!label || preparing->maximum_native_payload_bytes==0u || preparing->maximum_original_source_bytes==0u ||
+           !valid_saved_request(*preparing))
         { out.status=outcome::preparation_declined;out.preparation.status=llvm_jit_checkpoint_prepare_status::invalid_request;return out; }
     }
     ::std::unique_lock lock{native_retirement_mutex_, ::std::try_to_lock};
@@ -141,7 +150,7 @@ public:
     ::std::shared_ptr<native_retirement_state> actual{};
     try
     {
-        actual = ::std::make_shared<native_retirement_state>(); actual->deadline = deadline;
+        actual = ::uwvm2::utils::container::make_shared<native_retirement_state>(); actual->deadline = deadline;
         actual->joined = runtime_checkpoint_guest_worker_bridge::prepare_join_storage(supplied.size());
         if(!actual->joined)
         { out.status = outcome::allocation_failed; lock.unlock(); actual.reset(); return out; }
@@ -216,6 +225,8 @@ public:
     catch(...) { actual->result.status = outcome::failed_closed; out = actual->result; }
     release_completed_native_retirement(lock, actual); return out;
 }
+[[nodiscard]] static llvm_jit_checkpoint_native_retirement_result publish_prepared_instance(
+    llvm_jit_checkpoint_native_retirement_owner const&, ::std::chrono::steady_clock::time_point) noexcept;
 // Explicit rollback of a ready private candidate. Reacquire actual maintenance,
 // drain and physical-join proof; copied statuses never reopen admission.
 [[nodiscard]] static llvm_jit_checkpoint_native_retirement_result discard_prepared_instance(
@@ -236,7 +247,8 @@ public:
         auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
         if(!maintenance) { out=actual->result;out.status=outcome::busy;return out; }
         finish_native_retirement_until(*actual,maintenance);
-        if(actual->result.status!=outcome::prepared_world_ready_closed) { return actual->result; }
+        if(actual->result.status!=outcome::prepared_world_ready_closed)
+        { out=actual->result;release_completed_native_retirement(lock,actual);return out; }
         // Outside execution admission/publication: release and actually join
         // every precreated candidate worker before reopening old admission.
         // Their finite private bodies contain no guest/provider callbacks.

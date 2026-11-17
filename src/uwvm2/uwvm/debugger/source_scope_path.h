@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_types.h"
 # include <array>
@@ -27,10 +30,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     {
         // OWNED metadata only: physical subprogram first, then actual inline
         // instances outer-to-inner. Names/abstract origins never supply identity.
-        ::std::vector<die_key> physical_and_inline{};
+        ::uwvm2::utils::container::std_vector<die_key> physical_and_inline{};
         // Checked indices into the SAME immutable input index. No record pointer
         // or source owner escapes. These integers grant no frame/read authority.
-        ::std::vector<::std::size_t> record_indices{};
+        ::uwvm2::utils::container::std_vector<::std::size_t> record_indices{};
         void clear() noexcept { physical_and_inline.clear(); record_indices.clear(); }
     };
     // Pure bounded metadata selection, not a source/pause/generation credential.
@@ -51,7 +54,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             ::std::size_t ranges{}, physical{no_record}; bool ambiguous_physical{};
             // Parents must precede children. Compute each full ancestry depth
             // once, retaining validation of every inactive record and cap.
-            ::std::vector<::std::size_t> ancestry_depth(scopes.size());
+            ::uwvm2::utils::container::std_vector<::std::size_t> ancestry_depth(scopes.size());
             for(::std::size_t i{}; i != scopes.size(); ++i)
             {
                 // [immutable scope records ... i ... end]
@@ -115,7 +118,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             // Resolve the nearest active parent only for concrete inline
             // instances covering this PC. Repeated path levels never rescan
             // unrelated CUs or walk these same lexical ancestors again.
-            ::std::vector<::std::pair<::std::size_t,::std::size_t>> active_inline{};
+            ::uwvm2::utils::container::std_vector<::std::pair<::std::size_t,::std::size_t>> active_inline{};
             for(::std::size_t i{}; i != scopes.size(); ++i)
             {
                 if(scopes[i].kind != scope_kind::inline_subprogram || !scopes[i].concrete || !contains(i)) { continue; }
@@ -162,7 +165,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     // cached. There is no guest value, read lease, runtime frame or source token.
     class owned_scope_paths final
     {
-        ::std::vector<scope_record> scopes_{};
+        ::uwvm2::utils::container::std_vector<scope_record> scopes_{};
         struct entry
         {
             bool ready{};::std::uint64_t pc{};scope_path_limits cap{};concrete_scope_path path{};
@@ -180,7 +183,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         // Refuse an oversized or recursively nested metadata copy. Ineligible
         // indexes retain the original fully checked uncached query path.
         [[nodiscard]] static bool copy(::std::span<scope_record const> scopes,
-            ::std::unique_ptr<owned_scope_paths>& out) noexcept
+            ::uwvm2::utils::container::std_unique_ptr<owned_scope_paths>& out) noexcept
         {
             out.reset();
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -206,7 +209,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         { if(!piece.atom.pieces.empty()) { return false; } }
                     }
                 }
-                ::std::unique_ptr<owned_scope_paths> pending{new (::std::nothrow) owned_scope_paths{}};
+                ::uwvm2::utils::container::std_unique_ptr<owned_scope_paths> pending{::uwvm2::utils::allocator::fast_io_strict::try_object<owned_scope_paths>([&](owned_scope_paths* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) owned_scope_paths{}; })};
                 if(!pending) { return false; }
                 pending->scopes_.assign(scopes.begin(),scopes.end());
                 out=::std::move(pending);return true;

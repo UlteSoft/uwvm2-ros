@@ -261,6 +261,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             else { return false; }
         }(memory)};
         {
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{false};
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
             if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<false>(
                 memory, path_ptrsz, path.data(), path.size(), declared_shared))
@@ -289,6 +290,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         for(unsigned index{}; index != 4u; ++index)
         { encoded_fd[index] = static_cast<::std::byte>(static_cast<::std::uint32_t>(new_fd) >> (index * 8u)); }
         {
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory_phase{true};
             [[maybe_unused]] auto const memory_locker_guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
             if(!::uwvm2::imported::wasi::wasip1::memory::copy_guest_bytes_unlocked<true>(
                 memory, fd_ptrsz, encoded_fd, 4u, declared_shared))

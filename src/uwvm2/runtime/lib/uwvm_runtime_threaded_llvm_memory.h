@@ -10,10 +10,10 @@
 #endif
             };
             ::llvm::sys::MemoryBlock arena_{};
-            ::std::vector<section> sections_{};
+            ::uwvm2::utils::container::std_vector<section> sections_{};
             ::std::array<::llvm::RTDyldMemoryManager::EHFrame,4096u> frames_{};
             ::std::size_t frame_count_{},used_{};
-            ::std::vector<external> const* externals_{};
+            ::uwvm2::utils::container::std_vector<external> const* externals_{};
             bool failed_{},finalized_{};
             [[nodiscard]] ::std::uint8_t* allocate(::std::uintptr_t size,unsigned alignment,bool code,bool read_only,[[maybe_unused]] ::llvm::StringRef name) noexcept
             {
@@ -57,7 +57,7 @@
                 return 0u;
 #endif
             }
-            native_arena(::std::size_t cap,::std::vector<external> const& bindings,[[maybe_unused]] ::std::size_t native_functions):externals_{&bindings}
+            native_arena(::std::size_t cap,::uwvm2::utils::container::std_vector<external> const& bindings,[[maybe_unused]] ::std::size_t native_functions):externals_{&bindings}
             {
                 // Acquire the ENTIRE finite code budget fallibly BEFORE LLVM
                 // can load/relocate any object. No live guest calls this method.
@@ -112,7 +112,7 @@
                 finalized_=!failed_;return failed_;
             }
             ::std::uint64_t getSymbolAddress(::std::string const& name) override
-            {for(auto const& entry:*externals_)if(entry.name==name)return entry.address;return 0u;}
+            {for(auto const& entry:*externals_)if(::std::string_view{entry.name.data(),entry.name.size()}==::std::string_view{name})return entry.address;return 0u;}
             void registerEHFrames(::std::uint8_t* address,::std::uint64_t,::std::size_t size) override
             {
                 auto const base=reinterpret_cast<::std::uintptr_t>(arena_.base()),where=reinterpret_cast<::std::uintptr_t>(address);
@@ -136,6 +136,11 @@
 
         class loader_memory_adapter final:public ::llvm::RTDyldMemoryManager
         {
+        public:
+            static void operator delete(void* raw) noexcept
+            { ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<loader_memory_adapter>::deallocate(static_cast<loader_memory_adapter*>(raw)); }
+        private:
+
             native_arena& actual_;
         public:
             explicit loader_memory_adapter(native_arena& actual) noexcept:actual_{actual}{}
@@ -174,6 +179,7 @@
             if(!array(gc_scratch_.capacity(),sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))||
                !array(entries_.capacity(),sizeof(entries))||!array(local_type_ids_.capacity(),sizeof(::std::uint_least32_t))||
                !array(memories_.capacity(),sizeof(memory_type*))||
+               !array(reference_type_ids_.capacity(),sizeof(decltype(reference_type_ids_)::value_type))||
                !array(table_targets_.capacity(),sizeof(decltype(table_targets_)::value_type))||
                !array(table_views_.capacity(),sizeof(decltype(table_views_)::value_type))||
                !array(externals_.capacity(),sizeof(external))||!array(emitted_bridges_.capacity(),sizeof(native_bridge))||
@@ -187,5 +193,6 @@
                 if(!add(entry.typed_name.capacity()+1u)||!add(entry.raw_name.capacity()+1u))return false;
             for(auto const& entry:externals_)if(!add(entry.name.capacity()+1u))return false;
             for(auto const& targets:table_targets_)if(!array(targets.capacity(),sizeof(target_type)))return false;
+            for(auto const& types:reference_type_ids_)if(!array(types.capacity(),sizeof(::std::uint_least32_t)))return false;
             storage_bytes_=total;return true;
         }

@@ -42,12 +42,15 @@ PERMISSIONS = ("full", "read-only", "limited", "none")
 
 def selected_permissions(profile):
     args = profile.get("runtime", {}).get("arguments", [])
-    from fault_action import validate_fault_action, explicit_debug_permissions, default_debug_permissions
-    validate_fault_action(args)
+    from fault_action import validate_fault_action, validate_dump_policy, explicit_debug_permissions, default_debug_permissions
     cli = explicit_debug_permissions(args)
     value = profile.get("debugPermissions", cli or default_debug_permissions(args))
     if value not in PERMISSIONS or cli is not None and cli != value:
         raise ValueError("debugPermissions must match the explicit VM launch option")
+    # Validate the actual launch argv, including an explicit profile grant. A
+    # profile may legitimately supply full when the unadorned VM defaults limited.
+    validate_fault_action(args if cli is not None else ["--debug-permissions", value, *args])
+    validate_dump_policy(args, permission=value)
     return value
 
 

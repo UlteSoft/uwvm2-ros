@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -23,17 +25,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_registry
     enum class profile_kind { sequence, string, pointer, optional };
     struct profile
     {
-        ::std::string name{}, type_pattern{}, data_path{}, size_path{}, capacity_path{}, engaged_path{}, value_path{};
+        ::uwvm2::utils::container::std_string name{}, type_pattern{}, data_path{}, size_path{}, capacity_path{}, engaged_path{}, value_path{};
         profile_kind kind{profile_kind::sequence};
         bool enabled{true};
     };
     struct registry
     {
-        ::std::vector<profile> profiles{};
+        ::uwvm2::utils::container::std_vector<profile> profiles{};
         bool builtins_enabled{true};
     };
     enum class action { invalid, install, erase, enable, disable, list };
-    struct request { action operation{}; profile value{}; ::std::string name{}; };
+    struct request { action operation{}; profile value{}; ::uwvm2::utils::container::std_string name{}; };
     enum class error { none, invalid_request, invalid_registry, not_found, capacity, reserved_name, allocation_failure };
     [[nodiscard]] inline constexpr bool identifier_start(char c) noexcept
     { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
@@ -144,7 +146,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_registry
         try
         {
 #endif
-            ::std::array<::std::string,9u> words{}; ::std::size_t count{}, cursor{};
+            ::std::array<::uwvm2::utils::container::std_string,9u> words{}; ::std::size_t count{}, cursor{};
             while(cursor < line.size())
             {
                 while(cursor < line.size() && (line[cursor] == ' ' || line[cursor] == '\t')) { ++cursor; }
@@ -215,7 +217,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_registry
         try
         {
 #endif
-            auto pending{current == nullptr ? ::std::make_shared<registry>() : ::std::make_shared<registry>(*current)};
+            auto pending{current == nullptr ? ::uwvm2::utils::container::make_shared<registry>() : ::uwvm2::utils::container::make_shared<registry>(*current)};
             if(command.operation != action::install && command.name == "builtin")
             { pending->builtins_enabled = command.operation == action::enable; result = ::std::move(pending); return error::none; }
             ::std::size_t index{};
@@ -242,26 +244,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_registry
 #endif
     }
     inline constexpr ::std::size_t maximum_description_bytes{61440u};
-    [[nodiscard]] inline ::std::string acknowledge(request const& command)
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string acknowledge(request const& command)
     {
         auto const name{command.operation == action::install ? ::std::string_view{command.value.name} : ::std::string_view{command.name}};
         if((command.operation != action::install && command.operation != action::erase &&
             command.operation != action::enable && command.operation != action::disable) || !valid_name(name))
         { return "error: invalid pretty-printer acknowledgement\n"; }
-        ::std::string text{"Pretty-printer "};text += name;
+        ::uwvm2::utils::container::std_string text{"Pretty-printer "};text += name;
         text += command.operation == action::install ? " registered.\n" : command.operation == action::erase ? " deleted.\n" :
             command.operation == action::enable ? " enabled.\n" : " disabled.\n";
         return text;
     }
-    [[nodiscard]] inline ::std::string describe(registry const* values)
+    [[nodiscard]] inline ::uwvm2::utils::container::std_string describe(registry const* values)
     {
         if(values != nullptr && !valid(*values)) { return "error: invalid pretty-printer registry\n"; }
-        ::std::string text{"builtin "}; text += values == nullptr || values->builtins_enabled ? "enabled\n" : "disabled\n";
+        ::uwvm2::utils::container::std_string text{"builtin "}; text += values == nullptr || values->builtins_enabled ? "enabled\n" : "disabled\n";
         auto const total{values == nullptr ? 0u : values->profiles.size()};::std::size_t shown{};
         if(total == 0u) { text += "No custom pretty-printers registered.\n"; }
         else for(auto const& value : values->profiles)
         {
-            ::std::string row{};
+            ::uwvm2::utils::container::std_string row{};
             auto quoted{[&](::std::string_view field)
             { row += '"'; for(char c : field) { if(c == '\\' || c == '"') { row += '\\'; } row += c; } row += '"'; }};
             row += value.name; row += value.enabled ? " enabled " : " disabled "; row += kind_text(value.kind); row += " type="; quoted(value.type_pattern);
@@ -276,7 +278,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_registry
             if(text.size() > maximum_description_bytes-128u || row.size() > maximum_description_bytes-128u-text.size()) { break; }
             text += row;++shown;
         }
-        text += "pretty-printers shown=";text += ::std::to_string(shown);text += " total=";text += ::std::to_string(total);
+        text += "pretty-printers shown=";text += ::uwvm2::utils::container::to_string(shown);text += " total=";text += ::uwvm2::utils::container::to_string(total);
         text += shown == total ? " truncated=false\n" : " truncated=true\n";
         return text;
     }

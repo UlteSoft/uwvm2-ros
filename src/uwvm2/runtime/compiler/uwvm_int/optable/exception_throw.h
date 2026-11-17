@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <cstddef>
@@ -66,12 +69,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     class exception_throw_site final
     {
         ::uwvm2::runtime::exception::instance_root tag_identity_;
-        ::std::vector<::uwvm2::runtime::exception::payload_kind> parameter_kinds_;
+        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_kind> parameter_kinds_;
         ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store const> source_store_{};
         ::std::size_t argument_bytes_{};
 
         inline exception_throw_site(::uwvm2::runtime::exception::instance_root tag,
-                                    ::std::vector<::uwvm2::runtime::exception::payload_kind> kinds,
+                                    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_kind> kinds,
                                     ::std::size_t bytes,
                                     ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store const> store) noexcept
             : tag_identity_{::std::move(tag)}, parameter_kinds_{::std::move(kinds)},
@@ -101,12 +104,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 { return {}; }
                 bytes += width;
             }
-            ::std::vector<::uwvm2::runtime::exception::payload_kind> copied{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_kind> copied{};
             // [kinds: validated complete signature] end; do not subtract a null empty-span endpoint.
             // [safe                              ] nonempty assignment owns a copy of every kind.
             if(!kinds.empty()) { copied.assign(kinds.begin(), kinds.end()); }
             return ::std::shared_ptr<exception_throw_site const>{
-                new exception_throw_site{::std::move(tag), ::std::move(copied), bytes, ::std::move(source_store)}};
+                ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<exception_throw_site>([&](exception_throw_site* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exception_throw_site{::std::move(tag), ::std::move(copied), bytes, ::std::move(source_store)}; }))};
         }
 
         [[nodiscard]] inline ::uwvm2::runtime::exception::instance_root const& tag_identity() const noexcept
@@ -132,7 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                                                 ::std::span<::std::byte const> arguments) UWVM_THROWS
     {
         if(arguments.size() != site.argument_bytes()) [[unlikely]] { ::fast_io::fast_terminate(); }
-        ::std::vector<::uwvm2::runtime::exception::payload_field> fields{};
+        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
         fields.reserve(site.parameter_kinds().size());
         ::std::size_t offset{};
         for(auto kind: site.parameter_kinds())

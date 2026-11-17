@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 module;
+#include <uwvm2/utils/container/standard.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>

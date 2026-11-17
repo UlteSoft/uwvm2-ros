@@ -76,6 +76,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::io
     /// @see ::uwvm2::uwvm::wasm::loader::load_dl
     inline bool show_untrusted_dl_warning{true};  // [global]
 
+    /// @brief Controls the advisory emitted before explicitly enabling a deprecated ROS VM target.
+    /// @details Category: `deprecated-ros`, enabled by default for both legacy ROS namespace families.
+    ///          This changes diagnostics only; it never transfers authority to ROSv2. Settings are sealed before workers start.
+    /// @see deprecated_ros_warning_fatal
+    inline bool show_deprecated_ros_warning{true};  // [global]
+    /// @brief Warn before a trusted route opts out of input-carrier erasure.
+    /// @details Category retained-ros-input; enabled by default. Bytes may remain
+    ///          in sender memory. This diagnostic does not grant any authority.
+    inline bool show_retained_ros_input_warning{true};
+
 # ifdef UWVM_SUPPORT_PRELOAD_DL
     /// @brief Controls emission of preload-DL metadata and ABI warnings.
     /// @details Category: `dl`.  Covers recoverable diagnostics while loading UWVM preloaded dynamic-library modules,
@@ -166,6 +176,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::io
     /// @see ::uwvm2::uwvm::cmdline::params::details::log_convert_warn_to_fatal_callback
     /// @see ::uwvm2::uwvm::wasm::loader::load_dl
     inline bool untrusted_dl_warning_fatal{};  // [global]
+
+    /// @brief Refuse legacy ROS target enablement when its deprecation warning is emitted.
+    /// @details Paired with show_deprecated_ros_warning. Promotion is checked before policy mutation;
+    ///          disabling this warning suppresses its promotion, consistent with the other warning categories.
+    inline bool deprecated_ros_warning_fatal{};  // [global]
+    /// @brief Reject an emitted retained-ros-input warning before policy mutation.
+    inline bool retained_ros_input_warning_fatal{};
 
 # ifdef UWVM_SUPPORT_PRELOAD_DL
     /// @brief Converts emitted `dl` warnings into fatal errors.

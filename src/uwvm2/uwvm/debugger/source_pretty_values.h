@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #if UWVM_DEBUG_LANGUAGE_CPP
 #ifndef UWVM_MODULE
@@ -57,7 +58,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
         template<class Session>
         [[nodiscard]] outcome selected(Session& work,field payload,::std::span<::std::byte const> bytes,
             ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-            ::std::vector<dwarf::object_node>& tree,::std::size_t depth,::std::string text,::std::string_view profile)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth,::uwvm2::utils::container::std_string text,::std::string_view profile)
         {
             if(payload.type >= work.types.size() || !work.types[payload.type].size_known) { return outcome::unavailable; }
             auto const extent{work.types[payload.type].byte_size};
@@ -89,7 +90,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
         template<class Session>
         [[nodiscard]] outcome adapters(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
             ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-            ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]}; field payload{};
             bool const stack{family(type,"stack")}, queue{family(type,"queue")}, priority{family(type,"priority_queue")};
@@ -117,7 +118,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
         template<class Session>
         [[nodiscard]] outcome sums(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
             ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-            ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]}; field flag{},payload{};
             if(family(type,"optional"))
@@ -148,7 +149,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 field head{};
                 if(!member(work.types,branch,libcxx ? "__head" : "_M_first",head) ||
                    !value_field(work.types,head,libcxx ? "__value" : "_M_storage",target,payload)) { return outcome::unavailable; }
-                ::std::string text{"index="}; number(text,index); text += " "; text += work.types[target].name;
+                ::uwvm2::utils::container::std_string text{"index="}; number(text,index); text += " "; text += work.types[target].name;
                 return selected(work,payload,bytes,known,eligible,tree,depth,::std::move(text),libcxx ? "libc++ active variant" : "libstdc++ active variant");
             }
             if(family(type,"expected"))
@@ -174,7 +175,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
         template<class Session>
         [[nodiscard]] outcome shared(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
             ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-            ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
         {
             auto const& type{work.types[root]}; bool const weak{family(type,"weak_ptr")};
             if(!weak && !family(type,"shared_ptr")) { return outcome::not_matched; }
@@ -220,7 +221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                    work.types[owners.type].encoding != 5u || work.types[observers.type].encoding != 5u ||
                    work.types[owners.type].atomic_scalar || work.types[observers.type].atomic_scalar)
                 { return outcome::unavailable; }
-                ::std::vector<::std::byte> data{};
+                ::uwvm2::utils::container::std_vector<::std::byte> data{};
                 if(!work.read(block,static_cast<::std::size_t>(block_type.byte_size),data)) { return work.limited ? outcome::limit_exceeded : outcome::unavailable; }
                 if(!bits(work.types,owners,data,{},use) || !bits(work.types,observers,data,{},weak_count)) { return outcome::unavailable; }
                 auto const maximum{dwarf::numeric_mask(work.types[owners.type].byte_count)};
@@ -241,7 +242,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                     if(use != 0u) { --weak_count; }
                 }
             }
-            ::std::string text{weak ? "weak_ptr" : "shared_ptr"}; text += " use_count="; number(text,use); text += " weak_count="; number(text,weak_count);
+            ::uwvm2::utils::container::std_string text{weak ? "weak_ptr" : "shared_ptr"}; text += " use_count="; number(text,use); text += " weak_count="; number(text,weak_count);
             if(weak) { text += use == 0u ? " expired" : " observed (pointee not read)"; }
             else if(address == 0u) { text += block == 0u ? " empty" : " null stored pointer with ownership"; }
             else if(use == 0u) { text += " stored pointer without ownership"; }
@@ -252,7 +253,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
                 auto const target{work.types[stored.type].referenced_type}; auto const& value{work.types[target]};
                 if(value.size_known && value.byte_size != 0u && value.byte_size <= work.cap.max_bytes)
                 {
-                    ::std::vector<::std::byte> object{};
+                    ::uwvm2::utils::container::std_vector<::std::byte> object{};
                     if(!work.read(address,static_cast<::std::size_t>(value.byte_size),object)) { return work.limited ? outcome::limit_exceeded : outcome::unavailable; }
                     auto const before{tree.size()}; ++work.elements;
                     if(!work.append(tree,target,object,"*",depth)) { return work.limited ? outcome::limit_exceeded : outcome::unavailable; }
@@ -265,7 +266,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::detai
     template<class Session>
     [[nodiscard]] outcome extended_values(Session& work,::std::size_t root,::std::span<::std::byte const> bytes,
         ::std::span<::std::byte const> known,::std::span<::std::byte const> eligible,
-        ::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
     {
         auto const adapted{value_details::adapters(work,root,bytes,known,eligible,tree,depth)};
         if(adapted != outcome::not_matched) { return adapted; }

@@ -1,5 +1,8 @@
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS) && UWVM_EXPERIMENTAL_NATIVE_EXCEPTION_ROOTS == 1
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include "immutable_value.h"
 # include "activation.h"
@@ -219,8 +222,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
     {
         ::std::size_t module_id{};
         ::std::size_t function_index{};
-        ::std::u8string module_name{};
-        ::std::u8string function_name{};
+        ::uwvm2::utils::container::std_u8string module_name{};
+        ::uwvm2::utils::container::std_u8string function_name{};
     };
 
     // Compact throw-site identity. The immutable symbol owner below is built
@@ -234,15 +237,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
     struct diagnostic_function_symbol
     {
         ::std::size_t function_index{};
-        ::std::u8string name{};
+        ::uwvm2::utils::container::std_u8string name{};
     };
     struct diagnostic_module_symbols
     {
-        ::std::u8string name{};
+        ::uwvm2::utils::container::std_u8string name{};
         ::std::size_t function_count{};
         // Only named functions occupy entries, sorted by their public index.
         // Huge unnamed modules do not allocate one native string per function.
-        ::std::vector<diagnostic_function_symbol> functions{};
+        ::uwvm2::utils::container::std_vector<diagnostic_function_symbol> functions{};
     };
     struct diagnostic_frame_names
     {
@@ -254,12 +257,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
 
     class diagnostic_symbols final
     {
-        ::std::vector<diagnostic_module_symbols> modules_{};
+        ::uwvm2::utils::container::std_vector<diagnostic_module_symbols> modules_{};
         // A nonempty shared_ptr can alias this table while owning an unrelated
         // object. Keep the factory-issued control-block identity without an
         // extra strong reference, allocation or per-throw weak promotion.
         ::std::weak_ptr<diagnostic_symbols const> canonical_owner_{};
-        explicit diagnostic_symbols(::std::vector<diagnostic_module_symbols>&& modules) noexcept
+        explicit diagnostic_symbols(::uwvm2::utils::container::std_vector<diagnostic_module_symbols>&& modules) noexcept
             : modules_{::std::move(modules)} {}
     public:
         diagnostic_symbols(diagnostic_symbols const&) = delete;
@@ -270,7 +273,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         // Native-only publisher. An lvalue is copied; after moving a private
         // builder, the caller retires every mutable alias before publication.
         [[nodiscard]] static inline diagnostic_symbols_ref make(
-            ::std::vector<diagnostic_module_symbols> modules) UWVM_THROWS
+            ::uwvm2::utils::container::std_vector<diagnostic_module_symbols> modules) UWVM_THROWS
         {
             for(auto const& module: modules)
             {
@@ -284,7 +287,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
                     first = false;
                 }
             }
-            auto owner{::std::shared_ptr<diagnostic_symbols>{new diagnostic_symbols{::std::move(modules)}}};
+            auto owner{::std::shared_ptr<diagnostic_symbols>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<diagnostic_symbols>([&](diagnostic_symbols* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) diagnostic_symbols{::std::move(modules)}; }))}};
             // [complete table][its genuine owning control block] publication
             // [safe                                           ] initialize
             // the weak identity before any immutable owner can escape. Never
@@ -328,8 +331,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         // The names cache is published once and then remains immutable. The
         // compact identities and their independent symbol owner never change.
         // A caught exception that nobody displays does not copy any names.
-        mutable ::std::vector<diagnostic_frame> frames_;
-        ::std::vector<diagnostic_frame_index> indices_{};
+        mutable ::uwvm2::utils::container::std_vector<diagnostic_frame> frames_;
+        ::uwvm2::utils::container::std_vector<diagnostic_frame_index> indices_{};
         diagnostic_symbols_ref symbols_{};
         mutable ::std::mutex materialization_{};
         mutable bool names_materialized_{};
@@ -348,26 +351,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
 
         // The inaccessible key allows make_shared's one-allocation ownership
         // while keeping the public factories as the only native publishers.
-        explicit inline diagnostic_trace(construction_key, ::std::vector<diagnostic_frame>&& frames, bool truncated) noexcept
+        explicit inline diagnostic_trace(construction_key, ::uwvm2::utils::container::std_vector<diagnostic_frame>&& frames, bool truncated) noexcept
             : frames_{::std::move(frames)}, truncated_{truncated} {}
         explicit inline diagnostic_trace(construction_key, diagnostic_symbols_ref symbols,
-            ::std::vector<diagnostic_frame_index>&& indices, bool truncated) noexcept
+            ::uwvm2::utils::container::std_vector<diagnostic_frame_index>&& indices, bool truncated) noexcept
             : indices_{::std::move(indices)}, symbols_{::std::move(symbols)}, truncated_{truncated} {}
 
         // A host-only builder supplies innermost-to-outermost frames. Passing an lvalue copies it;
         // moving an exclusive builder avoids duplicating every name on the actual throw cold path.
         // The publisher must retire mutable aliases before handing off a moved builder.
-        [[nodiscard]] static inline diagnostic_trace_ref make(::std::vector<diagnostic_frame> frames, bool truncated = false) UWVM_THROWS
-        { return ::std::make_shared<diagnostic_trace>(construction_key{}, ::std::move(frames), truncated); }
+        [[nodiscard]] static inline diagnostic_trace_ref make(::uwvm2::utils::container::std_vector<diagnostic_frame> frames, bool truncated = false) UWVM_THROWS
+        { return ::uwvm2::utils::container::make_shared<diagnostic_trace>(construction_key{}, ::std::move(frames), truncated); }
 
         [[nodiscard]] static inline diagnostic_trace_ref make_compact(diagnostic_symbols_ref symbols,
-            ::std::vector<diagnostic_frame_index> indices, bool truncated = false) UWVM_THROWS
+            ::uwvm2::utils::container::std_vector<diagnostic_frame_index> indices, bool truncated = false) UWVM_THROWS
         {
             // Reject even nonempty aliases with the wrong control block
             // before a compact trace claims independent symbol ownership.
             if(!diagnostic_symbols::has_canonical_owner(symbols)) { return {}; }
             for(auto const index: indices) { if(!symbols->contains(index)) { return {}; } }
-            return ::std::make_shared<diagnostic_trace>(construction_key{}, ::std::move(symbols), ::std::move(indices), truncated);
+            return ::uwvm2::utils::container::make_shared<diagnostic_trace>(construction_key{}, ::std::move(symbols), ::std::move(indices), truncated);
         }
 
         [[nodiscard]] inline bool truncated() const noexcept { return truncated_; }
@@ -407,7 +410,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
                 ::std::lock_guard const lock{materialization_};
                 if(!names_materialized_)
                 {
-                    ::std::vector<diagnostic_frame> snapshot{};
+                    ::uwvm2::utils::container::std_vector<diagnostic_frame> snapshot{};
                     snapshot.reserve(indices_.size());
                     for(auto const index: indices_)
                     {
@@ -440,7 +443,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
     class value final
     {
         instance_root tag_;
-        ::std::vector<payload_field> fields_;
+        ::uwvm2::utils::container::std_vector<payload_field> fields_;
         diagnostic_trace_ref diagnostic_{};
         class construction_key
         {
@@ -456,7 +459,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
             // Avoid passing an empty/null range to an implementation that computes iterator distance.
             if(!fields.empty()) { fields_.assign(fields.begin(), fields.end()); }
         }
-        explicit inline value(construction_key, instance_root tag, ::std::vector<payload_field>&& fields,
+        explicit inline value(construction_key, instance_root tag, ::uwvm2::utils::container::std_vector<payload_field>&& fields,
                               diagnostic_trace_ref diagnostic) noexcept
             : tag_{::std::move(tag)}, fields_{::std::move(fields)}, diagnostic_{::std::move(diagnostic)} {}
 
@@ -473,7 +476,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         {
             if(!tag || tag.use_count() == 0) { return {}; }
             // Construct privately before publication; allocation failure cannot expose a partial value.
-            return ::std::make_shared<value>(construction_key{}, ::std::move(tag), fields, ::std::move(diagnostic));
+            return ::uwvm2::utils::container::make_shared<value>(construction_key{}, ::std::move(tag), fields, ::std::move(diagnostic));
         }
         // A validated throw builder transfers its exclusive field allocation. Before this call,
         // the caller must retire every mutable alias, element reference, pointer, iterator and span
@@ -482,11 +485,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         // [exclusive owned fields ...] end
         // [safe                      ] the private constructor moves storage and roots together;
         // no field pointer escapes before immutable publication. Invalid tags leave fields intact.
-        [[nodiscard]] static inline value_ref make_owned(instance_root tag, ::std::vector<payload_field>&& fields,
+        [[nodiscard]] static inline value_ref make_owned(instance_root tag, ::uwvm2::utils::container::std_vector<payload_field>&& fields,
                                                          diagnostic_trace_ref diagnostic = {})
         {
             if(!tag || tag.use_count() == 0) { return {}; }
-            return ::std::make_shared<value>(construction_key{}, ::std::move(tag), ::std::move(fields), ::std::move(diagnostic));
+            return ::uwvm2::utils::container::make_shared<value>(construction_key{}, ::std::move(tag), ::std::move(fields), ::std::move(diagnostic));
         }
 
         [[nodiscard]] inline void const* tag_identity() const noexcept { return tag_.get(); }

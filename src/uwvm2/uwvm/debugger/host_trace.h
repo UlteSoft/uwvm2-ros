@@ -1,5 +1,6 @@
 // Licensed under the APL-2.0 License (see LICENSE file).
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <charconv>
 #include <fast_io.h>
@@ -81,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
         }
         ::fast_io::io::print(out,"\"");
     }
-    inline std::string apply(request const& q)
+    inline ::uwvm2::utils::container::std_string apply(request const& q)
     {
         if(!valid(q)) {return "host-trace status=invalid\n";}
         if(q.operation==action::on&&!data::supported) {return "host-trace status=recording-unavailable-no-exceptions\n";}
@@ -89,7 +90,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
         if(q.operation==action::off) {data::enabled.fetch_and(~q.channels,std::memory_order_relaxed);}
         if(q.operation==action::clear) {data::clear();}
         std::lock_guard lock{data::mutex};
-        std::string text;auto out=::fast_io::ostring_ref_std{&text};
+        ::uwvm2::utils::container::std_string text;auto out=::uwvm2::utils::container::ostring_ref{&text};
         ::fast_io::io::print(out,"host-trace enabled=",data::enabled.load(std::memory_order_relaxed),
             " epoch=",data::epoch," cleared-through=",data::cleared_through," newest=",data::sequence,
             " allocation-failures=",data::allocation_failures.load()," invalid-ranges=",data::invalid_ranges.load(),

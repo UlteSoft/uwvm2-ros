@@ -4,6 +4,10 @@ if(query.operation==wasip1_state::action::portable_export || query.operation==wa
     namespace pp=::uwvm2::uwvm::debugger::wasip1_portable;namespace lib=::uwvm2::runtime::lib;
     using cs=lib::llvm_jit_wasip1_environment_capsule_status;
     auto& out=result.wasip1_state_values;out.portable_operation=true;
+    if(query.operation==wasip1_state::action::portable_export &&
+       ::uwvm2::utils::control::dump_permissions::permit(::uwvm2::utils::control::dump_permissions::disclosure::full).status!=
+           ::uwvm2::utils::control::dump_permissions::denial::none)
+    {out.result=wasip1_state::status::invalid_request;out.diagnostic=u8"immutable dump policy denies full environment export";return;}
 #if defined(__cpp_exceptions)
     try
 #endif
@@ -16,7 +20,7 @@ if(query.operation==wasip1_state::action::portable_export || query.operation==wa
         }
         else
         {
-            auto data=::std::make_shared<pp::snapshot>();
+            auto data=::uwvm2::utils::container::make_shared<pp::snapshot>();
             if(!pp::parse_rebindings(pp::text_view{query.value.data(),query.value.size()},selected.portable_rebindings) ||
                !pp::load_file(pp::text_view{query.name.data(),query.name.size()},*data))
             { out.result=wasip1_state::status::invalid_request;out.diagnostic=pp::text{u8"invalid portable file or rebinding list"};return; }
@@ -57,11 +61,15 @@ if(query.operation==wasip1_state::action::portable_export_group || query.operati
     namespace pp=::uwvm2::uwvm::debugger::wasip1_portable;namespace lib=::uwvm2::runtime::lib;
     using cs=lib::llvm_jit_wasip1_environment_capsule_status;
     auto& out=result.wasip1_state_values;out.portable_group_operation=true;out.environment_count=query.environments.size();
+    if(query.operation==wasip1_state::action::portable_export_group &&
+       ::uwvm2::utils::control::dump_permissions::permit(::uwvm2::utils::control::dump_permissions::disclosure::full).status!=
+           ::uwvm2::utils::control::dump_permissions::denial::none)
+    {out.result=wasip1_state::status::invalid_request;out.diagnostic=u8"immutable dump policy denies full environment export";return;}
 #if defined(__cpp_exceptions)
     try
 #endif
     {
-        ::std::vector<lib::llvm_jit_wasip1_environment_capsule_request> selected(query.environments.size());
+        ::uwvm2::utils::container::std_vector<lib::llvm_jit_wasip1_environment_capsule_request> selected(query.environments.size());
         pp::group_snapshot data{};std::array<std::byte,16u> label{};
         bool const exporting{query.operation==wasip1_state::action::portable_export_group};
         // Validate every selector before opening even the metadata file.
@@ -82,7 +90,7 @@ if(query.operation==wasip1_state::action::portable_export_group || query.operati
             else
             {
                 row.recording_label=data.environments[i].recording_label;out.total_entries+=data.environments[i].resources.size();
-                row.portable_restore=::std::make_shared<pp::snapshot>(::std::move(data.environments[i]));
+                row.portable_restore=::uwvm2::utils::container::make_shared<pp::snapshot>(::std::move(data.environments[i]));
             }
         }
         lib::llvm_jit_wasip1_environment_capsule_result saved{};

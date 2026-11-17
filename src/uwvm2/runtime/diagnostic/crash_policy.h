@@ -8,6 +8,8 @@
 # include <fast_io.h>
 # if defined(__linux__)
 #  include <unistd.h>
+#  include <fcntl.h>
+#  include <sys/stat.h>
 #  include <signal.h>
 #  include <cerrno>
 #  include <poll.h>
@@ -142,6 +144,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
     {
 #if defined(__linux__)
         int const saved_errno=errno;
+        // A diagnostic stream belongs to the launcher too. Never toggle its
+        // shared open-file-description flags (dup/F_SETFL changes the parent).
+        // Sockets have per-send nonblocking flags. Reopen pipes/character
+        // devices through procfs to obtain a private nonblocking description.
+        // A readiness poll alone would race another writer and could block.
+        struct stat original{};
+        if(descriptor < 0 || ::fstat(descriptor,&original)!=0)
+        { errno=saved_errno;return false; }
+        bool const socket{S_ISSOCK(original.st_mode)};
+        int output{descriptor};
+        bool owned{};
+        if(!socket && !S_ISREG(original.st_mode))
+        {
+            auto const flags{::fcntl(descriptor,F_GETFL)};
+            if(flags<0 || (flags&O_ACCMODE)==O_RDONLY ||
+               (!S_ISFIFO(original.st_mode) && !S_ISCHR(original.st_mode)))
+            { errno=saved_errno;return false; }
+            // Even an already-nonblocking description may be shared with a
+            // live thread that clears O_NONBLOCK. Always obtain our own OFD.
+            {
+                char path[sizeof("/proc/self/fd/")+3u*sizeof(int)]{"/proc/self/fd/"};
+                char digits[3u*sizeof(int)];unsigned count{};
+                auto value{static_cast<unsigned>(descriptor)};
+                do { digits[count++]=static_cast<char>('0'+value%10u);value/=10u; } while(value);
+                ::std::size_t pos{sizeof("/proc/self/fd/")-1u};
+                while(count) { path[pos++]=digits[--count]; }
+                output=::open(path,O_WRONLY|O_NONBLOCK|O_CLOEXEC|O_NOCTTY);
+                struct stat actual{};
+                if(output<0) { errno=saved_errno;return false; }
+                if(::fstat(output,&actual)!=0 || original.st_dev!=actual.st_dev ||
+                   original.st_ino!=actual.st_ino || original.st_mode!=actual.st_mode ||
+                   original.st_rdev!=actual.st_rdev)
+                { static_cast<void>(::close(output));errno=saved_errno;return false; }
+                owned=true;
+            }
+        }
         sigset_t block{},previous{},pending{};
         bool delivered{};
         if(::sigemptyset(&block)==0 && ::sigaddset(&block,SIGPIPE)==0 &&
@@ -153,10 +191,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
                 bool broken{};::std::size_t sent{};unsigned interrupted{};
                 while(sent<length)
                 {
-                    auto const n=::write(descriptor,data+sent,length-sent);
+                    auto const n=socket ? ::send(output,data+sent,length-sent,MSG_DONTWAIT|MSG_NOSIGNAL) :
+                                          ::write(output,data+sent,length-sent);
                     if(n>0)sent+=static_cast<::std::size_t>(n);
                     else if(n<0 && errno==EINTR && ++interrupted<16u)continue;
-                    else {broken=n<0 && errno==EPIPE;break;}
+                    else {broken=!socket && n<0 && errno==EPIPE;break;}
                 }
                 delivered=sent==length;
                 if(broken && !was_pending)
@@ -168,6 +207,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
             }
             static_cast<void>(::sigprocmask(SIG_SETMASK,&previous,nullptr));
         }
+        if(owned) { static_cast<void>(::close(output)); }
         errno=saved_errno;return delivered;
 #else
         (void)descriptor;(void)data;(void)length;return false;

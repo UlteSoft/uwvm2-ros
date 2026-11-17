@@ -362,6 +362,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
                                             ::uwvm2::imported::wasi::wasip1::abi::wasi_size_wasm64_t write_size) noexcept
         {
             if(write_size == 0u) { return; }
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
 #if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, buf_ptrsz, byte_write_all_size + write_size);
 #endif
@@ -675,6 +676,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 # endif
 
     readdir_done:
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
 
         ::uwvm2::imported::wasi::wasip1::memory::store_basic_wasm_type_to_memory_wasm64(
             memory,

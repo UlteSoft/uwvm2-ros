@@ -40,7 +40,7 @@ template<bool ManagedTraps>
     ::fast_io::fast_terminate();
 }
 
-template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shared,bool ManagedTraps=false>
+template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shared,bool ManagedTraps=false,bool Journal=false>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_memtag_operation_bridge(::std::uintptr_t owner,
     ::std::uint64_t first,::std::uint64_t second,::std::uint64_t third,::std::uint64_t fourth) noexcept(!ManagedTraps)
 {
@@ -53,8 +53,16 @@ template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shar
     // values into these exact i64 ABI carriers on every host architecture.
     ::std::array<Address,4> arguments{static_cast<Address>(first),static_cast<Address>(second),
                                     static_cast<Address>(third),static_cast<Address>(fourth)};
+    // Select at compilation, so ordinary execution has no journal/TLS branch.
+    auto const entropy=[&](::std::uint8_t& value) noexcept
+    {
+        if constexpr(Journal)
+            return ::uwvm2::runtime::lib::llvm_jit_checkpoint_memtag_entropy(owner,
+                static_cast<unsigned>(Operation),sizeof(Address)*CHAR_BIT,value);
+        else return ::uwvm2::runtime::memtag::next_random_tag(value);
+    };
     auto const result{::uwvm2::runtime::memtag::execute<true,Address,Shared>(*memory,Operation,
-        ::std::span<Address const>{arguments.data(),descriptor->operand_count})};
+        ::std::span<Address const>{arguments.data(),descriptor->operand_count},entropy)};
     if(!result)
     {
         if(result.operation.error==mt::operation_error::memory_access)
@@ -154,12 +162,21 @@ inline void llvm_jit_memtag_init_bridge(::std::uintptr_t owner,::std::uintptr_t 
     if(!checked) { llvm_jit_memtag_access_failure<ManagedTraps>(*memory,destination,0u,bytes,checked); }
 }
 
-template<unsigned Operation,typename Address,bool Shared,bool ManagedTraps=false>
+template<unsigned Operation,typename Address,bool Shared,bool ManagedTraps=false,bool Journal=false>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_memtag_wait_notify_bridge(::std::uintptr_t owner,::std::uint64_t offset,
     ::std::uint64_t pointer,::std::uint64_t expected,::std::int64_t timeout) noexcept(!ManagedTraps)
 {
     auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
     if(memory==nullptr) { ::fast_io::fast_terminate(); }
+    if constexpr(Journal)
+    {
+        struct arguments {::std::uintptr_t owner;::std::uint64_t offset,pointer,expected;::std::int64_t timeout;};
+        arguments args{owner,offset,pointer,expected,timeout};
+        return ::uwvm2::runtime::lib::llvm_jit_checkpoint_wait(owner,Operation,sizeof(Address)*CHAR_BIT,
+            offset,pointer,expected,timeout,::std::addressof(args),+[](void* opaque)->::std::uint64_t
+            {auto const& args=*static_cast<arguments*>(opaque);return llvm_jit_memtag_wait_notify_bridge<Operation,Address,Shared,ManagedTraps,false>(
+                args.owner,args.offset,args.pointer,args.expected,args.timeout);});
+    }
     constexpr ::std::size_t bytes{Operation==2u ? 8u : 4u};
     auto const result{::uwvm2::runtime::memtag::wait_notify<Operation,Address,Shared>(
         *memory,static_cast<Address>(pointer),offset,expected,timeout)};
@@ -204,6 +221,31 @@ template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_w
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,false,true>>{true};
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,true,false>>{true};
 template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,true,true>>{true};
+
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint32_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint32_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint32_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint32_t,true,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint64_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint64_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint64_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<0u,::std::uint64_t,true,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint32_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint32_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint32_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint32_t,true,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint64_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint64_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint64_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<1u,::std::uint64_t,true,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint32_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint32_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint32_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint32_t,true,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,false,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,false,true,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,true,false,true>>{true};
+template<> inline constexpr bool llvm_jit_debug_control_bridge<llvm_jit_memtag_wait_notify_bridge<2u,::std::uint64_t,true,true,true>>{true};
 
 // Checked leaves return faults by value. The ordinary wrapper and actual
 // threaded ChildLease wrapper keep distinct trap/ownership authority; neither
@@ -316,12 +358,13 @@ template<typename Address,bool Shared>
     if(opcode<0x10u || opcode>0x4eu) { ::fast_io::fast_terminate(); }
     auto const descriptor{atomic::describe_atomic_instruction(static_cast<::std::uint32_t>(opcode))};
     auto const bytes{::std::size_t{1u}<<descriptor.natural_alignment};
-    bool unaligned{};::std::uint64_t result{};
+    // Match direct LLVM and interpreter atomics without reading a tag or
+    // forming a native pointer for an already invalid unaligned access.
+    if(((pointer+offset)&(bytes-1u))!=0u) { return {.unaligned=true}; }
+    ::std::uint64_t result{};
     auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,
         [&](::std::span<::std::byte> data) noexcept
         {
-            unaligned=((pointer+offset)&(bytes-1u))!=0u;
-            if(unaligned) { return; }
             auto execute{[&]<::std::size_t Bytes>() noexcept
             {
                 switch(descriptor.kind)
@@ -345,7 +388,7 @@ template<typename Address,bool Shared>
                 default: ::fast_io::fast_terminate();
             }
         })};
-    return {checked,descriptor.result_i64 ? result : static_cast<::std::uint32_t>(result),unaligned};
+    return {checked,descriptor.result_i64 ? result : static_cast<::std::uint32_t>(result),false};
 }
 
 template<typename Address,bool Shared,bool ManagedTraps=false>

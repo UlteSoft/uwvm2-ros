@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 namespace uwvm2::utils::update
 {
@@ -16,8 +17,8 @@ namespace uwvm2::utils::update
         bool changes_policy{}, module_reset{}, module_preserve{}, module_migrate{};
         digest approved_contract_reference{};
         ::std::uint64_t target_policy_generation{}, target_revocation_generation{};
-        ::std::vector<::std::uint64_t> scopes{};
-        ::std::vector<unsigned char> policy{}, migration{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> scopes{};
+        ::uwvm2::utils::container::std_vector<unsigned char> policy{}, migration{};
         static bool decode(::std::span<unsigned char const> bytes, transition_manifest& out)
         {
             if(bytes.size() < 64u || bytes.size() > maximum_manifest_bytes) { return false; }

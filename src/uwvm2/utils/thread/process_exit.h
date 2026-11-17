@@ -19,6 +19,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
 {
     enum class wait_action : ::std::uint8_t { cancel, wait };
     class operation;
+    // A controlled private execution may finish its Guest process while its
+    // native host retains the debugger/journal. Its real operations still obey
+    // the same user-selected cancel/wait contract, independently of host exit.
+    class guest_domain;
+    inline thread_local guest_domain* current_guest_domain{};
+    class guest_domain
+    {
+        friend class operation;
+        ::std::atomic<bool> claimed_{};
+        ::std::uint32_t code_{};
+    public:
+        [[nodiscard]] bool claimed() const noexcept{return claimed_.load(::std::memory_order_acquire);}
+        [[nodiscard]] ::std::uint32_t claim(::std::uint32_t code) noexcept;
+        [[nodiscard]] ::std::uint32_t finish(::std::uint32_t code) noexcept;
+    };
+    class guest_domain_scope
+    {
+        guest_domain* previous_;
+    public:
+        explicit guest_domain_scope(guest_domain* domain) noexcept:previous_{current_guest_domain}
+        {current_guest_domain=domain;}
+        ~guest_domain_scope(){current_guest_domain=previous_;}
+        guest_domain_scope(guest_domain_scope const&)=delete;
+    };
     [[noreturn]] inline void request_process_exit(::std::uint32_t code) noexcept;
     inline ::std::mutex mutex{};
     inline ::std::condition_variable completed{};
@@ -42,6 +66,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
     {
         friend void request_process_exit(::std::uint32_t) noexcept;
         friend void notify_operations() noexcept;
+        friend class guest_domain;
+        guest_domain* domain_{current_guest_domain};
         operation* next{};
         operation* previous_current{};
         inline static thread_local operation* current{};
@@ -66,15 +92,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread::process_exit
         [[nodiscard]] bool select(wait_action action) noexcept
         {
             ::std::lock_guard lock{mutex};
-            if(exit_claimed.load(::std::memory_order_relaxed)) { return hold && !excluded; }
+            if(exit_claimed.load(::std::memory_order_relaxed)||(domain_&&domain_->claimed())) { return hold && !excluded; }
             hold=action == wait_action::wait; return true;
         }
         [[nodiscard]] bool cancelled() const noexcept
         {
-            if(!exit_claimed.load(::std::memory_order_acquire)) { return false; }
+            if(!exit_claimed.load(::std::memory_order_acquire)&&(!domain_||!domain_->claimed())) { return false; }
             ::std::lock_guard lock{mutex}; return !hold || excluded;
         }
     };
+    inline ::std::uint32_t guest_domain::claim(::std::uint32_t code) noexcept
+    {
+        ::std::lock_guard lock{mutex};
+        if(!claimed_.load(::std::memory_order_relaxed))
+        {code_=code;claimed_.store(true,::std::memory_order_release);}
+        return code_;
+    }
+    inline ::std::uint32_t guest_domain::finish(::std::uint32_t code) noexcept
+    {
+        ::std::unique_lock lock{mutex};
+        if(!claimed_.load(::std::memory_order_relaxed))
+        {code_=code;claimed_.store(true,::std::memory_order_release);}
+        for(auto* item{operation::current};item;item=item->previous_current)
+            if(item->domain_==this)item->excluded=true;
+        for(auto* item{operations};item;item=item->next)
+            if(item->domain_==this&&item->wake)item->wake(item->context);
+        completed.notify_all();
+        completed.wait(lock,[this]
+        {
+            for(auto* item{operations};item;item=item->next)
+                if(item->domain_==this&&item->hold&&!item->excluded)return false;
+            return true;
+        });
+        return code_;
+    }
     // A native lifecycle stop can wake pending providers without changing any
     // user quota, requesting process exit or reporting that work has drained.
     inline void notify_operations() noexcept

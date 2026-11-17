@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/thread/stop_token.h>
 namespace uwvm2::runtime::compiler::uwvm_int::threaded
 {
     inline bool engine::bulk_memory(threads::ThreadedGroup::ChildLease& lease,instruction const& ins) noexcept
@@ -17,9 +18,15 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         if(sub!=8u && sub!=10u && sub!=11u) { return fail(status::invariant_failure); }
         ::std::uint64_t size{},source{},destination{};
         if(!pop(size) || !pop(source) || !pop(destination)) { return false; }
-        auto const n{static_cast<::std::size_t>(static_cast<::std::uint32_t>(size))};
-        auto const dst{static_cast<::std::uint32_t>(destination)};
-        auto const src{static_cast<::std::uint32_t>(source)};
+        auto const destination_index=sub==8u?ins.target:ins.immediate;
+        auto& dst_memory=*bound.memories[destination_index].memory;
+        auto* src_memory=sub==10u?bound.memories[ins.target].memory:nullptr;
+        auto const size64=sub==10u?(memory64(dst_memory)&&memory64(*src_memory)):sub==11u?memory64(dst_memory):false;
+        auto const count=size64?size:static_cast<::std::uint64_t>(static_cast<::std::uint32_t>(size));
+        if(count>SIZE_MAX)return fail(status::trap_memory);
+        auto const n=static_cast<::std::size_t>(count);
+        auto const dst=memory_address(dst_memory,destination);
+        auto const src=src_memory?memory_address(*src_memory,source):static_cast<::std::uint64_t>(static_cast<::std::uint32_t>(source));
         ::std::byte const* payload{};
         if(sub==8u)
         {
@@ -33,10 +40,11 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         bool cancelled{};
         auto copy{[&](::std::span<::std::byte> destination_bytes,::std::span<::std::byte> source_bytes) noexcept
         {
-            using view=::uwvm2::extension::memtag::shadow_view<::std::uint32_t,true>;
-            auto const destination_offset{bound.memory->memtag_shadow.enabled()?view::untag(dst):dst};
-            auto const source_offset{bound.memory->memtag_shadow.enabled()?view::untag(src):src};
-            bool const backwards{sub==10u && destination_offset>source_offset && destination_offset-source_offset<n};
+            auto untag=[](memory_type const& memory,::std::uint64_t address) noexcept
+            {return !memory.memtag_shadow.enabled()?address:address&(memory64(memory)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff));};
+            auto const destination_offset=untag(dst_memory,dst);
+            auto const source_offset=src_memory?untag(*src_memory,src):0u;
+            bool const backwards=src_memory==&dst_memory&&destination_offset>source_offset&&destination_offset-source_offset<n;
             for(::std::size_t i{};i<n;++i)
             {
                 // A cancelled bulk instruction may have an already-written
@@ -54,11 +62,12 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // zero-length end-of-memory cases. No native pointer outlives the pin.
         if(sub==10u)
         {
-            auto const checked{::uwvm2::runtime::memtag::with_guest_copy<::std::uint32_t,::std::uint32_t>(
-                *bound.memory,*bound.memory,dst,src,n,copy)};
+            auto const checked=memory_geometry(dst_memory,[&]<typename D,bool>() noexcept
+            {return memory_geometry(*src_memory,[&]<typename S,bool>() noexcept
+                {return ::uwvm2::runtime::memtag::with_guest_copy<D,S>(dst_memory,*src_memory,static_cast<D>(dst),static_cast<S>(src),n,copy);});});
             if(!checked) { return access_failure(checked.access,checked.source_failed?src:dst); }
         }
-        else if(!memory_span(*bound.memory,dst,0u,n,[&](::std::span<::std::byte> destination_bytes) noexcept
+        else if(!memory_span(dst_memory,dst,0u,n,[&](::std::span<::std::byte> destination_bytes) noexcept
             { copy(destination_bytes,{}); })) { return false; }
         return (!cancelled && !lease.cancellation().stop_requested()) || fail(status::cancelled);
     }
@@ -76,24 +85,28 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // A real launch permanently closes old-engine reuse. Do not use a
         // synthetic readiness flag to authorize native memory mutation.
         if(!lease.full_source_reset_required()) { return record_failure(phase::invalid,false); }
-        if constexpr(requires(Memory& actual) { actual.grow_threaded_profile(::std::size_t{},::std::size_t{},::std::stop_token{}); })
+        if constexpr(requires(Memory& actual) { actual.grow_threaded_profile(::std::size_t{},::std::size_t{},::uwvm2::utils::thread::stop_token{}); })
         {
-            last_grow_=memory.grow_threaded_profile(static_cast<::std::uint32_t>(delta),maximum,lease.cancellation());
-            switch(last_grow_.status)
+            bool failed{};
+            auto value=threads::journal_memory_grow(memory_address(memory,delta),memory.get_page_size(),maximum,[&]() noexcept -> ::std::uint64_t
             {
-                case phase::success:
-                    if(lease.cancellation().stop_requested()) { return fail(status::cancelled); }
-                    return push(static_cast<::std::uint32_t>(last_grow_.old_pages));
-                case phase::limit:case phase::commit_failed:
-                    // commit_failed is only produced after actual PROT_NONE
-                    // rollback succeeded and logical length stayed unchanged.
-                    if(lease.cancellation().stop_requested()) { return fail(status::cancelled); }
-                    return push(UINT32_MAX);
-                case phase::cancelled:
-                    return lease.cancellation().stop_requested()?fail(status::cancelled):record_failure(phase::invalid,false);
-                case phase::rollback_failed:return record_failure(phase::rollback_failed,true);
-                case phase::invalid:return record_failure(phase::invalid,last_grow_.tainted);
-            }
+                auto const pages=memory_address(memory,delta);
+                if(pages>SIZE_MAX||!world_->charge_memory_growth(memory,pages))return UINT64_MAX;
+                last_grow_=memory.grow_threaded_profile(static_cast<::std::size_t>(pages),maximum,lease.cancellation());
+                switch(last_grow_.status)
+                {
+                    case phase::success:return last_grow_.old_pages;
+                    case phase::limit:case phase::commit_failed:return UINT64_MAX;
+                    case phase::cancelled:
+                        failed=true;(void)(lease.cancellation().stop_requested()?fail(status::cancelled):record_failure(phase::invalid,false));break;
+                    case phase::rollback_failed:failed=true;(void)record_failure(phase::rollback_failed,true);break;
+                    case phase::invalid:failed=true;(void)record_failure(phase::invalid,last_grow_.tainted);break;
+                }
+                return UINT64_MAX;
+            });
+            if(failed)return false;
+            if(lease.cancellation().stop_requested())return fail(status::cancelled);
+            return push(memory_address(memory,value));
         }
         return record_failure(phase::invalid,false);
     }

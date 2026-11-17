@@ -3,6 +3,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).     *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 
 // GNU/Linux ARM EHABI's native address-sized lookup ABI. This registry belongs only
 // to live SectionMemoryManager allocations. It is not a debugger stack/memory
@@ -53,15 +55,15 @@ namespace uwvm2::runtime::compiler::llvm_jit::details
         unsigned count{};
         // Each entry is bounded by the next start in this table and its own
         // actual code allocation. Never let the final entry cover the VM.
-        ::std::vector<arm_ehabi_owned_range> functions{};
+        ::uwvm2::utils::container::std_vector<arm_ehabi_owned_range> functions{};
     };
     class arm_ehabi_registry
     {
         friend class arm_ehabi_registration_owner;
-        struct owner_tables { void const* owner{}; ::std::vector<arm_ehabi_owned_table> tables{}; };
+        struct owner_tables { void const* owner{}; ::uwvm2::utils::container::std_vector<arm_ehabi_owned_table> tables{}; };
         ::std::mutex mutex_{};
-        ::std::vector<owner_tables> owners_{};
-        bool publish(void const* owner, ::std::vector<arm_ehabi_owned_table> tables)
+        ::uwvm2::utils::container::std_vector<owner_tables> owners_{};
+        bool publish(void const* owner, ::uwvm2::utils::container::std_vector<arm_ehabi_owned_table> tables)
         {
             ::std::lock_guard lock{mutex_};
 
@@ -100,7 +102,7 @@ namespace uwvm2::runtime::compiler::llvm_jit::details
     {
         // Process-lifetime registry: destruction of another static owner must
         // still be able to remove its tables before freeing JIT allocations.
-        static auto* const value{new(::std::nothrow) arm_ehabi_registry};
+        static auto* const value{::uwvm2::utils::allocator::fast_io_strict::try_object<arm_ehabi_registry>([&](arm_ehabi_registry* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) arm_ehabi_registry; })};
         if(value == nullptr) { ::fast_io::fast_terminate(); } return *value;
     }
     // A private base of the real memory manager, so ordinary headers and
@@ -109,7 +111,7 @@ namespace uwvm2::runtime::compiler::llvm_jit::details
     class arm_ehabi_registration_owner
     {
     protected:
-        [[nodiscard]] bool publish_arm_ehabi_tables(::std::vector<arm_ehabi_owned_table> tables)
+        [[nodiscard]] bool publish_arm_ehabi_tables(::uwvm2::utils::container::std_vector<arm_ehabi_owned_table> tables)
         { return get_arm_ehabi_registry().publish(this, ::std::move(tables)); }
         void retire_arm_ehabi_tables() noexcept { get_arm_ehabi_registry().retire(this); }
     };

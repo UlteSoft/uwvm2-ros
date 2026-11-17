@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # include "debug_permissions.h"
@@ -107,7 +109,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
     public:
         launch_authority() noexcept = default;
         explicit launch_authority(launch_config const& config) : admission{qualify(config)}
-        { if(admission == error::none) { owner = ::std::make_shared<details::authority>(config); } }
+        { if(admission == error::none) { owner = ::uwvm2::utils::container::make_shared<details::authority>(config); } }
         launch_authority(launch_authority const&) = delete;
         launch_authority& operator=(launch_authority const&) = delete;
         ~launch_authority() { revoke(); }
@@ -143,7 +145,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         // an untrusted function body, never native code or an authorization to
         // publish it. The runtime must validate complete canonical type/ABI,
         // module context and old-generation identity before any replacement.
-        ::std::vector<::std::byte> body;
+        ::uwvm2::utils::container::std_vector<::std::byte> body;
     };
     struct detach_command {};
     struct breakpoint_set_command { ::std::uint64_t module, function, offset; };

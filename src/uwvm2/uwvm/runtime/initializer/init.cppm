@@ -20,6 +20,9 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/control/wasithread.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 // std
 #include <concepts>

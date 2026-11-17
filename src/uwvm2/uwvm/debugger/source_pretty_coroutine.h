@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "language_debug_features.h"
 #if UWVM_DEBUG_LANGUAGE_CPP
 #ifndef UWVM_MODULE
@@ -53,7 +54,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
             return found;
         }
 
-        [[nodiscard]] inline dwarf::object_node const* child(::std::vector<dwarf::object_node> const& nodes,
+        [[nodiscard]] inline dwarf::object_node const* child(::uwvm2::utils::container::std_vector<dwarf::object_node> const& nodes,
             ::std::size_t owner, dwarf::member_record const& field, ::std::span<dwarf::type_record const> types) noexcept
         {
             dwarf::object_node const* found{};
@@ -84,9 +85,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
             bits = node->bits; return true;
         }
 
-        inline void publish(dwarf::object_node& node, ::std::string summary, ::std::string_view printer)
+        inline void publish(dwarf::object_node& node, ::uwvm2::utils::container::std_string summary, ::std::string_view printer)
         {
-            node.pretty_summary = ::std::move(summary); node.pretty_printer = ::fast_io::concat_std(printer);
+            node.pretty_summary = ::std::move(summary); node.pretty_printer = ::uwvm2::utils::container::concat(printer);
             node.pretty_available = true; node.pretty_truncated = false; node.pretty_omitted = 0u;
         }
 
@@ -111,7 +112,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
         }
 
         [[nodiscard]] inline bool handle(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node>& nodes, ::std::size_t owner, unsigned wasm_address_bytes=0u)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& nodes, ::std::size_t owner, unsigned wasm_address_bytes=0u)
         {
             auto& node{nodes[owner]}; auto const& type{types[node.type]};
             if(!handle_name(type.aggregate_name.empty() ? type.name : type.aggregate_name) || type.members.size() != 1u) { return false; }
@@ -121,7 +122,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
                type.byte_size != types[field.type].byte_size) { return false; }
             auto const width{static_cast<unsigned>(types[field.type].byte_size)};
             if(wasm_address_bytes!=0u && width!=wasm_address_bytes) { return false; }
-            ::std::uint64_t address{}; ::std::string text{}; ::fast_io::ostring_ref_std output{::std::addressof(text)};
+            ::std::uint64_t address{}; ::uwvm2::utils::container::std_string text{}; ::uwvm2::utils::container::ostring_ref output{::std::addressof(text)};
             if(scalar_bits(child(nodes,owner,field,types),width,true,address))
             {
                 ::fast_io::io::print(output,"coroutine_handle frame=guest:",::fast_io::mnp::hex0x(address),
@@ -145,7 +146,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
         }
 
         [[nodiscard]] inline bool frame(::std::span<dwarf::type_record const> types,
-            ::std::vector<dwarf::object_node>& nodes, ::std::size_t owner, unsigned wasm_address_bytes=0u)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& nodes, ::std::size_t owner, unsigned wasm_address_bytes=0u)
         {
             auto& node{nodes[owner]}; auto const& type{types[node.type]};
             ::std::string_view const spelling{type.aggregate_name.empty() ? type.name : type.aggregate_name};
@@ -175,7 +176,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
             bool const resume_known{scalar_bits(child(nodes,owner,*resume,types),width,true,resume_bits)};
             bool const destroy_known{scalar_bits(child(nodes,owner,*destroy,types),width,true,destroy_bits)};
             bool const index_known{scalar_bits(child(nodes,owner,*index,types),static_cast<unsigned>(it.byte_size),false,index_bits)};
-            ::std::string text{}; ::fast_io::ostring_ref_std output{::std::addressof(text)};
+            ::uwvm2::utils::container::std_string text{}; ::uwvm2::utils::container::ostring_ref output{::std::addressof(text)};
             ::fast_io::io::print(output,::std::string_view{clang ? "Clang coroutine frame, state=" : "GCC coroutine frame, state="});
             if(gcc && index_known && (index_bits & 1u) != 0u)
             { ::fast_io::io::print(output,"unknown (destroy path; destruction not proven)"); }
@@ -207,7 +208,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
     template<typename Session>
     [[nodiscard]] bool enrich_handle(Session& work,::std::size_t root,
         ::std::span<::std::byte const> bytes,::std::span<::std::byte const> known,
-        ::std::span<::std::byte const> eligible,::std::vector<dwarf::object_node>& tree,::std::size_t depth)
+        ::std::span<::std::byte const> eligible,::uwvm2::utils::container::std_vector<dwarf::object_node>& tree,::std::size_t depth)
     {
         if(root>=work.types.size() || tree.empty() || tree[0].type!=root ||
            tree[0].pretty_printer!="cxx.coroutine_handle" || work.width!=4u) {return false;}
@@ -232,10 +233,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
         ::std::string_view const abi{type.clang18_wasi32_coro_handle ? "LLVM18.1.2/libc++18.1/Wasm32" : "LLVM23.1.0/libc++23.1/Wasm32"};
         if(address==0u)
         {
-            details::publish(tree[0],::fast_io::concat_std("coroutine_handle frame=guest:0x0, state=empty, ABI=",abi),"cxx.coroutine_handle");
+            details::publish(tree[0],::uwvm2::utils::container::concat("coroutine_handle frame=guest:0x0, state=empty, ABI=",abi),"cxx.coroutine_handle");
             return true;
         }
-        ::std::vector<::std::byte> header{};
+        ::uwvm2::utils::container::std_vector<::std::byte> header{};
         if(!work.read(address,8u,header)) {return false;}
         ::std::uint64_t resume{},destroy{};
         for(unsigned i{};i!=4u;++i)
@@ -243,7 +244,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
             resume|=static_cast<::std::uint64_t>(static_cast<unsigned char>(header[i]))<<(i*8u);
             destroy|=static_cast<::std::uint64_t>(static_cast<unsigned char>(header[4u+i]))<<(i*8u);
         }
-        ::std::string text{};::fast_io::ostring_ref_std out{::std::addressof(text)};
+        ::uwvm2::utils::container::std_string text{};::uwvm2::utils::container::ostring_ref out{::std::addressof(text)};
         ::fast_io::io::print(out,"coroutine_handle frame=guest:",::fast_io::mnp::hex0x(address),
             ", ABI=",abi,", state=",
             ::std::string_view{resume==0u && destroy!=0u ? "done (final-suspend marker; lifetime not proven)" :
@@ -285,7 +286,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
                     {work.limited=true;promise_status="unavailable (element/depth budget)";}
                     else
                     {
-                        ::std::vector<::std::byte> value{};
+                        ::uwvm2::utils::container::std_vector<::std::byte> value{};
                         if(work.read(address+offset,static_cast<::std::size_t>(promise.byte_size),value))
                         {
                             auto detached{tree};++work.elements;
@@ -306,7 +307,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_pretty_printer::corou
     // calls, frame devirtualization, lifecycle claims or source-location guesses
     // are performed. Unknown compilers/layouts retain their raw object view.
     [[nodiscard]] inline bool summarize(::std::span<dwarf::type_record const> types,
-        ::std::vector<dwarf::object_node>& nodes, unsigned wasm_address_bytes=0u)
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& nodes, unsigned wasm_address_bytes=0u)
     {
         if(types.size() > 65536u || nodes.size() > 1024u) { return false; }
         for(::std::size_t i{}; i != nodes.size(); ++i)

@@ -7,13 +7,13 @@
         using eh_kind=::uwvm2::object::global::wasm_ref_kind;
         enum class eh_failure : ::std::uint32_t
         { uncaught=0x54454801u,resource=0x54454802u,invalid=0x54454803u };
-        struct eh_field{::std::uint8_t width{};bool reference{},nullable{},nonnull{};};
+        struct eh_field{::std::uint8_t width{};bool reference{},nullable{},nonnull{},exception{};::uwvm2::uwvm::runtime::storage::gc_type::core_value_type type{};};
         struct eh_schema{eh_tag const* tag{};::std::size_t first{},count{},bytes{};};
-        struct eh_record{eh_tag const* tag{};::std::size_t offset{},bytes{};};
-        ::std::vector<eh_schema> eh_schemas_{};
-        ::std::vector<eh_field> eh_fields_{};
-        ::std::vector<eh_record> eh_records_{};
-        ::std::vector<::std::byte> eh_payload_{};
+        struct eh_record{eh_tag const* tag{};::std::size_t offset{},bytes{},module{},schema{};bool escaped{};eh_reference reference{};};
+        ::uwvm2::utils::container::std_vector<eh_schema> eh_schemas_{};
+        ::uwvm2::utils::container::std_vector<eh_field> eh_fields_{};
+        ::uwvm2::utils::container::std_vector<eh_record> eh_records_{};
+        ::uwvm2::utils::container::std_vector<::std::byte> eh_payload_{};
         ::std::size_t eh_record_used_{},eh_payload_used_{},eh_pending_{};
         static void exception_failure(eh_failure value) noexcept
         {
@@ -30,11 +30,9 @@
         [[nodiscard]] ::std::size_t reference_token(eh_reference const& ref) const noexcept
         {
             if(ref.kind!=eh_kind::wasm_exn||ref.storage.ptr==nullptr||graph_->eh_record_used_==0u)return 0u;
-            auto base=reinterpret_cast<::std::uintptr_t>(graph_->eh_records_.data());
-            auto value=reinterpret_cast<::std::uintptr_t>(ref.storage.ptr);
-            if(value<base||value-base>=graph_->eh_record_used_*sizeof(eh_record)||(value-base)%sizeof(eh_record)!=0u)return 0u;
-            auto token=(value-base)/sizeof(eh_record)+1u;
-            return ref.storage.ptr==::std::addressof(graph_->eh_records_[token-1u])?token:0u;
+            for(::std::size_t i{};i<graph_->eh_record_used_;++i)
+                if(graph_->eh_records_[i].escaped&&graph_->eh_records_[i].reference.storage.ptr==ref.storage.ptr)return i+1u;
+            return 0u;
         }
         [[nodiscard]] bool exception_tuple_valid(eh_schema const& schema,::std::byte const* input) const noexcept
         {
@@ -48,7 +46,10 @@
                 {
                     eh_reference ref{};::std::memcpy(&ref,input+at,sizeof(ref));
                     bool null=ref.kind==eh_kind::wasm_null||(ref.kind==eh_kind::wasm_exn&&ref.storage.ptr==nullptr);
-                    if(null?!field.nullable:(!field.nonnull||reference_token(ref)==0u))return false;
+                    if(field.exception)
+                    { if(null?!field.nullable:(!field.nonnull||reference_token(ref)==0u))return false; }
+                    else if(!module_->gc_store->reference_type_matches(ref,field.type))return false;
+                    if(module_->gc_store->retain_gc_reference(ref)!=::uwvm2::uwvm::runtime::storage::gc_object_status::ok)return false;
                 }
                 at+=field.width;
             }
@@ -64,9 +65,7 @@
             auto supported=[](auto const& type) noexcept
             {
                 using kind=::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-                using heap=::uwvm2::parser::wasm::standard::wasm3::type::abstract_heap_type;
-                return type.kind<=kind::v128||(type.kind==kind::reference&&
-                    (type.heap.code==static_cast<::std::int64_t>(heap::exn)||type.heap.code==static_cast<::std::int64_t>(heap::noexn)));
+                return type.kind<=kind::v128||type.kind==kind::reference;
             };
             // Only actual tag payloads use this private EH representation.
             // shape() below authenticates their retained rich signatures. An
@@ -101,7 +100,7 @@
                     if(code==0x7fu||code==0x7du)width=4u;
                     else if(code==0x7eu||code==0x7cu)width=8u;
                     else if(code==0x7bu)width=16u;
-                    else if(code==0x69u&&rich&&
+                    else if((code==0x69u||code==0x70u||code==0x6fu)&&rich&&
                         types.owned_signature_begin[index].parameters.index_unchecked(k).kind==::uwvm2::parser::wasm::standard::wasm3::type::value_kind::reference&&
                         supported(types.owned_signature_begin[index].parameters.index_unchecked(k)))width=sizeof(eh_reference);
                     else return false;
@@ -141,12 +140,16 @@
                 eh_schemas_[i]={tag,field_at,n,bytes};
                 for(::std::size_t k{};k<n;++k)
                 {
-                    auto code=static_cast<unsigned>(params.begin[k]);bool reference=code==0x69u;
+                    auto code=static_cast<unsigned>(params.begin[k]);bool reference=code==0x69u||code==0x70u||code==0x6fu;
                     auto width=reference?sizeof(eh_reference):(code==0x7fu||code==0x7du?4u:code==0x7bu?16u:8u);
                     bool nullable=reference&&types.owned_signature_begin[index].parameters.index_unchecked(k).nullable;
                     bool nonnull=reference&&types.owned_signature_begin[index].parameters.index_unchecked(k).heap.code==
                         static_cast<::std::int64_t>(::uwvm2::parser::wasm::standard::wasm3::type::abstract_heap_type::exn);
-                    eh_fields_[field_at++]={static_cast<::std::uint8_t>(width),reference,nullable,nonnull};
+                    auto const type=reference?types.owned_signature_begin[index].parameters.index_unchecked(k):
+                        ::uwvm2::uwvm::runtime::storage::gc_type::core_value_type{};
+                    using heap=::uwvm2::uwvm::runtime::storage::gc_type::abstract_heap_type;
+                    bool const exception=reference&&(type.heap.code==static_cast<::std::int64_t>(heap::exn)||type.heap.code==static_cast<::std::int64_t>(heap::noexn));
+                    eh_fields_[field_at++]={static_cast<::std::uint8_t>(width),reference,nullable,nonnull,exception,type};
                 }
             }
             return field_at==fields;
@@ -165,7 +168,7 @@
             {exception_failure(eh_failure::resource);return;}
             auto offset=child.graph_->eh_payload_used_;
             if(bytes!=0u)::std::memcpy(child.graph_->eh_payload_.data()+offset,reinterpret_cast<void const*>(address),bytes);
-            child.graph_->eh_records_[child.graph_->eh_record_used_]={schema->tag,offset,bytes};
+            child.graph_->eh_records_[child.graph_->eh_record_used_]={schema->tag,offset,bytes,child.module_index_,tag};
             child.graph_->eh_payload_used_+=bytes;child.graph_->eh_pending_=++child.graph_->eh_record_used_;
         }
         static ::std::uintptr_t exception_matches(::std::uintptr_t token,::std::uintptr_t tag) noexcept
@@ -198,7 +201,27 @@
             if(!stopped())
             {
                 if(token!=child.graph_->eh_pending_||record==nullptr)exception_failure(eh_failure::invalid);
-                else{ref.storage.ptr=const_cast<eh_record*>(record);ref.kind=eh_kind::wasm_exn;}
+                else
+                {
+                    auto& retained=child.graph_->eh_records_[token-1u];
+                    if(!retained.escaped)
+                    {
+                        ::std::size_t at{};
+                        auto const result=::uwvm2::uwvm::runtime::initializer::make_threaded_exception_reference(
+                            *child.world_,retained.module,*retained.tag,[&](::std::size_t,::std::size_t width) noexcept
+                            {
+                                if(at>retained.bytes||width>retained.bytes-at)return ::std::span<::std::byte const>{};
+                                auto const bits=::std::span<::std::byte const>{child.graph_->eh_payload_.data()+retained.offset+at,width};
+                                at+=width;return bits;
+                            },retained.reference);
+                        if(result!=::uwvm2::uwvm::runtime::storage::gc_object_status::ok)
+                        {exception_failure(result==::uwvm2::uwvm::runtime::storage::gc_object_status::out_of_memory?eh_failure::resource:eh_failure::invalid);return;}
+                        retained.escaped=true;
+                    }
+                    if(child.module_->gc_store->retain_gc_reference(retained.reference)!=::uwvm2::uwvm::runtime::storage::gc_object_status::ok)
+                    {exception_failure(eh_failure::resource);return;}
+                    ref=retained.reference;
+                }
             }
             ::std::memcpy(reinterpret_cast<void*>(destination),&ref,sizeof(ref));
         }
@@ -207,7 +230,16 @@
             if(active_==nullptr||stopped())return;auto& child=*active_->child;
             if(token==0u||token!=child.graph_->eh_pending_||child.exception_record(token)==nullptr)
             {exception_failure(eh_failure::invalid);return;}
-            child.graph_->eh_pending_=0u; // immutable arena owners remain for catch_ref.
+            child.graph_->eh_pending_=0u;
+            auto& owner=*child.graph_;
+            // A record exposed through catch_ref keeps its address and identity.
+            // A new nonescaping catch has no aliases: recycle only the tail,
+            // after copy() delivered the complete payload to generated code.
+            if(token==owner.eh_record_used_ && !owner.eh_records_[token-1u].escaped)
+            {
+                owner.eh_payload_used_=owner.eh_records_[token-1u].offset;
+                owner.eh_records_[--owner.eh_record_used_]={};
+            }
         }
         static void exception_throw_reference(::std::uintptr_t module,::std::uintptr_t source) noexcept
         {

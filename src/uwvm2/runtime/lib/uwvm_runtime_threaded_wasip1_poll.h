@@ -30,7 +30,7 @@ extern "C++"
         for(::std::size_t i{}; i < count; ++i) descriptors[i]=-1;
         struct timers final
         {
-            ::std::unique_ptr<int[]> descriptors; ::std::size_t count{};
+            ::uwvm2::utils::allocator::resource::owned_array<int> descriptors; ::std::size_t count{};
             ~timers() noexcept{for(::std::size_t i{};i<count;++i)if(descriptors[i]>=0)static_cast<void>(::close(descriptors[i]));}
         } owned{::std::move(descriptors),static_cast<::std::size_t>(count)};
         // Snapshot every subscription before any output can overlap it. Each

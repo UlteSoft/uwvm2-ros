@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 # include "self_executable.h"
 #endif
@@ -109,7 +111,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::secure_file
 
     struct blob_snapshot
     {
-        ::std::unique_ptr<::std::byte[]> bytes{};
+        ::uwvm2::utils::container::std_unique_ptr<::std::byte[]> bytes{};
         ::std::size_t size{};
         bool ok{};
     };
@@ -148,7 +150,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache::secure_file
         if(!file || ::fstat(file.value, &opened) != 0 || !self_executable::same_content_identity(before, opened) ||
            !trusted_object(opened, maximum)) { record_failure(u8"pinned-object-identity-changed"); return result; }
         result.size = static_cast<::std::size_t>(before.st_size);
-        result.bytes.reset(new(::std::nothrow) ::std::byte[result.size]);
+        result.bytes.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<::std::byte>(result.size, false));
         if(!result.bytes) { record_failure(u8"snapshot-allocation"); return result; }
         ::std::size_t offset{};
         while(offset != result.size)

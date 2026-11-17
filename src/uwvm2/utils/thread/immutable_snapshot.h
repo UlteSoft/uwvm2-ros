@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <memory>
@@ -78,7 +80,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 {
                     *link = candidate->retired_next;
                     // Remaining live list bypasses candidate before its payload is destroyed.
-                    delete candidate;
+                    ::uwvm2::utils::allocator::fast_io_strict::destroy_object(candidate);
                     // No subsequent candidate access; link still belongs to owner/retained predecessor.
                 }
             }
@@ -160,14 +162,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             ::std::lock_guard lock{writers};
             auto const previous{current.load(::std::memory_order_seq_cst)};
             // [current node?] remains live under writers; construct a PRIVATE copy.
-            auto replacement{previous == nullptr ? ::std::make_unique<node>() : ::std::make_unique<node>(previous->value)};
+            auto replacement{previous == nullptr ? ::uwvm2::utils::container::make_unique<node>() : ::uwvm2::utils::container::make_unique<node>(previous->value)};
             ::std::forward<Update>(edit)(replacement->value);
             // Throwing copy/edit leaves the current version and reader borrows intact.
             publish_locked(replacement.release());
         }
         void replace(Payload value)
         {
-            auto replacement{::std::make_unique<node>(::std::move(value))};
+            auto replacement{::uwvm2::utils::container::make_unique<node>(::std::move(value))};
             ::std::lock_guard lock{writers};
             // Construct privately before publication; allocation/move failure
             // leaves the current snapshot and every reader's borrow unchanged.

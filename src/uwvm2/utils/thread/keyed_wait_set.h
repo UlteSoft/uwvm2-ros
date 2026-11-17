@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <fast_io_dsal/array.h>
@@ -20,7 +23,7 @@
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 #  include <condition_variable>
 #  include <mutex>
-#  include <stop_token>
+#  include <uwvm2/utils/thread/stop_token.h>
 # endif
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -59,8 +62,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             waiter* previous{};
             waiter* next{};
             bool notified{};
+            void* completion_context{};
+            void (*completion)(void*,keyed_wait_result) noexcept{};
+            bool completion_reported{};
             ::std::condition_variable event{};
         };
+        static void report_completion(waiter& node,keyed_wait_result result) noexcept
+        {
+            if(node.completion && !node.completion_reported)
+            {node.completion_reported=true;node.completion(node.completion_context,result);}
+        }
         struct shard
         {
             ::std::mutex mutex{};
@@ -145,7 +156,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             ::std::uint_least64_t position{};
             ::std::int_least64_t remaining_nanoseconds{-1};
             ::std::size_t pending_predecessors{};
-            bool notified{}, cancelled{}, closed{};
+            bool notified{}, timed_out{}, cancelled{}, closed{};
         };
         struct suspension_result
         {
@@ -163,9 +174,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             waiter& node_;
             clock::time_point until_;
             bool infinite_;
-            ::std::stop_token cancellation_;
+            ::uwvm2::utils::thread::stop_token cancellation_;
             suspension_borrow(keyed_wait_set& owner, shard& bucket, waiter& node,
-                clock::time_point until, bool infinite, ::std::stop_token cancellation) noexcept
+                clock::time_point until, bool infinite, ::uwvm2::utils::thread::stop_token cancellation) noexcept
                 : owner_{owner}, bucket_{bucket}, node_{node}, until_{until},
                   infinite_{infinite}, cancellation_{::std::move(cancellation)} {}
         public:
@@ -173,6 +184,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             suspension_borrow& operator=(suspension_borrow const&) = delete;
             suspension_borrow(suspension_borrow&&) = delete;
             suspension_borrow& operator=(suspension_borrow&&) = delete;
+            template<typename Visitor>
+            [[nodiscard]] bool inspect_resource(void const* resource,Visitor&& visitor) const noexcept
+            {
+                // The key is immutable for this stack-pinned queue node. The
+                // regular inspection still proves membership under its mutex.
+                if(node_.key.resource!=resource)return false;
+                return inspect({resource,node_.key.position},::std::forward<Visitor>(visitor));
+            }
             // Synchronous only. The stack node remains linked through the real
             // suspension; this borrow cannot outlive suspend(). Visitor must
             // not re-enter this shard/domain or call a host/guest provider.
@@ -225,11 +244,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         // returns false only for a genuine HOST-owned cleanup decision.
         template<typename Matches,typename Suspension>
         [[nodiscard]] suspension_result wait_suspendable(wait_key key,::std::int_least64_t timeout_ns,
-            Matches&& matches,Suspension& suspension,::std::stop_token cancellation={},
+            Matches&& matches,Suspension& suspension,::uwvm2::utils::thread::stop_token cancellation={},
             ::std::size_t max_waiters_per_key=SIZE_MAX)
         {
             static_assert(noexcept(suspension.requested()),"wake hint must not wait or throw");
             auto& bucket{select(key)};call_registration active_call{bucket};waiter node{.key=key};
+            if constexpr(requires { suspension.completed(keyed_wait_result::notified); })
+            {
+                node.completion_context=::std::addressof(suspension);
+                node.completion=+[](void* context,keyed_wait_result result) noexcept
+                {static_cast<Suspension*>(context)->completed(result);};
+            }
+            auto complete=[&](keyed_wait_result result) noexcept
+            {report_completion(node,result);return suspension_result{result,false};};
             struct wake_context { shard& bucket;waiter& node; } context{bucket,node};
             // Register BEFORE owning shard. Destruction is AFTER shard release,
             // so real controller request uses domain -> shard and never reverses
@@ -243,13 +270,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 ::std::lock_guard lock{actual.bucket.mutex};actual.node.event.notify_one();
             })};
             if(!listener) { return {keyed_wait_result::cancelled,true}; }
-            ::std::stop_callback wake_on_stop{cancellation,[&]
+            ::uwvm2::utils::thread::stop_callback wake_on_stop{cancellation,[&]
             { ::std::lock_guard lock{bucket.mutex};node.event.notify_one(); }};
             ::std::unique_lock lock{bucket.mutex};
             if(is_closed()) { return {keyed_wait_result::closed,false}; }
             if(cancellation.stop_requested()) { return {keyed_wait_result::cancelled,false}; }
-            if(!::std::forward<Matches>(matches)()) { return {keyed_wait_result::not_equal,false}; }
-            if(timeout_ns == 0) { return {keyed_wait_result::timed_out,false}; }
+            if(!::std::forward<Matches>(matches)()) { return complete(keyed_wait_result::not_equal); }
+            if(timeout_ns == 0) { return complete(keyed_wait_result::timed_out); }
             if(bucket.active_calls > max_waiters_per_key)
             {
                 ::std::size_t matching{};auto const* cursor{bucket.first};
@@ -277,6 +304,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                     unlink(bucket,node);
                 }
             } cleanup{bucket,node,lock}; // original wait() cleanup remains unchanged
+            // Optional debug recorder releases its instruction turn only AFTER
+            // the comparison and queue insertion are atomic with notifications.
+            // It cannot inspect/reenter this shard while the mutex is held.
+            if constexpr(requires { suspension.linked(); })
+            { static_assert(noexcept(suspension.linked()));suspension.linked(); }
             suspension_borrow borrowed{*this,bucket,node,until,timeout_ns < 0,cancellation};
             static_assert(noexcept(suspension.suspend(borrowed)),"real suspension must clean up without throwing");
             auto const ready{[&]
@@ -286,10 +318,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 // Original arbitration wins BEFORE a new suspension: notification
                 // precedes cancellation/close/timeout, exactly as wait(). No
                 // repeated matches() load or removal/reinsertion can steal wake.
-                if(node.notified) { return {keyed_wait_result::notified,false}; }
+                if(node.notified) { return complete(keyed_wait_result::notified); }
                 if(cancellation.stop_requested()) { return {keyed_wait_result::cancelled,false}; }
                 if(is_closed()) { return {keyed_wait_result::closed,false}; }
-                if(timeout_ns >= 0 && clock::now() >= until) { return {keyed_wait_result::timed_out,false}; }
+                if(timeout_ns >= 0 && clock::now() >= until) { return complete(keyed_wait_result::timed_out); }
                 if(suspension.requested())
                 {
                     lock.unlock(); // Actual linked node stays live; NO shard -> domain.
@@ -298,10 +330,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                     // A real notification/cancellation/close/deadline can win
                     // WHILE suspend() is unlocked. Preserve the original FIFO
                     // winner before considering a still-pending HOST abort.
-                    if(node.notified) { return {keyed_wait_result::notified,false}; }
+                    if(node.notified) { return complete(keyed_wait_result::notified); }
                     if(cancellation.stop_requested()) { return {keyed_wait_result::cancelled,false}; }
                     if(is_closed()) { return {keyed_wait_result::closed,false}; }
-                    if(timeout_ns >= 0 && clock::now() >= until) { return {keyed_wait_result::timed_out,false}; }
+                    if(timeout_ns >= 0 && clock::now() >= until) { return complete(keyed_wait_result::timed_out); }
                     if(!keep_waiting) { return {keyed_wait_result::cancelled,true}; }
                     continue;
                 }
@@ -335,7 +367,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                     :node{.key=spec.key},bucket{actual},specification{spec} {}
             };
             keyed_wait_set& owner_;
-            ::std::vector<::std::unique_ptr<prepared_node>> nodes_{};
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<prepared_node>> nodes_{};
             bool started_{}; // Every access holds ALL shards, or one held shard.
             explicit prepared_wait_batch(keyed_wait_set& owner) noexcept:owner_{owner} {}
             [[nodiscard]] static clock::time_point remaining_deadline(clock::time_point now,::std::int_least64_t ns) noexcept
@@ -348,11 +380,70 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 return now+::std::chrono::ceil<clock::duration>(duration);
             }
         public:
+            class completion_registration
+            {
+                prepared_node* node_{};
+                void* context_{};
+                friend class prepared_wait_batch;
+                completion_registration(prepared_node* node,void* context) noexcept:node_{node},context_{context} {}
+            public:
+                completion_registration(completion_registration const&)=delete;
+                completion_registration& operator=(completion_registration const&)=delete;
+                completion_registration(completion_registration&& other) noexcept:node_{other.node_},context_{other.context_}
+                {other.node_=nullptr;}
+                ~completion_registration()
+                {
+                    if(!node_)return;
+                    ::std::lock_guard lock{node_->bucket.mutex};
+                    if(node_->node.completion_context==context_)
+                    {node_->node.completion=nullptr;node_->node.completion_context=nullptr;}
+                }
+                explicit operator bool() const noexcept{return node_!=nullptr;}
+            };
+            // Bind before the real startup barrier opens, including unclaimed
+            // pre-linked waiters. The owner joins callbacks under the shard lock
+            // before destroying the native policy/context. No wire token enters.
+            [[nodiscard]] completion_registration bind_completion(::std::size_t index,wait_key expected,
+                void* context,void (*callback)(void*,keyed_wait_result) noexcept) noexcept
+            {
+                if(index>=nodes_.size() || !context || !callback)return {nullptr,nullptr};
+                auto& node=*nodes_[index];::std::lock_guard lock{node.bucket.mutex};
+                if(node.node.key!=expected || !node.counted || node.claimed || node.consumed || node.abort_requested || node.node.completion)
+                    return {nullptr,nullptr};
+                node.node.completion_context=context;node.node.completion=callback;
+                return {::std::addressof(node),context};
+            }
             prepared_wait_batch(prepared_wait_batch const&)=delete;
             prepared_wait_batch& operator=(prepared_wait_batch const&)=delete;
             prepared_wait_batch(prepared_wait_batch&&)=delete;
             prepared_wait_batch& operator=(prepared_wait_batch&&)=delete;
             [[nodiscard]] ::std::size_t size() const noexcept { return nodes_.size(); }
+            template<typename Visitor>
+            [[nodiscard]] bool inspect_unclaimed(::std::size_t index,wait_key expected,Visitor&& visitor) const noexcept
+            {
+                if(index>=nodes_.size())return false;
+                auto& selected=*nodes_[index];
+                {
+                    ::std::lock_guard lock{selected.bucket.mutex};
+                    if(!selected.armed || !selected.counted || selected.claimed || selected.consumed ||
+                        selected.abort_requested || selected.node.key!=expected)return false;
+                    if(selected.specification.completion!=prepared_wait_completion::pending)
+                    {
+                        suspension_snapshot copy{};copy.position=expected.position;
+                        copy.notified=selected.specification.completion==prepared_wait_completion::notified;
+                        copy.timed_out=selected.specification.completion==prepared_wait_completion::timed_out;
+                        copy.pending_predecessors=SIZE_MAX;copy.remaining_nanoseconds=selected.specification.remaining_nanoseconds;
+                        static_assert(noexcept(::std::forward<Visitor>(visitor)(copy)));
+                        ::std::forward<Visitor>(visitor)(copy);return true;
+                    }
+                }
+                // Actual world ownership pins this unclaimed node until the
+                // same paused worker resumes. Notifications retain membership.
+                suspension_borrow borrow{owner_,selected.bucket,selected.node,selected.until,
+                    selected.specification.remaining_nanoseconds<0,{}};
+                return borrow.inspect(expected,::std::forward<Visitor>(visitor));
+            }
+
             // The real startup publisher calls this once after its fallible
             // source/seed/worker/session checks and BEFORE releasing guest entry.
             // No allocation or recoverable failure belongs on that commit edge.
@@ -404,7 +495,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             }
             template<typename Suspension>
             [[nodiscard]] suspension_result consume(::std::size_t index,wait_key actual_resource,
-                Suspension& suspension,::std::stop_token cancellation={})
+                Suspension& suspension,::uwvm2::utils::thread::stop_token cancellation={})
             {
                 if(index >= nodes_.size()) { return {keyed_wait_result::cancelled,true}; }
                 // [nonmoving owned nodes0 ... index ... N] end
@@ -433,10 +524,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                     }
                 } claim{selected,actual_resource};
                 if(!claim.acquired) { return {keyed_wait_result::cancelled,true}; }
+                auto complete=[&](keyed_wait_result result) noexcept
+                {
+                    if constexpr(requires { suspension.completed(result); })suspension.completed(result);
+                    return suspension_result{result,false};
+                };
                 if(selected.specification.completion == prepared_wait_completion::notified)
-                { return {keyed_wait_result::notified,false}; }
+                { return complete(keyed_wait_result::notified); }
                 if(selected.specification.completion == prepared_wait_completion::timed_out)
-                { return {keyed_wait_result::timed_out,false}; }
+                { return complete(keyed_wait_result::timed_out); }
                 static_assert(noexcept(suspension.requested()),"wake hint must not wait or throw");
                 struct wake_context { shard& bucket;waiter& node; } context{selected.bucket,selected.node};
                 auto listener{suspension.register_waker(::std::addressof(context),+[](void* address) noexcept
@@ -447,15 +543,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                     ::std::lock_guard lock{actual.bucket.mutex};actual.node.event.notify_one();
                 })};
                 if(!listener) { return {keyed_wait_result::cancelled,true}; }
-                ::std::stop_callback wake_on_stop{cancellation,[&]
+                ::uwvm2::utils::thread::stop_callback wake_on_stop{cancellation,[&]
                 { ::std::lock_guard lock{selected.bucket.mutex};selected.node.event.notify_one(); }};
                 ::std::unique_lock lock{selected.bucket.mutex};
+                if constexpr(requires { suspension.completed(keyed_wait_result::notified); })
+                {
+                    selected.node.completion_context=::std::addressof(suspension);
+                    selected.node.completion=+[](void* context,keyed_wait_result result) noexcept
+                    {static_cast<Suspension*>(context)->completed(result);};
+                }
+                auto finish=[&](keyed_wait_result result) noexcept
+                {report_completion(selected.node,result);return suspension_result{result,false};};
                 struct queue_cleanup
                 {
                     prepared_node& selected;::std::unique_lock<::std::mutex>& lock;
                     ~queue_cleanup() noexcept
                     {
                         if(!lock.owns_lock()) { lock.lock(); }
+                        selected.node.completion=nullptr;selected.node.completion_context=nullptr;
                         if(selected.linked) { unlink(selected.bucket,selected.node);selected.linked=false; }
                     }
                 } cleanup{selected,lock};
@@ -468,20 +573,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 auto const finite{selected.specification.remaining_nanoseconds >= 0};
                 for(;;)
                 {
-                    if(selected.node.notified) { return {keyed_wait_result::notified,false}; }
+                    if(selected.node.notified) { return finish(keyed_wait_result::notified); }
                     if(cancellation.stop_requested()) { return {keyed_wait_result::cancelled,false}; }
                     if(owner_.is_closed()) { return {keyed_wait_result::closed,false}; }
-                    if(finite && clock::now() >= selected.until) { return {keyed_wait_result::timed_out,false}; }
+                    if(finite && clock::now() >= selected.until) { return finish(keyed_wait_result::timed_out); }
                     if(selected.abort_requested) { return {keyed_wait_result::cancelled,true}; }
                     if(suspension.requested())
                     {
                         lock.unlock(); // Actual queue node remains linked; no shard -> domain inversion.
                         bool const keep_waiting{suspension.suspend(borrowed)};
                         lock.lock(); // Actual mutex is owned BEFORE reading/splicing node state.
-                        if(selected.node.notified) { return {keyed_wait_result::notified,false}; }
+                        if(selected.node.notified) { return finish(keyed_wait_result::notified); }
                         if(cancellation.stop_requested()) { return {keyed_wait_result::cancelled,false}; }
                         if(owner_.is_closed()) { return {keyed_wait_result::closed,false}; }
-                        if(finite && clock::now() >= selected.until) { return {keyed_wait_result::timed_out,false}; }
+                        if(finite && clock::now() >= selected.until) { return finish(keyed_wait_result::timed_out); }
                         if(!keep_waiting || selected.abort_requested) { return {keyed_wait_result::cancelled,true}; }
                         continue;
                     }
@@ -490,14 +595,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 }
             }
         };
-        [[nodiscard]] ::std::unique_ptr<prepared_wait_batch> prepare_ordered_waits(
+        [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<prepared_wait_batch> prepare_ordered_waits(
             ::std::span<prepared_wait_spec const> specifications,::std::size_t quota=4096u)
         {
             if(quota > 4096u || specifications.size() > quota || is_closed()) { return {}; }
             // All allocations happen BEFORE any real queue publication. A new
             // actual memory/source adapter supplies keys; copied wire identities
             // or a caller bool never attest that a VM startup is closed.
-            ::std::unique_ptr<prepared_wait_batch> batch{new prepared_wait_batch{*this}};
+            ::uwvm2::utils::container::std_unique_ptr<prepared_wait_batch> batch{::uwvm2::utils::allocator::fast_io_strict::object<prepared_wait_batch>([&](prepared_wait_batch* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) prepared_wait_batch{*this}; })};
             batch->nodes_.reserve(specifications.size());
             ::fast_io::array<::std::size_t,shard_count> additions{};
             for(::std::size_t i{};i != specifications.size();++i)
@@ -519,8 +624,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 else if((spec.completion != prepared_wait_completion::notified && spec.completion != prepared_wait_completion::timed_out) ||
                         spec.pending_ordinal != UINT64_MAX) { return {}; }
                 auto& bucket{select(spec.key)};
-                batch->nodes_.push_back(::std::unique_ptr<prepared_wait_batch::prepared_node>{
-                    new prepared_wait_batch::prepared_node{bucket,spec}});
+                batch->nodes_.push_back(::uwvm2::utils::container::std_unique_ptr<prepared_wait_batch::prepared_node>{
+                    ::uwvm2::utils::allocator::fast_io_strict::object<prepared_wait_batch::prepared_node>([&](prepared_wait_batch::prepared_node* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) prepared_wait_batch::prepared_node{bucket,spec}; })});
                 for(::std::size_t shard_index{};shard_index != shard_count;++shard_index)
                 { if(::std::addressof(shards[shard_index]) == ::std::addressof(bucket)) { ++additions[shard_index];break; } }
             }
@@ -565,7 +670,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         // execution owners to share one resource's notification domain.
         template <typename Matches>
         [[nodiscard]] keyed_wait_result wait(wait_key key, ::std::int_least64_t timeout_ns, Matches&& matches,
-                                             ::std::stop_token cancellation = {}, ::std::size_t max_waiters_per_key = SIZE_MAX)
+                                             ::uwvm2::utils::thread::stop_token cancellation = {}, ::std::size_t max_waiters_per_key = SIZE_MAX)
         {
             auto& bucket{select(key)};
             call_registration active_call{bucket};
@@ -573,7 +678,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
             // Declare the callback before the unique_lock: its destructor may
             // wait for an executing callback, so our shard lock must be released
             // first. active_call keeps the shard alive through that destruction.
-            ::std::stop_callback wake_on_stop{cancellation, [&]
+            ::uwvm2::utils::thread::stop_callback wake_on_stop{cancellation, [&]
             {
                 ::std::lock_guard lock{bucket.mutex};
                 node.event.notify_one();
@@ -634,6 +739,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
                 if(node->key == key && !node->notified)
                 {
                     node->notified = true;
+                    report_completion(*node,keyed_wait_result::notified);
                     ++count;
                     // Notify before releasing the lock: node and its event cannot
                     // be unlinked/destroyed until the waiting thread reacquires it.

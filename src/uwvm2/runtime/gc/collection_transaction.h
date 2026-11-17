@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 #include <chrono>
@@ -208,13 +211,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
                 { result.status = collection_transaction_status::static_roots_rejected; }
                 return;
             }
-            ::std::unique_ptr<root_reference[]> roots{};
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> root_charge{};
+            ::uwvm2::utils::container::std_unique_ptr<root_reference[]> roots{};
             if(result.roots != 0uz)
             {
                 // [checked count * sizeof(complete carrier)] native allocation
                 // [safe                                    ] each array element
                 // is a real initialized C++ reference; no stack-bit inference.
-                roots.reset(new (::std::nothrow) root_reference[result.roots]);
+                constexpr auto root_prefix{::uwvm2::utils::allocator::fast_io_strict::array_prefix<root_reference>};
+                if(result.roots <= (SIZE_MAX-root_prefix)/sizeof(root_reference) &&
+                   root_charge.resize(root_prefix+result.roots*sizeof(root_reference)))
+                { roots.reset(::uwvm2::utils::allocator::fast_io_strict::try_array<root_reference>(result.roots, false)); }
                 if(!roots)
                 { result.status = collection_transaction_status::out_of_memory; return; }
             }

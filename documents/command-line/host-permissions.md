@@ -1,5 +1,9 @@
 # Exact WASIp1 / ROS1 / ROS2 interface authority
 
+The legacy ROS1/ROS2 VM interface families and their CLI settings documented
+here are **deprecated**; see [ROSv2 migration](../runtime/ros-host-interfaces.md#names-and-compatibility).
+Their authority behavior is retained. This status does not deprecate WASIp1.
+
 All three namespaces start disabled in `uwvm2-ros`. Enabling a namespace does
 not expose its functions. Each registered function has exactly one state:
 
@@ -13,9 +17,12 @@ not expose its functions. Each registered function has exactly one state:
   those underlying rights.
 
 `proc_exit` cannot return an errno; a denied call produces a controlled guest
-failure and a diagnostic. The WASI Threads extension separately requires
-`--wasm-feature-enable-threads --wasi-threads ...`; exposing `thread-spawn`
-does not create its execution profile or grant thread creation.
+failure and a diagnostic. The WASI Threads import uses the independent
+[wasithread / I1T family](../runtime/wasithread-policy.md), with its own
+Single/Group/default Global authority. Exposing `wasi.thread-spawn` requires no
+WASIp1 grant and works without selecting `--wasi-threads`; actual native
+creation additionally requires that private execution profile. Ordinary
+execution returns an explicit refusal instead of silently creating a thread.
 
 ## Commands
 
@@ -36,7 +43,7 @@ WASIp1 uses Single, Group and an implicit default Global policy:
 ~~~
 
 `API` is an exact registered function, for example `fd_write`, `random_get`,
-`fd_write_wasm64`, or `thread-spawn`. The memory32 and memory64 names are
+`fd_write_wasm64`, or `sched_yield`. The memory32 and memory64 names are
 independent. Every module without a Single or Group binding selects the same
 Global environment. Global starts disabled, with every interface hidden.
 `global-enable` enables its namespace; each interface and operation still needs

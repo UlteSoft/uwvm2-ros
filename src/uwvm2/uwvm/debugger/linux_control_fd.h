@@ -4,6 +4,9 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(__linux__) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -72,7 +75,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             while(written == -1 && errno == EINTR);
             return written >= 0 && static_cast<::std::size_t>(written) == size;
         }
-        [[nodiscard]] bool send_text(::std::string const& text) const noexcept
+        [[nodiscard]] bool send_text(::uwvm2::utils::container::std_string const& text) const noexcept
         {
             if(text.size() > maximum_reply_bytes)
             { return send_literal("error: bounded debugger response exceeded 65536 bytes\n"); }
@@ -191,6 +194,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         [[nodiscard]] bool bind_signal_diagnostics_host_api() const noexcept
         {return ::uwvm2::runtime::diagnostic::crash::install_signal_endpoint_host_api(
             descriptor_.native_handle(),peer_pidfd_.native_handle());}
+        // Genuine private-thread driver, sharing exactly the same inherited
+        // endpoint and per-packet peer checks as the ordinary controller.
+        // Handler and all-stop owner stay on this native management thread.
+        template<typename Handler> void serve_private_threads(Handler& handler) noexcept
+        {
+            while(peer_live() && !handler.closed())
+            {
+                ::pollfd input{descriptor_.native_handle(),POLLIN,0};
+                int const ready{posix_abi::poll_noexcept(&input,1,50)};
+                if(ready<0){if(errno==EINTR)continue;break;}
+                if(!ready)continue;
+                auto packet=receive_packet();if(packet.closed)break;if(!packet.valid)continue;
+                auto reply=handler.command({packet.bytes.data(),packet.size});
+                if(!send_text(reply))break;
+            }
+            handler.detach();close_endpoint();
+        }
         linux_control_fd(linux_control_fd const&) = delete;
         linux_control_fd& operator=(linux_control_fd const&) = delete;
         ~linux_control_fd()
@@ -198,7 +218,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             close_endpoint();
             // peer_pidfd_ retires exactly once with its native_file member.
         }
-        [[nodiscard]] static ::std::unique_ptr<linux_control_fd> adopt(int fd, bool diagnostic = false) noexcept
+        [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<linux_control_fd> adopt(int fd, bool diagnostic = false) noexcept
         {
             if(fd < 3) { return {}; }
             // The VM takes ownership at entry, including every rejected launch.
@@ -225,8 +245,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             }
             ::fast_io::native_file pidfd{opened_pidfd};
             // A failed allocation leaves both guards owned by this scope.
-            auto result{::std::unique_ptr<linux_control_fd>{new (::std::nothrow) linux_control_fd(
-                ::std::move(supplied), ::std::move(pidfd), peer)}};
+            auto result{::uwvm2::utils::container::std_unique_ptr<linux_control_fd>{::uwvm2::utils::allocator::fast_io_strict::try_object<linux_control_fd>([&](linux_control_fd* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) linux_control_fd(
+                ::std::move(supplied), ::std::move(pidfd), peer); })}};
             if(!result) { return {}; }
             if(!result->peer_live()) { return {}; }
             int enable{1};
@@ -253,7 +273,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         // A separate launch grant selects this immutable read-only dispatcher.
         // It never constructs a controller or interprets console/DAP commands.
-        void serve_diagnostics(::std::atomic<bool> const& finished, ::std::string (*snapshot)() noexcept) noexcept
+        void serve_diagnostics(::std::atomic<bool> const& finished, ::uwvm2::utils::container::std_string (*snapshot)() noexcept) noexcept
         {
             struct close_when_done { linux_control_fd& channel; ~close_when_done() { channel.close_endpoint(); } } close{*this};
             while(!finished.load(::std::memory_order_acquire) && peer_live())
@@ -279,7 +299,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         }
         struct rebuild_request
         {
-            ::std::u8string path{};
+            ::uwvm2::utils::container::std_u8string path{};
             ::uwvm2::utils::control::owned_file_image::owner image{};
             ::std::size_t module_index{}, preload_count{};
             bool allowed{}, ready{};
@@ -327,7 +347,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                 { if(!send_literal("error: rebuild pending; retry rebuild\n")) { return; } continue; }
                 if(command_view{packet.bytes.data(), packet.size} == "permissions")
                 {
-                    auto const text=::fast_io::concat_std("permissions ",::std::string{::uwvm2::utils::control::debug_permissions::name()},"\n");
+                    auto const text=::uwvm2::utils::container::concat("permissions ",::uwvm2::utils::container::std_string{::uwvm2::utils::control::debug_permissions::name()},"\n");
                     if(!send_text(text.data(),text.size()))return;
                     continue;
                 }
@@ -386,6 +406,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::wasip1_state:
                     case console_command_kind::host_trace:
                     case console_command_kind::ros_state:
+                    case console_command_kind::scene_state:
+                    case console_command_kind::wasithread_state:
                     case console_command_kind::watchpoint:
                 case console_command_kind::breakpoint_commands:
                 case console_command_kind::callback_echo:
@@ -402,8 +424,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     case console_command_kind::source_print_options:
                     case console_command_kind::source_printer_config:
                     case console_command_kind::wasm_disassemble:
+                    case console_command_kind::snapshot_record:
+                    case console_command_kind::snapshot_restore:
                     case console_command_kind::wasm_dump:
                     case console_command_kind::module_list:
+                    case console_command_kind::host_interfaces:
                     case console_command_kind::protocol: break;
                 }
                 if(!send_text(details::execute_control_command(control, command))) { return; }

@@ -20,11 +20,18 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/runtime/compiler/llvm_jit/fast_io_support.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include "uwvm_runtime_update.h"
 #include "uwvm_runtime_diagnostics.h"
 
 #include <uwvm2/utils/security/wsea.h>
 #include <uwvm2/utils/control/debug_permissions.h>
+#include <uwvm2/utils/control/dump_permissions.h>
+#include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 #include "uwvm_runtime_guest_exit.h"
 
 // std
@@ -83,6 +90,7 @@ module;
 # include "uwvm_runtime_pending_code_ranges.h"
 # include <uwvm2/runtime/compiler/shared/strict_float_jit.h>
 # include "uwvm_runtime_llvm_expanded_lane_unroll_policy.h"
+# include "uwvm_runtime_llvm_gc_private_calls.h"
 # include "uwvm_runtime_native_unwind_execution_gate.h"
 # include "uwvm_runtime_native_function_address.h"
 #endif
@@ -204,6 +212,9 @@ module uwvm2.runtime;
 import uwvm2.extension.memtag.debug_types;
 import uwvm2.extension.memtag.debug_view;
 import uwvm2.runtime.memtag.hardware_thread;
+import uwvm2.runtime.diagnostic.snapshot_archive;
+import uwvm2.runtime.diagnostic.snapshot_diagnostic;
+import uwvm2.runtime.diagnostic.snapshot_state;
 
 import uwvm2.extension.memtag.color;
 import uwvm2.runtime.memtag.host_access;
@@ -215,7 +226,6 @@ import uwvm2.runtime.memtag.host_fault;
 // runtime module declaration. Textual backend definitions in the global module
 // fragment cannot use the runtime-owned sealed activation provider and would
 // attach duplicate backend/provider/register types to different modules.
-import uwvm2.uwvm.debugger;
 #endif
 
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
@@ -223,8 +233,14 @@ import uwvm2.runtime.compiler.uwvm_int.threaded;
 import uwvm2.uwvm.runtime.initializer;
 import uwvm2.uwvm.runtime.threaded_builtin_loader;
 #endif
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+// Shared wait/cancellation types are used by both independent host families.
 import uwvm2.imported.ros;
+#endif
+#if defined(UWVM_IMPORT_ROSV2)
+import uwvm2.imported.ros.scene;
+#endif
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
 import uwvm2.uwvm.imported.ros;
 #endif
 import fast_io;
@@ -271,6 +287,8 @@ import uwvm2.runtime.checkpoint.caller_return_projection;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 // Portable checkpoint DATA only; importing the debugger controller would cycle.
 import uwvm2.uwvm.debugger.checkpoint_state;
+import uwvm2.uwvm.debugger.checkpoint_execution_replay;
+import uwvm2.uwvm.debugger.checkpoint_replay_memory;
 import uwvm2.uwvm.debugger.checkpoint_binding;
 import uwvm2.uwvm.debugger.checkpoint_state_identity;
 #endif
@@ -306,6 +324,7 @@ import uwvm2.uwvm.wasm.storage;
 // Implementation-private cache uses imported checkpoint types.
 #include "uwvm_runtime_checkpoint_entry_cache.h"
 #include "uwvm_runtime_function_identity_cache.h"
+#include "uwvm_runtime_ros_exchange_frame.h"
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
 #include <uwvm2/utils/update/policy_change.h>
 #endif

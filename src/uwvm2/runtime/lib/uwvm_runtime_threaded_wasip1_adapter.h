@@ -24,11 +24,13 @@ extern "C++"
         enum class operation {args_sizes,args_get,env_sizes,env_get,clock_time,clock_res,yield,random,read,write,poll,socket_send,socket_recv,socket_accept,socket_accept_wasix,socket_shutdown,renumber,prestat_get,prestat_name,fdstat_get,fdstat_rights,filestat_get,fd_close,fd_tell,fd_seek,path_open,pread,pwrite,canonical};
         struct binding {operation code{};environment* env{};::std::size_t parameter_bytes{};::std::size_t interface_id{};unsigned wide_parameters{};bool memory64{};::std::size_t provider_index{};};
         static constexpr ::std::size_t transfer_bytes{PIPE_BUF}; // Native packet capacity; legal partial I/O, never a request limit.
-        template<typename T> [[nodiscard]] static ::std::unique_ptr<T[]> allocate_array(::std::size_t count) noexcept
+        template<typename T> [[nodiscard]] static ::uwvm2::utils::allocator::resource::owned_array<T>
+            allocate_array(::std::size_t count) noexcept
         {
-            if(count > (SIZE_MAX / sizeof(T))) { return {}; }
-            try { return ::std::make_unique<T[]>(count); }
-            catch(...) { return {}; } // Allocation only: no Guest/native work is in this catch scope.
+            // Threaded poll/I/O/socket scratch shares the same host allocation
+            // budget as ordinary WASI scratch. Refusal follows the existing
+            // ENOMEM path and never relaxes guest-memory or capability checks.
+            return ::uwvm2::utils::allocator::resource::try_array<T>(count);
         }
         static constexpr ::std::uint32_t trap_memory{0x57415301u},trap_native{0x57415302u},trap_memtag{0x57415303u};
         struct context final
@@ -74,6 +76,8 @@ extern "C++"
             [[nodiscard]] bool copy_in(::std::uint64_t offset,::std::span<::std::byte> out) noexcept
             {
                 if(memtag_fault.pending)return false;
+                ::uwvm2::runtime::wasm_threads::thread_journal_memory_phase phase{0u,offset,out.size(),false};
+                if(!phase.entered())return false;
                 auto const checked=::uwvm2::runtime::memtag::with_host_access(shared,offset,out.size(),
                     [&](::std::span<::std::byte> data) noexcept
                     {
@@ -81,25 +85,89 @@ extern "C++"
                         {if((i&1023uz)==0u&&stopped())return;out[i]=static_cast<::std::byte>(__atomic_load_n(
                             reinterpret_cast<byte_type*>(data.data()+i),__ATOMIC_RELAXED));}
                     });
-                return checked_result(offset,checked)&&!stopped();
+                return phase.finish(checked_result(offset,checked)&&!stopped(),out);
             }
             [[nodiscard]] bool copy_out(::std::uint64_t offset,::std::span<::std::byte const> input) noexcept
             {
                 if(memtag_fault.pending)return false;
+                ::uwvm2::runtime::wasm_threads::thread_journal_memory_phase phase{0u,offset,input.size(),true};
+                if(!phase.entered())return false;
                 auto const checked=::uwvm2::runtime::memtag::with_host_access(shared,offset,input.size(),
                     [&](::std::span<::std::byte> data) noexcept
                     {
+                        phase.before(data);
                         for(::std::size_t i{};i<input.size();++i)
                         {if((i&1023uz)==0u&&stopped())return;__atomic_store_n(reinterpret_cast<byte_type*>(data.data()+i),
                             static_cast<byte_type>(::std::to_integer<unsigned char>(input[i])),__ATOMIC_RELAXED);}
                     });
-                return checked_result(offset,checked)&&!stopped();
+                return phase.finish(checked_result(offset,checked)&&!stopped(),input);
             }
             template<unsigned Bytes> [[nodiscard]] bool store(::std::uint64_t offset,::std::uint64_t value) noexcept
             {
                 ::std::array<::std::byte,Bytes> bytes{};
                 for(unsigned i{};i<Bytes;++i)bytes[i]=static_cast<::std::byte>(value>>(i*8u));
                 return copy_out(offset,bytes);
+            }
+        };
+        class canonical_recording_scope final
+        {
+            using phase_type=::uwvm2::runtime::wasm_threads::thread_journal_memory_phase;
+            using consumer=::uwvm2::runtime::checkpoint::host_memory_phase::consumer;
+            context& actual_;
+            consumer const* previous_{};
+            consumer current_{};
+            ::std::optional<phase_type> phase_{};
+            ::uwvm2::utils::container::std_vector<::std::byte> image_{};
+            ::std::size_t depth_{},length_{};
+            bool selected_{};
+            [[nodiscard]] ::std::size_t current_length() const noexcept
+            {
+                return ::uwvm2::runtime::wasm_threads::threaded_memory_length(actual_.shared);
+            }
+            void begin(bool) noexcept
+            {
+                if(depth_++!=0u)return;
+                length_=current_length();
+                // A canonical WASI phase may read several guest ranges and
+                // publish more than one scalar. Record the complete transaction
+                // under one instruction turn, after its outer native locks and
+                // before any guest-memory pin. No partial replay publication.
+                phase_.emplace(SIZE_MAX,0u,length_,true);
+                if(!phase_->entered())return;
+                try
+                {
+                    image_.resize(length_);
+                    if(!::uwvm2::runtime::wasm_threads::copy_threaded_memory(actual_.shared,image_,false))
+                    {::uwvm2::runtime::wasm_threads::current_thread_journal->journal->refuse();return;}
+                    phase_->before(image_);
+                }
+                catch(...){::uwvm2::runtime::wasm_threads::current_thread_journal->journal->refuse();}
+            }
+            void end() noexcept
+            {
+                if(!depth_||--depth_)return;
+                if(phase_)
+                {
+                    auto const length=current_length();
+                    bool const valid=length==length_&&::uwvm2::runtime::wasm_threads::copy_threaded_memory(actual_.shared,image_,false);
+                    (void)phase_->finish(valid,valid?::std::span<::std::byte const>{image_}: ::std::span<::std::byte const>{});
+                    phase_.reset();
+                }
+            }
+        public:
+            explicit canonical_recording_scope(context& actual) noexcept:actual_{actual}
+            {
+                if(!::uwvm2::runtime::wasm_threads::current_thread_journal)return;
+                previous_=::uwvm2::runtime::checkpoint::host_memory_phase::current;
+                if(previous_){::uwvm2::runtime::wasm_threads::current_thread_journal->journal->refuse();return;}
+                current_={this,[](void* p,bool write) noexcept{static_cast<canonical_recording_scope*>(p)->begin(write);},
+                    [](void* p) noexcept{static_cast<canonical_recording_scope*>(p)->end();}};
+                ::uwvm2::runtime::checkpoint::host_memory_phase::current=&current_;selected_=true;
+            }
+            ~canonical_recording_scope()
+            {
+                if(selected_)::uwvm2::runtime::checkpoint::host_memory_phase::current=previous_;
+                if(depth_)::uwvm2::runtime::wasm_threads::current_thread_journal->journal->refuse();
             }
         };
         [[nodiscard]] static ::std::uint64_t little(::std::byte const* p,unsigned width) noexcept
@@ -347,7 +415,7 @@ extern "C++"
         [[nodiscard]] static error fdstat_rights(context&,::std::uint32_t,::std::uint64_t,::std::uint64_t) noexcept;
         [[nodiscard]] static error prestat(context&,::std::uint32_t,::std::uint64_t,::std::uint64_t,bool) noexcept;
         [[nodiscard]] static error poll_oneoff(context&,::std::uint64_t,::std::uint64_t,::std::uint64_t,::std::uint64_t) noexcept;
-        [[nodiscard]] static dispatch_status dispatch(lease& actual,world const& instance,::std::size_t module,::std::size_t caller,
+        [[nodiscard]] static dispatch_status dispatch(lease& actual,world const& instance,::std::size_t module,::std::size_t caller_module,::std::size_t caller,
             ::std::size_t imported,provider const& native,::std::span<::std::byte> results,::std::span<::std::byte const> params) noexcept
         {
             if(&actual.world()!=&instance||&actual.admission()!=&instance.admission()||!actual.owns_current_native_thread())return dispatch_status::rejected;
@@ -364,10 +432,10 @@ extern "C++"
                 ::std::memcpy(results.data(),&result,4u);return dispatch_status::returned;
             }
 #endif
-            auto const* unit=instance.module(module);
+            auto const* unit=instance.module(caller_module);
             if(!unit||caller<unit->imported_function_vec_storage.size()||caller-unit->imported_function_vec_storage.size()>=unit->local_defined_function_vec_storage.size())return dispatch_status::rejected;
-            auto const* shared=instance.shared_memory(0u);if(!shared||!::uwvm2::runtime::wasm_threads::is_shared(shared->memory)||shared->memory.custom_page_size_log2!=16u)return dispatch_status::rejected;
-            context call{actual,instance,*found.env,const_cast<memory&>(shared->memory),module,caller,found.memory64};
+            auto* receiver_memory=instance.native_memory(module,0u);if(!receiver_memory||receiver_memory->custom_page_size_log2!=16u)return dispatch_status::rejected;
+            context call{actual,instance,*found.env,*receiver_memory,caller_module,caller,found.memory64};
             ::std::array<::std::uint64_t,9> a{};::std::size_t offset{};
             for(::std::size_t i{};offset<params.size();++i)
             {
@@ -427,6 +495,7 @@ extern "C++"
                     // checked atomic copies; FD/policy state is the same real
                     // environment. Never expose the shared base to native IO.
                     namespace storage=::uwvm2::uwvm::imported::wasi::wasip1::storage;
+                    canonical_recording_scope journal_memory{call};
                     storage::scoped_current_wasip1_env_t selected_env{call.env};
                     storage::scoped_current_wasip1_memory_t selected_memory{call.env,&call.shared};
                     native.call_func_index(found.provider_index,

@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "scalar_state.h"
 
 namespace uwvm2::utils::update
@@ -13,11 +14,11 @@ namespace uwvm2::utils::update
         ::std::size_t byte_size{};
         // Private complete initial memory, built before READY. Preserve plans
         // retain only byte_size and never allocate or publish reset bytes.
-        ::std::vector<unsigned char> bytes{};
+        ::uwvm2::utils::container::std_vector<unsigned char> bytes{};
         // Prepared alongside reset bytes, before READY. Never an implicit copy
         // of the previous epoch's allocation tags. PRESERVE has no tag image.
         bool tagged{};
-        ::std::vector<unsigned char> allocation_tags{};
+        ::uwvm2::utils::container::std_vector<unsigned char> allocation_tags{};
     };
     struct active_data_record
     {
@@ -28,15 +29,15 @@ namespace uwvm2::utils::update
     struct module_transition_plan
     {
         bool reset_state{};
-        ::std::vector<function_body> bodies{};
-        ::std::vector<scalar_reset_record> scalars{};
-        ::std::vector<memory_reset_record> memories{};
-        ::std::vector<active_data_record> data_segments{};
+        ::uwvm2::utils::container::std_vector<function_body> bodies{};
+        ::uwvm2::utils::container::std_vector<scalar_reset_record> scalars{};
+        ::uwvm2::utils::container::std_vector<memory_reset_record> memories{};
+        ::uwvm2::utils::container::std_vector<active_data_record> data_segments{};
     };
     namespace module_transition_detail
     {
         inline status memories(::std::span<unsigned char const> bytes, bool reset,
-                               ::std::vector<memory_reset_record>& records)
+                               ::uwvm2::utils::container::std_vector<memory_reset_record>& records)
         {
             ::std::size_t pos{}, total{}; ::std::uint32_t count{};
             if(!u32(bytes,pos,count))return status::validation_failed;
@@ -62,7 +63,7 @@ namespace uwvm2::utils::update
             return pos==bytes.size()?status::ok:status::validation_failed;
         }
         inline status active_data(::std::span<unsigned char const> bytes,bool apply,
-            ::std::vector<memory_reset_record>& memories,::std::vector<active_data_record>& records)
+            ::uwvm2::utils::container::std_vector<memory_reset_record>& memories,::uwvm2::utils::container::std_vector<active_data_record>& records)
         {
             ::std::size_t pos{};::std::uint32_t count{};
             if(!u32(bytes,pos,count))return status::validation_failed;
@@ -105,13 +106,13 @@ namespace uwvm2::utils::update
         out = {};
         if(scopes.empty() || scopes.size() > maximum_functions) { return status::invalid_input; }
         for(::std::size_t i{1}; i < scopes.size(); ++i) { if(scopes[i] <= scopes[i-1u]) { return status::invalid_input; } }
-        ::std::vector<section> old_sections, new_sections; ::std::vector<function_body> old_bodies;
+        ::uwvm2::utils::container::std_vector<section> old_sections, new_sections; ::uwvm2::utils::container::std_vector<function_body> old_bodies;
         module_transition_plan plan{}; plan.reset_state = reset_state;
         if(!split(base, old_sections, old_bodies) || !split(target, new_sections, plan.bodies) ||
            old_sections.size() != new_sections.size() || old_bodies.size() != plan.bodies.size()) { return status::validation_failed; }
         if(!scalar_detail::closed_immutable_aliases(base, old_sections, old_bodies) ||
            !scalar_detail::closed_immutable_aliases(target, new_sections, plan.bodies)) { return status::unsupported; }
-        ::std::vector<scalar_detail::value> old_globals, new_globals;
+        ::uwvm2::utils::container::std_vector<scalar_detail::value> old_globals, new_globals;
         ::std::span<unsigned char const> old_data{}, new_data{};
         bool seen_global{}, seen_memory{}, seen_data{}, seen_count{}, changed{}; ::std::uint32_t data_count{};
         for(::std::size_t i{}; i < old_sections.size(); ++i)
@@ -162,7 +163,7 @@ namespace uwvm2::utils::update
         }
         if(seen_data)
         {
-            ::std::vector<active_data_record> old_records;
+            ::uwvm2::utils::container::std_vector<active_data_record> old_records;
             if(auto result=module_transition_detail::active_data(old_data,false,plan.memories,old_records);result!=status::ok)return result;
             if(auto result=module_transition_detail::active_data(new_data,reset_state,plan.memories,plan.data_segments);result!=status::ok)return result;
             if(old_records.size() != plan.data_segments.size()) { return status::scope_mismatch; }

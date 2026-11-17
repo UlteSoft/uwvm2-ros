@@ -3,6 +3,8 @@
 // instance resources, file checkpoint loading and new epoch need a separate
 // complete staged graph/publication transaction; this class cannot issue it.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 extern "C++"
 {
@@ -24,11 +26,14 @@ extern "C++"
            installed->epoch_ != current_runtime_generation() ||
            !same_owner(installed->control_, g_runtime.debug_pause_control) ||
            !same_owner(installed->profile_, g_runtime.checkpoint_profile) ||
-           !installed->profile_ || installed->profile_->purpose() != cp::compilation_purpose::resumable)
+           !installed->profile_ || runtime_debug_shutdown_bridge::management_blocked() ||
+           (installed->profile_->purpose() != cp::compilation_purpose::resumable &&
+            !(policy == value_policy::live_native_roots &&
+              installed->profile_->purpose() == cp::compilation_purpose::observe_values)))
         { return {}; }
         try
         {
-            owner candidate{new request{installed, installed->control_, installed->profile_, installed->epoch_}};
+            owner candidate{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<request>([&](request* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) request{installed, installed->control_, installed->profile_, installed->epoch_}; }))};
             candidate->members.reserve(captured.size());
             for(::std::size_t i{}; i != captured.size(); ++i)
             {
@@ -63,14 +68,24 @@ extern "C++"
                            policy == value_policy::live_native_roots ? runtime_checkpoint_thread_capture::value_use::live_observation :
                            runtime_checkpoint_thread_capture::value_use::executable_scalar) != checkpoint_thread_capture_status::captured)
                     { return {}; }
+                    // Observation code needs no resume entry in the OLD world:
+                    // it exits through the existing, compiler-verified shutdown
+                    // cleanup. Every active frame must retain that cleanup ABI.
+                    if(candidate->profile->purpose() == cp::compilation_purpose::observe_values &&
+                       code->debug_shutdown_abi_revision.load(::std::memory_order_acquire) != 1u) { return {}; }
                     // Borrow only the freshly resolved current publication;
                     // its actual generation lease/publication guard remains.
                     actual_leaf_code = code;
                 }
                 auto const& leaf_frame{actual->frames_.back()};
                 auto const& leaf{leaf_frame.logical};
-                if(!leaf.plan || leaf.plan->get().resume_abi_revision != 2u || leaf.plan->get().retirement_abi_revision != 1u ||
-                   leaf.site == 0u || leaf.site > leaf.plan->get().sites.size())
+                if(!leaf.plan || leaf.site == 0u || leaf.site > leaf.plan->get().sites.size()) { return {}; }
+                if(candidate->profile->purpose() == cp::compilation_purpose::observe_values)
+                {
+                    candidate->members.push_back({::std::move(actual), member_phase::parked});
+                    continue; // Freshly compiled replacement supplies its own resume entries.
+                }
+                if(leaf.plan->get().resume_abi_revision != 2u || leaf.plan->get().retirement_abi_revision != 1u)
                 { return {}; }
                 // Resolve the actual native continuation entry independently
                 // of the immutable DATA site's ABI label. No saved address is
@@ -129,6 +144,8 @@ extern "C++"
             actual_request_->phase = request_phase::active;
             requested_.store(true, ::std::memory_order_release);
         }
+        if(supplied->profile->purpose() == ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values &&
+           !runtime_debug_shutdown_bridge::select_checkpoint_retirement_gate(true)) { ::fast_io::fast_terminate(); }
         return true;
     }
 
@@ -262,8 +279,10 @@ extern "C++"
             // drain still proves every old native/root/host lease is gone.
             // Preserve the distinction in the result; an ACK is never drain.
             retired = ::std::move(actual_request_); requested_.store(false, ::std::memory_order_release);
-            management_blocked_.store(false, ::std::memory_order_release);
         }
+        if(retired->profile->purpose() == ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values &&
+           !runtime_debug_shutdown_bridge::select_checkpoint_retirement_gate(false)) { ::fast_io::fast_terminate(); }
+        management_blocked_.store(false, ::std::memory_order_release);
         // Actual trusted drain callback owns the lifecycle proof; no copied ACK
         // or participant ID may call this sole-manager private method. Release
         // the retained old host gate outside every request/runtime lock, only

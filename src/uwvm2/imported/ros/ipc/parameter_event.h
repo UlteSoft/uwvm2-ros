@@ -2,6 +2,7 @@
  * UWVM2 canonical selected ROS2 parameter event. APL-2.0.    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "protocol.h"
 #include "parameter.h"
 namespace uwvm2::imported::ros::ipc
@@ -10,7 +11,7 @@ namespace uwvm2::imported::ros::ipc
     {
         std::uint32_t seconds{},nanoseconds{};
         std::uint8_t kind{};
-        std::string node{},name{},value{};
+        ::uwvm2::utils::container::std_string node{},name{},value{};
     };
     inline bool parameter_node(std::string_view name) noexcept
     {
@@ -36,7 +37,7 @@ namespace uwvm2::imported::ros::ipc
         }
         return !first;
     }
-    inline bool parameter_utf8(std::string const& text) noexcept
+    inline bool parameter_utf8(::uwvm2::utils::container::std_string const& text) noexcept
     {
         std::size_t p{};
         while(p<text.size())
@@ -53,14 +54,14 @@ namespace uwvm2::imported::ros::ipc
         }
         return true;
     }
-    inline bool decode_parameter_event(std::vector<std::uint8_t> const& bytes,parameter_event& result)
+    inline bool decode_parameter_event(::uwvm2::utils::container::std_vector<std::uint8_t> const& bytes,parameter_event& result)
     {
         if(bytes.size()<24||bytes.size()>max_payload_bytes) { return false; }
         parameter_event event;
         event.seconds=static_cast<std::uint32_t>(get(bytes.data(),4)); event.nanoseconds=static_cast<std::uint32_t>(get(bytes.data()+4,4)); event.kind=bytes[8];
         if(event.seconds>2147483647U||event.nanoseconds>=1000000000U||event.kind<1||event.kind>3) { return false; }
         std::size_t p{9};
-        auto string=[&](std::string& output,std::size_t maximum) {
+        auto string=[&](::uwvm2::utils::container::std_string& output,std::size_t maximum) {
             if(bytes.size()-p<4) { return false; } auto n{get(bytes.data()+p,4)}; p+=4;
             if(n>maximum||n>bytes.size()-p) { return false; }
             output.assign(reinterpret_cast<char const*>(bytes.data()+p),static_cast<std::size_t>(n));p+=static_cast<std::size_t>(n);return true;
@@ -68,25 +69,25 @@ namespace uwvm2::imported::ros::ipc
         if(!string(event.node,1024)||!string(event.name,255)||!string(event.value,max_payload_bytes)||p!=bytes.size()||!parameter_node(event.node)||!parameter_name(event.name)||!parameter_utf8(event.value)||(event.kind==3&&!event.value.empty())) { return false; }
         result=std::move(event);return true;
     }
-    inline std::vector<std::uint8_t> encode_parameter_event_view(std::uint32_t seconds,std::uint32_t nanoseconds,std::uint8_t kind,
+    inline ::uwvm2::utils::container::std_vector<std::uint8_t> encode_parameter_event_view(std::uint32_t seconds,std::uint32_t nanoseconds,std::uint8_t kind,
         std::string_view node,std::string_view name,std::string_view value)
     {
-        std::vector<std::uint8_t> bytes;bytes.reserve(21+node.size()+name.size()+value.size());
+        ::uwvm2::utils::container::std_vector<std::uint8_t> bytes;bytes.reserve(21+node.size()+name.size()+value.size());
         put(bytes,seconds,4);put(bytes,nanoseconds,4);put(bytes,kind,1);
         for(auto text:{node,name,value}) { put(bytes,text.size(),4);bytes.insert(bytes.end(),text.begin(),text.end()); }
         return bytes;
     }
-    inline std::vector<std::uint8_t> encode_parameter_event(parameter_event const& event)
+    inline ::uwvm2::utils::container::std_vector<std::uint8_t> encode_parameter_event(parameter_event const& event)
     { return encode_parameter_event_view(event.seconds,event.nanoseconds,event.kind,event.node,event.name,event.value); }
     struct typed_parameter_event
     {
         std::uint32_t seconds{},nanoseconds{};
         std::uint8_t kind{};
-        std::string node{},name{};
+        ::uwvm2::utils::container::std_string node{},name{};
         parameter_value value{};
     };
     inline std::uint32_t encode_typed_parameter_event_view(std::uint32_t seconds,std::uint32_t nanoseconds,std::uint8_t kind,
-        std::string_view node,std::string_view name,parameter_value const& value,std::vector<std::uint8_t>& output)
+        std::string_view node,std::string_view name,parameter_value const& value,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     {
         auto tag{parameter_event_tag(value.type)};
         if(value.type==parameter_kind::unsupported||(!tag&&value.type!=parameter_kind::deletion)) { return 95; }
@@ -96,7 +97,7 @@ namespace uwvm2::imported::ros::ipc
         if(kind!=3) { auto error{parameter_encoded_size(value,payload_size)};if(error) { return error; } }
         auto base{23+node.size()+name.size()};
         if(payload_size>parameter_wire_limit-base) { return 90; }
-        std::vector<std::uint8_t> bytes;
+        ::uwvm2::utils::container::std_vector<std::uint8_t> bytes;
         bytes.reserve(base+payload_size);
         put(bytes,seconds,4);put(bytes,nanoseconds,4);put(bytes,kind,1);put(bytes,2,1);put(bytes,tag,1);
         for(auto text:{node,name}) { put(bytes,text.size(),4);bytes.insert(bytes.end(),text.begin(),text.end()); }
@@ -104,9 +105,9 @@ namespace uwvm2::imported::ros::ipc
         if(kind!=3) { parameter_detail::append_checked(value,bytes); }
         output=std::move(bytes);return 0;
     }
-    inline std::uint32_t encode_typed_parameter_event(typed_parameter_event const& event,std::vector<std::uint8_t>& output)
+    inline std::uint32_t encode_typed_parameter_event(typed_parameter_event const& event,::uwvm2::utils::container::std_vector<std::uint8_t>& output)
     { return encode_typed_parameter_event_view(event.seconds,event.nanoseconds,event.kind,event.node,event.name,event.value,output); }
-    inline std::uint32_t decode_typed_parameter_event(std::vector<std::uint8_t> const& bytes,typed_parameter_event& output,std::size_t max_elements=parameter_max_elements)
+    inline std::uint32_t decode_typed_parameter_event(::uwvm2::utils::container::std_vector<std::uint8_t> const& bytes,typed_parameter_event& output,std::size_t max_elements=parameter_max_elements)
     {
         if(bytes.size()>max_payload_bytes) { return 90; }
         if(bytes.size()<23) { return 22; }
@@ -115,7 +116,7 @@ namespace uwvm2::imported::ros::ipc
         event.value.type=parameter_event_kind(bytes[10]);
         if(event.seconds>2147483647U||event.nanoseconds>=1000000000U||event.kind<1||event.kind>3||bytes[9]!=2||event.value.type==parameter_kind::unsupported||(event.value.type==parameter_kind::deletion&&event.kind!=3)) { return 22; }
         std::size_t p{11};
-        auto string=[&](std::string& text,std::size_t maximum) {
+        auto string=[&](::uwvm2::utils::container::std_string& text,std::size_t maximum) {
             if(bytes.size()-p<4) { return false; }auto size{get(bytes.data()+p,4)};p+=4;
             if(size>maximum||size>bytes.size()-p) { return false; }
             text.assign(reinterpret_cast<char const*>(bytes.data()+p),static_cast<std::size_t>(size));p+=static_cast<std::size_t>(size);return true;
@@ -126,7 +127,7 @@ namespace uwvm2::imported::ros::ipc
         if(event.kind!=3) { auto error{decode_parameter(event.value.type,bytes.data()+p,static_cast<std::size_t>(size),event.value,max_elements)};if(error) { return error; } }
         output=std::move(event);return 0;
     }
-    inline std::uint32_t validate_typed_parameter_event(version backend,capability_spec const& cap,std::vector<std::uint8_t> const& bytes,typed_parameter_event* output=nullptr)
+    inline std::uint32_t validate_typed_parameter_event(version backend,capability_spec const& cap,::uwvm2::utils::container::std_vector<std::uint8_t> const& bytes,typed_parameter_event* output=nullptr)
     {
         if(backend!=version::ros2||cap.operation!="param.subscribe-events"||parameter_event_type(backend,cap.type)==parameter_kind::unsupported) { return 95; }
         auto error{validate_parameter_contract(backend,cap)};if(error) { return error; }

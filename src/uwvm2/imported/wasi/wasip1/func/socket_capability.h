@@ -1,5 +1,9 @@
 // Licensed under APL-2.0 (see LICENSE). Included by base.h after its bounds/errno helpers.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#ifndef UWVM_MODULE
+# include "checkpoint_io.h"
+#endif
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(__linux__)
 UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capability
 {
@@ -60,11 +64,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
     // Shared by sock_recv/send and fd_read/write. Callers hold the descriptor
     // lock, so rights reduction/renumber cannot race resource use. No FD-number
     // based stdio/filesystem branch can change this socket's quota class.
-    template<unsigned Width>
-    inline error io(env_type& env,manager::wasi_fd_t& fd,::std::uint64_t vectors,
+    template<unsigned Width,bool Writing>
+    inline error io_impl(env_type& env,manager::wasi_fd_t& fd,::std::uint64_t vectors,
         ::std::uint64_t count,unsigned flags,::std::uint64_t result,::std::uint64_t out_flags,
-        bool writing,bool socket_call) noexcept
+        bool socket_call) noexcept
     {
+        constexpr bool writing=Writing;
         auto* memory=env.get_memory();if(!memory)return error::efault;
         auto const required=writing?abi::rights_t::right_fd_write:abi::rights_t::right_fd_read;
         if(!granted(fd,required))return error::enotcapable;
@@ -73,6 +78,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
         if(writing?flags!=0u:(flags&~3u)!=0u)return error::einval;
         if(vectors%Width || result%Width || (!writing&&socket_call&&out_flags%2u))return error::einval;
         auto const descriptor=native_descriptor(fd);if(descriptor<0)return error::ebadf;
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory{true};
         [[maybe_unused]] auto guard=memops::lock_memory(*memory);
         if(!wasip1_guest_range_valid_unlocked(*memory,result,::std::uint64_t{Width}) ||
            (!writing&&socket_call&&!wasip1_guest_range_valid_unlocked(*memory,out_flags,::std::uint64_t{2u})))return error::efault;
@@ -80,7 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
         if(count>SIZE_MAX/sizeof(::iovec))return error::eoverflow;
         // The common one/few-vector path needs no allocation. Larger valid
         // vectors remain legal; only the native sendmsg/recvmsg ABI limits apply.
-        ::std::array<::iovec,16u> small{};::std::vector<::iovec> large;
+        ::std::array<::iovec,16u> small{};::uwvm2::utils::container::std_vector<::iovec> large;
         ::iovec* data=small.data();
         if(count>small.size())
         {
@@ -93,6 +99,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
 #endif
             data=large.data();
         }
+        // Declared after the native vectors: cleanup must restore them while
+        // their storage is still alive, including every early error path.
+        ::uwvm2::imported::wasi::wasip1::func::checkpoint_scatter_io<Writing,::iovec> replay_io{*memory,guard};
         ::std::uint64_t total{};
         for(::std::uint64_t i{};i<count;++i)
         {
@@ -105,13 +114,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
             auto const span=memops::checked_span_unlocked(*memory,offset,length);
             if(!span)return error::efault;
             data[i]={span.data,span.bytes};
+            if(!replay_io.remember(offset,span.bytes))return error::enomem;
         }
+        if(auto status=replay_io.detach(*memory,data,static_cast<::std::size_t>(count));status!=error::esuccess)return status;
         auto const budget=writing?policy::budget_kind::socket_write:policy::budget_kind::socket_read;
         policy::budget_reservation reservation{budget,env.limits,total};
         if(!reservation)return reservation.template error<error>();
         if(env.debug_io_observed)env.debug_io_observed(total,0u,false);
         auto publish=[&](::std::size_t done,unsigned truncated) noexcept
         {
+            // Output tags can change while waiting. Validate both result words
+            // and every payload destination before committing the first byte.
+            if(auto status=replay_io.commit(*memory,done,result,Width,out_flags,!writing&&socket_call?2u:0u);
+                status!=error::esuccess)return status;
             write_word<Width>(*memory,result,done);
             if(!writing&&socket_call)write_word<2u>(*memory,out_flags,truncated);
             if(env.debug_io_observed)env.debug_io_observed(total,done,true);
@@ -172,6 +187,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
         }
     }
     template<unsigned Width>
+    inline error io(env_type& env,manager::wasi_fd_t& fd,::std::uint64_t vectors,
+        ::std::uint64_t count,unsigned flags,::std::uint64_t result,::std::uint64_t out_flags,
+        bool writing,bool socket_call) noexcept
+    {
+        return writing?io_impl<Width,true>(env,fd,vectors,count,flags,result,out_flags,socket_call):
+            io_impl<Width,false>(env,fd,vectors,count,flags,result,out_flags,socket_call);
+    }
+    template<unsigned Width>
     inline error transfer(env_type& env,int number,::std::uint64_t vectors,::std::uint64_t count,
         unsigned flags,::std::uint64_t result,::std::uint64_t out_flags,bool writing) noexcept
     {
@@ -196,6 +219,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
         auto* memory=env.get_memory();if(!memory)return error::efault;
         if(result%4u || (flags&~4u)!=0u)return error::einval;
         {
+            ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory{false};
             [[maybe_unused]] auto guard=memops::lock_memory(*memory);
             if(!wasip1_guest_range_valid_unlocked(*memory,result,::std::uint64_t{4}) ||
                (with_address&&!wasip1_guest_range_valid_unlocked(*memory,address,::std::uint64_t{20})))return error::efault;
@@ -250,9 +274,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func::socket_capabil
                 }
             }
         }
+        ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_memory{true};
         [[maybe_unused]] auto guard=memops::lock_memory(*memory);
         // Memory cannot shrink during the active call. Resolve its potentially
         // grown base again; never retain a pointer across native accept.
+        if(!wasip1_guest_range_valid_unlocked(*memory,result,::std::uint64_t{4}) ||
+           (with_address&&!wasip1_guest_range_valid_unlocked(*memory,address,::std::uint64_t{20})))return error::efault;
         write_word<4>(*memory,result,static_cast<unsigned>(new_number));
         if(with_address)
         {

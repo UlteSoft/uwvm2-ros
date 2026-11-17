@@ -3,6 +3,8 @@
 // code owner. Only the REAL materializer can construct it after finalization and
 // complete symbol resolution. No serialized/request owner can issue this DATA.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         class checkpoint_materialization_identity_data final
         {
@@ -102,13 +104,13 @@
             }
             [[nodiscard]] static digest finalize_hash(::fast_io::sha256_context& hash) noexcept
             { hash.do_final(); digest result{}; hash.digest_to_byte_ptr(result.data()); return result; }
-            [[nodiscard]] static ::std::unique_ptr<checkpoint_materialization_identity_data> retain(
+            [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<checkpoint_materialization_identity_data> retain(
                 checkpoint_materialization_identity_data&& value) noexcept
             {
-                try { return ::std::unique_ptr<checkpoint_materialization_identity_data>{new checkpoint_materialization_identity_data{::std::move(value)}}; }
+                try { return ::uwvm2::utils::container::std_unique_ptr<checkpoint_materialization_identity_data>{::uwvm2::utils::allocator::fast_io_strict::object<checkpoint_materialization_identity_data>([&](checkpoint_materialization_identity_data* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) checkpoint_materialization_identity_data{::std::move(value)}; })}; }
                 catch(...) { return {}; }
             }
-            [[nodiscard]] static ::std::unique_ptr<checkpoint_materialization_identity_data> from_actual_finalized_materializer(
+            [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<checkpoint_materialization_identity_data> from_actual_finalized_materializer(
                 source_owner const& source, profile_owner const& profile,
                 ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,
                 ::std::uint64_t actual_id, ::std::uint_least64_t actual_epoch,

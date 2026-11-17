@@ -1,5 +1,7 @@
 // Private SOURCE candidate: typed creation origin and DATA retention, not GC admission.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #if defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
 #if !defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) || UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES != 1
 # error "exception source retention requires homogeneous external handles"
@@ -211,7 +213,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             auto const canonical_store{store->weak_from_this()};
             if(canonical_store.owner_before(store) || store.owner_before(canonical_store)) { return {}; }
             auto domain{source_exn::native_exception_root_domain::make()};
-            auto mutable_owner{::std::make_shared<source_exception_publisher>(construction_key{},source,domain,serial,view.runtime_epoch)};
+            auto mutable_owner{::uwvm2::utils::container::make_shared<source_exception_publisher>(construction_key{},source,domain,serial,view.runtime_epoch)};
             mutable_owner->canonical_owner_=mutable_owner;
             return mutable_owner;
         }
@@ -331,7 +333,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
         // receipt. Source/tag/store checks alone never prove mutable ownership.
         [[nodiscard]] static ::std::optional<produced_value> publish_native_owned(
             owner const& producer, ::std::size_t actual_tag_index,
-            ::std::vector<source_exn::payload_field>&& private_fields,
+            ::uwvm2::utils::container::std_vector<source_exn::payload_field>&& private_fields,
             source_exn::diagnostic_trace_ref trace)
         {
             if(!canonical(producer) || producer->retired_.load(::std::memory_order_acquire) ||

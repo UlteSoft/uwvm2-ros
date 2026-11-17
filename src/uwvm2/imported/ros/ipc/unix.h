@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
@@ -305,7 +306,7 @@ namespace uwvm2::imported::ros::ipc
         // controller's real worker drain when a bounded nonwaiting view matters.
         cancellation_observation cancellation_status()noexcept
         { std::lock_guard<std::mutex> lock{mutex_};return cancellation_; }
-        std::uint32_t connect(std::string const& path,std::uint8_t backend,std::uint32_t expected_uid,std::uint32_t timeout_ms)
+        std::uint32_t connect(::uwvm2::utils::container::std_string const& path,std::uint8_t backend,std::uint32_t expected_uid,std::uint32_t timeout_ms)
         {
             auto stop{current_cancellation_fd()};
 #if defined(__linux__)
@@ -368,7 +369,7 @@ namespace uwvm2::imported::ros::ipc
         }
         // Metadata is borrowed only until encode_request_view synchronously
         // copies it into the owned frame; no view survives this call.
-        call_result call(std::string_view operation,std::string_view alias,std::vector<std::uint8_t> payload,std::uint32_t timeout_ms)
+        call_result call(std::string_view operation,std::string_view alias,::uwvm2::utils::container::std_vector<std::uint8_t> payload,std::uint32_t timeout_ms)
         {
             auto stop{current_cancellation_fd()};
 #if defined(__linux__)

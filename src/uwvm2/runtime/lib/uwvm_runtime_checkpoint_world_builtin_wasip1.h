@@ -2,24 +2,29 @@
 // Authenticate the original factory binding, never a serialized host address.
 [[nodiscard]] bool bind_builtin_wasip1_function(source_owner const& original,
     ::std::uint_least64_t epoch, ::std::size_t owner, ::std::size_t imported,
-    object_id id)
+    ::std::size_t provider_owner, ::std::size_t provider_index, object_id id)
 {
     namespace cp=checkpoint_world_data::cp;namespace st=checkpoint_world_data::st;
-    if(owner>=modules_.size() || !source_type::has_canonical_owner(original)) { return false; }
+    if(owner>=modules_.size() || provider_owner>=modules_.size() || !source_type::has_canonical_owner(original)) { return false; }
     auto const& module{modules_[owner]};
     auto const old{original->registry_.find(module.file->module_name)};
     if(old==original->registry_.end() ||
        original->actual_validated_file(module.old_actual_id,epoch,::std::addressof(old->second))==nullptr ||
        imported>=old->second.imported_function_vec_storage.size() || imported>=module.actual->imported_function_vec_storage.size())
     { return false; }
-    ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data binding{};
-    if(!original->actual_builtin_wasip1_function(module.old_actual_id,epoch,::std::addressof(old->second),imported,binding))
+    auto const& provider{modules_[provider_owner]};
+    auto const old_provider{original->registry_.find(provider.file->module_name)};
+    if(old_provider==original->registry_.end() || provider_index>=old_provider->second.imported_function_vec_storage.size() ||
+       provider_index>=provider.actual->imported_function_vec_storage.size()) { return false; }
+    ::uwvm2::uwvm::runtime::full::builtin_checkpoint_function_data binding{};
+    if(!original->actual_checkpoint_builtin_function(provider.old_actual_id,epoch,::std::addressof(old_provider->second),provider_index,binding))
     { return false; }
-    auto const& prior{old->second.imported_function_vec_storage.index_unchecked(imported)};
+    auto const& prior{old_provider->second.imported_function_vec_storage.index_unchecked(provider_index)};
+    auto const& terminal{provider.actual->imported_function_vec_storage.index_unchecked(provider_index)};
     auto const& next{module.actual->imported_function_vec_storage.index_unchecked(imported)};
-    if(next.link_kind!=st::imported_function_link_kind::local_imported ||
-       next.target.local_imported.module_ptr!=prior.target.local_imported.module_ptr ||
-       next.target.local_imported.index!=prior.target.local_imported.index)
+    if(terminal.link_kind!=st::imported_function_link_kind::local_imported ||
+       terminal.target.local_imported.module_ptr!=prior.target.local_imported.module_ptr ||
+       terminal.target.local_imported.index!=prior.target.local_imported.index)
     { return false; } // Compare native adapter identity; do not read its pointee.
     auto const* function{lookup(id)};auto* relocated{native(id)};
     if(function==nullptr || relocated==nullptr || function->kind!=cp::object_kind::function ||
@@ -46,15 +51,18 @@
        !matches(signature.result,binding.results,binding.result_count)) { return false; }
     auto const* adapter{lookup(function->links[1u])};
     if(adapter==nullptr || !cp::state_details::valid_builtin_binding(*adapter) ||
-       adapter->words!=::std::array<::std::uint64_t,8u>{cp::builtin_wasip1_binding_kind,1u,binding.function_index+1u,0u,0u,0u,0u,0u})
+       adapter->words!=::std::array<::std::uint64_t,8u>{binding.ros_family?cp::builtin_ros_v1_binding_kind:cp::builtin_wasip1_binding_kind,
+           binding.ros_family?binding.ros_family:1u,binding.function_index+1u,0u,0u,0u,0u,0u})
     { return false; }
     // Recreate the complete 108-byte canonical DATA descriptor using FastIO.
     // An equal ordinal/signature alone does not authenticate the interface.
     ::std::array<unsigned char,cp::builtin_wasip1_binding_bytes> bytes{};
     ::fast_io::basic_obuffer_view<unsigned char> output{bytes.data(),bytes.data()+bytes.size()};
-    constexpr unsigned char magic[]{'U','W','V','M','W','A','S','I','P','1','B','1'};
-    ::fast_io::operations::write_all(output,magic,magic+sizeof(magic));
-    ::fast_io::print(output,::fast_io::mnp::le_put<64u>(binding.function_index),::fast_io::mnp::le_put<64u>(::std::uint64_t{1u}));
+    auto const magic=binding.ros_family?::std::array<unsigned char,12u>{'U','W','V','M','R','O','S','V','1','B','0','1'}:
+        ::std::array<unsigned char,12u>{'U','W','V','M','W','A','S','I','P','1','B','1'};
+    ::fast_io::operations::write_all(output,magic.data(),magic.data()+magic.size());
+    ::fast_io::print(output,::fast_io::mnp::le_put<64u>(binding.function_index),
+        ::fast_io::mnp::le_put<64u>(::std::uint64_t{binding.ros_family?binding.ros_family:1u}));
     auto const* digest{reinterpret_cast<unsigned char const*>(binding.interface_sha256.data())};
     ::fast_io::operations::write_all(output,digest,digest+binding.interface_sha256.size());
     ::fast_io::print(output,::fast_io::mnp::le_put<64u>(static_cast<::std::uint64_t>(binding.parameter_count)),
@@ -67,6 +75,8 @@
     { return relocated->owner==owner && relocated->local==imported && relocated->imported_function && relocated->reference_ready; }
     relocated->owner=owner;relocated->local=imported;relocated->imported_function=true;
     relocated->value={};relocated->value.kind=::uwvm2::object::global::wasm_ref_kind::wasm_func_imported;
+    // Retain the actual receiver wrapper, not the final native leaf. Its real
+    // dispatch cache selects this module's memory/environment after publication.
     relocated->value.storage.ptr=const_cast<st::imported_function_storage_t*>(::std::addressof(next));
     relocated->reference_ready=true;
     return true; // Unpublished native member, no host execution/effect permission.

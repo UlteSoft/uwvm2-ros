@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_expression.h"
 # include "source_pretty_printer.h"
@@ -109,7 +110,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
         {
             matched = false;
             if(root >= types.size()) { return dwarf::inline_query_error::malformed; }
-            dwarf::object_node direct{}; ::std::vector<dwarf::object_node> selected{};
+            dwarf::object_node direct{}; ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{};
             dwarf::object_node const* node{::std::addressof(direct)};
             if(segment.empty())
             {
@@ -134,7 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             if constexpr (!(UWVM_DEBUG_LANGUAGE_RUST)) { return false; }
             else
             {
-            ::std::vector<dwarf::object_node> layout{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> layout{};
             if(dwarf::query_selected_object_type(types,root,segment,layout) != dwarf::inline_query_error::none || layout.empty() || layout[0u].type >= types.size()) { return false; }
             auto const& type{types[layout[0u].type]}; ::std::string_view name{type.name};
             string = name == "&str" || name == "&mut str";
@@ -172,7 +173,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             out = {};
             if(rust_sequence(types,root,segment,width,out.element,out.string))
             { out.pointer = "data_ptr"; out.length = "length"; return true; }
-            ::std::vector<dwarf::object_node> layout{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> layout{};
             if(dwarf::query_selected_object_type(types,root,segment,layout) != dwarf::inline_query_error::none ||
                layout.empty() || layout[0u].type >= types.size()) { return false; }
             auto const& type{types[layout[0u].type]};
@@ -203,19 +204,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             out.element = pt.referenced_type; out.pointer = "ptr"; out.length = "len"; return true;
         }
         [[nodiscard]] inline bool sequence_carriers(::std::span<dwarf::type_record const> types, ::std::size_t root,
-            ::std::vector<dwarf::object_selector_step> segment, ::std::span<::std::byte const> bytes,
+            ::uwvm2::utils::container::std_vector<dwarf::object_selector_step> segment, ::std::span<::std::byte const> bytes,
             ::std::span<::std::byte const> known, ::std::span<::std::byte const> qualified,
             ::std::uint64_t& address, ::std::uint64_t& length, sequence_layout const& layout)
         {
-            ::std::vector<dwarf::object_node> out{};
-            segment.push_back({dwarf::object_selector_kind::member,::fast_io::concat_std(layout.length),{}});
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> out{};
+            segment.push_back({dwarf::object_selector_kind::member,::uwvm2::utils::container::concat(layout.length),{}});
             auto const length_status{known.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,out) :
                 dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,known,out)};
             if(length_status != dwarf::inline_query_error::none || out.size() != 1u || !out[0u].value_available) { return false; }
             if(out[0u].scalar_kind == dwarf::numeric_kind::signed_integer && (out[0u].bits & (::std::uint64_t{1u} << (out[0u].byte_size*8u-1u))) != 0u) { return false; }
             length = out[0u].bits;
             if(length == 0u) { address = 0u; return true; }
-            segment.back().member = ::fast_io::concat_std(layout.pointer);
+            segment.back().member = ::uwvm2::utils::container::concat(layout.pointer);
             auto const pointer_status{qualified.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,out) :
                 dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,qualified,out)};
             if(pointer_status != dwarf::inline_query_error::none || out.size() != 1u || !out[0u].value_available) { return false; }
@@ -257,7 +258,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
         [[nodiscard]] inline bool go_builtin_layout(::std::span<dwarf::type_record const> types, ::std::size_t root,
             ::std::span<dwarf::object_selector_step const> segment, ::std::uint8_t width, bool capacity, sequence_layout& layout)
         {
-            ::std::vector<dwarf::object_node> selected{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{};
             return dwarf::query_selected_object_type(types,root,segment,selected) == dwarf::inline_query_error::none &&
                 !selected.empty() && selected[0u].type < types.size() && go_language(types[selected[0u].type]) &&
                 sequence(types,root,segment,width,layout) && !(capacity && layout.string);
@@ -267,7 +268,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             ::std::size_t root, ::std::span<dwarf::object_selector_step const> segment,
             ::std::uint8_t width, bool capacity, go_reference_layout& layout)
         {
-            ::std::vector<dwarf::object_node> selected{}; ::std::size_t target{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::size_t target{};
             if(dwarf::query_selected_object_type(types,root,segment,selected) != dwarf::inline_query_error::none ||
                selected.size() != 1u || selected[0u].type >= types.size() ||
                !conventional_pointer(types,selected[0u],width,target)) { return false; }
@@ -332,27 +333,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             layout = {target,channel}; return true;
         }
         inline void go_builtin_result(::std::uint8_t width, bool capacity, ::std::uint64_t bits, bool available,
-            ::std::vector<dwarf::object_node>& out)
+            ::uwvm2::utils::container::std_vector<dwarf::object_node>& out)
         {
             dwarf::object_node result{};
-            result.name = ::fast_io::concat_std(capacity ? "$cap" : "$len");
-            result.type_name = ::fast_io::concat_std("int"); result.kind = dwarf::type_kind::scalar;
+            result.name = ::uwvm2::utils::container::concat(capacity ? "$cap" : "$len");
+            result.type_name = ::uwvm2::utils::container::concat("int"); result.kind = dwarf::type_kind::scalar;
             result.scalar_kind = dwarf::numeric_kind::signed_integer; result.scalar_bytes = width;
             result.byte_size = width; result.bits = bits; result.value_available = available;
             out = {}; out.push_back(::std::move(result));
         }
         [[nodiscard]] inline dwarf::inline_query_error go_builtin_value(::std::span<dwarf::type_record const> types,
-            ::std::size_t root, ::std::vector<dwarf::object_selector_step> segment, ::std::uint8_t width, bool capacity,
-            ::std::span<::std::byte const> bytes, ::std::span<::std::byte const> known, ::std::vector<dwarf::object_node>& out)
+            ::std::size_t root, ::uwvm2::utils::container::std_vector<dwarf::object_selector_step> segment, ::std::uint8_t width, bool capacity,
+            ::std::span<::std::byte const> bytes, ::std::span<::std::byte const> known, ::uwvm2::utils::container::std_vector<dwarf::object_node>& out)
         {
-            ::std::vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
             if(dwarf::query_selected_object_type(types,root,segment,selected) == dwarf::inline_query_error::none &&
                !selected.empty() && go_array_length(types,selected[0u],width,length))
             { go_builtin_result(width,capacity,length,true,out); return dwarf::inline_query_error::none; }
             sequence_layout layout{};
             if(!go_builtin_layout(types,root,segment,width,capacity,layout)) { return dwarf::inline_query_error::unavailable; }
-            segment.push_back({dwarf::object_selector_kind::member,::fast_io::concat_std(capacity ? "cap" : layout.length),{}});
-            ::std::vector<dwarf::object_node> field{};
+            segment.push_back({dwarf::object_selector_kind::member,::uwvm2::utils::container::concat(capacity ? "cap" : layout.length),{}});
+            ::uwvm2::utils::container::std_vector<dwarf::object_node> field{};
             auto const status{known.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,field) :
                 dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,known,field)};
             if(status != dwarf::inline_query_error::none) { return status; }
@@ -365,7 +366,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             // are present, reject a contradictory slice descriptor.
             if(!layout.string)
             {
-                segment.back().member = ::fast_io::concat_std(capacity ? layout.length : "cap");
+                segment.back().member = ::uwvm2::utils::container::concat(capacity ? layout.length : "cap");
                 auto const other{known.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,field) :
                     dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,known,field)};
                 if(other == dwarf::inline_query_error::none && field.size() == 1u && field[0u].value_available &&
@@ -374,7 +375,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             }
             go_builtin_result(width,capacity,bits,true,out); return dwarf::inline_query_error::none;
         }
-        inline void add(::std::vector<dwarf::object_selector_step>& segment, dwarf::source_expression_step const& step)
+        inline void add(::uwvm2::utils::container::std_vector<dwarf::object_selector_step>& segment, dwarf::source_expression_step const& step)
         { segment.push_back({step.kind == dwarf::source_expression_step_kind::member ? dwarf::object_selector_kind::member :
                 dwarf::object_selector_kind::index, step.member, step.index}); }
     }
@@ -382,7 +383,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
     // pointer can have a known pointee type; this operation performs no read.
     [[nodiscard]] inline dwarf::inline_query_error type(::std::span<dwarf::type_record const> types,
         ::std::size_t root, ::std::span<dwarf::source_expression_step const> steps, ::std::uint8_t address_bytes,
-        ::std::vector<dwarf::object_node>& out) noexcept
+        ::uwvm2::utils::container::std_vector<dwarf::object_node>& out) noexcept
     {
         out = {};
         auto const validated{details::validate_steps(steps)};
@@ -392,7 +393,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
         try
         {
 #endif
-            ::std::vector<dwarf::object_selector_step> segment{}; ::std::size_t reference_hops{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_selector_step> segment{}; ::std::size_t reference_hops{};
             auto const normalize_references{[&]() -> dwarf::inline_query_error
             {
                 for(;;)
@@ -411,7 +412,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                 if(step.kind == dwarf::source_expression_step_kind::go_length || step.kind == dwarf::source_expression_step_kind::go_capacity)
                 {
                     details::sequence_layout layout{}; bool const capacity{step.kind == dwarf::source_expression_step_kind::go_capacity};
-                    ::std::vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
                     if(dwarf::query_selected_object_type(types,root,segment,selected) == dwarf::inline_query_error::none &&
                        !selected.empty() && details::go_array_length(types,selected[0u],address_bytes,length))
                     { details::go_builtin_result(address_bytes,capacity,0u,false,out); return dwarf::inline_query_error::none; }
@@ -426,7 +427,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                     // For a type query only, an all-zero descriptor is DATA
                     // used to select the proven element type. No location or
                     // pointer bits are evaluated and the planner has no reader.
-                    ::std::vector<dwarf::object_node> candidate{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> candidate{};
                     if(dwarf::query_selected_object_type(types,root,segment,candidate) == dwarf::inline_query_error::none &&
                        !candidate.empty() && candidate[0u].type < types.size() && candidate[0u].byte_size <= 65536u)
                     {
@@ -442,7 +443,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                             if(step.index<0 || (bounded && static_cast<::std::uint64_t>(step.index)>=bound)) { return dwarf::inline_query_error::unavailable; }
                             root=element;segment.clear();continue;
                         }
-                        ::std::vector<::std::byte> descriptor(static_cast<::std::size_t>(candidate[0u].byte_size));
+                        ::uwvm2::utils::container::std_vector<::std::byte> descriptor(static_cast<::std::size_t>(candidate[0u].byte_size));
                         source_pretty_printer::details::indexed_sequence plan{};
                         if(source_pretty_printer::details::index_plan(types,candidate[0u].type,descriptor,{}, {},address_bytes,plan))
                         { if(step.index < 0) { return dwarf::inline_query_error::unavailable; } root = plan.element; segment.clear(); continue; }
@@ -454,7 +455,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
 #if UWVM_DEBUG_LANGUAGE_RUST
                 if(step.kind==dwarf::source_expression_step_kind::dereference)
                 {
-                    ::std::vector<dwarf::object_node> candidate{};source_pretty_printer::details::rust_shared_layout layout{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> candidate{};source_pretty_printer::details::rust_shared_layout layout{};
                     if(dwarf::query_selected_object_type(types,root,segment,candidate)==dwarf::inline_query_error::none &&
                        !candidate.empty() && source_pretty_printer::details::rust_shared_schema(types,candidate[0u].type,address_bytes,layout) &&
                        !layout.weak_owner)
@@ -464,7 +465,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                 bool implicit{}, cpp_reference{};
                 if(step.kind == dwarf::source_expression_step_kind::member)
                 {
-                    ::std::vector<dwarf::object_node> selected{}; ::std::size_t target{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::size_t target{};
                     if(dwarf::query_selected_object_type(types,root,segment,selected) == dwarf::inline_query_error::none && selected.size() == 1u &&
                        selected[0u].type < types.size() && details::implicit_member(types[selected[0u].type]))
                     {
@@ -478,7 +479,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                     { return dwarf::inline_query_error::malformed; }
                     details::add(segment, step); continue;
                 }
-                ::std::vector<dwarf::object_node> selected{};
+                ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{};
                 auto const status{dwarf::query_selected_object_type(types, root, segment, selected)};
                 if(status != dwarf::inline_query_error::none) { return status; }
                 ::std::size_t target{};
@@ -504,8 +505,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
     template<typename Reader>
     [[nodiscard]] inline dwarf::inline_query_error value(::std::span<dwarf::type_record const> types,
         ::std::size_t root, ::std::span<dwarf::source_expression_step const> steps,
-        ::std::vector<::std::byte> bytes, ::std::vector<::std::byte> known_bits,
-        ::std::uint8_t address_bytes, Reader&& read, ::std::vector<dwarf::object_node>& out, limits const& cap = {},
+        ::uwvm2::utils::container::std_vector<::std::byte> bytes, ::uwvm2::utils::container::std_vector<::std::byte> known_bits,
+        ::std::uint8_t address_bytes, Reader&& read, ::uwvm2::utils::container::std_vector<dwarf::object_node>& out, limits const& cap = {},
         ::std::span<::std::byte const> pointer_carrier_known_bits = {}) noexcept
     {
         out = {};
@@ -527,7 +528,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
             if(!steps.empty() && (steps.back().kind == dwarf::source_expression_step_kind::go_length ||
                 steps.back().kind == dwarf::source_expression_step_kind::go_capacity))
             {
-                ::std::vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
+                ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::uint64_t length{};
                 if(type(types,root,steps.first(steps.size()-1u),address_bytes,selected) == dwarf::inline_query_error::none &&
                    !selected.empty() && details::go_array_length(types,selected[0u],address_bytes,length))
                 {
@@ -535,12 +536,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                         length,true,out); return dwarf::inline_query_error::none;
                 }
             }
-            ::std::vector<dwarf::object_selector_step> segment{}; ::std::size_t reads{};
+            ::uwvm2::utils::container::std_vector<dwarf::object_selector_step> segment{}; ::std::size_t reads{};
             // Source bytes and pointer-carrier eligibility differ: a legitimate
             // aggregate float member can remain displayable while its floating
             // storage bits cannot mint a conventional source pointer. Intersect
             // eligibility with actual availability before pointer planning.
-            ::std::vector<::std::byte> pointer_known{};
+            ::uwvm2::utils::container::std_vector<::std::byte> pointer_known{};
             if(!pointer_carrier_known_bits.empty())
             {
                 pointer_known.resize(bytes.size());
@@ -576,7 +577,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                     { return dwarf::inline_query_error::unavailable; }
                     if(reads >= allowed) { return dwarf::inline_query_error::limit_exceeded; }
                     ++reads; // Same transaction and allowance as explicit pointer/container reads.
-                    ::std::vector<::std::byte> copied{};
+                    ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                     if(!read(plan.guest_offset,static_cast<::std::size_t>(plan.extent),copied) || copied.size() != plan.extent)
                     { return dwarf::inline_query_error::unavailable; }
                     bytes = ::std::move(copied); known_bits.clear(); pointer_known.clear();
@@ -594,7 +595,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                     if(details::tinygo_reference_layout(types,root,segment,address_bytes,capacity,reference))
                     {
                         auto const& qualified{pointer_known.empty() ? known_bits : pointer_known};
-                        ::std::vector<dwarf::object_node> pointer{};
+                        ::uwvm2::utils::container::std_vector<dwarf::object_node> pointer{};
                         auto const selected{qualified.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,pointer) :
                             dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,qualified,pointer)};
                         if(selected != dwarf::inline_query_error::none || pointer.size() != 1u || !pointer[0u].value_available ||
@@ -611,15 +612,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                            plan.guest_offset > maximum_address || plan.extent-1u > maximum_address-plan.guest_offset)
                         { return dwarf::inline_query_error::unavailable; }
                         if(reads >= allowed) { return dwarf::inline_query_error::limit_exceeded; } ++reads;
-                        ::std::vector<::std::byte> header{};
+                        ::uwvm2::utils::container::std_vector<::std::byte> header{};
                         if(!read(plan.guest_offset,static_cast<::std::size_t>(plan.extent),header) || header.size() != plan.extent)
                         { return dwarf::inline_query_error::unavailable; }
                         // One ordinary guest-pointer copy, in the caller's
                         // existing stopped-guest transaction. Never follow a
                         // bucket/buffer/function/queue pointer or acquire locks.
-                        ::std::vector<dwarf::object_selector_step> member{{dwarf::object_selector_kind::member,
-                            ::fast_io::concat_std(::std::string_view{reference.channel ? (capacity ? "bufCap" : "bufLen") : "count"}),{}}};
-                        ::std::vector<dwarf::object_node> field{};
+                        ::uwvm2::utils::container::std_vector<dwarf::object_selector_step> member{{dwarf::object_selector_kind::member,
+                            ::uwvm2::utils::container::concat(::std::string_view{reference.channel ? (capacity ? "bufCap" : "bufLen") : "count"}),{}}};
+                        ::uwvm2::utils::container::std_vector<dwarf::object_node> field{};
                         auto const value{dwarf::query_selected_object_value(types,reference.target,member,header,field)};
                         auto const maximum_int{address_bytes == 4u ? 0x7fffffffull : 0x7fffffffffffffffull};
                         if(value != dwarf::inline_query_error::none || field.size() != 1u || !field[0u].value_available ||
@@ -628,7 +629,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                         auto const bits{field[0u].bits};
                         if(reference.channel)
                         {
-                            member[0u].member = ::fast_io::concat_std(capacity ? "bufLen" : "bufCap");
+                            member[0u].member = ::uwvm2::utils::container::concat(capacity ? "bufLen" : "bufCap");
                             if(dwarf::query_selected_object_value(types,reference.target,member,header,field) != dwarf::inline_query_error::none ||
                                field.size() != 1u || !field[0u].value_available || field[0u].bits > maximum_int ||
                                (capacity ? field[0u].bits > bits : bits > field[0u].bits))
@@ -641,7 +642,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                 }
                 if(step.kind == dwarf::source_expression_step_kind::index)
                 {
-                    ::std::vector<dwarf::object_node> selected_container{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> selected_container{};
                     if((known_bits.empty() ? dwarf::query_selected_object_value(types,root,segment,bytes,selected_container) :
                         dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,known_bits,selected_container)) == dwarf::inline_query_error::none &&
                        !selected_container.empty() && !selected_container[0u].bit_field)
@@ -672,8 +673,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                                     auto const at{first+static_cast<::std::size_t>(offset)};auto const size{static_cast<::std::size_t>(extent)};
                                     for(::std::size_t i{};i!=size;++i)
                                     { if(!known_bits.empty() && known_bits[at+i]!=::std::byte{0xffu}) { return dwarf::inline_query_error::unavailable; } }
-                                    ::std::vector<::std::byte> copied(bytes.begin()+at,bytes.begin()+at+size);
-                                    ::std::vector<::std::byte> copied_known{},copied_pointer{};
+                                    ::uwvm2::utils::container::std_vector<::std::byte> copied(bytes.begin()+at,bytes.begin()+at+size);
+                                    ::uwvm2::utils::container::std_vector<::std::byte> copied_known{},copied_pointer{};
                                     if(!known_bits.empty()) { copied_known.assign(known_bits.begin()+at,known_bits.begin()+at+size); }
                                     if(!pointer_known.empty()) { copied_pointer.assign(pointer_known.begin()+at,pointer_known.begin()+at+size); }
                                     bytes=::std::move(copied);known_bits=::std::move(copied_known);pointer_known=::std::move(copied_pointer);
@@ -683,7 +684,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                                 if(!source_pretty_printer::details::indexed_address(plan,static_cast<::std::uint64_t>(step.index),
                                     extent,address_bytes,address)) { return dwarf::inline_query_error::unavailable; }
                                 if(reads >= allowed) { return dwarf::inline_query_error::limit_exceeded; } ++reads;
-                                ::std::vector<::std::byte> copied{};
+                                ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                                 if(!read(address,static_cast<::std::size_t>(extent),copied) || copied.size() != extent) { return dwarf::inline_query_error::unavailable; }
                                 bytes = ::std::move(copied); root = plan.element; segment.clear(); known_bits.clear(); pointer_known.clear(); continue;
                             }
@@ -707,7 +708,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                         auto const offset{address+index*extent};
                         if(extent-1u > maximum-offset) { return dwarf::inline_query_error::unavailable; }
                         if(reads >= allowed) { return dwarf::inline_query_error::limit_exceeded; } ++reads;
-                        ::std::vector<::std::byte> copied{};
+                        ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                         if(!read(offset,static_cast<::std::size_t>(extent),copied) || copied.size() != extent) { return dwarf::inline_query_error::unavailable; }
                         bytes = ::std::move(copied); root = target; segment.clear(); known_bits.clear(); pointer_known.clear(); continue;
                     }
@@ -715,7 +716,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
 #if UWVM_DEBUG_LANGUAGE_RUST
                 if(step.kind==dwarf::source_expression_step_kind::dereference)
                 {
-                    ::std::vector<dwarf::object_node> candidate{};source_pretty_printer::details::rust_shared_layout layout{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> candidate{};source_pretty_printer::details::rust_shared_layout layout{};
                     auto const selected{known_bits.empty()?dwarf::query_selected_object_value(types,root,segment,bytes,candidate):
                         dwarf::query_selected_object_value_with_known_bits(types,root,segment,bytes,known_bits,candidate)};
                     if(selected==dwarf::inline_query_error::none && !candidate.empty() && !candidate[0u].bit_field &&
@@ -732,7 +733,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                             known,eligible,address_bytes,address,empty) || empty) { return dwarf::inline_query_error::unavailable; }
                         auto const size{static_cast<::std::size_t>(types[layout.value.type].byte_size)};auto const needed{size==0u?1u:2u};
                         if(reads>allowed || needed>allowed-reads) { return dwarf::inline_query_error::limit_exceeded; }
-                        ::std::vector<::std::byte> header{},value{};++reads;
+                        ::uwvm2::utils::container::std_vector<::std::byte> header{},value{};++reads;
                         if(!read(address,layout.header_bytes,header) || header.size()!=layout.header_bytes ||
                            !source_pretty_printer::details::rust_shared_counts(types,layout,header,address_bytes,strong,weak))
                         { return dwarf::inline_query_error::unavailable; }
@@ -747,7 +748,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                 bool implicit{}, cpp_reference{};
                 if(step.kind == dwarf::source_expression_step_kind::member)
                 {
-                    ::std::vector<dwarf::object_node> selected{}; ::std::size_t target{};
+                    ::uwvm2::utils::container::std_vector<dwarf::object_node> selected{}; ::std::size_t target{};
                     if(dwarf::query_selected_object_type(types,root,segment,selected) == dwarf::inline_query_error::none && selected.size() == 1u &&
                        selected[0u].type < types.size() && details::implicit_member(types[selected[0u].type]))
                     {
@@ -774,7 +775,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                 { return dwarf::inline_query_error::unavailable; }
                 if(reads >= allowed) { return dwarf::inline_query_error::limit_exceeded; }
                 ++reads; // [safe] bounded read budget charged BEFORE invoking the supplied cold policy.
-                ::std::vector<::std::byte> target{}; auto const extent{static_cast<::std::size_t>(plan.extent)};
+                ::uwvm2::utils::container::std_vector<::std::byte> target{}; auto const extent{static_cast<::std::size_t>(plan.extent)};
                 // guest_offset is a checked scalar plan from owned bytes. It is
                 // never cast to native memory here. Actual runtime checks its
                 // own retained memory bounds BEFORE every address derivation.
@@ -800,13 +801,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                     // Empty strings require neither a pointer nor read budget.
                     auto const maximum{address_bytes == 4u ? 0xffffffffull : ~::std::uint64_t{}};
                     auto const copied_bytes{static_cast<::std::size_t>(length < 4096u ? length : 4096u)};
-                    ::std::vector<::std::byte> copied{};
+                    ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                     if(length == 0u || (address != 0u && address <= maximum && length-1u <= maximum-address &&
                         reads < allowed && (++reads, read(address,copied_bytes,copied)) && copied.size() == copied_bytes))
                     {
                         out[0u].display_text_available = true;
                         out[0u].display_text_truncated = length > copied_bytes;
-                        if(copied_bytes != 0u) { out[0u].display_text = ::fast_io::concat_std(::std::string_view{reinterpret_cast<char const*>(copied.data()),copied.size()}); }
+                        if(copied_bytes != 0u) { out[0u].display_text = ::uwvm2::utils::container::concat(::std::string_view{reinterpret_cast<char const*>(copied.data()),copied.size()}); }
                     }
                 }
             }
@@ -820,11 +821,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_language_expression
                         dwarf::plan_copied_guest_pointer_with_known_bits(types,root,segment,bytes,qualified,plan)};
                     if(planned == dwarf::inline_query_error::none)
                     {
-                        ::std::string text{}; ::fast_io::ostring_ref_std output{::std::addressof(text)}; bool complete{};
+                        ::uwvm2::utils::container::std_string text{}; ::uwvm2::utils::container::ostring_ref output{::std::addressof(text)}; bool complete{};
                         auto const maximum{address_bytes == 4u ? 0xffffffffull : ~::std::uint64_t{}};
                         for(::std::size_t i{}; i < 256u && reads < allowed && plan.guest_offset <= maximum && i <= maximum-plan.guest_offset; ++i)
                         {
-                            ++reads; ::std::vector<::std::byte> copied{};
+                            ++reads; ::uwvm2::utils::container::std_vector<::std::byte> copied{};
                             if(!read(plan.guest_offset+i,1u,copied) || copied.size() != 1u) { break; }
                             if(copied[0u] == ::std::byte{}) { complete = true; break; }
                             ::fast_io::io::print(output,::fast_io::mnp::chvw(static_cast<char>(::std::to_integer<unsigned char>(copied[0u]))));

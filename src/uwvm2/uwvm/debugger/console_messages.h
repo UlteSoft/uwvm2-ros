@@ -37,7 +37,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_messages
             case breakpoint_commands: return "commands";
             case callback_echo: return "echo";
             case module_list: return "info modules";
+            case host_interfaces: return "info host-interfaces";
             case ros_state:return "ros";
+            case scene_state:return "scene";
+            case wasithread_state:return "wasithread";
             case execution_relocate: return "jump";
             case source_frame:
                 if(command.wasm_frames) { return "wasm frames"; }
@@ -231,6 +234,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::console_messages
             if(command.kind == console_command_kind::wasm_path && reply.wasm_path_values.result != wasm_state::status::available)
             { return ::fast_io::concat_fast_io("error: Wasm path unavailable: ", wasm_state::status_text(reply.wasm_path_values.result),
                 ".\nUse \"path clear\" to discard old handles; type \"help path\" for requirements.\n"); }
+            if(command.kind==console_command_kind::wasithread_state&&reply.wasithread_state_values.result!=wasithread_state::status::ok)
+            {return ::fast_io::concat_fast_io("error: I1T policy inspection unavailable: ",wasithread_state::name(reply.wasithread_state_values.result),"\n");}
+            if(command.kind==console_command_kind::scene_state&&reply.scene_state_values.result!=scene_state::status::ok)
+            {return ::fast_io::concat_fast_io("error: process-owned scene snapshot unavailable: ",scene_state::status_text(reply.scene_state_values.result),
+                ".\nNo scene provider operation was requested. Type \"help scene\" for scope and stop requirements.\n");}
             if(command.kind==console_command_kind::ros_state&&reply.ros_state_values.result!=ros_state::status::ok)
             {return ::fast_io::concat_fast_io("error: process-owned ROS snapshot unavailable: ",ros_state::status_text(reply.ros_state_values.result),
                 ".\nNo native ROS operation was requested. Type \"help ros\" for scope and stop requirements.\n");}

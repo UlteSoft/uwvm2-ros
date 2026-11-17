@@ -13,7 +13,7 @@ module;
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 # include <condition_variable>
 # include <mutex>
-# include <stop_token>
+# include <uwvm2/utils/thread/stop_token.h>
 #endif
 export module uwvm2.utils.thread:execution_lifetime;
 #define UWVM_MODULE

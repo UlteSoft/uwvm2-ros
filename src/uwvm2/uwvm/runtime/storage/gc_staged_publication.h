@@ -3,6 +3,9 @@
 // construct this owner, reserve a shell or publish a store. Its sole issuer is
 // the complete-world transaction; the private initializer only builds metadata.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 class checkpoint_gc_staging final
 {
     friend class ::uwvm2::uwvm::runtime::initializer::restoration_context;
@@ -15,8 +18,8 @@ class checkpoint_gc_staging final
         gc_object_store::object* object{};
         bool filled{};
     };
-    ::std::vector<store_owner> stores_{};
-    ::std::vector<shell> shells_{};
+    ::uwvm2::utils::container::std_vector<store_owner> stores_{};
+    ::uwvm2::utils::container::std_vector<shell> shells_{};
     bool published_{};
     // Sole-world cold backing budget. This private callback records allocation
     // payloads only; it grants no source, graph, epoch or publication permission.
@@ -31,22 +34,22 @@ class checkpoint_gc_staging final
     struct exception
     {
         store_owner issuer{};
-        ::std::unique_ptr<gc_object_store::exn_token_entry> entry{};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::exn_token_entry> entry{};
     };
     struct exception_root
     {
         store_owner recipient{};
         gc_object_store::exn_token_entry* entry{};
-        ::std::unique_ptr<gc_object_store::exn_root_node> root{};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::exn_root_node> root{};
     };
     struct bridge
     {
         store_owner issuer{};
-        ::std::unique_ptr<gc_object_store::extern_bridge> entry{};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::extern_bridge> entry{};
     };
-    ::std::vector<exception> exceptions_{};
-    ::std::vector<exception_root> exception_roots_{};
-    ::std::vector<bridge> bridges_{};
+    ::uwvm2::utils::container::std_vector<exception> exceptions_{};
+    ::uwvm2::utils::container::std_vector<exception_root> exception_roots_{};
+    ::uwvm2::utils::container::std_vector<bridge> bridges_{};
     [[nodiscard]] exception const* find_pending_exception(gc_reference ref) const noexcept
     {
         if(ref.kind!=::uwvm2::object::global::wasm_ref_kind::wasm_exn || ref.storage.ptr==nullptr) { return nullptr; }
@@ -75,13 +78,13 @@ class checkpoint_gc_staging final
         {
             if(!charge_private_backing(1u, sizeof(gc_object_store::exn_root_bucket_array)))
             { return gc_object_status::size_overflow; }
-            recipient->exn_root_buckets_.reset(new(::std::nothrow) gc_object_store::exn_root_bucket_array{});
+            recipient->exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<gc_object_store::exn_root_bucket_array>([&](gc_object_store::exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) gc_object_store::exn_root_bucket_array{}; }));
             if(!recipient->exn_root_buckets_) { return gc_object_status::out_of_memory; }
         }
         if(!charge_private_backing(1u, sizeof(gc_object_store::exn_root_node)) ||
            !charge_private_backing(1u, sizeof(exception_root)))
         { return gc_object_status::size_overflow; }
-        ::std::unique_ptr<gc_object_store::exn_root_node> root{new(::std::nothrow) gc_object_store::exn_root_node{}};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::exn_root_node> root{::uwvm2::utils::allocator::resource::try_charged_object<gc_object_store::exn_root_node>()};
         if(!root) { return gc_object_status::out_of_memory; }
 #if defined(UWVM_CPP_EXCEPTIONS)
         try { exception_roots_.push_back(exception_root{recipient,entry,::std::move(root)}); }
@@ -102,7 +105,7 @@ class checkpoint_gc_staging final
         if(!charge_private_backing(1u, sizeof(gc_object_store::exn_token_entry)) ||
            !charge_private_backing(1u, sizeof(exception)))
         { return gc_object_status::size_overflow; }
-        ::std::unique_ptr<gc_object_store::exn_token_entry> entry{new(::std::nothrow) gc_object_store::exn_token_entry{}};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::exn_token_entry> entry{::uwvm2::utils::allocator::resource::try_charged_object<gc_object_store::exn_token_entry>()};
         if(!entry) { return gc_object_status::out_of_memory; }
 #if defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) && UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES == 1
         auto record{::uwvm2::runtime::exception::external_exception_handle::record_from_privileged_native(actual_new_value)};
@@ -152,7 +155,7 @@ class checkpoint_gc_staging final
         if(!charge_private_backing(1u, sizeof(gc_object_store::extern_bridge)) ||
            !charge_private_backing(1u, sizeof(bridge)))
         { return gc_object_status::size_overflow; }
-        ::std::unique_ptr<gc_object_store::extern_bridge> entry{new(::std::nothrow) gc_object_store::extern_bridge{}};
+        ::uwvm2::utils::container::std_unique_ptr<gc_object_store::extern_bridge> entry{::uwvm2::utils::allocator::resource::try_charged_object<gc_object_store::extern_bridge>()};
         if(!entry) { return gc_object_status::out_of_memory; }
         // [actual canonical stage-owned issuer][checked staged inner identity]
         // [safe] owner borrows only the strong stores_ pin, never a wire pointer.
@@ -303,11 +306,11 @@ class checkpoint_gc_staging final
         {
             if(!charge_private_backing(1u, sizeof(gc_object_store)) ||
                !charge_private_backing(1u, sizeof(store_owner))) { return {}; }
-            auto* const fresh{new(::std::nothrow) gc_object_store(section,lease_owner,callback,gc_object_store::checkpoint_staged_tag{})};
+            auto* const fresh{::uwvm2::utils::allocator::fast_io_strict::try_object<gc_object_store>([&](gc_object_store* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) gc_object_store(section,lease_owner,callback,gc_object_store::checkpoint_staged_tag{}); })};
             if(fresh==nullptr) { return {}; }
             // shared_ptr constructor deletes fresh if its control allocation
             // throws; its actual canonical owner is never minted from an alias.
-            auto owned{store_owner{fresh}};
+            auto owned{store_owner{::uwvm2::utils::container::adopt_shared(fresh)}};
             if(!owned->valid_ || owned->cohort_registered_) { return {}; }
             // [canonical strong source control block][new private unregistered store]
             // [safe] no source native address is cast or accepted from file DATA.
@@ -464,6 +467,37 @@ class checkpoint_gc_staging final
         for(auto const& pending:bridges_)
         { if(!pending.entry || pending.entry->token==nullptr || !owns(pending.issuer)) { return false; } }
         return true;
+    }
+    // Only the genuine world publisher may retire this complete old roster,
+    // after execution drain and physical worker join under GC exclusion.
+    // Retained diagnostic/source owners can keep a store alive without keeping
+    // it in the NEW world's collection/capture cohort.
+    [[nodiscard]] bool previous_cohort_matches(::std::span<::std::shared_ptr<gc_object_store> const> previous) const noexcept
+    {
+        if(published_ || previous.empty()) { return false; }
+        gc_object_store::cohort_guard guard{};
+        ::std::size_t count{};
+        for(auto const& store:previous)
+        {
+            if(!store || !store->valid_ || !store->cohort_registered_ || owns(store)) { return false; }
+            for(::std::size_t i{};i<count;++i) { if(previous[i].get()==store.get()) { return false; } }
+            ++count;
+        }
+        count=0u;
+        for(auto* store=gc_object_store::cohort_head_;store;store=store->cohort_next_)
+        {
+            if(count==previous.size()) { return false; }
+            bool found{};for(auto const& candidate:previous) { found=found || candidate.get()==store; }
+            if(!found) { return false; }++count;
+        }
+        return count==previous.size();
+    }
+    void retire_previous_cohort_after_drain(::std::span<::std::shared_ptr<gc_object_store> const> previous) noexcept
+    {
+        if(!previous_cohort_matches(previous)) { ::fast_io::fast_terminate(); }
+        // The caller owns exclusive GC admission through publication. These
+        // ordinary list operations must not recursively hold cohort_guard.
+        for(auto const& store:previous) { store->unregister_cohort_member(); }
     }
     // Sole real joint-world issuer calls AFTER actual old-world drain, source/
     // engine/resource preparation and its non-fallible publication boundary.

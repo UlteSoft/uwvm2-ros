@@ -1,5 +1,6 @@
 // Narrow actual LLVM-full exception/root-domain composition. Default OFF.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
 #ifndef UWVM_MODULE
 // Bootstrap this standalone gated header before testing its prerequisites.
@@ -108,7 +109,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::gc
             // diagnostic owners are actual-source/native data pinned by pins_.
             // No foreign callback or last source/store deleter can run here.
             owner->batch_.reset_after_native_resume();
-            delete owner; // Empty batch dies before its genuine source/domain pins.
+            ::uwvm2::utils::allocator::fast_io_strict::destroy_object(owner); // Empty batch dies before its genuine source/domain pins.
         }
         managed_exception_cohort pins_;
         ::uwvm2::uwvm::runtime::storage::gc_object_store::retired_exception_batch batch_;

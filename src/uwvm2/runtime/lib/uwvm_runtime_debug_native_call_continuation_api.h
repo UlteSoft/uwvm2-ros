@@ -375,7 +375,7 @@
                !capture_->control_ || !capture_->ticket_ || trap_revision_==0u || trap_revision_==UINT64_MAX) { return false; }
             // All allocation precedes the actual resume transaction. A retained
             // copy loses authority immediately after this synchronous callback.
-            auto window{::std::make_shared<llvm_jit_debug_native_call_event::resume_window>()};
+            auto window{::uwvm2::utils::container::make_shared<llvm_jit_debug_native_call_event::resume_window>()};
             auto gc_reader{::uwvm2::runtime::gc::runtime_gc_entry_admission.try_enter()}; if(!gc_reader) { return false; }
             auto lease{g_runtime.execution_domain.try_enter()}; if(!lease) { return false; }
             return capture_->control_->with_externally_parked_participant_for_resume(
@@ -435,7 +435,7 @@
     namespace
     {
         ::std::mutex g_debug_native_call_continuation_mutex{};
-        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_call_continuation const>> g_debug_native_call_continuations{};
+        ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_debug_native_call_continuation const>> g_debug_native_call_continuations{};
         [[nodiscard]] llvm_jit_debug_native_call_continuation_owner canonical_native_call_continuation(
             llvm_jit_debug_native_call_continuation_owner const& supplied) noexcept
         {
@@ -478,12 +478,12 @@
 #endif
             // Allocate all bounded cold owners/copies before entering the real
             // native gate; never allocate in a handler or after event enable.
-            auto candidate{::std::shared_ptr<llvm_jit_debug_native_call_continuation>{new llvm_jit_debug_native_call_continuation}};
+            auto candidate{::std::shared_ptr<llvm_jit_debug_native_call_continuation>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_native_call_continuation>([&](llvm_jit_debug_native_call_continuation* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_native_call_continuation; }))}};
             candidate->capture_ = capture; candidate->cursor_ = cursor; candidate->session_ = session;
 #if UWVM2_DEBUG_NATIVE_LINUX_SOFTWARE || UWVM2_DEBUG_NATIVE_HARDWARE_CONTINUATION
             candidate->opaque_call_ = !require_guest; // SI additionally requires the actual typed guest target.
 #endif
-            auto image{::std::make_unique<llvm_jit_debug_native_function_image>()};
+            auto image{::uwvm2::utils::container::make_unique<llvm_jit_debug_native_function_image>()};
             if(!candidate->prepare_image_storage(*image)) { return {}; }
             llvm_jit_debug_native_call_continuation::observation first{};
             if(!candidate->observe(first, image.get()) || image->owner_begin == 0u || image->owner_end <= image->owner_begin ||

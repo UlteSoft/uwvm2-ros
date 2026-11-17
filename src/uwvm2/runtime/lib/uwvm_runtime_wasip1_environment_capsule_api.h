@@ -34,7 +34,7 @@ extern "C++" llvm_jit_wasip1_environment_capsule_data_result llvm_jit_checkpoint
     llvm_jit_wasip1_environment_capsule_owner const& supplied) noexcept
 {
     using status=llvm_jit_wasip1_environment_capsule_status;
-    if(!::uwvm2::utils::control::debug_permissions::full_allowed()) { return {status::unavailable_capture,{}}; }
+    if(!::uwvm2::utils::control::debug_permissions::inspection_allowed()) { return {status::unavailable_capture,{}}; }
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_CPP_EXCEPTIONS)
     auto const actual{llvm_jit_wasip1_environment_capsule::canonical(supplied)};
     if(!actual) { return {status::invalid_capsule_owner,{}}; }

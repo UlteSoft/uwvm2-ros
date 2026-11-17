@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include "source_dwarf_values.h"
 # include "source_dwarf_variants.h"
@@ -29,18 +30,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     struct object_node
     {
         ::std::size_t parent{no_record}, type{no_record}, depth{};
-        ::std::string name{}, type_name{}, enumerator{};
+        ::uwvm2::utils::container::std_string name{}, type_name{}, enumerator{};
         type_kind kind{};
         numeric_kind scalar_kind{numeric_kind::unavailable};
         object_unavailable_reason reason{object_unavailable_reason::none};
         ::std::uint64_t byte_offset{}, byte_size{}, bits{}, omitted_children{};
         ::std::uint8_t scalar_bytes{}, bit_width{};
         bool value_available{}, inherited{}, bit_field{};
-        ::std::string display_text{}; bool display_text_available{}, display_text_truncated{};
+        ::uwvm2::utils::container::std_string display_text{}; bool display_text_available{}, display_text_truncated{};
         // Presentation DATA from a bounded ABI formatter. A detached child is
         // a separately copied guest object, never an offset into its parent.
         // Neither its label nor its display can be re-used as a read selector.
-        ::std::string pretty_summary{}, pretty_printer{};
+        ::uwvm2::utils::container::std_string pretty_summary{}, pretty_printer{};
         bool pretty_available{}, pretty_truncated{}, detached_copy{};
         ::std::uint64_t pretty_omitted{};
         bool variant_part{}, variant_case{}, active_variant{}, default_variant{};
@@ -100,20 +101,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
               default: return false; }
         }
         [[nodiscard]] inline inline_query_error display_type_name(::std::span<type_record const> types,
-            ::std::size_t index, ::std::string& out, object_query_limits const& cap)
+            ::std::size_t index, ::uwvm2::utils::container::std_string& out, object_query_limits const& cap)
         {
             out.clear();
             if(index >= types.size()) { return inline_query_error::malformed; }
             if(!c_type_spelling(types[index]))
             {
                 if(types[index].name.size() > cap.max_result_string_bytes) { return inline_query_error::limit_exceeded; }
-                out = ::fast_io::concat_std(::std::string_view{types[index].name}); return inline_query_error::none;
+                out = ::uwvm2::utils::container::concat(::std::string_view{types[index].name}); return inline_query_error::none;
             }
             ::fast_io::string spelling{};
             auto const error{type_declarators::format(types,index,spelling,
                 {cap.max_depth,cap.max_edges,cap.max_result_string_bytes})};
             if(error != inline_query_error::none) { return error; }
-            out = ::fast_io::concat_std(::fast_io::mnp::strvw(spelling));
+            out = ::uwvm2::utils::container::concat(::fast_io::mnp::strvw(spelling));
             return inline_query_error::none;
         }
         [[nodiscard]] inline bool size(type_record const& type, ::std::uint64_t& out) noexcept
@@ -279,7 +280,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         {
             ::std::span<type_record const> types{};
             ::std::span<::std::byte const> bytes{};
-            ::std::vector<object_node> nodes{};
+            ::uwvm2::utils::container::std_vector<object_node> nodes{};
             object_query_limits const& cap;
             bool read_values{};
             ::std::size_t strings{};
@@ -362,7 +363,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 {
                     if((item.bits & mask) != node.bits) { continue; }
                     if(!budget::charge(item.name.size(), cap.max_result_string_bytes, strings)) { return fail(inline_query_error::limit_exceeded); }
-                    node.enumerator = ::fast_io::concat_std(::std::string_view{item.name}); break;
+                    node.enumerator = ::uwvm2::utils::container::concat(::std::string_view{item.name}); break;
                 }
                 return true;
             }
@@ -370,7 +371,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 ::std::size_t parent, ::std::size_t depth)
             {
                 object_node node{}; node.parent = parent; node.depth = depth; node.type = member.type;
-                node.name = ::fast_io::concat_std(::std::string_view{member.name}); node.bit_field = true; node.inherited = member.inherited;
+                node.name = ::uwvm2::utils::container::concat(::std::string_view{member.name}); node.bit_field = true; node.inherited = member.inherited;
                 if(member.type != no_record)
                 {
                     auto const named{display_type_name(types,member.type,node.type_name,cap)};
@@ -444,7 +445,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 if(!member.offset_known || member.byte_offset > extent || member.byte_offset > (::std::numeric_limits<::std::uint64_t>::max)() - base)
                 {
                     object_node unavailable{}; unavailable.parent = parent; unavailable.depth = depth;
-                    unavailable.type = member.type; unavailable.name = ::fast_io::concat_std(::std::string_view{member.name}); unavailable.inherited = member.inherited;
+                    unavailable.type = member.type; unavailable.name = ::uwvm2::utils::container::concat(::std::string_view{member.name}); unavailable.inherited = member.inherited;
                     if(member.type != no_record)
                     {
                         auto const named{display_type_name(types,member.type,unavailable.type_name,cap)};
@@ -455,12 +456,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     ::std::size_t ignored{}; return append(::std::move(unavailable), ignored);
                 }
                 return visit(member.type, base + member.byte_offset, extent - member.byte_offset, parent, depth,
-                    ::fast_io::concat_std(::std::string_view{member.name}), member.inherited);
+                    ::uwvm2::utils::container::concat(::std::string_view{member.name}), member.inherited);
             }
             [[nodiscard]] bool variant_part(type_record const& owner, variant_part_record const& part, ::std::uint64_t base,
                 ::std::uint64_t extent, ::std::size_t parent, ::std::size_t depth)
             {
-                object_node group{}; group.parent = parent; group.depth = depth; group.name = ::fast_io::concat_std("<variant-part>");
+                object_node group{}; group.parent = parent; group.depth = depth; group.name = ::uwvm2::utils::container::concat("<variant-part>");
                 group.variant_part = true; group.byte_offset = base; group.byte_size = extent;
                 ::std::size_t group_index{}; if(!append(::std::move(group), group_index)) { return false; }
                 ::std::uint64_t discriminant_bits{}; bool discriminant_known{};
@@ -493,7 +494,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                     if(read_values && i != selected) { continue; }
                     auto const& variant{part.variants[i]};
                     object_node branch{}; branch.parent = group_index; branch.depth = depth + 1u;
-                    branch.name = ::fast_io::concat_std(::std::string_view{variant.name}); branch.byte_offset = base; branch.byte_size = extent;
+                    branch.name = ::uwvm2::utils::container::concat(::std::string_view{variant.name}); branch.byte_offset = base; branch.byte_size = extent;
                     branch.variant_case = true; branch.active_variant = read_values; branch.default_variant = variant.selector_kind == variant_selector_kind::default_case;
                     if(variant.selector_kind == variant_selector_kind::unavailable) { branch.reason = object_unavailable_reason::unavailable_discriminant; }
                     else if(!variant.layout_supported) { branch.reason = object_unavailable_reason::unsupported_variant_layout; }
@@ -506,7 +507,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                 return true;
             }
             [[nodiscard]] bool visit(::std::size_t type_index, ::std::uint64_t offset, ::std::uint64_t extent,
-                ::std::size_t parent, ::std::size_t depth, ::std::string name, bool inherited = false, ::std::size_t dimension = 0u)
+                ::std::size_t parent, ::std::size_t depth, ::uwvm2::utils::container::std_string name, bool inherited = false, ::std::size_t dimension = 0u)
             {
                 object_node node{}; node.parent = parent; node.depth = depth; node.type = type_index;
                 node.name = ::std::move(name); node.byte_offset = offset; node.inherited = inherited;
@@ -554,7 +555,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
                         auto const index_bits{static_cast<::std::uint64_t>(bound.lower_bound) + i};
                         if(i > static_cast<::std::uint64_t>((::std::numeric_limits<::std::int64_t>::max)()) - static_cast<::std::uint64_t>(bound.lower_bound))
                         { return fail(inline_query_error::malformed); }
-                        auto label{::fast_io::concat_std("[", ::fast_io::mnp::dec(::std::bit_cast<::std::int64_t>(index_bits)), "]")};
+                        auto label{::uwvm2::utils::container::concat("[", ::fast_io::mnp::dec(::std::bit_cast<::std::int64_t>(index_bits)), "]")};
                         auto const child_type{dimension + 1u == type.dimensions.size() ? type.referenced_type : type_index};
                         if(!visit(child_type, offset + delta, stride, index, depth + 1u, ::std::move(label), false,
                                   child_type == type_index ? dimension + 1u : 0u)) { return false; }
@@ -573,7 +574,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             }
         };
         [[nodiscard]] inline inline_query_error query(::std::span<type_record const> types, ::std::size_t type,
-            ::std::span<::std::byte const> bytes, bool values, ::std::vector<object_node>& out, object_query_limits const& cap,
+            ::std::span<::std::byte const> bytes, bool values, ::uwvm2::utils::container::std_vector<object_node>& out, object_query_limits const& cap,
             ::std::span<::std::byte const> known_bits = {}) noexcept
         {
             out.clear();
@@ -602,20 +603,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
     // ptype-style layout is cold metadata only. Byte offsets/sizes do not give
     // permission to read memory. Self-referential POINTERS terminate as leaves.
     [[nodiscard]] inline inline_query_error query_type_layout(::std::span<type_record const> types, ::std::size_t type,
-        ::std::vector<object_node>& out, object_query_limits const& cap = {}) noexcept
+        ::uwvm2::utils::container::std_vector<object_node>& out, object_query_limits const& cap = {}) noexcept
     { return object_details::query(types, type, {}, false, out, cap); }
     // Caller supplies an OWNED COPY made under an authenticated stopped-frame
     // execution lease. This API cannot read guest/native memory, evaluate guest
     // expressions, dereference pointers, open files or retain either input span.
     [[nodiscard]] inline inline_query_error query_object_value(::std::span<type_record const> types, ::std::size_t type,
-        ::std::span<::std::byte const> copied_guest_bytes, ::std::vector<object_node>& out, object_query_limits const& cap = {}) noexcept
+        ::std::span<::std::byte const> copied_guest_bytes, ::uwvm2::utils::container::std_vector<object_node>& out, object_query_limits const& cap = {}) noexcept
     { return object_details::query(types, type, copied_guest_bytes, true, out, cap); }
     // Composite locations retain their per-bit availability. An unknown bit in
     // one field does not erase unrelated fully known fields; a variant selector
     // still requires every discriminant bit. This grants no guest read authority.
     [[nodiscard]] inline inline_query_error query_object_value_with_known_bits(::std::span<type_record const> types, ::std::size_t type,
         ::std::span<::std::byte const> copied_guest_bytes, ::std::span<::std::byte const> known_bits,
-        ::std::vector<object_node>& out, object_query_limits const& cap = {}) noexcept
+        ::uwvm2::utils::container::std_vector<object_node>& out, object_query_limits const& cap = {}) noexcept
     {
         if(known_bits.size() != copied_guest_bytes.size()) { out.clear(); return inline_query_error::malformed; }
         return object_details::query(types, type, copied_guest_bytes, true, out, cap, known_bits);
@@ -644,7 +645,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
         {
 #endif
             if(name.empty() || name.size() > cap.max_result_string_bytes) { return inline_query_error::unavailable; }
-            ::std::vector<numeric_variable> active{};
+            ::uwvm2::utils::container::std_vector<numeric_variable> active{};
             ::std::size_t actual_physical{no_record};
             auto const status{query_numeric_variables(scopes, types, variables, pc, {}, 0u, active, cap, scope_owner, schema_owner,
                 &actual_physical)};
@@ -888,7 +889,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::source_dwarf
             if(status!=object_location_error::none) { return status; }
             auto const maximum{location.address_bytes==4u ? ::std::uint64_t{0xffffffffu} : ~::std::uint64_t{}};
             if(slot>maximum || location.address_bytes-1u>maximum-slot) { return object_location_error::address_overflow; }
-            ::std::vector<::std::byte> bytes{};
+            ::uwvm2::utils::container::std_vector<::std::byte> bytes{};
             if(!reader(slot,location.address_bytes,bytes) || bytes.size()!=location.address_bytes)
             { return object_location_error::local_unavailable; }
             ::std::uint64_t address{};

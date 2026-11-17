@@ -2,14 +2,20 @@
  * UWVM2 ROS Runtime Extension. APL-2.0.                     *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
 #include "event.h"
+#include "../common/checkpoint_environment.h"
 #include "../common/synchronous_wait.h"
 #include <algorithm>
 #include <deque>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <new>
@@ -41,7 +47,7 @@ namespace uwvm2::imported::ros::ipc
     struct event_record
     {
         event_kind kind{};std::uint8_t flags{};std::uint32_t error{};std::uint64_t correlation{};
-        std::vector<std::uint8_t> payload;
+        ::uwvm2::utils::container::std_vector<std::uint8_t> payload;
         std::uint64_t wire_bytes() const noexcept { return event_header_bytes+payload.size(); }
         std::uint64_t owned_bytes() const noexcept { return event_header_bytes+payload.capacity(); }
     };
@@ -60,10 +66,10 @@ namespace uwvm2::imported::ros::ipc
         { return sum(sum(queued_bytes_,reserved_bytes_),controls()*event_header_bytes); }
         event_stream_settings settings_{};event_header binding_{};std::uint32_t mask_{};
         bool configured_{},active_{true};std::uint64_t sequence_{1},queued_bytes_{},reserved_bytes_{};
-        std::deque<event_record> records_;
+        ::uwvm2::utils::container::std_deque<event_record> records_;
         std::optional<event_record> pending_,control_error_,control_closed_;
         struct reserved_credit { std::uint64_t response{},owned{}; std::optional<event_record> completed; };
-        std::map<std::uint64_t,reserved_credit> reservations_;
+        ::uwvm2::utils::container::std_map<std::uint64_t,reserved_credit> reservations_;
         event_queue_statistics totals_{};
         enum class front_source {none,data,completion,error,closed};
         front_source pinned_{front_source::none};std::uint64_t pinned_request_{};
@@ -124,10 +130,10 @@ namespace uwvm2::imported::ros::ipc
         {
             if(!configured_) { return {22,{}}; }promote();auto record{front()};if(!record) { return {11,{}}; }
             if(sequence_==UINT64_MAX) { return {90,{}}; }auto size{record->wire_bytes()};
-            if(size>capacity) { std::vector<std::uint8_t> required;required.reserve(8);put(required,size,8);return {90,std::move(required)}; }
+            if(size>capacity) { ::uwvm2::utils::container::std_vector<std::uint8_t> required;required.reserve(8);put(required,size,8);return {90,std::move(required)}; }
             auto header{header_for(*record)};
             if(auto error=admission(header)) {return {error,{}};}
-            std::vector<std::uint8_t> bytes(static_cast<std::size_t>(size));if(!encode_event_header(header,bytes.data(),bytes.size())) { return {22,{}}; }
+            ::uwvm2::utils::container::std_vector<std::uint8_t> bytes(static_cast<std::size_t>(size));if(!encode_event_header(header,bytes.data(),bytes.size())) { return {22,{}}; }
             if(!record->payload.empty()) { std::copy(record->payload.begin(),record->payload.end(),bytes.begin()+event_header_bytes); }
             if(pinned_==front_source::none)
             {
@@ -193,10 +199,10 @@ namespace uwvm2::imported::ros::ipc
             std::chrono::steady_clock::time_point deadline,bool wait_records,bool wait_bytes,
             bool (*cancelled)(void*) noexcept=nullptr,void* context=nullptr,int cancellation_fd=-1)
         {
-            std::unique_ptr<synchronous_quota_wait> fallback;
+            ::uwvm2::utils::container::std_unique_ptr<synchronous_quota_wait> fallback;
             auto* waiter{synchronous_wait_context::present()?synchronous_wait_context::waiter():nullptr};
             if(!waiter && !synchronous_wait_context::present())
-            { fallback.reset(new(std::nothrow) synchronous_quota_wait{});waiter=fallback.get(); }
+            { fallback.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<synchronous_quota_wait>([&](synchronous_quota_wait* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) synchronous_quota_wait{}; }));waiter=fallback.get(); }
             if(!waiter) { return 12; }
             std::unique_lock<std::mutex> guard{mutex_};
             for(;;)
@@ -305,6 +311,122 @@ namespace uwvm2::imported::ros::ipc
                 value.admission_bytes=used>budget?0:budget-used;
             }
             return value;
+        }
+        // Called only by the trusted closed-cohort collector. Try-lock avoids
+        // waiting for a host operation stopped while owning this queue. No
+        // peek/promote/consume or waiter state mutation is permitted here.
+        bool copy_checkpoint(checkpoint::data::queue& output) const
+        {
+            std::unique_lock<std::mutex> guard{mutex_,std::try_to_lock};
+            if(!guard.owns_lock() || waiters_)return false;
+            checkpoint::data::queue next{};
+            next.state={settings_.depth,settings_.bytes,settings_.record_bytes,settings_.pending_events,
+                settings_.pending_bytes,static_cast<std::uint64_t>(settings_.overflow),mask_,sequence_,
+                queued_bytes_,reserved_bytes_,static_cast<std::uint64_t>(pinned_),pinned_request_};
+            next.configured=configured_;next.active=active_;
+            auto const& t=totals_;
+            next.totals={t.depth,t.bytes,t.pending_depth,t.pending_bytes,t.reserved_depth,t.reserved_bytes,
+                t.high_water_depth,t.high_water_bytes,t.enqueued,t.dequeued,t.dropped_oldest,t.dropped_newest,
+                t.rejected,t.backpressured,t.admission_refused,t.completed,t.closed};
+            auto append=[&](std::uint8_t location,event_record const* record,std::uint64_t request=0,
+                std::uint64_t response=0,std::uint64_t owned=0)
+            {
+                checkpoint::data::event value{};value.location=location;value.present=record!=nullptr;
+                value.request=request;value.response_credit=response;value.owned_bytes=owned;
+                if(record)
+                {
+                    value.kind=static_cast<std::uint16_t>(record->kind);value.flags=record->flags;
+                    value.error=record->error;value.correlation=record->correlation;
+                    if(location!=4)value.owned_bytes=record->owned_bytes();
+                    value.payload.reserve(record->payload.size());
+                    for(auto b:record->payload)value.payload.push_back(static_cast<std::byte>(b));
+                }
+                next.events.push_back(std::move(value));
+            };
+            for(auto const& record:records_)append(0,&record);
+            if(pending_)append(1,&*pending_);
+            if(control_error_)append(2,&*control_error_);
+            if(control_closed_)append(3,&*control_closed_);
+            for(auto const& [request,credit]:reservations_)append(4,credit.completed?&*credit.completed:nullptr,request,credit.response,credit.owned);
+            output=std::move(next);return true;
+        }
+        // Trusted stopped-world preparation only. The file supplies local DATA;
+        // the existing stream supplies the actual session/instance binding and
+        // current ceilings. The original queue is never touched on refusal.
+        std::shared_ptr<event_stream> prepare_checkpoint(checkpoint::data::queue const& saved) const
+        {
+            std::unique_lock<std::mutex> guard{mutex_,std::try_to_lock};
+            if(!guard.owns_lock() || waiters_ || !configured_ || !saved.configured || saved.active!=active_ ||
+               saved.state[0]!=settings_.depth || saved.state[1]!=settings_.bytes || saved.state[2]!=settings_.record_bytes ||
+               saved.state[3]!=settings_.pending_events || saved.state[4]!=settings_.pending_bytes ||
+               saved.state[5]!=static_cast<std::uint64_t>(settings_.overflow) || saved.state[6]!=mask_ ||
+               !saved.state[7] || saved.state[10]>4)return {};
+            auto next=::uwvm2::utils::container::make_shared<event_stream>(settings_,binding_,mask_);
+            next->active_=saved.active;next->sequence_=saved.state[7];
+            unsigned previous{},optional{};std::uint64_t last_request{},encoded_queued{},encoded_reserved{};
+            for(auto const& value:saved.events)
+            {
+                if(value.location>4 || value.location<previous || (!value.present && value.location!=4))return {};
+                previous=value.location;
+                if(value.location>0 && value.location<4)
+                {auto bit=1u<<value.location;if(optional&bit)return {};optional|=bit;}
+                if(value.location==4)
+                {
+                    if(!value.request || value.request<=last_request || value.response_credit<event_header_bytes ||
+                       value.response_credit>settings_.record_bytes || (!value.present && value.owned_bytes<value.response_credit))return {};
+                    last_request=value.request;
+                    // Do not resurrect an external request already delivered,
+                    // abandoned or retired in the current real session.
+                    auto live=reservations_.find(value.request);
+                    if(live==reservations_.end() || live->second.response!=value.response_credit ||
+                       live->second.completed.has_value()!=value.present)return {};
+                }
+                else if(value.request || value.response_credit || !value.present)return {};
+                event_record record{};
+                if(value.present)
+                {
+                    if(value.kind<1 || value.kind>7 || value.owned_bytes<event_header_bytes ||
+                       value.payload.size()>value.owned_bytes-event_header_bytes)return {};
+                    record.kind=static_cast<event_kind>(value.kind);record.flags=value.flags;record.error=value.error;
+                    record.correlation=value.correlation;record.payload.reserve(value.payload.size());
+                    for(auto b:value.payload)record.payload.push_back(std::to_integer<std::uint8_t>(b));
+                    if(!next->allowed(record) ||
+                       (value.location==2 && record.kind!=event_kind::resource_error) ||
+                       (value.location==3 && record.kind!=event_kind::resource_closed) ||
+                       (value.location==4 && (record.wire_bytes()>value.response_credit ||
+                           (record.kind!=event_kind::service_response && record.kind!=event_kind::resource_error) || record.correlation!=value.request)))return {};
+                }
+                else if(value.kind || value.flags || value.error || value.correlation || !value.payload.empty())return {};
+                if(value.location==0)
+                {
+                    if(value.owned_bytes>UINT64_MAX-encoded_queued || record.owned_bytes()>UINT64_MAX-next->queued_bytes_)return {};
+                    encoded_queued+=value.owned_bytes;next->queued_bytes_+=record.owned_bytes();next->records_.push_back(std::move(record));
+                }
+                else if(value.location==1)next->pending_=std::move(record);
+                else if(value.location==2)next->control_error_=std::move(record);
+                else if(value.location==3)next->control_closed_=std::move(record);
+                else
+                {
+                    if(value.owned_bytes>UINT64_MAX-encoded_reserved)return {};
+                    encoded_reserved+=value.owned_bytes;
+                    auto charged=std::max(value.owned_bytes,value.present?record.owned_bytes():std::uint64_t{});
+                    if(charged>UINT64_MAX-next->reserved_bytes_)return {};
+                    next->reserved_bytes_+=charged;
+                    reserved_credit credit{value.response_credit,charged,{}};
+                    if(value.present)credit.completed=std::move(record);
+                    next->reservations_.emplace(value.request,std::move(credit));
+                }
+            }
+            if(encoded_queued!=saved.state[8] || encoded_reserved!=saved.state[9] ||
+               next->reservations_.size()!=reservations_.size() || next->occupied_depth()>settings_.depth ||
+               next->occupied_bytes()>settings_.bytes || (next->pending_ &&
+                   (!settings_.pending_events || next->pending_->owned_bytes()>settings_.pending_bytes)))return {};
+            next->pinned_=static_cast<front_source>(saved.state[10]);next->pinned_request_=saved.state[11];
+            if((next->pinned_!=front_source::completion && next->pinned_request_) ||
+               (next->pinned_!=front_source::none && !next->front()))return {};
+            auto const& t=saved.totals;
+            next->totals_={t[0],t[1],t[2],t[3],t[4],t[5],t[6],t[7],t[8],t[9],t[10],t[11],t[12],t[13],t[14],t[15],t[16]};
+            return next;
         }
         event_queue_statistics statistics() const noexcept
         {

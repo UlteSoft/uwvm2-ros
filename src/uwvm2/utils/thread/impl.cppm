@@ -21,6 +21,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/thread/stop_token.h>
 
 export module uwvm2.utils.thread;
 export import :native_thread;
@@ -35,6 +36,14 @@ export import :cooperative_pause_domain;
 export import :collection_pause_domain;
 export import :immutable_snapshot;
 export import :deferred_owner;
+
+export namespace uwvm2::utils::thread
+{
+    using ::uwvm2::utils::thread::stop_source;
+    using ::uwvm2::utils::thread::stop_token;
+    using ::uwvm2::utils::thread::stop_callback;
+}
+
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

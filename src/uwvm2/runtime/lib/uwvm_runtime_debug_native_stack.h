@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -112,13 +114,13 @@ namespace uwvm2::runtime::lib::details::debug_native_stack
             auto const page{::uwvm2::runtime::lib::posix_abi::sysconf_noexcept(_SC_PAGESIZE)};
             native_stack::bounds actual{};
             ::std::byte here{};
-            if(page <= 0 || !native_stack::read_bounds(reinterpret_cast<::std::uintptr_t>(::std::addressof(here)),
+            if(page <= 0 || !native_stack::read_bounds(native_stack::probe_address(reinterpret_cast<::std::uintptr_t>(::std::addressof(here))),
                 static_cast<::std::size_t>(page), actual)) { return; }
             auto const thread{::fast_io::system_call<__NR_gettid, long>()};
             auto const process{::fast_io::system_call<__NR_getpid, int>()};
             if(thread <= 0 || process <= 0) { return; }
-            try { owner_.reset(new registration{actual.low, actual.high,
-                static_cast<::std::uint_least64_t>(thread), process}); }
+            try { owner_ = ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<registration>([&](registration* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) registration{actual.low, actual.high,
+                static_cast<::std::uint_least64_t>(thread), process}; })); }
             catch(...) { owner_.reset(); }
 #endif
         }

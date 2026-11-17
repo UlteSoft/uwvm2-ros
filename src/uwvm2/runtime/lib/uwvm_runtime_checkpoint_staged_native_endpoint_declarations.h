@@ -2,17 +2,19 @@
 // remain complete overlap claims; only real Wasm typed/resume declarations are
 // expected endpoint DATA. Nothing here grants ASM access to the VM or host.
 #pragma once
+#include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/standard.h>
 using native_budget_charge=bool (*)(void*,::std::size_t,::std::size_t) noexcept;
 void* native_budget_owner_{};
 native_budget_charge native_charge_{};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
 using native_endpoint_observer=details::pending_actual_native_endpoints;
-::std::unique_ptr<native_endpoint_observer> native_endpoints_{};
+::uwvm2::utils::container::std_unique_ptr<native_endpoint_observer> native_endpoints_{};
 ::std::size_t native_endpoint_expected_{},native_endpoint_helpers_{},native_endpoint_claims_{};
 bool native_endpoint_capture_qualified_{};
 
 [[nodiscard]] bool prepare_native_endpoint_declarations(::llvm::Module& ir,::llvm::LLVMContext const& actual_context,
-    ::std::vector<native_endpoint_observer::expected_function>& expected)
+    ::uwvm2::utils::container::std_vector<native_endpoint_observer::expected_function>& expected)
 {
     auto const count=locals_.size();auto const imported=owner_.module()->imported_function_vec_storage.size();
     if(!owner_.matches_unpublished_file() || !profile_ || !native_budget_owner_ || !native_charge_ ||
@@ -49,9 +51,9 @@ bool native_endpoint_capture_qualified_{};
         if(actual_name.empty() || actual_name.contains('\0') ||
            actual_name.size()>details::native_owner_table_format::max_name_bytes-suffix ||
            !native_charge_(native_budget_owner_,actual_name.size()+suffix+4u,8u)) { return false; }
-        auto original=::fast_io::concat_std(::fast_io::basic_io_scatter_t<char>{actual_name.data(),actual_name.size()});
-        auto resume_name=::fast_io::concat_std(original,".checkpoint.resume.v2");
-        auto* resume=ir.getFunction(resume_name);auto* adapter=ir.getFunction(::fast_io::concat_std(resume_name,".raw"));
+        auto original=::uwvm2::utils::container::concat(::fast_io::basic_io_scatter_t<char>{actual_name.data(),actual_name.size()});
+        auto resume_name=::uwvm2::utils::container::concat(original,".checkpoint.resume.v2");
+        auto* resume=ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(resume_name));auto* adapter=ir.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(::uwvm2::utils::container::concat(resume_name,".raw")));
         if(!resume || !adapter || resume==typed || resume==raw || resume==adapter || resume->isDeclaration() || adapter->isDeclaration() ||
            resume->getParent()!=::std::addressof(ir) || adapter->getParent()!=::std::addressof(ir) ||
            resume->getFunctionType()!=typed->getFunctionType() || resume->getCallingConv()!=typed->getCallingConv() ||

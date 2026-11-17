@@ -7,6 +7,9 @@ const {Buffer} = require("buffer");
 
 function activate(context) {
   const sessions = new Map();
+  if (vscode.window && vscode.commands.executeCommand)
+    require(path.join(context.extensionPath, "navigation_history.js")).create(vscode, context, sessions);
+  require(path.join(context.extensionPath,"runtime_launch.js")).register(vscode,context);
   // Webview-capable editor hosts get separate human-facing inspection windows.
   // The text fallback keeps the original command usable in non-UI hosts.
   const inspection = vscode.window && typeof vscode.window.createWebviewPanel === "function"
@@ -17,6 +20,9 @@ function activate(context) {
       typeof vscode.workspace.onDidOpenTextDocument === "function")
     require(path.join(context.extensionPath, "wasm_language.js")).register(vscode, context, sessions);
   const wasmView=require(path.join(context.extensionPath,"wasm_view.js")).register(vscode,context,sessions);
+  // Exact/next execution position at source, Wasm and assembly level.
+  if (vscode.window && typeof vscode.window.createTextEditorDecorationType === "function")
+    require(path.join(context.extensionPath,"positions.js")).register(vscode,context,sessions,wasmView);
   require(path.join(context.extensionPath,"debug_tools.js")).register(vscode,context,sessions,inspection,wasmView);
   const completeBreakpointState = require(path.join(context.extensionPath,"breakpoint_sync.js")).register(vscode,context,sessions) === true;
   const sessionPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;

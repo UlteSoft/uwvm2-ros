@@ -4,7 +4,7 @@
     extern "C++" bool ros_caller_source_facts_host_api(ros_caller_source_facts& out, bool allow_module_exports) noexcept
     {
         out={};
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 # if UWVM2_HAS_THREADED_PROFILE_HOST_API
         if(threaded_profile::has_active_host_call()) { return threaded_profile::caller_source_facts(out,allow_module_exports); }
 # endif

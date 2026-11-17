@@ -17,6 +17,12 @@
         inline static constexpr ::std::size_t jit_local_values_offset{offsetof(object,values)+offsetof(object_values_view,pointer)};
         inline static constexpr ::std::size_t jit_local_lock_offset{offsetof(object,mutation_lock)};
         inline static constexpr ::std::size_t jit_local_bucket_mask{bucket_count-1uz};
+        // Membership invariant: this index is private to the store. Every
+        // publisher inserts a fully initialized object whose owner is this
+        // store and whose immutable kind agrees with its local type_index.
+        // No foreign alias is installed; foreign lookup uses global_buckets_.
+        // Exact type equality therefore proves kind, but array.len has no
+        // expected local type and must still check the actual composite kind.
         // Both words are immutable for the retained store lifetime. Collection
         // may change bucket heads only with the existing complete-reader drain.
         // No individual object pointer is returned or cached across safepoints.

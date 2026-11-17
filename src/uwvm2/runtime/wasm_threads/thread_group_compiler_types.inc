@@ -34,12 +34,12 @@
             [[nodiscard]] auto const& admission() const noexcept { return *group_->admission_; }
             [[nodiscard]] ::std::shared_ptr<ThreadedSpawnAdmission const> retained_admission() const noexcept
             { return group_->admission_; }
-            [[nodiscard]] ::std::stop_token cancellation() const noexcept { return group_->cancellation_.get_token(); }
+            [[nodiscard]] ::uwvm2::utils::thread::stop_token cancellation() const noexcept { return group_->cancellation_.get_token(); }
             [[nodiscard]] ::std::size_t native_stack_usable_bytes() const noexcept;
             // Distinct from this compiler pthread's stack: actual reserved and
             // already mapped Guest slot that this exact job may launch.
             [[nodiscard]] ::std::size_t guest_native_stack_usable_bytes() const noexcept;
-            [[nodiscard]] launch_result launch(::std::unique_ptr<ChildWork>, ::std::uint32_t argument) noexcept;
+            [[nodiscard]] launch_result launch(::uwvm2::utils::container::std_unique_ptr<ChildWork>, ::std::uint32_t argument) noexcept;
         };
 
         class CompilerWork
@@ -105,7 +105,7 @@
         [[nodiscard]] static int release_native_stack(native_stack&) noexcept;
         [[nodiscard]] int start_compiler_worker() noexcept;
         [[nodiscard]] bool charge_runtime_control_storage(::std::size_t bytes) noexcept;
-        [[nodiscard]] compiler_submission submit_compilation(SpawnReservation&&, ::std::unique_ptr<CompilerWork>) noexcept;
+        [[nodiscard]] compiler_submission submit_compilation(SpawnReservation&&, ::uwvm2::utils::container::std_unique_ptr<CompilerWork>) noexcept;
         [[nodiscard]] compiler_observation observe_compilation(::std::size_t, ::std::uint64_t,
             ::std::chrono::steady_clock::time_point) noexcept;
         void abandon_compilation(::std::size_t, ::std::uint64_t) noexcept;

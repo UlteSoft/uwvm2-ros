@@ -122,12 +122,15 @@
         }
 
         [[nodiscard]] inline constexpr bool runtime_llvm_jit_win64_live_unwind_probe() noexcept
+# ifdef UWVM_CPP_EXCEPTIONS
+        try
+# endif
         {
             if(!ensure_llvm_jit_native_target_initialized()) [[unlikely]] { return false; }
             namespace emit = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
 
             ::llvm::LLVMContext context{};
-            auto module{::uwvm2::utils::container::make_delete_owned<::llvm::Module>("uwvm2_win64_unwind_probe", context)};
+            auto module{::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_module("uwvm2_win64_unwind_probe", context)};
             ::llvm::EngineBuilder target_builder{};
             target_builder.setEngineKind(::llvm::EngineKind::JIT).setOptLevel(::llvm::CodeGenOptLevel::None);
             // Probe the actual host ISA/ABI/features, not LLVM's implicit process
@@ -193,7 +196,7 @@
                 "uwvm2_win64_unwind_capture",
                 reinterpret_cast<void*>(reinterpret_cast<::std::uintptr_t>(&runtime_llvm_jit_win64_unwind_probe_capture)));
             auto memory_manager{
-                ::uwvm2::utils::container::make_delete_owned<::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
+                ::uwvm2::utils::container::make_unique<::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
             auto const memory_manager_observer{memory_manager.get()};
             auto const raw_engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
                                       .setEngineKind(::llvm::EngineKind::JIT)
@@ -213,4 +216,13 @@
             reinterpret_cast<root_func_t>(state.root_address)(::std::addressof(state));
             return state.capture_called && state.escaped_generated_code && !state.failed && state.recursive_frames == 3u && state.root_frames == 1u;
         }
+# ifdef UWVM_CPP_EXCEPTIONS
+        catch(::std::bad_alloc const&)
+        {
+            // LLVM builds a real native witness here. Resource exhaustion is
+            // neither a missing unwind capability nor a broken VM invariant.
+            // Keep this local: guest nothrow/ENOMEM recovery must still work.
+            ::uwvm2::utils::allocator::resource::compiler_memory_limit();
+        }
+# endif
 #endif

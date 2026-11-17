@@ -1,6 +1,7 @@
 // Private, owned mount provenance. This identity never enters portable wire
 // data and grants no authority beyond an actual target FD under the host gate.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/wasi/wasip1/fd_manager/impl.h>
 #include <cstdint>
@@ -18,10 +19,10 @@ namespace uwvm2::runtime::lib::wasip1_mount_identity
     {
         using fd=fm::wasi_fd_t;
         fd* cell{};bool ambiguous{};
-        ::std::vector<fd*> aliases{};
-        ::std::map<::std::pair<::std::uint64_t,::std::uint64_t>,fd*> choices{};
-        ::std::map<::std::tuple<::std::uint64_t,::std::uint64_t,::std::uint16_t>,fd*> flag_choices{};
-        ::std::map<fd const*,::std::optional<::std::uint16_t>> observed_flags{};
+        ::uwvm2::utils::container::std_vector<fd*> aliases{};
+        ::uwvm2::utils::container::std_map<::std::pair<::std::uint64_t,::std::uint64_t>,fd*> choices{};
+        ::uwvm2::utils::container::std_map<::std::tuple<::std::uint64_t,::std::uint64_t,::std::uint16_t>,fd*> flag_choices{};
+        ::uwvm2::utils::container::std_map<fd const*,::std::optional<::std::uint16_t>> observed_flags{};
         [[nodiscard]] static bool sufficient(fd const* candidate,::std::uint64_t base,::std::uint64_t inheriting) noexcept
         {
             return candidate!=nullptr && (base & ~static_cast<::std::uint64_t>(candidate->rights_base))==0u &&

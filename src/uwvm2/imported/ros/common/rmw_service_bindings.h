@@ -12,6 +12,7 @@
  * are never erased/reused, including failed activation and disconnected rows.
  */
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "types.h"
 #include "../ipc/event.h"
 #include "../ipc/rmw_endpoint.h"
@@ -92,11 +93,11 @@ namespace uwvm2::imported::ros
         struct entry
         {
             rmw_service_owner owner{};rmw_service_role kind{};std::uint64_t peer{};
-            std::string primary_alias,peer_alias;
+            ::uwvm2::utils::container::std_string primary_alias,peer_alias;
             bool retired{};std::uint32_t retirement_reason{};
         };
     private:
-        std::map<std::uint64_t,entry> rows_;
+        ::uwvm2::utils::container::std_map<std::uint64_t,entry> rows_;
         std::size_t capacity_;std::uint64_t instance_{},generation_{};bool sealed_{};
     public:
         /** Capacity zero refuses new reservations. No native

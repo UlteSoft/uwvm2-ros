@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -56,11 +57,11 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
             ::std::uint_least32_t line{}, file{}, column{};
         };
         struct file_key { ::std::uint64_t dwarf{}; ::std::uint_least32_t owned{}; };
-        ::std::vector<text_range> text_{};
-        ::std::vector<text_range> literal_data_{};
-        ::std::vector<row> rows_{};
-        ::std::vector<::fast_io::string> files_{};
-        ::std::vector<::std::uint64_t> objects_{};
+        ::uwvm2::utils::container::std_vector<text_range> text_{};
+        ::uwvm2::utils::container::std_vector<text_range> literal_data_{};
+        ::uwvm2::utils::container::std_vector<row> rows_{};
+        ::uwvm2::utils::container::std_vector<::fast_io::string> files_{};
+        ::uwvm2::utils::container::std_vector<::std::uint64_t> objects_{};
         ::std::uint_least64_t runtime_epoch_{};
         ::std::size_t decoded_rows_{};
         bool valid_{true};
@@ -81,9 +82,9 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
             ::std::uint_least32_t file{};
             unsigned dwarf_register{}, bits{};
         };
-        ::std::vector<numeric_range> numeric_{};
+        ::uwvm2::utils::container::std_vector<numeric_range> numeric_{};
         struct numeric_owner { ::std::uintptr_t begin{},end{};::std::uint64_t object{};::std::uint_least32_t file{}; };
-        ::std::vector<numeric_owner> numeric_owners_{};
+        ::uwvm2::utils::container::std_vector<numeric_owner> numeric_owners_{};
         // Private object DATA parser. Only exact Register locations of our
         // compiler-owned numeric witnesses can be projected at that one PC.
         // Direct/Indirect/Constant locations and all native frame fields are
@@ -117,12 +118,12 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
             if(functions>max_sections || constants>max_rows || records>max_rows ||
                functions>(bytes.size()-16u)/24u || constants>(bytes.size()-16u-functions*24u)/8u) { return false; }
             struct function { ::std::uintptr_t begin{},end{};::std::uint_least32_t file{};::std::uint64_t count{};bool proved{}; };
-            ::std::vector<function> owners;owners.reserve(functions);
+            ::uwvm2::utils::container::std_vector<function> owners;owners.reserve(functions);
             ::uwvm2::runtime::lib::details::ppc64_elfv1_relocation_index const descriptors{object};
             // Index actual-object relocations once, without rescanning every
             // relocation for each function. Only function address fields may
             // carry a relocation in this version-three numeric witness table.
-            ::std::vector<::std::optional<::llvm::object::RelocationRef>> addresses(functions);
+            ::uwvm2::utils::container::std_vector<::std::optional<::llvm::object::RelocationRef>> addresses(functions);
             for(auto const& section:object.sections())
             {
                 auto target{section.getRelocatedSection()};
@@ -135,12 +136,12 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                     auto& slot{addresses[(offset-16u)/24u]};if(slot) { return false; }slot=relocation;
                 }
             }
-            ::std::vector<numeric_owner> qualified;
+            ::uwvm2::utils::container::std_vector<numeric_owner> qualified;
             for(auto const& owner:numeric_owners_) { if(owner.object==object_key) { qualified.push_back(owner); } }
             auto const owner_less{[](numeric_owner const& a,numeric_owner const& b) noexcept
                 { return a.begin<b.begin || (a.begin==b.begin && a.end<b.end); }};
             ::std::sort(qualified.begin(),qualified.end(),owner_less);
-            ::std::vector<row> indexed_rows;
+            ::uwvm2::utils::container::std_vector<row> indexed_rows;
             for(auto const& item:rows_)
             { if(item.object==object_key && item.column==1u && item.line!=0u) { indexed_rows.push_back(item); } }
             auto const row_less{[](row const& a,row const& b) noexcept
@@ -250,7 +251,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
             // here. Only register-only locations inside explicit lexical ranges
             // of the same actual emitted subprogram can qualify numeric bits.
             struct scope_entry { ::llvm::DWARFDie die; ::llvm::DWARFAddressRange scope{}, owner{}; ::std::uint_least32_t file{}; bool scoped{}; };
-            ::std::vector<scope_entry> pending{}; pending.push_back({root});
+            ::uwvm2::utils::container::std_vector<scope_entry> pending{}; pending.push_back({root});
             ::std::size_t visited{}, decoded{};
             while(!pending.empty())
             {
@@ -264,11 +265,12 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                     if(tag == ::llvm::dwarf::DW_TAG_subprogram)
                     {
                         auto const file_index{::llvm::dwarf::toUnsigned(entry.die.find(::llvm::dwarf::DW_AT_decl_file))};
-                        ::std::string file{}; // bounded LLVM output parameter only
+                        ::std::string_view file{}; // Borrow only while the validated DWARF table is alive.
                         if(file_index)
                         {
-                            if(!table.hasFileAtIndex(*file_index) || !table.getFileNameByIndex(*file_index, "uwvm-native-provenance-v1",
-                                ::llvm::DILineInfoSpecifier::FileLineInfoKind::RawValue, file)) { return false; }
+                            if(!table.hasFileAtIndex(*file_index)) { return false; }
+                            auto const name{::llvm::dwarf::toStringRef(table.Prologue.getFileNameEntry(*file_index).Name)};
+                            file = {name.data(), name.size()};
                         }
                         else
                         {
@@ -276,7 +278,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                             // Its private CU still owns the actual synthetic file.
                             auto const unit_file{::llvm::dwarf::toStringRef(root.find(::llvm::dwarf::DW_AT_name))};
                             if(unit_file.empty() || unit_file.size() > max_filename_bytes) { continue; }
-                            file = ::fast_io::concat_std(::fast_io::mnp::strvw(::std::string_view{unit_file.data(), unit_file.size()}));
+                            file = {unit_file.data(), unit_file.size()};
                         }
                         if(file.empty() || file.size() > max_filename_bytes) { return false; }
                         entry.file = static_cast<::std::uint_least32_t>(files_.size());
@@ -379,7 +381,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                 text_.push_back({static_cast<::std::uintptr_t>(begin), static_cast<::std::uintptr_t>(begin + size),
                     object_key, section.getIndex()});
             }
-            ::std::vector<native_arm_mapping::data_range> arm_data{};
+            ::uwvm2::utils::container::std_vector<native_arm_mapping::data_range> arm_data{};
             if(!native_arm_mapping::collect(object,arm_data)) { return false; }
             for(auto const& data:arm_data)
             {
@@ -427,7 +429,7 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                 if(table == nullptr || malformed || table->Rows.size() > max_rows - decoded_rows_) { return false; }
                 decoded_rows_ += table->Rows.size();
                 if(!collect_numeric(die, *table, object_key)) { return false; }
-                ::std::vector<file_key> unit_files{};
+                ::uwvm2::utils::container::std_vector<file_key> unit_files{};
                 for(auto const& sequence: table->Sequences)
                 {
                     if(!sequence.isValid() || sequence.FirstRowIndex >= sequence.LastRowIndex ||
@@ -500,10 +502,9 @@ namespace uwvm2::runtime::lib::details::native_loaded_provenance
                             if(file == (::std::numeric_limits<::std::uint_least32_t>::max)())
                             {
                                 if(!table->hasFileAtIndex(origin.File)) { return false; }
-                                ::std::string filename{}; // LLVM's public output parameter.
-                                if(!table->getFileNameByIndex(origin.File, "uwvm-native-provenance-v1",
-                                    ::llvm::DILineInfoSpecifier::FileLineInfoKind::RawValue, filename) ||
-                                   filename.empty() || filename.size() > max_filename_bytes) { return false; }
+                                auto const name{::llvm::dwarf::toStringRef(table->Prologue.getFileNameEntry(origin.File).Name)};
+                                ::std::string_view const filename{name.data(),name.size()};
+                                if(filename.empty() || filename.size() > max_filename_bytes) { return false; }
                                 file = static_cast<::std::uint_least32_t>(files_.size());
                                 for(::std::size_t i{}; i != files_.size(); ++i) { if(::std::string_view{files_[i].data(), files_[i].size()} == filename) { file = static_cast<::std::uint_least32_t>(i); break; } }
                                 if(file == files_.size())

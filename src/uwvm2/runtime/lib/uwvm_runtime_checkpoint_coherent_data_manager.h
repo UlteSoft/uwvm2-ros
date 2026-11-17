@@ -4,6 +4,9 @@
 // Native resource operations require the authenticated current cohort, host
 // closure, source/provider/profile and publication guards below.
 #pragma once
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
     extern "C++" { class runtime_checkpoint_world_transaction; }
     // Runtime module attachment follows the public opaque forward declaration.
@@ -109,18 +112,18 @@ extern "C++"
         {
             ::std::uint_least64_t participant{};
             ::uwvm2::utils::thread::cooperative_pause_location observed_location{};
-            ::std::vector<logical_frame> frames{};
+            ::uwvm2::utils::container::std_vector<logical_frame> frames{};
         };
         struct result
         {
             status observation{status::not_selected};
             resource_census resources{resource_census::unavailable_complete_instance_census};
             ::std::uint_least64_t observed_runtime_epoch{};
-            ::std::vector<thread_data> threads{};
+            ::uwvm2::utils::container::std_vector<thread_data> threads{};
             runtime_checkpoint_resource_inputs::result immutable_inputs{};
             // Lifetime DATA only: these pins do not seal source.file() backing,
             // grant guest-FD exclusion or retain current native executable rights.
-            ::std::vector<source_owner> source_pins{};
+            ::uwvm2::utils::container::std_vector<source_owner> source_pins{};
             [[nodiscard]] constexpr bool snapshot_or_restore_authority() const noexcept { return false; }
         };
         // This immutable graph is copied DATA. It never replaces a new
@@ -151,6 +154,7 @@ extern "C++"
             ::std::array<::std::byte, 16u> recording_id{};
             ::uwvm2::uwvm::debugger::checkpoint::limits budget{};
             bool include_wasip1{};
+            unsigned recording_action{};
         };
         struct complete_instance_result
         {
@@ -158,8 +162,9 @@ extern "C++"
             ::uwvm2::uwvm::debugger::checkpoint::error data_error{
                 ::uwvm2::uwvm::debugger::checkpoint::error::unavailable_capability};
             complete_instance_capture::owner captured{};
-            ::std::vector<llvm_jit_wasip1_environment_capsule_owner> wasip1_environments{};
+            ::uwvm2::utils::container::std_vector<llvm_jit_wasip1_environment_capsule_owner> wasip1_environments{};
             bool wasip1_checkpoint_required{}, wasip1_captured_together{};
+            ::uwvm2::utils::container::std_vector<::std::shared_ptr<::uwvm2::runtime::diagnostic::snapshot_ros::environment const>> ros_environments{};
         };
         [[nodiscard]] static complete_instance_result capture_complete_current_instance(
             domain::pause_ticket const& ticket, ::std::span<capture::owner const> supplied,
@@ -172,7 +177,7 @@ extern "C++"
                 ::std::addressof(requested), ::std::addressof(copied))};
             copied.observation = checked.observation;
             if(checked.observation != status::coherent_typed_data)
-            { copied.captured.reset();copied.wasip1_environments.clear();copied.wasip1_captured_together=false; }
+            { copied.captured.reset();copied.wasip1_environments.clear();copied.wasip1_captured_together=false;copied.ros_environments.clear(); }
             return copied;
         }
 
@@ -389,7 +394,8 @@ extern "C++"
         {
             llvm_jit_checkpoint_prepare_result prepared{};bool label{};
             for(auto byte:request.recording_label) { label=label || byte!=::std::byte{}; }
-            if(!label || request.maximum_native_payload_bytes==0u || request.maximum_original_source_bytes==0u)
+            if(!label || request.maximum_native_payload_bytes==0u || request.maximum_original_source_bytes==0u ||
+               !valid_saved_request(request))
             { prepared.status=llvm_jit_checkpoint_prepare_status::invalid_request;return prepared; }
             complete_instance_request census{};census.recording_id=request.recording_label;census.budget=request.graph_budget;
             census.include_wasip1=request.include_wasip1;
@@ -408,6 +414,18 @@ extern "C++"
             return prepared;
         }
     private:
+        [[nodiscard]] static bool valid_saved_request(llvm_jit_checkpoint_prepare_request const& request) noexcept
+        {
+            using source = llvm_jit_checkpoint_environment_source;
+            if(request.environment_source != source::current && request.environment_source != source::captured &&
+               request.environment_source != source::recorded) { return false; }
+            if(request.saved_graph && request.saved_graph->recording_id != request.recording_label) { return false; }
+            if(request.environment_source != source::recorded &&
+               (!request.recorded_wasip1_environments.empty() || !request.wasip1_resource_rebindings.empty() || !request.recorded_ros_environments.empty())) { return false; }
+            if(request.environment_source == source::current) { return request.saved_wasip1_environments.empty(); }
+            if(request.environment_source == source::recorded && !request.saved_wasip1_environments.empty()) { return false; }
+            return request.saved_graph && request.include_wasip1;
+        }
  #include "uwvm_runtime_checkpoint_native_retirement_state.h"
         // Defined after the private world class. ONLY called inside this
         // manager's real lease/cohort/closed-host/N/publication scope.
@@ -530,7 +548,7 @@ extern "C++"
                    !same_owner(configuration->control_, g_runtime.debug_pause_control) ||
                    !same_owner(configuration->profile_, g_runtime.checkpoint_profile))
                 { out.observation = status::wrong_control_or_profile; return out; }
-                ::std::vector<capture::owner> canonical(supplied.size());
+                ::uwvm2::utils::container::std_vector<capture::owner> canonical(supplied.size());
                 for(::std::size_t i{}; i != supplied.size(); ++i)
                 {
                     // [request-owned owner span ... i<supplied.size()] end
@@ -546,7 +564,7 @@ extern "C++"
                         { out.observation = status::incomplete_cohort; return out; }
                     }
                 }
-                ::std::vector<domain::stopped_participant> scratch(supplied.size());
+                ::uwvm2::utils::container::std_vector<domain::stopped_participant> scratch(supplied.size());
                 result candidate{}; bool coherent{};
                 // One lexical proof body serves DATA and actual retirement.
                 // Retirement uses the indivisible transfer API below; never a
@@ -576,7 +594,7 @@ extern "C++"
                              wasip1_requested->operation == wasi_view::action::descriptors ||
                              wasip1_requested->operation == wasi_view::action::preopens ||
                              wasip1_requested->operation == wasi_view::action::policy)};
-                        if(actual.suspended_wait_ && (retiring != nullptr || complete_requested != nullptr ||
+                        if(actual.suspended_wait_ && !actual.wait_borrow_ && !actual.virtual_wait_ && (retiring != nullptr || complete_requested != nullptr ||
                            (wasip1_requested != nullptr && !reading_wasip1) || capsule_requested != nullptr ||
                            (requested == nullptr && source_read == nullptr && mutating == nullptr && !reading_wasip1)))
                         { out.observation = status::invalid_typed_data; return; }
@@ -608,7 +626,7 @@ extern "C++"
                     // capture/control/participant and SAME current ticket checks
                     // above, while every genuine participant is still parked.
                     using gc_admission = ::uwvm2::runtime::gc::managed_entry_admission;
-                    ::std::vector<gc_admission::shared_lease const*> actual_gc_leases(supplied.size());
+                    ::uwvm2::utils::container::std_vector<gc_admission::shared_lease const*> actual_gc_leases(supplied.size());
                     for(::std::size_t i{}; i != supplied.size(); ++i)
                     {
                         auto const& actual{*canonical[i]};
@@ -857,15 +875,33 @@ extern "C++"
                             complete_observation->data_error = census.status == cp::error::none ? cp::error::incompatible_type : census.status;
                             out.observation = status::invalid_typed_data; return;
                         }
-                        ::std::vector<llvm_jit_wasip1_environment_capsule_owner> environments{};
-                        ::std::vector<void const*> seen_environments{};
+                        auto const* selected_graph = ::std::addressof(census.snapshot);
+                        if(preparing && preparing->saved_graph)
+                        {
+                            auto const& saved = *preparing->saved_graph;
+                            auto const compatible = cp::state_identity::compatible_restore_code(saved, census.snapshot, complete_requested->budget);
+                            if(compatible != cp::error::none)
+                            {
+                                complete_observation->data_error = compatible;
+                                prepared->data_error = compatible;
+                                prepared->status = llvm_jit_checkpoint_prepare_status::resource_preparation_declined;
+                                candidate.observed_runtime_epoch = epoch; candidate.observation = status::coherent_typed_data;
+                                coherent = true; return; // Old workers and external resources are unchanged.
+                            }
+                            selected_graph = ::std::addressof(saved);
+                        }
+                        bool const captured_environment = preparing &&
+                            preparing->environment_source == llvm_jit_checkpoint_environment_source::captured;
+                        ::uwvm2::utils::container::std_vector<llvm_jit_wasip1_environment_capsule_owner> environments{};
+                        if(captured_environment) { environments = preparing->saved_wasip1_environments; }
+                        ::uwvm2::utils::container::std_vector<void const*> seen_environments{};
                         #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
                         for(::std::size_t id{};id!=g_runtime.modules.size();++id)
                         {
                             if(!is_wasip1_import_visible_for_runtime_module_id_slow(id)) { continue; }
                             complete_observation->wasip1_checkpoint_required=true;
                             if(prepared!=nullptr) { prepared->wasip1_checkpoint_required=true; }
-                            if(!complete_requested->include_wasip1) { continue; }
+                            if(!complete_requested->include_wasip1 || captured_environment) { continue; }
                             auto const* identity{::std::addressof(resolve_wasip1_env_for_runtime_module_id(id))};
                             if(::std::find(seen_environments.begin(),seen_environments.end(),identity)!=seen_environments.end()) { continue; }
                             llvm_jit_wasip1_environment_capsule_request request{};request.module=id;
@@ -898,12 +934,40 @@ extern "C++"
                                 prepared->status=llvm_jit_checkpoint_prepare_status::wasip1_preparation_declined;
                                 out.observation=status::invalid_typed_data;return;
                             }
-                            prepare_and_discard_actual_world(census.snapshot,
+                            if(captured_environment)
+                            {
+#if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
+                                bool valid = !complete_observation->wasip1_checkpoint_required || !environments.empty();
+                                for(auto const& supplied_environment : environments)
+                                {
+                                    auto const actual = llvm_jit_wasip1_environment_capsule::canonical(supplied_environment);
+                                    valid = valid && actual && actual->data_.recording_label == selected_graph->recording_id;
+                                }
+#else
+                                bool const valid = environments.empty();
+#endif
+                                if(!valid)
+                                {
+                                    prepared->status = llvm_jit_checkpoint_prepare_status::wasip1_preparation_declined;
+                                    prepared->wasip1_status = llvm_jit_wasip1_environment_capsule_status::invalid_capsule_owner;
+                                    complete_observation->data_error = cp::error::unavailable_capability;
+                                    candidate.observed_runtime_epoch = epoch; candidate.observation = status::coherent_typed_data;
+                                    coherent = true; return;
+                                }
+                            }
+                            prepare_and_discard_actual_world(*selected_graph,
                                 ::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin(),epoch,configuration->profile_,*preparing,*prepared,environments,
                                 retiring?::std::addressof(retiring->native->candidate):nullptr);
                             if(lease.stop_requested() || !borrow.current_scope())
                             { out.observation=status::execution_stopping;return; }
-                            complete_observation->data_error=cp::error::none;
+                            // Preserve a rejected preparation's precise cause:
+                            // both rehearsal and retirement APIs copy this
+                            // observation into their public result. A coherent
+                            // census does not imply the candidate was accepted.
+                            complete_observation->data_error=
+                                prepared->status==llvm_jit_checkpoint_prepare_status::prepared_and_discarded ||
+                                prepared->status==llvm_jit_checkpoint_prepare_status::prepared_and_retained ?
+                                    cp::error::none:prepared->data_error;
                             candidate.observed_runtime_epoch=epoch;candidate.observation=status::coherent_typed_data;
                             if(retiring)
                             {
@@ -919,12 +983,146 @@ extern "C++"
                                 { out.observation=status::invalid_typed_data;return; }
                                 native.request=retiring->request;native.host=configuration;
                                 native.source=::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin();
-                                native.result.runtime_epoch=epoch;native.result.workers=supplied.size();
+                                native.result.runtime_epoch=epoch;
+                                native.result.workers=runtime_checkpoint_guest_worker_bridge::sealed_worker_count(native.joined);
                                 native.result.candidate_world_retained=true;
                             }
                             coherent=true;return; // Candidate stays only in the private manager operation.
                         }
-                        ::std::shared_ptr<complete_instance_capture> captured{new complete_instance_capture};
+                        // Same stopped cohort / closed host / root transaction as
+                        // the Wasm graph and WASI capsules. No later resource lookup
+                        // during serialization may upgrade this detached DATA.
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
+                        unsigned ros_required{};
+                        for(auto const& object:census.snapshot.objects)
+                            if(object.kind==cp::object_kind::host_resource && object.flags==3u &&
+                               object.words[0u]==cp::builtin_ros_v1_binding_kind)
+                                ros_required|=object.words[1u]<=2u?1u:2u;
+                        if(complete_requested->include_wasip1 && ros_required)
+                        {
+                            namespace ros=::uwvm2::imported::ros::checkpoint;
+                            ::uwvm2::utils::container::std_vector<ros::source_member> members;
+                            members.reserve(g_runtime.modules.size());
+                            for(::std::size_t id{};id<g_runtime.modules.size();++id)
+                            {
+                                auto const& module=g_runtime.modules.index_unchecked(id);
+                                auto file=module.llvm_jit_full_publication ? module.llvm_jit_full_publication->source->actual_validated_file(id,epoch,module.runtime_module):nullptr;
+                                if(!file){out.observation=status::invalid_typed_data;return;}
+                                members.push_back({module.runtime_module,epoch,id,
+                                    {reinterpret_cast<char const*>(file->module_name.data()),file->module_name.size()},module.ros_authority_retired});
+                            }
+                            auto capture=ros::capture_hook.load(::std::memory_order_acquire);
+                            if(!capture || capture(members,complete_requested->recording_id,ros_required,complete_observation->ros_environments)!=ros::status::ready)
+                            {complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                        }
+#endif
+                        ::std::shared_ptr<runtime_checkpoint_replay_session> pending_journal{};
+                        runtime_checkpoint_replay_append_transaction journal_transaction{};
+                        if(complete_requested->recording_action)
+                        {
+                            if(actual_slots.empty() || complete_requested->recording_action>3u)
+                            {complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                            if(complete_requested->recording_action==1u)
+                            {
+                                if(checkpoint_replay_selected.load(::std::memory_order_acquire))
+                                {complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                                auto session=::uwvm2::utils::container::make_shared<runtime_checkpoint_replay_session>();
+                                auto valid=cp::execution_replay::supported_origin(census.snapshot,session->thread);
+                                if(valid!=cp::error::none)
+                                {complete_observation->data_error=valid;out.observation=status::invalid_typed_data;return;}
+                                session->origin=census.snapshot;session->epoch=epoch;
+                                for(auto const& slot:actual_slots)session->participants.push_back(slot.id);
+                                session->exited.resize(actual_slots.size());
+                                session->pending_origin.resize(actual_slots.size());
+                                for(auto const& item:session->origin.objects)if(item.kind==cp::object_kind::thread)
+                                    session->pending_origin[item.words[0]-1u]=item.flags==2u;
+                                session->initialize_waits();
+                                for(auto const& module:census.actual.modules)session->actual_modules.push_back(module.id);
+                                pending_journal=::std::move(session);
+                            }
+                            else
+                            {
+                                auto session=checkpoint_replay_current();
+                                if(!session){complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                                journal_transaction.bind(session);
+                                if((session->mode!=1u && session->mode!=2u) ||
+                                   (complete_requested->recording_action==3u && session->mode!=1u) || session->epoch!=epoch ||
+                                   session->origin.recording_id!=complete_requested->recording_id || !session->instructions)
+                                {complete_observation->data_error=session->failure==cp::error::none?cp::error::replay_diverged:session->failure;
+                                 out.observation=status::invalid_typed_data;return;}
+                                // A failed save can retry this same sealed immutable
+                                // journal; it never appends a second endpoint.
+                                if(session->mode==1u)
+                                {
+                                    if(session->running){complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                    // Capture the environment at this real complete
+                                    // stop. Encode only detached DATA from the same
+                                    // host-closed transaction as the Wasm census.
+                                    namespace archive=::uwvm2::runtime::diagnostic::snapshot_archive;
+                                    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::diagnostic::snapshot_wasip1::environment_stream> wasi_streams(environments.size());
+                                    ::uwvm2::utils::container::std_vector<::uwvm2::runtime::diagnostic::snapshot_ros::environment_stream> ros_streams(complete_observation->ros_environments.size());
+                                    ::uwvm2::utils::container::std_vector<archive::stream_record> records{};
+                                    for(::std::size_t n{};n<environments.size();++n)
+                                    {
+                                        auto data=llvm_jit_checkpoint_copy_wasip1_capsule_data_host_api(environments[n]);
+                                        if(data.status!=llvm_jit_wasip1_environment_capsule_status::captured ||
+                                           !data.data.archive_environment || !wasi_streams[n].bind(data.data.archive_environment))
+                                        {complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                                        records.push_back(wasi_streams[n].record());
+                                    }
+                                    for(::std::size_t n{};n<ros_streams.size();++n)
+                                    {
+                                        if(!ros_streams[n].bind(complete_observation->ros_environments[n]))
+                                        {complete_observation->data_error=cp::error::unavailable_capability;out.observation=status::invalid_typed_data;return;}
+                                        records.push_back(ros_streams[n].record());
+                                    }
+                                    cp::object historical{};historical.kind=cp::object_kind::event;historical.flags=cp::execution_replay::environment_kind;
+                                    historical.words={session->events.size()+1u,session->instructions,session->logical_thread(actual_slots.front().id),0u,0u,0u,cp::execution_replay::schema,0u};
+                                    auto append=[](void* context,::std::span<::std::byte const> bytes) noexcept
+                                    {try{auto& out=*static_cast<::uwvm2::utils::container::std_vector<::std::byte>*>(context);out.insert(out.end(),bytes.begin(),bytes.end());return true;}catch(...){return false;}};
+                                    if(!archive::encode_stream(archive::native_platform(),records,::std::addressof(historical.bytes),append,{},archive::visibility::full))
+                                    {complete_observation->data_error=cp::error::limit_exceeded;out.observation=status::invalid_typed_data;return;}
+                                    session->append(::std::move(historical));session->history_index=session->events.size()-1u;
+                                    if(complete_requested->recording_action==2u)for(auto const& slot:actual_slots)
+                                    {
+                                        auto logical=session->logical_thread(slot.id);
+                                        if(!logical || session->exited[logical-1u])
+                                        {complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                        auto endpoint=session->instruction(slot.location,logical,true);
+                                        auto thread=::std::find_if(census.snapshot.objects.begin(),census.snapshot.objects.end(),
+                                            [&](auto const& item){return item.kind==cp::object_kind::thread && item.words[0]==static_cast<::std::size_t>(::std::addressof(slot)-actual_slots.data())+1u;});
+                                        if(thread==census.snapshot.objects.end())
+                                        {complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                        if(thread->flags==2u)
+                                        {
+                                            auto const& wait=census.snapshot.objects[thread->links.back()-1u];
+                                            ::std::shared_ptr<runtime_checkpoint_thread_capture const> actual{};
+                                            for(::std::size_t n{};n<canonical.size();++n)if(canonical[n] && canonical[n]->participant_==slot.id){actual=canonical[n];break;}
+                                            if(!actual){complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                            auto memory=checkpoint_replay_memory_identity(*session,actual->wait_operation_.owner,actual->wait_operation_.bits);
+                                            if(!memory){complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                            endpoint.flags=cp::execution_replay::wait_endpoint_kind;endpoint.links.push_back(memory);endpoint.words[4]=9u;
+                                            for(auto word:wait.words){cp::value value{};value.type.kind=cp::value_kind::i64;value.low_bits=word;endpoint.values.push_back(value);}
+                                            cp::value flag{};flag.type.kind=cp::value_kind::i64;flag.low_bits=wait.flags;endpoint.values.push_back(flag);
+                                            if(!checkpoint_replay_wait_guard(*session,actual->wait_operation_,endpoint.bytes))
+                                            {complete_observation->data_error=cp::error::replay_diverged;out.observation=status::invalid_typed_data;return;}
+                                        }
+                                        session->append(::std::move(endpoint));
+                                    }
+                                    if(complete_requested->recording_action==2u)session->mode=2u;
+                                }
+                                if(complete_requested->recording_action==2u)
+                                {
+                                census.snapshot=session->origin;
+                                census.snapshot.objects.insert(census.snapshot.objects.end(),session->events.begin(),session->events.end());
+                                cp::execution_replay::decoded checked{};
+                                auto valid=cp::execution_replay::decode(census.snapshot,checked,complete_requested->budget);
+                                if(valid!=cp::error::none)
+                                {complete_observation->data_error=valid;out.observation=status::invalid_typed_data;return;}
+                                }
+                            }
+                        }
+                        ::std::shared_ptr<complete_instance_capture> captured{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<complete_instance_capture>([&](complete_instance_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) complete_instance_capture; }))};
                         captured->epoch_ = epoch;
                         captured->graph_ = ::std::move(census.snapshot);
                         // No partial graph or transient reference key is returned
@@ -935,8 +1133,10 @@ extern "C++"
                         complete_observation->captured = ::std::move(captured);
                         complete_observation->wasip1_environments=::std::move(environments);
                         complete_observation->wasip1_captured_together=complete_requested->include_wasip1;
+                        if(pending_journal)checkpoint_replay_install(::std::move(pending_journal));
                         candidate.observed_runtime_epoch = epoch;
                         candidate.observation = status::coherent_typed_data;
+                        journal_transaction.publish();
                         coherent = true; return;
                     }
                     if(mutating != nullptr)
@@ -1031,7 +1231,8 @@ extern "C++"
                             { out.observation = status::invalid_typed_data; return; }
                             native.request = retiring->request; native.host = configuration;
                             native.source = ::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin();
-                            native.result.runtime_epoch = epoch; native.result.workers = supplied.size();
+                            native.result.runtime_epoch = epoch;
+                            native.result.workers = runtime_checkpoint_guest_worker_bridge::sealed_worker_count(native.joined);
                         }
                     }
                     coherent = true;

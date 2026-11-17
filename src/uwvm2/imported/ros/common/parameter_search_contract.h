@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 
 #include "types.h"
 
@@ -60,12 +61,12 @@ namespace uwvm2::imported::ros
      * candidate has no successor. The caller must check name_allowed before
      * each native query, including the candidate returned by this function.
      */
-    inline bool parameter_search_next_candidate(::std::string& candidate)
+    inline bool parameter_search_next_candidate(::uwvm2::utils::container::std_string& candidate)
     {
         auto separator{candidate.rfind('/')};
-        if(separator == 0 || separator == ::std::string::npos) { return false; }
+        if(separator == 0 || separator == ::uwvm2::utils::container::std_string::npos) { return false; }
         auto parent{candidate.rfind('/', separator - 1)};
-        if(parent == ::std::string::npos) { return false; }
+        if(parent == ::uwvm2::utils::container::std_string::npos) { return false; }
         candidate.erase(parent, separator - parent);
         return true;
     }

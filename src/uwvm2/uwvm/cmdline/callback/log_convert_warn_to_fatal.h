@@ -37,8 +37,7 @@
 # include <uwvm2/utils/cmdline/impl.h>
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/uwvm/utils/ansies/impl.h>
-# include <uwvm2/uwvm/cmdline/impl.h>
-# include <uwvm2/uwvm/cmdline/params/impl.h>
+# include <uwvm2/uwvm/cmdline/params/log_convert_warn_to_fatal.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -109,6 +108,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             ::uwvm2::uwvm::io::vm_warning_fatal = true;
             ::uwvm2::uwvm::io::parser_warning_fatal = true;
             ::uwvm2::uwvm::io::untrusted_dl_warning_fatal = true;
+            ::uwvm2::uwvm::io::deprecated_ros_warning_fatal = true;
+            ::uwvm2::uwvm::io::retained_ros_input_warning_fatal = true;
 #ifdef UWVM_SUPPORT_PRELOAD_DL
             ::uwvm2::uwvm::io::dl_warning_fatal = true;
 #endif
@@ -126,6 +127,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         else if(currp1_str == u8"vm") { ::uwvm2::uwvm::io::vm_warning_fatal = true; }
         else if(currp1_str == u8"parser") { ::uwvm2::uwvm::io::parser_warning_fatal = true; }
         else if(currp1_str == u8"untrusted-dl") { ::uwvm2::uwvm::io::untrusted_dl_warning_fatal = true; }
+        else if(currp1_str == u8"deprecated-ros") { ::uwvm2::uwvm::io::deprecated_ros_warning_fatal = true; }
+        else if(currp1_str == u8"retained-ros-input") { ::uwvm2::uwvm::io::retained_ros_input_warning_fatal = true; }
 #ifdef UWVM_SUPPORT_PRELOAD_DL
         else if(currp1_str == u8"dl") { ::uwvm2::uwvm::io::dl_warning_fatal = true; }
 #endif

@@ -38,8 +38,8 @@ namespace native_eh_private_leaf
         native_eh_leaf_observer::module_attempt::owner actual_attempt_{};
 #endif
         // Declared in destruction order: IR retires before its OWN context.
-        ::std::unique_ptr<::llvm::LLVMContext> context_{};
-        ::std::unique_ptr<::llvm::Module> module_{};
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::context_owner context_{};
+        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_owner module_{};
         ::std::size_t selected_edges_{}, clones_{}, replaced_numeric_throws_{};
         bool cloned_leaf_indices_[256uz]{};
         staged_module() noexcept = default;
@@ -81,9 +81,9 @@ namespace native_eh_private_leaf
                attempt->source()->bound_initialized_main_module_id() != attempt->domain()->module_index()) { return {}; }
             try // Only private staging work. Original IR/module/source never move.
             {
-                ::std::shared_ptr<staged_module> result{new staged_module{}};
+                ::std::shared_ptr<staged_module> result{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<staged_module>([&](staged_module* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) staged_module{}; }))};
                 result->actual_attempt_ = attempt;
-                result->context_ = ::std::make_unique<::llvm::LLVMContext>();
+                result->context_ = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_context();
                 ::llvm::SmallVector<char, 0u> bytes{};
                 ::llvm::raw_svector_ostream stream{bytes};
                 ::llvm::WriteBitcodeToFile(*original.llvm_jit_module.llvm_module, stream);
@@ -93,7 +93,7 @@ namespace native_eh_private_leaf
                 auto parsed{::llvm::parseBitcodeFile(::llvm::MemoryBufferRef{
                     ::llvm::StringRef{bytes.data(), bytes.size()}, "uwvm-private-leaf-staged-r1"}, *result->context_)};
                 if(!parsed) { ::llvm::consumeError(parsed.takeError()); return {}; }
-                result->module_ = ::std::move(*parsed);
+                result->module_.reset(parsed->release());
                 // The first publisher creates its own single retention list.
                 // An earlier unknown list cannot be reused as ABI provenance.
                 if(result->module_->getNamedValue("llvm.compiler.used") != nullptr ||

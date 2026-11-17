@@ -4,6 +4,9 @@
 // A typed logical capture is one stopped-thread prerequisite, NEVER worldstop,
 // a GC root registration, protected database publication or executable restore.
 #pragma once
+#include <uwvm2/utils/container/shared.h>
+#include <uwvm2/utils/allocator/fast_io_strict/object.h>
+#include <uwvm2/utils/container/standard.h>
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
 // Same nonexported global-module attachment as the private host bridge. This
 // exact qualified friend avoids a second anonymous class with the same name.
@@ -53,21 +56,28 @@ namespace
         ::uwvm2::runtime::checkpoint::compilation_profile::owner profile_{};
         ::std::uint_least64_t participant_{};
         bool suspended_wait_{};
-        mutable ::std::vector<owned_frame> frames_{};
+        checkpoint_wait_operation wait_operation_{};
+        bool virtual_wait_{};
+        ::uwvm2::utils::thread::keyed_wait_set::suspension_snapshot virtual_wait_data_{};
+        // Synchronous borrow only, valid under the same authenticated all-stop.
+        ::uwvm2::utils::thread::keyed_wait_set::suspension_borrow const* wait_borrow_{};
+        mutable ::uwvm2::utils::container::std_vector<owned_frame> frames_{};
         // Borrowed only under this capture's genuine still-current all-stop.
         ::uwvm2::runtime::checkpoint::shadow_ledger* actual_shadow_{};
         // Comparison/borrow only. NEVER read after this actual episode ends.
         ::uwvm2::runtime::gc::managed_entry_admission::shared_lease const* actual_gc_lease_{};
         ::uwvm2::runtime::gc::root_frame const* actual_gc_frames_{};
         inline static ::std::mutex registry_mutex_{};
-        inline static ::std::vector<::std::weak_ptr<runtime_checkpoint_thread_capture const>> registry_{};
+        inline static ::uwvm2::utils::container::std_vector<::std::weak_ptr<runtime_checkpoint_thread_capture const>> registry_{};
 
         template<typename Owner>
         [[nodiscard]] static bool same_owner(Owner const& a, Owner const& b) noexcept
         { return a && b && a.get() == b.get() && !a.owner_before(b) && !b.owner_before(a); }
         // An observation is a comparison-only carrier copy. Only the real
         // current-episode roots/N/publication manager may inspect it later.
-        // Executable DATA and continuation still use the strict scalar purpose.
+        // Executable DATA requires scalar values or independently authenticated
+        // same-generation function records; GC/extern/exception carriers still
+        // require the complete rooted-world restoration path.
         enum class value_use : unsigned char { executable_scalar, live_observation };
         [[nodiscard]] static checkpoint_thread_capture_status check_scalar_reference(
             ::uwvm2::runtime::checkpoint::native_value const& value,
@@ -118,6 +128,40 @@ namespace
             }
             return checkpoint_thread_capture_status::invalid_typed_packet;
         }
+        // Functions belong to the initialized module registry, not a movable
+        // GC heap. Same-generation continuation may retain them after retiring
+        // a native stack. Authenticate the token before any pointee access and
+        // check its canonical type in the declaring frame's module. This does
+        // not admit collected aggregates, opaque externrefs or serialized PCs.
+        // All callers own a genuine generation lease and current publication
+        // (or the before-park producer's still-live execution admission).
+        [[nodiscard]] static bool check_owned_function_reference(logical_frame const& frame,
+            ::uwvm2::runtime::checkpoint::native_value const& value) noexcept
+        {
+            using kind = ::uwvm2::object::global::wasm_ref_kind;
+            if(!frame.plan || frame.identity.runtime_epoch != current_runtime_generation() ||
+               value.declaration.type.kind != ::uwvm2::runtime::checkpoint::types::value_kind::reference ||
+               !value.declaration.initialized) { return false; }
+            ::uwvm2::runtime::checkpoint::native_reference reference{};
+            static_assert(sizeof(reference) <= ::uwvm2::runtime::checkpoint::native_slot_bytes);
+            ::std::memcpy(::std::addressof(reference), value.bits.data(), sizeof(reference));
+            if(reference.kind == kind::wasm_func_defined)
+            {
+                if(find_defined_func_info(static_cast<runtime_local_func_storage_t const*>(reference.storage.ptr)) == nullptr)
+                { return false; }
+            }
+            else if(reference.kind == kind::wasm_func_imported)
+            {
+                if(find_cached_import_target(static_cast<runtime_imported_func_storage_t const*>(reference.storage.ptr)) == nullptr)
+                { return false; }
+            }
+            else { return false; }
+            auto const module_id{frame.plan->get().module};
+            if(module_id >= g_runtime.modules.size()) { return false; }
+            auto const module{g_runtime.modules.index_unchecked(static_cast<::std::size_t>(module_id)).runtime_module};
+            return module != nullptr && module->gc_store &&
+                module->gc_store->reference_type_matches(reference, value.declaration.type);
+        }
         [[nodiscard]] static checkpoint_thread_capture_status check_owned_values(logical_frame const& frame, value_use use = value_use::executable_scalar) noexcept
         {
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
@@ -166,7 +210,9 @@ namespace
                     { if(byte != ::std::byte{}) { return checkpoint_thread_capture_status::invalid_typed_packet; } }
                 }
                 auto const reference{check_scalar_reference(actual, use)};
-                if(reference != checkpoint_thread_capture_status::captured) { return reference; }
+                if(reference != checkpoint_thread_capture_status::captured &&
+                   !(use == value_use::executable_scalar && check_owned_function_reference(frame, actual)))
+                { return reference; }
             }
             return checkpoint_thread_capture_status::captured;
         }
@@ -284,7 +330,7 @@ namespace
                 { return {checkpoint_thread_capture_status::invalid_activation, {}}; }
                 auto const* gc_lease{runtime_execution_entry_scope::checkpoint_actual_gc_admission()};
                 if(gc_lease == nullptr) { return {checkpoint_thread_capture_status::unavailable_reference_roots, {}}; }
-                ::std::shared_ptr<runtime_checkpoint_thread_capture> candidate{new runtime_checkpoint_thread_capture};
+                ::std::shared_ptr<runtime_checkpoint_thread_capture> candidate{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<runtime_checkpoint_thread_capture>([&](runtime_checkpoint_thread_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) runtime_checkpoint_thread_capture; }))};
                 candidate->actual_gc_lease_ = gc_lease;
                 candidate->actual_shadow_ = shadow;
                 candidate->actual_gc_frames_ = ::uwvm2::runtime::gc::current_root_frames();
@@ -310,6 +356,26 @@ namespace
                 candidate->control_ = control; candidate->ticket_ = ticket; candidate->location_ = location;
                 candidate->participant_ = g_debug_pause_participant->identifier();
                 candidate->suspended_wait_ = g_debug_activation_park_site.suspended_wait;
+                if(candidate->suspended_wait_ && checkpoint_actual_wait && (checkpoint_actual_wait_borrow || checkpoint_virtual_wait))
+                {
+                    candidate->wait_operation_=*checkpoint_actual_wait;
+                    candidate->wait_borrow_=checkpoint_actual_wait_borrow;
+                    if(checkpoint_virtual_wait)
+                    {candidate->virtual_wait_=true;candidate->virtual_wait_data_=*checkpoint_virtual_wait;}
+                }
+                if(!candidate->suspended_wait_ && checkpoint_restored_wait && !checkpoint_restored_wait->consumed)
+                {
+                    auto const& pending=*checkpoint_restored_wait;
+                    if(pending.batch && pending.location.code_unit==location.code_unit && pending.location.function==location.function &&
+                        pending.location.offset==location.offset)
+                    {
+                        auto accepted=pending.batch->inspect_unclaimed(pending.index,
+                            {reinterpret_cast<void const*>(pending.operation.owner),pending.position},
+                            [&](auto const& saved) noexcept{candidate->virtual_wait_data_=saved;});
+                        if(!accepted)return {checkpoint_thread_capture_status::invalid_typed_packet,{}};
+                        candidate->virtual_wait_=candidate->suspended_wait_=true;candidate->wait_operation_=pending.operation;
+                    }
+                }
                 candidate->profile_ = g_runtime.checkpoint_profile;
                 if(candidate->participant_ == 0u) { return {checkpoint_thread_capture_status::invalid_activation, {}}; }
                 // Publish only a complete private capture. Reuse expired cells
@@ -330,7 +396,7 @@ namespace
     // authentication. Allocation failure cannot escape a noexcept host API.
     class runtime_checkpoint_capture_buffer
     {
-        ::std::vector<runtime_checkpoint_thread_capture::owner> values_{};
+        ::uwvm2::utils::container::std_vector<runtime_checkpoint_thread_capture::owner> values_{};
         bool ready_{};
     public:
         explicit runtime_checkpoint_capture_buffer(::std::size_t count) noexcept

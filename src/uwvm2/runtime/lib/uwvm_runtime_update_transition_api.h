@@ -1,5 +1,6 @@
 // Private aggregation fragment after prepare_update_internal.
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 extern "C++" ::uwvm2::utils::update::status runtime_update_prepare_host_api(
     ::uwvm2::utils::update::permit const& p, ::std::span<unsigned char const> target,
     ::std::span<::std::uint64_t const> scopes, ::std::chrono::steady_clock::time_point deadline) noexcept
@@ -33,7 +34,7 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_observe_transition_ho
     (void)out; return u::status::unsupported;
 #endif
 }
-extern "C++" ::uwvm2::utils::update::status runtime_update_read_policy_host_api(::std::vector<unsigned char>& out) noexcept
+extern "C++" ::uwvm2::utils::update::status runtime_update_read_policy_host_api(::uwvm2::utils::container::std_vector<unsigned char>& out) noexcept
 {
     namespace u = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)

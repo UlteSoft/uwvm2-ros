@@ -4,6 +4,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include "../common/format.h"
 
 #include <array>
@@ -57,7 +58,7 @@ namespace uwvm2::imported::ros
         }
         else if(key == "node-name")
         {
-            if(value.find('/') != ::std::string_view::npos || !canonical_resource(::fast_io::concat_std("/",value))) { return {errc::invalid_argument, "invalid ROS node basename"}; }
+            if(value.find('/') != ::std::string_view::npos || !canonical_resource(::uwvm2::utils::container::concat("/",value))) { return {errc::invalid_argument, "invalid ROS node basename"}; }
         }
         else if(key == "namespace")
         { if(!canonical_resource(value, true)) { return {errc::invalid_argument, "namespace must be canonical and absolute"}; } }
@@ -111,7 +112,7 @@ namespace uwvm2::imported::ros
         }
         if(target.enabled && !target.capabilities.empty())
         {
-            ::std::vector<::std::string_view> required{"gateway-socket",
+            ::uwvm2::utils::container::std_vector<::std::string_view> required{"gateway-socket",
                                                        "gateway-uid",
                                                        "node-name",
                                                        "namespace"};
@@ -124,7 +125,7 @@ namespace uwvm2::imported::ros
             {
                 if(!target.connection.contains(key))
                 {
-                    return {errc::invalid_argument, ::fast_io::concat_std("enabled target missing explicit connection field: ", ::std::string_view{key})};
+                    return {errc::invalid_argument, ::uwvm2::utils::container::concat("enabled target missing explicit connection field: ", ::std::string_view{key})};
                 }
             }
             if(target.ros_version == version::ros2)
@@ -144,8 +145,8 @@ namespace uwvm2::imported::ros
         bool const finite_burst{burst!=target.connection.end() && burst->second!="unlimited"};
         if(finite_rate!=finite_burst)
         { return {errc::invalid_argument,"denial audit rate and burst must be finite together"}; }
-        ::std::set<::std::tuple<::std::string, ::std::string, ::std::string>> duplicates{};
-        ::std::map<::std::string, ::std::string, ::std::less<>> resource_types{};
+        ::uwvm2::utils::container::std_set<::std::tuple<::uwvm2::utils::container::std_string, ::uwvm2::utils::container::std_string, ::uwvm2::utils::container::std_string>> duplicates{};
+        ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string, ::uwvm2::utils::container::std_string, ::std::less<>> resource_types{};
         for(auto const& [alias, cap] : target.capabilities)
         {
             if(alias != cap.alias) { return {errc::invalid_argument, "capability alias key mismatch"}; }
@@ -163,7 +164,7 @@ namespace uwvm2::imported::ros
                 auto allowed{ipc::event_bit(ipc::event_kind::resource_error)|ipc::event_bit(ipc::event_kind::resource_closed)};
                 if(has_payload) { allowed |= ipc::event_bit(payload); }
                 if(kinds & ~allowed) { return {errc::permission_denied, "event payload kind exceeds its independently granted source operation"}; }
-                ::fast_io::print(::fast_io::ostring_ref_std{::std::addressof(duplicate_resource)},"|",source->first);
+                ::fast_io::print(::uwvm2::utils::container::ostring_ref{::std::addressof(duplicate_resource)},"|",source->first);
             }
             if(cap.operation == "service.available")
             {
@@ -174,8 +175,8 @@ namespace uwvm2::imported::ros
             if(!duplicates.emplace(cap.operation, duplicate_resource, cap.type).second) { return {errc::conflict, "duplicate resource grant under another alias"}; }
             if(cap.operation.starts_with("topic.") || cap.operation.starts_with("service.") || cap.operation.starts_with("action."))
             {
-                auto const resource_key{::fast_io::concat_std(::std::string_view{cap.operation}.substr(0,cap.operation.find('.')),":",cap.resource)};
-                auto type_key{::fast_io::concat_std(cap.type,"|",cap.type_identity)};
+                auto const resource_key{::uwvm2::utils::container::concat(::std::string_view{cap.operation}.substr(0,cap.operation.find('.')),":",cap.resource)};
+                auto type_key{::uwvm2::utils::container::concat(cap.type,"|",cap.type_identity)};
                 // try_emplace leaves type_key intact when the key exists, so
                 // the same owned bytes serve insertion or conflict checking.
                 auto [it, inserted]{resource_types.try_emplace(resource_key,::std::move(type_key))};
@@ -211,12 +212,12 @@ namespace uwvm2::imported::ros
         return {};
     }
 
-    inline ::std::string json_quote(::std::string_view text)
-    { return ::fast_io::concat_std(json_quoted{text}); }
+    inline ::uwvm2::utils::container::std_string json_quote(::std::string_view text)
+    { return ::uwvm2::utils::container::concat(json_quoted{text}); }
 
     class policy_store
     {
-        using key_type = ::std::tuple<version, scope, ::std::string>;
+        using key_type = ::std::tuple<version, scope, ::uwvm2::utils::container::std_string>;
         using key_view = ::std::tuple<version, scope, ::std::string_view>;
         struct target_less
         {
@@ -237,8 +238,8 @@ namespace uwvm2::imported::ros
                 return ::std::pair{left.first, ::std::string_view{left.second}} < ::std::pair{right.first, ::std::string_view{right.second}};
             }
         };
-        ::std::map<key_type, target_policy, target_less> targets{};
-        ::std::map<::std::pair<version, ::std::string>, ::std::pair<scope, ::std::string>, binding_less> bindings{};
+        ::uwvm2::utils::container::std_map<key_type, target_policy, target_less> targets{};
+        ::uwvm2::utils::container::std_map<::std::pair<version, ::uwvm2::utils::container::std_string>, ::std::pair<scope, ::uwvm2::utils::container::std_string>, binding_less> bindings{};
 
         static ::std::string_view target_name(scope s, ::std::string_view name) noexcept { return s == scope::global ? ::std::string_view{} : name; }
         target_policy* mutable_target(version v, scope s, ::std::string_view name)
@@ -257,14 +258,14 @@ namespace uwvm2::imported::ros
             { return {errc::invalid_argument, "only explicitly named Single/Group targets can be created"}; }
             if(targets.contains(key_view{v, s, name})) { return {errc::conflict, "target already exists"}; }
             if(s == scope::single && bindings.contains(::std::pair{v, name})) { return {errc::conflict, "module already has an explicit target in this ROS version"}; }
-            targets.emplace(key_type{v, s, ::std::string(name)}, target_policy{v, s, ::std::string(name), false, {}, {}});
-            if(s == scope::single) { bindings.emplace(::std::pair{v, ::std::string(name)}, ::std::pair{s, ::std::string(name)}); }
+            targets.emplace(key_type{v, s, ::uwvm2::utils::container::std_string(name)}, target_policy{v, s, ::uwvm2::utils::container::std_string(name), false, {}, {}});
+            if(s == scope::single) { bindings.emplace(::std::pair{v, ::uwvm2::utils::container::std_string(name)}, ::std::pair{s, ::uwvm2::utils::container::std_string(name)}); }
             return {};
         }
         result bind_module(version v, ::std::string_view group, ::std::string_view module)
         {
             if(!find_target(v, scope::group, group) || !valid_module_name(module)) { return {errc::invalid_argument, "unknown Group or invalid module binding"}; }
-            if(!bindings.emplace(::std::pair{v, ::std::string(module)}, ::std::pair{scope::group, ::std::string(group)}).second)
+            if(!bindings.emplace(::std::pair{v, ::uwvm2::utils::container::std_string(module)}, ::std::pair{scope::group, ::uwvm2::utils::container::std_string(group)}).second)
             { return {errc::conflict, "module already explicitly bound in this ROS version"}; }
             return {};
         }
@@ -272,7 +273,7 @@ namespace uwvm2::imported::ros
         {
             if(!valid_version(v) || !valid_module_name(module))
             { return {errc::invalid_argument, "invalid explicit Global module binding"}; }
-            if(!bindings.emplace(::std::pair{v, ::std::string(module)}, ::std::pair{scope::global, ::std::string{}}).second)
+            if(!bindings.emplace(::std::pair{v, ::uwvm2::utils::container::std_string(module)}, ::std::pair{scope::global, ::uwvm2::utils::container::std_string{}}).second)
             { return {errc::conflict, "module already explicitly bound in this ROS version"}; }
             return {};
         }
@@ -372,9 +373,9 @@ namespace uwvm2::imported::ros
             }
             return find_target(v, it->second.first, it->second.second);
         }
-        ::std::vector<target_policy const*> configured_targets() const
+        ::uwvm2::utils::container::std_vector<target_policy const*> configured_targets() const
         {
-            ::std::vector<target_policy const*> out{};
+            ::uwvm2::utils::container::std_vector<target_policy const*> out{};
             out.reserve(targets.size());
             for(auto const& item : targets) { out.push_back(&item.second); }
             return out;
@@ -392,16 +393,16 @@ namespace uwvm2::imported::ros
             { if(!visitor(module.first,::std::string_view{module.second},target.first,::std::string_view{target.second})) { return false; } }
             return true;
         }
-        result validate(::std::span<::std::string const> loaded_modules, bool verify_bindings = true) const
+        result validate(::std::span<::uwvm2::utils::container::std_string const> loaded_modules, bool verify_bindings = true) const
         {
             // These views only live until validation returns to the span's owner.
-            ::std::set<::std::string_view, ::std::less<>> loaded{};
+            ::uwvm2::utils::container::std_set<::std::string_view, ::std::less<>> loaded{};
             for(auto const& name : loaded_modules)
             {
                 if(!valid_module_name(name)) { return {errc::invalid_argument, "invalid loaded module name"}; }
                 if(!loaded.emplace(name).second) { return {errc::conflict, "duplicate loaded module name"}; }
             }
-            for(auto const& [key, target] : targets) { if(auto r{validate_target(target)}; !r) { return {r.code, ::fast_io::concat_std(to_string(target.ros_version), "/", to_string(target.target_scope), "/", target.name, ": ", r.detail)}; } }
+            for(auto const& [key, target] : targets) { if(auto r{validate_target(target)}; !r) { return {r.code, ::uwvm2::utils::container::concat(to_string(target.ros_version), "/", to_string(target.target_scope), "/", target.name, ": ", r.detail)}; } }
             if(verify_bindings)
             {
                 for(auto const& [module, target] : bindings)
@@ -409,10 +410,10 @@ namespace uwvm2::imported::ros
             }
             return {};
         }
-        ::std::string canonical_dump(version v, ::std::span<::std::string const> modules) const
+        ::uwvm2::utils::container::std_string canonical_dump(version v, ::std::span<::uwvm2::utils::container::std_string const> modules) const
         {
-            ::std::string out{};
-            ::fast_io::ostring_ref_std stream{::std::addressof(out)};
+            ::uwvm2::utils::container::std_string out{};
+            ::uwvm2::utils::container::ostring_ref stream{::std::addressof(out)};
             ::fast_io::print(stream,"{\"version\":",json_quoted{to_string(v)},",\"targets\":[");
             bool first_target{true};
             for(auto const& [key, target] : targets)
@@ -429,7 +430,8 @@ namespace uwvm2::imported::ros
                 for(::std::size_t i{};i<api::catalogue.size();++i)
                 {
                     if(!target.interfaces.configured[i])continue;
-                    if(!first)::fast_io::print(stream,",");first=false;
+                    if(!first){::fast_io::print(stream,",");}
+                    first=false;
                     ::fast_io::print(stream,json_quoted{api::catalogue[i].key},":",json_quoted{api::name(target.interfaces.entries[i])});
                 }
                 ::fast_io::print(stream,"},\"capabilities\":["); first = true;
@@ -448,7 +450,7 @@ namespace uwvm2::imported::ros
             }
             ::fast_io::print(stream,"],\"modules\":[");
             // The caller's strings outlive this local set; no borrowed key is retained.
-            ::std::set<::std::string_view, ::std::less<>> sorted{modules.begin(), modules.end()};
+            ::uwvm2::utils::container::std_set<::std::string_view, ::std::less<>> sorted{modules.begin(), modules.end()};
             bool first{true};
             for(auto const& name : sorted)
             {

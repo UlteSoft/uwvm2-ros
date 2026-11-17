@@ -639,6 +639,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
                 // Linux provides neither a fault address nor the faulting PC.
                 // Only an actually admitted MTE entry owns this notification;
                 // do not search address zero or attribute the notification PC.
+                if(::uwvm2::extension::memtag::hardware_mte::asynchronous_capture_armed)
+                {
+                    ::uwvm2::extension::memtag::hardware_mte::asynchronous_fault_observed=1;
+                    return true;
+                }
                 hardware_memtag_fault const report{SIZE_MAX,UINT64_MAX,0u,0u,0u,0u,0u,false,true};
                 if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
                 ::_Exit(122);

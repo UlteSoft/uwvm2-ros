@@ -3,6 +3,7 @@
  * Licensed under the APL-2.0 License (see LICENSE file).      *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/update/module_transition.h>
 namespace uwvm2::utils::update
 {
@@ -14,8 +15,8 @@ namespace uwvm2::utils::update
     struct migration_global_copy { ::std::uint64_t source_index{}, destination_index{}; };
     struct migration_plan
     {
-        ::std::vector<migration_memory_copy> memories{};
-        ::std::vector<migration_global_copy> globals{};
+        ::uwvm2::utils::container::std_vector<migration_memory_copy> memories{};
+        ::uwvm2::utils::container::std_vector<migration_global_copy> globals{};
     };
     namespace migration_detail
     {
@@ -167,7 +168,7 @@ namespace uwvm2::utils::update
                 total += memory.byte_size;
             }
             constexpr char domain[]{"uwvm.module-migration.state.v2"};
-            ::std::vector<unsigned char> bytes; bytes.reserve(total + 2048u);
+            ::uwvm2::utils::container::std_vector<unsigned char> bytes; bytes.reserve(total + 2048u);
             for(char c : domain) { bytes.push_back(static_cast<unsigned char>(c)); }
             append_u64(bytes, module.memories.size());
             for(auto const& memory : module.memories)

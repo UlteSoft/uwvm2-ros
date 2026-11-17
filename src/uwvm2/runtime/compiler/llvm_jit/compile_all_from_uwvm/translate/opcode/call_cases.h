@@ -296,6 +296,20 @@ case wasm1_code::call:
     {
         llvm_jit_instruction_emitted_inline = true;
         llvm_jit_emit_state.checkpoint_call = {};
+        if(llvm_jit_emit_state.gc_private_call_graph_safe)
+        {
+            // Validated even on polymorphic/unreachable paths. An import can
+            // publish a reference or reenter; never infer purity from its type.
+            if(static_cast<::std::size_t>(func_index) < import_func_count)
+            { llvm_jit_emit_state.gc_private_call_graph_safe=false; }
+            else
+            {
+                auto const* owner=llvm_jit_emit_state.local_func_storage_ptr->runtime_module_ptr;
+                auto const name=get_llvm_wasm_function_name(*owner,func_index);
+                llvm_jit_emit_state.gc_private_callees.push_back(::llvm::MDString::get(
+                    *llvm_jit_emit_state.llvm_context_holder,get_llvm_string_ref(name)));
+            }
+        }
         // Imported Wasm forwarding is eligible only with the actual registered
         // defined-leaf witness. Host/dl/weak imports keep their prior metadata
         // and the original runtime foreign/nonreplayable admission guard.
@@ -304,7 +318,7 @@ case wasm1_code::call:
             runtime_local_func_llvm_jit_checkpoint_import_has_defined_owner(llvm_jit_emit_state, func_index)))
         {
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
-            ::std::vector<checkpoint::types::core_value_type> exact_after{}; exact_after.reserve(operand_stack.size());
+            ::uwvm2::utils::container::std_vector<checkpoint::types::core_value_type> exact_after{}; exact_after.reserve(operand_stack.size());
             bool complete{!is_polymorphic && code_curr >= code_begin && code_curr < code_end};
             for(::std::size_t i{}; complete && i != operand_stack.size(); ++i)
             {
@@ -736,7 +750,7 @@ case wasm1_code::call_indirect:
         if(runtime_local_func_llvm_jit_checkpoint_dynamic_call_selected(llvm_jit_emit_state))
         {
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
-            ::std::vector<checkpoint::types::core_value_type> exact_after{};
+            ::uwvm2::utils::container::std_vector<checkpoint::types::core_value_type> exact_after{};
             exact_after.reserve(operand_stack.size());
             bool complete{!is_polymorphic && code_curr >= code_begin && code_curr < code_end};
             for(::std::size_t i{}; complete && i != operand_stack.size(); ++i)
@@ -920,7 +934,7 @@ case static_cast<wasm1_code>(0x15u):
         if(!tail && runtime_local_func_llvm_jit_checkpoint_dynamic_call_selected(llvm_jit_emit_state))
         {
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
-            ::std::vector<checkpoint::types::core_value_type> exact_after{};
+            ::uwvm2::utils::container::std_vector<checkpoint::types::core_value_type> exact_after{};
             exact_after.reserve(operand_stack.size());
             bool complete{!is_polymorphic && code_curr >= code_begin && code_curr < code_end};
             for(::std::size_t i{}; complete && i != operand_stack.size(); ++i)

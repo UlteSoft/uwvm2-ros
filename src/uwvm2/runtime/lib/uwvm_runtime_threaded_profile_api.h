@@ -16,6 +16,8 @@
 #include <exception>
 #include <uwvm2/runtime/wasm_threads/admission.h>
 #include <uwvm2/runtime/wasm_threads/thread_group.h>
+#include <uwvm2/runtime/wasm_threads/execution_archive.h>
+#include <uwvm2/runtime/wasm_threads/execution_memory.h>
 #include <uwvm2/utils/container/impl.h>
 namespace uwvm2::uwvm::runtime::full { class full_source_instance; class full_source_destruction_completion; }
 #endif
@@ -130,6 +132,39 @@ namespace uwvm2::runtime::lib
         ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits const&) noexcept;
     extern "C++" [[nodiscard]] ::uwvm2::runtime::wasm_threads::threaded_debug_control_session
         runtime_threaded_profile_debug_control_session_host_api() noexcept;
+    // Explicit host-only private-world execution recording. Configuration is
+    // cold and immutable for the selected generation. A replay supplies DATA;
+    // normal source admission and present thread/storage grants are still required.
+    // Unified archives contain original modules, platform provenance and only
+    // logical execution records. Unknown in-flight results stay process-local.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_snapshot_capture_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const*,
+        ::uwvm2::utils::container::std_vector<::std::byte>&) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_snapshot_replay_configure_host_api(
+        ::std::span<::std::byte const>) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_snapshot_reattach_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const&,::std::span<::std::byte const>) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_record_configure_host_api(bool hold_entry=false) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_replay_configure_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history const&) noexcept;
+    extern "C++" [[nodiscard]] ::uwvm2::runtime::wasm_threads::journal_observation
+        runtime_threaded_profile_record_status_host_api() noexcept;
+    // Trusted terminal-policy inspection, never native cancellation or a
+    // serialization of an unknown result. Virtual replay always returns false.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_unresolved_imports_host_api() noexcept;
+    // A published terminal decision is observable before physical join. This
+    // never grants retirement/reuse of live owners or resumes a native call.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_terminal_host_api(::std::uint32_t&,unsigned&) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_record_capture_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const*,
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history&) noexcept;
+    // Same-process, exact-stop reattachment only. Continuation is the original
+    // guarded native worker; no result or external request is reconstructed.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_record_reattach_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const&,
+        ::uwvm2::runtime::wasm_threads::threaded_execution_history const&) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_replay_continue_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_debug_all_stop const&) noexcept;
     // Pure CLI aggregate derivation. No Runtime publication or execution grant.
     // Explicit native callers retain their original max_live_storage_bytes.
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_complete_cli_limits_host_api(

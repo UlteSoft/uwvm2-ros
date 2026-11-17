@@ -34,7 +34,7 @@
         // still requires real kernel/leave witnesses. Actual scope exit poisons
         // the ledger after native ACK, so stale providers cannot revive it.
         [[maybe_unused]] details::debug_activation::ledger const* ledger_{};
-        ::std::unique_ptr<details::debug_activation::frame[]> expected_storage_{};
+        ::uwvm2::utils::container::std_unique_ptr<details::debug_activation::frame[]> expected_storage_{};
         [[maybe_unused]] details::debug_activation::frame const* expected_{};
         [[maybe_unused]] ::std::size_t count_{};
         void const* session_{};
@@ -202,7 +202,7 @@
     namespace
     {
         ::std::mutex g_debug_native_activation_cursor_mutex{};
-        ::std::vector<::std::weak_ptr<llvm_jit_debug_native_activation_cursor const>> g_debug_native_activation_cursors{};
+        ::uwvm2::utils::container::std_vector<::std::weak_ptr<llvm_jit_debug_native_activation_cursor const>> g_debug_native_activation_cursors{};
         [[nodiscard]] llvm_jit_debug_native_activation_cursor_owner canonical_native_activation_cursor(
             llvm_jit_debug_native_activation_cursor_owner const& supplied) noexcept
         {
@@ -328,11 +328,11 @@
                 if(!debug_resolve_actual_native_function_body(actual.code_unit, actual.function,
                     capture->snapshot_.frames.back().function_generation, actual.code_generation,
                     site.return_pc, actual_begin, actual_end) || actual_begin != site.owner_begin || actual_end != site.owner_end) { return; }
-                candidate.reset(new llvm_jit_debug_native_activation_cursor);
+                candidate = ::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<llvm_jit_debug_native_activation_cursor>([&](llvm_jit_debug_native_activation_cursor* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) llvm_jit_debug_native_activation_cursor; }));
                 candidate->capture_ = capture; candidate->ledger_ = capture->native_ledger_owner_.get();
                 candidate->session_ = session; candidate->thread_ = site.native_thread;
                 candidate->begin_ = site.owner_begin; candidate->end_ = site.owner_end; candidate->first_ = site.return_pc;
-                candidate->expected_storage_ = ::std::make_unique<details::debug_activation::frame[]>(count);
+                candidate->expected_storage_ = ::uwvm2::utils::container::make_unique<details::debug_activation::frame[]>(count);
                 candidate->expected_ = candidate->expected_storage_.get();
                 candidate->count_ = count;
                 for(::std::size_t i{}; i != count; ++i)

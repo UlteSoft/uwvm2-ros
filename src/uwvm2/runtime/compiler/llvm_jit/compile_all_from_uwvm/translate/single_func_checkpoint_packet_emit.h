@@ -1,4 +1,5 @@
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 // Included after the actual LLVM emitter state/type/entry-alloca helpers.
 // Exact Core3 metadata comes from fused validation, never SSA projection.
 // Observer packets use an actual activation-owned heap; resume packets retain
@@ -330,7 +331,7 @@ struct llvm_jit_checkpoint_native_packet_emit_result
         }
     }
 #endif
-    ::std::vector<::std::size_t> conditional_rewrites{};
+    ::uwvm2::utils::container::std_vector<::std::size_t> conditional_rewrites{};
     for(::std::size_t index{}; index != site.slots.size(); ++index)
     {
         if(shared_locals && index < site.local_count) { continue; }

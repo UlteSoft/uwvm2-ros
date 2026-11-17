@@ -166,6 +166,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
         {
             if(curr_module.module_name == module_name) { curr_module.preload_module_memory_attribute = attribute; }
         }
+#else
+        (void)module_name;
+        (void)attribute;
 #endif
 
     }

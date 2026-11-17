@@ -66,17 +66,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         value.max_control_frames=(::std::min)(storage/4096u,static_cast<::std::size_t>(4096u));
         value.max_call_frames=(::std::min)(storage/65536u,static_cast<::std::size_t>(256u));
         value.max_table_elements=(::std::min)(storage/128u,static_cast<::std::size_t>(65536u));
-        value.max_local_memory_bytes=0u;value.max_shared_memory_bytes=shared;
+        value.max_local_memory_bytes=storage;value.max_shared_memory_bytes=shared;
         value.max_total_segment_bytes=(::std::min)(storage/8u,static_cast<::std::size_t>(64u*1024u*1024u));
         auto& init=value.initializer;
         init.max_runtime_modules=(::std::max)(static_cast<::std::size_t>(2u),storage/4096u);
         init.max_imported_functions=(::std::min)(code/4u,static_cast<::std::size_t>(4096u));
-        init.max_imported_tables=0u;init.max_imported_memories=1u;init.max_imported_globals=0u;init.max_imported_tags=0u;
+        init.max_imported_tables=(::std::min)(storage/256u,static_cast<::std::size_t>(4096u));init.max_imported_memories=(::std::min)(storage/256u,static_cast<::std::size_t>(4096u));
         init.max_local_defined_functions=(::std::min)(code/32u,static_cast<::std::size_t>(65536u));
         init.max_local_defined_codes=init.max_local_defined_functions;
-        init.max_local_defined_tables=1u;init.max_local_defined_memories=0u;
+        init.max_local_defined_tables=init.max_imported_tables;init.max_local_defined_memories=init.max_imported_memories;
         init.max_local_defined_globals=(::std::min)(storage/256u,static_cast<::std::size_t>(65536u));
         init.max_local_defined_tags=(::std::min)(storage/256u,static_cast<::std::size_t>(4096u));
+        // Imported globals and exception tags are linked to independently
+        // rebuilt private providers. Charge the selected storage budget; zero
+        // here would silently disable valid input despite available storage.
+        init.max_imported_globals=init.max_local_defined_globals;
+        init.max_imported_tags=init.max_local_defined_tags;
         init.max_local_defined_elements=(::std::min)(storage/128u,static_cast<::std::size_t>(65536u));
         init.max_local_defined_datas=(::std::min)(storage/4096u,static_cast<::std::size_t>(64u));
         if(value.max_value_stack_bytes<16u||value.max_control_frames==0u||value.max_call_frames==0u||
@@ -96,7 +101,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         ::uwvm2::utils::container::vector<::uwvm2::utils::cmdline::parameter_parsing_results>& parsed) noexcept
     {
         auto next=current+1u;
-        for(unsigned count{};count<6u&&next!=end&&*next!=nullptr;++count,++next)
+        auto const token=::uwvm2::utils::container::u8cstring_view{::fast_io::mnp::os_c_str(*current)};
+        unsigned const arguments=token==u8"--debug-thread-history"?3u:6u;
+        for(unsigned count{};count<arguments&&next!=end&&*next!=nullptr;++count,++next)
         {
             auto const text=::uwvm2::utils::container::u8cstring_view{::fast_io::mnp::os_c_str(*next)};
             // A following option stays an option; signed numeric input remains
@@ -108,6 +115,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             parsed.emplace_back_unchecked(text,nullptr,::uwvm2::utils::cmdline::parameter_parsing_results_type::occupied_arg);
         }
         current=next;
+    }
+#if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline
+#endif
+    ::uwvm2::utils::cmdline::parameter_return_type debug_thread_history_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using kind=::uwvm2::utils::cmdline::parameter_parsing_results_type;
+        using result=::uwvm2::utils::cmdline::parameter_return_type;
+        auto next=current+1u;::std::size_t control_bytes{};
+        bool valid=end-next>=3;
+        if(valid)for(unsigned i{};i<3u;++i)valid&=next[i].type==kind::arg||next[i].type==kind::occupied_arg;
+        valid=valid&&(next[0].str==u8"record"||next[0].str==u8"replay")&&!next[1].str.empty()&&wasi_threads_parse_positive(next[2].str,control_bytes);
+        if(!valid)
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] --debug-thread-history requires record or replay, a host path, and a positive control storage budget in bytes.");
+            return result::return_m1_imme;
+        }
+        debug_thread_history_mode=next[0].str==u8"record"?1u:2u;debug_thread_history_path.ptr=next[1].str.data();debug_thread_history_path.n=next[1].str.size();
+        debug_thread_history_control_bytes=control_bytes;
+        for(unsigned i{};i<3u;++i)next[i].type=kind::occupied_arg;
+        return result::def;
     }
 #if defined(UWVM_MODULE)
     extern "C++" UWVM_GNU_COLD

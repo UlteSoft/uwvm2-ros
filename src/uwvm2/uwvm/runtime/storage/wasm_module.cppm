@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 // std
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1

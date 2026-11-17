@@ -1,5 +1,7 @@
 // PRIVATE observation-only adapter; no production import or native admission.
 module;
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #include <cstddef>
 #include <limits>
 #include <memory>

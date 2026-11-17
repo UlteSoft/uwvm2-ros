@@ -4,6 +4,8 @@
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #pragma once
+#include <uwvm2/utils/container/standard.h>
+#include <uwvm2/utils/container/shared.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <chrono>
@@ -55,8 +57,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::thread
         ::std::mutex mutex_{};
         ::std::condition_variable changed_{};
         ::std::atomic_bool requested_{};
-        ::std::vector<slot> slots_;
-        ::std::shared_ptr<void const> identity_{::std::make_shared<unsigned char>()};
+        ::uwvm2::utils::container::std_vector<slot> slots_;
+        ::std::shared_ptr<void const> identity_{::uwvm2::utils::container::make_shared<unsigned char>()};
         ::std::size_t active_{}, parked_{}, admission_waiters_{}, tickets_{};
         ::std::size_t initiator_index_{};
         ::std::uint_least64_t serial_{}, next_participant_{1u}, initiator_id_{};

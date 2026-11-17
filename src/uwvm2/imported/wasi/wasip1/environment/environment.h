@@ -75,7 +75,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         stdio_full_rights = 128u,
         stdin_read = 256u, stdout_write = 512u, stderr_write = 1024u,
         stdio_metadata = 2048u, stdio_readiness = 4096u,
-        args = 8192u, environ = 16384u, proc_exit = 32768u, thread_spawn = 65536u,
+        args = 8192u, environ = 16384u, proc_exit = 32768u,
         realtime_resolution = 131072u, monotonic_resolution = 262144u, process_resolution = 524288u, thread_resolution = 1048576u,
         realtime_timer = 2097152u, monotonic_timer = 4194304u, process_timer = 8388608u, thread_timer = 16777216u
     };
@@ -177,7 +177,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         if(name == u8"sock_recv") { return ::std::uint64_t{1} << 43u; }
         if(name == u8"sock_send") { return ::std::uint64_t{1} << 44u; }
         if(name == u8"sock_shutdown") { return ::std::uint64_t{1} << 45u; }
-        if(name == u8"thread-spawn") { return ::std::uint64_t{1} << 46u; }
         return 0u;
     }
 

@@ -1,5 +1,6 @@
 // Licensed under APL-2.0 (see LICENSE).
 #pragma once
+#include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <atomic>
 # include <cerrno>
@@ -25,7 +26,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
     class dump_file final
     {
         int directory_{-1},file_{-1};
-        ::std::string destination_{},temporary_{};
+        ::uwvm2::utils::container::std_string destination_{},temporary_{};
         bool published_{};
         inline static ::std::atomic<unsigned long long> serial_{};
     public:
@@ -52,7 +53,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
             {
 # endif
                 auto const slash{path.find_last_of('/')};
-                ::std::string parent{slash==path.npos ? "." : path.substr(0u,slash==0u ? 1u:slash)};
+                ::uwvm2::utils::container::std_string parent{slash==path.npos ? "." : path.substr(0u,slash==0u ? 1u:slash)};
                 destination_=path.substr(slash==path.npos ? 0u:slash+1u);
                 if(destination_.empty() || destination_=="." || destination_=="..") return false;
                 directory_=::open(parent.c_str(),O_RDONLY|O_CLOEXEC|O_DIRECTORY);
@@ -61,8 +62,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
                 if(::fstatat(directory_,destination_.c_str(),&existing,AT_SYMLINK_NOFOLLOW)==0 || errno!=ENOENT) return false;
                 // Distinct non-guest-controlled names. O_EXCL is the authority,
                 // not unpredictability; a pre-existing name is never followed.
-                temporary_=".uwvm-core-"+::std::to_string(static_cast<unsigned long long>(::getpid()))+"-"+
-                    ::std::to_string(serial_.fetch_add(1u,::std::memory_order_relaxed));
+                temporary_=".uwvm-core-"+::uwvm2::utils::container::to_string(static_cast<unsigned long long>(::getpid()))+"-"+
+                    ::uwvm2::utils::container::to_string(serial_.fetch_add(1u,::std::memory_order_relaxed));
                 file_=::openat(directory_,temporary_.c_str(),O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC|O_NOFOLLOW,0600);
                 if(file_==-1) { temporary_.clear();return false; }
                 struct stat actual{};
