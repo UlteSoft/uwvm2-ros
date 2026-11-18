@@ -188,7 +188,7 @@ Jazzy Fast DDS and Humble Cyclone DDS each completed both independent
 GetParameters requests when the server and client used the same installation.
 A Jazzy Fast DDS client also received both typed replies from a Humble Fast DDS server. With a Jazzy Fast DDS client and Humble Cyclone DDS server on the same
 isolated loopback network, neither process completed the service exchange.
-The reliable Int32 topic exchange succeeded for that pair. Record the
+The same Jazzy client also timed out before its first typed reply with Dashing, Eloquent, Foxy, Galactic, Iron, Kilted, Lyrical and Rolling Cyclone servers. All nine cross-RMW pairs passed the separate reliable Int32 topic test. The [per-pair service observations](../../test/0084.ros-runtime/dds_interop/service_observations.json) identify the direction, server implementation and receipt for each run. Record the
 requested operation, each endpoint's RMW and the request direction when
 approving a route. The [service fixture](../../test/0084.ros-runtime/dds_interop/README.md#native-getparameters-service)
 accepts a separate server RMW and includes controls for both installations.
