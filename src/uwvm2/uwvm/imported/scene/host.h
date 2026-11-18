@@ -1073,18 +1073,35 @@ namespace uwvm2::uwvm::imported::scene
         using features=::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t;
         using value=::uwvm2::uwvm::wasm::type::feature_list_final_value_type_t<features>;
         template<typename T> consteval value mapped(){return sizeof(T)<=4?value::i32:value::i64;}
-        /** @brief Emit detached runtime metadata only after the guest return value is fixed.
-         * @details A disabled production audit does not resolve caller identity or sample a clock.
-         * The debugger has an independent, privileged trace switch. ABI queries retain their
-         * actual numeric return value, including the ABI version on success.
+        /** @brief Capture a monotonic entry time only while the operator's trace is enabled. */
+        struct trace_entry
+        {
+#if defined(UWVM_VERSION_DEV)
+            bool selected{};
+            std::uint64_t started{};
+#endif
+        };
+        inline trace_entry begin_trace() noexcept
+        {
+#if defined(UWVM_VERSION_DEV)
+            namespace trace=::uwvm2::utils::debug::host_calls;
+            if(trace::observing(trace::channel::rosv2)) return {true,trace::now()};
+#endif
+            return {};
+        }
+        /** @brief Attribute a completed host result and its optional local elapsed time.
+         * @details Clock reads occur only for active observation. Elapsed time ends
+         * before caller lookup, journal allocation and sink delivery. It includes
+         * time waiting inside the registered operation and excludes remote work
+         * performed after the host has returned.
          */
-        inline void observe_result(std::string_view name,std::uint32_t result) noexcept
+        inline void observe_result(std::string_view name,std::uint32_t result,[[maybe_unused]] trace_entry entry) noexcept
         {
             bool audit=configuration.auditing_calls();
 #if defined(UWVM_VERSION_DEV)
             namespace trace=::uwvm2::utils::debug::host_calls;
-            bool traced=trace::observing(trace::channel::rosv2);
-            if(!audit && !traced)return;
+            if(!audit && !entry.selected)return;
+            auto finished=entry.started?trace::now():0;
 #else
             if(!audit)return;
 #endif
@@ -1093,7 +1110,8 @@ namespace uwvm2::uwvm::imported::scene
             std::string_view module;
             if(known)module={reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
 #if defined(UWVM_VERSION_DEV)
-            if(traced)trace::observe_scene_result("uwvm_ros_v2",name,result,module,known?identity.generation:0);
+            if(entry.selected)trace::observe_scene_result("uwvm_ros_v2",name,result,module,known?identity.generation:0,
+                                                         entry.started,finished);
             if(!audit)return;
 #endif
             auto time=::uwvm2::utils::host_clock::now();
@@ -1119,10 +1137,11 @@ namespace uwvm2::uwvm::imported::scene
             static void call(local_imported_function_type& call) noexcept
             {
                 [[maybe_unused]] fp_control_guard const controls;
+                auto entry=begin_trace();
                 auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
                 {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
                 ::uwvm2::utils::container::get<0>(call.res)=result;
-                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result);
+                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry);
             }
         };
         template<auto Fn,auto& Name> using native=function<decltype(Fn),Fn,Name>;

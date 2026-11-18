@@ -36,7 +36,8 @@ int main()
     assert(journal::records.size()==1 && journal::records.front()->id==journal::scene_record_limit+1);
     assert(journal::scene_dropped.load()==2);
     journal::clear();
-    journal::observe_scene_result("uwvm_ros_v2","capability.open",13,"main",UINT64_MAX);
+    journal::observe_scene_result("uwvm_ros_v2","capability.open",13,"main",UINT64_MAX,100,175);
+    assert(journal::records.back()->timed && journal::records.back()->duration==75);
     journal::observe_scene_result("uwvm_ros_v2","capability.open",0,"other",5);
     journal::observe_scene_result("uwvm_ros_v2","abi",2,"",9);
     assert(journal::records.back()->generation==0);

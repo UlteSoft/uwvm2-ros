@@ -111,6 +111,7 @@ def main():
                     assert [r['result'] for r in calls['calls']]==['13','0','0','0']
                     assert all(r['namespace']=='uwvm_ros_v2' and r['family']=='rosv2'
                                and r['args']==[] and r['segments']=='0' for r in calls['calls'])
+                    assert all(r['timed']=='1' and int(r['duration-ns'])>=0 for r in calls['calls'])
                     assert all(r['moduleName']['utf8IfValid']=='main' and int(r['generation'])>0 for r in calls['calls'])
                     selected={'family':'rosv2','module':'main','function':'capability.open',
                               'namespace':'uwvm_ros_v2','result':'13','ifStop':calls['stopId']}

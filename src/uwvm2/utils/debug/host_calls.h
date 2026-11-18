@@ -142,7 +142,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
     /// busy debugger or a full 4096-record ROSv2 budget drops the observation;
     /// clearing the host journal makes room again. The drop count is cumulative.
     inline void observe_scene_result(std::string_view name_space,std::string_view name,std::uint32_t result,
-                                     std::string_view caller={},std::uint64_t generation=0) noexcept
+                                     std::string_view caller={},std::uint64_t generation=0,
+                                     std::uint64_t started=0,std::uint64_t finished=0) noexcept
     {
         if(!observing(channel::rosv2)) {return;}
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -168,13 +169,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
             value->has_result=true;
             value->returned=true;
             value->result=result;
+            value->timed=started!=0 && finished>=started;
+            if(value->timed) value->duration=finished-started;
             records.push_back(value);
             value->id=++sequence;
             ++scene_retained;
         }
         catch(...) {increment(allocation_failures);increment(scene_dropped);}
 #else
-        (void)name_space;(void)name;(void)result;(void)caller;(void)generation;
+        (void)name_space;(void)name;(void)result;(void)caller;(void)generation;(void)started;(void)finished;
 #endif
     }
     inline void clear() noexcept

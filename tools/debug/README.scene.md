@@ -485,6 +485,13 @@ The cumulative `rosv2-dropped` field reports losses, including after a clear.
 families. Older ROS1 and ROS2 host imports use the separate `ros1` and `ros2`
 filters. This debugger export carries no replay or restore authority.
 
+When a call began with the debugger trace enabled and both monotonic clock
+samples are available and ordered, its row carries `timed=1` and
+`duration-ns`. A clock that is unavailable or goes backwards produces
+`timed=0 duration-ns=0`. The interval covers the local operation, including
+time waiting inside it. Later device execution and journal delivery lie outside
+the measured interval. With both journals disabled, the wrapper reads no clock.
+
 ### Inspecting audit losses after the last call
 
 At a cooperative stop, run `info scene audit` or select **Audit counters** in
