@@ -43,21 +43,21 @@ def guest(width,memory,deadline,mode,count):
  if mode=='crash':g.request('driver.describe',b'',cap=cap,capacity=32);g.equal(g.word(16384),6);g.equal(g.word(16408),1)
  g.request('driver.disconnect',b'',cap=cap,capacity=8);return g
 
-def main():
+def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=()):
  parser=argparse.ArgumentParser(description=__doc__)
  for name in ('runtime','source-root','mujoco','output'):parser.add_argument('--'+name,required=True,type=Path)
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
- a=parser.parse_args()
+ a=parser.parse_args(argv)
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  verify_gate();out=a.output;out.mkdir(parents=True,exist_ok=False)
- report=dict(complete=False,scope=__doc__,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
+ report=dict(complete=False,scope=__doc__,guest_language=guest_name,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
  def save():(out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
  def run(label,cmd,env=None):
   p=subprocess.run(list(map(str,cmd)),capture_output=True,env=env,timeout=180);(out/(label+'.stdout')).write_bytes(p.stdout);(out/(label+'.stderr')).write_bytes(p.stderr)
   report['commands'].append(dict(name=label,argv=list(map(str,cmd)),exit=p.returncode));save();assert p.returncode==0,(label,p.stderr[-3000:]);return p.stdout
  fixture=ROOT/'test/0084.ros-runtime/driver_mujoco_receiver.cpp';binary=out/'receiver';model=a.mujoco/'model/humanoid/humanoid.xml'
- for path in (Path(__file__),fixture,model,a.mujoco.parent/'provenance.json'):report['inputs'][str(path.resolve())]=sha(path)
+ for path in (Path(__file__),fixture,model,a.mujoco.parent/'provenance.json',*guest_inputs):report['inputs'][str(path.resolve())]=sha(path)
  try:
   compile_options=[]
   libraries=[]
@@ -78,12 +78,19 @@ def main():
     if match:
      path=Path(match.group(1));closure.append((path,'/lib/'+path.name if 'mujoco' in path.name else str(path)))
    assert any('libmujoco' in destination for _,destination in closure)
-  for width,memory in ((32,0),(32,1),(64,0),(64,1)):
+  layouts=((32,0),(32,1),(64,0),(64,1)) if compile_guest is None else ((32,0),(64,0))
+  for width,memory in layouts:
    for engine in ('int','aot'):
     for mode in ('success','range','crash'):
      label=f'{mode}-{width}-{memory}-{engine}';count=128 if mode=='success' else 1;deadline=time.monotonic_ns()+60000000000
-     wat=out/(label+'.wat');wasm=wat.with_suffix('.wasm');wat.write_text(guest(width,memory,deadline,mode,count).render())
-     run(label+'-compile',['wat2wasm','--enable-memory64','--enable-multi-memory','--debug-names',wat,'-o',wasm])
+     wasm=out/(label+'.wasm')
+     if compile_guest is None:
+      wat=wasm.with_suffix('.wat');wat.write_text(guest(width,memory,deadline,mode,count).render())
+      run(label+'-compile',['wat2wasm','--enable-memory64','--enable-multi-memory','--debug-names',wat,'-o',wasm])
+      guest_flags=[]
+     else:
+      guest_flags=compile_guest(wasm,width,deadline,mode,count,run)
+     report['inputs'][str(wasm.resolve())]=sha(wasm)
      left,right=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
      for endpoint in (left,right):endpoint.setsockopt(socket.SOL_SOCKET,socket.SO_PASSCRED,1)
      keys=ExitStack()
@@ -103,7 +110,7 @@ def main():
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
        '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
        '--ros-scene-driver-schema','robot','joint','device.submit','128','128','16']
-      cmd=[str(a.runtime),'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
+      cmd=[str(a.runtime),*guest_flags,'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
       vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key,clock_fd) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
       stdout,stderr=vm.communicate(timeout=45);ps,pe=peer.communicate(timeout=5)
       if confinement:pe=confinement['ready_line'].encode()+pe
