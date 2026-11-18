@@ -38,6 +38,9 @@ def main():
     parser.add_argument("--runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--vtune", type=Path, default=Path("/opt/intel/oneapi/vtune/latest/bin64/vtune"))
+    parser.add_argument("--sampling-interval-ms", type=float, choices=(0.01, 0.1, 1.0), default=0.01)
+    parser.add_argument("--all-pmus", action="store_true",
+                        help="Allow VTune to configure all PMU types. The workload remains pinned to CPU 4.")
     args = parser.parse_args()
     verify_gate()
     vm, out = args.runtime.resolve(), args.output.resolve()
@@ -117,12 +120,13 @@ int main(int argc, char **argv) {
             target = out/name
             knobs = (["-knob", "sampling-mode=hw", "-knob", "enable-stack-collection=false"]
                      if analysis=="hotspots" else ["-knob", "pmu-collection-mode=detailed", "-knob", "dram-bandwidth-limits=false"])
-            task = [args.vtune, "-collect", analysis, *knobs, "-knob", "sampling-interval=0.01",
-                    "-no-analyze-system", "-no-summary", "-cpu-mask", "4", "-data-limit=16",
+            task = [args.vtune, "-collect", analysis, *knobs, "-knob", f"sampling-interval={args.sampling_interval_ms}",
+                    "-no-analyze-system", "-no-summary", *([] if args.all_pmus else ["-cpu-mask","4"]), "-data-limit=16",
                     "-return-app-exitcode", "-result-dir", target, "-source-search-dir", ROOT,
-                    "--", "/usr/bin/taskset", "-c", "4", *jobs[HIGH]]
+                    "--", "/usr/bin/taskset", "-c", "4", *(jobs[HIGH] if kind=="wasm" else [native, "2100000000"])]
             code, _ = run(name+"-collect", task, optional=True, limit=300)
-            profile = {"kind":kind,"analysis":analysis,"requested_ms":0.01,"collection_exit":code,
+            profile = {"kind":kind,"analysis":analysis,"requested_ms":args.sampling_interval_ms,"all_pmus":args.all_pmus,
+                       "iterations":HIGH if kind=="wasm" else 2100000000,"collection_exit":code,
                        "source_rows":0,"assembly_rows":0,"programmed":vtune_periods(target)}
             report["profiles"].append(profile)
             save()
