@@ -94,7 +94,8 @@ namespace uwvm2::imported::ros::scene::call_audit
             {
                 if(!applies(r, group, module)) continue;
                 selected = true;
-                if(r.denied_only && result != 13) return;
+                // Include failed authority, invalid handles and stale generations.
+                if(r.denied_only && result != 13 && result != 9 && result != 116) return;
             }
             if(!selected) return;
             if(sequence == UINT64_MAX || fn.empty() || fn.size() > 255 || group.size() > 255)
