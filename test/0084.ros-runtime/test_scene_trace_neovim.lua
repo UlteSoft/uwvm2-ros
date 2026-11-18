@@ -19,3 +19,70 @@ end)
 assert(vim.wait(1000, function() return finished end))
 assert(not pcall(plugin.host_trace, "unknown"))
 print("PASS immutable ROSv2 Neovim buffer and closed family selector")
+
+local selected = session
+local dap = package.loaded.dap
+dap.session = function() return selected end
+dap.adapters = {}
+dap.listeners = {after = {source = {}, attach = {}}, before = {event_terminated = {}}}
+plugin.setup({root = vim.fn.getcwd()})
+local stop = "18446744073709551615"
+local mode, used = "normal", {}
+function session:request(command, args, reply)
+  assert(command == "uwvm/sceneState" and args.count == 8)
+  assert(args.selection == "authority" or args.selection == "resources" or args.selection == "audit")
+  used[#used+1] = vim.deepcopy(args)
+  if mode == "denied" then reply({message = "Permission denied"}); return end
+  local rows, total = {}, args.selection == "resources" and 9 or 1
+  for _ = args.start + 1, math.min(args.start + args.count, total) do
+    rows[#rows+1] = args.selection == "audit"
+      and {configured=true,admitted=stop,limited="2",busy="0",clock_failed="0",sink_failed="0"}
+      or {kind=args.selection}
+  end
+  local body = {selection=args.selection, scope="process-owned", available=true, start=args.start, rows=rows,
+    stopId=mode == "wrong-stop" and "4" or stop, total=total, more=args.start+#rows<total,
+    next=args.start+#rows, payloadsRead=false, nativeOperationsIssued=false}
+  if mode == "retire" then self.current_frame = {id=12} end
+  reply(nil, body)
+end
+
+local function shown()
+  return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
+end
+for _, name in ipairs({"authority", "resources", "audit"}) do
+  vim.cmd("UwvmScene " .. name)
+  assert(vim.wait(1000, function() return vim.api.nvim_buf_get_name(0):find("/scene-" .. name, 1, true) end))
+  assert(not vim.bo.modifiable and shown():find(stop, 1, true))
+  if name == "resources" then
+    vim.cmd("UwvmSceneNext")
+    assert(vim.wait(1000, function() return shown():find('"start": 8', 1, true) end))
+    assert(used[#used].ifStop == stop)
+    assert(not pcall(plugin.scene_next))
+  elseif name == "audit" then
+    for _, key in ipairs({"configured","admitted","limited","busy","clock_failed","sink_failed"}) do
+      assert(shown():find(key,1,true))
+    end
+  end
+end
+local count = #used
+assert(not pcall(plugin.scene_state, "enable") and #used == count)
+local function done(call, wanted)
+  local complete = false
+  call(function(err, _, buffer)
+    assert((err and err.message:find(wanted,1,true)) or (not wanted and buffer))
+    complete = true
+  end)
+  assert(vim.wait(1000, function() return complete end))
+end
+done(function(cb) plugin.scene_state("resources", cb) end)
+local original = vim.api.nvim_get_current_buf()
+selected = {config=session.config, current_frame=session.current_frame, stopped_thread_id=1}
+assert(not pcall(plugin.scene_next) and #used == count+1)
+selected = session
+for _, entry in ipairs({{"denied","Permission denied"},{"wrong-stop","Scene stop changed"},
+                        {"retire","Debugger session or stop changed"}}) do
+  mode = entry[1]
+  done(plugin.scene_next, entry[2])
+  assert(vim.api.nvim_get_current_buf() == original)
+end
+print("PASS scene commands, page continuation, exact stop, read-only buffers, denial and retired session")

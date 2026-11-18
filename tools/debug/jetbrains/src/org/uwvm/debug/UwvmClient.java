@@ -25,6 +25,8 @@ public final class UwvmClient extends DAPClient {
         CompletableFuture<com.google.gson.JsonObject> dump(Map<String,Object> arguments);
         @org.eclipse.lsp4j.jsonrpc.services.JsonRequest("uwvm/memoryTags")
         CompletableFuture<com.google.gson.JsonObject> memoryTags(Map<String,Object> arguments);
+        @org.eclipse.lsp4j.jsonrpc.services.JsonRequest("uwvm/sceneState")
+        CompletableFuture<com.google.gson.JsonObject> sceneState(Map<String,Object> arguments);
         @org.eclipse.lsp4j.jsonrpc.services.JsonRequest("uwvm/hostTrace")
         CompletableFuture<com.google.gson.JsonObject> hostTrace(Map<String,Object> arguments);
         @org.eclipse.lsp4j.jsonrpc.services.JsonRequest("uwvm/hostTraceBytes")
@@ -56,7 +58,7 @@ public final class UwvmClient extends DAPClient {
         return client;
     }
     public CompletableFuture<Object> inspect(String method,Map<String,Object> arguments) {
-        if(!Set.of("uwvm/memoryTags","uwvm/hostTrace","uwvm/hostTraceBytes","uwvm/exportHostTrace","uwvm/permissions","uwvm/diagnostics","uwvm/dump").contains(method))
+        if(!Set.of("uwvm/sceneState","uwvm/memoryTags","uwvm/hostTrace","uwvm/hostTraceBytes","uwvm/exportHostTrace","uwvm/permissions","uwvm/diagnostics","uwvm/dump").contains(method))
             return CompletableFuture.failedFuture(new IllegalArgumentException("Unsupported inspection request"));
         boolean metadata=Set.of("uwvm/permissions","uwvm/diagnostics","uwvm/dump").contains(method);
         if(current(process.getSession().getProject())!=this || (!metadata && !process.getSession().isPaused()) || endpoint==null)
