@@ -201,6 +201,15 @@ completion. This result covers the specified private plaintext relay and
 GetParameters operation. Other services, SROS2 relay endpoints and field
 deployments require their own verification.
 
+### Micro XRCE-DDS
+
+An upstream eProsima Micro XRCE-DDS Client 2.4.3 sent a reliable Int32 topic
+sample through an upstream Agent 2.4.3 to a Jazzy Fast DDS 2.14.6 rclcpp node.
+The original client received the incremented reply. With the Agent absent, the
+XRCE session failed to open. The two wire legs were private plaintext UDPv4.
+The test binds the Agent, client and mapped Jazzy middleware libraries to this
+observation. [Reproduction and inputs](../../test/0084.ros-runtime/micro_xrce_dds/README.md)
+
 ### Zenoh RMW
 
 Two native rclcpp endpoints using Jazzy's archived Zenoh RMW 0.2.13 exchanged

@@ -1,0 +1,17 @@
+{
+  "Micro-CDR": {
+    "commit": "3d1b17703c7cf4f22def2910bc845bdb5152d7b5",
+    "uri": "https://codeload.github.com/eProsima/Micro-CDR/tar.gz/3d1b17703c7cf4f22def2910bc845bdb5152d7b5",
+    "archiveSha256": "563277a90c2f10a08dead8c2474ecf1737cc788c0776b1fd2386f72908dfd9db"
+  },
+  "Micro-XRCE-DDS-Client": {
+    "commit": "d44dc3fa0c488376e34d26ed92853f1c66dcb670",
+    "uri": "https://codeload.github.com/eProsima/Micro-XRCE-DDS-Client/tar.gz/d44dc3fa0c488376e34d26ed92853f1c66dcb670",
+    "archiveSha256": "4a3ade8bd6135e4317d35e314e548a12484db4fa50c5c6749dd410525aa08501"
+  },
+  "Micro-XRCE-DDS-Agent": {
+    "commit": "73622810d984349b80bbac0ef55fc0b694d62222",
+    "uri": "https://codeload.github.com/eProsima/Micro-XRCE-DDS-Agent/tar.gz/73622810d984349b80bbac0ef55fc0b694d62222",
+    "archiveSha256": "f9c5a4e8c6ed902cb24bdec33269f85dce5b1023c22267d941acbda800a2bf2a"
+  }
+}
