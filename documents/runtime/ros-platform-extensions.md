@@ -248,6 +248,8 @@ python3 -B test/0084.ros-runtime/run_driver_mujoco.py \
   --vendor-assets "$GO2" --output "$NEW_RESULTS"
 ```
 
+The compiler and receiver each enforce a 64 MiB compiled-model limit by default. For a reviewed model that exceeds this limit, pass `--vendor-model-max-mib N` (1 to 256). The compiler also runs with that file-size limit, so an oversized asset cannot fill the test volume while being compiled. The source bundle has a separate 256 MiB bound.
+
 The test exercises the simulation command through the Unitree child permission
 and the common external driver session. It compares physics state after 128
 steps, rejects an out-of-range command before a step and records loss of the
@@ -270,5 +272,8 @@ The following profiles use original files from the [MuJoCo Menagerie repository]
 | `fanuc_crx5ia` | `J1` | [fanuc-crx5ia.json](../../test/0084.ros-runtime/mujoco_profiles/fanuc-crx5ia.json) |
 | `franka_emika_panda` | `joint1` | [franka-emika-panda.json](../../test/0084.ros-runtime/mujoco_profiles/franka-emika-panda.json) |
 | `universal_robots_ur5e` | `shoulder_pan_joint` | [universal-robots-ur5e.json](../../test/0084.ros-runtime/mujoco_profiles/universal-robots-ur5e.json) |
+| `boston_dynamics_spot` | `fl_hx` | [boston-dynamics-spot.json](../../test/0084.ros-runtime/mujoco_profiles/boston-dynamics-spot.json) |
+| `agilex_piper` (160 MiB compiled-model limit) | `joint1` | [agilex-piper.json](../../test/0084.ros-runtime/mujoco_profiles/agilex-piper.json) |
+| `robotis_op3` (256 MiB compiled-model limit) | `head_pan` | [robotis-op3.json](../../test/0084.ros-runtime/mujoco_profiles/robotis-op3.json) |
 
-A separate Unitree Go2 run compiled C, C++, Fortran and Lua controllers using their public SDK installations. Each controller passed the six wasm32 cases at memory index zero with the two engines, including rejection of an out-of-range command and loss of the receiver. These results exercise the simulated joint and the common external driver interface. Vendor controller firmware and physical stopping behavior have independent acceptance tests.
+A separate Unitree Go2 run compiled C, C++, Fortran, Lua, Nim and Objective-C controllers using their public SDK installations. Each controller passed the six wasm32 cases at memory index zero with the two engines, including rejection of an out-of-range command and loss of the receiver. These results exercise the simulated joint and the common external driver interface. Vendor controller firmware and physical stopping behavior have independent acceptance tests.

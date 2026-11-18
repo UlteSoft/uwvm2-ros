@@ -7,7 +7,9 @@ import tempfile
 from run_scene_vm import sha
 
 
-def prepare(profile_path, source, mujoco, output, platforms, run):
+def prepare(profile_path, source, mujoco, output, platforms, run, maximum_bytes=64 << 20):
+    if not (1 << 20) <= maximum_bytes <= (256 << 20):
+        raise ValueError('invalid compiled simulation model budget')
     profile = json.loads(profile_path.read_bytes())
     platform = profile['platform']
     inputs = profile['files']
@@ -27,9 +29,9 @@ def prepare(profile_path, source, mujoco, output, platforms, run):
             '--symlink','usr/lib','/lib','--symlink','usr/lib64','/lib64','--dev','/dev',
             '--proc','/proc','--tmpfs','/tmp','--ro-bind',compiler,'/tool/compile',
             '--ro-bind',mujoco/'lib','/tool/lib','--setenv','LD_LIBRARY_PATH','/tool/lib',
-            '--bind',staging,'/output','--dir','/model','--chdir','/model']
+            '--dir','/model','--chdir','/model']
     source = source.resolve(strict=True)
-    with tempfile.TemporaryDirectory(dir=output) as private:
+    with tempfile.TemporaryDirectory(dir=output) as private, tempfile.TemporaryDirectory(dir=output) as compiler_output:
         total = 0
         for name, checksum in inputs.items():
             path = PurePosixPath(name)
@@ -56,8 +58,12 @@ def prepare(profile_path, source, mujoco, output, platforms, run):
                 raise ValueError('vendor source differs from the pinned model')
             sealed.chmod(0o400)
             args.extend(('--ro-bind',sealed,'/model/'+name))
-        run('compile-vendor-model', [*args,'/tool/compile',profile['model'],'/output/physics.mjb'])
-    binary=staging/'physics.mjb'
-    if not 0<binary.stat().st_size<=64<<20:
-        raise ValueError('compiled simulation model exceeds the receiver limit')
+        output_dir = Path(compiler_output)
+        args.extend(('--bind',output_dir,'/output'))
+        run('compile-vendor-model', ['/usr/bin/prlimit', '--fsize='+str(maximum_bytes)+':'+str(maximum_bytes),'--',*args,'/tool/compile',profile['model'],'/output/physics.mjb'])
+        candidate = output_dir/'physics.mjb'
+        if candidate.is_symlink() or not candidate.is_file() or not 0 < candidate.stat().st_size <= maximum_bytes:
+            raise ValueError('compiled simulation model exceeds the receiver limit')
+        binary = staging/'physics.mjb'
+        candidate.replace(binary)
     return profile,binary

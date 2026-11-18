@@ -47,6 +47,13 @@ static void filter_for(int fd,bool final_filter)
  require(replacements==1,"exact receive filter");
  auto size=source.size()*sizeof(sock_filter);require(::write(1,code.data(),size)==static_cast<ssize_t>(size),"filter output");
 }
+// This limit belongs to the external test receiver. The deployment fixture
+// sets the same bound on the translator before starting it.
+#ifndef UWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES
+#define UWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES (64 << 20)
+#endif
+static constexpr auto max_compiled_model_bytes = UWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES;
+static_assert((1 << 20) <= max_compiled_model_bytes && max_compiled_model_bytes <= (256 << 20));
 static mjModel* load_model(char const* path, bool compiled)
 {
  if(compiled)
@@ -54,7 +61,7 @@ static mjModel* load_model(char const* path, bool compiled)
   auto fd=::open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);
   require(fd>=0,"compiled model file");
   struct stat info{};
-  require(::fstat(fd,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0 && info.st_size<=(64<<20),"compiled model size");
+  require(::fstat(fd,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0 && info.st_size<=max_compiled_model_bytes,"compiled model size");
   auto size=static_cast<std::size_t>(info.st_size);
   auto* bytes=::mmap(nullptr,size,PROT_READ,MAP_PRIVATE,fd,0);
   ::close(fd);

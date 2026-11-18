@@ -25,7 +25,7 @@ python3 tools/ros_scene/in_existing_cgroup.py taskset -c 4-7 \
   --native-wire "$NATIVE_WIRE/results.json" --output "$PWD/.tmp/xrce-int32"
 ```
 
-The receipt includes the identities of the static client libraries and the
+The [observed exchange](observations.json) records the tested versions and result. The receipt includes the identities of the static client libraries and the
 vendor libraries mapped in the running Agent and rclcpp processes. This case
 covers the named XRCE version, UDPv4 and two reliable topics. Serial and CAN
 transports, firmware deadlines, XRCE services, authentication and vendor-specific

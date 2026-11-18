@@ -1,0 +1,24 @@
+{
+  "scope": "Native upstream Micro XRCE-DDS UDPv4 to Jazzy Fast DDS, reliable Int32 topics",
+  "security": "plaintext",
+  "clientVersion": "2.4.3",
+  "agentVersion": "2.4.3",
+  "microCDR": "2.0.1",
+  "loaded": {
+    "agent": {
+      "libfastrtps.so.2.14.6": "5c42ee390b403e0bacfbc5c535dc13fce0fe86b4a1f0243a115f3236f4b9c7de",
+      "libmicroxrcedds_agent.so.2.4.3": "4489925a1f0f7a722166fca07dc1277f55d1cc9f7c4a56b200d6daab91c89d94"
+    },
+    "rclcpp": {
+      "libfastrtps.so.2.14.6": "5c42ee390b403e0bacfbc5c535dc13fce0fe86b4a1f0243a115f3236f4b9c7de",
+      "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
+    }
+  },
+  "withoutAgentExit": 4,
+  "challenge": 157260513,
+  "response": 157260514,
+  "clientExit": 0,
+  "rclcppExit": 0,
+  "agentAlive": true,
+  "receiptSha256": "08eca6c3b919b0ffc9d92ed3583e6ae8f7d264a788e7ccbc9e457319ede2d738"
+}

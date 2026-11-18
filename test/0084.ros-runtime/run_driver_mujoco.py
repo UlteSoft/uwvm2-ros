@@ -50,9 +50,12 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
  parser.add_argument('--platform-targets',type=Path,help='Exercise the same simulated joint with each platform permission scope in an SDK share/targets.json')
  parser.add_argument('--vendor-model',type=Path,help='Reviewed vendor model profile including platform, actuator, joint and asset digests')
+ parser.add_argument('--vendor-model-max-mib',type=int,default=64,help='Size limit for the compiled simulation model (1..256 MiB, default 64)')
  parser.add_argument('--vendor-assets',type=Path,help='Locally supplied original vendor model source directory')
  parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
  a=parser.parse_args(argv)
+ if not 1 <= a.vendor_model_max_mib <= 256 or (not a.vendor_model and a.vendor_model_max_mib!=64):
+  parser.error('select a vendor model and a compiled model size limit from 1 through 256 MiB')
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
   parser.error('guest widths must be unique and drawn from wasm32 and wasm64')
@@ -80,11 +83,12 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  selector=[]
  if a.vendor_model:
   from mujoco_profiles.compile_model import prepare
-  profile,model=prepare(a.vendor_model,a.vendor_assets,a.mujoco,out,platforms,run)
+  profile,model=prepare(a.vendor_model,a.vendor_assets,a.mujoco,out,platforms,run,a.vendor_model_max_mib << 20)
   platforms=(profile['platform'],)
   selector=['--compiled-joint',profile['joint'],profile['actuator'] or '']
   report['platform_scope']='One original vendor model and its registered platform permission'
   report['vendor_model']=profile
+  report['vendor_model_max_bytes']=a.vendor_model_max_mib << 20
   for path in (a.vendor_model,Path(__file__).with_name('mujoco_profiles')/'compile_model.py',a.mujoco/'bin/compile'):
    report['inputs'][str(path.resolve())]=sha(path)
  for path in (Path(__file__),fixture,model,a.mujoco.parent/'provenance.json',*guest_inputs):report['inputs'][str(path.resolve())]=sha(path)
@@ -96,6 +100,8 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
    compile_options=['-DUWVM_ROS_ATTACHMENT_OPENSSL','-I'+str(a.openssl_root/'include')]
    libraries=[a.openssl_root/'libssl.a',a.openssl_root/'libcrypto.a','-ldl']
    for path in libraries[:2]:report['inputs'][str(path.resolve())]=sha(path)
+  if a.vendor_model:
+   compile_options.append('-DUWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES='+str(a.vendor_model_max_mib << 20))
   run('compile',['/usr/bin/clang++-22','-std=c++23','-O3','-g','-Wall','-Wextra','-Werror','-pthread',*compile_options,'-I'+str(a.source_root/'src'),'-isystem',a.source_root/'third-parties/fast_io/include','-I'+str(a.mujoco/'include'),fixture,'-L'+str(a.mujoco/'lib'),'-Wl,-rpath,'+str(a.mujoco/'lib'),'-lmujoco',*libraries,'-o',binary])
   report['inputs'][str(binary.resolve())]=sha(binary)
   native=json.loads(run('native',[binary,'0','direct',model,'128',*selector]));report['native_reference']=native
