@@ -397,9 +397,11 @@ function createController(vscode, context, sessions) {
         data = {internal: await session.customRequest("uwvm/wasithreadState", {
           selection: model.threadGroup, start: model.page, count: 8, ifStop: stop})};
       } else if (model.kind === "scene") {
-        data = {internal: await session.customRequest("uwvm/sceneState", {
+        const journal = model.sceneGroup === "journal";
+        data = {internal: journal ? await session.customRequest("uwvm/hostTrace", {family: "rosv2", after: String(model.page), count: 8}) :
+          await session.customRequest("uwvm/sceneState", {
           selection: model.sceneGroup, start: model.page, count: 8, ifStop: stop})};
-        if (data.internal.stopId !== stop || data.internal.available !== true)
+        if (data.internal.stopId !== stop || (!journal && data.internal.available !== true))
           throw new Error("u2rosv2 scene metadata is unavailable or belongs to a retired stop.");
       } else if (model.kind === "ros") {
         data = {policy: await rosPolicyPage(model, session, stop, epoch),
@@ -753,10 +755,12 @@ function createController(vscode, context, sessions) {
       if (value.action === "write" && model.kind === "memory") { await write(model, value.fields || {}); return; }
       if (model.busy) return;
       if (["browse-export", "call-payload", "payload", "export", "trace-on", "trace-off", "trace-clear"].includes(value.action)) {
-        if (!["wasip1", "ros"].includes(model.kind) || !["full", "read-only"].includes(model.permission) || !model.data || !model.stopId || model.retired)
+        if (!["wasip1", "ros", "scene"].includes(model.kind) || !["full", "read-only"].includes(model.permission) || !model.data || !model.stopId || model.retired)
           throw new Error("Refresh a current full or read-only stopped group before accessing recorded calls.");
-        const family = model.kind === "wasip1" ? "wasip1" : model.backend;
-        if (!["wasip1", "ros1", "ros2"].includes(family)) throw new Error("Choose one explicit ROS backend for host-call controls.");
+        const family = model.kind === "wasip1" ? "wasip1" : model.kind === "scene" ? "rosv2" : model.backend;
+        if (family === "rosv2" && (model.sceneGroup !== "journal" || ["payload", "call-payload"].includes(value.action)))
+          throw new Error("ROSv2 records contain completion metadata only.");
+        if (!["wasip1", "ros1", "ros2", "rosv2"].includes(family)) throw new Error("Choose one explicit ROS backend for host-call controls.");
         const session = sessionFor(model), expected = model.stopId, epoch = model.epoch;
         const diagnostic = await session.customRequest("uwvm/diagnostics", {}); current(model, session, epoch);
         if (model.stopId !== expected || model.retired || stopFrom(diagnostic) !== expected)

@@ -644,15 +644,21 @@
   function callsTable(group, family) {
     if (group.error) return h("div.banner.error", icon("error"), h("div.text", group.error));
     const calls = group.calls || [];
-    const recording = group.journal && (Number(group.journal.enabled) & ({wasip1: 1, ros1: 2, ros2: 4}[family] || 0));
+    const recording = group.journal && (Number(group.journal.enabled) & ({wasip1: 1, ros1: 2, ros2: 4, rosv2: 8}[family] || 0));
     if (!calls.length) return emptyState("record", "No recorded calls",
       recording ? "Recording is on. Run the guest and pause again to inspect new calls." :
       family === "wasip1" ? "Start recording, run the guest, and pause again. Calls made while recording appear here." :
-        "Start recording for u2rosv1 › " + family + ", run the guest and pause again.");
+        "Start recording for " + (family === "rosv2" ? "u2rosv2" : "u2rosv1 › " + family) + ", run the guest and pause again.");
     // A ROS result can be a version, handle or boolean. Only the WASI
     // Preview 1 errno convention gives a generic nonzero error predicate.
     const failed = row => family === "wasip1" && row["has-result"] === "1" && row.result !== "0";
     const shown = calls.filter(matches);
+    if (family === "rosv2") return grid([
+      {title: "#", width: "48px", cls: "num", render: row => row.id},
+      {title: "Import module", cls: "wrap", render: row => row.namespace},
+      {title: "Function", cls: "wrap", render: row => row.function},
+      {title: "Raw result", cls: "num", render: row => row.result}
+    ], shown, {key: row => "call:" + row.id});
     return grid([
       {title: "#", width: "48px", cls: "num", render: row => h("span.v-number", row.id)},
       {title: "Function", cls: "wrap", render: row => h("span", h("span.status-dot" + (row.returned === "1" ? (failed(row) ? ".bad" : "") : ".unknown")),
@@ -702,7 +708,7 @@
   }
   function recordingBar(group, family, extra) {
     const journal = group && group.journal, canWrite = view.permission.level === "full";
-    const on = journal && (Number(journal.enabled) & ({wasip1: 1, ros1: 2, ros2: 4}[family] || 0));
+    const on = journal && (Number(journal.enabled) & ({wasip1: 1, ros1: 2, ros2: 4, rosv2: 8}[family] || 0));
     return h("div.toolrow",
       h("span.kind-pill.recording-state" + (on ? ".on" : ".off"), icon("record"), on ? "Recording" : "Not recording"),
       button(on ? "Stop recording" : "Start recording", () => post({action: on ? "trace-off" : "trace-on"}), {small: true, secondary: true, icon: on ? "debug-stop" : "record", disabled: !canWrite || view.busy,
@@ -835,7 +841,10 @@
     const scene = view.scene, page = scene.view;
     const nav = h("nav.nav", {"aria-label": "u2rosv2 robot scene sections"},
       Object.entries(scene.groups).map(([key, label]) => navItem(key, label, key === "authority" ? "key" : "database", "scene-group", scene.active)));
-    const content = blocked() || (scene.unavailable ? emptyState("shield", "u2rosv2 is not built", scene.unavailable) : [
+    const content = blocked() || (scene.unavailable ? emptyState("shield", "u2rosv2 is not built", scene.unavailable) : scene.active === "journal" && page ? [
+      recordingBar(page, "rosv2"), h("div.toolrow", "Dropped ROSv2 completions: " + (page.journal?.["rosv2-dropped"] ?? "unavailable")),
+      h("div.pane", callsTable(page, "rosv2")), pager(page, "group-previous", "group-next"),
+      exportBar(scene.exportPath, scene.exportResult)] : [
       h("div.toolrow", h("span.chip.outline", "u2rosv2 · In development")),
       h("div.toolrow", h("b", scene.groups[scene.active]), h("span.spacer"),
         filterBox("Filter this page", page ? page.rows.length : 0, page ? page.rows.filter(matches).length : 0)),

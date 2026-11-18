@@ -122,7 +122,7 @@ public final class UwvmInspection implements ToolWindowFactory, com.intellij.ope
     public static final class HostPanel extends JPanel {
         private final JLabel state=new JLabel("Retained observations only; recording must be explicitly enabled.");
         private final JTextArea text=new JTextArea();
-        private final JComboBox<String> family=new JComboBox<>(new String[]{"all","wasip1","ros1","ros2"});
+        private final JComboBox<String> family=new JComboBox<>(new String[]{"all","wasip1","ros1","ros2","rosv2"});
         private final JTextField after=field("uwvm.hostAfter","0",10),call=field("uwvm.call","1",8),segment=field("uwvm.segment","0",4),offset=field("uwvm.byteOffset","0",10);
         HostPanel(Project project) {
             super(new BorderLayout());text.setEditable(false);text.setName("uwvm.hostJSON");var controls=new JPanel();controls.add(family);

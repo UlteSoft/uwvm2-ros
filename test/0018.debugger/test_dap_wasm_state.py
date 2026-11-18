@@ -90,7 +90,7 @@ class Broker:
             count, first = int(count), int(first)
             assert int(stop) == self.stop and int(byte) == 0
             header = f"wasm-code thread=1 stop={self.stop} module=0 function=1 epoch=7 generation=1 pc=4 size=5 first={first} count={count}\n"
-            return header + "".join("wasm-op offset=4 size=1 text=end\n" if i == 0 else "wasm-op unavailable\n"
+            return header + "".join("wasm-op offset=4 size=1 safe=0 text=end\n" if i == 0 else "wasm-op unavailable\n"
                                    for i in range(first, first+count))
         if command.startswith("frames wasm 1 "):
             words = command.split(); first = min(int(words[-2]), 1)

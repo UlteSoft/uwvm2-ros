@@ -45,7 +45,7 @@ new session.
 
 At a cooperative stop:
 
-- `:UwvmHostTrace [all|wasip1|ros1|ros2]` displays retained call records.
+- `:UwvmHostTrace [all|wasip1|ros1|ros2|rosv2]` displays retained call records.
 - `:UwvmHostTraceBytes CALL SEGMENT` displays the recorded raw payload segment.
 - `:UwvmExportHostTrace /absolute/host/path/calls.json` saves human-readable JSON.
 - `:UwvmMemoryTags MODULE MEMORY OFFSET COUNT` displays actual bytes and their

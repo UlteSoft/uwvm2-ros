@@ -23,9 +23,10 @@ WAT='''(module
  (import "uwvm_ros_v2" "capability.open" (func $open (param i32 i64 i64 i64) (result i32)))
  (import "uwvm_ros_v2" "guard.create" (func $create (param i64 i32 i64 i64 i64 i64 i64) (result i32)))
  (import "uwvm_ros_v2" "guard.trigger" (func $trigger (param i64 i32 i64 i64 i64 i64 i64) (result i32)))
- (memory 1) (data (i32.const 0) "signal")
+ (memory 1) (data (i32.const 0) "signal") (data (i32.const 16) "denied")
  (func $spin (export "spin") (loop $again br $again))
  (func (export "_start")
+  i32.const 0 i64.const 16 i64.const 6 i64.const 64 call $open i32.const 13 i32.ne if unreachable end
   i32.const 0 i64.const 0 i64.const 6 i64.const 64 call $open if unreachable end
   i32.const 64 i64.load i32.const 0 i64.const 0 i64.const 0 i64.const 72 i64.const 8 i64.const 128 call $create if unreachable end
   i32.const 64 i64.load i32.const 0 i64.const 72 i64.const 8 i64.const 96 i64.const 0 i64.const 128 call $trigger if unreachable end
@@ -42,7 +43,7 @@ def main():
     for action in ['capability.open','guard.create','guard.trigger']:
         flags+=['--ros-scene-interface','robot',action,'allow']
     flags+=['--ros-scene-grant','robot','signal','guard','signal','local','guard.create,guard.trigger,resource.observe']
-    paths=[args.runtime.resolve(),ROOT/'tools/debug/dap_adapter.py',ROOT/'tools/debug/secure_server.py',Path(__file__),wasm]
+    paths=[args.runtime.resolve(),ROOT/'tools/debug/dap_adapter.py',ROOT/'tools/debug/export_host_trace.py',ROOT/'tools/debug/host_trace_view.py',ROOT/'tools/debug/secure_server.py',Path(__file__),wasm]
     pins={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     report=dict(scope='actual Linux VM + broker + DAP scene metadata, no graphical IDE/native ROS claim',
                 pins=pins,cgroup=str(GROUP),inode=GROUP.stat().st_ino,memory_max='68719476736',swap_max='0',
@@ -53,7 +54,8 @@ def main():
         try:
             argv=['--runtime-debug','--debug-permissions',permission,'--runtime-compile-threads','0',
                   '--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
-            server=BrokerSession(args.runtime.resolve(),ROOT/'tools/debug/secure_server.py',ROOT/'tools/debug/dap_adapter.py',argv,folder)
+            server=BrokerSession(args.runtime.resolve(),ROOT/'tools/debug/secure_server.py',ROOT/'tools/debug/dap_adapter.py',argv,folder,
+                                 socket_parent=next(p for p in out.parents if p.name=='.tmp'))
             record['broker_argv']=server.command
             client=server.connect('wasm')
             record['permissions']=client.request('uwvm/permissions')['body']
@@ -70,6 +72,15 @@ def main():
                 assert 'body' not in initial
                 record['initial_unstarted_refusal']=initial
                 if permission=='full':
+                    # Arm recording at the guest's _start before its first host call.
+                    entry=client.evaluate('breakwasm 0 4 0')
+                    entry_id=re.search(rb'breakpoint ([0-9]+)',entry);assert entry_id,entry
+                    client.evaluate('continue')
+                    assert b'stopped: breakpoint' in client.evaluate('wait')
+                    client.evaluate('delete '+entry_id[1].decode())
+                    initial_calls=client.request('uwvm/hostTrace',{'family':'rosv2'})['body']
+                    assert not initial_calls['calls']
+                    assert b'host-trace enabled=8' in client.evaluate('trace host on family=rosv2')
                     point=client.evaluate('breakwasm 0 3 0')
                     match=re.search(rb'breakpoint ([0-9]+)',point);assert match,point
                     client.evaluate('continue')
@@ -85,7 +96,17 @@ def main():
                     assert again==resources,'metadata inspection changed resources'
                     repeated=client.request('uwvm/sceneState',{'selection':'authority','environment':'robot','alias':'signal'})['body']
                     assert repeated==authority,'metadata inspection admitted calls or refreshed authority'
-                    record.update(authority=authority,resources=resources)
+                    calls=client.request('uwvm/hostTrace',{'family':'rosv2'})['body']
+                    assert calls['stopId']==resources['stopId'] and calls['journal']['rosv2-dropped']=='0'
+                    assert [r['function'] for r in calls['calls']]==['capability.open','capability.open','guard.create','guard.trigger']
+                    assert [r['result'] for r in calls['calls']]==['13','0','0','0']
+                    assert all(r['namespace']=='uwvm_ros_v2' and r['family']=='rosv2'
+                               and r['args']==[] and r['segments']=='0' for r in calls['calls'])
+                    archive=folder/'scene-calls.json'
+                    client.request('uwvm/exportHostTrace',{'family':'rosv2','path':str(archive)})
+                    exported=json.loads(archive.read_text())
+                    assert exported['summary']['calls']=='4' and exported['summary']['payloadBytes']=='0'
+                    record.update(authority=authority,resources=resources,host_completions=calls)
                     thread=re.search(rb'thread ([0-9]+)',stopped);assert thread
                     client.evaluate('step wasm '+thread[1].decode())
                     stale=client.request('uwvm/sceneState',{'ifStop':resources['stopId']},success=False)
