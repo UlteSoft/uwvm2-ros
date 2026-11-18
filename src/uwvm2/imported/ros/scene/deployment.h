@@ -10,6 +10,7 @@
 #include <uwvm2/utils/container/shared.h>
 #include "broker.h"
 #include "debug.h"
+#include "call_audit.h"
 #include "model_policy.h"
 #include "transform_policy.h"
 #include "log_diagnostic_configuration.h"
@@ -149,6 +150,7 @@ namespace uwvm2::imported::ros::scene
         mutable std::mutex mutex;
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,environment,std::less<>> environments;
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,::uwvm2::utils::container::std_string,std::less<>> memberships;
+        call_audit::journal result_audit;
         bool frozen{},retired{},providers_ready{};
         inline static std::atomic<std::uint64_t> next_environment{1};
         static std::uint64_t environment_identity() noexcept
@@ -811,6 +813,43 @@ namespace uwvm2::imported::ros::scene
             frozen=true;providers_ready=!have_providers;return error::success;
         }
     public:
+        /** @brief Make one trusted process, environment or caller audit ceiling immutable at freeze.
+         * @details The process selector has label "*". Group labels are configured scene environment
+         * names. A single rule matches only an exact runtime caller name. These rules grant no imports.
+         */
+        error configure_call_audit(call_audit::scope scope,std::string_view label,bool denied,call_audit::ceiling limits)
+        {
+            std::lock_guard lock{mutex};
+            if(frozen || retired || (scope==call_audit::scope::global ? label!="*" : !identifier(label)))
+                return error::invalid;
+            if(scope==call_audit::scope::group && !environments.contains(label)) return error::invalid;
+            return result_audit.add(scope,label,denied,limits) ? error::success : error::invalid;
+        }
+        bool auditing_calls() const noexcept { return result_audit.active(); }
+
+        /** @brief Read the exact caller's group label, release the authority lock, then emit metadata.
+         * @details Missing membership permits process/single accounting only. Contention drops the
+         * observation without waiting on a provider. Inspection cannot create membership or authority.
+         */
+        template<typename Sink>
+        void observe_call(std::string_view module,std::uint64_t generation,std::string_view function,
+                          std::uint32_t result,std::uint64_t now,Sink&& sink) noexcept
+        {
+            std::array<char,255> group{};
+            std::size_t length{};
+            {
+                std::unique_lock lock{mutex,std::try_to_lock};
+                if(!lock.owns_lock()) {call_audit::increment(result_audit.contention);return;}
+                auto member=memberships.find(module);
+                if(member!=memberships.end())
+                {
+                    length=member->second.size();
+                    if(length>group.size())return;
+                    std::copy_n(member->second.data(),length,group.data());
+                }
+            }
+            result_audit.observe({group.data(),length},module,generation,function,result,now,sink);
+        }
         /** @brief Reserve a finite external-driver registry; no process is started.
          * @details Zero is a valid disabled capacity. This accounts owned route
          * records and buffers, not allocator metadata, kernel queues or peer RAM.

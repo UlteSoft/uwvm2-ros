@@ -149,6 +149,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_diagnostic_limit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_diagnostic_source),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_child),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_audit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_driver_schema),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_driver_budget),
 #if defined(UWVM_ROS_TEST_KERNEL_ATTACHMENT)

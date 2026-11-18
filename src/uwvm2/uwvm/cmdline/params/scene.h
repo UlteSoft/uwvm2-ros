@@ -16,7 +16,7 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
 {
     namespace scene=::uwvm2::imported::ros::scene;
     using result=::uwvm2::utils::cmdline::parameter_return_type;
-    enum class operation{driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check};
+    enum class operation{call_audit,driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check};
     template<operation Action,std::size_t Count>
     inline result configure(::uwvm2::utils::cmdline::parameter_parsing_results*,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current,
@@ -39,6 +39,21 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 auto text=current[i+1].str;args[i]={reinterpret_cast<char const*>(text.data()),text.size()};
             }
             auto& config=::uwvm2::uwvm::imported::scene::configuration;scene::error status{};
+            if constexpr(Action==operation::call_audit)
+            {
+                scene::call_audit::scope target;
+                if(args[0]=="global")target=scene::call_audit::scope::global;
+                else if(args[0]=="group")target=scene::call_audit::scope::group;
+                else if(args[0]=="single")target=scene::call_audit::scope::single;
+                else return failure("audit scope requires global, group or single");
+                if(args[2]!="all" && args[2]!="denied")return failure("audit mode requires all or denied");
+                scene::call_audit::ceiling limits;
+                auto fields=std::array{&limits.records,&limits.bytes,&limits.rate_hz,&limits.burst};
+                for(std::size_t i{};i<fields.size();++i)
+                    if(!scene::parse_unsigned(args[3+i],*fields[i]) || *fields[i]==UINT64_MAX)
+                        return failure("audit ceilings require finite decimal integers");
+                status=config.configure_call_audit(target,args[1],args[2]=="denied",limits);
+            }
             if constexpr(Action==operation::driver_schema)
             {
                 std::array<std::uint64_t,3> values{};
@@ -579,6 +594,7 @@ namespace uwvm2::uwvm::cmdline::params
         .name{u8##flag},.describe{u8##description},.usage{u8##usage_text}, \
         .handle=::std::addressof(scene_details::configure<scene_details::operation::action,arguments>), \
         .cate=::uwvm2::utils::cmdline::categorization::ros_scene};
+    UWVM_SCENE_PARAMETER(ros_scene_call_audit,"--ros-scene-call-audit","Audit completed ROSv2 imports to stderr with intersecting host-only limits. No guest payload is recorded.","<scope:str> <label:str> <mode:str> <records:u64> <bytes:u64> <rate-hz:u64> <burst:u64>",call_audit,7)
     UWVM_SCENE_PARAMETER(ros_scene_driver_schema,"--ros-scene-driver-schema","Require a compiled canonical operation shape for both driver request and reply.","<environment:str> <alias:str> <operation:str> <nodes:u64> <elements:u64> <depth:u64>",driver_schema,6)
     UWVM_SCENE_PARAMETER(ros_scene_driver_budget,"--ros-scene-driver-budget","Reserve external-driver bindings and retained bytes; no process authority.","<environment:str> <bindings:u64> <bytes:u64>",driver_budget,3)
 #if defined(UWVM_ROS_TEST_KERNEL_ATTACHMENT)

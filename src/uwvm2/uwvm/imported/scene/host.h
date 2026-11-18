@@ -19,6 +19,10 @@
 #include <uwvm2/imported/ros/scene/erased_buffer.h>
 #include <uwvm2/imported/ros/scene/lifecycle.h>
 #include <uwvm2/imported/ros/common/synchronous_wait.h>
+#include <uwvm2/imported/ros/common/audit_io.h>
+#if defined(UWVM_VERSION_DEV)
+#include <uwvm2/utils/debug/host_calls.h>
+#endif
 #include <uwvm2/runtime/lib/uwvm_runtime.h>
 #include <uwvm2/runtime/lib/uwvm_runtime_wasm_fp_native_control.h>
 #include <uwvm2/uwvm/wasm/type/impl.h>
@@ -1069,6 +1073,27 @@ namespace uwvm2::uwvm::imported::scene
         using features=::uwvm2::uwvm::wasm::type::binfmt_ver1_feature_list_t;
         using value=::uwvm2::uwvm::wasm::type::feature_list_final_value_type_t<features>;
         template<typename T> consteval value mapped(){return sizeof(T)<=4?value::i32:value::i64;}
+        /** @brief Emit detached runtime metadata only after the guest return value is fixed.
+         * @details A disabled production audit does not resolve caller identity or sample a clock.
+         * The debugger has an independent, privileged trace switch. ABI queries retain their
+         * actual numeric return value, including the ABI version on success.
+         */
+        inline void observe_result(std::string_view name,std::uint32_t result) noexcept
+        {
+#if defined(UWVM_VERSION_DEV)
+            ::uwvm2::utils::debug::host_calls::observe_scene_result("uwvm_ros_v2",name,result);
+#endif
+            if(!configuration.auditing_calls())return;
+            runtime::ros_caller_identity identity{};
+            auto known=runtime::ros_caller_identity_host_api(identity,true);
+            std::string_view module;
+            if(known)module={reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
+            auto time=::uwvm2::utils::host_clock::now();
+            auto ns=::uwvm2::utils::host_clock::available() ?
+                std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch()).count() : 0;
+            configuration.observe_call(module,known?identity.generation:0,name,result,ns>0?static_cast<std::uint64_t>(ns):0,
+                [](std::string_view record) noexcept {return ::uwvm2::imported::ros::audit_io::write_record(record);});
+        }
         template<typename Signature,Signature Fn,auto& Name> struct function;
         template<typename R,typename... A,R(*Fn)(A...) noexcept,auto& Name>
         struct function<R(*)(A...) noexcept,Fn,Name>
@@ -1089,6 +1114,7 @@ namespace uwvm2::uwvm::imported::scene
                 auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
                 {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
                 ::uwvm2::utils::container::get<0>(call.res)=result;
+                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result);
             }
         };
         template<auto Fn,auto& Name> using native=function<decltype(Fn),Fn,Name>;

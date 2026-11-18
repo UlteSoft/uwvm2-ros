@@ -122,6 +122,10 @@ import fast_io_crypto;
 import uwvm2.runtime;
 import uwvm2.utils.container;
 import uwvm2.utils.control;
+import uwvm2.utils.thread;
+#if defined(UWVM_VERSION_DEV)
+import uwvm2.utils.debug.host_calls;
+#endif
 import uwvm2.uwvm.wasm.type;
 import uwvm2.uwvm.wasm.storage;
 #if defined(UWVM_IMPORT_WASI_WASIP1) && !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1)
