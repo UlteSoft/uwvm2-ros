@@ -53,7 +53,7 @@ static void filter_for(int fd,bool final_filter)
 #define UWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES (64 << 20)
 #endif
 static constexpr auto max_compiled_model_bytes = UWVM_MUJOCO_COMPILED_MODEL_MAX_BYTES;
-static_assert((1 << 20) <= max_compiled_model_bytes && max_compiled_model_bytes <= (256 << 20));
+static_assert((1 << 20) <= max_compiled_model_bytes && max_compiled_model_bytes <= (512 << 20));
 static mjModel* load_model(char const* path, bool compiled)
 {
  if(compiled)

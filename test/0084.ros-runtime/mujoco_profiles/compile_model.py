@@ -8,7 +8,7 @@ from run_scene_vm import sha
 
 
 def prepare(profile_path, source, mujoco, output, platforms, run, maximum_bytes=64 << 20):
-    if not (1 << 20) <= maximum_bytes <= (256 << 20):
+    if not (1 << 20) <= maximum_bytes <= (512 << 20):
         raise ValueError('invalid compiled simulation model budget')
     profile = json.loads(profile_path.read_bytes())
     platform = profile['platform']

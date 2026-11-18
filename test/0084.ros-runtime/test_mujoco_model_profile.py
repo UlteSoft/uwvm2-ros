@@ -10,6 +10,12 @@ from run_scene_vm import ROOT, verify_gate
 
 
 class ModelIntake(unittest.TestCase):
+    def test_compiled_size_budget_checked_before_reading_source(self):
+        verify_gate()
+        for size in ((1 << 20) - 1, (512 << 20) + 1):
+            with self.subTest(size=size), self.assertRaisesRegex(ValueError, 'budget'):
+                prepare(None, None, None, None, (), None, maximum_bytes=size)
+
     def test_declined_before_compiler_start(self):
         verify_gate()
         scratch = ROOT/'.tmp'

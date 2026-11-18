@@ -50,12 +50,12 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
  parser.add_argument('--platform-targets',type=Path,help='Exercise the same simulated joint with each platform permission scope in an SDK share/targets.json')
  parser.add_argument('--vendor-model',type=Path,help='Reviewed vendor model profile including platform, actuator, joint and asset digests')
- parser.add_argument('--vendor-model-max-mib',type=int,default=64,help='Size limit for the compiled simulation model (1..256 MiB, default 64)')
+ parser.add_argument('--vendor-model-max-mib',type=int,default=64,help='Size limit for the compiled simulation model (1..512 MiB, default 64)')
  parser.add_argument('--vendor-assets',type=Path,help='Locally supplied original vendor model source directory')
  parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
  a=parser.parse_args(argv)
- if not 1 <= a.vendor_model_max_mib <= 256 or (not a.vendor_model and a.vendor_model_max_mib!=64):
-  parser.error('select a vendor model and a compiled model size limit from 1 through 256 MiB')
+ if not 1 <= a.vendor_model_max_mib <= 512 or (not a.vendor_model and a.vendor_model_max_mib!=64):
+  parser.error('select a vendor model and a compiled model size limit from 1 through 512 MiB')
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if guest_steady_deadlines and compile_guest is None:parser.error('run-time deadlines require an SDK controller with an authorized steady clock')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
