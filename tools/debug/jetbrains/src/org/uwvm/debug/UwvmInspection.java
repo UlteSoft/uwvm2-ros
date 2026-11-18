@@ -20,6 +20,22 @@ public final class UwvmInspection implements ToolWindowFactory, com.intellij.ope
         tabs.add("Diagnostics / dump",new DiagnosticsPanel(project));
         tabs.add("Memory tags",new MemoryPanel(project));
         tabs.add("Host calls",new HostPanel(project));
+        tabs.add("ROSv2 scene", new UwvmScenePanel(new UwvmScenePanel.Source() {
+            public Object session() { return UwvmClient.current(project); }
+            public java.util.concurrent.CompletableFuture<UwvmScenePanel.Page> read(Object session, Map<String,Object> args) {
+                return ((UwvmClient) session).inspect("uwvm/sceneState", args).thenApply(value -> {
+                    var r = JSON.toJsonTree(value).getAsJsonObject();
+                    if (!new JsonPrimitive(true).equals(r.get("available")) ||
+                        !"process-owned".equals(r.get("scope").getAsString()) ||
+                        !new JsonPrimitive(false).equals(r.get("payloadsRead")) ||
+                        !new JsonPrimitive(false).equals(r.get("nativeOperationsIssued")))
+                        throw new IllegalArgumentException("Read-only process scene required");
+                    return new UwvmScenePanel.Page(r.get("selection").getAsString(), r.get("stopId").getAsString(),
+                        r.get("start").getAsInt(), r.get("total").getAsInt(), r.get("next").getAsInt(),
+                        r.get("more").getAsBoolean(), r.getAsJsonArray("rows").size(), JSON.toJson(r));
+                });
+            }
+        }));
         window.getContentManager().addContent(ContentFactory.getInstance().createContent(tabs,"",false));
     }
     private static void request(Project project,String method,Map<String,Object> args,JLabel state,Consumer<JsonObject> result) {

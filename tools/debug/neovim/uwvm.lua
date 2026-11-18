@@ -5,6 +5,8 @@ local api = vim.api
 local namespace = api.nvim_create_namespace("uwvm_debug_snapshots")
 local serial = 0
 local wasm_buffers = {}
+local scene_pages = {}
+local latest_scene_request
 
 local function active()
   local session = require("dap").session()
@@ -136,6 +138,52 @@ function M.disassemble(count, callback, instruction_offset)
     end, true)
 end
 
+-- Keep continuation identity in the snapshot buffer that produced it. A new
+-- session can reuse a numeric stop ID. It cannot inherit the previous page.
+local function read_scene(selection, start, stop, callback)
+  local args = {selection = selection, start = start, count = 8, ifStop = stop}
+  local frame = active().current_frame
+  local ticket = {}
+  latest_scene_request = ticket
+  request("uwvm/sceneState", args, function(err, body, session)
+    if ticket ~= latest_scene_request or (not err and session.current_frame ~= frame) then
+      err = {message = "Scene selection or stop changed; reply retired"}
+    end
+    finish(callback, err, body, function(value)
+      assert(value.available == true and value.scope == "process-owned" and
+        value.selection == selection and value.start == start and
+        value.payloadsRead == false and value.nativeOperationsIssued == false,
+        "Unavailable or mismatched scene page")
+      local id = value.stopId
+      assert(type(id) == "string" and id:match("^[1-9][0-9]*$") and
+        (#id < 20 or (#id == 20 and id <= "18446744073709551615")) and
+        (not stop or id == stop), "Scene stop changed")
+      local total, rows = value.total, value.rows
+      assert(type(total) == "number" and total % 1 == 0 and total >= 0 and total <= 4096 and
+        type(rows) == "table" and #rows == math.min(8, math.max(0, total - start)) and
+        value.next == (#rows > 0 and start + #rows or 0) and value.more == (start + #rows < total),
+        "Incomplete scene page")
+      local buffer = snapshot("scene-" .. selection, pretty_json(value), "json")
+      if value.more then
+        scene_pages[buffer] = {session = session, selection = selection, start = value.next, stop = id}
+      end
+      return buffer
+    end)
+  end, true)
+end
+
+function M.scene_state(selection, callback)
+  assert(selection == "authority" or selection == "resources" or selection == "audit",
+    "Select authority, resources or audit")
+  read_scene(selection, 0, nil, callback)
+end
+
+function M.scene_next(callback)
+  local page = scene_pages[api.nvim_get_current_buf()]
+  assert(page and page.session == active(), "Select a scene snapshot with another page in this session")
+  read_scene(page.selection, page.start, page.stop, callback)
+end
+
 function M.host_trace(family, callback)
   family = family or "all"
   assert(family == "all" or family == "wasip1" or family == "ros1" or family == "ros2" or family == "rosv2",
@@ -253,14 +301,19 @@ function M.setup(options)
     for buffer, identity in pairs(wasm_buffers) do
       if identity.session == session then wasm_buffers[buffer] = nil end
     end
+    for buffer, page in pairs(scene_pages) do
+      if page.session == session then scene_pages[buffer] = nil end
+    end
   end
   require("dap").listeners.before.event_terminated.uwvm_source_identity = retire
   require("dap").listeners.after.attach.uwvm_source_identity = function(session)
     if session.config.type == "uwvm" then session.on_close.uwvm_source_identity = retire end
   end
   local group = api.nvim_create_augroup("UwvmSourceIdentity", {clear = true})
-  api.nvim_create_autocmd("BufWipeout", {group = group, callback = function(event) wasm_buffers[event.buf] = nil end})
+  api.nvim_create_autocmd("BufWipeout", {group = group, callback = function(event) wasm_buffers[event.buf] = nil; scene_pages[event.buf] = nil end})
   local commands = {
+    UwvmScene = {function(args) M.scene_state(args.args) end, {nargs = 1}},
+    UwvmSceneNext = {function() M.scene_next() end, {nargs = 0}},
     UwvmDiagnostics = {function() request("uwvm/diagnostics", {}, function(err, body)
       finish(nil, err, body, function(value) return snapshot("diagnostics", pretty_json(value), "json") end)
     end, false) end, {nargs = 0}},

@@ -156,6 +156,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_driver_kernel_channel),
 #endif
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_driver_channel),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_buffer_journal),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_buffer_capture),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_budget),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_clear_input),

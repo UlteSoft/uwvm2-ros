@@ -46,8 +46,15 @@ int main()
         assert(zero.add(audit::scope::global,"*",false,limits));
         zero.observe("g","m",3,"abi",2,1,[](auto) noexcept {assert(false);return true;});
         assert(zero.limited==1);
+        audit::statistics first{}, repeated{};
+        assert(zero.inspect(first) && zero.inspect(repeated));
+        assert(first.configured && first.admitted==0 && first.limited==1 && repeated.limited==first.limited);
     }
+    audit::statistics counts;
+    assert(events.inspect(counts) && counts.admitted==5 && counts.sink_failed==1 &&
+           counts.clock_failed==1 && counts.limited==2);
     audit::journal nesting;
+    assert(nesting.inspect(counts) && !counts.configured && counts.admitted==0);
     assert(nesting.add(audit::scope::single,"owned",false,{5,8192,1,5}));
     nesting.observe("unknown","else",4,"abi",2,1,[](auto) noexcept{assert(false);return true;});
     nesting.observe("g","owned",4,"abi",2,1,[&](auto) noexcept {

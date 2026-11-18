@@ -68,9 +68,12 @@ def main():
         except ValueError:
             continue
         raise AssertionError('incomplete or unverified ROSv2 caller advertised as complete')
+    for duration in (0, 75, (1 << 64)-1):
+        timed = call.replace(" timed=0", " timed=1").replace(" duration-ns=0", f" duration-ns={duration}")
+        assert export.call_row(timed)["duration-ns"] == duration
     for old,new in [(' segments=0',' segments=1'),(' args= ',' args=32:10 '),
                     (' result=2 ',' result=4294967296 '),(' returned=1',' returned=0'),
-                    (' module=0',' module=22'),(' timed=0', ' timed=1')]:
+                    (' module=0',' module=22'),(' duration-ns=0', ' duration-ns=33')]:
         corrupt = call.replace(old, new)
         assert corrupt != call
         try:

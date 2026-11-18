@@ -16,7 +16,8 @@ int main(int argc,char** argv)
     scene::read(request,value);check(value.result==scene::status::not_selected&&value.size==0,"unselected hook");
     check(scene::parse("info scene authority environment=robot alias=log first=0 count=1 if-stop=11",request),"complete grammar");
     check(request.stop==11&&request.environment.view()=="robot"&&request.alias.view()=="log","exact fields");
-    for(auto text:{"info scene revoke","info scene authority count=0","info scene authority count=9",
+    check(scene::parse("info scene audit count=1 if-stop=11",request) && request.selected==scene::selection::audit,"process audit counters");
+    for(auto text:{"info scene audit alias=log","info scene audit environment=robot","info scene revoke","info scene authority count=0","info scene authority count=9",
                    "info scene authority first=4097","info scene authority count=1 count=1","info scene authority fd=3",
                    "info scene resources if-stop=0","info scene resources first=-1","info scene resources first=+1",
                    "info scene resources environment=a/b","info scene authority alias=a\ncontinue"})

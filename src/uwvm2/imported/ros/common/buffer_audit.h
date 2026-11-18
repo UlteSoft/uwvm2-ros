@@ -6,6 +6,7 @@
 #include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
 #include "../ipc/protocol.h"
+#include "audit_file.h"
 #include <array>
 #include <atomic>
 #include <charconv>
@@ -153,9 +154,8 @@ namespace uwvm2::imported::ros::buffer_audit
             auto buffer=::uwvm2::utils::container::std_unique_ptr<char[]>{::uwvm2::utils::allocator::fast_io_strict::try_array<char>(static_cast<::std::size_t>(limits_.record_bytes), false)};
             if(!buffer){return false;}
             int copy{::fcntl(static_cast<int>(descriptor),F_DUPFD_CLOEXEC,3)};if(copy<0){return false;}
-            struct stat info{};int flags{::fcntl(copy,F_GETFL)};
-            if(::fstat(copy,&info)||!S_ISREG(info.st_mode)||info.st_nlink!=1||info.st_uid!=::geteuid()||
-               (info.st_mode&07777)!=0600||info.st_size!=0||flags<0||(flags&O_ACCMODE)!=O_WRONLY||(flags&(O_APPEND|O_PATH)))
+            struct stat info{};
+            if(!audit_file::validate(copy,0,info))
             {::close(copy);return false;}
             // No stdout, socket, pipe, inherited pre-existing data or Guest
             // descriptor. Consume the supplied descriptor in this process,

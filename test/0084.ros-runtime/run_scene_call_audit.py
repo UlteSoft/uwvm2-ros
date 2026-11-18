@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import resource
 import subprocess
 from run_scene_vm import verify_gate
 
@@ -71,6 +72,23 @@ def main():
             report["cases"].append(dict(engine=engine,case=label,flags=flags,exit=run.returncode,rows=rows,passed=passed))
             result_file.write_text(json.dumps(report,indent=2)+"\n")
             if not passed:raise RuntimeError((label,expected,data[-3000:]))
+        # Exercise a normal deployed Wasm program with its diagnostic file capped.
+        # The limit applies only to this child. A partial journal write cannot
+        # change any of the four guest results or terminate the VM.
+        for maximum in (0, 4):
+            target=out/f"{engine}-stderr-{maximum}.log"
+            def restrict_file():
+                _, hard=resource.getrlimit(resource.RLIMIT_FSIZE)
+                resource.setrlimit(resource.RLIMIT_FSIZE,(maximum,hard))
+            with target.open("wb") as stream:
+                run=subprocess.run([args.runtime,"--runtime-"+engine,"--runtime-compile-threads","0",
+                    "--runtime-llvm-jit-cache-path","disable",*setup,*audit("global","*","all"),"--run",wasm],
+                    stdout=subprocess.PIPE,stderr=stream,preexec_fn=restrict_file,timeout=60)
+            passed=run.returncode==0 and target.read_bytes()==b'{"ro'[:maximum]
+            report["cases"].append(dict(engine=engine,case="operator-file-quota",maximum=maximum,
+                                        exit=run.returncode,passed=passed))
+            result_file.write_text(json.dumps(report,indent=2)+"\n")
+            if not passed: raise RuntimeError((engine,maximum,run.returncode,target.read_bytes()))
     for label,flags in [("missing-group",audit("group","missing","all")),("invalid-mode",audit("global","*","off")),
                         ("ambiguous",audit("single","main","all")*2),("unbounded",audit("global","*","all","unlimited"))]:
         run=subprocess.run([args.runtime,*setup,*flags,"--ros-scene-check"],capture_output=True,timeout=30)

@@ -6,6 +6,7 @@
  * refuses a record. No argument, payload, native identity or handle is copied.
  */
 #pragma once
+#include "call_audit_statistics.h"
 #include <uwvm2/utils/container/standard.h>
 #include <array>
 #include <atomic>
@@ -61,6 +62,21 @@ namespace uwvm2::imported::ros::scene::call_audit
         std::atomic<std::uint64_t> contention{}, limited{}, sink_failures{}, clock_failures{};
         bool active() const noexcept { return enabled.load(std::memory_order_acquire); }
 
+        /** @brief Copy current counters without recording, refilling or draining.
+         * @details This operation never waits for a producer or sink. Failures
+         * occurring concurrently outside the journal lock appear on this or
+         * a later read. The caller must report a contended read as unavailable.
+         */
+        bool inspect(statistics& output) const noexcept
+        {
+            std::unique_lock lock{mutex, std::try_to_lock};
+            if(!lock.owns_lock()) return false;
+            output = {active(), sequence, limited.load(std::memory_order_relaxed),
+                      contention.load(std::memory_order_relaxed),
+                      clock_failures.load(std::memory_order_relaxed),
+                      sink_failures.load(std::memory_order_relaxed)};
+            return true;
+        }
         /** @brief Register one finite allowance for an exact trusted scope.
          * @details Repeated scope/label pairs are rejected. A zero ceiling
          * disables that part of the selection. One billion nanocredits is one

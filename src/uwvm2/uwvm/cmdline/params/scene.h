@@ -2,7 +2,7 @@
  * @brief CLI configuration for independent robot scene environments.
  * @details These callbacks never mutate WASIp1/ROS-v1 state. Every module must
  * be bound explicitly; every function and resource remains denied until the
- * corresponding setting is present. Validation performs no native I/O.
+ * corresponding setting is present. Private payload capture explicitly consumes a provisioned host FD.
  */
 #pragma once
 #include <uwvm2/utils/container/standard.h>
@@ -16,7 +16,7 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
 {
     namespace scene=::uwvm2::imported::ros::scene;
     using result=::uwvm2::utils::cmdline::parameter_return_type;
-    enum class operation{call_audit,driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check};
+    enum class operation{call_audit,driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,module_buffer_journal,module_buffer_capture,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check};
     template<operation Action,std::size_t Count>
     inline result configure(::uwvm2::utils::cmdline::parameter_parsing_results*,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current,
@@ -101,6 +101,21 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
             }
             if constexpr(Action==operation::create)status=config.create(::uwvm2::utils::container::std_string(args[0]));
             if constexpr(Action==operation::child)status=config.platform_setting(args[0],args[1],args[2],args[3]);
+            if constexpr(Action==operation::module_buffer_journal)
+            {
+                std::uint64_t fd{},records{},bytes{},payload{};
+                if(!scene::parse_unsigned(args[0],fd)||fd>1048575||!scene::parse_unsigned(args[1],records)||
+                   !scene::parse_unsigned(args[2],bytes)||!scene::parse_unsigned(args[3],payload)||
+                   !scene::module_buffer_audit::output.configure(static_cast<int>(fd),{records,bytes,payload}))
+                    return failure("invalid private journal descriptor or limits");
+            }
+            if constexpr(Action==operation::module_buffer_capture)
+            {
+                scene::module_buffer_audit::stage stage{};
+                if(!scene::module_buffer_audit::parse_stage(args[2],stage))
+                    return failure("capture stage requires submit, take, respond or result");
+                status=config.module_call_buffer_capture(args[0],args[1],stage);
+            }
             if constexpr(Action==operation::module_call_budget)
             {
                 std::uint64_t bytes{},routes{};
@@ -601,6 +616,8 @@ namespace uwvm2::uwvm::cmdline::params
     UWVM_SCENE_PARAMETER(ros_scene_driver_kernel_channel,"--ros-scene-driver-kernel-channel","Opt into kernel-only driver IPC on a private inherited local socket. This mode sends unencrypted application frames.","<environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64>",driver_kernel_channel,17)
 #endif
     UWVM_SCENE_PARAMETER(ros_scene_driver_channel,"--ros-scene-driver-channel","Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secret only from a sealed identity descriptor.","<environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32> <peer-time-namespace-fd:u32>",driver_channel,19)
+    UWVM_SCENE_PARAMETER(ros_scene_call_buffer_journal,"--ros-scene-call-buffer-journal","Consume a private writable file descriptor for bounded host-only message capture.","<fd:u32> <records:u64> <file-bytes:u64> <payload-bytes:u64>",module_buffer_journal,4)
+    UWVM_SCENE_PARAMETER(ros_scene_call_buffer_capture,"--ros-scene-call-buffer-capture","Persist the complete body of one successful registered message stage to the private host journal.","<environment:str> <route:str> <submit|take|respond|result>",module_buffer_capture,3)
     UWVM_SCENE_PARAMETER(ros_scene_call_budget,"--ros-scene-call-budget","Reserve cross-Wasm message storage; creates no authority.","<environment:str> <bytes:u64> <routes:u64>",module_call_budget,3)
     UWVM_SCENE_PARAMETER(ros_scene_call,"--ros-scene-call","Register an exact caller, callee and bounded message contract; no arbitrary export invocation.","<environment:str> <route:str> <caller:str> <callee:str> <operation:str> <request-schema:str> <response-schema:str> <request-bytes:u64> <response-bytes:u64> <slots:u64> <deadline-ns:u64>",module_call,11)
     UWVM_SCENE_PARAMETER(ros_scene_call_clear_input,"--ros-scene-call-clear-input","Set copied-input erasure for one registered route (default true); false risks retained sender data.","<environment:str> <route:str> <clear-after-copy:bool>",module_call_clear_input,3)

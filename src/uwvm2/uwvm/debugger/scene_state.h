@@ -21,7 +21,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
     inline bool valid(request const& query) noexcept{return data::valid(query);}
     inline void read(request const& query,view& output) noexcept{data::snapshot(query,output);}
     inline ::std::string_view selection_text(selection value) noexcept
-    {return value==selection::authority?"authority":value==selection::resources?"resources":"invalid";}
+    {return value==selection::authority?"authority":value==selection::resources?"resources":value==selection::audit?"audit":"invalid";}
     inline ::std::string_view status_text(status value) noexcept
     {
         switch(value)
@@ -51,6 +51,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
         request query{};
         if(words[2]=="authority")query.selected=selection::authority;
         else if(words[2]=="resources")query.selected=selection::resources;
+        else if(words[2]=="audit")query.selected=selection::audit;
         else return false;
         unsigned seen{};
         for(::std::size_t i=3;i<count;++i)
@@ -95,6 +96,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
     {
         ::fast_io::io::print(output,"scene scope=process-owned stop=",stop," selection=",selection_text(value.selected)," status=",status_text(value.result),"\n");
         if(value.result!=status::ok)return;
+        if(value.selected==selection::audit)
+        {
+            auto const& counters=value.audit;
+            if(value.size) ::fast_io::io::print(output,"audit configured=",counters.configured,
+                " admitted=",counters.admitted," limited=",counters.limited," busy=",counters.busy,
+                " clock_failed=",counters.clock_failed," sink_failed=",counters.sink_failed,"\n");
+            ::fast_io::io::print(output,"page total=",value.total," next=",value.next," more=",value.more,"\n");
+            return;
+        }
         if(value.size>value.rows.size()){::fast_io::io::print(output,"invalid bounded snapshot\n");return;}
         for(::std::size_t i=0;i<value.size;++i)
         {

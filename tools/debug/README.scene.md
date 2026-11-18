@@ -484,3 +484,34 @@ The cumulative `rosv2-dropped` field reports losses, including after a clear.
 `trace host off family=rosv2` stops collection. `trace host clear` clears all
 families. Older ROS1 and ROS2 host imports use the separate `ros1` and `ros2`
 filters. This debugger export carries no replay or restore authority.
+
+When a call began with the debugger trace enabled and both monotonic clock
+samples are available and ordered, its row carries `timed=1` and
+`duration-ns`. A clock that is unavailable or goes backwards produces
+`timed=0 duration-ns=0`. The interval covers the local operation, including
+time waiting inside it. Later device execution and journal delivery lie outside
+the measured interval. With both journals disabled, the wrapper reads no clock.
+
+### Inspecting audit losses after the last call
+
+At a cooperative stop, run `info scene audit` or select **Audit counters** in
+the scene inspector. DAP clients use `uwvm/sceneState` with `selection` set
+to `audit`. The reply contains one process-wide row even when the result
+journal is disabled. The optional stop and pagination parameters work as for
+resource pages. Environment and alias selectors are rejected because a
+process-wide counter cannot attribute a loss to a particular resource.
+
+`configured` reports whether the operator installed any result-audit rule.
+`admitted` counts reserved record sequences. `limited` includes observations
+that exhausted a record, byte or rate budget or exceeded a representation
+bound. `busy` counts producer lock contention, `clock_failed` counts clock
+failures and `sink_failed` counts writes that failed after admission. Counts
+saturate at the maximum unsigned 64-bit value. Concurrent sink completions can
+appear on a later read. A busy snapshot returns an unavailable status.
+
+This view also works when the first observation exhausted a zero budget, or
+when the last attempted write failed and no later event can carry the loss
+count. Reading the counters never drains a queue, replenishes a budget, reads
+a body or writes another audit record. These counters describe the operator's
+call-result journal. The debugger's independently enabled call trace has its
+own drop count.

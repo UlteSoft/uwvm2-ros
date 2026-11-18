@@ -118,6 +118,7 @@
 # endif
 # if defined(UWVM_IMPORT_ROSV2)
 #  include <uwvm2/imported/ros/scene/lifecycle.h>
+#  include <uwvm2/imported/ros/scene/module_buffer_audit.h>
 # endif
 # if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
 #  include <uwvm2/imported/ros/common/synchronous_wait.h>
@@ -14070,6 +14071,9 @@ namespace uwvm2::runtime::lib
         // Finalize only this opt-in journal; a footer is not process-tree
         // retirement or native ROS acceptance evidence.
         ::uwvm2::imported::ros::buffer_audit::journal.finish();
+#endif
+#if defined(UWVM_IMPORT_ROSV2)
+        ::uwvm2::imported::ros::scene::module_buffer_audit::output.finish();
 #endif
     }
 

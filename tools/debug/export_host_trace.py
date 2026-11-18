@@ -117,7 +117,7 @@ def call_row(line):
         raise ValueError("invalid ABI argument count")
     if row["family"] == 8 and (arguments or row["returned"] != 1 or row["has-result"] != 1
             or row["result"] >= 1 << 32 or row["module-name-bytes"] > 255 or row["module"] or row["participant"]
-            or bool(length) != bool(row["generation"]) or row["environment"] or row["segments"] or row["timed"] or row["duration-ns"]
+            or bool(length) != bool(row["generation"]) or row["environment"] or row["segments"] or (not row["timed"] and row["duration-ns"])
             or row["incomplete"] or not 0 < len(row["namespace"]) <= 255 or not 0 < len(row["function"]) <= 255):
         raise ValueError("invalid metadata-only ROSv2 completion")
     row["args"] = arguments
@@ -209,7 +209,7 @@ def save_host_trace(request, checkpoint, path, family="all", *, filters=None, if
                     "coverage": "Retained observations only, from explicitly enabled recording intervals.",
                     "wasip1": "Before/after snapshots, not proof of kernel consumption under shared-memory races.",
                     "ros": "Copied Host transfers, not proof of remote delivery; inspect the result.",
-                    "rosv2": "Completed registered operation and raw u32 result. When generation is nonzero, moduleName contains the complete verified caller label (1 to 255 bytes). Zero generation and an empty label indicate unavailable identity. Arguments, payloads and durations are omitted. rosv2-dropped counts cumulative losses.",
+                    "rosv2": "Completed registered operation and raw u32 result. When generation is nonzero, moduleName contains the complete verified caller label (1 to 255 bytes). Zero generation and an empty label indicate unavailable identity. Arguments and payloads are omitted. A timed row measures local elapsed time through the host return. rosv2-dropped counts cumulative losses.",
                     "integers": "64-bit quantities and ABI values are decimal strings to avoid JSON reader rounding.",
                     "bytes": "Concatenate chunks in offset order. Hex is lossless; utf8IfValid is per chunk.",
                     "timing": "durationNs is monotonic elapsed time, not a wall-clock timestamp.",

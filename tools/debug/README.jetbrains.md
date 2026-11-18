@@ -46,3 +46,13 @@ run. The current evidence does not qualify every language, a visible native
 assembly editor, or every JetBrains product. CLion's built-in DAP support
 is a separate client and needs its own acceptance run; a configuration file
 alone is not that evidence.
+
+## ROSv2 scene metadata
+
+Pause the selected UWVM session and open **UWVM Inspection → ROSv2 scene**.
+Select **authority** to inspect effective grants, **resources** for admitted
+resource metadata, or **audit** for the process-wide delivery counters. **Read
+scene** opens the first eight rows. **Next page** retains the stop ID and the
+selected VM session. Changing the selector clears the displayed page. A denied
+or expired request clears the result and shows its diagnostic. The operation
+requires full or read-only debug inspection.
