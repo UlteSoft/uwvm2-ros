@@ -12,6 +12,15 @@ grants an operation or replaces the subsequent mutual-TLS checks. See the
 for the byte layout and one-time descriptor delivery. This helper is for the
 separate adapter, and adds no Wasm import or VM lifecycle authority.
 
+`provider_bootstrap_receiver.h` implements the adapter's bounded handoff: it
+pins the provisioner's PID, verifies packet credentials, consumes exactly four
+descriptors and validates the sealed record before publishing output. Its
+noncopyable descriptor bundle closes all owned handles; malformed and truncated
+deliveries cannot leak descriptors. The caller supplies the expected provisioner
+identity from trusted launch state and closes the borrowed courier on completion.
+The receiver never enters the VM executable or the per-message path. A successful
+handoff still requires the ordinary TLS and independent operation admission.
+
 This is the current VM contract. The deployment program is not implemented by
 this change. Historical component-launcher receipts do not qualify this path.
 Imports belong to `uwvm_ros_v2`: `driver.connect`, `driver.submit`,

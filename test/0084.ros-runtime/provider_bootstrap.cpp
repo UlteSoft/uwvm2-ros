@@ -3,7 +3,7 @@
  * It exposes one harmless parameter query and no process/device authority.
  */
 #include <uwvm2/imported/ros/scene/attachment_tls.h>
-#include <uwvm2/imported/ros/scene/provider_bootstrap.h>
+#include <uwvm2/imported/ros/scene/provider_bootstrap_receiver.h>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -86,16 +86,17 @@ static bool receive(int courier,d::credentials parent,received& output,std::stri
 }
 static int serve(int courier,d::credentials parent,std::string_view mode)
 {
- received descriptors;if(!receive(courier,parent,descriptors,mode))return 13;
+ if(mode=="unexpected-rights"||mode=="bad-origin"||mode=="bad-ready")
+ {received hostile;receive(courier,parent,hostile,mode);return 13;}
+ p::descriptors descriptors;p::record config;
+ if(p::receive(courier,{parent.pid,parent.uid,parent.gid},UINT64_C(5000000000),descriptors,config)!=p::receive_status::success)return 13;
  ::close(courier);
- auto [fd,key,clock,record]=descriptors.fds;p::record config;
- if(!p::load(record,fd,key,clock,config))return 13;
  auto const& b=config.bound;s::attachment_tls::channel channel;
- if(channel.bind(fd,{config.peer.pid,config.peer.uid,config.peer.gid},key,s::attachment_tls::purpose::driver,
-   b.deployment,b.vm,b.module,b.driver,b.session,b.contract,176+std::max(config.request_bytes,config.response_bytes),true,clock)!=E::success)return 13;
+ if(channel.bind(descriptors.carrier(),{config.peer.pid,config.peer.uid,config.peer.gid},descriptors.identity(),s::attachment_tls::purpose::driver,
+   b.deployment,b.vm,b.module,b.driver,b.session,b.contract,176+std::max(config.request_bytes,config.response_bytes),true,descriptors.clock())!=E::success)return 13;
  // The channel has duplicated its carrier and consumed its key. Close the
  // delivered originals now; no bootstrap descriptor remains in the hot path.
- for(auto& handle:descriptors.fds){::close(handle);handle=-1;}
+ descriptors.reset();
  std::array<std::uint8_t,65712> input{};std::array<std::uint8_t,24> body{};
  s::wire::writer out{body};out.boolean(true);out.boolean(false);out.u64(3);unsigned calls{};bool greeted{};
  auto until=std::min(now()+10000000000,config.session_until_ns);
