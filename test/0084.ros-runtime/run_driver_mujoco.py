@@ -43,7 +43,7 @@ def guest(width,memory,deadline,mode,count):
  if mode=='crash':g.request('driver.describe',b'',cap=cap,capacity=32);g.equal(g.word(16384),6);g.equal(g.word(16408),1)
  g.request('driver.disconnect',b'',cap=cap,capacity=8);return g
 
-def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), guest_widths=(32,64)):
+def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), guest_widths=(32,64), guest_steady_deadlines=False):
  parser=argparse.ArgumentParser(description=__doc__)
  for name in ('runtime','source-root','mujoco','output'):parser.add_argument('--'+name,required=True,type=Path)
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
@@ -57,6 +57,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  if not 1 <= a.vendor_model_max_mib <= 256 or (not a.vendor_model and a.vendor_model_max_mib!=64):
   parser.error('select a vendor model and a compiled model size limit from 1 through 256 MiB')
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
+ if guest_steady_deadlines and compile_guest is None:parser.error('run-time deadlines require an SDK controller with an authorized steady clock')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
   parser.error('guest widths must be unique and drawn from wasm32 and wasm64')
  if compile_guest is None and guest_widths!=(32,64):parser.error('the WAT reference covers both widths')
@@ -72,6 +73,10 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   platforms=tuple(names)
  verify_gate();out=a.output;out.mkdir(parents=True,exist_ok=False)
  report=dict(complete=False,scope=__doc__,guest_language=guest_name,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
+ if guest_steady_deadlines:
+  report['driver_request_max_ns']=60_000_000_000
+  report['guest_timeout_seconds']=180
+  report['deadline_source']='Guest reads an explicitly granted ROSv2 steady clock before submitting each command'
  if a.platform_targets:
   report['platform_targets_sha256']=sha(a.platform_targets)
   report['platform_scope']='The same official MuJoCo humanoid is driven under each named SDK permission restriction.'
@@ -119,7 +124,8 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   for platform,(width,memory) in itertools.product(platforms,layouts):
    for engine in ('int','aot'):
     for mode in ('success','range','crash'):
-     label=(platform+'-' if platform else '')+f'{mode}-{width}-{memory}-{engine}';count=128 if mode=='success' else 1;deadline=time.monotonic_ns()+60000000000
+     label=(platform+'-' if platform else '')+f'{mode}-{width}-{memory}-{engine}';count=128 if mode=='success' else 1
+     deadline=0 if guest_steady_deadlines else time.monotonic_ns()+60000000000
      wasm=out/(label+'.wasm')
      if compile_guest is None:
       wat=wasm.with_suffix('.wat');wat.write_text(guest(width,memory,deadline,mode,count).render())
@@ -143,17 +149,23 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
        peer_clock,own_clock=os.fstat(clock_fd),os.stat('/proc/self/ns/time')
        assert (peer_clock.st_dev,peer_clock.st_ino)==(own_clock.st_dev,own_clock.st_ino)
       flags=['--ros-scene-create','robot','--ros-scene-bind','robot','main']
+      if guest_steady_deadlines:
+       for op in ('clock.create','clock.read'):flags+=['--ros-scene-interface','robot',op,'allow']
+       flags+=['--ros-scene-grant','robot','steady','clock.steady','steady','local','clock.create,clock.read']
+      # The external attachment lease covers cold compiler startup. Its independent
+      # per-request budget applies to each actual driver call after guest readiness.
+      session_until=time.monotonic_ns()+181_000_000_000 if guest_steady_deadlines else deadline+1_000_000_000
       if a.audit_calls:flags+=['--ros-scene-call-audit','single','main','all','4','8192','1000000','4']
       for name in ['capability.open']+NAMES:flags+=['--ros-scene-interface','robot',name,'allow']
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
-       '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
+       '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(session_until),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
        '--ros-scene-driver-schema','robot','joint','device.submit','128','128','16']
       if platform:
        module='uwvm_ros_v2.platform_extension.'+platform+'.v1'
        flags+=['--ros-scene','robot','platform_extension',module,'enable','--ros-scene','robot','platform_extension.bind',module,'joint']
       cmd=[str(a.runtime),*guest_flags,'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
       vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key,clock_fd) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
-      stdout,stderr=vm.communicate(timeout=45);ps,pe=peer.communicate(timeout=5)
+      stdout,stderr=vm.communicate(timeout=180 if guest_steady_deadlines else 45);ps,pe=peer.communicate(timeout=5)
       if confinement:pe=confinement['ready_line'].encode()+pe
       (out/(label+'.vm.stderr')).write_bytes(stderr);(out/(label+'.peer.stderr')).write_bytes(pe)
       expected_exit=128+signal.SIGSEGV if a.namespace else -signal.SIGSEGV
