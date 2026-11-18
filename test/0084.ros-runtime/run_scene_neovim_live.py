@@ -10,12 +10,18 @@ import subprocess
 from run_scene_dap_live import ROOT, WAT, BrokerSession, gate
 
 
+def digest(path):
+    with path.open("rb") as source:
+        return hashlib.file_digest(source, "sha256").hexdigest()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", required=True, type=Path)
     parser.add_argument("--nvim-dap", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--audit", action="store_true", help="also require the process-wide audit query")
+    parser.add_argument("--policy", action="store_true", help="require two pages of actual import rules")
     args = parser.parse_args()
     gate()
     out, plugin, runtime = args.output.resolve(), args.nvim_dap.resolve(), args.runtime.resolve()
@@ -39,7 +45,8 @@ def main():
     paths = [runtime, ROOT/"tools/debug/dap_adapter.py", ROOT/"tools/debug/neovim/uwvm.lua",
              ROOT/"tools/debug/secure_server.py", script, wasm]
     receipt = {"complete": False, "nvim_dap_commit": upstream,
-               "sha256": {str(p): hashlib.file_digest(p.open("rb"), "sha256").hexdigest() for p in paths}}
+               "cgroup": Path("/proc/self/cgroup").read_text().strip(),
+               "sha256": {str(p): digest(p) for p in paths}}
     broker = BrokerSession(runtime, paths[3], paths[1], flags, out, socket_parent=socket_parent)
     try:
         setup = broker.connect("wasm")
@@ -49,14 +56,19 @@ def main():
         setup.close()
         env = {**os.environ, "UWVM_NVIM_ROOT": str(ROOT), "UWVM_NVIM_DAP": str(plugin),
                "UWVM_NVIM_SOCKET": str(broker.directory), "UWVM_NVIM_CAPTURE": str(out/"queries.json"),
-               "UWVM_NVIM_AUDIT": "1" if args.audit else "0"}
+               "UWVM_NVIM_AUDIT": "1" if args.audit else "0", "UWVM_NVIM_POLICY": "1" if args.policy else "0"}
         for key in ("CONFIG", "CACHE", "STATE", "DATA"):
             env["XDG_"+key+"_HOME"] = str(out / key.lower())
         with (out/"neovim.log").open("wb") as log:
             subprocess.run(["nvim", "--headless", "-u", "NONE", "-l", str(script)], cwd=ROOT,
                            env=env, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=75)
         rows = json.loads((out/"queries.json").read_text())
-        assert list(sorted(rows)) == sorted(["authority", "resources"] + (["audit"] if args.audit else []))
+        expected = {"authority", "resources"}
+        if args.audit:
+            expected.add("audit")
+        if args.policy:
+            expected.update({"policy", "policyNext"})
+        assert set(rows) == expected
         assert len({r["stopId"] for r in rows.values()}) == 1
         receipt["pages"] = rows
     finally:
