@@ -67,3 +67,13 @@ Every asynchronous view checks that its original session and stopped frame
 still exist before displaying a reply. Stale replies are rejected. These
 commands expose only the VM-owned memory and code admitted by the controller;
 they do not inspect the VM host, native libraries or another process.
+
+## ROSv2 scene metadata
+
+At a cooperative stop, run `:UwvmScene authority` for effective grants,
+`:UwvmScene resources` for admitted resource metadata, or `:UwvmScene audit`
+for the process-wide audit counters. Each command opens an immutable buffer
+with up to eight rows. If `more` is true, run `:UwvmSceneNext` in that buffer.
+The continuation uses the same session and the exact decimal stop ID.
+The adapter requires full or read-only debug inspection. A denial or expired
+stop reports an error and leaves the earlier snapshot at its original stop.
