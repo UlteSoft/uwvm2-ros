@@ -1,7 +1,9 @@
 /** @file @brief Pinned TLS transport checks on real provisioned Linux sockets. */
 #include <uwvm2/imported/ros/scene/attachment_tls.h>
+#include <atomic>
 #include <cassert>
 #include <cstdio>
+#include <thread>
 #include <linux/memfd.h>
 #include <sys/wait.h>
 namespace scene=uwvm2::imported::ros::scene;
@@ -31,7 +33,7 @@ static void pair(int (&sockets)[2]){
     for(int fd:sockets)assert(!::setsockopt(fd,SOL_SOCKET,SO_PASSCRED,&enabled,sizeof(enabled)));
 }
 enum class scenario { success,wrong_client_pin,wrong_server_pin,wrong_contract,cross_service,corrupt,wrong_origin };
-static void exercise(scenario mode,tls::purpose service,std::size_t size){
+static void exercise(scenario mode,tls::purpose service,std::size_t size,bool handoff=false){
     key_pair client,server,other;
     int left=identity(client,mode==scenario::wrong_server_pin?other:server);
     int right=identity(server,mode==scenario::wrong_client_pin?other:client);
@@ -63,30 +65,48 @@ static void exercise(scenario mode,tls::purpose service,std::size_t size){
         if(alter)encrypted[static_cast<std::size_t>(count)-1]^=1;
         assert(::send(target,encrypted.data(),static_cast<std::size_t>(count),MSG_NOSIGNAL)==count);
     };
-    bool sent{};std::size_t delivered=SIZE_MAX;error status=error::again;
-    for(unsigned n=0;n<128&&status==error::again;++n){
-        if(!sent){
-            status=sender.send(header,std::span{payload}.first(size));
-            if(status!=error::success&&status!=error::again)break;
-            sent=status==error::success;
+    auto transfer=[&]{
+        bool sent{};std::size_t delivered=SIZE_MAX;error status=error::again;
+        for(unsigned n=0;n<128&&status==error::again;++n){
+            if(!sent){
+                status=sender.send(header,std::span{payload}.first(size));
+                if(status!=error::success&&status!=error::again)break;
+                sent=status==error::success;
+            }
+            relay(client_pipe[1],server_pipe[1],mode==scenario::corrupt&&sent);
+            status=receiver.receive(output,delivered);
+            relay(server_pipe[1],client_pipe[1],false);
         }
-        relay(client_pipe[1],server_pipe[1],mode==scenario::corrupt&&sent);
-        status=receiver.receive(output,delivered);
-        relay(server_pipe[1],client_pipe[1],false);
-    }
-    if(mode==scenario::success){
-        if(status!=error::success)ERR_print_errors_fp(stderr);
-        assert(status==error::success&&sent&&delivered==maximum);
-        assert(std::equal(header.begin(),header.end(),output.begin()));
-        assert(std::equal(payload.begin(),payload.begin()+size,output.begin()+header.size()));
-        assert(receiver.send(header,{})==error::success);
-        relay(server_pipe[1],client_pipe[1],false);
-        assert(sender.receive(output,delivered)==error::success&&delivered==header.size());
+        if(mode==scenario::success){
+            if(status!=error::success)ERR_print_errors_fp(stderr);
+            assert(status==error::success&&sent&&delivered==maximum);
+            assert(std::equal(header.begin(),header.end(),output.begin()));
+            assert(std::equal(payload.begin(),payload.begin()+size,output.begin()+header.size()));
+            assert(receiver.send(header,{})==error::success);
+            relay(server_pipe[1],client_pipe[1],false);
+            assert(sender.receive(output,delivered)==error::success&&delivered==header.size());
+        }else{
+            assert(status==error::denied&&delivered==SIZE_MAX);
+            assert(std::all_of(output.begin(),output.end(),[](auto byte){return byte==0xdb;}));
+        }
+    };
+    if(handoff){
+        // Preparation, authenticated traffic and retirement run on three distinct threads.
+        // Keep the traffic owner alive through retirement, just as a VM worker remains pooled.
+        std::atomic_bool transferred{},retired{};
+        std::thread worker([&]{
+            transfer();
+            transferred.store(true,std::memory_order_release);
+            transferred.notify_one();
+            retired.wait(false,std::memory_order_acquire);
+        });
+        transferred.wait(false,std::memory_order_acquire);
+        std::thread supervisor([&]{sender.close();receiver.close();});
+        supervisor.join();retired.store(true,std::memory_order_release);retired.notify_one();
+        worker.join();
     }else{
-        assert(status==error::denied&&delivered==SIZE_MAX);
-        assert(std::all_of(output.begin(),output.end(),[](auto byte){return byte==0xdb;}));
+        transfer();sender.close();receiver.close();
     }
-    sender.close();receiver.close();
     for(int fd:client_pipe)::close(fd);
     for(int fd:server_pipe)::close(fd);
 }
@@ -97,6 +117,8 @@ int main(){
     }
     for(auto kind:{tls::purpose::driver,tls::purpose::model,tls::purpose::deployment})
         for(auto size:{0u,8u,16384u,65536u})exercise(scenario::success,kind,size);
+    for(auto kind:{tls::purpose::driver,tls::purpose::model,tls::purpose::deployment})
+        exercise(scenario::success,kind,8,true);
     for(auto failure:{scenario::wrong_client_pin,scenario::wrong_server_pin,scenario::wrong_contract,
                       scenario::cross_service,scenario::corrupt,scenario::wrong_origin})exercise(failure,tls::purpose::driver,8);
     std::puts("pinned TLS success, credential, binding, integrity and maximum-frame checks passed");

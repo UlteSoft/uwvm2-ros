@@ -71,6 +71,18 @@ namespace uwvm2::imported::ros::scene::attachment_tls
 #if defined(UWVM_ROS_HAS_ATTACHMENT_TLS)
     class session
     {
+        /** @brief End private-context thread registrations before a serialized caller hands off the session.
+         * @details OpenSSL deregisters only the destroying thread when a private library context is freed.
+         * Preparation, traffic and teardown may run on distinct, still-live threads. Each use releases
+         * its registrations on the same thread while the context is valid. An idle socket poll never
+         * enters OpenSSL and requires no cleanup. The process-wide default context is left alone.
+         */
+        struct thread_registration
+        {
+            OSSL_LIB_CTX* context{};
+            ~thread_registration() { if(context) OPENSSL_thread_stop_ex(context); }
+        };
+
         OSSL_LIB_CTX* library_{};
         OSSL_PROVIDER* provider_{};
         SSL_CTX* context_{};
@@ -120,7 +132,7 @@ namespace uwvm2::imported::ros::scene::attachment_tls
             erase_bytes(cipher_.writable().first(pending_));pending_=0;
             return error::success;
         }
-        error ingest(drivers::channel& local,bool handshake) noexcept
+        error ingest(drivers::channel& local,bool handshake,thread_registration& use) noexcept
         {
             std::size_t size{},written{};
             auto status=local.receive(cipher_.writable(),size);
@@ -131,10 +143,11 @@ namespace uwvm2::imported::ros::scene::attachment_tls
                 if(++flights_>32||size>65536-handshake_bytes_)return fail();
                 handshake_bytes_+=size;
             }
+            use.context=library_;
             if(BIO_write_ex(network_,cipher_.view().data(),size,&written)!=1||written!=size)return fail();
             erase_bytes(cipher_.writable().first(size));return error::success;
         }
-        error advance(drivers::channel& local) noexcept
+        error advance(drivers::channel& local,thread_registration& use) noexcept
         {
             if(failed_)return error::denied;
             if(finished_&&!pending_)return error::success;
@@ -145,9 +158,10 @@ namespace uwvm2::imported::ros::scene::attachment_tls
             }
             if(want_input_)
             {
-                auto status=ingest(local,true);if(status!=error::success)return status;
+                auto status=ingest(local,true,use);if(status!=error::success)return status;
                 want_input_=false;
             }
+            use.context=library_;
             ERR_clear_error();
             int completed=SSL_do_handshake(ssl_);
             if(completed==1)
@@ -183,7 +197,9 @@ namespace uwvm2::imported::ros::scene::attachment_tls
             struct key_buffer{std::array<std::uint8_t,64> data{};~key_buffer(){erase_bytes(data);}} keys;
             if(::pread(identity_fd,keys.data.data(),64,0)!=64)return error::io;
             library_=OSSL_LIB_CTX_new();
-            if(!library_||!(provider_=OSSL_PROVIDER_load(library_,"default")))return error::no_memory;
+            if(!library_)return error::no_memory;
+            thread_registration use{library_};
+            if(!(provider_=OSSL_PROVIDER_load(library_,"default")))return error::no_memory;
             context_=SSL_CTX_new_ex(library_,"provider=default",TLS_method());
             if(!context_)return error::no_memory;
             constexpr unsigned char raw=TLSEXT_cert_type_rpk;
@@ -218,6 +234,7 @@ namespace uwvm2::imported::ros::scene::attachment_tls
         error send(drivers::channel& local,wire::bytes header,wire::bytes body) noexcept
         {
             if(failed_)return error::denied;
+            thread_registration use{};
             auto header_size=drivers::protocol::header_bytes;
             if(header.size()!=header_size||body.size()>packed_.view().size()-4-header_size)return error::invalid;
             auto size=header_size+body.size();
@@ -229,12 +246,13 @@ namespace uwvm2::imported::ros::scene::attachment_tls
             }
             else
             {
-                auto status=advance(local);if(status!=error::success)return status;
+                auto status=advance(local,use);if(status!=error::success)return status;
                 auto bytes=packed_.writable().first(size+4);
                 for(unsigned n{};n<4;++n)bytes[n]=static_cast<std::uint8_t>(size>>(8*n));
                 std::copy(header.begin(),header.end(),bytes.begin()+4);
                 std::copy(body.begin(),body.end(),bytes.begin()+4+header_size);
                 std::size_t written{};
+                use.context=library_;
                 if(SSL_write_ex(ssl_,bytes.data(),bytes.size(),&written)!=1||written!=bytes.size()||!drain_output())return fail();
                 retry_size_=size;
             }
@@ -246,8 +264,9 @@ namespace uwvm2::imported::ros::scene::attachment_tls
         {
             if(failed_)return error::denied;
             if(retry_size_)return error::again;
-            auto status=advance(local);if(status!=error::success)return status;
-            status=ingest(local,false);if(status!=error::success)return status;
+            thread_registration use{};
+            auto status=advance(local,use);if(status!=error::success)return status;
+            status=ingest(local,false,use);if(status!=error::success)return status;
             std::size_t used{};
             auto plain=packed_.writable();
             do
