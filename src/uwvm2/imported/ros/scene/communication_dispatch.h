@@ -19,6 +19,7 @@
  */
 #pragma once
 #include "authority.h"
+#include "service_observation_audit.h"
 #include "communication_contract.h"
 #include "communication_receive_contract.h"
 #include "byte_buffer.h"
@@ -250,6 +251,16 @@ namespace uwvm2::imported::ros::scene
             if(!ready_||retired_||!core_||!value||value->revoked||value->kind!=grant.kind||grant.binding!="native-communication")return error::denied;
             output=value;return error::success;
         }
+        error resolve_observation(grant const& policy,std::string_view action,binding*& output) noexcept
+        {
+            if(!service_observer(policy))return resolve(policy,output);
+            if(action!="service.available")return error::denied;
+            std::lock_guard lock{mutex_};
+            auto* actual=named(policy.resource);
+            if(!ready_||retired_||!core_||!actual||actual->revoked||actual->kind!=purpose::service||
+               std::get<communication::service_plan>(actual->policy).direction!=communication::service_role::client)return error::denied;
+            output=actual;return error::success;
+        }
         error active(binding& value,handle id,std::shared_ptr<origins>& output) noexcept
         {
             std::lock_guard lock{mutex_};
@@ -262,6 +273,30 @@ namespace uwvm2::imported::ros::scene
             if(source){for(std::size_t i{};i<source->count;++i)claims[count++]=source->claims[i];}
             auto status=permissions_->admit_group(who,{claims.data(),count},result,charge,check_budget);
             return status==error::success&&source?validate_origins(*source,result):status;
+        }
+        /** @brief Revalidate one registered readiness observer and the actual client's held origins.
+         * @details The client grant never pays for an observation. Validate the pair and all
+         * node/context/schema grants under a single lease before any quota debit.
+         */
+        error availability_group(caller who,handle cap,binding const& client,handle linked,origins const& source,
+                                 std::uint64_t bytes,group_lease& output,bool charge=false)
+        {
+            if(!linked)return group(who,cap,"service.available",bytes,&source,output,charge);
+            if(linked==cap||!source.id||source.count!=4)return error::denied;
+            std::array<admission_claim,6> claims{};
+            claims[0]={cap,"service.available",bytes};
+            for(std::size_t i{};i<source.count;++i)claims[i+1]=source.claims[i];
+            claims.back()={linked,"service.submit",0,false,true};
+            group_lease validated;
+            auto status=permissions_->admit_group(who,claims,validated,false);
+            if(status!=error::success)return status;
+            auto observer=validated.specification(0), target=validated.specification(5);
+            if(!observer||!target||!service_observer(*observer)||observer->resource!=client.alias||target->alias!=client.alias||
+               target->kind!=purpose::service||target->binding!="native-communication")return error::denied;
+            status=validate_origins(source,validated);
+            if(status!=error::success)return status;
+            if(charge)return permissions_->admit_group(who,claims,output,true);
+            output=std::move(validated);return error::success;
         }
         /** @brief Check retained exact resources as well as their capability grants.
          * @details Local provider retirement is independent of authority-table
@@ -308,7 +343,7 @@ namespace uwvm2::imported::ros::scene
          */
         error operation(caller who,handle cap,std::string_view action,binding& selected,
                         std::shared_ptr<origins> const& origin,group_lease const& admitted,
-                        communication::operation_token& output)
+                        communication::operation_token& output,handle linked=0)
         {
             using family=communication::operation_family;
             communication::operation_token value;
@@ -328,6 +363,12 @@ namespace uwvm2::imported::ros::scene
                 }
                 value.origins[i+1]={origin->owners[i],origin->claims[i].capability,origin->resources[i],
                     communication::parse_permission(origin->claims[i].action)};
+            }
+            if(linked)
+            {
+                if(value.family!=family::service||value.action!=communication::permission::service_available||value.count!=5)return error::denied;
+                value.secondary=communication::permission::service_submit;
+                value.origins[value.count++]={selected.identity,linked,origin->id,value.secondary};
             }
             if(!value.valid(value.action,value.family,selected.identity,origin->id,false))return error::denied;
             output=std::move(value);return error::success;
@@ -865,7 +906,7 @@ namespace uwvm2::imported::ros::scene
             lease granted;auto status=mutation?permissions_->admit(who,cap,communication_contract::operations[index].name,0,granted,false):
                 permissions_->preflight(who,cap,communication_contract::operations[index].name,extent,granted);
             if(status!=error::success)return status;
-            binding* selected{};status=resolve(granted.specification(),selected);
+            binding* selected{};status=resolve_observation(granted.specification(),communication_contract::operations[index].name,selected);
             return status==error::success&&!kind_matches(selected->kind,action)?error::denied:status;
         }
         error reserve_workspace(caller who,op action,handle cap,std::size_t extent,workspace_lease& output)
@@ -891,7 +932,9 @@ namespace uwvm2::imported::ros::scene
             if(!receive&&!closing&&descriptor==communication_contract::operations.end())return error::denied;
             caller who{token.caller_instance,token.caller_generation};
             lease allowed;auto status=permissions_->admit(who,token.capability,name,0,allowed,false);if(status!=error::success)return status;
-            binding* selected{};status=resolve(allowed.specification(),selected);
+            binding* selected{};status=resolve_observation(allowed.specification(),name,selected);
+            bool linked=service_observer(allowed.specification());
+            if(linked!=(token.secondary==communication::permission::service_submit))return error::denied;
             if(status!=error::success||selected->identity!=token.authority||
                 (closing?(selected->kind!=purpose::topic&&selected->kind!=purpose::service):
                     receive?!receive_matches(selected->kind,token.action):!kind_matches(selected->kind,descriptor->id)))return error::denied;
@@ -901,9 +944,10 @@ namespace uwvm2::imported::ros::scene
             group_lease fresh;
             if(cleanup)
             {admission_claim claim{token.capability,name,0,false,false,true};status=permissions_->admit_group(who,{&claim,1},fresh,false);}
+            else if(linked)status=availability_group(who,token.capability,*selected,token.origins[5].capability,*origin,0,fresh);
             else status=group(who,token.capability,name,0,origin.get(),fresh,false);
             if(status!=error::success)return status;
-            communication::operation_token actual;status=operation(who,token.capability,name,*selected,origin,fresh,actual);
+            communication::operation_token actual;status=operation(who,token.capability,name,*selected,origin,fresh,actual,linked?token.origins[5].capability:0);
             if(status!=error::success||actual.family!=token.family||actual.count!=token.count||actual.origins!=token.origins)return error::denied;
             admitted=std::move(fresh);return error::success;
         }
@@ -1247,6 +1291,70 @@ namespace uwvm2::imported::ros::scene
             status=permissions_->admit_group(who,{claims.data(),origin->count+1},admitted,false);
             return status==error::success?validate_origins(*origin,admitted):status;
         }
+    private:
+        /** @brief Observe only the registered live native client, with an optional independent observer grant.
+         * @details The trusted worker obtains readiness from that exact client's native getter.
+         * A queued job charges once when reserved, then rechecks both grants at transmission
+         * and result delivery. No query performs a service invocation. Synchronous adapters
+         * must provide a bounded nonblocking getter. A short output performs no native work.
+         */
+        error service_readiness(caller who,handle cap,binding& client,communication_contract::request const& request,
+                                std::size_t bytes,std::size_t capacity,std::size_t& required,sink deliver,
+                                ::uwvm2::utils::container::function_ref<bool()> cancelled,lease& initial)
+        {
+            if(!observation_.sample)return error::unsupported;
+            if(cancelled&&cancelled())return error::cancelled;
+            std::shared_ptr<origins> origin;
+            auto status=active(client,request.resource,origin);if(status!=error::success)return status;
+            group_lease authorized;
+            status=availability_group(who,cap,client,request.origin_capability,*origin,0,authorized);
+            if(status!=error::success)return status;
+            if(request.origin_capability&&service_observation_audit::current)
+                service_observation_audit::associate(authorized.specification(0)->alias,client.alias);
+            // Record a re-entrant withdrawal only after a verified association and
+            // before this call returns. An unknown source never supplies a peer label.
+            struct withdrawal_check
+            {
+                authority& permissions;caller who;handle observer,source;
+                ~withdrawal_check()
+                {
+                    if(!source||!service_observation_audit::current||!service_observation_audit::current->source_length)return;
+                    lease first,second;
+                    bool lost_observer=permissions.admit(who,observer,"service.available",0,first,false)!=error::success;
+                    bool lost_source=permissions.admit(who,source,"service.submit",0,second,false)!=error::success;
+                    using loss=service_observation_audit::withdrawal;
+                    service_observation_audit::current->lost=lost_observer?(lost_source?loss::both:loss::observer):(lost_source?loss::source:loss::none);
+                }
+            } audit{*permissions_,who,cap,request.origin_capability};
+            required=32;if(capacity<required)return error::too_large;
+            workspace_lease workspace;status=reserve(required,workspace);if(status!=error::success)return status;
+            communication::operation_token context;
+            status=operation(who,cap,"service.available",client,origin,authorized,context,request.origin_capability);
+            if(status!=error::success)return status;
+            bool queued{};
+            status=convert(core_->queued_observation(client.identity,request.resource,queued));if(status!=error::success)return status;
+            group_lease charged;
+            if(!queued)
+            {
+                status=availability_group(who,cap,client,request.origin_capability,*origin,bytes+required,charged,true);
+                if(status!=error::success)return status;
+            }
+            initial.release();authorized.release();
+            bool available{};
+            status=convert(core_->service_available(client.identity,request.resource,available,&context));
+            charged.release();
+            if(status!=error::success)return status;
+            communication_contract::clock_epoch epoch;std::int64_t now{};
+            if(!observation_.sample(observation_.context,epoch,now)||!epoch)return error::io;
+            std::array<std::uint8_t,32> body{};wire::writer output{body};
+            if(!output.boolean(available)||!communication_contract::encode_stamp(output,epoch,now)||output.size()!=required)return error::io;
+            if(cancelled&&cancelled())return error::cancelled;
+            group_lease delivery;status=revalidate(context,delivery);if(status!=error::success)return status;
+            if(!deliver(output.written()))return error::io;
+            if(cancelled&&cancelled())return error::cancelled;
+            group_lease after;return revalidate(context,after);
+        }
+    public:
         error invoke(caller who,op action,handle cap,wire::bytes input,std::size_t capacity,std::size_t& required,sink deliver,
                      ::uwvm2::utils::container::function_ref<bool()> cancelled={})
         {
@@ -1255,7 +1363,14 @@ namespace uwvm2::imported::ros::scene
             communication_contract::request request;if(!communication_contract::decode(action,input,request))return error::invalid;
             auto action_name=communication_contract::operations[static_cast<std::size_t>(action)].name;
             lease allowed;status=permissions_->admit(who,cap,action_name,0,allowed,false);if(status!=error::success)return status;
-            binding* selected{};status=resolve(allowed.specification(),selected);if(status!=error::success)return status;
+            binding* selected{};status=resolve_observation(allowed.specification(),action_name,selected);if(status!=error::success)return status;
+            if(action==op::service_available)
+            {
+                if(service_observer(allowed.specification())!=(request.origin_capability!=0))return error::denied;
+                try{return service_readiness(who,cap,*selected,request,input.size(),capacity,required,deliver,cancelled,allowed);}
+                catch(std::bad_alloc const&){return error::no_memory;}
+                catch(...){return error::io;}
+            }
             origins const* current_origin{};
             // A cancellation callback may revoke recursively and still return
             // false. Recheck the complete cohort after that callback and before
@@ -1404,17 +1519,6 @@ namespace uwvm2::imported::ros::scene
                     communication::qos actual;std::array<std::uint8_t,32> gid{};std::size_t size{};
                     status=convert(core_->describe_qos(selected->identity,request.resource,actual,gid,size,&authorized));if(status!=error::success)return status;
                     return output(who,cap,action_name,origin.get(),input.size(),capacity,required,emit,[&](auto& out){return communication_contract::encode_qos(out,requested,actual);},!queued);
-                }
-                if(action==op::service_available)
-                {
-                    if(!observation_.sample)return error::unsupported;
-                    required=32;if(capacity<required)return error::too_large;
-                    bool queued{};status=convert(core_->queued_observation(selected->identity,request.resource,queued));if(status!=error::success)return status;
-                    group_lease budget;
-                    if(!queued){status=group(who,cap,action_name,input.size()+required,origin.get(),budget,false,true);if(status!=error::success)return status;}
-                    bool available{};status=convert(core_->service_available(selected->identity,request.resource,available,&authorized));if(status!=error::success)return status;
-                    communication_contract::clock_epoch epoch;std::int64_t now{};if(!observation_.sample(observation_.context,epoch,now)||!epoch)return error::io;
-                    return output(who,cap,action_name,origin.get(),input.size(),capacity,required,emit,[&](auto& out){return out.boolean(available)&&communication_contract::encode_stamp(out,epoch,now);},!queued);
                 }
                 if(action==op::topic_take)
                 {

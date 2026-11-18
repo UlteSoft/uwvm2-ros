@@ -169,7 +169,7 @@ def render(catalogue, design, robot):
             f'**Request:** {fields(op["request"])}', '', f'**Result:** {fields(op["result"])}', '',
             f'**Authority:** exact `{row["authority_action"]}`; additional named actions: '
             + (', '.join('`'+a+'`' for a in row['secondary_actions']) or 'none listed')
-            + '. Actual ancestor, source, profile and target checks still apply.', '', op['contract'], '']
+            + '. Actual ancestor, source, profile and target checks still apply.', '', op['contract'].rstrip(), '']
         if op['name'] in robot['operations']:
             specific = robot['operations'][op['name']]
             lines += ['**Additional admission.** ' + specific['secondary_admission'], '',
@@ -204,7 +204,7 @@ def render(catalogue, design, robot):
         '    inline constexpr std::array operations{']
     for op in catalogue['operations']:
         row = records[op['name']]
-        comment = op['contract'].replace('*/', '* /')
+        comment = op['contract'].rstrip().replace('*/', '* /')
         header += [f'        /** @brief {op["name"]}: {row["behavior"].replace("_", " ")}.',
                    '         * @details ' + comment,
                    '         * Apply the complete origin, bounded delivery and recovery contract;',

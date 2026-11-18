@@ -162,7 +162,24 @@ namespace uwvm2::imported::ros::scene::communication_worker
         {return query(operation::action_take,origin,deadline,[](auto&){return true;},std::forward<Decode>(decode));}
         template<typename Decode> error graph_capture(token const& origin,std::uint64_t deadline,Decode&& decode)noexcept
         {return query(operation::graph_capture,origin,deadline,[](auto&){return true;},std::forward<Decode>(decode));}
-        error pump(communication_worker_async::transport& transport)noexcept{return jobs.pump(transport);}
+        /** @brief Drain a revoked observer's completed read without disturbing the shared client.
+         * @details The terminal status and effect must be settled. An uncertain result stays
+         * fenced. A different observer can subsequently reserve its own native probe, and
+         * cannot obtain the previous observer's response or acquire its grant.
+         */
+        error pump(communication_worker_async::transport& transport)noexcept
+        {
+            auto status=jobs.pump(transport);
+            std::unique_lock lock{encoding,std::try_to_lock};
+            if(!lock.owns_lock()||!pending.request||pending_operation!=operation::service_available||
+               pending.secondary!=communication::permission::service_submit)return status;
+            communication_jobs::receipt completed;
+            if(jobs.inspect(pending,pending.request,completed)!=error::ok||completed.phase!=communication_jobs::state::complete||
+               completed.cleanup_debt||completed.observed!=communication::effect::none)return status;
+            group_lease held;auto current=admission(context,pending,held);
+            if(current!=error::denied&&current!=error::cancelled&&current!=error::bad_handle)return status;
+            auto discarded=consume();return discarded==error::ok?status:discarded;
+        }
         /** @brief Cancel the retained query without granting observation or refunding work. */
         error cancel(communication_worker_async::transport& transport,communication_jobs::receipt& result)noexcept
         {

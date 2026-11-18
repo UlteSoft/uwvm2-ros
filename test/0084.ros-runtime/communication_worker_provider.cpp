@@ -50,6 +50,12 @@ struct environment
         if(graph)for(auto name:{"context.describe","graph.snapshot"})assert(permissions.expose(name,s::exposure::allow)==s::error::success);
         if(topics)for(auto name:{"type.describe","topic.open","topic.publish","qos.describe","qos.liveliness.assert","qos.acknowledgements.wait",
             "topic.reserve","topic.acknowledge","topic.release"})assert(permissions.expose(name,s::exposure::allow)==s::error::success);
+        if(services&&canonical)
+        {
+            s::grant observer;observer.alias="readiness";observer.resource="service.0";observer.kind=s::purpose::service;
+            observer.binding="service-observer";observer.actions.emplace("service.available");
+            assert(permissions.configure(std::move(observer))==s::error::success);
+        }
         if(services)for(auto name:{"type.describe","service.open","service.submit","service.respond","service.available","service.abandon","qos.describe",
             "service.reserve","service.acknowledge","service.release"})assert(permissions.expose(name,s::exposure::allow)==s::error::success);
         if(canonical)for(auto name:{"communication.open.take","communication.open.cancel","request.describe","request.release"})

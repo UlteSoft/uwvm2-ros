@@ -62,6 +62,7 @@ def configured(packs,documents):
             flags+=['--ros-scene-grant','robot',ident,kind,ident,'native-communication',','.join(actions(kind)),
                 '--ros-scene-limit','robot',ident,'max-resources','1',
                 '--ros-scene-communication-bind','robot',ident,name,row['identity']]
+    flags+=['--ros-scene-grant','robot','observe-client','service',alias(0,'service-client'),'service-observer','service.available']
     flags+=['--ros-scene-communication-pair','robot','robot','worker.0','worker.1','5000000000']
     return flags
 
@@ -142,6 +143,19 @@ def successful_guest(documents,width,memory):
     # Let native DDS discovery progress; this is semantic setup, not a latency claim.
     g.globals.add('discovery');g.body.append(g.refresh(2000000000)+' global.set $discovery')
     g.body.append('loop $discovery.wait');g.body.append(g.refresh(0)+' global.get $discovery i64.lt_u br_if $discovery.wait end')
+    observer=g.open('observe-client')
+    client=members[0]['service_id'];source=members[0]['caps']['service-client']
+    other=members[1]['caps']['service-server']
+    g.raw('service.available',observer,bytes(8),[(0,client)],expected=22)
+    g.raw('service.available',observer,bytes(16),[(0,client)],expected=13)
+    g.raw('service.available',observer,bytes(16),[(0,client),(8,other)],expected=13)
+    g.raw('service.available',source,bytes(16),[(0,client),(8,source)],expected=13)
+    g.raw('service.available',observer,bytes(16),[(0,client),(8,source)],capacity=31,expected=90)
+    # The real client getter may complete successfully before DDS discovery.
+    # Poll its correlated operation, then retry a new observation until ready.
+    g.body.append('loop $readiness')
+    g.polling('service.available',observer,bytes(16),[(0,client),(8,source)],capacity=32)
+    g.bound();g.body.append(g.word(512)+' i64.eqz br_if $readiness end')
     def mutate(side,family,body,correlation=None):
         m=members[side];endpoint=m[family+'_id'];cap=m['caps'][m[family]]
         codec='std-string'if family=='topic'else'set-bool-response'if correlation else'set-bool-request'

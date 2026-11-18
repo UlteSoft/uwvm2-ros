@@ -115,7 +115,7 @@ namespace uwvm2::imported::ros::scene
         }
         /** @brief Exact supported communication purpose; a name alone cannot choose a provider. */
         static bool communication_policy(grant const& policy)noexcept
-        {return (policy.binding=="native-communication"&&(policy.kind==purpose::context||policy.kind==purpose::node||
+        {return service_observer(policy)||(policy.binding=="native-communication"&&(policy.kind==purpose::context||policy.kind==purpose::node||
             policy.kind==purpose::type||policy.kind==purpose::topic||policy.kind==purpose::service))||
             (policy.binding=="native-action"&&policy.kind==purpose::action)||
             (policy.binding=="native-graph"&&policy.kind==purpose::discovery)||(policy.binding=="event-stream"&&policy.kind==purpose::event);}

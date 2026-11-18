@@ -215,6 +215,9 @@ import uwvm2.runtime.memtag.hardware_thread;
 import uwvm2.runtime.diagnostic.snapshot_archive;
 import uwvm2.runtime.diagnostic.snapshot_diagnostic;
 import uwvm2.runtime.diagnostic.snapshot_state;
+#if defined(UWVM_IMPORT_ROSV2)
+import uwvm2.uwvm.debugger.scene_state;
+#endif
 
 import uwvm2.extension.memtag.color;
 import uwvm2.runtime.memtag.host_access;

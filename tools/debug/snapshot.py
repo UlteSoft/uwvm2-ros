@@ -21,6 +21,7 @@ COMMIT = b"UWSEND1\0"
 KINDS = {1: "diagnostic", 2: "wasm-state", 3: "wasm-module", 4: "effective-code",
          5: "debug-source", 6: "wasip1", 7: "ros1", 8: "ros2", 9: "events", 10: "wasm-inspection",
          11: "retained-native"}
+SCENE_OBSERVATION_SCHEMA = 0x52534331
 CAPTURE = ("complete", "partial", "redacted", "unavailable")
 ARCH = ("unknown", "x86_64", "i686", "aarch64", "arm", "armhf")
 OS = ("unknown", "linux", "windows", "macos", "freebsd")
@@ -50,6 +51,7 @@ class Snapshot:
     platform: dict
     disclosure: str
     records: tuple[Record, ...]
+    scene_observation: dict | None = None
 
     def describe(self):
         result = {"format": "uwvm-snapshot-v1", "disclosure": self.disclosure,
@@ -57,6 +59,8 @@ class Snapshot:
                   "records": [{"kind": KINDS[r.kind], "id": r.identifier, "schema": r.schema,
                                "capture": CAPTURE[r.capture], "bytes": len(r.payload)} for r in self.records],
                   "executableRestore": False}
+        if self.scene_observation is not None:
+            result["sceneObservation"] = self.scene_observation
         for row in self.records:
             if row.kind == 1 and row.capture != 3:
                 result["diagnostic"] = diagnostic(row.payload)
@@ -237,6 +241,47 @@ def diagnostic(data):
                        "wasmOffset": None if location == (1 << 64) - 1 else str(location)})
     require(actual_threads == threads, "diagnostic thread census mismatch")
     return {"stopId": str(stop), "stopReason": reason, "exitStatus": exit_status, "frames": frames}
+
+
+def scene_observation(record, records):
+    """Decode the RSC1 first pages only in their stopped Core Dump context."""
+    from dap_adapter import parse_scene_state
+
+    require(record.identifier == 1 and record.capture == 1, "invalid scene observation record")
+    diagnostic_rows = [r for r in records if r.kind == 1]
+    state_rows = [r for r in records if r.kind == 2]
+    core = next((r for r in records if r.kind == 10 and r.identifier == 0), None)
+    require(len(diagnostic_rows) == 1 and diagnostic_rows[0].capture == 1 and
+            len(state_rows) == 1 and state_rows[0].identifier == 0 and state_rows[0].capture == 3 and
+            core is not None and core.capture == 1 and core.schema == 1 and
+            core.payload[:8] == b"\0asm\1\0\0\0", "scene observation requires a stopped inspection Core Dump")
+    data = record.payload
+    require(16 <= len(data) <= 16 + 3 * (4 + 65536) and data[:8] == b"UWSCN1\0\0",
+            "invalid scene observation header")
+    stop, = struct.unpack_from("<Q", data, 8)
+    require(str(stop) == diagnostic(diagnostic_rows[0].payload)["stopId"], "scene observation stop mismatch")
+    pages = {}
+    at = 16
+    for selected in ("authority", "resources", "audit"):
+        require(at + 4 <= len(data), "truncated scene page size")
+        size, = struct.unpack_from("<I", data, at)
+        at += 4
+        require(0 < size <= 65536 and at + size <= len(data), "invalid scene page extent")
+        packet = bytes(data[at:at + size])
+        at += size
+        require(all(c == 10 or 32 <= c <= 126 for c in packet), "invalid scene page encoding")
+        wire = packet.decode("ascii")
+        prefix = f"scene scope=process-owned stop={stop} selection={selected} status="
+        if wire in (prefix + "busy\n", prefix + "bounded scan limit\n"):
+            pages[selected] = {"available": False, "status": wire[len(prefix):-1]}
+        else:
+            try:
+                pages[selected] = parse_scene_state(wire, {"selection": selected, "start": 0, "count": 8}, stop)
+            except ValueError as exc:
+                raise InvalidSnapshot(f"invalid scene {selected} page: {exc}") from exc
+    require(at == len(data), "trailing scene observation bytes")
+    return {"scope": "process-owned", "stopId": str(stop), "pageCapacity": 8, "pages": pages,
+            "restoreAuthority": False, "providerStateRestorable": False}
 
 
 def wasip1(data):
@@ -530,7 +575,10 @@ def decode(data: bytes) -> Snapshot:
     require(at == end, "trailing snapshot bytes")
     records = tuple(Record(kind, capture, identifier, schema, memoryview(data)[start:start + size])
                     for kind, capture, identifier, schema, start, size in extents)
+    observed_scene = None
     for record in records:
+        if record.kind == 10 and record.schema == SCENE_OBSERVATION_SCHEMA:
+            observed_scene = scene_observation(record, records)
         # A pending continuation is a strictly shaped observation. Reject it at
         # decoding, including extraction callers that never call describe(). It
         # must never be mistaken for a complete/absent native result.
@@ -568,7 +616,7 @@ def decode(data: bytes) -> Snapshot:
     return Snapshot(data, {"architecture": ARCH[arch], "os": OS[system], "byteOrder": "little" if endian == 1 else "big",
                           "pointerBits": pointer_bits, "productVersion": list(product), "logicalABI": logical,
                           "continuationABI": continuation, "features": str(features)},
-                    "diagnostic" if disclosure == 1 else "full", records)
+                    "diagnostic" if disclosure == 1 else "full", records, observed_scene)
 
 
 def main():
