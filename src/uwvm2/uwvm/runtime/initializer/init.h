@@ -8141,6 +8141,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             if(module == u8"wasi_snapshot_preview1" || module == u8"wasi_unstable")
             {
+                // The Preview 1 memory64 clock aliases change guest address width only.
+                // Clock selection and resolution remain subject to per-module WASI policy.
+                if(module == u8"wasi_snapshot_preview1" &&
+                   (name == u8"clock_time_get_wasm64" || name == u8"clock_res_get_wasm64")) { return 1u; }
                 if(name.starts_with(u8"fd_") || name.starts_with(u8"path_") || name == u8"poll_oneoff") { return 3u; }
                 if(name.starts_with(u8"sock_")) { return 5u; }
                 if(name == u8"args_get" || name == u8"args_sizes_get" || name == u8"environ_get" ||
