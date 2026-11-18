@@ -1,5 +1,5 @@
 /** @file
- * @brief Bounded, optional host-only result audit for registered ROSv2 calls.
+ * @brief Bounded, optional host-only result audit for ROSv2 returns and import visibility refusals.
  * @details The operator installs scope ceilings before execution. All matching
  * rules charge the same record, including its newline, or none do. A completed
  * call keeps its real return value even when an audit budget, sink, or lock
@@ -19,6 +19,7 @@
 
 namespace uwvm2::imported::ros::scene::call_audit
 {
+    enum class phase { returned, hidden_import };
     enum class scope { global, group, single };
     struct ceiling
     {
@@ -93,15 +94,18 @@ namespace uwvm2::imported::ros::scene::call_audit
             return true;
         }
 
-        /** @brief Admit one completed call and deliver a bounded ASCII record.
+        /** @brief Admit one call result or hidden import and deliver a bounded ASCII record.
          * @details Caller and group are copied as hexadecimal bytes. A caller
          * longer than 255 bytes has an explicit truncation flag. Runtime code
          * supplies a registered operation label, the raw ABI result, a trusted
-         * generation and monotonic timestamp. Sink failures keep the charge.
+         * generation and monotonic timestamp. Hidden imports precede runtime activation.
+         * They record a null result and generation zero. Unregistered names with
+         * unsafe bytes use a bounded hexadecimal prefix and an exact byte count.
+         * Sink failures keep the charge.
          */
         template<typename Sink>
         void observe(std::string_view group, std::string_view module, std::uint64_t generation,
-                     std::string_view fn, std::uint32_t result, std::uint64_t now, Sink&& sink) noexcept
+                     std::string_view fn, std::uint32_t result, std::uint64_t now, Sink&& sink, phase point = phase::returned) noexcept
         {
             std::unique_lock lock{mutex, std::try_to_lock};
             if(!lock.owns_lock()) { increment(contention); return; }
@@ -112,15 +116,18 @@ namespace uwvm2::imported::ros::scene::call_audit
                 if(!applies(r, group, module)) continue;
                 selected = true;
                 // Include failed authority, invalid handles and stale generations.
-                if(r.denied_only && result != 13 && result != 9 && result != 116) return;
+                if(r.denied_only && point == phase::returned && result != 13 && result != 9 && result != 116) return;
             }
             if(!selected) return;
-            if(sequence == UINT64_MAX || fn.empty() || fn.size() > 255 || group.size() > 255)
-            { increment(limited); return; }
-            for(auto ch : fn)
+            bool named = !fn.empty() && fn.size() <= 255;
+            if(named) for(auto ch : fn)
+            {
                 if(!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
                      (ch >= '0' && ch <= '9') || ch == '.' || ch == '_' || ch == '-'))
-                { increment(limited); return; }
+                { named = false; break; }
+            }
+            if(sequence == UINT64_MAX || group.size() > 255 || (!named && point == phase::returned))
+            { increment(limited); return; }
             // 1020 hex digits, 255 operation bytes and bounded integer fields.
             std::array<char,2048> line;
             std::size_t used{};
@@ -141,12 +148,22 @@ namespace uwvm2::imported::ros::scene::call_audit
                 if(v.size()>(line.size()-used)/2) {fits=false;return;}
                 for(unsigned char c : v) { line[used++]=digits[c>>4]; line[used++]=digits[c&15]; }
             };
-            text("{\"ros\":\"uwvm_ros_v2\",\"phase\":\"return\",\"sequence\":"); number(sequence+1);
+            text("{\"ros\":\"uwvm_ros_v2\",\"phase\":");
+            text(point == phase::returned ? "\"return\"" : "\"link\"");
+            text(",\"sequence\":"); number(sequence+1);
             text(",\"generation\":"); number(generation); text(",\"steady_ns\":"); number(now);
             text(",\"caller_hex\":\""); hex(module.substr(0,255));
             text("\",\"caller_truncated\":"); text(module.size()>255 ? "true" : "false");
-            text(",\"group_hex\":\""); hex(group); text("\",\"function\":\""); text(fn);
-            text("\",\"result\":"); number(result);
+            text(",\"group_hex\":\""); hex(group); text("\",\"function\":");
+            if(named) { text("\""); text(fn); text("\""); }
+            else
+            {
+                text("null,\"function_hex\":\""); hex(fn.substr(0, 128));
+                text("\",\"function_bytes\":"); number(fn.size());
+                text(",\"function_truncated\":"); text(fn.size() > 128 ? "true" : "false");
+            }
+            if(point == phase::hidden_import) text(",\"reason\":\"hidden\",\"result\":null");
+            else {text(",\"result\":"); number(result);}
             text(",\"limited\":"); number(limited.load(std::memory_order_relaxed));
             text(",\"busy\":"); number(contention.load(std::memory_order_relaxed));
             text(",\"clock_failed\":"); number(clock_failures.load(std::memory_order_relaxed));

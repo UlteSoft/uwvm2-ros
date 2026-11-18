@@ -26,6 +26,7 @@ module;
 // std
 #include <cstddef>
 #include <cstdint>
+#include <chrono>
 #include <climits>
 #include <type_traits>
 #include <memory>
@@ -56,6 +57,7 @@ import uwvm2.uwvm.utils.memory;
 import uwvm2.uwvm.imported.wasi.wasip1.storage;
 #if defined(UWVM_IMPORT_ROSV2)
 import uwvm2.uwvm.imported.scene.storage;
+import uwvm2.utils.thread;
 #endif
 import uwvm2.uwvm.wasm.base;
 import uwvm2.uwvm.wasm.type;

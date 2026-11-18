@@ -274,13 +274,13 @@ Native driver lifetime belongs to the external deployment. See the
 [driver attachment protocol](../runtime/ros-driver-attachment.md) for inherited
 channels, fixed canonical schemas, exact module grants and detached status.
 
-### Host audit of completed ROSv2 imports
+### Host audit of ROSv2 imports and call results
 
 Use `--ros-scene-call-audit SCOPE LABEL MODE RECORDS BYTES RATE_HZ BURST` before the deployment is frozen. The default emits no records. This option changes host diagnostics only. It cannot expose an import, enroll a guest, grant a resource or poll a provider.
 
 | Scope | Label | Charged events |
 | --- | --- | --- |
-| `global` | Literal `*` | Each completed registered core ROSv2 import in the process |
+| `global` | Literal `*` | Core ROSv2 call returns and hidden imports in the process |
 | `group` | A previously created scene environment | Calls from a member of that environment |
 | `single` | Exact loaded module label | Calls attributed to that module |
 
@@ -291,10 +291,10 @@ For example, use the following pair of options to observe refused calls for the 
 --ros-scene-call-audit single body denied 100 32768 10 4
 ```
 
-All matching ceilings apply. A process-wide rule also selects calls outside the single module. To select only that module, use the single rule alone. The `denied` selection covers access denied (13), bad handle (9) and stale identity or generation (116). The `all` selection preserves the raw return value, including `abi` success (2). Every limit is an explicit finite decimal integer. Byte counts include the newline. Record and byte quotas last for the deployment. The rate budget refills against monotonic time with the configured burst capacity. Zero in any ceiling prevents delivery. Repeating the same scope and label is an error.
+All matching ceilings apply. A process-wide rule also selects calls outside the single module. To select only that module, use the single rule alone. The `denied` selection includes hidden imports at link time. At runtime it covers access denied (13), bad handle (9) and stale identity or generation (116). The `all` selection preserves the raw return value, including `abi` success (2). Every limit is an explicit finite decimal integer. Byte counts include the newline. Record and byte quotas last for the deployment. The rate budget refills against monotonic time with the configured burst capacity. Zero in any ceiling prevents delivery. Repeating the same scope and label is an error.
 
-NDJSON records are emitted to host standard error. They contain the completed operation, raw result, admission sequence number, monotonic timestamp and the runtime caller's generation. The group and caller label use hexadecimal bytes. Caller labels exceeding 255 bytes are marked truncated. Diagnostic loss counters distinguish lock contention, admission limits, clock failure and sink failure. A sink failure consumes the admission. Concurrent outputs can arrive out of sequence. Counters are reported on subsequent accepted records, so a saturated or disconnected sink can leave the tail unobserved. A regular-file sink can add I/O latency; the writer holds no scene authority lock while emitting. Observation never alters the underlying operation's result.
+NDJSON records are emitted to host standard error. They contain the completed operation, raw result, admission sequence number, monotonic timestamp and the runtime caller's generation. The group and caller label use hexadecimal bytes. Caller labels exceeding 255 bytes are marked truncated. Diagnostic loss counters distinguish lock contention, admission limits, clock failure and sink failure. A sink failure consumes the admission. Concurrent outputs can arrive out of sequence. Each accepted record carries the earlier loss counters. At a cooperative debugger stop, use `info scene audit` to inspect the latest counters, including trailing losses. A regular-file sink can add I/O latency; the writer holds no scene authority lock while emitting. Observation never alters the underlying operation's result.
 
-A hidden import is rejected during linking. A trap or process loss can prevent a normal return. The completed-call stream does not establish execution, cancellation or safe physical shutdown for any of those cases. It contains no arguments, request/response contents, native addresses, file descriptors or capability handles. Sensor values, model prompts and sealed cross-module messages remain outside this stream.
+The loader records each observed visibility rejection as `phase="link"`, `reason="hidden"`, `generation=0` and `result=null`. The import name reflects host rewrites. A raw identifier outside the bounded ASCII operation alphabet is encoded as a hexadecimal prefix of up to 128 bytes with the original byte count and an explicit truncation field. Unbound callers can match process and single-module rules. Linking stops at the first fatal dependency error. A trap or process loss can prevent a normal return. The completed-call stream does not establish execution, cancellation or safe physical shutdown for any of those cases. It contains no arguments, request/response contents, native addresses, file descriptors or capability handles. Sensor values, model prompts and sealed cross-module messages remain outside this stream.
 
 For explicitly authorized cross-Wasm message bytes, see [Private payload capture](../runtime/ros-module-buffer-audit.md) for the separate file registration, route and stage selection, and fixed capture budgets.

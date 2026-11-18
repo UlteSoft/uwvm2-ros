@@ -833,7 +833,8 @@ namespace uwvm2::imported::ros::scene
          */
         template<typename Sink>
         void observe_call(std::string_view module,std::uint64_t generation,std::string_view function,
-                          std::uint32_t result,std::uint64_t now,Sink&& sink) noexcept
+                          std::uint32_t result,std::uint64_t now,Sink&& sink,
+                          call_audit::phase point=call_audit::phase::returned) noexcept
         {
             std::array<char,255> group{};
             std::size_t length{};
@@ -848,7 +849,7 @@ namespace uwvm2::imported::ros::scene
                     std::copy_n(member->second.data(),length,group.data());
                 }
             }
-            result_audit.observe({group.data(),length},module,generation,function,result,now,sink);
+            result_audit.observe({group.data(),length},module,generation,function,result,now,sink,point);
         }
         /** @brief Reserve a finite external-driver registry; no process is started.
          * @details Zero is a valid disabled capacity. This accounts owned route
