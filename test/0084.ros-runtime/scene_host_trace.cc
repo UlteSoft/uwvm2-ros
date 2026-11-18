@@ -59,5 +59,5 @@ int main()
     for(std::string_view text:{"trace host read family=ros1 result=1","trace host read family=rosv2 result=4294967296",
                               "trace host on family=rosv2 function=abi","trace host read family=rosv2 module=bad/",
                               "trace host read family=rosv2 function=abi function=abi","trace host read family=rosv2 alias=signal"})
-    {assert(!trace::parse({text.data(),text.size()},request));}
+    {assert(!trace::parse(::fast_io::string_view{text.data(),text.size()},request));}
 }
