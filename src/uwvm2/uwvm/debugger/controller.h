@@ -207,6 +207,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::uwvm2::utils::control::dump_permissions::selection dump_policy{};
         ::uwvm2::utils::control::dump_permissions::denial dump_denial{};
         bool dump_published{},retained_snapshot{},retained_host_query_denied{};
+        bool recording_origin_unavailable{};
         ::uwvm2::runtime::lib::llvm_jit_checkpoint_replay_status replay{};
         ::uwvm2::utils::container::std_string historical_environment{};
         unsigned restore_phase{},restore_detail{},restore_preparation{},restore_state_error{};

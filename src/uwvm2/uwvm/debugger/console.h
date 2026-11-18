@@ -241,7 +241,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     " mode=",reply.replay.mode," instructions=",reply.replay.instructions," events=",reply.replay.events,
                     " cursor=",reply.replay.cursor," state-error=",reply.restore_state_error," journal-error=",static_cast<unsigned>(reply.replay.error),
                     " saved=",static_cast<unsigned>(reply.dump_published),
-                    ::fast_io::mnp::os_c_str(reply.retained_snapshot?" retained=1":""),"; ",
+                    ::fast_io::mnp::os_c_str(reply.retained_snapshot?" retained=1":""),
+                    ::fast_io::mnp::os_c_str(reply.recording_origin_unavailable?" origin-wasm-state=unavailable":""),"; ",
                     ::fast_io::mnp::os_c_str(reply.execution==execution_status::stopped?"guest stopped":
                         reply.execution==execution_status::running?"guest running":
                         reply.execution==execution_status::stopping?"pause incomplete":
