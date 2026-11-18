@@ -87,3 +87,28 @@ has the scope `reliable-Int32-topic-roundtrip`. ROS graph interoperability
 remains unverified, including when an echo succeeds with diagnostics. The
 fixture does not identify their cause. DDS Security and physical-device
 operation require separate receipts.
+
+## Native Jazzy SROS2 Enforce
+
+The Jazzy test uses the existing `native_secure_ros2.cc` witness and its signed
+resource policy. Build `uwvm-ros2-gateway` and `uwvm-ros2-secure-probe` from
+matching native SDK and VM protocol sources with
+`-DUWVM_ROS2_BUILD_PROBES=ON` and native compiler flags `-O3 -g`. From the
+qualification cgroup, CPU set and shared lock, run the two executables against
+a Jazzy root filesystem with the ROS security CLI installed:
+
+```sh
+python3 -B test/0084.ros-runtime/run_native_sros2.py \
+  --rootfs "$JAZZY_ROOTFS" --gateway "$NATIVE_GATEWAY" --probe "$SECURE_PROBE" \
+  --output "$NEW_DIR"
+```
+
+Each run uses an isolated loopback network and generates a fresh test keystore
+in temporary memory. The two enclaves exchange the fixture's exact String
+payload on their authorized topics. The witness also checks that its attempt to
+publish to `/uwvm_test/not_permitted` raises an error. The receipt records the
+two programs, middleware libraries, ROS package versions, public certificate
+and signed policy digests, and the status of issuance and enforcement.
+This native Fast DDS test covers the named Jazzy enclaves and topic operations.
+Scene guest authorization and cross-vendor DDS Security have separate
+qualification requirements.
