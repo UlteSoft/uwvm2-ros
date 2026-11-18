@@ -265,5 +265,7 @@ The following profiles use original files from the [MuJoCo Menagerie repository]
 | `kuka_iiwa_14` | `joint1` | [kuka-iiwa-14.json](../../test/0084.ros-runtime/mujoco_profiles/kuka-iiwa-14.json) |
 | `flexiv_rizon4s` | `joint1` | [flexiv-rizon4s.json](../../test/0084.ros-runtime/mujoco_profiles/flexiv-rizon4s.json) |
 | `ufactory_lite6` | `joint1` | [ufactory-lite6.json](../../test/0084.ros-runtime/mujoco_profiles/ufactory-lite6.json) |
+| `pal_tiago` | `arm_1_joint` | [pal-tiago.json](../../test/0084.ros-runtime/mujoco_profiles/pal-tiago.json) |
+| `booster_t1` | `AAHead_yaw` | [booster-t1.json](../../test/0084.ros-runtime/mujoco_profiles/booster-t1.json) |
 
 A separate Unitree Go2 run compiled C, C++, Fortran and Lua controllers using their public SDK installations. Each controller passed the six wasm32 cases at memory index zero with the two engines, including rejection of an out-of-range command and loss of the receiver. These results exercise the simulated joint and the common external driver interface. Vendor controller firmware and physical stopping behavior have independent acceptance tests.
