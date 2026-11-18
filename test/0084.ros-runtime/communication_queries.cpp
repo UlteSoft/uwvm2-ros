@@ -2,6 +2,7 @@
 #define UWVM_COMMUNICATION_GRAPH_FIXTURE_ONLY
 #include "communication_graph_dispatch.cpp"
 #include <uwvm2/imported/ros/scene/communication_queries.h>
+#include <sys/syscall.h>
 namespace rpc=s::communication_worker_protocol;
 using query=s::communication_worker::queries;
 struct query_pipes
