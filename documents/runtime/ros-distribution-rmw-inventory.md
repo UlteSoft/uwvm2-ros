@@ -112,3 +112,30 @@ and signed policy digests, and the status of issuance and enforcement.
 This native Fast DDS test covers the named Jazzy enclaves and topic operations.
 Scene guest authorization and cross-vendor DDS Security have separate
 qualification requirements.
+
+## Identify a native peer from an archived ROS release
+
+`test/0084.ros-runtime/run_archived_dds_peer.py` runs the original Int32
+fixture and samples executable library mappings in each actual endpoint. It
+checks the selected release's Cyclone, rclcpp and RMW binaries against the
+members of their Debian packages. The package versions and digests are
+verified against the signed amd64 ROS archive index. Keep the acquisition
+plan, InRelease, Packages.gz and downloaded Debian files together. Their
+expected layout is `ARCHIVE/RELEASE-plan.json` and
+`ARCHIVE/RELEASE/PACKAGE.deb`.
+
+```sh
+python3 -B test/0084.ros-runtime/run_archived_dds_peer.py \
+  --runner "$FIXTURE/dds_interop/run.py" --plan "$ARCHIVE/$RELEASE-plan.json" \
+  --keyring "$ROS_KEYRING" --ros-prefix "$JAZZY_PREFIX" \
+  --ros-system-libs "$JAZZY_SYSTEM" --peer-prefix "$PEER_PREFIX" \
+  --peer-system-libs "$PEER_SYSTEM" --output "$NEW_DIR"
+```
+
+Run this inside the existing qualification cgroup, CPU set and lock. For an
+rclcpp peer whose installation omits idlc, `--auxiliary-cyclone` selects an
+installed generator for the fixture's auxiliary C build. The echo process
+must still load the selected peer release's Cyclone runtime and RMW. Use
+`--raw-cyclone` for a direct C participant. The receipt identifies the API,
+both loaded library sets, actual challenge/response and endpoint diagnostics.
+A failed attempt retains its stage and raw fixture log.
