@@ -44,7 +44,21 @@
                 static_cast<unsigned>(reply.reason),captures);
             if(!captured)return reply;
             archive::decoded decoded{};::std::shared_ptr<checkpoint::state const> graph{};
-            if(!archive::decode(bytes,decoded) || !snapshot::decode(decoded,graph,{},true))return reply;
+            if(!archive::decode(bytes,decoded))return reply;
+            auto origin=snapshot::decode(decoded,graph,{},true);
+            if(!origin)
+            {
+                reply.restore_state_error=static_cast<unsigned>(origin.state_error);
+                for(auto const& record:decoded.records)
+                {
+                    if(record.kind==archive::component::wasm_state && record.capture==archive::completeness::unavailable)
+                    {
+                        reply.recording_origin_unavailable=true;
+                        break;
+                    }
+                }
+                return reply;
+            }
             auto history=select_snapshot_history(decoded,graph->recording_id);
             auto started=lib::llvm_jit_checkpoint_record_host_api(pause_,captures,graph->recording_id,1u);
             reply.restore_state_error=static_cast<unsigned>(started.data_error);

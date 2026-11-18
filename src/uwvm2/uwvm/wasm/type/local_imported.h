@@ -1286,41 +1286,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
             pack_tuple_to_packed(res, sig.res);
         }
 
-        template <::std::size_t N, typename FuncTuple>
-        inline constexpr void call_func_index_impl(::std::size_t index, ::std::byte* res, ::std::byte const* para) noexcept
+        /** @brief Resolve a validated local import index directly to its packed ABI adapter and FP contract.
+         * @details Both fields originate from the same registered function type and tuple position.
+         * The table is immutable and shared by instances of the same tuple. The caller checks the
+         * index before using it. Authorization and caller provenance remain inside the host boundary.
+         */
+        struct packed_import_entry
         {
-            using curr_tuple_type = ::std::remove_cvref_t<FuncTuple>;
-            constexpr ::std::size_t tuple_size{::fast_io::tuple_size<curr_tuple_type>::value};
+            void (*call)(::std::byte*, ::std::byte const*) noexcept;
+            local_imported_wasm_fp_control_policy_t fp_policy;
+        };
 
-            if constexpr(N >= tuple_size) { ::fast_io::fast_terminate(); }
-            else
-            {
-                if(index != N) { return call_func_index_impl<N + 1uz, curr_tuple_type>(index, res, para); }
+        template <typename Function>
+        inline constexpr packed_import_entry packed_import_for{&call_func_packed<Function>, local_imported_function_wasm_fp_control_policy<Function>()};
 
-                using func_type = ::std::remove_cvref_t<decltype(::fast_io::get<N>(::std::declval<curr_tuple_type&>()))>;
-                return call_func_packed<func_type>(res, para);
-            }
+        template <typename FuncTuple, ::std::size_t... I>
+        inline consteval auto make_packed_import_entries(::std::index_sequence<I...>) noexcept
+        {
+            return ::uwvm2::utils::container::array<packed_import_entry, sizeof...(I)>{
+                packed_import_for<::std::remove_cvref_t<decltype(::fast_io::get<I>(::std::declval<FuncTuple&>()))>>...};
         }
 
-        template <::std::size_t N, typename FuncTuple>
-        [[nodiscard]] inline constexpr ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t
-            function_wasm_fp_control_policy_from_index_impl(::std::size_t index) noexcept
-        {
-            using curr_tuple_type = ::std::remove_cvref_t<FuncTuple>;
-            constexpr ::std::size_t tuple_size{::fast_io::tuple_size<curr_tuple_type>::value};
-
-            if constexpr(N >= tuple_size)
-            {
-                return ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t::may_modify;
-            }
-            else
-            {
-                if(index != N) { return function_wasm_fp_control_policy_from_index_impl<N + 1uz, curr_tuple_type>(index); }
-
-                using func_type = ::std::remove_cvref_t<decltype(::fast_io::get<N>(::std::declval<curr_tuple_type&>()))>;
-                return local_imported_function_wasm_fp_control_policy<func_type>();
-            }
-        }
+        template <typename FuncTuple>
+        inline constexpr auto packed_import_entries{make_packed_import_entries<FuncTuple>(
+            ::std::make_index_sequence<::fast_io::tuple_size<FuncTuple>::value>{})};
 
         template <typename Module>
         concept has_local_memory_storage = ::uwvm2::uwvm::wasm::type::has_local_memory_tuple<Module> && requires(Module& m) {
@@ -1856,7 +1845,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
                 {
                     using curr_func_tuple_type = typename ::std::remove_cvref_t<rcvmod_type>::local_function_tuple;
                     constexpr auto tuple_size{::fast_io::tuple_size<curr_func_tuple_type>::value};
-                    if(index < tuple_size) { return function_wasm_fp_control_policy_from_index_impl<0uz, curr_func_tuple_type>(index); }
+                    if(index < tuple_size) { return packed_import_entries<curr_func_tuple_type>.data()[index].fp_policy; }
                 }
                 return policy_type::may_modify;
             }
@@ -1868,7 +1857,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
                     using curr_func_tuple_type = typename ::std::remove_cvref_t<rcvmod_type>::local_function_tuple;
                     constexpr auto tuple_size{::fast_io::tuple_size<curr_func_tuple_type>::value};
                     if(index >= tuple_size) [[unlikely]] { ::fast_io::fast_terminate(); }
-                    call_func_index_impl<0uz, curr_func_tuple_type>(index, res, para);
+                    packed_import_entries<curr_func_tuple_type>.data()[index].call(res, para);
                 }
                 else
                 {

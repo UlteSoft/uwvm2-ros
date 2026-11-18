@@ -32,6 +32,7 @@ namespace
 
     struct add_i32
     {
+        inline static constexpr auto wasm_fp_control_policy{::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t::preserves_wasm_control};
         inline static constexpr ::uwvm2::utils::container::u8string_view function_name{u8"add_i32"};
 
         using res_type = ::uwvm2::uwvm::wasm::type::import_function_result_tuple_t<feature_list0, value_type::i32>;
@@ -122,6 +123,15 @@ namespace
         using wasm_f32 = ::uwvm2::parser::wasm::standard::wasm1::type::wasm_f32;
 
         ::uwvm2::uwvm::wasm::type::local_imported_module<wasm1> mod{demo_local_import{}};
+
+        using fp_policy = ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t;
+        if(mod.function_wasm_fp_control_policy_from_index(0uz) != fp_policy::preserves_wasm_control ||
+           mod.function_wasm_fp_control_policy_from_index(1uz) != fp_policy::may_modify ||
+           mod.function_wasm_fp_control_policy_from_index(2uz) != fp_policy::may_modify ||
+           mod.function_wasm_fp_control_policy_from_index(3uz) != fp_policy::may_modify)
+        {
+            return 5;
+        }
 
         // add_i32: (i32,i32)->i32
         {
