@@ -15,7 +15,7 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **88**.
+Advertised primary commands: **90**.
 
 ## `--ros-scene`
 
@@ -112,6 +112,22 @@ Audit completed ROSv2 imports to stderr with intersecting host-only limits. No g
 ```
 
 Reserve cross-Wasm message storage; creates no authority.
+
+## `--ros-scene-call-buffer-capture`
+
+```text
+[--ros-scene-call-buffer-capture] <environment:str> <route:str> <submit|take|respond|result>
+```
+
+Persist the complete body of one successful registered message stage to the private host journal.
+
+## `--ros-scene-call-buffer-journal`
+
+```text
+[--ros-scene-call-buffer-journal] <fd:u32> <records:u64> <file-bytes:u64> <payload-bytes:u64>
+```
+
+Consume a private writable file descriptor for bounded host-only message capture.
 
 ## `--ros-scene-call-clear-input`
 
