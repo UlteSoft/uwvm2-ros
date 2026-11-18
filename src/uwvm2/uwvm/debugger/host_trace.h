@@ -17,12 +17,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
     struct request
     {
         action operation{};
-        unsigned channels{7};
+        unsigned channels{15};
         std::uint64_t after{},call{},segment{},offset{},count{8},stop{};
     };
     inline bool valid(request const& q) noexcept
     {
-        return q.operation<=action::bytes&&q.channels&&q.channels<=7&&q.count&&
+        return q.operation<=action::bytes&&q.channels&&q.channels<=15&&q.count&&
             q.count<=(q.operation==action::bytes?4096u:8u)&&
             (q.operation==action::bytes?q.call!=0:!(q.call||q.segment||q.offset));
     }
@@ -50,8 +50,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
             if(key=="family")
             {
                 bit=1;
-                if(v=="all") {q.channels=7;}else if(v=="wasip1") {q.channels=1;}
-                else if(v=="ros1") {q.channels=2;}else if(v=="ros2") {q.channels=4;}else {return false;}
+                if(v=="all") {q.channels=15;}else if(v=="wasip1") {q.channels=1;}
+                else if(v=="ros1") {q.channels=2;}else if(v=="ros2") {q.channels=4;}else if(v=="rosv2") {q.channels=8;}else {return false;}
             }
             else
             {
@@ -94,7 +94,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
         ::fast_io::io::print(out,"host-trace enabled=",data::enabled.load(std::memory_order_relaxed),
             " epoch=",data::epoch," cleared-through=",data::cleared_through," newest=",data::sequence,
             " allocation-failures=",data::allocation_failures.load()," invalid-ranges=",data::invalid_ranges.load(),
-            " sequence-failures=",data::sequence_failures.load(),"\n");
+            " sequence-failures=",data::sequence_failures.load()," rosv2-dropped=",data::scene_dropped.load(),"\n");
         if(q.operation==action::bytes)
         {
             for(auto const& p:data::records)
