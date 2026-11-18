@@ -78,3 +78,19 @@ with up to eight rows. If `more` is true, run `:UwvmSceneNext` in that buffer.
 The continuation uses the same session and the exact decimal stop ID.
 The adapter requires full or read-only debug inspection. A denial or expired
 stop reports an error and leaves the earlier snapshot at its original stop.
+
+The end-to-end check attaches upstream nvim-dap to an already paused test VM,
+opens the real editor commands, and reads the JSON from their immutable
+buffers. Use a clean nvim-dap 0.9.0 Lua checkout (commit
+`04ce47fc5a6ef2b717f33c320fc003091cebac40`) and an unused output directory
+inside the project's `.tmp` tree. Select `--audit` and `--policy` for VM
+builds that implement those selectors. The policy check reads two pages at
+the same stop. [Upstream nvim-dap source](https://github.com/mfussenegger/nvim-dap/tree/04ce47fc5a6ef2b717f33c320fc003091cebac40)
+
+```sh
+/usr/bin/python3 tools/ros_scene/in_existing_cgroup.py /usr/bin/taskset -c 4-7 \
+  /usr/bin/flock ../uwvm2-ros-sdk-v2/.tmp/sdk-qualification.lock /usr/bin/python3 -B \
+  test/0084.ros-runtime/run_scene_neovim_live.py \
+  --runtime /path/to/uwvm2-ros --nvim-dap /path/to/nvim-dap \
+  --output .tmp/neovim-scene --audit --policy
+```
