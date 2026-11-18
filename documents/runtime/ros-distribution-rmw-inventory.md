@@ -79,4 +79,11 @@ to the receipt. When inputs have moved, use `--wire-remap OLD_ROOT NEW_ROOT` to
 recheck their original byte identities in the new directory. An incomplete
 build or failed exchange retains its steps and exit statuses as a separate
 attempt. The isolated plaintext UDPv4 experiment covers this message type
-and these two peers. It supplies no DDS Security or physical-device evidence.
+and these two peers. The `diagnostics` entry records each peer's log digest,
+rcutils error-state report count, and literal message counts for invalid data
+size and unterminated string data. A single rcutils report can mention both
+the prior and the new error. Counts measure log occurrences. Each completed row
+has the scope `reliable-Int32-topic-roundtrip`. ROS graph interoperability
+remains unverified, including when an echo succeeds with diagnostics. The
+fixture does not identify their cause. DDS Security and physical-device
+operation require separate receipts.
