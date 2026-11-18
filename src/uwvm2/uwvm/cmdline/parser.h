@@ -354,6 +354,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             // Here, guard will perform destructors.
         }
 
+#if defined(UWVM_IMPORT_ROSV2)
+        // Offline review must be classified before options that can load native
+        // code, start an effectful sink or return early. Tokens following --run
+        // are guest arguments and never select this host operation.
+        bool offline_scene_review{};
+        for(auto item=pr.begin()+1u;item!=end_pos;++item)
+            offline_scene_review|=item->para==::std::addressof(params::ros_scene_dump_effective_policy);
+        if(offline_scene_review)
+        {
+            bool invalid=wasm_file_ppos!=nullptr||end_pos[-1].para!=::std::addressof(params::ros_scene_dump_effective_policy);
+            for(auto item=pr.begin()+1u;item!=end_pos;++item)
+                if(auto p=item->para;p!=nullptr)
+                    invalid|=p->cate!=::uwvm2::utils::cmdline::categorization::ros_scene||
+                        p==::std::addressof(params::ros_scene_check);
+            if(invalid)
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [error] --ros-scene-dump-effective-policy requires a final, scene-only offline command; execution and other early exits are unavailable.");
+                return parsing_return_val::returnm1;
+            }
+        }
+#endif
 #if defined(UWVM_IMPORT_ROSV2) && defined(UWVM_SUPPORT_PRELOAD_DL)
         // ROSv2 owns a fixed VM process boundary. Detect both option orders and
         // aliases before any native constructor, signature check or callback.

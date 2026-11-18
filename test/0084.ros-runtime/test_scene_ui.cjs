@@ -19,7 +19,7 @@ const session = {id:"scene", type:"uwvm-llvm-full", name:"robot", async customRe
     const expected={family:"rosv2",after:"0",ifStop:stop,count:8};
     if (args.result !== undefined) Object.assign(expected,{module:"main",result:"13"});
     assert.deepEqual(args,expected);
-    return {stopId:stop,journal:{enabled:"8","rosv2-dropped":"3"},
+    return {stopId:stop,journal:{enabled:"8","rosv2-dropped":"3","rosv2-dropped-capacity":"2","rosv2-dropped-busy":"1"},
       calls:[{id:"9",function:"abi",result:"2",segments:"0",args:[]}],next:"9",more:false};
   }
   if (command !== "uwvm/sceneState") throw Error("unexpected side effect route: " + command);
@@ -172,6 +172,7 @@ const vscode = {
   panel.receive({action:"scene-group",group:"journal",epoch:view().epoch});await tick();
   assert.equal(view().scene.active,"journal");
   assert.equal(view().scene.view.journal["rosv2-dropped"],"3");
+  assert.equal(view().scene.view.journal["rosv2-dropped-capacity"],"2");
   assert.equal(view().scene.view.calls[0].result,"2");
   panel.receive({action:"scene-trace-filter",fields:{module:"main",result:"13"},epoch:view().epoch});await tick();
   assert.deepEqual(view().scene.filters,{module:"main",result:"13"});

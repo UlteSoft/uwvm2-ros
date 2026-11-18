@@ -179,6 +179,11 @@ namespace uwvm2::imported::ros::scene::platform_extensions
         std::string_view owner(std::string_view alias)const noexcept
         {auto found=owners_.find(alias);return found==owners_.end()?std::string_view{}:std::string_view(children_[found->second].module);}
         /** @brief Read cached configuration only, without granting or activating a provider. */
+        template<class Visitor> bool visit_selections(Visitor visit)const
+        {
+            for(auto const& child:children_)if(child.selected&&!visit(child.module,child.enabled))return false;
+            return true;
+        }
         bool enabled(std::string_view module)const noexcept
         {auto const* item=find(module);return item&&item->selected&&item->enabled;}
     };

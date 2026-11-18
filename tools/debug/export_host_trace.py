@@ -78,12 +78,19 @@ def encoded(data):
     return {"hex": data.hex(), "utf8IfValid": readable(data)}
 
 
+SCENE_LOSSES = {"rosv2-dropped-"+name for name in ("busy", "capacity", "labels", "sequence", "storage")}
+
+
 def packet(reply):
     if not isinstance(reply, str) or len(reply) > 65536 or not reply.endswith("\n"):
         raise ValueError("incomplete host trace reply")
     lines = reply[:-1].split("\n")
     keys = HEADER | {"rosv2-dropped"} if " rosv2-dropped=" in lines[0] else HEADER
+    if any(" "+key+"=" in lines[0] for key in SCENE_LOSSES):
+        keys = keys | SCENE_LOSSES
     h = {k: number(v) for k, v in fields(lines[0], "host-trace", keys).items()}
+    if SCENE_LOSSES <= keys and h.get("rosv2-dropped") != min(U64,sum(h[key] for key in SCENE_LOSSES)):
+        raise ValueError("inconsistent ROSv2 trace loss counters")
     if h["enabled"] > (15 if "rosv2-dropped" in h else 7) or h["cleared-through"] > h["newest"]:
         raise ValueError("inconsistent host trace journal")
     return h, lines[1:]

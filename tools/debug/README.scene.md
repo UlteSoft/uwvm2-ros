@@ -514,7 +514,11 @@ when the last attempted write failed and no later event can carry the loss
 count. Reading the counters never drains a queue, replenishes a budget, reads
 a body or writes another audit record. These counters describe the operator's
 call-result journal. The debugger's independently enabled call trace has its
-own drop count.
+own drop count. Its console header, DAP journal and JSON export carry a saturating
+`rosv2-dropped` total and separate lifetime counters for lock contention (busy),
+reaching the retained-record ceiling (capacity), oversized operation labels,
+sequence exhaustion and failure to allocate record storage. Each lost completion
+has one cause. Clearing the debugger's retained calls preserves the counters.
 
 ## Effective interface policy
 

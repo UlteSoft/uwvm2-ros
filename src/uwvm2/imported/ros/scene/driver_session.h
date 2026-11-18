@@ -17,6 +17,12 @@ namespace uwvm2::imported::ros::scene::drivers
     enum class state:std::uint64_t{prepared,handshake,ready,pending,result,closed,failed};
     struct snapshot{state phase{};std::uint64_t sequence{},status{};bool effect_unknown{};};
     struct limits{std::size_t request_bytes{},response_bytes{};std::uint64_t request_ns{},session_until{};int tls_identity_fd{-1},peer_time_namespace_fd{-1};};
+    inline bool valid(limits const& capacity) noexcept
+    {
+        return capacity.request_bytes<=protocol::maximum_payload && capacity.response_bytes<=protocol::maximum_payload &&
+            capacity.request_ns && capacity.request_ns<=INT64_MAX && capacity.session_until && capacity.session_until<=INT64_MAX &&
+            capacity.tls_identity_fd>=-1 && capacity.peer_time_namespace_fd>=-1;
+    }
     class session
     {
         mutable std::mutex mutex_;attachment_tls::channel endpoint_;protocol::binding binding_;limits limits_;
@@ -38,8 +44,7 @@ namespace uwvm2::imported::ros::scene::drivers
         error prepare(int fd,credentials peer,protocol::binding const& binding,limits const& capacity)
         {
             std::lock_guard lock{mutex_};if(bound_)return error::conflict;
-            if(!protocol::valid(binding)||capacity.request_bytes>protocol::maximum_payload||capacity.response_bytes>protocol::maximum_payload||
-                !capacity.request_ns||capacity.request_ns>INT64_MAX||!capacity.session_until||capacity.session_until>INT64_MAX)return error::invalid;
+            if(!protocol::valid(binding)||!valid(capacity))return error::invalid;
             incoming_.resize_for_overwrite(protocol::header_bytes+capacity.response_bytes);
             request_.resize_for_overwrite(capacity.request_bytes);
             auto status=endpoint_.bind(fd,peer,capacity.tls_identity_fd,attachment_tls::purpose::driver,

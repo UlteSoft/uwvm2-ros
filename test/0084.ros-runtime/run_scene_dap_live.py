@@ -121,6 +121,8 @@ def main():
                     record['policy']=snapshots
                     calls=client.request('uwvm/hostTrace',{'family':'rosv2'})['body']
                     assert calls['stopId']==resources['stopId'] and calls['journal']['rosv2-dropped']=='0'
+                    assert all(calls['journal']['rosv2-dropped-'+reason]=='0' for reason in
+                               ('busy','capacity','labels','sequence','storage'))
                     assert [r['function'] for r in calls['calls']]==['capability.open','capability.open','guard.create','guard.trigger']
                     assert [r['result'] for r in calls['calls']]==['13','0','0','0']
                     assert all(r['namespace']=='uwvm_ros_v2' and r['family']=='rosv2'
