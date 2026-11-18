@@ -60,3 +60,23 @@ python3 -B test/0084.ros-runtime/run_scene_pinned_dds.py \
 Use `$NEW_DIR/results.json` with the same two manifests for the inventory.
 The native run covers the specific worker profiles, operations, carrier
 layouts and execution engines recorded in the receipt.
+
+## Independent native DDS exchange
+
+Pass `--native-wire "$NATIVE_RUN/results.json"` for each attempt from
+`test/0084.ros-runtime/dds_interop/run.py`. The `nativeWireRuns` array records
+the discovery/transport profile, actual client and peer APIs, middleware
+identities, and the checked Int32 challenge and reply. A raw Cyclone DDS C
+participant has a null ROS RMW identity. Its distribution describes the origin
+of the DDS installation. A peer using Humble rclcpp instead checks
+`rmw_cyclonedds_cpp` inside the running process. Neither native variant drives
+a Wasm guest.
+
+A completed run requires the original pinned IDL and source, the vendor
+libraries, the built peers, the loopback isolation step, the two peer completion
+logs, and a verified response of challenge plus one. Keep the output files next
+to the receipt. When inputs have moved, use `--wire-remap OLD_ROOT NEW_ROOT` to
+recheck their original byte identities in the new directory. An incomplete
+build or failed exchange retains its steps and exit statuses as a separate
+attempt. The isolated plaintext UDPv4 experiment covers this message type
+and these two peers. It supplies no DDS Security or physical-device evidence.

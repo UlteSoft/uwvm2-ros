@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 import sys
 
+import rmw_native_wire
+
 
 DEFAULT_TARGETS = Path(__file__).resolve().parents[1] / 'ros_distro/distributions.json'
 PRERELEASES = [*(f'alpha{i}' for i in range(1, 9)), *(f'beta{i}' for i in range(1, 4))]
@@ -138,7 +140,7 @@ def scene_run(path, manifests):
             'providerProfile': 'rmw_fastrtps_cpp', 'rmwReportedAtRuntime': None, 'positiveCases': positive}
 
 
-def inventory(catalog, directory, sdk, scene):
+def inventory(catalog, directory, sdk, scene, native_wire=(), remaps=()):
     definition, checksum = load(catalog)
     rows = {(n, d): {'ros': n, 'release': d, 'stage': 'prerelease' if n == 2 and d in PRERELEASES else 'distribution',
                      'index': package_index(directory, n, d), 'executions': []} for n, d in targets(definition)}
@@ -149,7 +151,14 @@ def inventory(catalog, directory, sdk, scene):
         require(entry['receiptSha256'] not in seen, 'duplicate execution receipt')
         rows[key]['executions'].append(entry)
         seen.add(entry['receiptSha256'])
-    return {'format': 'uwvm-ros-rmw-inventory-v1', 'catalogSha256': checksum, 'targets': list(rows.values())}
+    wire = [rmw_native_wire.verify(p, remaps) for p in native_wire]
+    require(len({w['receiptSha256'] for w in wire}) == len(wire), 'duplicate native wire receipt')
+    for run in wire:
+        if run['status'] == 'passed':
+            require(all((2, run[role]['distribution']) in rows for role in ('requestPeer', 'replyPeer')),
+                    'native wire receipt names unknown distribution')
+    return {'format': 'uwvm-ros-rmw-inventory-v1', 'catalogSha256': checksum, 'targets': list(rows.values()),
+            'nativeWireRuns': sorted(wire, key=lambda run: run['receiptSha256'])}
 
 
 def main():
@@ -158,11 +167,15 @@ def main():
     parser.add_argument('--package-index-dir', type=Path, required=True, help='directory with <release>-packages.json files')
     parser.add_argument('--sdk-native', type=Path, action='append', default=[], metavar='RECEIPT')
     parser.add_argument('--scene-dds', type=Path, action='append', nargs=3, default=[], metavar=('RECEIPT','PACK_0','PACK_1'))
+    parser.add_argument('--native-wire', action='append', default=[], type=Path, metavar='RESULTS',
+                        help='native isolated Int32 fixture directory results.json; repeat for independent attempts')
+    parser.add_argument('--wire-remap', action='append', nargs=2, type=Path, default=[], metavar=('OLD', 'NEW'),
+                        help='relocated input directory for native wire evidence')
     args = parser.parse_args()
     try:
         require(args.package_index_dir.is_dir(), 'package index directory does not exist')
-        data = inventory(args.catalog, args.package_index_dir, args.sdk_native, args.scene_dds)
-    except (OSError, ValueError, TypeError, KeyError) as exc:
+        data = inventory(args.catalog, args.package_index_dir, args.sdk_native, args.scene_dds, args.native_wire, args.wire_remap)
+    except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
         parser.exit(2, f'invalid inventory input: {exc}\n')
     json.dump(data, sys.stdout, indent=2)
     print()
