@@ -209,6 +209,10 @@ XRCE session failed to open. The two wire legs were private plaintext UDPv4.
 The test binds the Agent, client and mapped Jazzy middleware libraries to this
 observation. [Reproduction and inputs](../../test/0084.ros-runtime/micro_xrce_dds/README.md)
 
+### Dust DDS
+
+In an x86-64 QEMU guest with one isolated Ethernet port, both the original Rust Dust DDS 0.16.0 pair and the Jazzy Fast DDS pair returned the incremented Int32 sample. With one of each vendor, both client directions discovered the other participant but matched zero application endpoints. The upstream Rust crate and Python wheel have independent controls. The [Dust DDS fixture](../../test/0084.ros-runtime/dds_interop/dust/README.md) identifies the build, network and wire type used.
+
 ### Zenoh RMW
 
 Two native rclcpp endpoints using Jazzy's archived Zenoh RMW 0.2.13 exchanged
