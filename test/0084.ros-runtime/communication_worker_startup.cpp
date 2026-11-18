@@ -18,6 +18,28 @@ static bool add(char const* path,char const* hash,std::string_view destination,x
     if(!fd||::fstat(fd.get(),&status)||!S_ISREG(status.st_mode)||status.st_size<0||!digest(hash,result.sha256)||!result.destination.assign(destination))return false;
     result.role=role;result.source=fd.get();result.bytes=static_cast<std::uint64_t>(status.st_size);ownership.emplace_back(std::move(fd));return true;
 }
+/** @brief Select the external peer's ament prefix from its sealed ROS images.
+ * @details The caller supplies the hash and destination of every image. A mixed
+ * installation cannot establish the peer's identity. No host environment or
+ * process-global default selects a distribution during activation.
+ */
+static bool select_image_prefix(x::manifest& manifest, bool standalone_fixture = false)
+{
+    constexpr std::string_view root{"/opt/ros/"};
+    std::string_view prefix{};
+    for(auto const& image : manifest.files)
+    {
+        auto const path = image.destination.view();
+        if(!path.starts_with(root)) continue;
+        auto const end = path.find('/', root.size());
+        if(end == std::string_view::npos || end == root.size()) return false;
+        auto const candidate = path.substr(0, end);
+        if(!prefix.empty() && prefix != candidate) return false;
+        prefix = candidate;
+    }
+    if(prefix.empty() && standalone_fixture) prefix = "/opt/ros/fixture";
+    return !prefix.empty() && manifest.ros_prefix.assign(prefix);
+}
 static int execute(int argc,char** argv)
 {
     if(argc<11||(argc-7)%4)return 10;
@@ -64,28 +86,6 @@ static int execute(int argc,char** argv)
     drain();std::fprintf(stderr,"cleanup=%u child_status=%d stderr_bytes=%zu\n",unsigned(cleanup),exited,stderr_bytes);
     if(status!=error::success||cleanup!=error::success||!child.namespace_identity_confirmed())return 18;
     std::puts("PASS approved single-node sealed worker startup and attachment; startup_only=true; no ROS data-path claim");return 0;
-}
-/** @brief Select the external peer's ament prefix from its sealed ROS images.
- * @details The caller supplies the hash and destination of every image. A mixed
- * installation cannot establish the peer's identity. No host environment or
- * process-global default selects a distribution during activation.
- */
-[[maybe_unused]] static bool select_image_prefix(x::manifest& manifest, bool standalone_fixture = false)
-{
-    constexpr std::string_view root{"/opt/ros/"};
-    std::string_view prefix{};
-    for(auto const& image : manifest.files)
-    {
-        auto const path = image.destination.view();
-        if(!path.starts_with(root)) continue;
-        auto const end = path.find('/', root.size());
-        if(end == std::string_view::npos || end == root.size()) return false;
-        auto const candidate = path.substr(0, end);
-        if(!prefix.empty() && prefix != candidate) return false;
-        prefix = candidate;
-    }
-    if(prefix.empty() && standalone_fixture) prefix = "/opt/ros/fixture";
-    return !prefix.empty() && manifest.ros_prefix.assign(prefix);
 }
 int main(int argc,char** argv)
 {
