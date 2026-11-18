@@ -299,7 +299,7 @@ function view(model) {
     base.footer.push({icon: "shield", text: "Read-only launch inventory · Native code and addresses are outside Wasm debugging"});
   } else if (model.kind === "scene") {
     const data = model.data && model.data.internal;
-    base.scene = {groups: SCENE_GROUPS, active: model.sceneGroup, unavailable: model.data?.unavailable,
+    base.scene = {groups: SCENE_GROUPS, active: model.sceneGroup, filters: model.sceneTraceFilters || {}, unavailable: model.data?.unavailable,
       exportPath: model.exportPath || "", exportResult: model.exportResult,
       view: data ? {...groupRows(data), total: data.total, next: data.next, more: !!data.more,
         journal: data.journal, calls: data.calls, start: data.start, available: data.available !== false, status: data.status,

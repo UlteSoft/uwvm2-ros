@@ -5138,11 +5138,14 @@ class Adapter:
         return self.stop_key, min(t["id"] for t in self.threads), self.threads[0]["stop_id"]
 
     def export_host_trace(self, args):
-        from export_host_trace import save_host_trace
-        if not isinstance(args, dict) or args.keys() - {"path", "family"}:
-            raise ValueError("host trace export accepts path and optional family")
+        from export_host_trace import save_host_trace, SCENE_FILTERS
+        if not isinstance(args, dict) or args.keys() - ({"path", "family", "ifStop"} | SCENE_FILTERS):
+            raise ValueError("unknown host trace export selector")
+        if "ifStop" in args and args["ifStop"] is None:
+            raise ValueError("current host trace stop required")
         return save_host_trace(self.command, self.cooperative_memory_stop,
-                               args.get("path"), args.get("family", "all"))
+                               args.get("path"), args.get("family", "all"),
+                               filters={k: v for k, v in args.items() if k in SCENE_FILTERS}, if_stop=args.get("ifStop"))
 
     def query_host_trace(self, args, *, byte_page=False, expected=None):
         from host_trace_view import query

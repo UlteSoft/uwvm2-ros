@@ -464,9 +464,19 @@ stop. Reading or exporting the journal leaves recording and guest grants unchang
 Each entry records the registered namespace, import name, sequence and raw
 32-bit return value at completion. For example, the `abi` import returns the
 ABI version. Interpret other values using the named operation's contract.
-Arguments, capability handles, guest data, caller identity and timing are
-unavailable for this family. A zero in an unused transport field carries no
-identity. The journal does not attest remote delivery or physical effects.
+A verified nonzero module generation accompanies the complete caller label when
+available. Missing identity is represented by generation zero and an empty label.
+Arguments, capability handles, guest data and timing are unavailable for this
+family. An unused numeric module ID does not identify the caller. The journal does not attest remote delivery or physical effects.
+
+Filter by exact `function`, host import `namespace`, Wasm caller `module`, or
+unsigned `result`. Filters combine by intersection before pagination. For example,
+`trace host read family=rosv2 module=main function=capability.open result=13 after=0 count=8 if-stop=7`
+lists completed denied opens at debugger stop 7. DAP accepts the same selectors
+and `ifStop` in `uwvm/hostTrace` and `uwvm/exportHostTrace`; list pages also accept
+`after` and `count`. The IDE applies the same selectors when exporting. A generic
+result filter compares the raw return value; interpreting error semantics depends
+on the registered operation. Resource aliases and session IDs are unavailable.
 
 At most 4096 ROSv2 completions are retained between journal clears. A busy
 journal, allocation failure or exhausted limit can discard an observation.

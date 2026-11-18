@@ -116,15 +116,50 @@ def call_row(line):
     if len(arguments) > 16:  # Current ABI record schema, not a history limit.
         raise ValueError("invalid ABI argument count")
     if row["family"] == 8 and (arguments or row["returned"] != 1 or row["has-result"] != 1
-            or row["result"] >= 1 << 32 or row["module-name-bytes"] or row["module"] or row["participant"]
-            or row["generation"] or row["environment"] or row["segments"] or row["timed"] or row["duration-ns"]
+            or row["result"] >= 1 << 32 or row["module-name-bytes"] > 255 or row["module"] or row["participant"]
+            or bool(length) != bool(row["generation"]) or row["environment"] or row["segments"] or row["timed"] or row["duration-ns"]
             or row["incomplete"] or not 0 < len(row["namespace"]) <= 255 or not 0 < len(row["function"]) <= 255):
         raise ValueError("invalid metadata-only ROSv2 completion")
     row["args"] = arguments
     return row
 
 
-def save_host_trace(request, checkpoint, path, family="all"):
+SCENE_FILTERS = {"function", "namespace", "module", "result"}
+
+
+def scene_filters(family, options):
+    if not isinstance(options, dict) or options.keys() - SCENE_FILTERS or (options and family != "rosv2"):
+        raise ValueError("exact ROSv2 completion selectors required")
+    selected = {}
+    for key, value in options.items():
+        if key == "result":
+            if type(value) is int:
+                value = str(value)
+            if type(value) is not str:
+                raise ValueError("unsigned 32-bit raw result required")
+            selected[key] = str(number(value, (1 << 32)-1))
+        elif type(value) is str and re.fullmatch(r"[A-Za-z0-9_.-]{1,255}", value):
+            selected[key] = value
+        else:
+            raise ValueError("bounded exact ROSv2 identifier required")
+    return selected
+
+
+def validate_selection(call, selected):
+    for key, value in selected.items():
+        actual = call["module-name" if key == "module" else key]
+        if (key == "result" and str(actual) != value) or (key != "result" and actual != value.encode("ascii")):
+            raise ValueError("ROSv2 completion differs from the requested selector")
+
+
+def checked_stop(value, actual):
+    if type(value) is int:
+        value = str(value)
+    if type(value) is not str or not actual or number(value) != actual:
+        raise ValueError("host trace stop changed")
+
+
+def save_host_trace(request, checkpoint, path, family="all", *, filters=None, if_stop=None):
     """request(str)->str, checkpoint()->stable stop identity ending in stop ID.
 
     Export memory is bounded by protocol pages, independent of retained history
@@ -135,11 +170,15 @@ def save_host_trace(request, checkpoint, path, family="all"):
         raise ValueError("family must be all, wasip1, ros1, ros2 or rosv2")
     if not isinstance(path, str) or not path or "\0" in path:
         raise ValueError("a host output file path is required")
+    selected = scene_filters(family, {} if filters is None else filters)
+    suffix = "".join(f" {k}={v}" for k, v in selected.items())
     destination = Path(os.path.abspath(path))
     identity = checkpoint()
     stop = identity[-1]
     if type(stop) is not int or not 0 < stop <= U64:
         raise ValueError("a current cooperative stop is required")
+    if if_stop is not None:
+        checked_stop(if_stop, stop)
     journal = None
 
     def query(command):
@@ -151,7 +190,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
             raise ValueError("host trace changed during export; file not published")
         return rows
 
-    rows = query(f"trace host read family={family} after=0 count=8")
+    rows = query(f"trace host read family={family}{suffix} after=0 count=8")
     descriptor, temporary = tempfile.mkstemp(prefix=".uwvm-host-trace-", suffix=".tmp",
                                             dir=destination.parent)
     summary = {"calls": 0, "incompleteCalls": 0, "unreturnedCalls": 0, "payloadBytes": 0}
@@ -164,7 +203,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
             metadata = {
                 "schema": "uwvm.host-trace.v1",
                 "exportedAtUtc": datetime.now(timezone.utc).isoformat(),
-                "stopId": str(stop), "familyFilter": family,
+                "stopId": str(stop), "familyFilter": family, "selectors": selected,
                 "journal": {k: str(v) for k, v in journal.items()},
                 "semantics": {
                     "coverage": "Retained observations only, from explicitly enabled recording intervals.",
@@ -192,6 +231,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
                         raise ValueError("out-of-order or retired host call")
                     if family != "all" and FAMILIES[call["family"]] != family:
                         raise ValueError("host call family differs from request")
+                    validate_selection(call, selected)
                     after = call["id"]
                     output.write("\n    " if first_call else ",\n    ")
                     first_call = False
@@ -275,8 +315,8 @@ def save_host_trace(request, checkpoint, path, family="all"):
                     raise ValueError("non-progressing or inconsistent host trace cursor")
                 if not more:
                     break
-                rows = query(f"trace host read family={family} after={after} count=8")
-            final = query(f"trace host read family={family} after={journal['newest']} count=1")
+                rows = query(f"trace host read family={family}{suffix} after={after} count=8")
+            final = query(f"trace host read family={family}{suffix} after={journal['newest']} count=1")
             if final != [f"host-calls next={journal['newest']} more=0"]:
                 raise ValueError("incomplete final host trace cursor")
             if checkpoint() != identity:

@@ -30,7 +30,16 @@ def main():
     row, = page['calls']
     assert row['family'] == 'rosv2' and row['function'] == 'abi' and row['result'] == '2'
     assert not row['args'] and row['segments'] == '0' and page['journal']['rosv2-dropped'] == '0'
-    export.save_host_trace(request, checkpoint, str(args.output), 'rosv2')
+    options = {'family': 'rosv2', 'function': 'abi', 'namespace': 'uwvm_ros_v2', 'result': '2', 'ifStop': '7'}
+    assert view.query(request, checkpoint, options)['calls'] == [row]
+    for bad in ({'ifStop': '8'}, {'module': 'other'}, {'function': 'bad name'}, {'result': '4294967296'},
+                {'alias': 'unknown'}, {'family': 'ros1', 'function': 'abi'}):
+        try:
+            view.query(request, checkpoint, {**options, **bad})
+        except ValueError:
+            continue
+        raise AssertionError(bad)
+    export.save_host_trace(request, checkpoint, str(args.output), 'rosv2', filters={'function':'abi','result':'2'}, if_stop='7')
     saved = json.loads(args.output.read_text())
     assert len(saved['calls']) == 1 and saved['calls'][0]['resultUnsigned'] == '2'
     assert saved['summary']['payloadBytes'] == '0'

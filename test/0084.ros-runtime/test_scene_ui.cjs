@@ -16,7 +16,9 @@ const session = {id:"scene", type:"uwvm-llvm-full", name:"robot", async customRe
   if (command === "uwvm/diagnostics") return {text:`stopped: cooperative pause\nstop-id ${stop}\n`};
   if (command === "uwvm/hostInterfaces") return {builds:{u2rosv2:true}};
   if (command === "uwvm/hostTrace") {
-    assert.deepEqual(args,{family:"rosv2",after:"0",count:8});
+    const expected={family:"rosv2",after:"0",ifStop:stop,count:8};
+    if (args.result !== undefined) Object.assign(expected,{module:"main",result:"13"});
+    assert.deepEqual(args,expected);
     return {stopId:stop,journal:{enabled:"8","rosv2-dropped":"3"},
       calls:[{id:"9",function:"abi",result:"2",segments:"0",args:[]}],next:"9",more:false};
   }
@@ -154,6 +156,9 @@ const vscode = {
   assert.equal(view().scene.active,"journal");
   assert.equal(view().scene.view.journal["rosv2-dropped"],"3");
   assert.equal(view().scene.view.calls[0].result,"2");
+  panel.receive({action:"scene-trace-filter",fields:{module:"main",result:"13"},epoch:view().epoch});await tick();
+  assert.deepEqual(view().scene.filters,{module:"main",result:"13"});
+  assert.equal(queries.filter(q=>q.command==="uwvm/hostTrace").at(-1).args.result,"13");
   const beforePayload=queries.length;
   panel.receive({action:"payload",fields:{call:"9",segment:"0",offset:"0",count:"8"},epoch:view().epoch});await tick();
   assert.equal(queries.length,beforePayload,"metadata-only calls have no payload read route");
