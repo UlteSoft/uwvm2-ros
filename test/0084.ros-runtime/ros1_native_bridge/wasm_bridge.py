@@ -175,14 +175,52 @@ def guest(role, token, until, denied):
     return g.render()
 
 
+def compile_sdk_guest(args, output, role, denied, token, deadline):
+    """Compile the case with the site's signed release and preserve its Wasm receipt."""
+    payload = publish(token, deadline) if role == 'publish' else u64(1)
+    result = accepted() if role == 'publish' else delivery(token)
+    header = output/'case_values.h'
+    rows = []
+    for name, contents in [('submit_request', u64(1)+u64(deadline)+blob(payload)),
+                           ('expected_reply', u64(0)+blob(result))]:
+        rows.append('static const uint8_t '+name+'[] = {'+', '.join(map(str,contents))+'};')
+    rows.append('enum { expected_submit = '+str(13 if denied else 0)+' };')
+    header.write_text('\n'.join(rows)+'\n')
+    wasm = output/'application.wasm'
+    env = dict(os.environ, TMPDIR=str(output), PATH='/usr/bin:/bin')
+    command = [args.sdk/'bin/wrc', '-O3', '-g', '--reactor', '--export', '_start', '--build-receipt',
+               '-I'+str(output), HERE/'driver_guest.c', '-o', wasm]
+    with (output/'sdk.log').open('wb') as log:
+        subprocess.run(command, env=env, cwd=output, stdout=log, stderr=subprocess.STDOUT,
+                       check=True, timeout=40)
+    receipt = Path(str(wasm)+'.wros-build.json')
+    build_data = json.loads(receipt.read_bytes())
+    require(build_data['mode']=='strict' and build_data['profile']['mte']
+            and build_data['vm_sha256']==digest(args.runtime), 'signed SDK build configuration')
+    sys.path.insert(0,str(args.sdk/'install'))
+    from imports import inspect
+    imports = inspect(wasm.read_bytes())
+    expected = {'capability.open','driver.connect','driver.submit','driver.disconnect'}
+    if not denied:
+        expected.add('driver.result')
+    require(all(i['kind']==0 and i['module']=='uwvm_ros_v2' for i in imports)
+            and {i['name'] for i in imports}==expected, 'unexpected guest authority surface')
+    return digest(receipt)
+
+
 def case(args):
     from attachment_peer import issue
     names = [s.split(':')[0].strip() for s in Path('/proc/net/dev').read_text().splitlines()[2:]]
     require(names == ['lo'] and args.allow_plaintext_loopback,'explicit private legacy network')
     role, engine, denied = args.role, args.engine, args.denied
     output = args.output/(role+'-'+engine+('-denied' if denied else '-granted'))
-    output.mkdir()
-    token = secrets.token_hex(16)
+    if args.sdk:
+        prepared = json.loads((output/'sdk-case.json').read_bytes())
+        require(digest(output/'application.wasm')==prepared['wasm'], 'SDK guest changed after build')
+        token = prepared['token']
+    else:
+        output.mkdir()
+        token = secrets.token_hex(16)
     focal = args.noetic_root/'usr'
     noetic = args.noetic_root/'opt/ros/noetic'
     ros2 = args.humble_prefix
@@ -241,10 +279,15 @@ def case(args):
                 time.sleep(.05)
             else:
                 raise TimeoutError('Noetic witness TCPROS connection')
-        until = time.monotonic_ns()+20_000_000_000
+        until = prepared['deadline'] if args.sdk else time.monotonic_ns()+20_000_000_000
         wat, wasm = output/'application.wat', output/'application.wasm'
-        wat.write_text(guest(role,token.encode(),until,denied))
-        subprocess.run(['wat2wasm','--enable-multi-memory','--debug-names',wat,'-o',wasm],check=True,timeout=5)
+        sdk_receipt = None
+        if args.sdk:
+            sdk_receipt = prepared['receipt']
+            require(sdk_receipt==digest(Path(str(wasm)+'.wros-build.json')), 'SDK receipt changed')
+        else:
+            wat.write_text(guest(role,token.encode(),until,denied))
+            subprocess.run(['wat2wasm','--enable-multi-memory','--debug-names',wat,'-o',wasm],check=True,timeout=5)
         # One deployment-created native client waiting on a bounded local pipe.
         io = start('dds',[args.output/'ros2_io',role],env=ros_env,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
         left, right = socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
@@ -290,7 +333,7 @@ def case(args):
                     'Noetic witness and upstream bridge failed exact value check')
         observed=dict(role=role,engine=engine,denied=denied,authenticatedRequests=requests,
                       value=None if denied else token,interfaces=names,argv=list(map(str,cmd)),
-                      guestSHA256=digest(wasm),logs={p.name:digest(p) for p in output.glob('*.log')})
+                      guestSHA256=digest(wasm),sdkBuildReceiptSHA256=sdk_receipt,logs={p.name:digest(p) for p in output.glob('*.log')})
         (output/'observed.json').write_text(json.dumps(observed,indent=2)+'\n')
 
 
@@ -299,6 +342,8 @@ def main():
     for arg in ('vm-source','runtime','runtime-receipt','native-dir','noetic-root','humble-prefix',
                 'humble-system-libs','openssl-root','output'):
         parser.add_argument('--'+arg,type=lambda value:Path(value).resolve(),required=True)
+    parser.add_argument('--sdk',type=lambda value:Path(value).resolve(),
+                        help='Compile C guests with this site-configured development installation')
     parser.add_argument('--allow-plaintext-loopback',action='store_true')
     parser.add_argument('--role',choices=ROLES,help=argparse.SUPPRESS)
     parser.add_argument('--engine',choices=('int','aot'),help=argparse.SUPPRESS)
@@ -329,12 +374,21 @@ def main():
         manifest['commands']=build(args,args.output)
         files = [Path(__file__).resolve(),HERE/'ros2_string_io.cpp',HERE/'run.py',HERE/'ros1_witness.py',
                  args.output/'tls.so',args.output/'ros2_io', args.openssl_root/'libssl.a',args.openssl_root/'libcrypto.a']
+        if args.sdk:
+            files.extend((HERE/'driver_guest.c',args.sdk/'bin/wrc',args.sdk/'share/abi/ros.json'))
         for leaf in ('attachment_peer.cpp','attachment_peer.py','run_module_security_vm.py','run_scene_vm.py'):
             files.append(args.vm_source/'test/0084.ros-runtime'/leaf)
         manifest['inputs']={str(path):digest(path) for path in files}
         for role in ROLES:
             for engine,denied in [('int',True),('int',False),('aot',False)]:
                 casepath=args.output/(role+'-'+engine+('-denied' if denied else '-granted'))
+                if args.sdk:
+                    casepath.mkdir()
+                    token = secrets.token_hex(16)
+                    deadline = time.monotonic_ns()+30_000_000_000
+                    receipt = compile_sdk_guest(args,casepath,role,denied,token.encode(),deadline)
+                    (casepath/'sdk-case.json').write_text(json.dumps(dict(token=token,deadline=deadline,
+                        receipt=receipt,wasm=digest(casepath/'application.wasm'))))
                 cmd=['/usr/bin/bwrap','--die-with-parent','--unshare-net','--ro-bind','/','/','--bind',
                      args.output,args.output,'--proc','/proc','--dev','/dev',sys.executable,'-B',Path(__file__).resolve(),
                      *sys.argv[1:],'--role',role,'--engine',engine,*(['--denied'] if denied else [])]

@@ -73,3 +73,12 @@ The report binds the VM digest, native bridge receipt, two adapter binaries,
 compile arguments, guest modules and logs. This exercises an external test
 adapter. Direct `bridge.*` attachment to a native ROS 1 endpoint and dynamic
 message conversion remain separate qualification targets.
+
+Supply `--sdk /absolute/path/to/site-configured-c-development` to
+`wasm_bridge.py` to compile the application from `driver_guest.c`. The
+harness compiles each challenge at `-O3 -g` using the installed SDK before
+starting the ROS participants. It checks that the strict build receipt binds
+the selected VM and retains MTE. The resulting core Wasm imports just the
+capability and driver operations exercised by that case. Both peers compare
+the payload to the same independently generated token. The provisioned
+legacy link still requires its explicit plaintext-loopback option.
