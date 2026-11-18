@@ -1,6 +1,7 @@
 /** @file @brief Compare detached debugger rows with the runtime's actual interface visibility. */
 #include <cassert>
 #include <iostream>
+#include <cstdio>
 #include <uwvm2/imported/ros/scene/deployment.h>
 #include <uwvm2/uwvm/debugger/scene_state.h>
 
@@ -56,6 +57,18 @@ int main()
     query.operation.assign("guard.trigger");query.environment.assign("robot");deploy.retire();deploy.inspect(query,page);
     assert(page.size==1&&page.policy[0].origin=="retired"&&page.policy[0].configured=="allow"&&page.policy[0].effective=="hidden");
     assert(deploy.visible("main","guard.trigger")==model::exposure::hidden);
+    model::deployment many;
+    char last[32]{};
+    for(std::size_t i{};i<=model::debug::maximum_scan/model::callable_names.size();++i)
+    {
+        std::snprintf(last,sizeof(last),"environment-%zu",i);
+        assert(many.create(last)==model::error::success);
+    }
+    query={};query.selected=console::selection::policy;many.inspect(query,page);
+    assert(page.result==console::status::resource_limit&&!page.size&&!page.total&&!page.more);
+    query.environment.assign(last);many.inspect(query,page);
+    assert(page.result==console::status::ok&&page.total==model::callable_names.size()&&page.size==8&&page.more);
+    std::cerr<<"Compared "<<seen<<" registered imports, bounded multi-environment refusal and exact recovery\n";
     assert(!console::parse("info scene policy alias=resource",query));
     assert(!console::parse("info scene authority operation=abi",query));
     assert(!console::parse("info scene policy operation=abi operation=abi",query));

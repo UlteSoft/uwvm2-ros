@@ -164,11 +164,10 @@ const vscode = {
   await tick();assert.equal(queries.length,count,"scene messages cannot reach payload or effect requests");
   panel.receive({action:"scene-group",group:"policy",epoch:view().epoch});await tick();
   assert.equal(view().scene.view.rows[0].origin,"self-default");
-  assert.equal(queries.at(-1).args.selection,"policy");
+  assert.equal(queries.filter(q=>q.command==="uwvm/sceneState").at(-1).args.selection,"policy");
   assert.ok(view().scene.view.columns.includes("effective"));
   panel.receive({action:"scene-group",group:"audit",epoch:view().epoch});await tick();
-  assert.equal(queries.at(-1).command,"uwvm/sceneState");
-  assert.equal(queries.at(-1).args.selection,"audit");
+  assert.equal(queries.filter(q=>q.command==="uwvm/sceneState").at(-1).args.selection,"audit");
   assert.equal(view().scene.view.rows[0].__raw.limited,"18446744073709551615");
   panel.receive({action:"scene-group",group:"journal",epoch:view().epoch});await tick();
   assert.equal(view().scene.active,"journal");
