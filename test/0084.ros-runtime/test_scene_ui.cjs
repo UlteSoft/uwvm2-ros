@@ -25,6 +25,11 @@ const session = {id:"scene", type:"uwvm-llvm-full", name:"robot", async customRe
   if (command !== "uwvm/sceneState") throw Error("unexpected side effect route: " + command);
   assert.deepEqual(Object.keys(args).sort(), ["count","ifStop","selection","start"]);
   assert.equal(args.count,8); assert.equal(args.ifStop,stop);
+  if (args.selection === "audit") {
+    return {selection:"audit",available:true,status:"available",scope:"process-owned",stopId:stop,
+      rows:[{configured:true,admitted:"1",limited:"18446744073709551615",busy:"0",clock_failed:"0",sink_failed:"1"}],
+      total:1,next:1,more:false,start:0};
+  }
   assert.ok(["authority","resources"].includes(args.selection));
   assert.ok(Number.isInteger(args.start) && args.start >= 0 && args.start <= 4096);
   const total = args.selection === "authority" ? 10 : 9, next = Math.min(total,args.start+8);
@@ -152,6 +157,10 @@ const vscode = {
     "lifecycle.open","lifecycle.state","lifecycle.transitions","lifecycle.submit","lifecycle.take","lifecycle.respond"])
     panel.receive({action,epoch:view().epoch,fields:{hex:"00",dumpPath:"/tmp/not-issued"}});
   await tick();assert.equal(queries.length,count,"scene messages cannot reach payload or effect requests");
+  panel.receive({action:"scene-group",group:"audit",epoch:view().epoch});await tick();
+  assert.equal(queries.at(-1).command,"uwvm/sceneState");
+  assert.equal(queries.at(-1).args.selection,"audit");
+  assert.equal(view().scene.view.rows[0].__raw.limited,"18446744073709551615");
   panel.receive({action:"scene-group",group:"journal",epoch:view().epoch});await tick();
   assert.equal(view().scene.active,"journal");
   assert.equal(view().scene.view.journal["rosv2-dropped"],"3");
