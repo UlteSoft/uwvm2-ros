@@ -30,13 +30,13 @@ def copy(source, target):
         shutil.copy2(source, target)
 
 
-def runtime_libraries(root):
+def runtime_libraries(root, native_inputs=("/fixture/jazzy-string",)):
     cache = {}
     for line in subprocess.check_output(['/sbin/ldconfig', '-p'], text=True).splitlines():
         item = re.match(r'\s*(\S+) \(libc6,x86-64[^)]*\) => (\S+)', line)
         if item:
             cache.setdefault(item[1], Path(item[2]))
-    inspect = [root / name.lstrip('/') for name in (*HOST_TOOLS, '/usr/bin/python3', '/fixture/jazzy-string')]
+    inspect = [root / name.lstrip('/') for name in (*HOST_TOOLS, '/usr/bin/python3', *native_inputs)]
     inspect.extend(root.glob('usr/lib/python3.*/lib-dynload/*.so'))
     inspect.extend(root.glob('opt/ros/jazzy/lib/*.so*'))
     inspect.extend(root.glob('syslib/*/*.so*'))

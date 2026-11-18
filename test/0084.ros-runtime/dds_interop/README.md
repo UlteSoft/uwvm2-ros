@@ -78,3 +78,9 @@ The runner reads the installed Cyclone version to select its loopback schema and
 gives each process its own log directory. The [individual service
 observations](service_observations.json) list nine successful relay pairings and
 their missing-egress controls.
+
+## Dust DDS
+
+The isolated guest fixture compares the original Rust crate and Python wheel
+with Jazzy Fast DDS. Its results distinguish participant discovery, endpoint
+matching and a verified Int32 round trip. [Inputs, commands and observed outcomes](dust/README.md)

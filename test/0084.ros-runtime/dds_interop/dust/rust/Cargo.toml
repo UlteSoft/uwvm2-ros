@@ -1,0 +1,13 @@
+[package]
+name = "wros-dust-witness"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+dust_dds = "=0.16.0"
+
+[profile.release]
+opt-level = 3
+debug = 1
+incremental = false
