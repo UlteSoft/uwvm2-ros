@@ -1,4 +1,4 @@
-"""Compile independent vendor peers, then exchange an actual ROS Int32 over isolated DDS/RTPS."""
+"""Compile independent vendor peers, then exchange a ROS topic or service over isolated DDS/RTPS."""
 import argparse
 import hashlib
 import json
@@ -40,10 +40,21 @@ def main():
     parser.add_argument('--peer-cxx-standard', choices=('17','20'), default='20',
                         help='C++ mode for the second rclcpp installation')
     parser.add_argument('--cyclone-system-libs', type=Path, help='System SONAMEs needed by the Cyclone installation')
+    parser.add_argument('--service', action='store_true', help='Exercise rcl_interfaces/srv/GetParameters with two native rclcpp installations')
+    parser.add_argument('--service-peer-rmw', choices=('rmw_cyclonedds_cpp','rmw_fastrtps_cpp'),
+                        help='Middleware for the service server; uses the second ROS installation')
+    parser.add_argument('--service-control', choices=('request','reply'),
+                        help='Use the same service binary, RMW and installation for both roles')
     parser.add_argument('--run-peers', action='store_true', help=argparse.SUPPRESS)
     a = parser.parse_args()
     if bool(a.peer_ros_prefix) != bool(a.peer_system_libs):
         parser.error('supply both second-peer paths together')
+    if a.service and not a.peer_ros_prefix:
+        parser.error('--service requires a second rclcpp installation')
+    if (a.service_peer_rmw or a.service_control) and not a.service:
+        parser.error('service controls require --service')
+    peer_rmw = a.service_peer_rmw or 'rmw_cyclonedds_cpp'
+    client_source = HERE / ('ros_service.cpp' if a.service else 'ros_client.cpp')
     member = Path('/proc/self/cgroup').read_text().strip()
     if (member != '0::/'+str(GROUP.relative_to('/sys/fs/cgroup')) or
             (GROUP/'memory.max').read_text().strip() != '68719476736' or
@@ -104,19 +115,41 @@ def main():
                 dds_env.update(ros_env, AMENT_PREFIX_PATH=str(peer_ros), RMW_IMPLEMENTATION='rmw_cyclonedds_cpp',
                                LD_LIBRARY_PATH=os.pathsep.join(map(str,(peer_ros/'lib',peer_dds_lib,peer_system))))
                 peer_command = [out/'ros-echo',challenge,'echo','rmw_cyclonedds_cpp']
-            peer = subprocess.Popen(peer_command, env=dds_env, stdout=log, stderr=subprocess.STDOUT)
+            client_command = [out/'ros-client',challenge,'request','rmw_fastrtps_cpp']
+            server_env, client_env = dds_env, ros_env
+            if a.service:
+                server_env = dict(dds_env, RMW_IMPLEMENTATION=peer_rmw)
+                peer_command[-1] = peer_rmw
+                if a.service_control == 'request':
+                    server_env = client_env
+                    peer_command = [client_command[0],challenge,'echo',client_command[-1]]
+                elif a.service_control == 'reply':
+                    client_env = server_env
+                    client_command = [peer_command[0],challenge,'request',peer_command[-1]]
+            peer = subprocess.Popen(peer_command, env=server_env, stdout=log, stderr=subprocess.STDOUT)
             try:
                 with (out/'ros.log').open('wb') as roslog:
-                    client = subprocess.run([out/'ros-client', challenge, 'request', 'rmw_fastrtps_cpp'], env=ros_env, stdout=roslog,
+                    client = subprocess.run(client_command, env=client_env, stdout=roslog,
                                             stderr=subprocess.STDOUT, timeout=18)
                 server = peer.wait(timeout=16)
             finally:
                 if peer.poll() is None:
                     peer.kill()
                     peer.wait()
-        (out/'exchange.json').write_text(json.dumps(dict(domain=61, challenge=int(challenge),
-            expected_response=int(challenge)+1, network='isolated loopback', ros_exit=client.returncode,
-            cyclone_exit=server), indent=2)+'\n')
+        exchange = dict(domain=61, challenge=int(challenge), network='isolated loopback',
+                        ros_exit=client.returncode, cyclone_exit=server)
+        if a.service:
+            names = [challenge+'-a', challenge+'-b']
+            exchange['request_names'] = names
+            if not (client.returncode or server):
+                for log, rmw, role in [('ros.log',client_command[-1],'request'), ('cyclone.log',peer_command[-1],'echo')]:
+                    expected = f'GetParameters {rmw} {role} {names[0]} {names[1]} completed'
+                    if (out/log).read_text().splitlines().count(expected) != 1:
+                        raise RuntimeError('missing correlated service responses in '+log)
+                exchange['response_values'] = ['reply/'+name for name in names]
+        else:
+            exchange['expected_response'] = int(challenge)+1
+        (out/'exchange.json').write_text(json.dumps(exchange,indent=2)+'\n')
         return int(bool(client.returncode or server))
     out.mkdir(parents=True)
     inputs = [Path(__file__).resolve(), HERE/'Int32.idl', HERE/'fastdds-loopback.xml', HERE/'cyclone.c', HERE/'ros_client.cpp',
@@ -127,6 +160,19 @@ def main():
             inputs.append(ros_lib/lib)
     if peer_opts:
         inputs += [peer_dds_lib/'libddsc.so', cyclone_version_header(peer_ros), peer_ros/'lib/librmw_cyclonedds_cpp.so', peer_ros/'lib/librclcpp.so', peer_ros/'share/std_msgs/msg/Int32.idl']
+    if a.service:
+        inputs = [Path(__file__).resolve(), HERE/'fastdds-loopback.xml', client_source,
+                  cyclone_version_header(peer_ros), peer_dds_lib/'libddsc.so', ros_lib/'librmw_fastrtps_cpp.so',
+                  peer_ros/('lib/lib'+peer_rmw+'.so')]
+        for prefix in (ros, peer_ros):
+            inputs.extend([prefix/'share/rcl_interfaces/srv/GetParameters.idl', prefix/'lib/librclcpp.so',
+                           prefix/'lib/librcl_interfaces__rosidl_typesupport_cpp.so'])
+        if peer_rmw == 'rmw_fastrtps_cpp':
+            vendor = [peer_ros/'lib'/n for n in ('libfastrtps.so','libfastdds.so') if (peer_ros/'lib'/n).is_file()]
+            if not vendor:
+                raise ValueError('second Fast DDS installation lacks its vendor library')
+            inputs.extend(vendor)
+        inputs += [ros_lib/lib for lib in ('libfastrtps.so','libfastdds.so') if (ros_lib/lib).is_file()]
     report = dict(complete=False, cgroup=member, ros_prefix=str(ros), cyclone_prefix=str(cyclone),
                   scope='Native DDS wire baseline. Reliable Int32 pub/sub on isolated loopback. Plaintext.',
                   request_peer=dict(language='C++', api='rclcpp', rmw='rmw_fastrtps_cpp', distribution=ros.name, prefix=str(ros)),
@@ -135,6 +181,13 @@ def main():
                                   distribution=(peer_ros if peer_opts else cyclone).name, prefix=str(peer_ros if peer_opts else cyclone)),
                   transport='UDPv4', ros_type='std_msgs/msg/Int32', network_security='plaintext',
                   inputs={str(p):digest(p) for p in inputs}, steps=[])
+    if a.service:
+        report.update(scope='Native GetParameters service on isolated loopback. Plaintext.',
+                      ros_type='rcl_interfaces/srv/GetParameters', control=a.service_control)
+        report['reply_peer']['rmw'] = peer_rmw
+        if a.service_control:
+            selected = report[a.service_control+'_peer']
+            report.update(request_peer=dict(selected),reply_peer=dict(selected))
     def save():
         (out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
     def run(name, argv, env=None):
@@ -148,11 +201,12 @@ def main():
     save()
     # Cyclone 0.8 writes generated files into the working directory. run()
     # already starts every build step in the selected output directory.
-    idl_output = ['-o',out] if cyclone_version(cyclone) >= (0,9) else []
-    run('idlc',[cyclone/'bin/idlc',*idl_output,HERE/'Int32.idl'],dds_env)
     flags = ['-O3','-g','-Wall','-Wextra','-Werror']
-    run('build-cyclone',['/usr/bin/cc',*flags,'-I'+str(dds_include),'-I'+str(out),HERE/'cyclone.c',
-        out/'Int32.c','-L'+str(dds_lib),*['-Wl,-rpath-link,'+str(directory) for directory in dds_search],'-lddsc','-o',out/'cyclone-echo'],dds_env)
+    if not a.service:
+        idl_output = ['-o',out] if cyclone_version(cyclone) >= (0,9) else []
+        run('idlc',[cyclone/'bin/idlc',*idl_output,HERE/'Int32.idl'],dds_env)
+        run('build-cyclone',['/usr/bin/cc',*flags,'-I'+str(dds_include),'-I'+str(out),HERE/'cyclone.c',
+            out/'Int32.c','-L'+str(dds_lib),*['-Wl,-rpath-link,'+str(directory) for directory in dds_search],'-lddsc','-o',out/'cyclone-echo'],dds_env)
     def compile_ros(prefix, system_lib, output, standard):
         ros_lib = prefix/'lib'
         include = prefix/'include'
@@ -166,7 +220,7 @@ def main():
                     'builtin_interfaces__rosidl_typesupport_cpp')
         extra = ['-l'+name for name in optional if (ros_lib/('lib'+name+'.so')).is_file()]
         run('build-'+output,['/usr/bin/clang++-22','-std=c++'+standard,*flags,*[v for p in includes for v in ('-isystem',p)],
-            HERE/'ros_client.cpp','-L'+str(ros_lib),'-L'+str(system_lib),'-Wl,-rpath-link,'+str(ros_lib),
+            client_source,'-L'+str(ros_lib),'-L'+str(system_lib),'-Wl,-rpath-link,'+str(ros_lib),
             '-Wl,-rpath-link,'+str(system_lib),'-lrclcpp','-lrcl','-lrcutils','-lrmw','-lrmw_implementation',
             '-lstd_msgs__rosidl_typesupport_cpp',*extra,'-o',out/output],ros_env)
     compile_ros(ros,system,'ros-client','20')
@@ -175,8 +229,13 @@ def main():
     run('isolated-network',['/usr/bin/bwrap','--die-with-parent','--unshare-net','--ro-bind','/','/',
         '--bind',out,out,'--proc','/proc','--dev','/dev','--ro-bind','/sys','/sys',sys.executable,'-B',
         Path(__file__).resolve(),'--ros-prefix',ros,'--ros-system-libs',system,'--cyclone-prefix',cyclone,
-        '--output',out,*peer_opts,*(['--cyclone-system-libs',a.cyclone_system_libs] if a.cyclone_system_libs else []),'--run-peers'])
-    report['outputs']={n:digest(out/n) for n in ('ros-client','cyclone-echo','Int32.c','Int32.h','exchange.json','ros.log','cyclone.log')}
+        '--output',out,*peer_opts,*(['--service'] if a.service else []),
+        *(['--service-peer-rmw',a.service_peer_rmw] if a.service_peer_rmw else []),
+        *(['--service-control',a.service_control] if a.service_control else []),*(['--cyclone-system-libs',a.cyclone_system_libs] if a.cyclone_system_libs else []),'--run-peers'])
+    names = ['ros-client','exchange.json','ros.log','cyclone.log']
+    if not a.service:
+        names.extend(['cyclone-echo','Int32.c','Int32.h'])
+    report['outputs']={n:digest(out/n) for n in names}
     if peer_opts:
         report['outputs']['ros-echo']=digest(out/'ros-echo')
     report['complete']=True

@@ -33,3 +33,38 @@ Dashing and Eloquent link against their installed rclcpp dependencies. The
 fixture includes statistics and tracing libraries when the release supplies
 them. Endpoint home and ROS log paths live under the run's output directory.
 This also contains the default logfile created by Eloquent's spdlog backend.
+
+## Native GetParameters service
+
+Supply both native rclcpp installations and add `--service` to the command
+above. The first process creates a Jazzy Fast DDS service client. The second
+creates an independently compiled service server. Select the second middleware
+with `--service-peer-rmw rmw_cyclonedds_cpp` or
+`--service-peer-rmw rmw_fastrtps_cpp`. The fixture issues two successive
+requests containing independently identifiable names. Each request must return
+one string parameter with the requested name in its value. Both processes must
+finish before their deadlines.
+
+Use `--service-control request` to run both roles using the first installation,
+or `--service-control reply` to run both using the second. Compare those controls
+with the mixed installation before attributing a failure to package installation,
+service discovery or delivery. Inspect `ros.log`, `cyclone.log` and
+`exchange.json` for the actual roles and results. Pass the resulting
+`results.json` to `tools/ros_scene/rmw_inventory.py --native-service` alongside
+the release catalog and package index. The verifier checks compiler inputs and
+flags, executable and library digests, process exits, both endpoint logs and
+the order and contents of both replies.
+
+### Crossing unlike service mappings
+
+Run `parameter_relay.py` with `--fast-prefix`, `--fast-libs`,
+`--cyclone-prefix`, `--cyclone-libs` and a new `--output` directory under
+`.tmp`. Run under the same cgroup as the direct test. The Jazzy client uses
+domain 61, the Humble server domain 62, and the two native relay processes use
+two reliable String topics on domain 63. Each end uses its local RMW for the
+original GetParameters service. The test forwards exactly two named reads and
+checks the server's typed values at the original client. With the egress
+process absent, the client must fail discovery and the ingress must time out.
+All four native processes are outside the VM. This fixture exercises the
+read-only operation on private plaintext loopback. Production use needs
+separately approved endpoints and a qualified security profile on every leg.

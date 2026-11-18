@@ -182,6 +182,25 @@ service or action and the site's configured QoS and identity. ROS documents
 its cross-distribution compatibility policy in the
 [upstream release guide](https://github.com/ros2/ros2_documentation/blob/rolling/source/Releases.rst).
 
+### Native parameter services
+
+Jazzy Fast DDS and Humble Cyclone DDS each completed both independent
+GetParameters requests when the server and client used the same installation.
+A Jazzy Fast DDS client also received both typed replies from a Humble Fast DDS server. With a Jazzy Fast DDS client and Humble Cyclone DDS server on the same
+isolated loopback network, neither process completed the service exchange.
+The reliable Int32 topic exchange succeeded for that pair. Record the
+requested operation, each endpoint's RMW and the request direction when
+approving a route. The [service fixture](../../test/0084.ros-runtime/dds_interop/README.md#native-getparameters-service)
+accepts a separate server RMW and includes controls for both installations.
+
+A typed relay delivered both named parameter responses between those same
+Jazzy Fast DDS and Humble Cyclone DDS applications. Each side used its local
+service mapping and exchanged only the two approved reads over reliable ROS
+topics on a third isolated domain. Removing the egress process prevented
+completion. This result covers the specified private plaintext relay and
+GetParameters operation. Other services, SROS2 relay endpoints and field
+deployments require their own verification.
+
 ### Zenoh RMW
 
 Two native rclcpp endpoints using Jazzy's archived Zenoh RMW 0.2.13 exchanged

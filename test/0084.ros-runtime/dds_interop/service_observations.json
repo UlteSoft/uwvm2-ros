@@ -1,0 +1,94 @@
+{
+  "rosType": "rcl_interfaces/srv/GetParameters",
+  "requestsPerCase": 2,
+  "network": "private plaintext loopback",
+  "direct": [
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "completed": 2,
+      "receiptSha256": "b346279838e9b45043ae1fa882768d02bf4a1b7d2605577b49afb91aeefc2983"
+    },
+    {
+      "client": [
+        "humble",
+        "rmw_cyclonedds_cpp"
+      ],
+      "server": [
+        "humble",
+        "rmw_cyclonedds_cpp"
+      ],
+      "completed": 2,
+      "receiptSha256": "0722aff8e9690758214d8d4c644375eab44c415e049ebfad142b0ca6e5740132"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "humble",
+        "rmw_fastrtps_cpp"
+      ],
+      "completed": 2,
+      "receiptSha256": "bc744e90d9c0cb0b4e6f6fd4321bbb2e215c9ec0a2ca1e46beee814dc6345695"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "humble",
+        "rmw_cyclonedds_cpp"
+      ],
+      "completed": 0,
+      "clientExit": 3,
+      "serverExit": 3,
+      "receiptSha256": "74531dd507c42edab747113d2738ae5f3484bb98e3c966bd92d7394e578159b7"
+    }
+  ],
+  "relay": {
+    "client": [
+      "jazzy",
+      "rmw_fastrtps_cpp"
+    ],
+    "server": [
+      "humble",
+      "rmw_cyclonedds_cpp"
+    ],
+    "domains": {
+      "client": 61,
+      "server": 62,
+      "topics": 63
+    },
+    "observed": {
+      "challenge": "163132244",
+      "cases": {
+        "with-relay": {
+          "exits": {
+            "server": 0,
+            "egress": 0,
+            "ingress": 0,
+            "client": 0
+          },
+          "passed": true
+        },
+        "missing-egress": {
+          "exits": {
+            "ingress": 3,
+            "client": 3
+          },
+          "passed": true
+        }
+      }
+    },
+    "receiptSha256": "ca3a9c7a41c65697e6433349f1eb2a1c23ffdf9c680ea9a8bfb27cf6fca3abb5"
+  }
+}

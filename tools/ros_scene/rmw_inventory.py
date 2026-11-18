@@ -140,7 +140,7 @@ def scene_run(path, manifests):
             'providerProfile': 'rmw_fastrtps_cpp', 'rmwReportedAtRuntime': None, 'positiveCases': positive}
 
 
-def inventory(catalog, directory, sdk, scene, native_wire=(), remaps=()):
+def inventory(catalog, directory, sdk, scene, native_wire=(), remaps=(), native_service=()):
     definition, checksum = load(catalog)
     rows = {(n, d): {'ros': n, 'release': d, 'stage': 'prerelease' if n == 2 and d in PRERELEASES else 'distribution',
                      'index': package_index(directory, n, d), 'executions': []} for n, d in targets(definition)}
@@ -152,6 +152,7 @@ def inventory(catalog, directory, sdk, scene, native_wire=(), remaps=()):
         rows[key]['executions'].append(entry)
         seen.add(entry['receiptSha256'])
     wire = [rmw_native_wire.verify(p, remaps) for p in native_wire]
+    wire.extend(rmw_native_wire.verify_service(p, remaps) for p in native_service)
     require(len({w['receiptSha256'] for w in wire}) == len(wire), 'duplicate native wire receipt')
     for run in wire:
         if run['status'] == 'passed':
@@ -169,12 +170,14 @@ def main():
     parser.add_argument('--scene-dds', type=Path, action='append', nargs=3, default=[], metavar=('RECEIPT','PACK_0','PACK_1'))
     parser.add_argument('--native-wire', action='append', default=[], type=Path, metavar='RESULTS',
                         help='native isolated Int32 fixture directory results.json; repeat for independent attempts')
+    parser.add_argument('--native-service', action='append', default=[], type=Path, metavar='RESULTS',
+                        help='correlated GetParameters run, including optional same-installation controls')
     parser.add_argument('--wire-remap', action='append', nargs=2, type=Path, default=[], metavar=('OLD', 'NEW'),
                         help='relocated input directory for native wire evidence')
     args = parser.parse_args()
     try:
         require(args.package_index_dir.is_dir(), 'package index directory does not exist')
-        data = inventory(args.catalog, args.package_index_dir, args.sdk_native, args.scene_dds, args.native_wire, args.wire_remap)
+        data = inventory(args.catalog, args.package_index_dir, args.sdk_native, args.scene_dds, args.native_wire, args.wire_remap, args.native_service)
     except (OSError, ValueError, TypeError, KeyError, IndexError) as exc:
         parser.exit(2, f'invalid inventory input: {exc}\n')
     json.dump(data, sys.stdout, indent=2)
