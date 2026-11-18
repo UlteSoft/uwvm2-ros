@@ -538,14 +538,35 @@ class SceneTests(unittest.TestCase):
             adapter=self.adapter(list(replies));adapter.ros_scope_stops[1]=('old','queues')
             with self.assertRaises(ValueError):adapter.query_scene_state({})
             self.assertIsNone(adapter.stop_key);self.assertEqual(adapter.ros_scope_stops,{})
+    def test_import_policy(self):
+        options=dap.scene_state_options({"selection":"policy","operation":"permission.report"})
+        first='policy environment="other" operation="permission.report" configured=hidden effective=hidden origin=explicit'
+        second='policy environment="robot" operation="permission.report" configured=unset effective=allow origin=self-default'
+        packet='scene scope=process-owned stop=9 selection=policy status=available\n'+first+'\n'+second+'\npage total=2 next=2 more=0\n'
+        sample=POLICY_PACKET.read_text() if POLICY_PACKET else packet
+        self.assertEqual(sample,packet)
+        rows=dap.parse_scene_state(sample,options,9)['rows']
+        self.assertEqual([(r['environment']['text'],r['effective']) for r in rows],[('other','hidden'),('robot','allow')])
+        for bad in (sample.replace(first,second),sample.replace('origin=explicit','origin=default'),
+                    sample.replace('effective=allow','effective=hidden'),sample.replace('operation="permission.report"','operation="abi"'),
+                    sample.replace('configured=unset','configured=deny'),sample.replace('more=0','more=1'),
+                    sample.replace('origin=self-default','origin=self-default alias=x')):
+            with self.subTest(bad=bad),self.assertRaises(ValueError):
+                dap.parse_scene_state(bad,options,9)
+        for bad in ({'selection':'policy','alias':'a'}, {'selection':'audit','operation':'abi'},
+                    {'selection':'resources','operation':'abi'}, {'selection':'policy','operation':'a'*65}):
+            with self.assertRaises(ValueError):dap.scene_state_options(bad)
     def test_dap_route(self):
         adapter=self.adapter([STOP,packet(),STOP])
         adapter.handle({'seq':1,'command':'uwvm/sceneState','arguments':{}})
         raw=adapter.output.getvalue() if hasattr(adapter,'output') else None
         self.assertEqual(adapter.broker.commands,['status','info scene authority first=0 count=8 if-stop=11','status'])
+POLICY_PACKET=None
 if __name__=='__main__':
     parser=argparse.ArgumentParser(add_help=False)
     parser.add_argument('--formatter',type=Path)
+    parser.add_argument('--policy-packet',type=Path)
     options,rest=parser.parse_known_args()
+    POLICY_PACKET=options.policy_packet
     FORMATTER=options.formatter.resolve() if options.formatter else None
     unittest.main(argv=[sys.argv[0],*rest])

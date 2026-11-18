@@ -298,3 +298,11 @@ NDJSON records are emitted to host standard error. They contain the completed op
 A hidden import is rejected during linking. A trap or process loss can prevent a normal return. The completed-call stream does not establish execution, cancellation or safe physical shutdown for any of those cases. It contains no arguments, request/response contents, native addresses, file descriptors or capability handles. Sensor values, model prompts and sealed cross-module messages remain outside this stream.
 
 For explicitly authorized cross-Wasm message bytes, see [Private payload capture](../runtime/ros-module-buffer-audit.md) for the separate file registration, route and stage selection, and fixed capture budgets.
+
+
+At a cooperative debugger stop, `info scene policy environment=robot
+operation=permission.report` displays the configured and effective import
+exposure for members of that environment. The debugger operator can inspect
+this metadata with full or read-only inspection authority. See the
+[scene inspector](../../tools/debug/README.scene.md) for pagination and
+the distinction between interface exposure and resource grants.

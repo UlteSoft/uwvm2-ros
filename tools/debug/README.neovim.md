@@ -71,7 +71,8 @@ they do not inspect the VM host, native libraries or another process.
 ## ROSv2 scene metadata
 
 At a cooperative stop, run `:UwvmScene authority` for effective grants,
-`:UwvmScene resources` for admitted resource metadata, or `:UwvmScene audit`
+`:UwvmScene resources` for admitted resource metadata, `:UwvmScene policy` for
+configured and effective import exposure, or `:UwvmScene audit`
 for the process-wide audit counters. Each command opens an immutable buffer
 with up to eight rows. If `more` is true, run `:UwvmSceneNext` in that buffer.
 The continuation uses the same session and the exact decimal stop ID.
