@@ -48,6 +48,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  for name in ('runtime','source-root','mujoco','output'):parser.add_argument('--'+name,required=True,type=Path)
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
+ parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
  a=parser.parse_args(argv)
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
@@ -110,6 +111,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
        peer_clock,own_clock=os.fstat(clock_fd),os.stat('/proc/self/ns/time')
        assert (peer_clock.st_dev,peer_clock.st_ino)==(own_clock.st_dev,own_clock.st_ino)
       flags=['--ros-scene-create','robot','--ros-scene-bind','robot','main']
+      if a.audit_calls:flags+=['--ros-scene-call-audit','single','main','all','4','8192','1000000','4']
       for name in ['capability.open']+NAMES:flags+=['--ros-scene-interface','robot',name,'allow']
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
        '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
@@ -121,11 +123,18 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
       (out/(label+'.vm.stderr')).write_bytes(stderr);(out/(label+'.peer.stderr')).write_bytes(pe)
       expected_exit=128+signal.SIGSEGV if a.namespace else -signal.SIGSEGV
       assert vm.returncode==0 and peer.returncode==(expected_exit if mode=='crash' else 0),(label,peer.returncode,stderr[-3000:],pe[-3000:])
+      audit_rows=[json.loads(line) for line in stderr.splitlines() if line.startswith(b'{"ros":"uwvm_ros_v2",')]
+      if a.audit_calls:
+       assert [row["sequence"] for row in audit_rows]==[1,2,3,4],(label,audit_rows)
+       assert all(row["caller_hex"]=="main".encode().hex() and row["group_hex"]=="robot".encode().hex()
+                  and row["phase"]=="return" and row["generation"]>0 for row in audit_rows)
+       assert any(row["function"]=="capability.open" and row["result"]==0 for row in audit_rows)
+      else:assert not audit_rows
       observed=json.loads(ps) if ps else None;rows=[json.loads(line) for line in pe.splitlines() if line.startswith(b'{')];effects=[row for row in rows if 'sequence' in row]
       if a.namespace:assert [row for row in rows if row.get('kind')=='confined']==[dict(kind='confined',escape_checks=7)]
       assert len(effects)==count and effects[-1]['steps']==(0 if mode=='range' else count)
       if mode=='success':assert all(observed[k]==native[k] for k in ('steps','time','position'))
-      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement));save();print('PASS '+label,flush=True)
+      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows));save();print('PASS '+label,flush=True)
      finally:
       keys.close();left.close()
       for process in ([vm] if vm else [])+[peer]:
