@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/limxdynamics/tron1-robot-description",
+  "commit": "ac417d44656d3c7494a095cecd62928e777a0f3a",
+  "sourceDirectory": "pointfoot/PF_TRON1A",
+  "model": "xml/robot.xml",
+  "platform": "limx",
+  "joint": "hip_L_Joint",
+  "actuator": "hip_L_Joint",
+  "files": {
+    "xml/robot.xml": "a257b5b94fd87263433e1b262a2d85b705efa7893c0442e7fc068cebbc649f75",
+    "meshes/base_Link.STL": "1fab73a8a883ee67e0e6e3c2a14a3c21799529e0c06c8d749bfefcb2f83fd727",
+    "meshes/abad_L_Link.STL": "56ca26c1d14c1b148412a5b86bf5d63a72b4aaf6bff4fb60b6adefd6a47fb8e5",
+    "meshes/hip_L_Link.STL": "d9c5699d6948d2778c4206284e76531d9ed008c3d3205ba902abd4bdc9715117",
+    "meshes/knee_L_Link.STL": "6a0b04c81523cfbb7155a7d8865887c7951c8ac8825ff933445d30403c33faad",
+    "meshes/foot_L_Link.STL": "f8d7e4f5bfcc08c1a7c4fadccbadf880b8d75d2bbb399307e12db0cc21cdf69a",
+    "meshes/abad_R_Link.STL": "dd9da40c8c868690c870e8fd1a28b27136ee9c413c1d6a403b20fb461929355d",
+    "meshes/hip_R_Link.STL": "aec019292827c33f87a34197c061ece97781882f4c706dfa7da00548821e923f",
+    "meshes/knee_R_Link.STL": "a43bc346997b71b6160a6ab49abace5fcd02ec210afdb2820485ec5f74b9eab9",
+    "meshes/foot_R_Link.STL": "3c1cbe5c43b0a32bf08a7f53aa1a62d553b3cdfa9c77c7349f8561ba77082b7b"
+  }
+}

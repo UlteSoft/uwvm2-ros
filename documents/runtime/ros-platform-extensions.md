@@ -256,6 +256,12 @@ steps, rejects an out-of-range command before a step and records loss of the
 receiver after a step. The upstream DDS driver, the radio link and a physical
 protective stop each require separate hardware or protocol tests.
 
+### LimX TRON1 point-foot model
+
+Use `test/0084.ros-runtime/mujoco_profiles/limx-tron1-pf.json` with both commands above. The fetcher retrieves the original `PF_TRON1A` MJCF and nine STL files. Add `--vendor-model-max-mib 128` to the simulation command. MuJoCo 3.4.0 produces an 84,003,794-byte model, which exceeds the default 64 MiB budget. [Original LimX model](https://github.com/limxdynamics/tron1-robot-description/tree/ac417d44656d3c7494a095cecd62928e777a0f3a/pointfoot/PF_TRON1A) · [Upstream license](https://github.com/limxdynamics/tron1-robot-description/blob/ac417d44656d3c7494a095cecd62928e777a0f3a/LICENSE)
+
+The `limx` platform permission and isolated TLS receiver passed 24 cases for the motor driving `hip_L_Joint`. Both VM engines and all four memory layouts matched the direct native reference after 128 steps. Each refused command produced zero steps. Each receiver failure after a step left the VM running and the command outcome unknown. LimX SDK transport, IMU subscriptions, actuator firmware and an independent physical stop require separate tests.
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.
