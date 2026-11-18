@@ -555,6 +555,17 @@ extern "C++"
                 // resumable checkpoint. Portable state has its own typed record.
                 static_records.push_back({archive::component::wasm_inspection,archive::completeness::partial,
                     0u,1u,measured.bytes,::std::addressof(dump),emit_core});
+#if defined(UWVM_IMPORT_ROSV2)
+                namespace scene=::uwvm2::uwvm::debugger::scene_state;
+                static_image observation;
+                try
+                {
+                    if(scene::capture_observation(stop_identifier,observation.owned))
+                        static_records.push_back({archive::component::wasm_inspection,archive::completeness::partial,
+                            1u,scene::observation_schema,observation.owned.size(),::std::addressof(observation),static_image::emit});
+                }
+                catch(::std::bad_alloc const&) {} // The Core Dump remains available without the optional observation.
+#endif
                 return emit_archive(archive::visibility::full);
                 // Destruction: detached metadata -> host gate -> pause transition
                 // -> true generation lease. No resume is performed by exporting.

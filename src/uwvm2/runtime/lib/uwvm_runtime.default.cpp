@@ -61,6 +61,9 @@
 # include <uwvm2/runtime/diagnostic/snapshot_archive.h>
 # include <uwvm2/runtime/diagnostic/snapshot_diagnostic.h>
 # include <uwvm2/runtime/diagnostic/snapshot_state.h>
+# if defined(UWVM_IMPORT_ROSV2)
+#  include <uwvm2/uwvm/debugger/scene_state.h>
+# endif
 # include <uwvm2/uwvm/debugger/checkpoint_execution_replay.h>
 # include <uwvm2/runtime/checkpoint/host_memory_phase.h>
 # include <uwvm2/runtime/memtag/host_access.h>
