@@ -18,6 +18,7 @@ from run_scene_vm import GATE, verify_gate
 
 VENDORS = {
     'rmw_fastrtps_dynamic_cpp': 'libfastrtps.so',
+    'rmw_opensplice_cpp': 'libddskernel.so',
     'rmw_int2dds_cpp': 'libint2dds_ffi.so',
 }
 
@@ -65,6 +66,8 @@ def main():
             ROOT/'test/0084.ros-runtime/dds_interop/fastdds-loopback.xml',
             GATE/'memory.max', GATE/'memory.swap.max',
         }
+        if a.rmw == 'rmw_opensplice_cpp':
+            mounts.add(Path(__file__).with_name('opensplice-loopback.xml'))
         mounts.update(Path(p) for p in baseline['inputs'] if '/dds_interop/' in p)
         cmd = ['/usr/bin/bwrap', '--die-with-parent', '--unshare-net', '--unshare-ipc', '--unshare-pid',
                '--new-session', '--cap-drop', 'ALL', '--clearenv', '--setenv', 'PATH', '/usr/bin:/bin',
@@ -98,10 +101,19 @@ def main():
                     ROS_AUTOMATIC_DISCOVERY_RANGE='SYSTEM_DEFAULT',FASTRTPS_DEFAULT_PROFILES_FILE=str(xml))
     right_env = dict(left_env, LD_LIBRARY_PATH=os.pathsep.join(map(str,libs)),AMENT_PREFIX_PATH=f'{overlay}:{right}',
                      RMW_IMPLEMENTATION=a.rmw)
+    if a.rmw == 'rmw_opensplice_cpp':
+        ospl = Path(__file__).with_name('opensplice-loopback.xml')
+        metaconfig = overlay/'etc/ospl_metaconfig.xml'
+        if not metaconfig.is_file():
+            raise ValueError('place the original OpenSplice configuration schema at '+str(metaconfig))
+        right_env.update(OSPL_HOME=str(overlay), OSPL_URI=ospl.as_uri(), OSPL_INFOFILE='<stdout>',
+                         OSPL_ERRORFILE='<stderr>', ROS_HOME=str(out))
     expected = {'request':[left_rmw,fast],'echo':[right_rmw,vendor_lib]}
     report = dict(complete=False,baseline=checked['receiptSha256'], transport='isolated loopback, plaintext Int32',
                   rmw=a.rmw,localLibrary=a.local_library,libraryHashes={str(p):digest(p) for files in expected.values() for p in files},
                   source=digest(Path(__file__)), profile=digest(xml), processes={})
+    if a.rmw == 'rmw_opensplice_cpp':
+        report.update(openSpliceProfileSha256=digest(ospl), openSpliceMetaconfigSha256=digest(metaconfig))
     challenge = 1+secrets.randbelow(2**29)
     report.update(challenge=challenge,expectedReply=challenge+1)
     try:
@@ -132,10 +144,13 @@ def main():
                 log=out/(role+'.log');row['logSha256']=digest(log)
                 text=log.read_text(errors='replace')
                 marker = 'rclcpp '+row['argv'][-1]+' '+role+' completed'
-                row['reportedCompletion'] = text.endswith(marker+'\n')
+                lines = text.splitlines(keepends=True)
+                row['reportedCompletion'] = lines.count(marker+'\n') == 1
                 err = out/(role+'.stderr')
                 row['stderrSha256'] = digest(err)
-                diagnostics = (text[:-len(marker)-1] if row['reportedCompletion'] else text) + err.read_text(errors='replace')
+                if row['reportedCompletion']:
+                    lines.remove(marker+'\n')
+                diagnostics = ''.join(lines) + err.read_text(errors='replace')
                 row['diagnostics'] = diagnostics.strip().splitlines()
                 row['rcutilsErrorReports']=diagnostics.count('] rcutils_set_error_state()')
             report['complete']=all(r['exit']==0 and r['reportedCompletion'] and

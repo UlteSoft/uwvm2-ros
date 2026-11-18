@@ -33,3 +33,14 @@ share a disposable PID, IPC and network namespace for discovery. Their
 mounts contain the system runtime, selected installations, pinned test inputs
 and a fresh output directory. The operator remains responsible for selecting
 a compatible RMW build and trusted dependencies, including transitive ones.
+
+For Dashing OpenSplice, use the release's original rmw_opensplice_cpp,
+rosidl_typesupport_opensplice_c and rosidl_typesupport_opensplice_cpp packages
+with the OpenSplice 6.9 runtime. Place the vendor shared libraries under the
+Dashing overlay's lib directory and the original configuration schema at
+etc/ospl_metaconfig.xml. Use the two-rclcpp Dashing baseline and select
+`--rmw rmw_opensplice_cpp`. The bundled XML selects private IPv4 loopback,
+unicast discovery and domain 61. The results bind the test XML and vendor
+schema digests. OpenSplice can write diagnostics during participant teardown.
+A completed result requires exactly one success line from each process and
+retains the surrounding diagnostic lines.

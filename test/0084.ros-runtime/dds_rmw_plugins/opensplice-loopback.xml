@@ -1,0 +1,18 @@
+<OpenSplice>
+  <Domain>
+    <Name>wros_loopback</Name>
+    <Id>61</Id>
+    <SingleProcess>true</SingleProcess>
+    <Service name="ddsi2"><Command>ddsi2</Command></Service>
+  </Domain>
+  <DDSI2Service name="ddsi2">
+    <General>
+      <NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>
+      <AllowMulticast>false</AllowMulticast>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <Peers><Peer Address="127.0.0.1"/></Peers>
+    </Discovery>
+  </DDSI2Service>
+</OpenSplice>
