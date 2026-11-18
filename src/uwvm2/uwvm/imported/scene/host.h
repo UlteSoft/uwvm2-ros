@@ -1079,6 +1079,8 @@ namespace uwvm2::uwvm::imported::scene
 #if defined(UWVM_VERSION_DEV)
             bool selected{};
             std::uint64_t started{};
+#else
+            static constexpr bool selected = false;
 #endif
         };
         inline trace_entry begin_trace() noexcept
@@ -1095,18 +1097,17 @@ namespace uwvm2::uwvm::imported::scene
          * time waiting inside the registered operation and excludes remote work
          * performed after the host has returned.
          */
-        inline void observe_result(std::string_view name,std::uint32_t result,[[maybe_unused]] trace_entry entry) noexcept
+        inline void observe_result(std::string_view name,std::uint32_t result,[[maybe_unused]] trace_entry entry,
+                                   [[maybe_unused]] bool audit) noexcept
         {
-            bool audit=configuration.auditing_calls();
 #if defined(UWVM_VERSION_DEV)
             namespace trace=::uwvm2::utils::debug::host_calls;
-            if(!audit && !entry.selected)return;
             auto finished=entry.started?trace::now():0;
-#else
-            if(!audit)return;
 #endif
             runtime::ros_caller_identity identity{};
-            auto known=runtime::ros_caller_identity_host_api(identity,true);
+            // The sealed runtime may still identify the caller of a rejected operation
+            // after its authority retires. This observation never authorizes a call.
+            bool const known = runtime::ros_observed_caller_identity_host_api(identity);
             std::string_view module;
             if(known)module={reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
 #if defined(UWVM_VERSION_DEV)
@@ -1141,7 +1142,9 @@ namespace uwvm2::uwvm::imported::scene
                 auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
                 {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
                 ::uwvm2::utils::container::get<0>(call.res)=result;
-                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry);
+                bool const audit = configuration.auditing_calls();
+                if(audit || entry.selected) [[unlikely]]
+                    observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry,audit);
             }
         };
         template<auto Fn,auto& Name> using native=function<decltype(Fn),Fn,Name>;

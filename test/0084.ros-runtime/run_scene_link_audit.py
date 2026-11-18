@@ -76,6 +76,35 @@ def main():
             target.write_text(json.dumps(report, indent=2) + "\n")
             if not ok:
                 raise RuntimeError((engine, label, run.returncode, run.stderr[-1600:]))
+    # An ordinary Wasm library may be linked and called. Its own exposed
+    # import still checks the immediate runtime ancestry before performing work.
+    helper_wat = out / "helper.wat"
+    helper_wat.write_text('(module (import "uwvm_ros_v2" "abi" (func $abi (result i32)))'
+                          ' (func (export "check") (result i32) call $abi))')
+    caller_wat = out / "application.wat"
+    caller_wat.write_text('(module (import "helper" "check" (func $check (result i32)))'
+                          ' (func (export "_start") call $check i32.const 13 i32.ne if unreachable end))')
+    for source in (helper_wat, caller_wat):
+        subprocess.run(["wat2wasm", source, "-o", source.with_suffix(".wasm")], check=True, timeout=30)
+    report["guests"].update({p.stem:sha(p.with_suffix(".wasm")) for p in (helper_wat, caller_wat)})
+    for engine in ("int", "aot"):
+        for principal in ("helper", "main"):
+            cmd = [vm, "--runtime-"+engine, "--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable",
+                   "--wasm-set-main-module-name", "main", "--wasm-preload-library", helper_wat.with_suffix(".wasm"), "helper",
+                   "--ros-scene-create", "library", "--ros-scene-bind", "library", "helper",
+                   "--ros-scene-interface", "library", "abi", "allow", *audit("single",principal,"denied"),
+                   "--run", caller_wat.with_suffix(".wasm")]
+            run = subprocess.run(cmd, capture_output=True, timeout=60)
+            rows = [json.loads(line) for line in run.stderr.splitlines() if line.startswith(b'{"ros":"uwvm_ros_v2",')]
+            ok = run.returncode==0 and len(rows)==int(principal=="helper")
+            if rows:
+                row=rows[0]
+                ok &= (row["phase"]=="return" and row["function"]=="abi" and row["result"]==13 and
+                       row["generation"]>0 and row["group_hex"]==b"library".hex() and row["caller_hex"]==b"helper".hex())
+            report["cases"].append(dict(engine=engine, case="library-authority", scope=principal,
+                                        exit=run.returncode, rows=rows, passed=ok))
+            target.write_text(json.dumps(report, indent=2) + "\n")
+            if not ok: raise RuntimeError((engine, principal, run.returncode, run.stderr[-1600:]))
     report["complete"] = True
     target.write_text(json.dumps(report, indent=2) + "\n")
     print("passed", len(report["cases"]))
