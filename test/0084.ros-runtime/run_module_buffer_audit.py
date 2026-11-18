@@ -7,7 +7,7 @@ import struct
 import subprocess
 
 from run_module_exchange_frames import pair
-from run_module_security_vm import CALLS, message_pair
+from run_module_security_vm import CALLS, Fixture, message_pair
 from run_scene_vm import sha, verify_gate
 
 
@@ -63,6 +63,20 @@ def main():
         clean = compile_pair("ordinary", pair(width, memory, False, 8))
         invalid = {name: compile_pair(name, message_pair(width, memory, shared=shared, exported=exported))
                    for name, shared, exported in (("private-memory", False, False), ("exported-memory", True, True))}
+        for name in ("memory-index", "output-extent", "unauthorized-operation"):
+            client = Fixture(["module.call.submit"], width, memory, True)
+            capability = client.open("exchange")
+            if name == "memory-index":
+                client.write(128, 0)
+                client.write(136, 8)
+                client.write(144, 0x12345678)
+                client.check(f"{capability} i32.const {1-memory} i64.const 128 i64.const 24 "
+                             "i64.const 2048 i64.const 128 i64.const 3072 call $module.call.submit", 95)
+            else:
+                client.call("module.call.submit", capability, [0, 8, 0x12345678], size=24,
+                            expected=95 if name == "output-extent" else 13,
+                            output=65536 if name == "output-extent" else 2048, capacity=128, length=3072)
+            invalid[name] = compile_pair(name, (client, Fixture([], width, memory, True)))
         flags = ["--ros-scene-create", "exchange", "--ros-scene-bind", "exchange", "main",
                  "--ros-scene-bind", "exchange", "worker"]
         for name in ["capability.open", *CALLS]:
@@ -73,7 +87,8 @@ def main():
         for engine in ("int", "aot"):
             for name, point in (("none", 0), ("submit", 1), ("take", 2), ("respond", 3), ("result", 4),
                                 ("oversize", 1), ("bad-route", 0), ("bad-stage", 0),
-                                ("private-memory", 1), ("exported-memory", 1)):
+                                ("private-memory", 1), ("exported-memory", 1), ("memory-index", 1),
+                                ("output-extent", 1), ("unauthorized-operation", 1)):
                 images = invalid.get(name, clean)
                 label = f"w{width}-{engine}-{name}"
                 path = out / (label + ".bin")
@@ -82,9 +97,12 @@ def main():
                 if name != "none":
                     selected = "submit" if name in ("oversize", "bad-route") or name in invalid else name
                     options += ["--ros-scene-call-buffer-capture", "exchange", "wrong" if name == "bad-route" else "echo", selected]
+                applied = list(flags)
+                if name == "unauthorized-operation":
+                    applied[-1] = ",".join(op for op in CALLS if op != "module.call.submit")
                 command = [str(runtime), "--wasm-set-main-module-name", "main", "--runtime-" + engine,
                            "--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable",
-                           "--runtime-memtag-backend", "software", *flags, *options, "--wasm-preload-library",
+                           "--runtime-memtag-backend", "software", *applied, *options, "--wasm-preload-library",
                            str(images[1]), "worker", "--run", str(images[0])]
                 try:
                     run = subprocess.run(command, pass_fds=(fd,), capture_output=True, timeout=60)
@@ -93,7 +111,8 @@ def main():
                 (out / (label + ".stderr")).write_bytes(run.stderr)
                 expected_failure = name.startswith("bad-")
                 if expected_failure:
-                    if not run.returncode or path.stat().st_size not in (8, 64):
+                    reason = b"capture stage requires" if name == "bad-stage" else b"invalid, duplicate, conflicting or late configuration"
+                    if not run.returncode or reason not in run.stderr or path.stat().st_size not in (8, 64):
                         raise ValueError("invalid selector reached a guest: " + label)
                 else:
                     if run.returncode:
