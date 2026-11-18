@@ -44,3 +44,13 @@ unicast discovery and domain 61. The results bind the test XML and vendor
 schema digests. OpenSplice can write diagnostics during participant teardown.
 A completed result requires exactly one success line from each process and
 retains the surrounding diagnostic lines.
+
+A site can select a peer's vendor configuration with
+`--peer-profile FILE SHA256`. The harness checks the pinned file before
+creating the namespace and checks it again inside. It exposes the file
+read-only. Fast DDS reads it via `FASTRTPS_DEFAULT_PROFILES_FILE`, GurumDDS
+via `GURUMDDS_CONFIG`, and RTI Connext Professional via `NDDS_QOS_PROFILES`.
+The setting applies only to the echo peer. For a licensed middleware,
+supply the matching installed plugin and library with `--local-library`.
+The configuration file should select the loopback interface and allow
+discovery on domain 61. A passed exchange records the configuration digest.

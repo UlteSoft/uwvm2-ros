@@ -23,6 +23,15 @@ VENDORS = {
 }
 
 
+# Only the selected reply process receives this fixed middleware-specific setting.
+SITE_PROFILES = {
+    'rmw_fastrtps_cpp': 'FASTRTPS_DEFAULT_PROFILES_FILE',
+    'rmw_fastrtps_dynamic_cpp': 'FASTRTPS_DEFAULT_PROFILES_FILE',
+    'rmw_gurumdds_cpp': 'GURUMDDS_CONFIG',
+    'rmw_connextdds': 'NDDS_QOS_PROFILES',
+}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--baseline', type=Path, required=True)
@@ -30,6 +39,8 @@ def main():
     parser.add_argument('--rmw', required=True, help='Exact rmw implementation identifier')
     parser.add_argument('--local-library', nargs=3, metavar=('SONAME', 'PLUGIN_SHA256', 'LIBRARY_SHA256'),
                         help='Require these exact original library digests for a site-provided RMW')
+    parser.add_argument('--peer-profile', nargs=2, metavar=('FILE', 'SHA256'),
+                        help='Mount one pinned native peer configuration read-only')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
     a = parser.parse_args()
@@ -50,6 +61,15 @@ def main():
         soname = VENDORS[a.rmw]
     else:
         parser.error('a site-provided RMW requires --local-library')
+    peer_profile = None
+    if a.peer_profile:
+        if a.rmw not in SITE_PROFILES:
+            parser.error('the selected middleware has no local profile binding')
+        peer_profile = Path(a.peer_profile[0]).resolve(strict=True)
+        if (not peer_profile.is_file() or peer_profile.stat().st_size > 1 << 20
+                or not re.fullmatch(r'[a-f0-9]{64}', a.peer_profile[1])
+                or digest(peer_profile) != a.peer_profile[1]):
+            raise ValueError('native peer profile differs before peer startup')
     baseline = json.loads(receipt.read_bytes())
     args = baseline['steps'][-1]['argv']
     left, right = (Path(baseline[k]['prefix']) for k in ('request_peer','reply_peer'))
@@ -68,6 +88,8 @@ def main():
         }
         if a.rmw == 'rmw_opensplice_cpp':
             mounts.add(Path(__file__).with_name('opensplice-loopback.xml'))
+        if peer_profile:
+            mounts.add(peer_profile)
         mounts.update(Path(p) for p in baseline['inputs'] if '/dds_interop/' in p)
         cmd = ['/usr/bin/bwrap', '--die-with-parent', '--unshare-net', '--unshare-ipc', '--unshare-pid',
                '--new-session', '--cap-drop', 'ALL', '--clearenv', '--setenv', 'PATH', '/usr/bin:/bin',
@@ -81,6 +103,8 @@ def main():
                     '--worker', '--baseline', receipt, '--overlay', overlay, '--rmw', a.rmw, '--output', out))
         if a.local_library:
             cmd.extend(('--local-library', *a.local_library))
+        if peer_profile:
+            cmd.extend(('--peer-profile', peer_profile, a.peer_profile[1]))
         return subprocess.run(cmd, timeout=55).returncode
     interfaces = [line.split(':',1)[0].strip() for line in Path('/proc/net/dev').read_text().splitlines()[2:]]
     if interfaces != ['lo']:
@@ -108,12 +132,16 @@ def main():
             raise ValueError('place the original OpenSplice configuration schema at '+str(metaconfig))
         right_env.update(OSPL_HOME=str(overlay), OSPL_URI=ospl.as_uri(), OSPL_INFOFILE='<stdout>',
                          OSPL_ERRORFILE='<stderr>', ROS_HOME=str(out))
+    if peer_profile:
+        right_env[SITE_PROFILES[a.rmw]] = str(peer_profile)
     expected = {'request':[left_rmw,fast],'echo':[right_rmw,vendor_lib]}
     report = dict(complete=False,baseline=checked['receiptSha256'], transport='isolated loopback, plaintext Int32',
                   rmw=a.rmw,localLibrary=a.local_library,libraryHashes={str(p):digest(p) for files in expected.values() for p in files},
                   source=digest(Path(__file__)), profile=digest(xml), processes={})
     if a.rmw == 'rmw_opensplice_cpp':
         report.update(openSpliceProfileSha256=digest(ospl), openSpliceMetaconfigSha256=digest(metaconfig))
+    if peer_profile:
+        report['peerProfile'] = dict(setting=SITE_PROFILES[a.rmw], sha256=a.peer_profile[1])
     challenge = 1+secrets.randbelow(2**29)
     report.update(challenge=challenge,expectedReply=challenge+1)
     try:
