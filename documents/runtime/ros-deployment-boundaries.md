@@ -87,21 +87,20 @@ The [SROS2 tutorials](https://github.com/ros2/sros2/blob/rolling/SROS2_Linux.md)
 warn that secure communication between DDS vendors is not supported; a standard
 or shared topic name does not replace a tested interoperability matrix.
 
-[ESROS2](https://www.csa.iisc.ac.in/~vg/papers/sigops_atc2026/sigops_atc2026.pdf)
-adds application confinement to SROS2 using syscall-context checks, eBPF and
-Intel MPK. It addresses bypasses through direct OS access; it is not a separate
-DDS wire format. Its architecture informs the requirement that a native driver
-must not escape through unmediated sockets/files. Do not assume its Intel MPK
-implementation works across all five Linux VM ABIs. The acquired package-name
-inventory contains SROS2, but no package named ESROS2; source availability and
-interoperability for that research implementation remain unverified.
+[ESROS2](https://www.csa.iisc.ac.in/~vg/papers/sigops_atc2026/) adds
+syscall-context checks, eBPF and Intel MPK around native SROS2 applications.
+The authors publish their [wrapper and eBPF sources](https://github.com/Esros2/ESROS2/tree/3d43c3433e43e7d7d6f7267fb4eaa2f1caf26678).
+A deployment using this research implementation needs evidence for its actual
+CPU, kernel, native application, DDS runtime and enforced policy. The indexed
+ROS corpus contains SROS2. Execution of ESROS2 remains unverified.
 
-Current native evidence covers explicit loopback FastDDS/Jazzy profiles and
-private broker-connected workers, including bounded topics and selected
-service/action bindings. Authenticated external DDS, multiple RMW combinations,
-generic service/action adapters and complete native ROS1 bridging require
-additional implementation and end-to-end qualification. The current private
-transport must not be relabelled as a general DDS Security integration.
+The [distribution and middleware results](ros-distribution-rmw-inventory.md)
+record original TCPROS clients across thirteen releases and the specific
+ROS 2 middleware pairs that exchanged messages. Native Jazzy Fast DDS with
+SROS2 Enforce has a separate authorized and denied topic test. The retained
+Wasm traffic tests use separately provisioned peers on selected topics and
+services. Custom service/action mappings, cross-vendor encrypted operation
+and hardware deployment each require independent tests.
 
 ## Package evidence and semantic gaps
 

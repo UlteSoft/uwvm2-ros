@@ -174,3 +174,20 @@ For deployment acceptance, use original endpoints with the actual message,
 service or action and the site's configured QoS and identity. ROS documents
 its cross-distribution compatibility policy in the
 [upstream release guide](https://github.com/ros2/ros2_documentation/blob/rolling/source/Releases.rst).
+
+### Site middleware and application security
+
+Record the ROS release, RMW, vendor runtime version and the negotiated
+security policy separately. For example, GurumNetworks publishes a
+[version pairing table](https://github.com/ros2/rmw_gurumdds#requirements)
+and lists DDS Security as incomplete. The
+[RTI Connext RMW configuration](https://github.com/ros2/rmw_connextdds#rmw_connext_cyclone_compatibility_mode)
+documents a distinct service request mapping for Cyclone DDS. A successful
+topic exchange provides no evidence about that service mapping.
+
+An upstream SROS2 interoperability run covers the enclaves, policy files
+and endpoints used by that run. [ESROS2](https://www.csa.iisc.ac.in/~vg/papers/sigops_atc2026/)
+adds native application sandboxing using eBPF and Intel MPK. Qualifying it
+requires the original sandboxed endpoint as well as a wire exchange. The
+[authors’ artifact](https://github.com/Esros2/ESROS2/tree/3d43c3433e43e7d7d6f7267fb4eaa2f1caf26678)
+is an independent upstream source.
