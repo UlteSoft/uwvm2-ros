@@ -68,3 +68,13 @@ process absent, the client must fail discovery and the ingress must time out.
 All four native processes are outside the VM. This fixture exercises the
 read-only operation on private plaintext loopback. Production use needs
 separately approved endpoints and a qualified security profile on every leg.
+
+For Dashing, Eloquent and Foxy, pass `--peer-cxx-standard 17 --server-domain-topics`.
+These rclcpp versions read the domain from the process environment. Domain 61 holds
+the client and ingress service. Domain 62 holds the server, egress client and both
+transit topics. A real installation using this topology must authorize the two
+additional topics on domain 62. Galactic accepts C++17 and the default three domains.
+The runner reads the installed Cyclone version to select its loopback schema and
+gives each process its own log directory. The [individual service
+observations](service_observations.json) list nine successful relay pairings and
+their missing-egress controls.

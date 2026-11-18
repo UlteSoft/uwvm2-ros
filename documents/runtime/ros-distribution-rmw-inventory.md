@@ -198,8 +198,7 @@ Jazzy Fast DDS and Humble Cyclone DDS applications. Each side used its local
 service mapping and exchanged only the two approved reads over reliable ROS
 topics on a third isolated domain. Removing the egress process prevented
 completion. This result covers the specified private plaintext relay and
-GetParameters operation. Other services, SROS2 relay endpoints and field
-deployments require their own verification.
+GetParameters operation. The same two reads and the missing-egress rejection also passed with Dashing, Eloquent, Foxy, Galactic, Iron, Kilted, Lyrical and Rolling Cyclone servers. Dashing, Eloquent and Foxy shared their server domain with the two explicitly selected transit topics. The other six server installations kept the third transit domain. Other service types, protected relay endpoints and field deployments require separate verification.
 
 ### Micro XRCE-DDS
 

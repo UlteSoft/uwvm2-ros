@@ -202,5 +202,169 @@
       }
     },
     "receiptSha256": "ca3a9c7a41c65697e6433349f1eb2a1c23ffdf9c680ea9a8bfb27cf6fca3abb5"
-  }
+  },
+  "qualifiedRelayPairs": [
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "dashing",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 62
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "358848c0690b88ff6693116168300f9ab506074c715a8f8331368284d0c8a9b8"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "eloquent",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 62
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "4558361bb3ec7746c4a7357a034656406df8312181269a52765c7ae72d511d1a"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "foxy",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 62
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "b1f8e47ca9a26181a7c2d7a5e36aa74391f228dd0fd77f233459a0bbe77cc5a8"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "galactic",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "13d154dc171b01f68b409979c3561bc81bb8b08a22bf8f470ffc254d6321b457"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "humble",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "5560428234c922a1a79ef53f2a9c133474186294b781834b250f1bab412766a3"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "iron",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "695bd99573ec1e67f1442e04cb4c27d78f66ead654f44ffd0122b5db6de89ed5"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "kilted",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "2725014e568affde068894d9f2b6aa5a12a84199ad364c01f4dbfa8ab208d5b0"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "lyrical",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "a5ea1055cf0617f9e77f04efba4bf23f8b8e5e4089535224d779c2b9e4f72ce8"
+    },
+    {
+      "client": [
+        "jazzy",
+        "rmw_fastrtps_cpp"
+      ],
+      "server": [
+        "rolling",
+        "rmw_cyclonedds_cpp"
+      ],
+      "domains": {
+        "client": 61,
+        "server": 62,
+        "topics": 63
+      },
+      "typedReplies": 2,
+      "missingEgressRejected": true,
+      "receiptSha256": "c140a3e5675970f1097876e78faf3a1959b5fff81a6d8f651b73598ee6f365d4"
+    }
+  ]
 }

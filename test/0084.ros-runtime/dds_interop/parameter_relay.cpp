@@ -1,6 +1,6 @@
 /** @file @brief Bridge two named parameter reads across independent DDS service mappings.
- * The test provisions two separate ROS domains for clients and servers and a third
- * for a fixed pair of reliable relay topics. It accepts two named observations in
+ * The test provisions separate client and server domains. Two fixed reliable
+ * topics use a third domain by default, or the selected legacy server domain. It accepts two named observations in
  * order. The upstream service supplies each result and a deadline bounds every wait.
  */
 #include <stdint.h>
@@ -11,7 +11,8 @@
 #include <rmw/rmw.h>
 
 #include <chrono>
-#include <cctype>
+#include <cstdlib>
+#include <stdexcept>
 #include <cstdio>
 #include <memory>
 #include <optional>
@@ -25,6 +26,21 @@ using Sample = std_msgs::msg::String;
 using Value = rcl_interfaces::msg::ParameterValue;
 constexpr auto string_type = rcl_interfaces::msg::ParameterType::PARAMETER_STRING;
 
+// Early rclcpp releases obtain the node domain from the process environment.
+template<class Options>
+static auto assign_domain(Options& options, unsigned id, int) -> decltype(options.set_domain_id(id), void())
+{
+    options.set_domain_id(id);
+}
+
+template<class Options>
+static void assign_domain(Options&, unsigned id, long)
+{
+    char const* configured = std::getenv("ROS_DOMAIN_ID");
+    if (!configured || std::to_string(id) != configured)
+        throw std::invalid_argument("this rclcpp requires one configured domain per process");
+}
+
 struct Domain
 {
     std::shared_ptr<rclcpp::Context> context = std::make_shared<rclcpp::Context>();
@@ -34,12 +50,16 @@ struct Domain
     Domain(unsigned id, char const* name)
     {
         rclcpp::InitOptions init;
-        init.set_domain_id(id);
+        assign_domain(init, id, 0);
         context->init(0, nullptr, init);
         rclcpp::NodeOptions options;
         options.context(context).start_parameter_services(false).start_parameter_event_publisher(false);
         node = rclcpp::Node::make_shared(name, options);
+#if __has_include(<rclcpp/executor_options.hpp>)
         rclcpp::ExecutorOptions execution;
+#else
+        rclcpp::executor::ExecutorArgs execution;
+#endif
         execution.context = context;
         executor = std::make_unique<rclcpp::executors::SingleThreadedExecutor>(execution);
         executor->add_node(node);
@@ -58,10 +78,10 @@ static bool wait_for(Domain& domain, Ready ready, Clock::time_point end)
     return ready();
 }
 
-static bool transfer(bool ingress, std::string const& token)
+static bool transfer(bool ingress, std::string const& token, unsigned wire_domain)
 {
     Domain local(ingress ? 61 : 62, ingress ? "wros_ingress" : "wros_egress");
-    Domain wire(63, ingress ? "wros_ingress_transport" : "wros_egress_transport");
+    Domain wire(wire_domain, ingress ? "wros_ingress_transport" : "wros_egress_transport");
     auto send = wire.node->create_publisher<Sample>(ingress ? "/wros_relay/query" : "/wros_relay/value", 2);
     unsigned count = 0;
     bool failed = false;
@@ -120,11 +140,13 @@ static bool transfer(bool ingress, std::string const& token)
 
 int main(int argc, char** argv)
 {
-    if (argc != 4) return 1;
+    if (argc != 5) return 1;
+    std::string const wire_domain(argv[4]);
+    if (wire_domain != "62" && wire_domain != "63") return 1;
     std::string role(argv[1]), token(argv[2]);
     if ((role != "ingress" && role != "egress") || token.empty() || token.size() > 9 ||
         token.find_first_not_of("0123456789") != std::string::npos) return 1;
     if (std::string(rmw_get_implementation_identifier()) != argv[3]) return 2;
-    if (!transfer(role == "ingress", token)) return 3;
+    if (!transfer(role == "ingress", token, wire_domain == "62" ? 62U : 63U)) return 3;
     std::printf("GetParameters relay %s %s %s-a %s-b completed\n", role.c_str(), argv[3], token.c_str(), token.c_str());
 }
