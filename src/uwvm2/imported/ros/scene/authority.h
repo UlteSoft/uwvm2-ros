@@ -12,6 +12,7 @@
  * admissions. Fixed capacity reservations are independent of rate limits.
  */
 #pragma once
+#include "identifier.h"
 #include <uwvm2/utils/container/standard.h>
 #include <array>
 #include <atomic>
@@ -204,12 +205,6 @@ namespace uwvm2::imported::ros::scene
         bool infinite_wait{};
         attenuation limits;
     };
-    inline bool identifier(std::string_view name) noexcept
-    {
-        if(name.empty()||name.size()>255||name=="."||name=="..")return false;
-        for(auto c:name)if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_'||c=='-'||c=='.'))return false;
-        return true;
-    }
     inline bool valid(grant const& value) noexcept
     {
         if(!identifier(value.alias)||!identifier(value.resource)||!identifier(value.binding)||value.actions.empty())return false;
