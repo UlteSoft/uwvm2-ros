@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/google-deepmind/mujoco_menagerie",
+  "commit": "370c43965323c0944b433b202aac5058b5f907a9",
+  "sourceDirectory": "ufactory_lite6",
+  "model": "scene.xml",
+  "platform": "ufactory",
+  "joint": "joint1",
+  "actuator": null,
+  "files": {
+    "scene.xml": "3e009a1b8105cc1f2c7a5e15352e31827f353b64b1f17e3b696d47818b01c7bf",
+    "lite6.xml": "89672be1b10bef6ab49850c105f6faf1945bf13d238f8a79df0f200cfe6d7796",
+    "assets/visual/link_base.stl": "84f69488a1de60c76c23f83b1759ed76e9235bd56b4b98b4c997c24c18ba7b42",
+    "assets/visual/link1.stl": "41d28af66c2fbd6a93b9fb5f9cfceb3c1de1f021928006871ae4e9d813f8459a",
+    "assets/visual/link2.stl": "d082d23629f1fe619bfc664208039e177cf774a6f953c2c1722aec20edd73ca4",
+    "assets/visual/link3.stl": "ff11c8164bb932cfdfedf27f875e5d5bd3ae13df128c44809da1bf15b712d759",
+    "assets/visual/link4.stl": "902ef2e6c6f66f0fa72b8b7e242ea75ea85af7dfd35581997ceaf475e25a4954",
+    "assets/visual/link5.stl": "3e0c201146a4444a08493d83a273f81b0298a723186a2bb27ede21c574237a41",
+    "assets/visual/link6.stl": "36a7bad22997a0938884485997f026b602bd952674a22d3a8e47cc160cde70d8",
+    "assets/collision/link_base.stl": "728a2e960227fe8b781e7220e0c9a171e2f746524c5db7875bb15b3a2ce2ff92",
+    "assets/collision/link1.stl": "ac91231b9338ecc99dc4f318854f3288d427dbf7d36d5f1a916b7cdb00e0ee8b",
+    "assets/collision/link2.stl": "2945b39ecc4154da30d1ebe5a9b380e742a379fb0902148f2e286672f46ee1db",
+    "assets/collision/link3.stl": "9af8b412d1f9bc5714be78f4473f28f4ffa91caa0455f215e24e132c8ef433cd",
+    "assets/collision/link4.stl": "17ff580ba7a4477c120374b2e6396940bab2cdc8fad07a34af9ae44b08ee1515",
+    "assets/collision/link5.stl": "f69ec2478819438078db12412597d51bb815acb66d0e1aaa57d4d0f93630fc9c",
+    "assets/collision/link6.stl": "6c2492bd20f3b7216626f00f7e8b63cda12e3faec9b64c6216d1d53022f2ee18"
+  }
+}

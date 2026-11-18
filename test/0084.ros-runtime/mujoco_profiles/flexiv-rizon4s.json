@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/google-deepmind/mujoco_menagerie",
+  "commit": "370c43965323c0944b433b202aac5058b5f907a9",
+  "sourceDirectory": "flexiv_rizon4s",
+  "model": "scene.xml",
+  "platform": "flexiv",
+  "joint": "joint1",
+  "actuator": "joint1",
+  "files": {
+    "scene.xml": "58b8c4056553acc571f38aebb7cbfd9e26a03d2030bd4bd053ec43cdebbd2a48",
+    "flexiv_rizon4s.xml": "5bd33931cca3ecff96c8c6a7cc3a44d58472e78fe8483c564613e34a5b508a37",
+    "assets/link0/link0.obj": "cb7968064f5477ce25401f5dd6d69e2ec70c1ecf54e88dfc21f0397f42f38fd5",
+    "assets/link1/link1_0.obj": "6161eacd9d517b6d54aed979de6cc104c0751d43e4ffa81278b032f62186f66a",
+    "assets/link1/link1_1.obj": "575c5cb39c8c8fa5263c61f16f2343ad014296095280e31475ed473cc512df02",
+    "assets/link2/link2_0.obj": "289c9764904962e43a194553c8219c8271224d8203baa8940aadf25a041465f9",
+    "assets/link2/link2_1.obj": "eea00b040b02ec014761c288403380d8a3ec43dd0054f7adaef6e0c8e6e1eaf8",
+    "assets/link3/link3_0.obj": "1f4f9b6b752aa1968608bf39a0487cbb4abefdc443fae3b03ffd0673a59e1cc3",
+    "assets/link3/link3_1.obj": "b7e68e21687db1c4e97f156da19e30984ed7ddae2bfacd0dc5339f66cd0627a3",
+    "assets/link4/link4_0.obj": "8dca849d28a663ab5264d56cb6c43d0ca8b914861ff23be8b7a799e6d31b6c26",
+    "assets/link4/link4_1.obj": "74a065eb55caa9afa87d3c6768d9ac845a0ce60c707a97d6aaf44987780c9f40",
+    "assets/link5/link5_0.obj": "8beadd0185a3f96f744043b94ef18007aa4d5a1e673f1201dabe409c28386f3c",
+    "assets/link5/link5_1.obj": "c6275b0615a348ef1a2e8d6114f1010d4529ddf2da9bfab4d6747ab2b5cd6eda",
+    "assets/link6/link6_0.obj": "e253d08ce01ce4a850a215d24ae1777c5cd340a61f1193afe747307ae3dc9d43",
+    "assets/link6/link6_1.obj": "665d54f75bd42206c421640d3ac2c6ecd5e4943bd9b215355fd74e1ab0a6e93f",
+    "assets/link7/link7.obj": "c24022b76408b2cdf0b78fe3efbf18caadb90246511d95eb1237c167c78ee507"
+  }
+}

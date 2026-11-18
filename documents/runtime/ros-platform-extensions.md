@@ -253,3 +253,17 @@ and the common external driver session. It compares physics state after 128
 steps, rejects an out-of-range command before a step and records loss of the
 receiver after a step. The upstream DDS driver, the radio link and a physical
 protective stop each require separate hardware or protocol tests.
+
+## Models from MuJoCo Menagerie
+
+The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.
+
+| Simulation model | Selected hinge | Profile |
+| --- | --- | --- |
+| `trossen_wx250s` | `waist` | [trossen-wx250s.json](../../test/0084.ros-runtime/mujoco_profiles/trossen-wx250s.json) |
+| `kinova_gen3` | `joint_1` | [kinova-gen3.json](../../test/0084.ros-runtime/mujoco_profiles/kinova-gen3.json) |
+| `kuka_iiwa_14` | `joint1` | [kuka-iiwa-14.json](../../test/0084.ros-runtime/mujoco_profiles/kuka-iiwa-14.json) |
+| `flexiv_rizon4s` | `joint1` | [flexiv-rizon4s.json](../../test/0084.ros-runtime/mujoco_profiles/flexiv-rizon4s.json) |
+| `ufactory_lite6` | `joint1` | [ufactory-lite6.json](../../test/0084.ros-runtime/mujoco_profiles/ufactory-lite6.json) |
+
+A separate Unitree Go2 run compiled C, C++, Fortran and Lua controllers using their public SDK installations. Each controller passed the six wasm32 cases at memory index zero with the two engines, including rejection of an out-of-range command and loss of the receiver. These results exercise the simulated joint and the common external driver interface. Vendor controller firmware and physical stopping behavior have independent acceptance tests.
