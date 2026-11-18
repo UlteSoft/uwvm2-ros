@@ -100,7 +100,9 @@ namespace uwvm2::imported::ros::scene
         {
             if(!available())return error::denied;
             lease allowed;auto status=permissions->admit(who,capability,action,0,allowed,false);if(status!=error::success)return status;
-            result=target(allowed.specification().alias);return result?error::success:error::denied;
+            auto const& policy=allowed.specification();
+            result=target(service_observer(policy)?policy.resource:policy.alias);
+            return result?error::success:error::denied;
         }
         static bool creates(operation action)noexcept
         {return action==operation::node_open||action==operation::topic_open||action==operation::service_open;}

@@ -205,9 +205,19 @@ namespace uwvm2::imported::ros::scene
         bool infinite_wait{};
         attenuation limits;
     };
+    /** @brief An independently revocable readiness grant for exactly one client grant.
+     * @details The operator sets resource to the exact client grant alias. This
+     * registration confers no ability to open the endpoint or send requests.
+     */
+    inline bool service_observer(grant const& value) noexcept
+    {
+        return value.kind==purpose::service && value.binding=="service-observer" && value.alias!=value.resource &&
+               value.actions.size()==1 && value.actions.contains("service.available");
+    }
     inline bool valid(grant const& value) noexcept
     {
         if(!identifier(value.alias)||!identifier(value.resource)||!identifier(value.binding)||value.actions.empty())return false;
+        if(value.binding=="service-observer"&&!service_observer(value))return false;
         for(auto const& action:value.actions)if(!permits(value.kind,action))return false;
         bool limited=value.limits.calls.has_value()||value.limits.bytes.has_value();
         return value.limits.window.count()>0&&(!limited||value.limits.uncertain);

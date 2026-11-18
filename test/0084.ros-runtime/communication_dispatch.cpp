@@ -8,6 +8,7 @@
 #include <uwvm2/imported/ros/scene/communication_mutations.h>
 #include <uwvm2/imported/ros/scene/communication_queries.h>
 #include <uwvm2/imported/ros/scene/communication_worker_receiver.h>
+#include <uwvm2/imported/ros/scene/call_audit.h>
 #include <uwvm2/imported/ros/scene/communication_worker_closure.h>
 #include <cassert>
 #include <iostream>
@@ -231,6 +232,8 @@ struct backend final:c::backend
 };
 static bytes encode(auto&& f)
 {std::array<std::uint8_t,4096> storage{};w::writer out{storage};assert(f(out));return {out.written().begin(),out.written().end()};}
+[[maybe_unused]] static bytes readiness(s::handle endpoint,s::handle source=0)
+{return encode([&](auto& out){return out.u64(endpoint)&&out.u64(source);});}
 [[maybe_unused]] static bytes resource(s::handle id){return encode([&](auto& out){return out.u64(id);});}
 static bytes open_profile(std::string_view name){return encode([&](auto& out){return contract::encode_profile(out,profile(name));});}
 static s::communication_dispatch::limits limits()
@@ -442,7 +445,7 @@ static void schemas_observation_and_unknown()
     assert(f.call(contract::operation::topic_describe,f.pub_cap,resource(f.pub_id),result)==error::success);
     assert(f.call(contract::operation::qos_describe,f.pub_cap,resource(f.pub_id),result)==error::success);
     f.service_id=f.opened(contract::operation::service_open,f.service_cap,f.endpoint("srv","client"));
-    assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),result)==error::success);
+    assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),result)==error::success);
     w::reader reader{result};bool available{};std::uint64_t clock{},epoch{};std::int64_t time{};
     assert(reader.boolean(available)&&available&&reader.u64(clock)&&clock==999&&reader.u64(epoch)&&epoch==0&&reader.i64(time)&&time==0&&reader.done());
     assert(f.call(contract::operation::qos_describe,f.service_cap,resource(f.service_id),result)==error::success);
@@ -565,7 +568,7 @@ static void independent_service_description()
         auto response=quality();response.depth=3;f.native->client->evidence[1]=response;describe(true,true);
         auto admissions=f.admissions("service");
         assert(f.call(contract::operation::service_describe,f.service_cap,resource(f.service_id),result,1)==error::too_large&&f.admissions("service")==admissions);
-        assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),result)==error::denied);
+        assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),result)==error::denied);
         assert(f.call(contract::operation::service_take,f.service_cap,resource(f.service_id),result)==error::denied);
         assert(f.call(contract::operation::qos_describe,f.service_cap,resource(f.service_id),result)==error::denied);
         f.native->client->evidence[1]->history=999;
@@ -579,23 +582,85 @@ static void observation_preflight_and_reentrant_provider()
 {
     fixture f;bytes result;
     f.service_id=f.opened(contract::operation::service_open,f.service_cap,f.endpoint("srv","client"));
-    assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),result,31)==error::too_large&&!f.native->client->availability_calls);
+    assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),result,31)==error::too_large&&!f.native->client->availability_calls);
     assert(f.call(contract::operation::qos_describe,f.service_cap,resource(f.service_id),result,1)==error::too_large&&!f.native->client->inspections);
     auto callback=[&]
     {
         bytes nested;
         assert(f.dispatch.close(f.who,f.service_cap,f.service_id)==error::again);
-        assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),nested)==error::again);
+        assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),nested)==error::again);
     };
     f.native->client->during_available=callback;
-    assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),result)==error::success&&f.native->client->availability_calls==1);
+    assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),result)==error::success&&f.native->client->availability_calls==1);
     auto revoke=[&]{assert(f.authority->revoke("response",[&](auto alias){f.dispatch.revoke(alias);})==error::success);};
     f.native->client->during_available=revoke;
-    assert(f.call(contract::operation::service_available,f.service_cap,resource(f.service_id),result)==error::cancelled&&f.native->client->closed);
+    assert(f.call(contract::operation::service_available,f.service_cap,readiness(f.service_id),result)==error::cancelled&&f.native->client->closed);
     f.native->client->during_available={};
     fixture exhausted(true,true,{},false,false,false,false,c::service_role::client,1);
     exhausted.pub_id=exhausted.opened(contract::operation::topic_open,exhausted.pub_cap,exhausted.endpoint("pub","publisher"));
     assert(exhausted.call(contract::operation::qos_describe,exhausted.pub_cap,resource(exhausted.pub_id),result)==error::again&&!exhausted.native->publisher->inspections);
+}
+static void paired_service_readiness()
+{
+    auto configure=[](s::authority& grants)
+    {
+        for(auto name:{"observer","other"})
+        {
+            s::grant policy;policy.kind=s::purpose::service;policy.binding="service-observer";policy.alias=name;
+            policy.resource=name==std::string_view{"observer"}?"service":"other-client";policy.actions.emplace("service.available");
+            assert(grants.configure(std::move(policy))==error::success);
+        }
+    };
+    for(bool retire_source:{false,true})
+    {
+        fixture f(true,true,configure);
+        auto id=f.opened(contract::operation::service_open,f.service_cap,f.endpoint("srv","client"));
+        s::handle observer{},other{};
+        assert(f.authority->open(f.who,"observer",observer)==error::success);
+        assert(f.authority->open(f.who,"other",other)==error::success);
+        bytes result;
+        auto call=[&](s::handle query,s::handle source){return f.call(contract::operation::service_available,query,readiness(id,source),result);};
+        assert(call(observer,0)==error::denied && call(f.service_cap,f.service_cap)==error::denied);
+        assert(call(observer,observer)==error::denied && call(observer,f.node_cap)==error::denied);
+        assert(call(other,f.service_cap)==error::denied);
+        assert(f.call(contract::operation::service_available,observer,resource(id),result)==error::invalid);
+        assert(!f.native->client->availability_calls);
+        auto count=[&](std::string_view name)
+        {
+            uwvm2::utils::container::std_vector<s::authority_snapshot> rows;
+            assert(f.authority->inspect(rows,32));for(auto const& row:rows)if(row.alias==name)return row.admissions;
+            assert(false);return std::uint64_t{};
+        };
+        auto original=count("service");
+        assert(call(observer,f.service_cap)==error::success && f.native->client->availability_calls==1 && result.size()==32);
+        assert(count("service")==original && count("observer")==1);
+        result.clear();
+        s::service_observation_audit::frame captured{true};
+        auto revoke=[&]{assert(f.authority->revoke(retire_source?"service":"observer",[&](auto alias){f.dispatch.revoke(alias);})==error::success);};
+        f.native->client->during_available=revoke;
+        assert(call(observer,f.service_cap)!=error::success && result.empty() && f.native->client->availability_calls==2);
+        f.native->client->during_available={};
+        auto metadata=s::service_observation_audit::current;
+        assert((std::string_view{metadata->observer.data(),metadata->observer_length}=="observer"));
+        assert((std::string_view{metadata->source.data(),metadata->source_length}=="service"));
+        assert(metadata->lost==(retire_source?s::service_observation_audit::withdrawal::source:
+                                                s::service_observation_audit::withdrawal::observer));
+        s::call_audit::journal journal;
+        assert(journal.add(s::call_audit::scope::global,"*",false,{3,8192,100,3}));
+        std::string entry;
+        auto capture=[&](std::string_view line){entry.assign(line);return true;};
+        journal.observe("robot","application",1,"service.available",13,1,capture);
+        assert(entry.find("\"observer_hex\":\"6f62736572766572\"")!=entry.npos);
+        assert(entry.find("\"source_hex\":\"73657276696365\"")!=entry.npos);
+        assert(entry.find(retire_source?"\"authority_lost\":\"source\"":"\"authority_lost\":\"observer\"")!=entry.npos);
+        {
+            s::service_observation_audit::frame nested{true};entry.clear();
+            assert(call(other,f.service_cap)==error::denied);
+            journal.observe("robot","application",1,"service.available",13,2,capture);
+            assert(!entry.empty()&&entry.find("observer_hex")==entry.npos&&entry.find("source_hex")==entry.npos);
+        }
+        if(!retire_source)assert(call(f.service_cap,0)==error::success && !f.native->client->closed);
+    }
 }
 int main()
 {
@@ -603,7 +668,8 @@ int main()
     observed_endpoint_identity();
     independent_service_description();
     observation_preflight_and_reentrant_provider();
-    std::cout<<"passed 11 communication dispatch security groups\n";
+    paired_service_readiness();
+    std::cout<<"passed 12 communication dispatch security groups\n";
 }
 
 #endif

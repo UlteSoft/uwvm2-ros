@@ -231,11 +231,11 @@ namespace uwvm2::imported::ros::scene::operation_design
          */
         descriptor{"service.respond","keyed_effect","Respond once to an exact live owned received request.",5,true},
         /** @brief service.available: owned observation.
-         * @details Observation is not a promise for the next request.
+         * @details Observe native readiness on the exact live client. Direct client grants supply source_capability zero. A service-observer grant requires its separately authorized registered source service.submit capability. Only the observer is charged. Either authorization may prevent result delivery.
          * Apply the complete origin, bounded delivery and recovery contract;
          * this descriptor neither exposes the operation nor grants authority.
          */
-        descriptor{"service.available","owned_observation","Observation is not a promise for the next request.",5,true},
+        descriptor{"service.available","owned_observation","Observe native readiness on the exact live client. Direct client grants supply source_capability zero. A service-observer grant requires its separately authorized registered source service.submit capability. Only the observer is charged. Either authorization may prevent result delivery.",5,true},
         /** @brief service.abandon: owned cancellation.
          * @details Retire local wait/response interest; never claim remote cancellation.
          * Apply the complete origin, bounded delivery and recovery contract;

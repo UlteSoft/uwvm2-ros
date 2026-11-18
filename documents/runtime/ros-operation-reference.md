@@ -812,13 +812,13 @@ Respond once to an exact live owned received request.
 
 **Domain:** 5, `ros_graph_types`. **Recovery class:** `owned_observation`.
 
-**Request:** `client: u64`
+**Request:** `client: u64`, `source_capability: u64`
 
 **Result:** `available: bool`, `observed: stamp`
 
 **Authority:** exact `service.available`; additional named actions: none listed. Actual ancestor, source, profile and target checks still apply.
 
-Observation is not a promise for the next request.
+Observe native readiness on the exact live client. Direct client grants supply source_capability zero. A service-observer grant requires its separately authorized registered source service.submit capability. Only the observer is charged. Either authorization may prevent result delivery.
 
 ### service.abandon
 

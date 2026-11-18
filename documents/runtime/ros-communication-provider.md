@@ -1175,3 +1175,40 @@ requests use bounded stack storage. The wrappers reject overlapping result and
 length slots before effects and retain the normal full floating-point boundary.
 Actual VM, debugger and performance qualification remain separate acceptance
 steps; compilation or registration alone is not proof of complete ROS coverage.
+
+## Independently authorized service readiness
+
+The `service.available` request consists of two little-endian 64-bit words, the live
+client endpoint and its source capability. A direct client grant supplies zero
+in the second word. For independent observation, use the ordinary scene CLI to
+register a service grant. Set its binding to `service-observer`, its resource to
+the exact client grant alias, and its only action to `service.available`.
+The source grant must own a configured native client with `service.submit`.
+The source need not grant direct readiness to its holder.
+
+For example, with an existing `worker.0.service-client` grant and native
+client binding in the `robot` environment, add the observer before freeze.
+
+```sh
+--ros-scene-grant robot observe-client service worker.0.service-client service-observer service.available
+```
+
+The guest opens both grants. The observer capability is the first Wasm import
+argument. The second request word must contain the live capability for its
+registered client. Two clients with identical service names and profiles remain
+distinct. The same environment must currently expose both actions. The host
+binds the result to the exact endpoint and validates its context, node, request
+schema, response schema and independent source. Only the observer incurs a
+query debit. No service request is submitted during discovery.
+
+The worker performs its own client's native readiness observation and retains
+a correlated asynchronous result. A final authorization check precedes guest
+delivery. An observer withdrawal leaves the actual client usable. The supervisor
+can discard a settled, effect-free response for a retired observer. An unknown
+effect remains fenced. An enabled host result journal adds the two operator
+aliases and the observed authority loss only after a verified association.
+Unauthenticated queries reveal neither alias. No payload is included.
+
+Passing this query establishes readiness at the observed host timestamp. Legacy
+ROS1 header/MD5 verification, a bounded wait with advertised native features
+and event payload forwarding require separate providers and migration review.
