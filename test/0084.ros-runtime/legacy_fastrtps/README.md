@@ -133,3 +133,16 @@ The SHA-256 of the retained host receipt for this measurement is
 `2833ca75684d1c238e2c10918ff4b750676310cd3ad139b3f1ec3eb9f0ca7d89`.
 The runner writes the per-release receipts and endpoint logs to the chosen
 output directory; keep these together to verify a run independently.
+
+## Single-port Ethernet observations
+
+Using the isolated Ethernet option above, the Beta 2, Beta 3, Ardent, Bouncy and
+Crystal publishers and subscribers each delivered ten distinct numbered strings
+within their own release. The five historical pairs loaded their archive-verified
+Fast RTPS libraries. All ten historical processes exited successfully. None of
+the ten historical-to-Jazzy or Jazzy-to-historical directions produced a matching
+payload in this guest. This difference matters when reproducing a legacy deployment
+whose discovery depends on a multicast-capable interface.
+
+The SHA-256 of the host receipt for this topology is
+`f025b7401bba7bf8fbb9de49bda527a631a02923200ba07c43a65b0aee3096fa`.

@@ -151,7 +151,8 @@ scoped to the stated operations.
 
 | Peer and transport | Operation exercised |
 | --- | --- |
-| Ardent, Bouncy and Crystal original Fast RTPS nodes | In a disposable Linux QEMU guest, each release’s native publisher and subscriber exchanged ten distinct String values. The tested two-address loopback configuration did not complete a bidirectional exchange with Jazzy for these releases. [Reproduction](../../test/0084.ros-runtime/legacy_fastrtps/README.md) |
+| Alpha 1–8 and Beta 1 native Linux talker and listener | All nine original pairs delivered distinct String samples. Neither direction matched a Jazzy peer for any of the nine. A Jazzy-to-Jazzy control using the same witness and profile delivered all three random values. [Per-release observations and reproduction](../../test/0084.ros-runtime/prerelease_archives/README.md) |
+| Beta 2, Beta 3, Ardent, Bouncy and Crystal original Fast RTPS nodes | In a Linux QEMU guest with one isolated Ethernet port, each release’s original publisher and subscriber exchanged ten distinct String values. No direction with Jazzy matched on that network. The two-address loopback fixture records its own observations. [Reproduction](../../test/0084.ros-runtime/legacy_fastrtps/README.md) |
 | Jazzy Fast DDS with Dashing, Eloquent, Foxy, Galactic, Humble, Iron, Kilted, Lyrical or Rolling Cyclone DDS | Native rclcpp endpoints exchanged a reliable Int32 request and its incremented response over private loopback. The Rolling run used packages from the signed Resolute testing archive. The Foxy, Galactic and Humble runs retained rcutils diagnostics. |
 | Jazzy Fast DDS with Humble int2DDS, dynamic Fast DDS or Fast DDS | Two rclcpp processes exchanged an Int32 challenge. The library-mapping fixture checked the plugin and vendor library in each process. Dynamic Fast DDS emitted a participant deletion diagnostic after delivering the sample. |
 | Jazzy Fast DDS with Dashing OpenSplice 6.9 | Two native rclcpp processes exchanged an Int32 challenge and its incremented reply on a private loopback domain. The test checked both processes’ loaded libraries, used the archived OpenSplice configuration schema and retained its startup and shutdown logs. |
@@ -159,6 +160,11 @@ scoped to the stated operations.
 | Box Turtle, C Turtle, Diamondback, Electric and Fuerte TCPROS clients with Humble | Each release supplied its archived rospy and generated String. The original clients used a Noetic master and the upstream Noetic–Humble bridge. Each release passed both send and receive in the interpreter and AOT, and both withheld-grant cases produced zero requests at the TLS adapter. |
 | Groovy, Hydro, Indigo, Jade, Kinetic, Lunar and Melodic TCPROS clients with Humble | The archived master, rospy and generated String for each release communicated through the Noetic-built upstream bridge. Each release passed four Wasm send/receive cases across the interpreter and AOT, plus two withheld-grant cases with zero requests at the adapter. |
 | Noetic TCPROS with Humble Cyclone DDS | The upstream ROS 1 bridge passed a String in both directions. The Wasm fixture exercised a registered TLS adapter and checked the original payload at the other endpoint. With the submission grant withheld, the test observed zero adapter requests. |
+
+A C application compiled with the publicly installed SDK also passed the two
+directions with Box Turtle, Melodic and Noetic. Each tested release contributed
+four permitted interpreter/AOT runs and two denied runs. For Box Turtle the
+bridge used a Noetic master and the archived Lucid client stack.
 
 The ROS 1 fixture grants access to one direction on one topic. A site must
 explicitly approve the isolated legacy plaintext link. Its result leaves
