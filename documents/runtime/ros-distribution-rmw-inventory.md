@@ -139,3 +139,35 @@ must still load the selected peer release's Cyclone runtime and RMW. Use
 `--raw-cyclone` for a direct C participant. The receipt identifies the API,
 both loaded library sets, actual challenge/response and endpoint diagnostics.
 A failed attempt retains its stage and raw fixture log.
+
+## Choosing a release or a middleware
+
+The release selector recognizes thirteen ROS 1 distributions, thirteen named
+ROS 2 targets including Rolling, and eleven ROS 2 Alpha/Beta releases. Each
+running network peer uses its own native ROS libraries. Record the peer's
+release, middleware plugin, vendor library, message type, QoS, and security
+profile when describing an installation. The following observations are
+scoped to the stated operations.
+
+| Peer and transport | Operation exercised |
+| --- | --- |
+| Jazzy Fast DDS with Dashing, Eloquent, Foxy, Galactic, Humble, Iron, Kilted, Lyrical or Rolling Cyclone DDS | Native rclcpp endpoints exchanged a reliable Int32 request and its incremented response over private loopback. The Rolling run used packages from the signed Resolute testing archive. The Foxy, Galactic and Humble runs retained rcutils diagnostics. |
+| Jazzy Fast DDS with Humble int2DDS, dynamic Fast DDS or Fast DDS | Two rclcpp processes exchanged an Int32 challenge. The library-mapping fixture checked the plugin and vendor library in each process. Dynamic Fast DDS emitted a participant deletion diagnostic after delivering the sample. |
+| Jazzy on a secured Fast DDS domain | Native SROS2 enclaves exchanged authorized messages. The participant rejected creation of the unauthorized topic. |
+| Noetic TCPROS with Humble Cyclone DDS | The upstream ROS 1 bridge passed a String in both directions. The Wasm fixture exercised a registered TLS adapter and checked the original payload at the other endpoint. With the submission grant withheld, the test observed zero adapter requests. |
+
+The ROS 1 fixture grants access to one direction on one topic. A site must
+explicitly approve the isolated legacy plaintext link. Its result leaves
+direct use of the guest's general bridge operations, custom message pairs,
+and authentication on the legacy leg unqualified. Each table row represents
+one or more independent runs. A plaintext middleware run provides no DDS
+Security result. A successful data sample can coexist with graph diagnostics.
+
+Run a locally licensed middleware through the
+[additional RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md).
+Run a ROS 1 network peer through the
+[Noetic–Humble fixture](../../test/0084.ros-runtime/ros1_native_bridge/README.md).
+For deployment acceptance, use original endpoints with the actual message,
+service or action and the site's configured QoS and identity. ROS documents
+its cross-distribution compatibility policy in the
+[upstream release guide](https://github.com/ros2/ros2_documentation/blob/rolling/source/Releases.rst).
