@@ -6,6 +6,7 @@ local namespace = api.nvim_create_namespace("uwvm_debug_snapshots")
 local serial = 0
 local wasm_buffers = {}
 local scene_pages = {}
+local latest_scene_request
 
 local function active()
   local session = require("dap").session()
@@ -141,7 +142,13 @@ end
 -- session can reuse a numeric stop ID. It cannot inherit the previous page.
 local function read_scene(selection, start, stop, callback)
   local args = {selection = selection, start = start, count = 8, ifStop = stop}
+  local frame = active().current_frame
+  local ticket = {}
+  latest_scene_request = ticket
   request("uwvm/sceneState", args, function(err, body, session)
+    if ticket ~= latest_scene_request or (not err and session.current_frame ~= frame) then
+      err = {message = "Scene selection or stop changed; reply retired"}
+    end
     finish(callback, err, body, function(value)
       assert(value.available == true and value.scope == "process-owned" and
         value.selection == selection and value.start == start and

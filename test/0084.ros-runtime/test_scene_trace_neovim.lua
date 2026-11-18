@@ -86,3 +86,33 @@ for _, entry in ipairs({{"denied","Permission denied"},{"wrong-stop","Scene stop
   assert(vim.api.nvim_get_current_buf() == original)
 end
 print("PASS scene commands, page continuation, exact stop, read-only buffers, denial and retired session")
+
+-- A resumed stop may reuse the integer frame ID. Also exercise an older
+-- selection that completes after a newer selection on the same stop.
+local pending = {}
+function session:request(_, args, reply)
+  pending[#pending+1] = function()
+    reply(nil, {selection=args.selection,scope="process-owned",available=true,start=0,rows={},
+      stopId="3",total=0,more=false,next=0,payloadsRead=false,nativeOperationsIssued=false})
+  end
+end
+local reused_frame_retired = false
+plugin.scene_state("authority", function(err)
+  reused_frame_retired = err and err.message:find("reply retired",1,true)
+end)
+session.current_frame = {id=session.current_frame.id}
+pending[1]()
+assert(vim.wait(1000, function() return reused_frame_retired end))
+assert(vim.api.nvim_get_current_buf() == original)
+local retired, newest = false, false
+plugin.scene_state("authority", function(err)
+  retired = err and err.message:find("reply retired",1,true)
+end)
+plugin.scene_state("audit", function(err, _, buffer)
+  assert(not err and buffer)
+  newest = true
+end)
+pending[3](); pending[2]()
+assert(vim.wait(1000, function() return newest and retired end))
+assert(vim.api.nvim_buf_get_name(0):find("/scene-audit",1,true))
+print("PASS Neovim overlapping scene selections and reused frame IDs")
