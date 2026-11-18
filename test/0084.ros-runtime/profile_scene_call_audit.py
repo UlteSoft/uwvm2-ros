@@ -8,6 +8,8 @@ profile describes its own workload and cannot establish a call's duration.
 import argparse
 import csv
 import json
+import os
+import select
 import statistics
 import subprocess
 import sys
@@ -51,8 +53,19 @@ def main():
     def run(name, command, *, optional=False, limit=180):
         before = time.monotonic_ns()
         with (out / (name + ".log")).open("wb") as log:
-            result = subprocess.run(list(map(str, command)), cwd=out, stdout=log, stderr=subprocess.STDOUT, timeout=limit)
-        elapsed = time.monotonic_ns()-before
+            with subprocess.Popen(list(map(str, command)), cwd=out, stdout=log, stderr=subprocess.STDOUT) as result:
+                fd = os.pidfd_open(result.pid)
+                try:
+                    deadline = select.poll()
+                    deadline.register(fd, select.POLLIN)
+                    if not deadline.poll(limit*1000):
+                        result.kill()
+                        result.wait()
+                        raise TimeoutError(name)
+                    elapsed = time.monotonic_ns()-before
+                    result.wait()
+                finally:
+                    os.close(fd)
         if result.returncode and not optional:
             raise RuntimeError(f"{name} failed, see {out / (name+'.log')}")
         return result.returncode, elapsed
