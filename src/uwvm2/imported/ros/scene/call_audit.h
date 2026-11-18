@@ -11,6 +11,7 @@
 #include <atomic>
 #include <charconv>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include <mutex>
 #include <string_view>
@@ -106,12 +107,23 @@ namespace uwvm2::imported::ros::scene::call_audit
                 { increment(limited); return; }
             // 1020 hex digits, 255 operation bytes and bounded integer fields.
             std::array<char,2048> line;
-            char* pos = line.data();
-            auto text = [&](std::string_view v) noexcept { for(char c : v) *pos++ = c; };
-            auto number = [&](std::uint64_t n) noexcept { pos = std::to_chars(pos, line.data()+line.size(), n).ptr; };
+            std::size_t used{};
+            bool fits=true;
+            auto text = [&](std::string_view v) noexcept {
+                if(v.size()>line.size()-used) { fits=false; return; }
+                std::memcpy(line.data()+used,v.data(),v.size());
+                used+=v.size();
+            };
+            auto number = [&](std::uint64_t n) noexcept {
+                std::array<char,20> digits;
+                auto value=std::to_chars(digits.data(),digits.data()+digits.size(),n);
+                if(value.ec!=std::errc{}) {fits=false;return;}
+                text({digits.data(),static_cast<std::size_t>(value.ptr-digits.data())});
+            };
             auto hex = [&](std::string_view v) noexcept {
                 constexpr char digits[] = "0123456789abcdef";
-                for(unsigned char c : v) { *pos++ = digits[c >> 4]; *pos++ = digits[c & 15]; }
+                if(v.size()>(line.size()-used)/2) {fits=false;return;}
+                for(unsigned char c : v) { line[used++]=digits[c>>4]; line[used++]=digits[c&15]; }
             };
             text("{\"ros\":\"uwvm_ros_v2\",\"phase\":\"return\",\"sequence\":"); number(sequence+1);
             text(",\"generation\":"); number(generation); text(",\"steady_ns\":"); number(now);
@@ -123,7 +135,8 @@ namespace uwvm2::imported::ros::scene::call_audit
             text(",\"busy\":"); number(contention.load(std::memory_order_relaxed));
             text(",\"clock_failed\":"); number(clock_failures.load(std::memory_order_relaxed));
             text(",\"sink_failed\":"); number(sink_failures.load(std::memory_order_relaxed)); text("}");
-            std::string_view record{line.data(),static_cast<std::size_t>(pos-line.data())};
+            if(!fits) { increment(limited); return; }
+            std::string_view record{line.data(),used};
             auto bytes = static_cast<std::uint64_t>(record.size()+1);
             for(auto& r : rules)
             {
