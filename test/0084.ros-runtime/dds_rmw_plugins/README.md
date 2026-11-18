@@ -23,3 +23,13 @@ The exchange covers a reliable, plaintext Int32 topic. The test publishes no
 Wasm permissions or vendor files. Graph compatibility, security plugins,
 service mappings and production access through a Wasm provider each need
 independent verification.
+
+For an additional installed middleware, pass its exact RMW identifier and
+`--local-library SONAME PLUGIN_SHA256 LIBRARY_SHA256`. Supply the hashes of
+the original RMW plugin and the underlying vendor library separately. The
+test rejects missing or mismatched inputs before starting either peer. Keep
+the trusted distribution and licensed dependencies local. Both processes
+share a disposable PID, IPC and network namespace for discovery. Their
+mounts contain the system runtime, selected installations, pinned test inputs
+and a fresh output directory. The operator remains responsible for selecting
+a compatible RMW build and trusted dependencies, including transitive ones.
