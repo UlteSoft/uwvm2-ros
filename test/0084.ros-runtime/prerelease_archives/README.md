@@ -14,7 +14,7 @@ The source URLs, asset IDs and byte counts come from the upstream GitHub release
 
 Alpha 1–6 link to OpenSplice. The OSRF Trusty repository provides `libopensplice64` version `6.4.0-3~trusty`. Verify the signed repository index with fingerprint `D2486D2DD83DB69272AFE98867170598AF249743`. The amd64 package SHA-256 is `8c2051599931be50ea8d11ce1f7f4d77b5e7cf36c9d9756e5b5995878cc26d5b`. Extract it into a private runtime prefix with `dpkg-deb -x`. The 6.7 runtime from Xenial failed to resolve `DDS::TypeSupportFactory` for the Trusty binaries. [Release maintainer's instructions](https://discourse.openrobotics.org/t/ros2-alpha6-install-problem/2389), [OSRF Trusty index](https://packages.osrfoundation.org/gazebo/ubuntu/dists/trusty/InRelease)
 
-For the Fast RTPS builds, install or privately extract the Ubuntu Xenial amd64 Boost 1.58 shared libraries for chrono, date-time, system and thread. Beta 1 also loads Poco Foundation 9 and its dependencies. The closure receipt lists the original ELF SONAMEs for each release. [Ubuntu Xenial signed index](https://archive.ubuntu.com/ubuntu/dists/xenial/InRelease)
+For the Fast RTPS builds, install or privately extract the Ubuntu Xenial amd64 Boost 1.58 shared libraries for chrono, date-time, system and thread. Beta 1 also loads Poco Foundation 9 and its dependencies. The Beta 1 dispatcher also loads the C++ introspection module for each message package dynamically. The extractor includes each of those original modules and its linked dependencies. The closure receipt lists the original ELF SONAMEs for each release. [Beta 1 dispatch source](https://github.com/ros2/rosidl_typesupport/blob/release-beta1/rosidl_typesupport_cpp/src/type_support_dispatch.cpp) [Ubuntu Xenial signed index](https://archive.ubuntu.com/ubuntu/dists/xenial/InRelease)
 
 ## Observe actual messages
 
@@ -68,6 +68,12 @@ Counts are distinct matching application payloads in the recorded single-address
 | alpha6 | pass (18) | none observed | none observed |
 | alpha7 | pass (21) | none observed | none observed |
 | alpha8 | pass (20) | none observed | none observed |
-| beta1 | none observed | none observed | none observed |
+| beta1 | pass (21) | none observed | none observed |
 
-The Beta 1 binaries in this first extraction exited while creating a publisher. Its Fast RTPS RMW reported an unavailable type support implementation. Both Jazzy directions were measured again for each release with fresh pairs and their configured ten-second observation window. A zero count describes this run's observed application traffic.
+The Alpha 1–6 OpenSplice diagnostics each logged 140 malformed packets from vendor 1.15 during original-to-Jazzy observation and 34 in the reverse direction. The application observers recorded zero matching strings in those runs. The logs show that traffic reached the legacy transport.
+
+The Beta 1 run includes the original message introspection libraries for builtin_interfaces, rcl_interfaces, and std_msgs. The initial extraction contained only DT_NEEDED dependencies. Its original publisher terminated during type support selection. With the three original modules present, the original pair exchanged the numbered payloads recorded above.
+
+A separate Jazzy control used the same executable, Fast DDS discovery profile, and single-address loopback configuration. Three Jazzy writers each sent ten copies of a distinct random payload. The Jazzy subscriber received all three payloads.
+
+This probe covers native x86-64 Linux release programs and a single ROS message type and topic. Tests used private paths for the historical vendor libraries and a current host Linux runtime. A zero count denotes the observed result within the configured window.
