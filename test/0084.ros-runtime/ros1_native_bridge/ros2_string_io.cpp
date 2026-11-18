@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <string>
 #include <thread>
+#include <poll.h>
+#include <unistd.h>
 
 namespace {
 bool valid(std::string const& data)
@@ -38,13 +40,27 @@ int main(int argc, char** argv)
         sample.data.resize(32);
         if (std::fread(sample.data.data(), 1, 32, stdin) != 32 || !valid(sample.data)) return 3;
         auto publisher = node->create_publisher<Message>("/chatter", 4);
-        while (!publisher->get_subscription_count()) {
-            if (std::chrono::steady_clock::now() >= until) return 4;
+        // The upstream example uses best-effort SensorDataQoS. ROS graph
+        // discovery can precede completion of the reverse RTPS match.
+        auto matched_since = std::chrono::steady_clock::time_point::max();
+        for (;;) {
+            auto const now = std::chrono::steady_clock::now();
+            if (now >= until) return 4;
+            if (!publisher->get_subscription_count())
+                matched_since = std::chrono::steady_clock::time_point::max();
+            else if (matched_since > now)
+                matched_since = now;
+            else if (now - matched_since >= 250ms)
+                break;
             std::this_thread::sleep_for(5ms);
         }
         publisher->publish(sample);
         if (!publisher->wait_for_all_acked(1s)) return 5;
-        if (std::fputc('P', stdout) == EOF) return 7;
+        if (std::fputc('P', stdout) == EOF || std::fflush(stdout)) return 7;
+        // Preserve the writer until the independent ROS 1 witness reports
+        // the exact payload. This acknowledgement is a test control only.
+        pollfd confirmation{STDIN_FILENO,POLLIN,0};
+        if (::poll(&confirmation,1,10000) != 1 || std::fgetc(stdin) != 'A') return 8;
     } else {
         std::string data;
         bool invalid{};
