@@ -256,8 +256,11 @@ static void qualify(std::array<peer,2> const& peers,bool service)
             [&](wire::bytes value){wire::reader in{value};bool released{};assert(in.boolean(released)&&released&&in.done());return copied;});};
         assert(release(false)==s::error::io&&release(true)==s::error::success);pump();
         assert(release(true)==s::error::success);pump();
-        assert(item.dispatch->close(env.who[item.index],env.request[item.index].node_capability,item.node)==s::error::success);
     }
+    // Node closure retires this deployment's linked worker domain. Drain
+    // both independently owned remote endpoint receipts before retiring it.
+    for(auto& item:sides)
+        assert(item.dispatch->close(env.who[item.index],env.request[item.index].node_capability,item.node)==s::error::success);
     factory->retire();assert(!factory->cleanup_confirmed());
     for(auto& item:sides)
     {
