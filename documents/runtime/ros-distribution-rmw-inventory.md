@@ -182,6 +182,16 @@ service or action and the site's configured QoS and identity. ROS documents
 its cross-distribution compatibility policy in the
 [upstream release guide](https://github.com/ros2/ros2_documentation/blob/rolling/source/Releases.rst).
 
+### Zenoh RMW
+
+Two native rclcpp endpoints using Jazzy's archived Zenoh RMW 0.2.13 exchanged
+an Int32 challenge through a Jazzy router. A Kilted endpoint using Zenoh RMW
+0.6.8 also returned the incremented Jazzy challenge. The fixture matched the
+two distinct loopback TCP connections at the router and checked the middleware
+libraries in both application processes. With the router absent, both peers
+reported connection refusal. These tests cover plaintext Zenoh on an isolated
+network. [Reproduction and package identities](../../test/0084.ros-runtime/zenoh_rmw/README.md)
+
 ### Site middleware and application security
 
 Record the ROS release, RMW, vendor runtime version and the negotiated
