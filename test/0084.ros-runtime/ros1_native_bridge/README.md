@@ -36,3 +36,40 @@ fixture covers the two static String examples with plaintext TCPROS and DDS
 on one host. A ROSv2 Wasm caller, per-capability admission, a dynamic bridge,
 other message types, DDS Security and physical deployment require separate
 qualification.
+
+## Wasm application using a registered bridge adapter
+
+After running the native qualification, supply its output directory to the VM
+test. This fixture uses the VM's existing `uwvm_ros_v2.driver.connect`,
+`driver.submit`, `driver.result` and `driver.disconnect` imports. The grant
+binds one fixed resource, direction and operation schema. VM and adapter
+authenticate over a TLS 1.3 channel with fresh sealed identity descriptors.
+Only the external ROS client participates in DDS discovery.
+
+```sh
+/usr/bin/python3 tools/ros_scene/in_existing_cgroup.py \
+  /usr/bin/taskset -c 4-7 /usr/bin/flock "$SDK_ROOT/.tmp/sdk-qualification.lock" \
+  /usr/bin/python3 -B test/0084.ros-runtime/ros1_native_bridge/wasm_bridge.py \
+  --vm-source "$VM_SOURCE" --runtime "$VM_BINARY" --runtime-receipt "$VM_BUILD_JSON" \
+  --native-dir "$PWD/.tmp/noetic-humble-string" --noetic-root "$NOETIC_ROOT" \
+  --humble-prefix "$HUMBLE_PREFIX" --humble-system-libs "$JAMMY_RUNTIME_LIBS" \
+  --openssl-root "$BUILT_OPENSSL_PREFIX" --allow-plaintext-loopback \
+  --output "$PWD/.tmp/noetic-humble-wasm"
+```
+
+The interpreter and AOT cases carry a fresh 32-character String between a Wasm
+module and a Noetic node in each direction. For publication the deployment
+waits for a real Noetic TCPROS connection, and the Wasm application submits a
+single String to the adapter. The Noetic subscriber checks the exact value.
+For subscription the application checks every byte returned by
+`driver.result`. Each denial case omits the submission grant while leaving
+connect and disconnect available. The application must receive access denied,
+the adapter must receive zero requests, and its dormant native client must exit
+without initializing ROS. The explicit CLI acknowledgement allows plaintext
+for that test's private loopback-only ROS network. The caller has no WASI
+imports.
+
+The report binds the VM digest, native bridge receipt, two adapter binaries,
+compile arguments, guest modules and logs. This exercises an external test
+adapter. Direct `bridge.*` attachment to a native ROS 1 endpoint and dynamic
+message conversion remain separate qualification targets.
