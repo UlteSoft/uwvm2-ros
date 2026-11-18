@@ -202,26 +202,30 @@ static void qualify(std::array<peer,2> const& peers,bool service)
         };
         check_direct();
 
-        // Wait for the external native process to finish its actual call without
-        // reading its response. Retiring the observer handle at this boundary
-        // must suppress even a response that is already waiting in the pipe.
-        c::handle after_reply{};assert(env.permissions.open(env.who[0],"readiness",after_reply)==s::error::success);
-        auto response_fd=env.external[0]->owned[2];int unread{};
-        assert(::ioctl(response_fd,FIONREAD,&unread)==0&&unread==0);
-        result.clear();assert(observe_as(after_reply,client.cap,result)==s::error::again&&result.empty());
-        assert(factory->pump_services()==c::error::ok);
-        auto until_reply=c::now()+6000000000;
-        while(true)
+        // The external process writes its complete answer before either the
+        // observer handle or the separate source capability is withdrawn. The
+        // response remains unread, so the guest delivery race is deterministic.
+        for(bool withdraw_source:{false,true})
         {
-            assert(::ioctl(response_fd,FIONREAD,&unread)==0);
-            if(unread>=static_cast<int>(s::communication_worker_protocol::header_bytes+8))break;
-            assert(c::now()<until_reply);::poll(nullptr,0,1);
+            c::handle transient{};assert(env.permissions.open(env.who[0],withdraw_source?"service.0":"readiness",transient)==s::error::success);
+            auto observer=withdraw_source?query:transient,source=withdraw_source?transient:client.cap;
+            auto response_fd=env.external[0]->owned[2];int unread{};
+            assert(::ioctl(response_fd,FIONREAD,&unread)==0&&unread==0);
+            result.clear();assert(observe_as(observer,source,result)==s::error::again&&result.empty());
+            assert(factory->pump_services()==c::error::ok);
+            auto until_reply=c::now()+6000000000;
+            while(true)
+            {
+                assert(::ioctl(response_fd,FIONREAD,&unread)==0);
+                if(unread>=static_cast<int>(s::communication_worker_protocol::header_bytes+8))break;
+                assert(c::now()<until_reply);::poll(nullptr,0,1);
+            }
+            assert(env.permissions.close(env.who[0],transient)==s::error::success);
+            assert(observe_as(observer,source,result)==s::error::bad_handle&&result.empty());
+            pump();
+            check_direct();
         }
-        assert(env.permissions.close(env.who[0],after_reply)==s::error::success);
-        assert(observe_as(after_reply,client.cap,result)==s::error::bad_handle&&result.empty());
-        pump();
-        check_direct();
-        std::puts("withdrawn observer could not receive the complete external native reply");std::fflush(stdout);
+        std::puts("complete native replies suppressed after independent observer and source withdrawal");std::fflush(stdout);
 
         result.clear();
         assert(observe(client.cap,result)==s::error::again);
