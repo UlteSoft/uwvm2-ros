@@ -5,6 +5,7 @@
  */
 #define UWVM_COMMUNICATION_FACTORY_FIXTURE_ONLY
 #include "communication_worker_provider.cpp"
+#include <sys/ioctl.h>
 #include <uwvm2/imported/ros/scene/communication_worker_endpoint_open.h>
 #include <uwvm2/imported/ros/scene/communication_worker_activation.h>
 #include <uwvm2/imported/ros/scene/communication_node_open_provider.h>
@@ -167,12 +168,13 @@ static void qualify(std::array<peer,2> const& peers,bool service)
         std::puts("attached real SetBool client and server");std::fflush(stdout);
         auto& client=sides[0];
         c::handle query{};assert(env.permissions.open(env.who[0],"readiness",query)==s::error::success);
-        auto observe=[&](c::handle source,bytes& result)
+        auto observe_as=[&](c::handle observer,c::handle source,bytes& result)
         {
             auto body=encode([&](auto& w){return w.u64(client.resource)&&w.u64(source);});std::size_t required{};
-            return client.dispatch->invoke(env.who[0],contract::operation::service_available,query,body,32,required,
+            return client.dispatch->invoke(env.who[0],contract::operation::service_available,observer,body,32,required,
                 [&](wire::bytes value){result.assign(value.begin(),value.end());return true;});
         };
+        auto observe=[&](c::handle source,bytes& result){return observe_as(query,source,result);};
         bytes result;
         assert(observe(0,result)==s::error::denied&&observe(env.service_caps[1],result)==s::error::denied&&result.empty());
         bool available{};auto until=c::now()+6000000000;
@@ -199,6 +201,28 @@ static void qualify(std::array<peer,2> const& peers,bool service)
             wire::reader fresh{result};bool ready{};assert(fresh.boolean(ready)&&ready);
         };
         check_direct();
+
+        // Wait for the external native process to finish its actual call without
+        // reading its response. Retiring the observer handle at this boundary
+        // must suppress even a response that is already waiting in the pipe.
+        c::handle after_reply{};assert(env.permissions.open(env.who[0],"readiness",after_reply)==s::error::success);
+        auto response_fd=env.external[0]->owned[2];int unread{};
+        assert(::ioctl(response_fd,FIONREAD,&unread)==0&&unread==0);
+        result.clear();assert(observe_as(after_reply,client.cap,result)==s::error::again&&result.empty());
+        assert(factory->pump_services()==c::error::ok);
+        auto until_reply=c::now()+6000000000;
+        while(true)
+        {
+            assert(::ioctl(response_fd,FIONREAD,&unread)==0);
+            if(unread>=static_cast<int>(s::communication_worker_protocol::header_bytes+8))break;
+            assert(c::now()<until_reply);::poll(nullptr,0,1);
+        }
+        assert(env.permissions.close(env.who[0],after_reply)==s::error::success);
+        assert(observe_as(after_reply,client.cap,result)==s::error::bad_handle&&result.empty());
+        pump();
+        check_direct();
+        std::puts("withdrawn observer could not receive the complete external native reply");std::fflush(stdout);
+
         result.clear();
         assert(observe(client.cap,result)==s::error::again);
         assert(env.permissions.revoke("readiness",[&](auto alias){client.dispatch->revoke(alias);})==s::error::success);
