@@ -28,13 +28,14 @@ int main()
         std::thread peer{observe};
         peer.join();
     }
-    assert(journal::scene_dropped.load()==1 && journal::records.size()==1);
+    assert(journal::scene_loss_counts().total()==1 && journal::records.size()==1);
     for(std::size_t i=1;i<=journal::scene_record_limit;++i) {observe();}
-    assert(journal::records.size()==journal::scene_record_limit && journal::scene_dropped.load()==2);
+    assert(journal::records.size()==journal::scene_record_limit && journal::scene_loss_counts().total()==2);
+    assert(journal::scene_loss_counts().busy==1 && journal::scene_loss_counts().capacity==1);
     journal::clear();
     observe();
     assert(journal::records.size()==1 && journal::records.front()->id==journal::scene_record_limit+1);
-    assert(journal::scene_dropped.load()==2);
+    assert(journal::scene_loss_counts().total()==2);
     journal::clear();
     journal::observe_scene_result("uwvm_ros_v2","capability.open",13,"main",UINT64_MAX,100,175);
     assert(journal::records.back()->timed && journal::records.back()->duration==75);
@@ -61,4 +62,14 @@ int main()
                               "trace host on family=rosv2 function=abi","trace host read family=rosv2 module=bad/",
                               "trace host read family=rosv2 function=abi function=abi","trace host read family=rosv2 alias=signal"})
     {assert(!trace::parse(::fast_io::string_view{text.data(),text.size()},request));}
+    std::string too_long(256,'x');
+    journal::observe_scene_result("uwvm_ros_v2",too_long,13);
+    assert(journal::scene_loss_counts().labels==1);
+    auto const saved_sequence=journal::sequence;
+    journal::sequence=UINT64_MAX;
+    journal::observe_scene_result("uwvm_ros_v2","abi",2);
+    assert(journal::scene_loss_counts().sequence==1);
+    journal::sequence=saved_sequence;
+    journal::scene_losses overflow{UINT64_MAX-1,0,1,1,0};
+    assert(overflow.total()==UINT64_MAX);
 }

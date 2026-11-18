@@ -63,7 +63,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
     inline std::atomic<std::uint64_t> allocation_failures{},invalid_ranges{},sequence_failures{};
     inline constexpr std::size_t scene_record_limit{4096};
     inline std::size_t scene_retained{}; // protected by mutex
-    inline std::atomic<std::uint64_t> scene_dropped{};
+    struct scene_losses
+    {
+        std::uint64_t busy{}, capacity{}, labels{}, sequence{}, storage{};
+        std::uint64_t total() const noexcept
+        {
+            std::uint64_t count{};
+            for(auto n : {busy, capacity, labels, sequence, storage})
+            {
+                if(n > UINT64_MAX-count) return UINT64_MAX;
+                count += n;
+            }
+            return count;
+        }
+    };
+    inline std::atomic<std::uint64_t> scene_busy{}, scene_capacity{}, scene_labels{}, scene_sequence{}, scene_storage{};
+    /** @brief Sample each lifetime loss counter once. The total uses the same samples and saturates.
+     * @details A refused completion increments exactly one cause. Reading the counters and clearing
+     * retained calls consume no observations and never reset earlier loss evidence.
+     */
+    inline scene_losses scene_loss_counts() noexcept
+    {
+        return {scene_busy.load(std::memory_order_relaxed), scene_capacity.load(std::memory_order_relaxed),
+                scene_labels.load(std::memory_order_relaxed), scene_sequence.load(std::memory_order_relaxed),
+                scene_storage.load(std::memory_order_relaxed)};
+    }
     inline thread_local record* active{};
     inline void increment(std::atomic<std::uint64_t>& c) noexcept
     {auto v=c.load(std::memory_order_relaxed);while(v!=UINT64_MAX&&!c.compare_exchange_weak(v,v+1,std::memory_order_relaxed)) {}}
@@ -150,11 +174,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
         try
         {
             std::unique_lock lock{mutex,std::try_to_lock};
-            if(!lock.owns_lock()) {increment(scene_dropped);return;}
+            if(!lock.owns_lock()) {increment(scene_busy);return;}
             if(!observing(channel::rosv2)) {return;}
-            if(scene_retained>=scene_record_limit || name_space.size()>255u || name.size()>255u)
-            {increment(scene_dropped);return;}
-            if(sequence==UINT64_MAX) {increment(sequence_failures);increment(scene_dropped);return;}
+            if(scene_retained>=scene_record_limit) {increment(scene_capacity);return;}
+            if(name_space.size()>255u || name.size()>255u) {increment(scene_labels);return;}
+            if(sequence==UINT64_MAX) {increment(sequence_failures);increment(scene_sequence);return;}
             auto value=::uwvm2::utils::container::make_shared<record>();
             value->family=channel::rosv2;
             value->name_space=name_space;
@@ -175,7 +199,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
             value->id=++sequence;
             ++scene_retained;
         }
-        catch(...) {increment(allocation_failures);increment(scene_dropped);}
+        catch(...) {increment(allocation_failures);increment(scene_storage);}
 #else
         (void)name_space;(void)name;(void)result;(void)caller;(void)generation;(void)started;(void)finished;
 #endif

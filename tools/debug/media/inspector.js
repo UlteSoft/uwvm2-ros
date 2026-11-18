@@ -850,7 +850,9 @@
       }}}, ...[["module", "Caller"], ["function", "Function"], ["namespace", "Import module"], ["result", "Raw result"]].map(([name, label]) =>
         h("label.field", label, h("input", {name, value: scene.filters[name] || "", size: 12}))),
         h("button", {type: "submit"}, "Apply filters")),
-      recordingBar(page, "rosv2"), h("div.toolrow", "Dropped ROSv2 completions: " + (page.journal?.["rosv2-dropped"] ?? "unavailable")),
+      recordingBar(page, "rosv2"), h("div.toolrow", "Dropped completions " + (page.journal?.["rosv2-dropped"] ?? "unavailable"),
+        ...["busy", "capacity", "labels", "sequence", "storage"].filter(cause => page.journal?.["rosv2-dropped-" + cause] !== undefined)
+          .map(cause => h("span", cause + " " + page.journal["rosv2-dropped-" + cause]))),
       h("div.pane", callsTable(page, "rosv2")), pager(page, "group-previous", "group-next"),
       exportBar(scene.exportPath, scene.exportResult)] : [
       h("div.toolrow", h("span.chip.outline", "u2rosv2 · In development")),

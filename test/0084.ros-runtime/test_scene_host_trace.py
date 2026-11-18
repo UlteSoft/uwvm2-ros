@@ -29,6 +29,14 @@ def main():
     page = view.query(request, checkpoint, {'family': 'rosv2'})
     row, = page['calls']
     assert row['family'] == 'rosv2' and row['function'] == 'abi' and row['result'] == '2'
+    assert all(page["journal"][key]=="0" for key in export.SCENE_LOSSES)
+    bad = raw.replace("rosv2-dropped-capacity=0", "rosv2-dropped-capacity=1", 1)
+    try:
+        export.packet(bad)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("inconsistent total was accepted")
     assert not row['args'] and row['segments'] == '0' and page['journal']['rosv2-dropped'] == '0'
     options = {'family': 'rosv2', 'function': 'abi', 'namespace': 'uwvm_ros_v2', 'result': '2', 'ifStop': '7'}
     assert view.query(request, checkpoint, options)['calls'] == [row]

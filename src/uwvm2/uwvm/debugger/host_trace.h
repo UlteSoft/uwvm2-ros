@@ -122,10 +122,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
         if(q.operation==action::clear) {data::clear();}
         std::lock_guard lock{data::mutex};
         ::uwvm2::utils::container::std_string text;auto out=::uwvm2::utils::container::ostring_ref{&text};
+        auto const losses = data::scene_loss_counts();
         ::fast_io::io::print(out,"host-trace enabled=",data::enabled.load(std::memory_order_relaxed),
             " epoch=",data::epoch," cleared-through=",data::cleared_through," newest=",data::sequence,
             " allocation-failures=",data::allocation_failures.load()," invalid-ranges=",data::invalid_ranges.load(),
-            " sequence-failures=",data::sequence_failures.load()," rosv2-dropped=",data::scene_dropped.load(),"\n");
+            " sequence-failures=",data::sequence_failures.load()," rosv2-dropped=",losses.total(),
+            " rosv2-dropped-busy=",losses.busy," rosv2-dropped-capacity=",losses.capacity,
+            " rosv2-dropped-labels=",losses.labels," rosv2-dropped-sequence=",losses.sequence,
+            " rosv2-dropped-storage=",losses.storage,"\n");
         if(q.operation==action::bytes)
         {
             for(auto const& p:data::records)
