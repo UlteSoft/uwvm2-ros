@@ -1079,6 +1079,8 @@ namespace uwvm2::uwvm::imported::scene
 #if defined(UWVM_VERSION_DEV)
             bool selected{};
             std::uint64_t started{};
+#else
+            static constexpr bool selected = false;
 #endif
         };
         inline trace_entry begin_trace() noexcept
@@ -1095,18 +1097,17 @@ namespace uwvm2::uwvm::imported::scene
          * time waiting inside the registered operation and excludes remote work
          * performed after the host has returned.
          */
-        inline void observe_result(std::string_view name,std::uint32_t result,[[maybe_unused]] trace_entry entry) noexcept
+        inline void observe_result(std::string_view name,std::uint32_t result,[[maybe_unused]] trace_entry entry,
+                                   [[maybe_unused]] bool audit) noexcept
         {
-            bool audit=configuration.auditing_calls();
 #if defined(UWVM_VERSION_DEV)
             namespace trace=::uwvm2::utils::debug::host_calls;
-            if(!audit && !entry.selected)return;
             auto finished=entry.started?trace::now():0;
-#else
-            if(!audit)return;
 #endif
             runtime::ros_caller_identity identity{};
-            auto known=runtime::ros_caller_identity_host_api(identity,true);
+            // The sealed runtime may still identify the caller of a rejected operation
+            // after its authority retires. This observation never authorizes a call.
+            bool const known = runtime::ros_observed_caller_identity_host_api(identity);
             std::string_view module;
             if(known)module={reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
 #if defined(UWVM_VERSION_DEV)
@@ -1141,7 +1142,9 @@ namespace uwvm2::uwvm::imported::scene
                 auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
                 {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
                 ::uwvm2::utils::container::get<0>(call.res)=result;
-                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry);
+                bool const audit = configuration.auditing_calls();
+                if(audit || entry.selected) [[unlikely]]
+                    observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry,audit);
             }
         };
         template<auto Fn,auto& Name> using native=function<decltype(Fn),Fn,Name>;
@@ -1427,6 +1430,35 @@ namespace uwvm2::uwvm::imported::scene
 #undef UWVM_EVENT_FUNCTION
             wrapper::native<&abi,wrapper::abi_name>,wrapper::native<&open,wrapper::open_name>,wrapper::native<&close,wrapper::close_name>>;
     };
+    /** @brief Check every policy catalogue entry against the actual linked wrapper tuple.
+     * @details Each ASCII operation must appear exactly once. Changes to either the
+     * host module or its configurable policy fail at compile time if the names drift.
+     */
+    template<typename... Functions>
+    consteval bool matches_policy_catalog(::uwvm2::utils::container::tuple<Functions...>*)
+    {
+        auto const& names=model::callable_names;
+        if(sizeof...(Functions)!=names.size())return false;
+        std::array<bool,sizeof...(Functions)> seen{};
+        auto take=[&](auto const& name)
+        {
+            std::array<char,64> ascii{};
+            if(name.empty()||name.size()>ascii.size())return false;
+            for(std::size_t i{};i<name.size();++i)
+            {
+                if(name[i]>127)return false;
+                ascii[i]=static_cast<char>(name[i]);
+            }
+            std::string_view key{ascii.data(),name.size()};
+            auto it=std::lower_bound(names.begin(),names.end(),key);
+            if(it==names.end()||*it!=key)return false;
+            auto i=static_cast<std::size_t>(it-names.begin());
+            if(seen[i])return false;
+            seen[i]=true;return true;
+        };
+        return (take(Functions::function_name)&&...);
+    }
+    static_assert(matches_policy_catalog(static_cast<local_imported_module_t::local_function_tuple*>(nullptr)));
     inline constexpr local_imported_module_t local_imported_module{};
     extern "C++"
     {

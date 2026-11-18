@@ -53,6 +53,19 @@ int main()
     audit::statistics counts;
     assert(events.inspect(counts) && counts.admitted==5 && counts.sink_failed==1 &&
            counts.clock_failed==1 && counts.limited==2);
+    audit::journal linking;
+    assert(linking.add(audit::scope::group, "machine", true, {4,8192,100,4}));
+    linking.observe("machine", "main", 0, "abi", 0, 1, emit, audit::phase::hidden_import);
+    assert(check("\"phase\":\"link\"") && check("\"result\":null") && check("\"reason\":\"hidden\""));
+    assert(check("\"function\":\"abi\"") && check("\"generation\":0"));
+    linking.observe("machine", "main", 0, "a\"\n", 0, 2, emit, audit::phase::hidden_import);
+    assert(check("\"function\":null") && check("\"function_hex\":\"61220a\"") &&
+           check("\"function_truncated\":false"));
+    std::array<char,256> long_name{};
+    long_name.fill('a');
+    linking.observe("machine", "main", 0, {long_name.data(),long_name.size()}, 0, 3, emit, audit::phase::hidden_import);
+    assert(check("\"function_bytes\":256") && check("\"function_truncated\":true"));
+    assert(linking.inspect(counts) && counts.admitted==3 && counts.limited==0);
     audit::journal nesting;
     assert(nesting.inspect(counts) && !counts.configured && counts.admitted==0);
     assert(nesting.add(audit::scope::single,"owned",false,{5,8192,1,5}));

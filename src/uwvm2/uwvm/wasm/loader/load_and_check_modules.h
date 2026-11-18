@@ -23,6 +23,7 @@
 #pragma once
 #if !defined(UWVM_MODULE) && defined(UWVM_IMPORT_ROSV2)
 #include <uwvm2/uwvm/imported/scene/storage.h>
+#include <uwvm2/utils/thread/monotonic_clock.h>
 #endif
 #include <uwvm2/uwvm/io/host_diagnostics.h>
 
@@ -462,7 +463,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                        {reinterpret_cast<char const*>(import_extern_name.data()),import_extern_name.size()})==
                                        ::uwvm2::imported::ros::scene::exposure::hidden)
                                 {
-                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] ROS scene interface is hidden; configure an exact --ros-scene-interface and --ros-scene-bind.");
+                                    auto& policy{::uwvm2::uwvm::imported::scene::configuration};
+                                    if(policy.auditing_calls())
+                                    {
+                                        // Linking precedes runtime activation, so there is no generation or guest result.
+                                        auto const now{::uwvm2::utils::host_clock::now()};
+                                        auto const ns{::uwvm2::utils::host_clock::available() ?
+                                            ::std::chrono::duration_cast<::std::chrono::nanoseconds>(now.time_since_epoch()).count() : 0};
+                                        policy.observe_call({reinterpret_cast<char const*>(curr_module_name.data()),curr_module_name.size()}, 0,
+                                            {reinterpret_cast<char const*>(import_extern_name.data()),import_extern_name.size()}, 0,
+                                            ns > 0 ? static_cast<::std::uint64_t>(ns) : 0,
+                                            [](auto record) noexcept { return ::uwvm2::imported::ros::audit_io::write_record(record); },
+                                            ::uwvm2::imported::ros::scene::call_audit::phase::hidden_import);
+                                    }
+                                    ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] ROS scene interface is hidden; configure an exact --ros-scene-interface and --ros-scene-bind.");
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
 #endif

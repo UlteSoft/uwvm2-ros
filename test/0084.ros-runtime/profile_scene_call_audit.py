@@ -33,11 +33,32 @@ WAT = """(module
   (if (i32.ne (local.get $sum) (i32.const SUM)) (then unreachable))))"""
 
 
+def event_rows(path, key):
+    """Read a VTune TSV whose header may be preceded by diagnostic text."""
+    with path.open() as stream:
+        for header in stream:
+            if header.startswith(key+"\t"):
+                reader = csv.DictReader(stream, fieldnames=header.rstrip("\r\n").split("\t"), delimiter="\t")
+                yield from reader
+                return
+    raise ValueError(f"missing {key} table in {path}")
+
+
+def sampled(row):
+    return any(float(value.replace(",", "") or 0)>0 for key,value in row.items()
+               if key and key.startswith("Hardware Event Count:"))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--vtune", type=Path, default=Path("/opt/intel/oneapi/vtune/latest/bin64/vtune"))
+    parser.add_argument("--sampling-interval-ms", type=float, choices=(0.01, 0.1, 1.0), default=0.01)
+    parser.add_argument("--all-pmus", action="store_true",
+                        help="Allow VTune to configure all PMU types. The workload remains pinned to CPU 4.")
+    parser.add_argument("--native-policy-include", action="append", type=Path, default=[],
+                        help="Benchmark the actual native scene policy using these ordered include directories.")
     args = parser.parse_args()
     verify_gate()
     vm, out = args.runtime.resolve(), args.output.resolve()
@@ -71,18 +92,32 @@ def main():
         return result.returncode, elapsed
 
     native = out / "native"
-    (out / "abi.c").write_text("#include <stdint.h>\nuint32_t scene_abi(void) { return 2; }\n")
-    (out / "loop.c").write_text("""#include <stdint.h>
-#include <stdlib.h>
-uint32_t scene_abi(void);
-int main(int argc, char **argv) {
-    if (argc != 2) return 2;
-    uint32_t n = (uint32_t)strtoul(argv[1], 0, 10), sum = 0;
-    for (uint32_t i = 0; i < n; ++i) sum += scene_abi();
-    return sum != n * 2;
-}
-""")
-    run("native-build", ["cc", "-O3", "-g", "-fno-lto", "loop.c", "abi.c", "-o", native])
+    policy_source = ROOT / "test/0084.ros-runtime/scene_abi_native.cc"
+    if args.native_policy_include:
+        includes = ["-I"+str(directory.resolve()) for directory in args.native_policy_include]
+        native_compile = ["clang++-22", "-std=c++23", "-pthread", "-O3", "-g", "-UNDEBUG", "-Wall", "-Wextra", "-Werror",
+                          *includes, policy_source, "-o", native]
+        native_inputs = [policy_source]
+        profiled_native_calls = 32000000
+        report["native_boundary"] = "Real scene policy, membership, grant lookup and caller enrollment; native caller identity supplied by the fixture."
+    else:
+        (out / "abi.c").write_text("#include <stdint.h>\nuint32_t scene_abi(void) { return 2; }\n")
+        (out / "loop.c").write_text("""#include <stdint.h>
+    #include <stdlib.h>
+    uint32_t scene_abi(void);
+    int main(int argc, char **argv) {
+        if (argc != 2) return 2;
+        uint32_t n = (uint32_t)strtoul(argv[1], 0, 10), sum = 0;
+        for (uint32_t i = 0; i < n; ++i) sum += scene_abi();
+        return sum != n * 2;
+    }
+    """)
+        native_compile = ["cc", "-O3", "-g", "-fno-lto", "loop.c", "abi.c", "-o", native]
+        native_inputs = [out / "abi.c", out / "loop.c"]
+        profiled_native_calls = 2100000000
+        report["native_boundary"] = "Direct native function returning the ABI version."
+    report["native_compile"] = list(map(str,native_compile))
+    run("native-build", native_compile)
     commands = {"native": {}, "wasm": {}}
     for n in (LOW, HIGH):
         wat, wasm = out / f"calls-{n}.wat", out / f"calls-{n}.wasm"
@@ -93,7 +128,7 @@ int main(int argc, char **argv) {
             "--runtime-llvm-jit-cache-path", "disable", "--wasm-set-main-module-name", "main",
             "--ros-scene-create", "robot", "--ros-scene-bind", "robot", "main",
             "--ros-scene-interface", "robot", "abi", "allow", "--run", wasm]
-    report["inputs"] = {p.name: sha(p) for p in [native, out / "abi.c", out / "loop.c", *out.glob("*.wasm")]}
+    report["inputs"] = {p.name: sha(p) for p in [native, *native_inputs, *out.glob("*.wasm")]}
     report["commands"] = {k: {n: list(map(str, v)) for n, v in jobs.items()} for k, jobs in commands.items()}
     for kind in commands:
         run(kind+"-warm", commands[kind][LOW])
@@ -117,40 +152,49 @@ int main(int argc, char **argv) {
             target = out/name
             knobs = (["-knob", "sampling-mode=hw", "-knob", "enable-stack-collection=false"]
                      if analysis=="hotspots" else ["-knob", "pmu-collection-mode=detailed", "-knob", "dram-bandwidth-limits=false"])
-            task = [args.vtune, "-collect", analysis, *knobs, "-knob", "sampling-interval=0.01",
-                    "-no-analyze-system", "-no-summary", "-cpu-mask", "4", "-data-limit=16",
+            pid_file = out / (name+"-pid")
+            record_pid = ("import os,sys; from pathlib import Path; Path(sys.argv[1]).write_text(str(os.getpid())); "
+                          "os.execv(sys.argv[2],sys.argv[2:])")
+            task = [args.vtune, "-collect", analysis, *knobs, "-knob", f"sampling-interval={args.sampling_interval_ms}",
+                    "-no-analyze-system", "-no-summary", *([] if args.all_pmus else ["-cpu-mask","4"]), "-data-limit=16",
                     "-return-app-exitcode", "-result-dir", target, "-source-search-dir", ROOT,
-                    "--", "/usr/bin/taskset", "-c", "4", *jobs[HIGH]]
+                    "--", "/usr/bin/taskset", "-c", "4", sys.executable, "-c", record_pid, pid_file, *(jobs[HIGH] if kind=="wasm" else [native,str(profiled_native_calls)])]
             code, _ = run(name+"-collect", task, optional=True, limit=300)
-            profile = {"kind":kind,"analysis":analysis,"requested_ms":0.01,"collection_exit":code,
+            profile = {"kind":kind,"analysis":analysis,"requested_ms":args.sampling_interval_ms,"all_pmus":args.all_pmus,
+                       "iterations":HIGH if kind=="wasm" else profiled_native_calls,"collection_exit":code,
                        "source_rows":0,"assembly_rows":0,"programmed":vtune_periods(target)}
             report["profiles"].append(profile)
             save()
             if code: continue
+            pid = int(pid_file.read_text())
+            if pid <= 0: raise ValueError("missing client process identity")
+            profile["client_pid"] = pid
             binary = native.name if kind=="native" else vm.name
-            options = [args.vtune, "-report", "hw-events", "-result-dir", target, "-filter", "module="+binary,
+            options = [args.vtune, "-report", "hw-events", "-result-dir", target, "-filter", "process-id="+str(pid), "-filter", "module="+binary,
                        "-format", "csv", "-csv-delimiter", "tab"]
             table = out/(name+"-source.tsv")
             code, _ = run(name+"-source", [*options, "-group-by", "function,source-file,source-line",
                                            "-report-output", table], optional=True)
             if code: continue
-            def sampled(row):
-                return any(float(v.replace(",","") or 0)>0 for k,v in row.items() if k and k.startswith("Hardware Event Count:"))
-            with table.open() as stream:
-                rows = [row for row in csv.DictReader(stream, delimiter="\t") if row.get("Source Line","").isdigit() and sampled(row)]
-            relevant = [row for row in rows if (kind=="native" and Path(row.get("Source File","")).name in {"abi.c","loop.c"}) or
+            rows = [row for row in event_rows(table,"Function") if row.get("Source Line","").isdigit() and sampled(row)]
+            relevant = [row for row in rows if (kind=="native" and Path(row.get("Source File","")).name in {"abi.c","loop.c","scene_abi_native.cc","deployment.h","authority.h"}) or
                         (kind=="wasm" and "uwvm2::uwvm::imported::scene" in row.get("Function",""))]
             profile["source_rows"] = len(relevant)
             if relevant:
-                func = relevant[0]["Function"]
+                preferred = ({"main", "scene_abi"} if kind=="native" else
+                             {"uwvm2::uwvm::imported::scene::abi", "uwvm2::uwvm::imported::scene::wrapper::observe_result"})
+                chosen = max(relevant, key=lambda r:(r["Function"] in preferred,
+                             float(r.get("Hardware Event Count:INST_RETIRED.ANY","").replace(",","") or 0)))
+                func = chosen["Function"]
+                profile["sampled_function"] = func
+                profile["source_file"] = chosen["Source File"]
+                profile["source_line"] = int(chosen["Source Line"])
                 assembly = out/(name+"-asm.tsv")
                 code, _ = run(name+"-asm", [*options, "-source-object", "function="+func, "-group-by", "address",
                               "-column", "Assembly,Source Line,Hardware Event Count", "-report-output", assembly], optional=True)
                 if not code:
-                    with assembly.open() as stream:
-                        profile["function"] = func
-                        profile["assembly_rows"] = sum(1 for row in csv.DictReader(stream,delimiter="\t")
-                            if row.get("Address","").startswith("0x") and row.get("Source Line","").isdigit() and sampled(row))
+                    profile["assembly_rows"] = sum(1 for row in event_rows(assembly,"Address")
+                        if row.get("Address","").startswith("0x") and row.get("Source Line","").isdigit() and sampled(row))
             save()
     report["complete"] = all(p["source_rows"] and p["assembly_rows"] for p in report["profiles"])
     save()

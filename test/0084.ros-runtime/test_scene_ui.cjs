@@ -25,6 +25,11 @@ const session = {id:"scene", type:"uwvm-llvm-full", name:"robot", async customRe
   if (command !== "uwvm/sceneState") throw Error("unexpected side effect route: " + command);
   assert.deepEqual(Object.keys(args).sort(), ["count","ifStop","selection","start"]);
   assert.equal(args.count,8); assert.equal(args.ifStop,stop);
+  if (args.selection === "policy") {
+    return {selection:"policy",available:true,status:"available",scope:"process-owned",stopId:stop,
+      start:0,total:1,next:1,more:false,payloadsRead:false,nativeOperationsIssued:false,
+      rows:[{kind:"policy",environment:label("robot"),operation:"permission.report",configured:"unset",effective:"allow",origin:"self-default"}]};
+  }
   if (args.selection === "audit") {
     return {selection:"audit",available:true,status:"available",scope:"process-owned",stopId:stop,
       rows:[{configured:true,admitted:"1",limited:"18446744073709551615",busy:"0",clock_failed:"0",sink_failed:"1"}],
@@ -157,6 +162,10 @@ const vscode = {
     "lifecycle.open","lifecycle.state","lifecycle.transitions","lifecycle.submit","lifecycle.take","lifecycle.respond"])
     panel.receive({action,epoch:view().epoch,fields:{hex:"00",dumpPath:"/tmp/not-issued"}});
   await tick();assert.equal(queries.length,count,"scene messages cannot reach payload or effect requests");
+  panel.receive({action:"scene-group",group:"policy",epoch:view().epoch});await tick();
+  assert.equal(view().scene.view.rows[0].origin,"self-default");
+  assert.equal(queries.filter(q=>q.command==="uwvm/sceneState").at(-1).args.selection,"policy");
+  assert.ok(view().scene.view.columns.includes("effective"));
   panel.receive({action:"scene-group",group:"audit",epoch:view().epoch});await tick();
   assert.equal(queries.filter(q=>q.command==="uwvm/sceneState").at(-1).args.selection,"audit");
   assert.equal(view().scene.view.rows[0].__raw.limited,"18446744073709551615");
