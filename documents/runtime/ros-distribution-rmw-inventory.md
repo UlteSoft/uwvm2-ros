@@ -151,6 +151,7 @@ scoped to the stated operations.
 
 | Peer and transport | Operation exercised |
 | --- | --- |
+| Ardent, Bouncy and Crystal original Fast RTPS nodes | In a disposable Linux QEMU guest, each release’s native publisher and subscriber exchanged ten distinct String values. The tested two-address loopback configuration did not complete a bidirectional exchange with Jazzy for these releases. [Reproduction](../../test/0084.ros-runtime/legacy_fastrtps/README.md) |
 | Jazzy Fast DDS with Dashing, Eloquent, Foxy, Galactic, Humble, Iron, Kilted, Lyrical or Rolling Cyclone DDS | Native rclcpp endpoints exchanged a reliable Int32 request and its incremented response over private loopback. The Rolling run used packages from the signed Resolute testing archive. The Foxy, Galactic and Humble runs retained rcutils diagnostics. |
 | Jazzy Fast DDS with Humble int2DDS, dynamic Fast DDS or Fast DDS | Two rclcpp processes exchanged an Int32 challenge. The library-mapping fixture checked the plugin and vendor library in each process. Dynamic Fast DDS emitted a participant deletion diagnostic after delivering the sample. |
 | Jazzy Fast DDS with Dashing OpenSplice 6.9 | Two native rclcpp processes exchanged an Int32 challenge and its incremented reply on a private loopback domain. The test checked both processes’ loaded libraries, used the archived OpenSplice configuration schema and retained its startup and shutdown logs. |
