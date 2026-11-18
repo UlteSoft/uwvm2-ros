@@ -43,13 +43,16 @@ def guest(width,memory,deadline,mode,count):
  if mode=='crash':g.request('driver.describe',b'',cap=cap,capacity=32);g.equal(g.word(16384),6);g.equal(g.word(16408),1)
  g.request('driver.disconnect',b'',cap=cap,capacity=8);return g
 
-def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=()):
+def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), guest_widths=(32,64)):
  parser=argparse.ArgumentParser(description=__doc__)
  for name in ('runtime','source-root','mujoco','output'):parser.add_argument('--'+name,required=True,type=Path)
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
  a=parser.parse_args(argv)
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
+ if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
+  parser.error('guest widths must be unique and drawn from wasm32 and wasm64')
+ if compile_guest is None and guest_widths!=(32,64):parser.error('the WAT reference covers both widths')
  verify_gate();out=a.output;out.mkdir(parents=True,exist_ok=False)
  report=dict(complete=False,scope=__doc__,guest_language=guest_name,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
  def save():(out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -78,7 +81,8 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=()):
     if match:
      path=Path(match.group(1));closure.append((path,'/lib/'+path.name if 'mujoco' in path.name else str(path)))
    assert any('libmujoco' in destination for _,destination in closure)
-  layouts=((32,0),(32,1),(64,0),(64,1)) if compile_guest is None else ((32,0),(64,0))
+  layouts=((32,0),(32,1),(64,0),(64,1)) if compile_guest is None else tuple((width,0) for width in guest_widths)
+  report["layouts"]=[dict(address_bits=w,memory_index=m) for w,m in layouts]
   for width,memory in layouts:
    for engine in ('int','aot'):
     for mode in ('success','range','crash'):
