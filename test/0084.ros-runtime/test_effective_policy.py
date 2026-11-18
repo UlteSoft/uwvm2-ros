@@ -107,8 +107,12 @@ def check_cli(runtime):
         run([*flags[:flags.index('--ros-scene-driver-schema')], '--ros-scene-check'], okay=False)
 
     from run_model_attachment_vm import flags as model_flags
-    model = run([*model_flags(1023456, 12345, 9007199254740993), DUMP])['environments'][0]['sessions'][0]
-    assert model['kind'] == 'model' and model['alias'] == 'brain' and model['transport'] == 'kernel-seqpacket'
+    flags = model_flags(1023456, 12345, 9007199254740993)
+    channel = flags.index('--ros-scene-model-kernel-channel')
+    flags[channel] = '--ros-scene-model-channel'
+    flags[channel + 19:channel + 19] = ['1023457', '1023458']
+    model = run([*flags, DUMP])['environments'][0]['sessions'][0]
+    assert model['kind'] == 'model' and model['alias'] == 'brain' and model['transport'] == 'mutual-tls-1.3'
     assert model['supervisorBytes'] == '1048576' and model['sessionUntilNs'] == '9007199254740993'
 
 
