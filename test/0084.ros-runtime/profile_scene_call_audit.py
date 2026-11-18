@@ -41,6 +41,8 @@ def main():
     parser.add_argument("--sampling-interval-ms", type=float, choices=(0.01, 0.1, 1.0), default=0.01)
     parser.add_argument("--all-pmus", action="store_true",
                         help="Allow VTune to configure all PMU types. The workload remains pinned to CPU 4.")
+    parser.add_argument("--native-policy-include", action="append", type=Path, default=[],
+                        help="Benchmark the actual native scene policy using these ordered include directories.")
     args = parser.parse_args()
     verify_gate()
     vm, out = args.runtime.resolve(), args.output.resolve()
@@ -74,18 +76,32 @@ def main():
         return result.returncode, elapsed
 
     native = out / "native"
-    (out / "abi.c").write_text("#include <stdint.h>\nuint32_t scene_abi(void) { return 2; }\n")
-    (out / "loop.c").write_text("""#include <stdint.h>
-#include <stdlib.h>
-uint32_t scene_abi(void);
-int main(int argc, char **argv) {
-    if (argc != 2) return 2;
-    uint32_t n = (uint32_t)strtoul(argv[1], 0, 10), sum = 0;
-    for (uint32_t i = 0; i < n; ++i) sum += scene_abi();
-    return sum != n * 2;
-}
-""")
-    run("native-build", ["cc", "-O3", "-g", "-fno-lto", "loop.c", "abi.c", "-o", native])
+    policy_source = ROOT / "test/0084.ros-runtime/scene_abi_native.cc"
+    if args.native_policy_include:
+        includes = ["-I"+str(directory.resolve()) for directory in args.native_policy_include]
+        native_compile = ["clang++-22", "-std=c++23", "-pthread", "-O3", "-g", "-UNDEBUG", "-Wall", "-Wextra", "-Werror",
+                          *includes, policy_source, "-o", native]
+        native_inputs = [policy_source]
+        profiled_native_calls = 32000000
+        report["native_boundary"] = "Real scene policy, membership, grant lookup and caller enrollment; native caller identity supplied by the fixture."
+    else:
+        (out / "abi.c").write_text("#include <stdint.h>\nuint32_t scene_abi(void) { return 2; }\n")
+        (out / "loop.c").write_text("""#include <stdint.h>
+    #include <stdlib.h>
+    uint32_t scene_abi(void);
+    int main(int argc, char **argv) {
+        if (argc != 2) return 2;
+        uint32_t n = (uint32_t)strtoul(argv[1], 0, 10), sum = 0;
+        for (uint32_t i = 0; i < n; ++i) sum += scene_abi();
+        return sum != n * 2;
+    }
+    """)
+        native_compile = ["cc", "-O3", "-g", "-fno-lto", "loop.c", "abi.c", "-o", native]
+        native_inputs = [out / "abi.c", out / "loop.c"]
+        profiled_native_calls = 2100000000
+        report["native_boundary"] = "Direct native function returning the ABI version."
+    report["native_compile"] = list(map(str,native_compile))
+    run("native-build", native_compile)
     commands = {"native": {}, "wasm": {}}
     for n in (LOW, HIGH):
         wat, wasm = out / f"calls-{n}.wat", out / f"calls-{n}.wasm"
@@ -96,7 +112,7 @@ int main(int argc, char **argv) {
             "--runtime-llvm-jit-cache-path", "disable", "--wasm-set-main-module-name", "main",
             "--ros-scene-create", "robot", "--ros-scene-bind", "robot", "main",
             "--ros-scene-interface", "robot", "abi", "allow", "--run", wasm]
-    report["inputs"] = {p.name: sha(p) for p in [native, out / "abi.c", out / "loop.c", *out.glob("*.wasm")]}
+    report["inputs"] = {p.name: sha(p) for p in [native, *native_inputs, *out.glob("*.wasm")]}
     report["commands"] = {k: {n: list(map(str, v)) for n, v in jobs.items()} for k, jobs in commands.items()}
     for kind in commands:
         run(kind+"-warm", commands[kind][LOW])
@@ -123,10 +139,10 @@ int main(int argc, char **argv) {
             task = [args.vtune, "-collect", analysis, *knobs, "-knob", f"sampling-interval={args.sampling_interval_ms}",
                     "-no-analyze-system", "-no-summary", *([] if args.all_pmus else ["-cpu-mask","4"]), "-data-limit=16",
                     "-return-app-exitcode", "-result-dir", target, "-source-search-dir", ROOT,
-                    "--", "/usr/bin/taskset", "-c", "4", *(jobs[HIGH] if kind=="wasm" else [native, "2100000000"])]
+                    "--", "/usr/bin/taskset", "-c", "4", *(jobs[HIGH] if kind=="wasm" else [native,str(profiled_native_calls)])]
             code, _ = run(name+"-collect", task, optional=True, limit=300)
             profile = {"kind":kind,"analysis":analysis,"requested_ms":args.sampling_interval_ms,"all_pmus":args.all_pmus,
-                       "iterations":HIGH if kind=="wasm" else 2100000000,"collection_exit":code,
+                       "iterations":HIGH if kind=="wasm" else profiled_native_calls,"collection_exit":code,
                        "source_rows":0,"assembly_rows":0,"programmed":vtune_periods(target)}
             report["profiles"].append(profile)
             save()
@@ -142,7 +158,7 @@ int main(int argc, char **argv) {
                 return any(float(v.replace(",","") or 0)>0 for k,v in row.items() if k and k.startswith("Hardware Event Count:"))
             with table.open() as stream:
                 rows = [row for row in csv.DictReader(stream, delimiter="\t") if row.get("Source Line","").isdigit() and sampled(row)]
-            relevant = [row for row in rows if (kind=="native" and Path(row.get("Source File","")).name in {"abi.c","loop.c"}) or
+            relevant = [row for row in rows if (kind=="native" and Path(row.get("Source File","")).name in {"abi.c","loop.c","scene_abi_native.cc","deployment.h","authority.h"}) or
                         (kind=="wasm" and "uwvm2::uwvm::imported::scene" in row.get("Function",""))]
             profile["source_rows"] = len(relevant)
             if relevant:
