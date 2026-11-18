@@ -54,9 +54,9 @@ int main(int argc,char** argv) {
     if(mode=="guard"||mode=="pending") {
         int fds[2];if(::pipe(fds)) return 5;::close(fds[0]);
         {
-            a::details::pipe_signal_guard guard;if(!guard.valid()) return 6;
+            a::details::write_signal_guard guard{SIGPIPE};if(!guard.valid()) return 6;
             if(::write(fds[1],"x",1)!=-1||errno!=EPIPE) return 7;
-            guard.broken_pipe();
+            guard.consume_generated_signal();
         }
         ::close(fds[1]);ok=true;
     } else if(mode=="concurrent") {

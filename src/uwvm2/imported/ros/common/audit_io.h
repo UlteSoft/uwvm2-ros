@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <sys/sysmacros.h>
 #include <unistd.h>
 #endif
@@ -51,22 +52,22 @@ namespace uwvm2::imported::ros::audit_io
         struct errno_guard { int value{errno};~errno_guard() { errno=value; } };
         inline bool same_file(struct stat const& a,struct stat const& b) noexcept
         { return a.st_dev==b.st_dev&&a.st_ino==b.st_ino&&(a.st_mode&S_IFMT)==(b.st_mode&S_IFMT); }
-        class pipe_signal_guard
+        class write_signal_guard
         {
             sigset_t set_{},old_{};
             bool active_{},previously_pending_{},consume_{};
         public:
-            pipe_signal_guard() noexcept
+            explicit write_signal_guard(int signo) noexcept
             {
-                if(::sigemptyset(&set_)||::sigaddset(&set_,SIGPIPE)||::pthread_sigmask(SIG_BLOCK,&set_,&old_)) { return; }
+                if(::sigemptyset(&set_)||::sigaddset(&set_,signo)||::pthread_sigmask(SIG_BLOCK,&set_,&old_)) { return; }
                 active_=true;sigset_t pending{};
                 if(::sigpending(&pending)<0) { (void)::pthread_sigmask(SIG_SETMASK,&old_,nullptr);active_=false;return; }
-                previously_pending_=::sigismember(&pending,SIGPIPE)==1;
+                previously_pending_=::sigismember(&pending,signo)==1;
             }
-            pipe_signal_guard(pipe_signal_guard const&)=delete;
+            write_signal_guard(write_signal_guard const&)=delete;
             bool valid() const noexcept { return active_; }
-            void broken_pipe() noexcept { consume_=true; }
-            ~pipe_signal_guard()
+            void consume_generated_signal() noexcept { consume_=true; }
+            ~write_signal_guard()
             {
                 if(!active_) { return; }
                 if(consume_&&!previously_pending_)
@@ -78,27 +79,44 @@ namespace uwvm2::imported::ros::audit_io
                 (void)::pthread_sigmask(SIG_SETMASK,&old_,nullptr);
             }
         };
-        inline bool regular_write(int fd,std::string_view record,[[maybe_unused]] failure& reason)
+        /** @brief Write the record and newline to the pinned regular file.
+         * @details Keep the shared file offset and append mode intact. Linux
+         * can signal the writing thread on its file-size limit. Consume only
+         * the signal associated with an EFBIG write when none was pending on
+         * entry. No process-wide signal disposition is changed. A short write
+         * followed by a failure is recorded as a partial delivery.
+         */
+        inline bool regular_write(int fd,std::string_view record,failure& reason) noexcept
         {
-#if defined(__cpp_exceptions)
-            // A pinned duplicate shares the original regular-file OFD, so its
-            // position and append semantics are unchanged. No flags are set.
-            ::fast_io::io::println(::fast_io::posix_io_observer{fd},record);return true;
-#else
-            // Error-reporting fast_io device operations terminate without
-            // exceptions. Keep best-effort behavior for that build profile.
-            for(auto part:{record,std::string_view{"\n"}})
+            if(record.size()>=static_cast<std::size_t>(std::numeric_limits<ssize_t>::max()))
+            { reason=failure::oversized;return false; }
+            write_signal_guard signal{SIGXFSZ};
+            if(!signal.valid()) { reason=failure::signal_guard;return false; }
+            char newline='\n';
+            iovec parts[2]{{const_cast<char*>(record.data()),record.size()},{&newline,1}};
+            unsigned index=record.empty()?1u:0u,interrupted{};
+            bool started{};
+            while(index<2)
             {
-                std::size_t done{};unsigned interrupted{};
-                while(done<part.size())
+                auto written=::writev(fd,parts+index,static_cast<int>(2-index));
+                if(written<0 && errno==EINTR && ++interrupted<16) continue;
+                if(written<=0)
                 {
-                    auto n{::write(fd,part.data()+done,part.size()-done)};
-                    if(n<0&&errno==EINTR&&++interrupted<16) { continue; }
-                    if(n<=0) { reason=done ? failure::partial_write : failure::io_error;return false; }done+=static_cast<std::size_t>(n);
+                    if(written<0 && errno==EFBIG) signal.consume_generated_signal();
+                    reason=started?failure::partial_write:failure::io_error;
+                    return false;
+                }
+                started=true;
+                auto consumed=static_cast<std::size_t>(written);
+                while(index<2 && consumed>=parts[index].iov_len)
+                { consumed-=parts[index].iov_len;++index; }
+                if(consumed)
+                {
+                    parts[index].iov_base=static_cast<char*>(parts[index].iov_base)+consumed;
+                    parts[index].iov_len-=consumed;
                 }
             }
             return true;
-#endif
         }
         inline bool write_complete(ssize_t count,std::size_t expected,failure& reason) noexcept
         {
@@ -155,13 +173,13 @@ namespace uwvm2::imported::ros::audit_io
             if(::fstat(independent,&actual)<0||!same_file(snapshot,actual)) { reason=failure::replaced_descriptor;return false; }
             auto output_flags{::fcntl(independent,F_GETFL,0)};
             if(output_flags<0||!(output_flags&O_NONBLOCK)) { return false; }
-            pipe_signal_guard signal;
+            write_signal_guard signal{SIGPIPE};
             if(!signal.valid()) { reason=failure::signal_guard;return false; }
             for(unsigned attempt{};attempt!=16;++attempt)
             {
                 auto n{::write(independent,bytes.data(),length)};
                 if(n<0&&errno==EINTR) { continue; }
-                if(n<0&&errno==EPIPE) { signal.broken_pipe(); }
+                if(n<0&&errno==EPIPE) { signal.consume_generated_signal(); }
                 return write_complete(n,length,reason);
             }
             return false;
