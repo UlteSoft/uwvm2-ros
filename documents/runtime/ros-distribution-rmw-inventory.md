@@ -237,6 +237,8 @@ With the upstream SROS2 policies enforced, Jazzy Fast DDS 2.14.6 and Lyrical Fas
 
 Two Lyrical Cyclone DDS 11.0.1 endpoints loaded the vendor authentication, access-control and cryptography plugins and exchanged the same protected String. The Jazzy Fast DDS to Lyrical Cyclone DDS plaintext control also returned the expected String. Under Enforce on those mixed endpoints, Cyclone reported a handshake key conversion error and neither authorized callback received a value. Site admission must qualify the actual middleware and security policies on both ends. The [cross-vendor fixture](../../test/0084.ros-runtime/sros2_cross/README.md) records the positive controls and the failed authenticated pair.
 
+A fixed String exchange also ran between the two mixed-vendor applications through two independent SROS2 security domains. Each native gateway decrypted its approved topic, authenticated its peer over a TLS 1.3 socket pair and republished into the other trust domain. Both applications checked fresh values. Removing the gateways, substituting an untrusted TLS client certificate, or substituting an untrusted server certificate prevented delivery. The [secure relay fixture](../../test/0084.ros-runtime/sros2_tls_relay/README.md) covers four native processes and this topic only. Each domain must authorize its gateway to read and publish; the gateway can see plaintext.
+
 An upstream SROS2 interoperability run covers the enclaves, policy files
 and endpoints used by that run. [ESROS2](https://www.csa.iisc.ac.in/~vg/papers/sigops_atc2026/)
 adds native application sandboxing using eBPF and Intel MPK. Qualifying it
