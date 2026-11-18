@@ -21,6 +21,16 @@ identity from trusted launch state and closes the borrowed courier on completion
 The receiver never enters the VM executable or the per-message path. A successful
 handoff still requires the ordinary TLS and independent operation admission.
 
+The external Rust deployer separately implements [device-node ownership and
+kernel filtering](https://github.com/UlteSoft/wasmros-deployer/blob/main/document/en/device-isolation.md).
+Its VM startup path denies physical device opens; trusted provider provisioning
+can reserve exact character/block device numbers with the original deployment.
+These host-only controls add no import or process authority to the VM. Device
+ownership, kernel open permission, encrypted session admission and motion
+authorization are independent requirements. Existing device FDs and individual
+ioctls need separate containment; a device number is not proof of physical
+identity after hotplug. Native-provider lifecycle integration remains unfinished.
+
 This is the current VM contract. The deployment program is not implemented by
 this change. Historical component-launcher receipts do not qualify this path.
 Imports belong to `uwvm_ros_v2`: `driver.connect`, `driver.submit`,
