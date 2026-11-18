@@ -283,11 +283,11 @@ class SourceSession(source_cli.Session):
 
 
 class BrokerSession:
-    def __init__(self, product, broker, adapter, vm_args, folder):
+    def __init__(self, product, broker, adapter, vm_args, folder, *, socket_parent="/tmp"):
         self.folder, self.adapter = folder, adapter
         # Socket metadata needs a short pathname even when TMPDIR points to
         # a deep persistent build root. Large logs/products stay in folder.
-        self.directory = Path(tempfile.mkdtemp(prefix="uwvm-dap-current-", dir="/tmp"))
+        self.directory = Path(tempfile.mkdtemp(prefix="uwvm-dap-current-", dir=socket_parent))
         self.log_path = folder / "broker.raw"
         self.log = self.log_path.open("wb")
         self.command = [sys.executable, str(broker), "serve", "--uwvm", str(product),

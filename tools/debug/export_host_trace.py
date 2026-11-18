@@ -12,14 +12,14 @@ from pathlib import Path
 import re
 import tempfile
 
-FAMILIES = {1: "wasip1", 2: "ros1", 4: "ros2"}
+FAMILIES = {1: "wasip1", 2: "ros1", 4: "ros2", 8: "rosv2"}
 U64 = (1 << 64) - 1
 HEADER = {"enabled", "epoch", "cleared-through", "newest", "allocation-failures",
           "invalid-ranges", "sequence-failures"}
 CALL = {"id", "family", "namespace", "function", "module-name", "module-name-bytes",
         "module-name-truncated", "module", "participant", "generation", "environment",
         "args", "returned", "has-result", "result", "timed", "duration-ns", "segments", "incomplete"}
-TOKEN = re.compile(r'([a-z-]+)=("(?:[\x20-\x21\x23-\x5b\x5d-\x7e]|\\x[0-9a-f]{2})*"|[^ "\r\n]*)')
+TOKEN = re.compile(r'([a-z][a-z0-9-]*)=("(?:[\x20-\x21\x23-\x5b\x5d-\x7e]|\\x[0-9a-f]{2})*"|[^ "\r\n]*)')
 
 
 def fields(line, prefix, keys):
@@ -82,8 +82,9 @@ def packet(reply):
     if not isinstance(reply, str) or len(reply) > 65536 or not reply.endswith("\n"):
         raise ValueError("incomplete host trace reply")
     lines = reply[:-1].split("\n")
-    h = {k: number(v) for k, v in fields(lines[0], "host-trace", HEADER).items()}
-    if h["enabled"] > 7 or h["cleared-through"] > h["newest"]:
+    keys = HEADER | {"rosv2-dropped"} if " rosv2-dropped=" in lines[0] else HEADER
+    h = {k: number(v) for k, v in fields(lines[0], "host-trace", keys).items()}
+    if h["enabled"] > (15 if "rosv2-dropped" in h else 7) or h["cleared-through"] > h["newest"]:
         raise ValueError("inconsistent host trace journal")
     return h, lines[1:]
 
@@ -114,6 +115,11 @@ def call_row(line):
                           "hex": f"0x{value:0{width//4}x}"})
     if len(arguments) > 16:  # Current ABI record schema, not a history limit.
         raise ValueError("invalid ABI argument count")
+    if row["family"] == 8 and (arguments or row["returned"] != 1 or row["has-result"] != 1
+            or row["result"] >= 1 << 32 or row["module-name-bytes"] or row["module"] or row["participant"]
+            or row["generation"] or row["environment"] or row["segments"] or row["timed"] or row["duration-ns"]
+            or row["incomplete"] or not 0 < len(row["namespace"]) <= 255 or not 0 < len(row["function"]) <= 255):
+        raise ValueError("invalid metadata-only ROSv2 completion")
     row["args"] = arguments
     return row
 
@@ -126,7 +132,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
     Existing files and symlinks are never overwritten.
     """
     if family not in ("all", *FAMILIES.values()):
-        raise ValueError("family must be all, wasip1, ros1 or ros2")
+        raise ValueError("family must be all, wasip1, ros1, ros2 or rosv2")
     if not isinstance(path, str) or not path or "\0" in path:
         raise ValueError("a host output file path is required")
     destination = Path(os.path.abspath(path))
@@ -164,6 +170,7 @@ def save_host_trace(request, checkpoint, path, family="all"):
                     "coverage": "Retained observations only, from explicitly enabled recording intervals.",
                     "wasip1": "Before/after snapshots, not proof of kernel consumption under shared-memory races.",
                     "ros": "Copied Host transfers, not proof of remote delivery; inspect the result.",
+                    "rosv2": "Completed registered operation and raw u32 result. No caller, arguments, payload or duration is recorded. rosv2-dropped counts lost records cumulatively.",
                     "integers": "64-bit quantities and ABI values are decimal strings to avoid JSON reader rounding.",
                     "bytes": "Concatenate chunks in offset order. Hex is lossless; utf8IfValid is per chunk.",
                     "timing": "durationNs is monotonic elapsed time, not a wall-clock timestamp.",
@@ -275,8 +282,8 @@ def save_host_trace(request, checkpoint, path, family="all"):
             if checkpoint() != identity:
                 raise ValueError("guest stop changed during export; file not published")
             output.write('\n  ],\n  "summary": ')
-            summary["observationLossReported"] = any(journal[k] for k in
-                ("allocation-failures", "invalid-ranges", "sequence-failures"))
+            summary["observationLossReported"] = any(journal.get(k, 0) for k in
+                ("allocation-failures", "invalid-ranges", "sequence-failures", "rosv2-dropped"))
             write({k: str(v) if type(v) is int else v for k, v in summary.items()}, 2)
             output.write("\n}\n")
             output.flush()

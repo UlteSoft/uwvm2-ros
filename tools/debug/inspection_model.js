@@ -14,7 +14,7 @@ const WASI_ICONS = {args: "list-flat", env: "symbol-field", fds: "files", preope
 const ROS_GROUPS = {capabilities: "Capabilities", sessions: "Sessions", queues: "Queues", services: "Services", actions: "Actions",
   parameters: "Parameters", tf: "Transforms", graph: "Graph", stats: "Interface statistics", calls: "Call statistics",
   trace: "Call metadata", journal: "Recorded calls"};
-const SCENE_GROUPS = {authority: "Authority", resources: "Resources"};
+const SCENE_GROUPS = {authority: "Authority", resources: "Resources", journal: "Recorded calls"};
 const ROS_POLICY = "policy";
 const COLUMN_WIDTHS = [1, 2, 4, 8, 16, 32, 64];
 
@@ -300,8 +300,9 @@ function view(model) {
   } else if (model.kind === "scene") {
     const data = model.data && model.data.internal;
     base.scene = {groups: SCENE_GROUPS, active: model.sceneGroup, unavailable: model.data?.unavailable,
+      exportPath: model.exportPath || "", exportResult: model.exportResult,
       view: data ? {...groupRows(data), total: data.total, next: data.next, more: !!data.more,
-        start: data.start, available: data.available !== false, status: data.status,
+        journal: data.journal, calls: data.calls, start: data.start, available: data.available !== false, status: data.status,
         back: !!(model.groupHistory && model.groupHistory.length)} : undefined};
     base.footer.push({icon: "shield", text: "Read-only scene metadata"});
     base.footer.push({icon: "info", text: "Guest self reports are read-only after ROSv2 binding; other-module inspection and message routes require separate explicit authority"});

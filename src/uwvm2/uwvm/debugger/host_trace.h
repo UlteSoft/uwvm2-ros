@@ -2,6 +2,8 @@
 #pragma once
 #include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
+#include <array>
+#include <algorithm>
 #include <charconv>
 #include <fast_io.h>
 #include <fast_io_dsal/string_view.h>
@@ -14,15 +16,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
 {
     namespace data=::uwvm2::utils::debug::host_calls;
     enum class action {read,on,off,clear,bytes};
+    // The controller copies console commands across threads. Own the bounded
+    // selector bytes rather than retaining a view into the console command.
+    struct exact_label
+    {
+        std::array<char,255> bytes{};
+        std::uint8_t size{};
+        bool assign(std::string_view value) noexcept
+        {
+            if(value.empty() || value.size()>bytes.size()) {return false;}
+            for(char c:value)
+            {
+                if(!((c>='a'&&c<='z') || (c>='A'&&c<='Z') || (c>='0'&&c<='9') ||
+                     c=='_' || c=='.' || c=='-')) {return false;}
+            }
+            std::copy(value.begin(),value.end(),bytes.begin());
+            size=static_cast<std::uint8_t>(value.size());return true;
+        }
+        bool matches(std::string_view value) const noexcept
+        {return !size || value==std::string_view{bytes.data(),size};}
+    };
     struct request
     {
         action operation{};
         unsigned channels{15};
         std::uint64_t after{},call{},segment{},offset{},count{8},stop{};
+        exact_label function_name{},name_space{},caller{};
+        std::uint32_t result{};
+        bool match_result{};
     };
     inline bool valid(request const& q) noexcept
     {
         return q.operation<=action::bytes&&q.channels&&q.channels<=15&&q.count&&
+            (!(q.function_name.size || q.name_space.size || q.caller.size || q.match_result) ||
+             (q.operation==action::read && q.channels==static_cast<unsigned>(data::channel::rosv2))) &&
             q.count<=(q.operation==action::bytes?4096u:8u)&&
             (q.operation==action::bytes?q.call!=0:!(q.call||q.segment||q.offset));
     }
@@ -53,11 +80,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
                 if(v=="all") {q.channels=15;}else if(v=="wasip1") {q.channels=1;}
                 else if(v=="ros1") {q.channels=2;}else if(v=="ros2") {q.channels=4;}else if(v=="rosv2") {q.channels=8;}else {return false;}
             }
+            else if(key=="function") {bit=128;if(!q.function_name.assign(v)) {return false;}}
+            else if(key=="namespace") {bit=256;if(!q.name_space.assign(v)) {return false;}}
+            else if(key=="module") {bit=512;if(!q.caller.assign(v)) {return false;}}
             else
             {
                 std::uint64_t n{};auto p=std::from_chars(v.data(),v.data()+v.size(),n);
                 if(p.ec!=std::errc{}||p.ptr!=v.data()+v.size()) {return false;}
-                if(key=="after") {bit=2;q.after=n;}
+                if(key=="result") {bit=1024;if(n>UINT32_MAX) {return false;}q.match_result=true;q.result=static_cast<std::uint32_t>(n);}
+                else if(key=="after") {bit=2;q.after=n;}
                 else if(key=="call") {bit=4;q.call=n;}
                 else if(key=="segment") {bit=8;q.segment=n;}
                 else if(key=="offset") {bit=16;q.offset=n;}
@@ -126,6 +157,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::host_trace
         for(auto const& p:data::records)
         {
             auto const& r=*p;if(r.id<=q.after||!(q.channels&static_cast<unsigned>(r.family))) {continue;}
+            if(!q.function_name.matches(r.name) || !q.name_space.matches(r.name_space) ||
+               !q.caller.matches(r.module_name) || (q.match_result && (!r.has_result || r.result!=q.result))) {continue;}
             if(shown==q.count) {more=true;break;}++shown;next=r.id;
             ::fast_io::io::print(out,"host-call id=",r.id," family=",static_cast<unsigned>(r.family)," namespace=");quoted(out,r.name_space);
             ::fast_io::io::print(out," function=");quoted(out,r.name);::fast_io::io::print(out," module-name=");quoted(out,std::string_view{r.module_name}.substr(0,255));

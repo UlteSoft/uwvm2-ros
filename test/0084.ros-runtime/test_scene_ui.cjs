@@ -15,6 +15,11 @@ const session = {id:"scene", type:"uwvm-llvm-full", name:"robot", async customRe
   if (command === "uwvm/permissions") return {permissions:permission};
   if (command === "uwvm/diagnostics") return {text:`stopped: cooperative pause\nstop-id ${stop}\n`};
   if (command === "uwvm/hostInterfaces") return {builds:{u2rosv2:true}};
+  if (command === "uwvm/hostTrace") {
+    assert.deepEqual(args,{family:"rosv2",after:"0",count:8});
+    return {stopId:stop,journal:{enabled:"8","rosv2-dropped":"3"},
+      calls:[{id:"9",function:"abi",result:"2",segments:"0",args:[]}],next:"9",more:false};
+  }
   if (command !== "uwvm/sceneState") throw Error("unexpected side effect route: " + command);
   assert.deepEqual(Object.keys(args).sort(), ["count","ifStop","selection","start"]);
   assert.equal(args.count,8); assert.equal(args.ifStop,stop);
@@ -145,6 +150,14 @@ const vscode = {
     "lifecycle.open","lifecycle.state","lifecycle.transitions","lifecycle.submit","lifecycle.take","lifecycle.respond"])
     panel.receive({action,epoch:view().epoch,fields:{hex:"00",dumpPath:"/tmp/not-issued"}});
   await tick();assert.equal(queries.length,count,"scene messages cannot reach payload or effect requests");
+  panel.receive({action:"scene-group",group:"journal",epoch:view().epoch});await tick();
+  assert.equal(view().scene.active,"journal");
+  assert.equal(view().scene.view.journal["rosv2-dropped"],"3");
+  assert.equal(view().scene.view.calls[0].result,"2");
+  const beforePayload=queries.length;
+  panel.receive({action:"payload",fields:{call:"9",segment:"0",offset:"0",count:"8"},epoch:view().epoch});await tick();
+  assert.equal(queries.length,beforePayload,"metadata-only calls have no payload read route");
+  panel.receive({action:"scene-group",group:"resources",epoch:view().epoch});await tick();
   const beforeGroup=queries.length;
   panel.receive({action:"scene-group",group:"__proto__",epoch:view().epoch});await tick();
   assert.equal(queries.length,beforeGroup);

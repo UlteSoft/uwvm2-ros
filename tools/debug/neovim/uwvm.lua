@@ -138,8 +138,8 @@ end
 
 function M.host_trace(family, callback)
   family = family or "all"
-  assert(family == "all" or family == "wasip1" or family == "ros1" or family == "ros2",
-    "Select all, wasip1, ros1 or ros2")
+  assert(family == "all" or family == "wasip1" or family == "ros1" or family == "ros2" or family == "rosv2",
+    "Select all, wasip1, ros1, ros2 or rosv2")
   request("uwvm/hostTrace", {family = family}, function(err, body)
     finish(callback, err, body, function(value)
       return snapshot("host-trace-" .. family, pretty_json(value), "json")

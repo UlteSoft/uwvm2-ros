@@ -141,7 +141,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
     /// capability, provider address or observing scope enters the journal. A
     /// busy debugger or a full 4096-record ROSv2 budget drops the observation;
     /// clearing the host journal makes room again. The drop count is cumulative.
-    inline void observe_scene_result(std::string_view name_space,std::string_view name,std::uint32_t result) noexcept
+    inline void observe_scene_result(std::string_view name_space,std::string_view name,std::uint32_t result,
+                                     std::string_view caller={},std::uint64_t generation=0) noexcept
     {
         if(!observing(channel::rosv2)) {return;}
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -157,6 +158,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
             value->family=channel::rosv2;
             value->name_space=name_space;
             value->name=name;
+            // Zero generation represents unavailable caller evidence. Keep complete
+            // byte labels or omit the identity rather than conflating two prefixes.
+            if(generation && !caller.empty() && caller.size()<=255u)
+            {
+                value->module_name=caller;
+                value->generation=generation;
+            }
             value->has_result=true;
             value->returned=true;
             value->result=result;
@@ -166,7 +174,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::debug::host_calls
         }
         catch(...) {increment(allocation_failures);increment(scene_dropped);}
 #else
-        (void)name_space;(void)name;(void)result;
+        (void)name_space;(void)name;(void)result;(void)caller;(void)generation;
 #endif
     }
     inline void clear() noexcept

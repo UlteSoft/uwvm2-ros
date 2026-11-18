@@ -449,3 +449,28 @@ No row contains PID, FD, payload or native path. Inspection performs no I/O,
 restart, termination, lease refresh or physical safety determination. The IDE
 footer explains this boundary. Component rows remain parseable for archived
 packets; current imports do not expose component process lifecycle.
+
+## Completed host calls
+
+While stopped with full debugger permission, run `trace host on family=rosv2`.
+Continue the guest, stop again, and use `trace host read family=rosv2` or
+**Recorded calls** in the VS Code Robot scene inspector. A read-only session
+can read existing records. Neovim accepts `:UwvmHostTrace rosv2`; JetBrains
+provides the same filter in its Host calls panel. DAP clients can request
+`uwvm/hostTrace` or `uwvm/exportHostTrace` with `family: "rosv2"`. The export
+writes a private JSON file on the debug host and requires a stable cooperative
+stop. Reading or exporting the journal leaves recording and guest grants unchanged.
+
+Each entry records the registered namespace, import name, sequence and raw
+32-bit return value at completion. For example, the `abi` import returns the
+ABI version. Interpret other values using the named operation's contract.
+Arguments, capability handles, guest data, caller identity and timing are
+unavailable for this family. A zero in an unused transport field carries no
+identity. The journal does not attest remote delivery or physical effects.
+
+At most 4096 ROSv2 completions are retained between journal clears. A busy
+journal, allocation failure or exhausted limit can discard an observation.
+The cumulative `rosv2-dropped` field reports losses, including after a clear.
+`trace host off family=rosv2` stops collection. `trace host clear` clears all
+families. Older ROS1 and ROS2 host imports use the separate `ros1` and `ros2`
+filters. This debugger export carries no replay or restore authority.
