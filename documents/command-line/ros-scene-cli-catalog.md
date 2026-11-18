@@ -284,10 +284,10 @@ Reserve external-driver bindings and retained bytes; no process authority.
 ## `--ros-scene-driver-channel`
 
 ```text
-[--ros-scene-driver-channel] <environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32>
+[--ros-scene-driver-channel] <environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32> <peer-time-namespace-fd:u32>
 ```
 
-Require pinned mutual TLS 1.3 on a provisioned driver channel. Read the secret only from a sealed identity descriptor.
+Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secret only from a sealed identity descriptor.
 
 ## `--ros-scene-driver-schema`
 
@@ -452,10 +452,10 @@ Set one model binding's finite reservations and deadline; independent of optiona
 ## `--ros-scene-model-channel`
 
 ```text
-[--ros-scene-model-channel] <environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64> <identity-fd:u32>
+[--ros-scene-model-channel] <environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64> <identity-fd:u32> <peer-time-namespace-fd:u32>
 ```
 
-Require pinned mutual TLS 1.3 on a provisioned model channel. Read the secret only from a sealed identity descriptor.
+Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secret only from a sealed identity descriptor.
 
 ## `--ros-scene-output`
 

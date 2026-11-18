@@ -22,7 +22,7 @@ namespace uwvm2::imported::ros::scene::model_attachment
     struct limits
     {
         std::uint64_t request_bytes{},response_bytes{},startup_ns{},poll_ns{},supervisor_bytes{},session_until{};
-        int tls_identity_fd{-1};
+        int tls_identity_fd{-1},peer_time_namespace_fd{-1};
     };
     /** @brief Closed finite local reservations; external RSS/CPU are deployment policy. */
     inline bool valid(limits const& value)noexcept
@@ -31,7 +31,7 @@ namespace uwvm2::imported::ros::scene::model_attachment
             value.response_bytes>=24&&value.response_bytes<=protocol::maximum_message&&
             value.startup_ns&&value.startup_ns<=60000000000ull&&value.poll_ns&&value.poll_ns<=100000000&&
             value.supervisor_bytes>=65536&&value.supervisor_bytes<=16777216&&
-            value.session_until&&value.session_until<=INT64_MAX&&value.tls_identity_fd>=-1;
+            value.session_until&&value.session_until<=INT64_MAX&&value.tls_identity_fd>=-1&&value.peer_time_namespace_fd>=-1;
     }
     inline constexpr std::size_t transport_frame(limits const& capacity)noexcept
     {
@@ -221,7 +221,7 @@ namespace uwvm2::imported::ros::scene::model_attachment
                 models::plan selected;auto status=dispatcher.limits(alias,selected);if(status!=error::success)return status;
                 auto value=::uwvm2::utils::container::make_shared<service>(dispatcher,alias,generation,std::move(selected),binding,capacity);
                 status=value->channel_.bind(fd,peer,capacity.tls_identity_fd,attachment_tls::purpose::model,
-                    binding.deployment,binding.vm,binding.scope,binding.provider,binding.session,binding.contract,transport_frame(capacity));
+                    binding.deployment,binding.vm,binding.scope,binding.provider,binding.session,binding.contract,transport_frame(capacity),false,capacity.peer_time_namespace_fd);
                 if(status!=error::success)return status;
                 value->packet_.resize_for_overwrite(protocol::header_bytes+std::min<std::uint64_t>(protocol::fragment_bytes,std::max<std::uint64_t>(capacity.response_bytes,1024)));
                 status=value->stack_.prepare(capacity.supervisor_bytes);if(status!=error::success)return status;

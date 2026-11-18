@@ -277,17 +277,17 @@ namespace uwvm2::imported::ros::scene::attachment_tls
 #endif
     public:
         error bind(int fd,drivers::credentials peer,int key_fd,purpose service,id deployment,id vm,id scope,id provider,
-                   id session_id,digest contract,std::size_t maximum,bool server=false)
+                   id session_id,digest contract,std::size_t maximum,bool server=false,int peer_time_namespace_fd=-1)
         {
             if(key_fd<-1)return error::invalid;
-            if(key_fd==-1)return local_.bind(fd,peer);
+            if(key_fd==-1)return local_.bind(fd,peer,peer_time_namespace_fd);
 #if defined(UWVM_ROS_HAS_ATTACHMENT_TLS)
             auto candidate=::uwvm2::utils::container::make_unique<session>();
             auto status=candidate->prepare(key_fd,label(service,deployment,vm,scope,provider,session_id,contract),maximum,server);if(status!=error::success)return status;
-            status=local_.bind(fd,peer);if(status==error::success)secure_=std::move(candidate);
+            status=local_.bind(fd,peer,peer_time_namespace_fd);if(status==error::success)secure_=std::move(candidate);
             return status;
 #else
-            (void)service;(void)deployment;(void)vm;(void)scope;(void)provider;(void)session_id;(void)contract;(void)maximum;(void)server;return error::unsupported;
+            (void)service;(void)deployment;(void)vm;(void)scope;(void)provider;(void)session_id;(void)contract;(void)maximum;(void)server;(void)peer_time_namespace_fd;return error::unsupported;
 #endif
         }
         bool same_endpoint(channel const& other)const noexcept{return local_.same_endpoint(other.local_);}

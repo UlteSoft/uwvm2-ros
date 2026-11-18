@@ -73,15 +73,16 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 };
                 for(std::size_t i{};i<ids.size();++i)if(!hex(args[7+i],*ids[i]))return failure("driver identities require 32 lowercase hex characters");
                 if(!hex(args[12],binding.contract))return failure("driver contract requires 64 lowercase hex characters");
-                int key_fd=-1;
+                int key_fd=-1,time_fd=-1;
                 if constexpr(Action==operation::driver_channel)
                 {
-                    std::uint64_t value{};
-                    if(!scene::parse_unsigned(args.back(),value)||value>INT32_MAX)return failure("TLS identity requires a sealed descriptor");
-                    key_fd=static_cast<int>(value);
+                    std::uint64_t key{},clock{};
+                    if(!scene::parse_unsigned(args[17],key)||key>INT32_MAX)return failure("TLS identity requires a sealed descriptor");
+                    if(!scene::parse_unsigned(args[18],clock)||clock>INT32_MAX)return failure("peer clock requires a provisioned time-namespace descriptor");
+                    key_fd=static_cast<int>(key);time_fd=static_cast<int>(clock);
                 }
                 status=config.driver_bind(args[0],args[1],args[2],static_cast<int>(number[0]),{number[1],number[2],number[3]},binding,
-                    {static_cast<std::size_t>(number[4]),static_cast<std::size_t>(number[5]),number[6],number[7],key_fd});
+                    {static_cast<std::size_t>(number[4]),static_cast<std::size_t>(number[5]),number[6],number[7],key_fd,time_fd});
             }
             if constexpr(Action==operation::create)status=config.create(::uwvm2::utils::container::std_string(args[0]));
             if constexpr(Action==operation::child)status=config.platform_setting(args[0],args[1],args[2],args[3]);
@@ -458,15 +459,16 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 };
                 for(std::size_t i{};i<ids.size();++i)if(!hex(args[6+i],*ids[i]))return failure("model channel identities require lowercase hex128");
                 if(!hex(args[11],binding.contract))return failure("model channel contract requires lowercase SHA256");
-                int key_fd=-1;
+                int key_fd=-1,time_fd=-1;
                 if constexpr(Action==operation::model_channel)
                 {
-                    std::uint64_t value{};
-                    if(!scene::parse_unsigned(args.back(),value)||value>INT32_MAX)return failure("TLS identity requires a sealed descriptor");
-                    key_fd=static_cast<int>(value);
+                    std::uint64_t key{},clock{};
+                    if(!scene::parse_unsigned(args[18],key)||key>INT32_MAX)return failure("TLS identity requires a sealed descriptor");
+                    if(!scene::parse_unsigned(args[19],clock)||clock>INT32_MAX)return failure("peer clock requires a provisioned time-namespace descriptor");
+                    key_fd=static_cast<int>(key);time_fd=static_cast<int>(clock);
                 }
                 status=config.model_channel(args[0],args[1],static_cast<int>(numbers[0]),{numbers[1],numbers[2],numbers[3]},binding,
-                    {numbers[4],numbers[5],numbers[6],numbers[7],numbers[8],numbers[9],key_fd});
+                    {numbers[4],numbers[5],numbers[6],numbers[7],numbers[8],numbers[9],key_fd,time_fd});
             }
             if constexpr(Action==operation::buffer)
             {
@@ -582,7 +584,7 @@ namespace uwvm2::uwvm::cmdline::params
 #if defined(UWVM_ROS_TEST_KERNEL_ATTACHMENT)
     UWVM_SCENE_PARAMETER(ros_scene_driver_kernel_channel,"--ros-scene-driver-kernel-channel","Opt into kernel-only driver IPC on a private inherited local socket. This mode sends unencrypted application frames.","<environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64>",driver_kernel_channel,17)
 #endif
-    UWVM_SCENE_PARAMETER(ros_scene_driver_channel,"--ros-scene-driver-channel","Require pinned mutual TLS 1.3 on a provisioned driver channel. Read the secret only from a sealed identity descriptor.","<environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32>",driver_channel,18)
+    UWVM_SCENE_PARAMETER(ros_scene_driver_channel,"--ros-scene-driver-channel","Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secret only from a sealed identity descriptor.","<environment:str> <alias:str> <module:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <module:hex128> <driver:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <request-ns:u64> <session-until-ns:u64> <identity-fd:u32> <peer-time-namespace-fd:u32>",driver_channel,19)
     UWVM_SCENE_PARAMETER(ros_scene_call_budget,"--ros-scene-call-budget","Reserve cross-Wasm message storage; creates no authority.","<environment:str> <bytes:u64> <routes:u64>",module_call_budget,3)
     UWVM_SCENE_PARAMETER(ros_scene_call,"--ros-scene-call","Register an exact caller, callee and bounded message contract; no arbitrary export invocation.","<environment:str> <route:str> <caller:str> <callee:str> <operation:str> <request-schema:str> <response-schema:str> <request-bytes:u64> <response-bytes:u64> <slots:u64> <deadline-ns:u64>",module_call,11)
     UWVM_SCENE_PARAMETER(ros_scene_call_clear_input,"--ros-scene-call-clear-input","Set copied-input erasure for one registered route (default true); false risks retained sender data.","<environment:str> <route:str> <clear-after-copy:bool>",module_call_clear_input,3)
@@ -612,7 +614,7 @@ namespace uwvm2::uwvm::cmdline::params
 #if defined(UWVM_ROS_TEST_KERNEL_ATTACHMENT)
     UWVM_SCENE_PARAMETER(ros_scene_model_kernel_channel,"--ros-scene-model-kernel-channel","Opt into kernel-only model IPC on a private inherited local socket. This mode sends unencrypted application frames.","<environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64>",model_kernel_channel,18)
 #endif
-    UWVM_SCENE_PARAMETER(ros_scene_model_channel,"--ros-scene-model-channel","Require pinned mutual TLS 1.3 on a provisioned model channel. Read the secret only from a sealed identity descriptor.","<environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64> <identity-fd:u32>",model_channel,19)
+    UWVM_SCENE_PARAMETER(ros_scene_model_channel,"--ros-scene-model-channel","Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secret only from a sealed identity descriptor.","<environment:str> <alias:str> <fd:u32> <peer-pid:u32> <peer-uid:u32> <peer-gid:u32> <deployment:hex128> <vm:hex128> <scope:hex128> <provider:hex128> <session:hex128> <contract:sha256> <request-bytes:u64> <response-bytes:u64> <startup-ns:u64> <poll-ns:u64> <supervisor-bytes:u64> <session-until-ns:u64> <identity-fd:u32> <peer-time-namespace-fd:u32>",model_channel,20)
     UWVM_SCENE_PARAMETER(ros_scene_transform_budget,"--ros-scene-transform-budget","Reserve aggregate transform sessions, queries, data, scratch, query records and carrier copies; no implicit capacity.","<environment:str> <sessions:u64> <queries:u64> <data-bytes:u64> <workspace-bytes:u64> <query-bytes:u64> <carrier-bytes:u64>",transform_budget,7)
     UWVM_SCENE_PARAMETER(ros_scene_transform_profile,"--ros-scene-transform-profile","Select one exact canonical frame definition under a local-transform grant.","<environment:str> <alias:str> <identity:str> <sha256:hex>",transform_profile,4)
     UWVM_SCENE_PARAMETER(ros_scene_transform_limit,"--ros-scene-transform-limit","Set one mandatory finite transform bound by semantic name; zero is literal.","<environment:str> <alias:str> <name:str> <value:u64>",transform_limit,4)

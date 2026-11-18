@@ -144,8 +144,11 @@ def main():
                         try:
                             argv=[str(runtime),'--wasm-set-main-module-name','main','--runtime-'+engine,'--runtime-compile-threads','1','--runtime-llvm-jit-cache-path','disable',*flags(left.fileno(),peer.pid,time.monotonic_ns()+20000000000),'--run',str(wasm)]
                             index=argv.index('--ros-scene-model-kernel-channel')
-                            argv[index]='--ros-scene-model-channel';argv.insert(index+19,str(client_key))
-                            result=subprocess.Popen(argv,pass_fds=[left.fileno(),client_key],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                            clock_fd=os.open(f'/proc/{peer.pid}/ns/time',os.O_RDONLY|os.O_CLOEXEC);owned.callback(os.close,clock_fd)
+                            peer_clock,own_clock=os.fstat(clock_fd),os.stat('/proc/self/ns/time')
+                            assert (peer_clock.st_dev,peer_clock.st_ino)==(own_clock.st_dev,own_clock.st_ino)
+                            argv[index]='--ros-scene-model-channel';argv[index+19:index+19]=[str(client_key),str(clock_fd)]
+                            result=subprocess.Popen(argv,pass_fds=[left.fileno(),client_key,clock_fd],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                             try:
                                 assert os.write(write_pid,struct.pack('=I',result.pid))==4
                                 stdout,stderr=result.communicate(timeout=30)

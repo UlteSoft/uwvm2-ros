@@ -94,13 +94,17 @@ def main():
       peer=subprocess.Popen([str(binary),str(right.fileno()),mode,str(model),str(count),'--identity-fd',str(peer_key)],pass_fds=(right.fileno(),peer_key),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE);peer_pid=peer.pid;confinement=None
      right.close();vm=None
      try:
+      if a.openssl_root:
+       clock_fd=os.open(f'/proc/{peer_pid}/ns/time',os.O_RDONLY|os.O_CLOEXEC);keys.callback(os.close,clock_fd)
+       peer_clock,own_clock=os.fstat(clock_fd),os.stat('/proc/self/ns/time')
+       assert (peer_clock.st_dev,peer_clock.st_ino)==(own_clock.st_dev,own_clock.st_ino)
       flags=['--ros-scene-create','robot','--ros-scene-bind','robot','main']
       for name in ['capability.open']+NAMES:flags+=['--ros-scene-interface','robot',name,'allow']
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
-       '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key)] if a.openssl_root else []),
+       '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
        '--ros-scene-driver-schema','robot','joint','device.submit','128','128','16']
       cmd=[str(a.runtime),'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
-      vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
+      vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key,clock_fd) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
       stdout,stderr=vm.communicate(timeout=45);ps,pe=peer.communicate(timeout=5)
       if confinement:pe=confinement['ready_line'].encode()+pe
       (out/(label+'.vm.stderr')).write_bytes(stderr);(out/(label+'.peer.stderr')).write_bytes(pe)

@@ -16,7 +16,7 @@ namespace uwvm2::imported::ros::scene::drivers
 {
     enum class state:std::uint64_t{prepared,handshake,ready,pending,result,closed,failed};
     struct snapshot{state phase{};std::uint64_t sequence{},status{};bool effect_unknown{};};
-    struct limits{std::size_t request_bytes{},response_bytes{};std::uint64_t request_ns{},session_until{};int tls_identity_fd{-1};};
+    struct limits{std::size_t request_bytes{},response_bytes{};std::uint64_t request_ns{},session_until{};int tls_identity_fd{-1},peer_time_namespace_fd{-1};};
     class session
     {
         mutable std::mutex mutex_;attachment_tls::channel endpoint_;protocol::binding binding_;limits limits_;
@@ -44,7 +44,7 @@ namespace uwvm2::imported::ros::scene::drivers
             request_.resize_for_overwrite(capacity.request_bytes);
             auto status=endpoint_.bind(fd,peer,capacity.tls_identity_fd,attachment_tls::purpose::driver,
                 binding.deployment,binding.vm,binding.module,binding.driver,binding.session,binding.contract,
-                protocol::header_bytes+std::max(capacity.request_bytes,capacity.response_bytes));
+                protocol::header_bytes+std::max(capacity.request_bytes,capacity.response_bytes),false,capacity.peer_time_namespace_fd);
             if(status!=error::success){incoming_.clear();request_.clear();return status;}
             binding_=binding;limits_=capacity;bound_=true;return error::success;
         }

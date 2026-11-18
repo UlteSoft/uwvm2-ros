@@ -97,11 +97,11 @@ Then supply:
 
 ```text
 --ros-scene-driver-budget ENV BINDINGS BYTES
---ros-scene-driver-channel ENV ALIAS MODULE FD PEER_PID PEER_UID PEER_GID DEPLOYMENT_ID VM_ID MODULE_ID DRIVER_ID SESSION_ID CONTRACT_SHA256 REQUEST_BYTES RESPONSE_BYTES REQUEST_NS SESSION_UNTIL_NS IDENTITY_FD
+--ros-scene-driver-channel ENV ALIAS MODULE FD PEER_PID PEER_UID PEER_GID DEPLOYMENT_ID VM_ID MODULE_ID DRIVER_ID SESSION_ID CONTRACT_SHA256 REQUEST_BYTES RESPONSE_BYTES REQUEST_NS SESSION_UNTIL_NS IDENTITY_FD PEER_TIME_NAMESPACE_FD
 --ros-scene-driver-schema ENV ALIAS CANONICAL_OPERATION NODES ELEMENTS DEPTH
 ```
 
-The final `IDENTITY_FD` argument names a sealed Linux memfd containing the
+The `IDENTITY_FD` argument names a sealed Linux memfd containing the
 32-byte local Ed25519 seed followed by the exact 32-byte peer public key.
 The provisioner creates a distinct identity pair for each session, applies
 all four seals (write, grow, shrink and seal), and passes only the local
@@ -112,6 +112,25 @@ with AES-128-GCM. The authenticated ALPN transcript binds the service purpose,
 deployment, VM, scope, provider, session and contract digest. The receiver
 also checks kernel credentials and the pinned process incarnation. Registration
 and a successful handshake confer no guest operation permissions.
+
+`PEER_TIME_NAMESPACE_FD` is a read-only namespace descriptor opened by the
+trusted provisioner from the pinned peer's `/proc/PID/ns/time`. The provisioner
+verifies that both endpoints use the same time namespace and prevents subsequent
+changes. It must not substitute an unverified local namespace or accept a
+guest-selected descriptor. Keep this descriptor open through VM registration;
+the VM does not enter or retain it. The VM checks `NS_GET_NSTYPE` and compares
+the kernel device/inode identity with its own clock namespace before binding.
+This permits separate non-root UID/GID identities without granting either peer
+ptrace access. A wrong descriptor type or a different clock is rejected. The
+existing pidfd, per-packet credentials, exact session binding and TLS checks
+remain independent requirements. Namespace evidence does not prove confinement
+of arbitrary vendor code. In particular, cgroups alone do not prevent a
+privileged provider from changing namespaces.
+
+Direct native callers that omit namespace evidence retain strict procfs checks;
+an inaccessible peer namespace is rejected. The production CLI requires the
+explicit descriptor. This is an intentional change to the unreleased ROSv2
+registration contract.
 
 Budget for the TLS records and handshake in addition to the application
 payload. Backpressure may require retrying the same frame under current

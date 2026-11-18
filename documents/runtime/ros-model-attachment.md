@@ -13,10 +13,10 @@ Model bytes are data, never an implicit actuator command. Configure model
 identity, codec, aggregate budget and per-alias capacities before registration:
 
 ```text
---ros-scene-model-channel ENV ALIAS FD PEER_PID PEER_UID PEER_GID DEPLOYMENT_ID VM_ID SCOPE_ID PROVIDER_ID SESSION_ID CONTRACT_SHA256 REQUEST_BYTES RESPONSE_BYTES STARTUP_NS POLL_NS SUPERVISOR_BYTES SESSION_UNTIL_NS IDENTITY_FD
+--ros-scene-model-channel ENV ALIAS FD PEER_PID PEER_UID PEER_GID DEPLOYMENT_ID VM_ID SCOPE_ID PROVIDER_ID SESSION_ID CONTRACT_SHA256 REQUEST_BYTES RESPONSE_BYTES STARTUP_NS POLL_NS SUPERVISOR_BYTES SESSION_UNTIL_NS IDENTITY_FD PEER_TIME_NAMESPACE_FD
 ```
 
-The final `IDENTITY_FD` argument names a sealed Linux memfd containing the
+The `IDENTITY_FD` argument names a sealed Linux memfd containing the
 32-byte local Ed25519 seed followed by the exact 32-byte peer public key.
 The provisioner creates a distinct identity pair for each session, applies
 all four seals (write, grow, shrink and seal), and passes only the local
@@ -33,6 +33,14 @@ payload. Backpressure may require retrying the same frame under current
 authority. Production registration fails when the TLS backend or the sealed
 identity is unavailable. The plaintext kernel-channel option belongs to
 explicitly compiled historical test fixtures.
+
+`PEER_TIME_NAMESPACE_FD` supplies trusted, read-only clock provenance from the
+provisioner. The same [namespace evidence contract](ros-driver-attachment.md#registration)
+applies to model providers: the descriptor must refer to the pinned peer's time
+namespace, match the VM's clock and remain open through provider preparation.
+Neither the VM nor the provider needs ptrace rights over the other user. An
+invalid descriptor, wrong namespace type or different clock is rejected. This
+descriptor is not a socket, process-control grant or proof of vendor containment.
 
 
 IDs are nonzero 128-bit values encoded as 32 lowercase hex characters. The

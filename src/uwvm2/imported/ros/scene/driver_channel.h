@@ -19,6 +19,9 @@
 #include <sys/un.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/nsfs.h>
+#include <linux/sched.h>
 #include <poll.h>
 #include <charconv>
 #include <unistd.h>
@@ -49,13 +52,21 @@ namespace uwvm2::imported::ros::scene::drivers
          * @details SO_PASSCRED must be provisioned before this call; binding
          * changes neither the source descriptor's flags nor socket options.
          * Unknown namespace-translated identity is denied, never guessed.
+         * A privileged provisioner may supply a borrowed time-namespace FD
+         * opened from the pinned peer before credential isolation. Its kernel
+         * namespace type and identity must equal this process's time namespace.
+         * This attests clock provenance only: PID lifetime, packet credentials
+         * and TLS authentication remain mandatory. The provisioner must prevent
+         * subsequent peer time-namespace changes. No descriptor is entered,
+         * retained or exposed to Wasm. Without evidence, procfs checking remains
+         * strict; EACCES is never treated as matching namespaces.
          */
-        error bind(int descriptor,credentials expected)noexcept
+        error bind(int descriptor,credentials expected,int peer_time_namespace_fd=-1)noexcept
         {
             if(!same_process())return error::denied;
             if(fd_>=0)return error::conflict;
 #if defined(__linux__)
-            if(descriptor<0||!expected.pid||expected.pid>INT32_MAX||expected.uid>UINT32_MAX||expected.gid>UINT32_MAX)return error::invalid;
+            if(descriptor<0||peer_time_namespace_fd<-1||!expected.pid||expected.pid>INT32_MAX||expected.uid>UINT32_MAX||expected.gid>UINT32_MAX)return error::invalid;
             int duplicate=::fcntl(descriptor,F_DUPFD_CLOEXEC,0);if(duplicate<0)return error::bad_handle;
             auto refuse=[&](error e){::close(duplicate);return e;};
             int type{},pass{};::socklen_t size=sizeof(type);
@@ -77,12 +88,14 @@ namespace uwvm2::imported::ros::scene::drivers
             auto converted=std::to_chars(path.data()+prefix.size(),path.data()+64,expected.pid);
             constexpr std::string_view suffix="/ns/time";std::copy(suffix.begin(),suffix.end(),converted.ptr);
             struct ::stat local{},remote{},socket{};
-            if(::stat("/proc/self/ns/time",&local)||::stat(path.data(),&remote)||local.st_dev!=remote.st_dev||local.st_ino!=remote.st_ino||::fstat(duplicate,&socket))
+            bool remote_valid=peer_time_namespace_fd<0?::stat(path.data(),&remote)==0:
+                ::ioctl(peer_time_namespace_fd,NS_GET_NSTYPE)==CLONE_NEWTIME&&::fstat(peer_time_namespace_fd,&remote)==0;
+            if(::stat("/proc/self/ns/time",&local)||!remote_valid||local.st_dev!=remote.st_dev||local.st_ino!=remote.st_ino||::fstat(duplicate,&socket))
             {::close(lifetime);return refuse(error::denied);}
             socket_device_=static_cast<std::uint64_t>(socket.st_dev);socket_inode_=static_cast<std::uint64_t>(socket.st_ino);
             fd_=duplicate;peer_lifetime_=lifetime;expected_=expected;return error::success;
 #else
-            (void)descriptor;(void)expected;return error::unsupported;
+            (void)descriptor;(void)expected;(void)peer_time_namespace_fd;return error::unsupported;
 #endif
         }
         void close()noexcept

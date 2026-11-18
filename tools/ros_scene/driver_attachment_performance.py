@@ -58,6 +58,11 @@ def connected_trial(a,kind,label,descriptors):
   for fd in (read_pid,write_pid):descriptors.callback(os.close,fd)
   server_fds.extend((server_fd,read_pid));extra=[str(server_fd),str(read_pid)];mode='tls-server'
  server=subprocess.Popen(['taskset','-c',str(a.peer_cpu),str(a.native),mode,str(right.fileno()),str(a.iterations),*extra],pass_fds=server_fds,stdout=subprocess.PIPE,stderr=subprocess.PIPE);right.close()
+ if a.tls:
+  clock_fd=os.open(f'/proc/{server.pid}/ns/time',os.O_RDONLY|os.O_CLOEXEC);descriptors.callback(os.close,clock_fd)
+  peer_clock,own_clock=os.fstat(clock_fd),os.stat('/proc/self/ns/time')
+  assert (peer_clock.st_dev,peer_clock.st_ino)==(own_clock.st_dev,own_clock.st_ino)
+  client_fds.append(clock_fd)
  if kind=='native':command=['taskset','-c',str(a.cpu),str(a.native),'client',str(left.fileno()),str(a.iterations),str(server.pid),str(deadline)]+([str(client_fds[1])] if a.tls else [])
  else:
   g=fixture(a.iterations,deadline);wat=out/(label+'.wat');wasm=out/(label+'.wasm');wat.write_text(g.render())
@@ -74,6 +79,7 @@ def connected_trial(a,kind,label,descriptors):
    flags[flags.index('--ros-scene-driver-kernel-channel')]='--ros-scene-driver-channel'
    flags[flags.index('--ros-scene-driver-budget')+3]='1048576'
    flags.insert(flags.index('--ros-scene-driver-schema'),str(client_fds[1]))
+   flags.insert(flags.index('--ros-scene-driver-schema'),str(clock_fd))
   command=['taskset','-c',str(a.cpu),str(a.runtime),'--wasm-set-main-module-name','main','--runtime-aot','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
  client=subprocess.Popen(command,pass_fds=client_fds,stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close()
  if a.tls:assert os.write(write_pid,struct.pack('=I',client.pid))==4
