@@ -7,6 +7,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 #include <uwvm2/imported/ros/scene/debug.h>
+#include <uwvm2/utils/container/standard.h>
 #include <fast_io.h>
 #include <fast_io_dsal/array.h>
 #include <fast_io_dsal/string_view.h>
@@ -148,5 +149,64 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
                 " platform_enabled=",row.platform_enabled," clear_after_copy=",row.clear_after_copy,"\n");
         }
         ::fast_io::io::print(output,"page total=",value.total," next=",value.next," more=",value.more,"\n");
+    }
+
+    /** @brief Capture bounded first pages for a full inspection-only Core Dump.
+     * The caller holds the cooperative stop. Each page uses the installed
+     * permission-checked metadata hook and its own process-state read guard.
+     */
+    inline constexpr ::std::uint32_t observation_schema{0x52534331u};
+    [[nodiscard]] inline bool capture_observation(::std::uint64_t stop,
+        ::uwvm2::utils::container::std_vector<::std::byte>& output)
+    {
+        if(!stop)return false;
+        ::uwvm2::utils::container::std_vector<::std::byte> blob;
+        auto put=[&](::std::uint64_t value,unsigned bytes)
+        {
+            for(unsigned i{};i<bytes;++i)
+            {
+                blob.push_back(static_cast<::std::byte>(value & 255u));
+                value>>=8u;
+            }
+        };
+        constexpr char magic[8]{'U','W','S','C','N','1',0,0};
+        for(char c:magic)blob.push_back(static_cast<::std::byte>(c));
+        put(stop,8u);
+        bool selected{};
+        for(auto choice:{selection::authority,selection::resources,selection::audit})
+        {
+            request query{};query.selected=choice;query.stop=stop;
+            view page{};read(query,page);
+            if(page.selected!=choice)return false;
+            if(page.result==status::ok)
+            {
+                selected|=choice==selection::audit ? page.audit.configured : page.total!=0u;
+                // Live labels can be marked truncated. Only publish pages the
+                // shared wire reader can represent completely.
+                if(choice!=selection::audit)
+                {
+                    bool valid_page=page.size<=page.rows.size();
+                    for(::std::size_t i{};valid_page && i<page.size;++i)
+                    {
+                        auto const& row=page.rows[i];
+                        valid_page=data::valid(row) && !row.environment.truncated && !row.alias.truncated &&
+                            !row.resource.truncated && !row.binding.truncated && !row.type.truncated &&
+                            !row.state.truncated && !row.platform.truncated;
+                    }
+                    if(!valid_page)page.result=status::resource_limit;
+                }
+            }
+            else if(page.result!=status::busy && page.result!=status::resource_limit)return false;
+            ::uwvm2::utils::container::std_string packet;
+            ::uwvm2::utils::container::ostring_ref sink{&packet};
+            print(sink,page,stop);
+            if(packet.size()>65536u)return false;
+            put(packet.size(),4u);
+            auto const* first=reinterpret_cast<::std::byte const*>(packet.data());
+            blob.insert(blob.end(),first,first+packet.size());
+        }
+        if(!selected)return false;
+        output.swap(blob);
+        return true;
     }
 }

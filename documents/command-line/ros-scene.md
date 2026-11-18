@@ -73,6 +73,36 @@ The exporter accepts at most 4,096 variable rows and 4 MiB of JSON.
 Invalid declarations, mixed host commands or either bound being exceeded
 produce a failing exit status and empty stdout.
 
+## Inspect a stopped scene archive
+
+A full `dump wasm` at a cooperative stop can write a partial Wasm Core Dump
+when executable state is unavailable. With debugger inspection permission,
+that archive also records the first eight rows of each available process-owned
+scene view (`authority`, `resources` and `audit`) when at least one grant,
+resource or configured audit counter set is observed. Each page is sampled
+independently while the guest stays stopped. The snapshot reader displays the
+stop ID, logical labels, counters, total rows and the recorded page boundary:
+
+```sh
+python3 tools/debug/snapshot.py info guard.uwsnap
+```
+
+Inspect `sceneObservation.pages` in the JSON output. A page with `more: true`
+has additional live rows beyond the saved first page. A busy or scan-limited
+page carries an unavailable status. An absent observation means the file has
+no recorded scene pages. Diagnostic-only dumps, typed-state captures and older
+archives can all lack this optional record. The three pages exclude buffers,
+credentials, descriptors, operation history and provider internals. They grant
+no restore, replay or device authority.
+
+The UWSNAP1 inspection record with id 0 and schema 1 still contains the Wasm
+Core Dump. The optional partial inspection record has id 1 and schema
+`0x52534331`. Its payload starts with the eight bytes `UWSCN1\0\0`, a
+little-endian 64-bit diagnostic stop ID and three pages in the order above.
+Each page is a little-endian 32-bit byte count followed by up to 65,536 bytes
+of the existing ASCII scene debugger response. Readers can retain unknown
+inspection schemas as opaque records.
+
 ## Current implementation boundary
 
 The VM source registers 160 imports: `abi`, `capability.open`, `capability.close`, `capability.revoke`, and
