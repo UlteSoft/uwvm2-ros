@@ -15,6 +15,21 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def peer_diagnostics(directory, outputs, name):
+    checksum = outputs.get(name)
+    if checksum is None:
+        return {'status': 'no-pinned-log'}
+    log = directory / name
+    require(digest(log) == checksum, f'output identity differs for {name}')
+    content = log.read_text()
+    return {
+        'status': 'examined', 'logSha256': checksum,
+        'rcutilsErrorStateReports': content.count('] rcutils_set_error_state()'),
+        'invalidDataSizeMentions': content.count('invalid data size'),
+        'unterminatedStringMentions': content.count('string data is not null-terminated'),
+    }
+
+
 def verify(path, remaps=()):
     report = json.loads(path.read_bytes())
     require(report['scope'] == 'Native DDS wire baseline. Reliable Int32 pub/sub on isolated loopback. Plaintext.',
@@ -24,6 +39,10 @@ def verify(path, remaps=()):
             all(isinstance(s['name'], str) and type(s['exit']) is int for s in steps), 'invalid build steps')
     failed = [s['name'] for s in steps if s['exit'] != 0]
     result = {'receiptSha256': digest(path), 'steps': [{'name': s['name'], 'exit': s['exit']} for s in steps]}
+    result['exchangeScope'] = 'reliable-Int32-topic-roundtrip'
+    result['rosGraphInteroperability'] = 'unverified'
+    result['diagnostics'] = {role: peer_diagnostics(path.parent, report.get('outputs', {}), name)
+                             for role, name in [('requestPeer', 'ros.log'), ('replyPeer', 'cyclone.log')]}
     if not report['complete']:
         result['status'] = 'failed' if failed else 'incomplete'
         return result
