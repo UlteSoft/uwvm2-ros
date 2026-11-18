@@ -4,8 +4,8 @@
   "timeout_seconds_per_case": 10,
   "mode": "original upstream native Linux talker/listener; Jazzy rmw_fastrtps_cpp std_msgs/String on /chatter",
   "fixture_sha256": {
-    "archives.json": "dca681910be283bea0160521e18b0987219817f24ed268dd7cdd01cc050706e2",
-    "extract.py": "0fb07dcf83b9b570fd17533d9910f730f7cbfc47ccca95e7a71bfd26bff1fc27",
+    "archives.json": "312d945355f091dbcd7f2d360ef7d0c5cf6aeb766d865c22a52a9a4b5695c52f",
+    "extract.py": "c23fc80bdfa0e8e53ea33cfc92e6f4ce7a4513e3fc914c3f4f42f028bc7430d3",
     "observe.py": "641e6fc8688f4ed5c8bc67b21373582a1524c70a3197b61082fc43b202b1904b",
     "profiles.py": "b6f302b7dc51558fbe7f1d739afc0211ed646dea6f4d7602876ae75efcad58b6",
     "jazzy_chatter.cpp": "c7eae0d887860a4eef38707d398770fefeb07031d51286c718642474985519b7"
@@ -73,6 +73,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "b1012dff2879670e48d58e40cc14a3c443e7c7be163766238234f9b84e59daad",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -108,6 +112,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "ff58ec390ef27ccddafb6f7bd87496513b9f1b36f90b1f21fa354a2d5180c80a",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -143,6 +151,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "ca80dff7f3ce218d600c3f6298b18e528bed8148dcbb7bdab6e308a11e2af669",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -188,6 +200,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "ddc93e5fdf06111d8ef5442a4697b227906c106393de72ad5a0426ccd3abc842",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -223,6 +239,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "87d4fc61861047f4d33cd28a9993a684325685b721538d813911725c2de47a67",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -258,6 +278,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "889f01711e2628faa92479d2220d3aed858b3e36e7d22f2982a91bae1f35e34b",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -303,6 +327,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "695a22454f6e7bbba18761ccc5e4c4a7b0106f40d0a216ad4d8c5c6f6d3a85e4",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -338,6 +366,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "a0e4b8362501a18cdd6e75c8dfb47b7f2bf303a56b2b332debf789e2aece0e88",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -373,6 +405,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "e8ceb69308d9dc4f3eafbaad9c5ce93d1c042ca75a067b578b99859ff6e6a5f8",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -418,6 +454,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "450bf9a2c49a331c9764230a62116f642abee10a39ffd32b89f69b6b4f9811ec",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -453,6 +493,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "b51c1fef73ec2cd44da621725996aa6275503cdea4c53f485eeb55a292d642ed",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -488,6 +532,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "b5bffc57c3745c6a9547bebf3d398d09a11c51fc9a32e3699f15d4d50d738677",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -533,6 +581,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "b4942f34bfdeef85edc2c4f12707448242f22e8100ca99d856591f40500f0300",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -568,6 +620,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "be24975227c2fd5790f4e3762e7e2d0bb7c7f24c8c102c62df8f91805f47a42a",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -603,6 +659,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "151c3cffd1df0491fa299bd7dbc8c5d297bc91e06adbcc724d88c992e8e89a08",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -648,6 +708,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "a513ffce0a36087a10bfd52ce7862f4f448254cb321defc71bdfc3e25b838d4c",
+            "vendor_1_15_malformed_packets": 0
           }
         },
         "legacy-to-jazzy": {
@@ -683,6 +747,10 @@
                 "libddskernel.so": "486169a5f702814a6dcf40bc0b0be7b1993b479b43675a59d8fcf64c5773f7bb"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "b327a503cc23ddba4edc2f8714a902c446d88c5ef6acef55abeb8a1eec2469b5",
+            "vendor_1_15_malformed_packets": 140
           }
         },
         "jazzy-to-legacy": {
@@ -718,6 +786,10 @@
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
               }
             }
+          },
+          "opensplice_log": {
+            "sha256": "c0831e0882e7d02a68fe5dae4f8647b2e5efc5e29acfb834718e080d8f06f675",
+            "vendor_1_15_malformed_packets": 34
           }
         }
       }
@@ -953,33 +1025,40 @@
       }
     },
     "beta1": {
-      "actor_receipt_sha256": "d95b9da408cbac02b6f1755e098153755b69662f373ce5b18f32642ca48ed4c5",
+      "actor_receipt_sha256": "94e4bcee0bc81b2a59a380beef8e3672d9787dceb5dcdc50c7d8cfdc8f894033",
       "archive_asset_id": 2853086,
       "cases": {
         "native": {
-          "passed": false,
-          "distinct_payloads": 0,
-          "samples": [],
+          "passed": true,
+          "distinct_payloads": 21,
+          "samples": [
+            "Hello World: 1",
+            "Hello World: 10",
+            "Hello World: 11"
+          ],
           "origin_matches": {
-            "listener": false,
+            "listener": true,
             "talker": true
           },
           "actors": {
             "listener": {
               "binary_sha256": "e634880d6e2bd6f82852ff8b891757f20c6b1337d91fd82e51b72ddd82c5ec6f",
-              "stdout_sha256": "c1dbde7f8524047a9b6880f467e758b9474479dc319c10c383a09d11754e0486",
-              "output_bytes": 316,
-              "first_1536_bytes": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  could not create publisher: type support not from this implementation, at /home/rosbuild/ci_scripts/ws/src/ros2/rmw_fastrtps/rmw_fastrtps_cpp/src/functions.cpp:782, at /home/rosbuild/ci_scripts/ws/src/ros2/rcl/rcl/src/rcl/publisher.c:81\n",
-              "exit": -6,
-              "stopped_by_observer": false,
-              "middleware": {}
+              "stdout_sha256": "bd67791308d573a781453e177fc4f4bd38a3cd3d8430e6641909c03d87f1b2d9",
+              "output_bytes": 576,
+              "first_1536_bytes": "I heard: [Hello World: 1]\nI heard: [Hello World: 2]\nI heard: [Hello World: 3]\nI heard: [Hello World: 4]\nI heard: [Hello World: 5]\nI heard: [Hello World: 6]\nI heard: [Hello World: 7]\nI heard: [Hello World: 8]\nI heard: [Hello World: 9]\nI heard: [Hello World: 10]\nI heard: [Hello World: 11]\nI heard: [Hello World: 12]\nI heard: [Hello World: 13]\nI heard: [Hello World: 14]\nI heard: [Hello World: 15]\nI heard: [Hello World: 16]\nI heard: [Hello World: 17]\nI heard: [Hello World: 18]\nI heard: [Hello World: 19]\nI heard: [Hello World: 20]\nI heard: [Hello World: 21]\nsignal_handler(2)\n",
+              "exit": 0,
+              "stopped_by_observer": true,
+              "middleware": {
+                "libfastrtps.so": "1717844fa4797bba68b82394f6a2a901bc2b881ab2fbc3696e960a8b7e0d58eb",
+                "librmw_fastrtps_cpp.so": "5035a9f38bbd7b9b6b226829a76cbd5a91db3f027c70581e74738fb65ae124cb"
+              }
             },
             "talker": {
               "binary_sha256": "a125a54b51a52bc9bbb35b303e9d66037c16102e070f8311ee6e4fd64f53ddf8",
-              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-              "output_bytes": 0,
-              "first_1536_bytes": "",
-              "exit": -2,
+              "stdout_sha256": "4cdc99fb0b5f27b77ceff97f377892312efd72be528502f10147c265ec676785",
+              "output_bytes": 639,
+              "first_1536_bytes": "Publishing: 'Hello World: 1'\nPublishing: 'Hello World: 2'\nPublishing: 'Hello World: 3'\nPublishing: 'Hello World: 4'\nPublishing: 'Hello World: 5'\nPublishing: 'Hello World: 6'\nPublishing: 'Hello World: 7'\nPublishing: 'Hello World: 8'\nPublishing: 'Hello World: 9'\nPublishing: 'Hello World: 10'\nPublishing: 'Hello World: 11'\nPublishing: 'Hello World: 12'\nPublishing: 'Hello World: 13'\nPublishing: 'Hello World: 14'\nPublishing: 'Hello World: 15'\nPublishing: 'Hello World: 16'\nPublishing: 'Hello World: 17'\nPublishing: 'Hello World: 18'\nPublishing: 'Hello World: 19'\nPublishing: 'Hello World: 20'\nPublishing: 'Hello World: 21'\nsignal_handler(2)\n",
+              "exit": 0,
               "stopped_by_observer": true,
               "middleware": {
                 "libfastrtps.so": "1717844fa4797bba68b82394f6a2a901bc2b881ab2fbc3696e960a8b7e0d58eb",
@@ -999,11 +1078,11 @@
           "actors": {
             "listener": {
               "binary_sha256": "332ea41b7474e1818f85515383b7641d468a3fb5a0c7f1b4a867c8e8c0ae6d04",
-              "stdout_sha256": "0f1c82358da5bba05f7706d1cfb68b3bb171adf6c4c2cfb1ab9d6dae442b1f62",
-              "output_bytes": 79,
-              "first_1536_bytes": "\u001b[0m[INFO] [1795028048.838735511] [rclcpp]: signal_handler(SIGINT/SIGTERM)\u001b[0m\n",
+              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "output_bytes": 0,
+              "first_1536_bytes": "",
               "exit": 3,
-              "stopped_by_observer": true,
+              "stopped_by_observer": false,
               "middleware": {
                 "libfastrtps.so.2.14.6": "5c42ee390b403e0bacfbc5c535dc13fce0fe86b4a1f0243a115f3236f4b9c7de",
                 "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
@@ -1011,11 +1090,11 @@
             },
             "talker": {
               "binary_sha256": "a125a54b51a52bc9bbb35b303e9d66037c16102e070f8311ee6e4fd64f53ddf8",
-              "stdout_sha256": "c1dbde7f8524047a9b6880f467e758b9474479dc319c10c383a09d11754e0486",
-              "output_bytes": 316,
-              "first_1536_bytes": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  could not create publisher: type support not from this implementation, at /home/rosbuild/ci_scripts/ws/src/ros2/rmw_fastrtps/rmw_fastrtps_cpp/src/functions.cpp:782, at /home/rosbuild/ci_scripts/ws/src/ros2/rcl/rcl/src/rcl/publisher.c:81\n",
-              "exit": -6,
-              "stopped_by_observer": false,
+              "stdout_sha256": "df374ab9b12ca3c3dee77f8f32bccc376bd4180e06e87873b8534b081a3e0ecf",
+              "output_bytes": 489,
+              "first_1536_bytes": "Publishing: 'Hello World: 1'\nPublishing: 'Hello World: 2'\nPublishing: 'Hello World: 3'\nPublishing: 'Hello World: 4'\nPublishing: 'Hello World: 5'\nPublishing: 'Hello World: 6'\nPublishing: 'Hello World: 7'\nPublishing: 'Hello World: 8'\nPublishing: 'Hello World: 9'\nPublishing: 'Hello World: 10'\nPublishing: 'Hello World: 11'\nPublishing: 'Hello World: 12'\nPublishing: 'Hello World: 13'\nPublishing: 'Hello World: 14'\nPublishing: 'Hello World: 15'\nPublishing: 'Hello World: 16'\nsignal_handler(2)\n",
+              "exit": 0,
+              "stopped_by_observer": true,
               "middleware": {
                 "libfastrtps.so": "1717844fa4797bba68b82394f6a2a901bc2b881ab2fbc3696e960a8b7e0d58eb",
                 "librmw_fastrtps_cpp.so": "5035a9f38bbd7b9b6b226829a76cbd5a91db3f027c70581e74738fb65ae124cb"
@@ -1028,31 +1107,65 @@
           "distinct_payloads": 0,
           "samples": [],
           "origin_matches": {
-            "listener": false,
-            "talker": false
+            "listener": true,
+            "talker": true
           },
           "actors": {
             "listener": {
               "binary_sha256": "e634880d6e2bd6f82852ff8b891757f20c6b1337d91fd82e51b72ddd82c5ec6f",
-              "stdout_sha256": "c1dbde7f8524047a9b6880f467e758b9474479dc319c10c383a09d11754e0486",
-              "output_bytes": 316,
-              "first_1536_bytes": "terminate called after throwing an instance of 'std::runtime_error'\n  what():  could not create publisher: type support not from this implementation, at /home/rosbuild/ci_scripts/ws/src/ros2/rmw_fastrtps/rmw_fastrtps_cpp/src/functions.cpp:782, at /home/rosbuild/ci_scripts/ws/src/ros2/rcl/rcl/src/rcl/publisher.c:81\n",
-              "exit": -6,
-              "stopped_by_observer": false,
-              "middleware": {}
+              "stdout_sha256": "6b3bcf3ace88681b13ad42945de86c2e964d72e9a3c24d2cce6e2eb14faf4409",
+              "output_bytes": 18,
+              "first_1536_bytes": "signal_handler(2)\n",
+              "exit": 0,
+              "stopped_by_observer": true,
+              "middleware": {
+                "libfastrtps.so": "1717844fa4797bba68b82394f6a2a901bc2b881ab2fbc3696e960a8b7e0d58eb",
+                "librmw_fastrtps_cpp.so": "5035a9f38bbd7b9b6b226829a76cbd5a91db3f027c70581e74738fb65ae124cb"
+              }
             },
             "talker": {
               "binary_sha256": "332ea41b7474e1818f85515383b7641d468a3fb5a0c7f1b4a867c8e8c0ae6d04",
-              "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-              "output_bytes": 0,
-              "first_1536_bytes": "",
-              "exit": -2,
-              "stopped_by_observer": true,
-              "middleware": {}
+              "stdout_sha256": "2d2220d5d5fec17aed28142f693b636a1ec0c16717e36a6822baec71db492a65",
+              "output_bytes": 32,
+              "first_1536_bytes": "sent 10\nmatched subscriptions 0\n",
+              "exit": 0,
+              "stopped_by_observer": false,
+              "middleware": {
+                "libfastrtps.so.2.14.6": "5c42ee390b403e0bacfbc5c535dc13fce0fe86b4a1f0243a115f3236f4b9c7de",
+                "librmw_fastrtps_cpp.so": "51c1476d193f62f8f75535b52998c84f3e64177ab0c97368042aac8653bc02d0"
+              }
             }
           }
         }
       }
+    }
+  },
+  "xenial_dependencies": {
+    "libpocofoundation9v5": "c0675afe60307fbb02cad9b25cb97440de0d24ab094ccb156b6f4edfbdfb4700",
+    "libtinyxml2-2v5": "b0b769edcc40c2a8b2f97cdd80ceef37fe28481d074e9e7f2449a2af2da71117",
+    "libpcre3": "736f799fbb8a8d4be8cdded2b046813de391661d925d6e5a5a82febf65bbf065",
+    "libssl1.0.0": "8dbec15b98fa6d5ff017ced4d262a45dd7c24635d54a9419b3b5a582c50079c2",
+    "libyaml-0-2": "8afd66f2a983f5eed1e1416ca3afa70e3034e7012311b3d30938f70711c8edd4"
+  },
+  "jazzy_control": {
+    "passed": true,
+    "received": [
+      "77726f735f636f6e74726f6c5f3634303634636539373062633566613131633036393066366361366665663462",
+      "77726f735f636f6e74726f6c5f3636353438666434636266356437323164323637616163396234363836653135",
+      "77726f735f636f6e74726f6c5f3930353034343264366561333337653437393533643664366436313237656333"
+    ],
+    "expected": [
+      "77726f735f636f6e74726f6c5f3634303634636539373062633566613131633036393066366361366665663462",
+      "77726f735f636f6e74726f6c5f3636353438666434636266356437323164323637616163396234363836653135",
+      "77726f735f636f6e74726f6c5f3930353034343264366561333337653437393533643664366436313237656333"
+    ],
+    "discovery_sha256": "8bb93dbd4168b005e477e9469db801eb72b3355b0e6e7cd0ae365f7487cd0cf0",
+    "executable_sha256": "332ea41b7474e1818f85515383b7641d468a3fb5a0c7f1b4a867c8e8c0ae6d04",
+    "outputs": {
+      "reader": "received 77726f735f636f6e74726f6c5f3634303634636539373062633566613131633036393066366361366665663462\nreceived 77726f735f636f6e74726f6c5f3930353034343264366561333337653437393533643664366436313237656333\nreceived 77726f735f636f6e74726f6c5f3636353438666434636266356437323164323637616163396234363836653135\n",
+      "writer1": "sent 10\nmatched subscriptions 1\n",
+      "writer2": "sent 10\nmatched subscriptions 1\n",
+      "writer3": "sent 10\nmatched subscriptions 1\n"
     }
   }
 }

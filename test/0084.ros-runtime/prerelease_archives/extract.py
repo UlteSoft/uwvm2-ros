@@ -78,6 +78,11 @@ def closure(archive, release, root):
         table = subprocess.check_output(["/usr/bin/readelf", "-d", path], env={"LC_ALL": "C"}, text=True)
         needed = re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", table)
         members[name] = {"path": member.name, "bytes": len(body), "sha256": hashlib.sha256(body).hexdigest(), "needed": needed}
+        # Beta 1 resolves each C++ message package's introspection module with dlopen.
+        # Later link stages cannot recover this dependency from DT_NEEDED alone.
+        if release == "beta1" and name.endswith("__rosidl_typesupport_cpp.so"):
+            introspection = name.removesuffix("_cpp.so") + "_introspection_cpp.so"
+            todo.append(introspection)
         for library in needed:
             if library in by_name:
                 todo.append(library)
