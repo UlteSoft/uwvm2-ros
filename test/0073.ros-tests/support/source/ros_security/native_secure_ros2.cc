@@ -20,7 +20,17 @@ int main(int argc,char** argv)
         {
             c.policy.connection["domain-id"]="74";c.policy.connection["security-mode"]="enforce";c.policy.connection["keystore"]=keys;c.policy.connection["enclave"]="/gateway";
             for(auto it=c.policy.capabilities.begin();it!=c.policy.capabilities.end();)
-            {if(it->first!="pubString"&&it->first!="subString"){it=c.policy.capabilities.erase(it);}else{++it;}}
+            {
+                if(it->first!="pubString"&&it->first!="subString")
+                {
+                    it=c.policy.capabilities.erase(it);
+                }
+                else
+                {
+                    it->second.limits.at("overflow-policy")="reject";
+                    ++it;
+                }
+            }
         }};
         ipc::client client;f.connect(client);std::atomic<unsigned> received{};
         auto subscriber{node->create_subscription<std_msgs::msg::String>("/uwvm_test/pubString",rclcpp::QoS{8}.reliable(),[&](std_msgs::msg::String::ConstSharedPtr m)
