@@ -189,3 +189,34 @@ and wire validation are described in
 [bounded native topics](ros-bounded-native-topics.md). Additional native type
 qualification, generic service/action adapters, the remaining platform contracts
 and native transports are still required.
+
+## Exercising every SDK platform restriction
+
+Both tests take the selected SDK commit's `share/targets.json` and the VM
+executable. The physics test provisions a separate MuJoCo process and a fresh
+mutually authenticated TLS channel for each case. The `--platform-targets`
+option enables the named child and binds it to the common driver alias. The
+guest runs 128 steps against the official humanoid model and checks the final
+time and joint position against direct native execution. Further cases check
+a rejected out-of-range request and loss of the receiver after one step.
+Each child uses the same model and common driver contract. Vendor protocol,
+vendor model and physical-device acceptance require their own fixtures.
+
+The denial test independently runs two configurations for each child. With the
+parent operation granted, disabling the child must deny the connection. With
+the child enabled, withholding the parent connection grant must also deny it.
+The guest checks the status and both output sentinels. The peer checks that
+the VM sent zero bytes, including TLS handshake data.
+
+Run both commands serially in the existing qualification cgroup. Choose a
+fresh output directory for each run.
+
+```sh
+python3 test/0084.ros-runtime/run_driver_mujoco.py \
+  --runtime "$VM" --source-root "$VM_SOURCE" --mujoco "$MUJOCO_ROOT" \
+  --openssl-root "$OPENSSL_ROOT" --platform-targets "$SDK/share/targets.json" \
+  --audit-calls --output "$PHYSICS_OUTPUT"
+python3 test/0084.ros-runtime/run_platform_tls_denials.py \
+  --runtime "$VM" --platform-targets "$SDK/share/targets.json" \
+  --output "$DENIAL_OUTPUT"
+```

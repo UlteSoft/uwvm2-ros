@@ -9,7 +9,7 @@ namespace topology and seven attempted escapes under stacked syscall filters.
 Ordinary mode has process separation only. Neither mode qualifies hardware
 emergency stop. All processes inherit the existing 64 GiB zero-swap gate.
 """
-import argparse,hashlib,json,os,re,signal,socket,struct,subprocess,time
+import argparse,hashlib,itertools,json,os,re,signal,socket,struct,subprocess,time
 from pathlib import Path
 from contextlib import ExitStack
 from run_scene_vm import ROOT,GATE,verify_gate,sha
@@ -48,14 +48,26 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  for name in ('runtime','source-root','mujoco','output'):parser.add_argument('--'+name,required=True,type=Path)
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
+ parser.add_argument('--platform-targets',type=Path,help='Exercise the same simulated joint with each platform permission scope in an SDK share/targets.json')
  parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
  a=parser.parse_args(argv)
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
   parser.error('guest widths must be unique and drawn from wasm32 and wasm64')
  if compile_guest is None and guest_widths!=(32,64):parser.error('the WAT reference covers both widths')
+ platforms=(None,)
+ if a.platform_targets:
+  if not a.openssl_root:parser.error('--platform-targets requires an authenticated TLS driver')
+  sdk_platforms=json.loads(a.platform_targets.read_bytes())['platforms']
+  if not isinstance(sdk_platforms,dict) or not sdk_platforms:parser.error('expected named platform targets')
+  names=sorted(sdk_platforms)
+  if any(not re.fullmatch('[a-z0-9][a-z0-9_-]{0,95}',name) for name in names):parser.error('invalid SDK platform identifier')
+  platforms=tuple(names)
  verify_gate();out=a.output;out.mkdir(parents=True,exist_ok=False)
  report=dict(complete=False,scope=__doc__,guest_language=guest_name,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
+ if a.platform_targets:
+  report['platform_targets_sha256']=sha(a.platform_targets)
+  report['platform_scope']='The same official MuJoCo humanoid is driven under each named SDK permission restriction.'
  def save():(out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
  def run(label,cmd,env=None):
   p=subprocess.run(list(map(str,cmd)),capture_output=True,env=env,timeout=180);(out/(label+'.stdout')).write_bytes(p.stdout);(out/(label+'.stderr')).write_bytes(p.stderr)
@@ -84,10 +96,10 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
    assert any('libmujoco' in destination for _,destination in closure)
   layouts=((32,0),(32,1),(64,0),(64,1)) if compile_guest is None else tuple((width,0) for width in guest_widths)
   report["layouts"]=[dict(address_bits=w,memory_index=m) for w,m in layouts]
-  for width,memory in layouts:
+  for platform,(width,memory) in itertools.product(platforms,layouts):
    for engine in ('int','aot'):
     for mode in ('success','range','crash'):
-     label=f'{mode}-{width}-{memory}-{engine}';count=128 if mode=='success' else 1;deadline=time.monotonic_ns()+60000000000
+     label=(platform+'-' if platform else '')+f'{mode}-{width}-{memory}-{engine}';count=128 if mode=='success' else 1;deadline=time.monotonic_ns()+60000000000
      wasm=out/(label+'.wasm')
      if compile_guest is None:
       wat=wasm.with_suffix('.wat');wat.write_text(guest(width,memory,deadline,mode,count).render())
@@ -116,6 +128,9 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
        '--ros-scene-driver-channel' if a.openssl_root else '--ros-scene-driver-kernel-channel','robot','joint','main',str(left.fileno()),str(peer_pid),str(os.getuid()),str(os.getgid()),*[x.hex() for x in IDS],DIGEST.hex(),'4096','256','60000000000',str(deadline+1000000000),*([str(vm_key),str(clock_fd)] if a.openssl_root else []),
        '--ros-scene-driver-schema','robot','joint','device.submit','128','128','16']
+      if platform:
+       module='uwvm_ros_v2.platform_extension.'+platform+'.v1'
+       flags+=['--ros-scene','robot','platform_extension',module,'enable','--ros-scene','robot','platform_extension.bind',module,'joint']
       cmd=[str(a.runtime),*guest_flags,'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
       vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key,clock_fd) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
       stdout,stderr=vm.communicate(timeout=45);ps,pe=peer.communicate(timeout=5)
@@ -134,7 +149,9 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
       if a.namespace:assert [row for row in rows if row.get('kind')=='confined']==[dict(kind='confined',escape_checks=7)]
       assert len(effects)==count and effects[-1]['steps']==(0 if mode=='range' else count)
       if mode=='success':assert all(observed[k]==native[k] for k in ('steps','time','position'))
-      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows));save();print('PASS '+label,flush=True)
+      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows,platform=platform));
+      if not platform or (width,memory)==layouts[-1] and engine=='aot' and mode=='crash':save()
+      print('PASS '+label,flush=True)
      finally:
       keys.close();left.close()
       for process in ([vm] if vm else [])+[peer]:
