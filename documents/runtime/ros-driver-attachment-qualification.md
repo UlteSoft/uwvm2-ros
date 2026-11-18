@@ -195,6 +195,26 @@ event-configuration failure. Installed SEP/PAX/VTSSPP devices were confirmed
 loaded for the current user group. No additional privilege or kernel setting
 was changed, and the successful explicit-period samples remain separate.
 
+### Authenticated local IPC with a separately scheduled receiver
+
+On x86_64 Linux, runtime build `576aa42918eaa3baca12ca030e3c55482cb524ca`
+(VM SHA-256 `cdfc3cc76bd953d362aca5a96cef88b972a05a7487fc92599a17741529b34283`)
+and a native client built with `-O3 -g` used the same authenticated TLS
+receiver and driver dispatcher. Seven interleaved trials per client issued
+10,000 requests per trial. The receiver measured the time between its first
+and last calls. With the client on CPU 4 and the receiver on CPU 6, the median
+was 4,157 ns for the native client and 4,367 ns for the AOT guest (ratio
+1.051). The operation used a 17-byte request payload and a 24-byte response.
+The measurement excludes cold startup. Direct in-module calls, other payloads
+and other operations require their own measurements.
+
+VTune hardware Hotspots and detailed Microarchitecture Exploration both
+produced client-PID-filtered source and assembly reports. VTune accepted
+nominal sampling intervals of 0.1 ms and 1 ms respectively. A separate
+0.01 ms attempt for each client and analysis failed to configure the events.
+Keep the requested interval, actual collection settings, process IDs and
+individual trial times when reproducing these results.
+
 ## Outstanding acceptance boundaries
 
 The deployment program is deliberately outside this change. Its own process
