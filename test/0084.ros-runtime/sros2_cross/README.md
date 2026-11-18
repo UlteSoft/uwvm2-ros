@@ -72,3 +72,33 @@ The Jazzy/Humble default-result SHA-256 is
 `b8423c852432cbd800e38893c428e94290032a20bb3bcb64c6b6fccb9031003a`.
 The XML property experiment produced result SHA-256
 `51ece1000fcf9c22149e68ef84731eebd9cdf0ed5b3a3b1ef37fe3d290d83756`.
+
+## Cyclone DDS peer and same-vendor control
+
+Add `--cyclone-echo --cyclone-plan "$CYCLONE_PLAN" --archive-keyring "$ROS_KEYRING"`
+to select the echo release's own `rmw_cyclonedds_cpp`. Use the same Jazzy issuer
+rootfs, Fast DDS requester, signed gateway/witness policy and loopback profile.
+The runner checks the original Cyclone, rclcpp and RMW package members against
+the signed ROS index and records the authentication, access-control and
+cryptography plugin digests. Cyclone uses the isolated IPv4 loopback interface
+and a fixed unicast discovery peer. The application checks the selected RMW
+at runtime.
+
+One issuance supplies every case. The mixed pair and the two Cyclone
+processes each run a plaintext control and an Enforce exchange. The control's
+two processes use their distinct gateway and witness identities. Each Enforce
+case requires both authorized callbacks, protected RTPS sends to both peers'
+owned UDP ports, and the loaded native libraries and Cyclone security plugins.
+The separate unauthorized observer belongs to the mixed pair. Individual
+results include timeouts, process exits, marker sightings and trace digests.
+
+Lyrical Cyclone DDS 11.0.1 completed the two-process Enforce control. The
+participant traces recorded 45 AES-256-GCM submessages to the echo process
+and 39 to the requester. Both callbacks confirmed the exact strings. The
+Jazzy Fast DDS 2.14.6 and Lyrical Cyclone pair exchanged both exact strings
+in plaintext. Under Enforce, both authorized processes expired without
+confirming a sample. Their paired UDP ports received zero observed encrypted
+submessages from each other. The Cyclone log recorded seven handshake reply
+failures while converting a key string to an ASN.1 integer (code 200).
+Fast DDS denied the independent observer's reader. The combined result SHA-256
+is `0baac996c23659c7588674f1b54f65b17d1a71b44e6c554fece32c0926f0a2b9`.

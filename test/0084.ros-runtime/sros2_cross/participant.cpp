@@ -11,12 +11,12 @@ using Message = std_msgs::msg::String;
 
 int main(int argc, char** argv)
 {
-    if(argc < 4) return 1;
+    if(argc < 5) return 1;
     std::string const role = argv[1], token = argv[2];
     bool const request = role == "request", denied = role == "observer";
     if(!request && !denied && role != "echo") return 1;
     rclcpp::init(argc, argv);
-    if(std::string(rmw_get_implementation_identifier()) != "rmw_fastrtps_cpp") return 2;
+    if(std::string(rmw_get_implementation_identifier()) != argv[3]) return 2;
     rclcpp::NodeOptions options;
     options.enable_rosout(false).start_parameter_services(false).start_parameter_event_publisher(false);
     options.parameter_overrides({rclcpp::Parameter("start_type_description_service", false)});

@@ -135,11 +135,16 @@ def environment(spec, secure):
     env = dict(PATH='/usr/bin:/bin', HOME='/tmp',
                LD_LIBRARY_PATH=os.pathsep.join([str(Path(spec['prefix'])/'lib'),
                    str(Path(spec['prefix'])/'lib/x86_64-linux-gnu'), spec['system']]),
-               AMENT_PREFIX_PATH=spec['prefix'], ROS_DOMAIN_ID=str(DOMAIN), RMW_IMPLEMENTATION='rmw_fastrtps_cpp',
+               AMENT_PREFIX_PATH=spec['prefix'], ROS_DOMAIN_ID=str(DOMAIN), RMW_IMPLEMENTATION=spec['rmw'],
                ROS_AUTOMATIC_DISCOVERY_RANGE='SYSTEM_DEFAULT',
                ROS_LOG_DIR='/tmp/ros-logs', ROS_SECURITY_ENABLE='true' if secure else 'false')
-    setting = 'FASTDDS_DEFAULT_PROFILES_FILE' if spec['release'] in ('lyrical','kilted') else 'FASTRTPS_DEFAULT_PROFILES_FILE'
-    env[setting] = '/work/loopback.xml'
+    if spec['rmw'] == 'rmw_cyclonedds_cpp':
+        env['CYCLONEDDS_URI'] = ('<CycloneDDS><Domain><General><Interfaces><NetworkInterface name="lo"/>'
+            '</Interfaces><AllowMulticast>false</AllowMulticast></General><Discovery><ParticipantIndex>auto</ParticipantIndex>'
+            '<Peers><Peer Address="127.0.0.1"/></Peers></Discovery></Domain></CycloneDDS>')
+    else:
+        setting = 'FASTDDS_DEFAULT_PROFILES_FILE' if spec['release'] in ('lyrical','kilted') else 'FASTRTPS_DEFAULT_PROFILES_FILE'
+        env[setting] = '/work/loopback.xml'
     if secure:
         env.update(ROS_SECURITY_STRATEGY='Enforce', ROS_SECURITY_KEYSTORE='/issued')
     return env
@@ -150,7 +155,7 @@ def missing_identity(out, cfg):
     for role in ('request', 'echo'):
         spec = cfg['peers'][role]
         path = out/(role+'-no-identity.log')
-        cmd = [out/spec['release'], role, secrets.token_hex(24), '--ros-args', '--enclave', '/unissued']
+        cmd = [out/spec['release'], role, secrets.token_hex(24), spec['rmw'], '--ros-args', '--enclave', '/unissued']
         with path.open('wb') as log:
             run = subprocess.run(cmd, env=environment(spec, True), stdout=log, stderr=subprocess.STDOUT, timeout=16)
         content = path.read_text(errors='replace')
@@ -161,12 +166,13 @@ def missing_identity(out, cfg):
                          for s in statuses.values()), 'peers':statuses}
 
 
-def exchange(out, cfg, secure):
-    directory = out/('enforce' if secure else 'plaintext')
+def exchange(out, cfg, secure, control=False):
+    case_name = 'enforce' if secure else 'plaintext'
+    directory = out/(('cyclone-control-' if control else '') + case_name)
     directory.mkdir()
     token = secrets.token_hex(24)
     markers = {'request': 'secure-request-'+token, 'reply': 'secure-reply-'+token}
-    roles = ('observer', 'echo', 'request') if secure else ('echo', 'request')
+    roles = ('observer', 'echo', 'request') if secure and not control else ('echo', 'request')
     proc, status = {}, {}
     mapped = {r: set() for r in roles}
     listening = {r: set() for r in roles}
@@ -174,7 +180,7 @@ def exchange(out, cfg, secure):
         for role in roles:
             spec = cfg['peers']['echo' if role == 'echo' else 'request']
             env = environment(spec, secure)
-            argv = [out/spec['release'], role, token, '--ros-args']
+            argv = [out/spec['release'], role, token, spec['rmw'], '--ros-args']
             if secure:
                 argv.extend(['--enclave', '/'+ENCLAVES[role]])
             stream = stack.enter_context((directory/(role+'.log')).open('wb'))
@@ -189,10 +195,11 @@ def exchange(out, cfg, secure):
         observer_during_request = False
         deadline = time.monotonic() + 17
         while time.monotonic() < deadline and any(p.poll() is None for p in proc.values()):
-            if secure and proc['request'].poll() == 0 and proc['observer'].poll() is None:
+            if 'observer' in proc and proc['request'].poll() == 0 and proc['observer'].poll() is None:
                 observer_during_request = True
             for role, process in proc.items():
-                expected = cfg['peers']['echo' if role == 'echo' else 'request']['libraries']
+                spec = cfg['peers']['echo' if role == 'echo' else 'request']
+                expected = set(spec['libraries']) | (set(spec['securityPlugins']) if secure else set())
                 pid = app_pid(process)
                 if not pid:
                     continue
@@ -209,24 +216,28 @@ def exchange(out, cfg, secure):
     logs = {r: (directory/(r+'.log')).read_text(errors='replace') for r in roles}
     exact = all('received '+markers[label] in logs[r].splitlines() for r,label in [('echo','request'),('request','reply')])
     ok = all(rc == 0 for rc in status.values()) and exact and all(
-        mapped[r] == set(cfg['peers']['echo' if r == 'echo' else 'request']['libraries']) for r in roles)
+        mapped[r] == (set(spec['libraries']) | (set(spec['securityPlugins']) if secure else set()))
+        for r in roles for spec in [cfg['peers']['echo' if r == 'echo' else 'request']])
     secured = {row['sender'] for row in observation['userPortEncryptedSubmessages']}
     paired = {r:sum(row['count'] for row in observation['userPortEncryptedSubmessages']
                     if row['sender'] == r and row['destination'] in listening[other])
               for r,other in [('request','echo'),('echo','request')]}
-    if secure:
+    denied = None
+    if 'observer' in roles:
         denied = (any('rt/uwvm_test/pubString' in line and 'check_create_datareader' in line for line in logs['observer'].splitlines())
                   and 'observer reader=refused samples=0' in logs['observer'].splitlines())
+        ok = ok and denied and observer_during_request
+    if secure:
         unique_ports = (all(len(ports) == 1 for ports in listening.values()) and
                         len(set.union(*listening.values())) == len(roles))
-        ok = ok and denied and observer_during_request and unique_ports and all(paired.values()) and not any(
+        ok = ok and unique_ports and all(paired.values()) and not any(
             count for labels in observation['clearMarkers'].values() for count in labels.values())
     else:
         denied = None
         ok = ok and observation['clearMarkers']['request']['request'] > 0 and observation['clearMarkers']['echo']['reply'] > 0 and not secured
     return {'passed': ok, 'token': token, 'exits': status, 'exactCallbacks': exact,
-            'observerRelease': cfg['peers']['request']['release'] if secure else None, 'securityEnabled': secure, 'securityStrategy': 'Enforce' if secure else None,
-            'unauthorizedReaderDenied': denied, 'observerAliveAtRequestCompletion': observer_during_request if secure else None, 'capture': observation,
+            'observerRelease': cfg['peers']['request']['release'] if 'observer' in roles else None, 'securityEnabled': secure, 'securityStrategy': 'Enforce' if secure else None,
+            'unauthorizedReaderDenied': denied, 'observerAliveAtRequestCompletion': observer_during_request if 'observer' in roles else None, 'capture': observation,
             'ownedUserUnicastPorts':{r:sorted(ports) for r,ports in listening.items()},
             'encryptedSubmessagesToAuthorizedPeer':paired, 'mappedLibraries': {r: sorted(items) for r, items in mapped.items()},
             'peers': {r: {'logSha256':sha(directory/(r+'.log')), 'rosErrors':logs[r].count('[ERROR]'),
@@ -246,6 +257,12 @@ def worker():
     for secure in (False, True):
         result['cases']['enforce' if secure else 'plaintext'] = exchange(out, cfg, secure)
         save(out/'results.json', result)
+    if cfg['peers']['echo']['rmw'] == 'rmw_cyclonedds_cpp':
+        control = {'peers':{role:cfg['peers']['echo'] for role in ('request','echo')}}
+        for secure in (False, True):
+            name = 'cycloneControlEnforce' if secure else 'cycloneControlPlaintext'
+            result['cases'][name] = exchange(out, control, secure, control=True)
+            save(out/'results.json', result)
     result.update(complete=True, passed=all(c['passed'] for c in result['cases'].values()))
     save(out/'results.json', result)
     return int(not result['passed'])
@@ -258,7 +275,13 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     for name in ('issuer-rootfs','request-prefix','request-system','echo-prefix','echo-system','loopback-profile','output'):
         p.add_argument('--'+name, type=Path, required=True)
+    p.add_argument('--cyclone-echo', action='store_true',
+                   help='Use native Cyclone DDS for the echo and repeat with two Cyclone participants using the same PKI')
+    p.add_argument('--cyclone-plan', type=Path, help='Signed archive package plan for the Cyclone echo')
+    p.add_argument('--archive-keyring', type=Path, help='Public ROS archive keyring for the package plan')
     a = p.parse_args()
+    if a.cyclone_echo and (not a.cyclone_plan or not a.archive_keyring):
+        p.error('--cyclone-echo requires --cyclone-plan and --archive-keyring')
     out = a.output.resolve()
     out.mkdir(mode=0o700, parents=True, exist_ok=False)
     profile = a.loopback_profile.resolve(strict=True)
@@ -277,10 +300,25 @@ def main():
             system = getattr(a, role+'_system').resolve(strict=True)
             check(prefix.name in ('jazzy','humble','kilted','lyrical'), 'unsupported native release')
             command = build(prefix, system, out/prefix.name)
-            vendor = 'libfastdds.so' if (prefix/'lib/libfastdds.so').is_file() else 'libfastrtps.so'
-            libraries = [prefix/'lib'/name for name in (vendor,'librmw_fastrtps_cpp.so','librclcpp.so')]
+            cyclone = role == 'echo' and a.cyclone_echo
+            rmw = 'rmw_cyclonedds_cpp' if cyclone else 'rmw_fastrtps_cpp'
+            multiarch = prefix/'lib/x86_64-linux-gnu'
+            vendor = multiarch/'libddsc.so' if cyclone else next(
+                p for p in [prefix/'lib/libfastdds.so',prefix/'lib/libfastrtps.so'] if p.is_file())
+            libs = [vendor, prefix/'lib'/('lib'+rmw+'.so'),prefix/'lib/librclcpp.so']
+            plugins = [multiarch/('libdds_security_'+part+'.so') for part in ('auth','ac','crypto')] if cyclone else []
             peers[role] = {'prefix':str(prefix), 'system':str(system), 'release':prefix.name, 'build':command,
-                           'binarySha256':sha(out/prefix.name), 'libraries':{str(p.resolve()):sha(p) for p in libraries}}
+                           'rmw':rmw, 'binarySha256':sha(out/prefix.name), 'libraries':{str(p.resolve()):sha(p) for p in libs},
+                           'securityPlugins':{str(p.resolve()):sha(p) for p in plugins}}
+            if cyclone:
+                from run_archived_dds_peer import signed_packages, match_payloads
+                plan, packages = signed_packages(a.cyclone_plan.resolve(strict=True), a.archive_keyring.resolve(strict=True))
+                check(plan['release'] == prefix.name, 'unexpected Cyclone package release')
+                loaded = {**peers[role]['libraries'], **peers[role]['securityPlugins']}
+                peers[role]['signedArchive'] = {
+                    'inReleaseSha256':plan['inReleaseSha256'], 'indexSha256':plan['indexSha256'],
+                    'signer':plan['fingerprint'], 'packages':{n:plan['packages'][n]['sha256'] for n in packages},
+                    'members':match_payloads(prefix, packages, loaded)}
             mounts.update([prefix,system])
             mounts.update(p.resolve(strict=True) for p in system.iterdir() if p.is_symlink() and p.is_file()
                           and not p.resolve().is_relative_to(system))
@@ -300,7 +338,7 @@ def main():
         cmd += ['--clearenv','--setenv','PATH','/usr/bin:/bin','--chdir','/work','/usr/bin/python3','-I','-B',
                 '/fixture/run.py','--worker']
         with (out/'namespace.log').open('wb') as log:
-            return subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=75).returncode
+            return subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=135 if a.cyclone_echo else 75).returncode
 
 
 if __name__ == '__main__':
