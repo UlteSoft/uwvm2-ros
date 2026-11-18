@@ -16,9 +16,10 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
 {
     namespace scene=::uwvm2::imported::ros::scene;
     using result=::uwvm2::utils::cmdline::parameter_return_type;
-    enum class operation{call_audit,driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,module_buffer_journal,module_buffer_capture,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check};
+    enum class operation{call_audit,driver_budget,driver_kernel_channel,driver_channel,driver_schema,module_call_budget,module_call,module_call_clear_input,module_buffer_journal,module_buffer_capture,child,create,bind,expose,grant,limit,input_budget,input,output_budget,output,publication_budget,publication,managed_lifecycle,buffer_budget,buffer,model_budget,model,model_capacity,model_kernel_channel,model_channel,transform_budget,transform_profile,transform_limit,transform_definition,transform_definition_hex,recording_budget,recording_profile,recording_limit,recording_definition,recording_definition_hex,replay,log_diagnostic_budget,log_limit,log_logger,log_loss,diagnostic_limit,diagnostic_source,device_budget,device_endpoints,device_profile,device_limit,device_definition,device_definition_hex,control_profile,control_limit,control_definition,control_definition_hex,bridge_budget,bridge_profile,bridge_limit,bridge_definition,bridge_definition_hex,media_budget,media_profile,media_limit,media_definition,media_definition_hex,sensor_budget,sensor_profile,sensor_limit,sensor_descriptor,sensor_definition,sensor_definition_hex,proposal_budget,proposal_profile,proposal_limit,proposal_definition,proposal_definition_hex,proposal_arbiter,communication_budget,communication_worker,communication_binding,communication_event,communication_pair,communication_worker_limit,communication_channel,parameter_budget,parameter_profile,parameter_limit,parameter_definition,parameter_definition_hex,check,dump_effective_policy};
+    inline scene::deployment& command_configuration(::uwvm2::utils::cmdline::parameter_parsing_results* end);
     template<operation Action,std::size_t Count>
-    inline result configure(::uwvm2::utils::cmdline::parameter_parsing_results*,
+    inline result configure([[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* begin,
         ::uwvm2::utils::cmdline::parameter_parsing_results* current,
         ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
     {
@@ -38,7 +39,7 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 if(current[i+1].type!=::uwvm2::utils::cmdline::parameter_parsing_results_type::arg)return failure("explicit argument required");
                 auto text=current[i+1].str;args[i]={reinterpret_cast<char const*>(text.data()),text.size()};
             }
-            auto& config=::uwvm2::uwvm::imported::scene::configuration;scene::error status{};
+            auto& config=command_configuration(end);scene::error status{};
             if constexpr(Action==operation::call_audit)
             {
                 scene::call_audit::scope target;
@@ -106,7 +107,7 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 std::uint64_t fd{},records{},bytes{},payload{};
                 if(!scene::parse_unsigned(args[0],fd)||fd>1048575||!scene::parse_unsigned(args[1],records)||
                    !scene::parse_unsigned(args[2],bytes)||!scene::parse_unsigned(args[3],payload)||
-                   !scene::module_buffer_audit::output.configure(static_cast<int>(fd),{records,bytes,payload}))
+                   config.configure_payload_journal(static_cast<int>(fd),{records,bytes,payload})!=scene::error::success)
                     return failure("invalid private journal descriptor or limits");
             }
             if constexpr(Action==operation::module_buffer_capture)
@@ -590,6 +591,19 @@ namespace uwvm2::uwvm::cmdline::params::scene_details
                 registration.startup_ns=numbers[11];registration.session_until=numbers[12];registration.stderr_bytes=numbers[13];
                 status=config.communication_channel(args[0],args[1],registration);
             }
+            if constexpr(Action==operation::dump_effective_policy)
+            {
+                if(current+1!=end)return failure("effective policy dump must terminate the host command");
+                for(auto item=begin+1;item!=current;++item)
+                    if(item->type==::uwvm2::utils::cmdline::parameter_parsing_results_type::arg)
+                        return failure("unexpected argument in offline policy review");
+                status=config.validate();
+                if(status!=scene::error::success)return failure("scene validation failed before policy output");
+                ::uwvm2::utils::container::std_string document;
+                status=config.dump_effective_policy(document);
+                if(status!=scene::error::success)return failure("effective policy unavailable or bounded output limit reached");
+                ::fast_io::io::println(::fast_io::out(),document);return result::return_imme;
+            }
             if constexpr(Action==operation::check)status=config.validate();
             if(status==scene::error::unsupported)return failure("purpose/provider has no registered implementation");
             if(status!=scene::error::success)return failure("invalid, duplicate, conflicting or late configuration");
@@ -704,7 +718,20 @@ namespace uwvm2::uwvm::cmdline::params
     UWVM_SCENE_PARAMETER(ros_scene_proposal_definition,"--ros-scene-proposal-definition","Load one bounded exact-hash source/tool definition; current target adapters accept local nonphysical lifecycle only.","<environment:str> <alias:str> <host-path:str> <bytes:u64> <sha256:hex>",proposal_definition,5)
     UWVM_SCENE_PARAMETER(ros_scene_proposal_definition_hex,"--ros-scene-proposal-definition-hex","Supply canonical proposal definition bytes as bounded lowercase hex.","<environment:str> <alias:str> <canonical-bytes:hex>",proposal_definition_hex,3)
     UWVM_SCENE_PARAMETER(ros_scene_proposal_arbiter,"--ros-scene-proposal-arbiter","Bind one existing arbiter grant to exact proposal and target aliases plus a finite tool mask; acceptance never executes.","<environment:str> <alias:str> <proposal-alias:str> <target-alias:str> <tool-mask:u64>",proposal_arbiter,5)
+    UWVM_SCENE_PARAMETER(ros_scene_dump_effective_policy,"--ros-scene-dump-effective-policy","Validate and print bounded core scene authorization as JSON. Place last in a scene-only offline command.","",dump_effective_policy,0)
     UWVM_SCENE_PARAMETER(ros_scene_check,"--ros-scene-check","Validate and freeze scene policy without executing guests or activating native providers.","",check,0)
 #undef UWVM_SCENE_PARAMETER
+}
+namespace uwvm2::uwvm::cmdline::params::scene_details
+{
+    inline scene::deployment& command_configuration(::uwvm2::utils::cmdline::parameter_parsing_results* end)
+    {
+        if(end[-1].para==&ros_scene_dump_effective_policy)
+        {
+            static scene::deployment review{scene::deployment::mode::offline_review};
+            return review;
+        }
+        return ::uwvm2::uwvm::imported::scene::configuration;
+    }
 }
 #endif

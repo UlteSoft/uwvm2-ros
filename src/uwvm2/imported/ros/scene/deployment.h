@@ -175,6 +175,8 @@ namespace uwvm2::imported::ros::scene
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,::uwvm2::utils::container::std_string,std::less<>> memberships;
         call_audit::journal result_audit;
         bool frozen{},retired{},providers_ready{};
+        bool const declarations_only{};
+        std::optional<module_buffer_audit::limits> payload_journal;
         inline static std::atomic<std::uint64_t> next_environment{1};
         static std::uint64_t environment_identity() noexcept
         {
@@ -683,7 +685,7 @@ namespace uwvm2::imported::ros::scene
             ::uwvm2::utils::container::std_vector<std::pair<transforms::configuration*,transforms::configuration>> transform_settings;
             ::uwvm2::utils::container::std_vector<std::pair<communication_deployment_configuration*,communication_deployment_configuration>> communication_settings;
             bool have_providers{};std::uint64_t total_bytes{};
-            attachment_registry attachments;
+            attachment_registry attachments{declarations_only};
             for(auto& [name,entry]:environments)
             {
                 if(entry.drivers)if(auto status=entry.drivers->claim_endpoints(attachments);status!=error::success)return status;
@@ -827,15 +829,26 @@ namespace uwvm2::imported::ros::scene
                 }
                 std::shared_ptr<broker> next;
                 if(auto result=configure(entry,next);result!=error::success)return result;
-                pending.emplace_back(&entry,std::move(next));
+                if(!declarations_only)pending.emplace_back(&entry,std::move(next));
             }
             for(auto& [setting,prepared]:workers)*setting=std::move(prepared);
             for(auto& [setting,prepared]:transform_settings)*setting=std::move(prepared);
             for(auto& [setting,prepared]:communication_settings)*setting=std::move(prepared);
             for(auto& [entry,state]:pending){if(entry->drivers){entry->drivers->freeze(entry->platform_children);state->driver_store=entry->drivers;}entry->live=std::move(state);}
-            frozen=true;providers_ready=!have_providers;return error::success;
+            frozen=true;providers_ready=!declarations_only&&!have_providers;return error::success;
         }
     public:
+        deployment()=default;
+        enum class mode { offline_review };
+        explicit deployment(mode):declarations_only{true}{}
+        /** @brief Configure only the declaration during review, leaving the supplied descriptor untouched. */
+        error configure_payload_journal(int fd,module_buffer_audit::limits limits)
+        {
+            std::lock_guard lock{mutex};
+            if(frozen||retired||payload_journal||!module_buffer_audit::journal::valid_configuration(fd,limits))return error::invalid;
+            if(!declarations_only&&!module_buffer_audit::output.configure(fd,limits))return error::invalid;
+            payload_journal=limits;return error::success;
+        }
         /** @brief Make one trusted process, environment or caller audit ceiling immutable at freeze.
          * @details The process selector has label "*". Group labels are configured scene environment
          * names. A single rule matches only an exact runtime caller name. These rules grant no imports.
@@ -882,7 +895,7 @@ namespace uwvm2::imported::ros::scene
         {
             std::lock_guard lock{mutex};auto found=environments.find(name);
             if(frozen||retired||found==environments.end()||found->second.drivers||count>65536||bytes>INT64_MAX||bytes>SIZE_MAX)return error::invalid;
-            auto value=::uwvm2::utils::container::make_shared<driver_dispatch>();
+            auto value=::uwvm2::utils::container::make_shared<driver_dispatch>(declarations_only);
             auto status=value->budget(static_cast<std::size_t>(count),static_cast<std::size_t>(bytes));
             if(status==error::success)found->second.drivers=std::move(value);
             return status;
@@ -969,7 +982,7 @@ namespace uwvm2::imported::ros::scene
         {
             std::lock_guard lock{mutex};
             auto env=environments.find(name);
-            if(frozen || retired || !module_buffer_audit::output.enabled() || env==environments.end() ||
+            if(frozen || retired || !(declarations_only?payload_journal.has_value():module_buffer_audit::output.enabled()) || env==environments.end() ||
                 static_cast<unsigned>(stage)<1 || static_cast<unsigned>(stage)>4)return error::invalid;
             auto found=env->second.module_call_plans.find(route);
             if(found==env->second.module_call_plans.end())return error::invalid;
@@ -1851,7 +1864,7 @@ namespace uwvm2::imported::ros::scene
         /** @brief Register an existing external model channel; no worker launch or lifecycle authority. */
         error model_channel(std::string_view name,std::string_view alias,int fd,drivers::credentials peer,
                             model_attachment::protocol::binding binding,model_attachment::limits bounds)
-        {return model_worker_setting(name,alias,[&](auto& setting){return setting.channel(fd,peer,binding,bounds);});}
+        {return model_worker_setting(name,alias,[&](auto& setting){return setting.channel(fd,peer,binding,bounds,declarations_only);});}
         /** @brief Default native preparation fails closed for configured model workers. */
         struct unavailable_model_provider
         {
@@ -1903,7 +1916,8 @@ namespace uwvm2::imported::ros::scene
         template<typename Provider,typename ModelProvider=unavailable_model_provider,typename CommunicationProvider=unavailable_communication_provider>
         error prepare_resources(Provider&& provider,ModelProvider model_provider={},CommunicationProvider communication_provider={})
         {
-            std::lock_guard lock{mutex};if(auto status=freeze();status!=error::success)return status;
+            std::lock_guard lock{mutex};if(declarations_only)return error::denied;
+            if(auto status=freeze();status!=error::success)return status;
             if(providers_ready)return error::success;
 #if defined(__linux__)
             ::uwvm2::utils::container::std_vector<std::pair<environment*,std::shared_ptr<broker>>> pending;
@@ -2005,6 +2019,13 @@ namespace uwvm2::imported::ros::scene
             }
             cap->second=std::move(updated);it->second.assigned_limits.insert(std::move(setting));return error::success;
         }
+        /** @brief Copy validated, frozen core authorization as one bounded JSON document.
+         * @details Reads only configuration. Membership, import exposure, grants,
+         * observation reductions and foundation selections are reported separately.
+         * No provider, session, guest or native file descriptor is queried here.
+         * On failure the caller receives no bytes and cannot publish a partial inventory.
+         */
+        error dump_effective_policy(::uwvm2::utils::container::std_string& document)const;
         /** @brief Validate all policy before execution, without native effects. */
         error validate(){std::lock_guard lock{mutex};return freeze();}
         exposure visible(std::string_view module,std::string_view action) const
@@ -2691,3 +2712,5 @@ namespace uwvm2::imported::ros::scene
         }
     };
 }
+
+#include "policy_dump.h"

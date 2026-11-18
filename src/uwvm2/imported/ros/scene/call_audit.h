@@ -77,6 +77,13 @@ namespace uwvm2::imported::ros::scene::call_audit
                       sink_failures.load(std::memory_order_relaxed)};
             return true;
         }
+        /** @brief Visit configured ceilings. Counters and rate-window state stay private. */
+        template<class Visitor> bool visit_policy(Visitor visit)const
+        {
+            std::lock_guard lock{mutex};
+            for(auto const& r:rules)if(!visit(r.target,r.label,r.denied_only,r.limits))return false;
+            return true;
+        }
         /** @brief Register one finite allowance for an exact trusted scope.
          * @details Repeated scope/label pairs are rejected. A zero ceiling
          * disables that part of the selection. One billion nanocredits is one

@@ -20,7 +20,9 @@ namespace uwvm2::imported::ros::scene
         using error=resources::error;
         ::uwvm2::utils::container::std_set<std::pair<std::uint64_t,std::uint64_t>> endpoints_;
         ::uwvm2::utils::container::std_set<drivers::protocol::identity> sessions_;
+        bool declarations_only_{};
     public:
+        explicit attachment_registry(bool declarations_only=false):declarations_only_{declarations_only}{}
         error endpoint(std::pair<std::uint64_t,std::uint64_t> key)noexcept
         {
             if(!key.second)return error::bad_handle;
@@ -30,6 +32,9 @@ namespace uwvm2::imported::ros::scene
         }
         error descriptor(int fd)noexcept
         {
+            // Offline declarations can detect reused numbers. Only a live
+            // launch can prove that distinct numbers refer to distinct objects.
+            if(declarations_only_)return fd<0?error::bad_handle:endpoint({0,static_cast<std::uint64_t>(fd)+1});
 #if defined(__linux__)
             struct stat info{};if(fd<0||::fstat(fd,&info))return error::bad_handle;
             if(!S_ISSOCK(info.st_mode)&&!S_ISFIFO(info.st_mode))return error::denied;

@@ -143,6 +143,11 @@ namespace uwvm2::imported::ros::scene::module_buffer_audit
         journal& operator=(journal const&)=delete;
         /** @brief Indicates whether the private writer can accept another observation. */
         bool enabled()const noexcept{return running_.load(std::memory_order_acquire);}
+        static constexpr bool valid_configuration(int fd,limits cap) noexcept
+        {
+            return fd>=3 && fd<=1048575 && cap.records && cap.records<=1048576 && cap.payload && cap.payload<=65536 &&
+                cap.bytes>=magic.size()+footer_bytes+fixed_bytes+2 && cap.bytes<=67108864;
+        }
         /** @brief Consume an empty private FD after successful initialization.
          * @details The deployment configures this once before starting guests.
          * The fixed writer stack is bounded to 256 KiB and joins on shutdown.
@@ -150,8 +155,7 @@ namespace uwvm2::imported::ros::scene::module_buffer_audit
         bool configure(int fd,limits cap) noexcept
         {
 #if defined(__linux__)
-            if(fd<3 || fd>1048575 || !cap.records || cap.records>1048576 || !cap.payload || cap.payload>65536 ||
-                cap.bytes<magic.size()+footer_bytes+fixed_bytes+2 || cap.bytes>67108864)return false;
+            if(!valid_configuration(fd,cap))return false;
             auto owner=pid_.load(std::memory_order_acquire);
             if(owner && owner!=::getpid())return false;
             std::lock_guard lock{mutex_};

@@ -30,6 +30,8 @@ namespace uwvm2::imported::ros::scene::drivers
 {
     using error=resources::error;
     struct credentials{std::uint64_t pid{},uid{},gid{};friend bool operator==(credentials const&,credentials const&)=default;};
+    inline bool valid(credentials const& peer) noexcept
+    {return peer.pid && peer.pid<=INT32_MAX && peer.uid<=UINT32_MAX && peer.gid<=UINT32_MAX;}
     class channel
     {
         int fd_{-1},peer_lifetime_{-1};credentials expected_;
@@ -66,7 +68,7 @@ namespace uwvm2::imported::ros::scene::drivers
             if(!same_process())return error::denied;
             if(fd_>=0)return error::conflict;
 #if defined(__linux__)
-            if(descriptor<0||peer_time_namespace_fd<-1||!expected.pid||expected.pid>INT32_MAX||expected.uid>UINT32_MAX||expected.gid>UINT32_MAX)return error::invalid;
+            if(descriptor<0||peer_time_namespace_fd<-1||!valid(expected))return error::invalid;
             int duplicate=::fcntl(descriptor,F_DUPFD_CLOEXEC,0);if(duplicate<0)return error::bad_handle;
             auto refuse=[&](error e){::close(duplicate);return e;};
             int type{},pass{};::socklen_t size=sizeof(type);

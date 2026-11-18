@@ -15,6 +15,64 @@ see [logging controls](logging.md). New robot deployments should select the
 specific qualified ROSv2 provider for each required capability. A planned
 provider name does not establish a working replacement for a legacy operation.
 
+## Review a scene policy offline
+
+Use `--ros-scene-dump-effective-policy` as the last option in a scene-only
+command. The process validates the declarations and writes one JSON document to
+stdout. It exits before guest loading, native provider preparation or journal
+activation. Redirect stdout to save the inventory.
+
+```sh
+uwvm --ros-scene-create robot --ros-scene-bind robot main \
+  --ros-scene-interface robot guard.trigger deny \
+  --ros-scene-dump-effective-policy > robot-policy.json
+```
+
+The schema version is 1. To find a module’s policy, locate its exact
+`moduleHex` in `memberships`, then inspect the matching `environments` entry.
+Printable ASCII names also have a `module` display string. Unbound modules are
+hidden. For members, an explicit `configuredImports` rule wins. An absent
+`permission.report` rule allows self-reporting, and all other absent rules are
+hidden. Resource authority also requires a grant. Each grant includes its
+purpose, resource and binding IDs, exact action set, platform owner, handle,
+resource and wait limits, delivery policy, and call/byte window ceilings.
+`platformSelections` reports explicit enable and disable choices. A bound
+alias inherits its platform switch. `observationDenials` identifies reductions
+to a permission report, with a null function for an entire family.
+
+`sessions` gives each external driver, model or communication registration’s
+logical owner, transport, expected PID/UID/GID, deployment, VM, scope, provider
+and session IDs, pinned contract digest, absolute monotonic expiry and local
+channel bounds. For a driver, the scope identifies the module and the provider
+identifies the driver. The exact Wasm module, grant alias and schema traversal
+limits also appear. Communication records include the authenticated startup
+profile and worker limits. `communicationBindings` and `communicationPairs`
+associate aliases and coupled workers with these sessions.
+
+`callAuditRules` holds the configured global, group and single ceilings.
+`payloadJournal` reports declared capture capacity. Per-route entries include
+the client, server, schemas, limits, sender input erasure and selected capture
+stages. Integer limits and timestamps are decimal strings so readers can
+preserve all 64 bits. The literal `"unlimited"` distinguishes an unlimited
+ceiling from a finite zero.
+
+`validation: "declarations-only"` describes the evidence available before
+launch. Provisioner descriptor numbers are checked for syntax and endpoint
+reuse by number. The real launch must check kernel identity, duplicate kernel
+objects, secret seals, transport availability and peer authentication.
+Operator-specified hashed configuration definition files are read when their
+CLI options require them. Artifact input paths, private journal files, TLS
+identities and provider channels stay unopened. Paths, descriptor numbers,
+key material and payloads have no JSON fields. Module names and logical IDs
+are supplied by the operator and appear as declared.
+
+The machine-readable `excluded` list identifies the rest of deployment policy
+outside this inventory, including provider-specific definitions and aggregate
+budgets, platform operation mappings, other host modules and live state.
+The exporter accepts at most 4,096 variable rows and 4 MiB of JSON.
+Invalid declarations, mixed host commands or either bound being exceeded
+produce a failing exit status and empty stdout.
+
 ## Current implementation boundary
 
 The VM source registers 160 imports: `abi`, `capability.open`, `capability.close`, `capability.revoke`, and
