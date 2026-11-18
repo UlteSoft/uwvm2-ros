@@ -18,3 +18,13 @@ On x86-64 Linux, select absolute paths to extracted native SDKs, their system li
 ```
 
 The receipt records the compilers' arguments, selected libraries, type definition, executables, challenge, expected response, network boundary and process exits. Its scope is unencrypted native UDPv4 and `std_msgs/msg/Int32`. Secure DDS, services, actions, discovery of unrelated hosts, Wasm execution, source migration and live actuator control each have separate acceptance criteria.
+
+Some installations put Cyclone's public headers under `include/CycloneDDS`.
+The fixture locates the installed header layout and reads the vendor version
+header to select the IDL compiler's output option and the loopback-interface
+XML syntax. For a pre-C++20 rclcpp installation, pass
+`--peer-cxx-standard 17` explicitly. Foxy omits the idlc program in its binary
+package. For an rclcpp exchange, `--cyclone-prefix` may point at a separate
+installation for the additional C compile. The echo process resolves its DDS
+library from `--peer-ros-prefix`. A direct Cyclone C run may use
+`--cyclone-system-libs` for its system runtime libraries.

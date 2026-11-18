@@ -20,10 +20,12 @@ int main(int argc, char** argv)
     rclcpp::init(argc, argv);
     if(std::string_view(rmw_get_implementation_identifier()) != argv[3]) return 2;
     auto node = rclcpp::Node::make_shared(echo ? "wros_dds_echo" : "wros_dds_interop");
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(node);
     bool received{}, unexpected{};
     auto writer = node->create_publisher<message>(echo ? "wros_dds_reply" : "wros_dds_request", 4);
-    auto reader = node->create_subscription<message>(echo ? "wros_dds_request" : "wros_dds_reply", 4, [&](message const& value) {
-        if(value.data != (echo ? challenge : challenge + 1)) { unexpected = true; return; }
+    auto reader = node->create_subscription<message>(echo ? "wros_dds_request" : "wros_dds_reply", 4, [&](message::ConstSharedPtr value) {
+        if(value->data != (echo ? challenge : challenge + 1)) { unexpected = true; return; }
         received = true;
         if(echo)
         {
@@ -40,7 +42,7 @@ int main(int argc, char** argv)
     {
         if(!echo) writer->publish(request);
         if(echo && received && !echoed) { deadline = std::chrono::steady_clock::now() + 2s; echoed = true; }
-        rclcpp::spin_some(node);
+        executor.spin_some();
         std::this_thread::sleep_for(20ms);
     }
     rclcpp::shutdown();
