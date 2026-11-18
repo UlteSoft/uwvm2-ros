@@ -114,6 +114,10 @@ def main():
                     client.request('uwvm/exportHostTrace',{**selected,'path':str(filtered_archive)})
                     binding=json.loads(filtered_archive.read_text())
                     assert binding['summary']['calls']=='1' and binding['calls'][0]['resultUnsigned']=='13'
+                    saved=binding['calls'][0]; live=rejected['calls'][0]
+                    assert 'complete verified caller label' in binding['semantics']['rosv2']
+                    assert saved['generation']==live['generation'] and saved['moduleName']['byteLength']=='4'
+                    assert saved['moduleName']['chunks']==[{'offset':'0',**live['moduleName']}]
                     archive=folder/'scene-calls.json'
                     client.request('uwvm/exportHostTrace',{'family':'rosv2','path':str(archive)})
                     exported=json.loads(archive.read_text())

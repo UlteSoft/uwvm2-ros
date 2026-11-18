@@ -44,6 +44,30 @@ def main():
     assert len(saved['calls']) == 1 and saved['calls'][0]['resultUnsigned'] == '2'
     assert saved['summary']['payloadBytes'] == '0'
     assert stat.S_IMODE(args.output.stat().st_mode) == 0o600
+    assert 'complete verified caller label' in saved['semantics']['rosv2']
+    assert saved['calls'][0]['generation'] == '0' and saved['calls'][0]['moduleName']['byteLength'] == '0'
+    whole = b'a' * 254 + bytes([255])
+    label = 'a' * 254 + chr(92) + 'xff'
+    known = call.replace('module-name=""', 'module-name="' + label + '"').replace(
+        'module-name-bytes=0', 'module-name-bytes=255').replace('generation=0', 'generation=18446744073709551615')
+    def known_request(command):
+        return request(command).replace(call, known)
+    known_page = view.query(known_request, checkpoint, {'family':'rosv2'})
+    shown = known_page['calls'][0]
+    assert shown['moduleName'] == {'hex': whole.hex(), 'utf8IfValid': None}
+    known_path = args.output.with_name(args.output.stem + '-caller.json')
+    export.save_host_trace(known_request, checkpoint, str(known_path), 'rosv2')
+    known_saved = json.loads(known_path.read_text())['calls'][0]
+    assert known_saved['generation'] == '18446744073709551615' and known_saved['moduleName']['byteLength'] == '255'
+    chunk, = known_saved['moduleName']['chunks']
+    assert chunk == {'offset':'0', **shown['moduleName']}
+    for invalid in (known.replace('generation=18446744073709551615', 'generation=0'),
+                    known.replace('module-name-bytes=255', 'module-name-bytes=256').replace('module-name-truncated=0', 'module-name-truncated=1')):
+        try:
+            export.call_row(invalid)
+        except ValueError:
+            continue
+        raise AssertionError('incomplete or unverified ROSv2 caller advertised as complete')
     for old,new in [(' segments=0',' segments=1'),(' args= ',' args=32:10 '),
                     (' result=2 ',' result=4294967296 '),(' returned=1',' returned=0'),
                     (' module=0',' module=22'),(' timed=0', ' timed=1')]:

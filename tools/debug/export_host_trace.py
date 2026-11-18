@@ -209,7 +209,7 @@ def save_host_trace(request, checkpoint, path, family="all", *, filters=None, if
                     "coverage": "Retained observations only, from explicitly enabled recording intervals.",
                     "wasip1": "Before/after snapshots, not proof of kernel consumption under shared-memory races.",
                     "ros": "Copied Host transfers, not proof of remote delivery; inspect the result.",
-                    "rosv2": "Completed registered operation and raw u32 result. No caller, arguments, payload or duration is recorded. rosv2-dropped counts lost records cumulatively.",
+                    "rosv2": "Completed registered operation and raw u32 result. When generation is nonzero, moduleName contains the complete verified caller label (1 to 255 bytes). Zero generation and an empty label indicate unavailable identity. Arguments, payloads and durations are omitted. rosv2-dropped counts cumulative losses.",
                     "integers": "64-bit quantities and ABI values are decimal strings to avoid JSON reader rounding.",
                     "bytes": "Concatenate chunks in offset order. Hex is lossless; utf8IfValid is per chunk.",
                     "timing": "durationNs is monotonic elapsed time, not a wall-clock timestamp.",
