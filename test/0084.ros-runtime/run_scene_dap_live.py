@@ -102,15 +102,28 @@ def main():
                     assert [r['result'] for r in calls['calls']]==['13','0','0','0']
                     assert all(r['namespace']=='uwvm_ros_v2' and r['family']=='rosv2'
                                and r['args']==[] and r['segments']=='0' for r in calls['calls'])
+                    assert all(r['moduleName']['utf8IfValid']=='main' and int(r['generation'])>0 for r in calls['calls'])
+                    selected={'family':'rosv2','module':'main','function':'capability.open',
+                              'namespace':'uwvm_ros_v2','result':'13','ifStop':calls['stopId']}
+                    rejected=client.request('uwvm/hostTrace',selected)['body']
+                    assert rejected['calls']==calls['calls'][:1]
+                    assert client.request('uwvm/hostTrace',{**selected,'module':'other'})['body']['calls']==[]
+                    assert client.request('uwvm/hostTrace',{**selected,'after':rejected['next']})['body']['calls']==[]
+                    assert 'body' not in client.request('uwvm/hostTrace',{**selected,'alias':'signal'},success=False)
+                    filtered_archive=folder/'denied-calls.json'
+                    client.request('uwvm/exportHostTrace',{**selected,'path':str(filtered_archive)})
+                    binding=json.loads(filtered_archive.read_text())
+                    assert binding['summary']['calls']=='1' and binding['calls'][0]['resultUnsigned']=='13'
                     archive=folder/'scene-calls.json'
                     client.request('uwvm/exportHostTrace',{'family':'rosv2','path':str(archive)})
                     exported=json.loads(archive.read_text())
                     assert exported['summary']['calls']=='4' and exported['summary']['payloadBytes']=='0'
-                    record.update(authority=authority,resources=resources,host_completions=calls)
+                    record.update(authority=authority,resources=resources,host_completions=calls,denied_completions=rejected)
                     thread=re.search(rb'thread ([0-9]+)',stopped);assert thread
                     client.evaluate('step wasm '+thread[1].decode())
                     stale=client.request('uwvm/sceneState',{'ifStop':resources['stopId']},success=False)
                     assert 'body' not in stale;record['stale']=stale
+                    assert 'body' not in client.request('uwvm/hostTrace',selected,success=False)
                 else:
                     denied=client.request('continue',{},success=False)
                     assert 'body' not in denied;record['execution_refusal']=denied

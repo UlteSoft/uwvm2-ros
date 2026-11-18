@@ -12,7 +12,7 @@ const editorStyle = require("./editor_style");
 function createController(vscode, context, sessions) {
   const panels = new Map();
   const history = require("./navigation_history").get(sessions);
-  const coordinates = m => ({selector: {...m.selector}, columns: m.columns, showTags: m.showTags, module: m.module, backend: m.backend, wasiGroup: m.wasiGroup, rosGroup: m.rosGroup, sceneGroup: m.sceneGroup, threadGroup: m.threadGroup, policyScope: m.policyScope, policyTarget: m.policyTarget, policyAlias: m.policyAlias, page: m.page, policyPage: m.policyPage, groupHistory: [...m.groupHistory||[]], policyHistory: [...m.policyHistory||[]]});
+  const coordinates = m => ({selector: {...m.selector}, columns: m.columns, showTags: m.showTags, module: m.module, backend: m.backend, wasiGroup: m.wasiGroup, rosGroup: m.rosGroup, sceneGroup: m.sceneGroup, sceneTraceFilters: {...m.sceneTraceFilters}, threadGroup: m.threadGroup, policyScope: m.policyScope, policyTarget: m.policyTarget, policyAlias: m.policyAlias, page: m.page, policyPage: m.policyPage, groupHistory: [...m.groupHistory||[]], policyHistory: [...m.policyHistory||[]]});
   let nextPanelId = 0;
   const stopStates = new Map();
   const mutationViews = new Map();
@@ -398,7 +398,7 @@ function createController(vscode, context, sessions) {
           selection: model.threadGroup, start: model.page, count: 8, ifStop: stop})};
       } else if (model.kind === "scene") {
         const journal = model.sceneGroup === "journal";
-        data = {internal: journal ? await session.customRequest("uwvm/hostTrace", {family: "rosv2", after: String(model.page), count: 8}) :
+        data = {internal: journal ? await session.customRequest("uwvm/hostTrace", {family: "rosv2", ...model.sceneTraceFilters, ifStop: stop, after: String(model.page), count: 8}) :
           await session.customRequest("uwvm/sceneState", {
           selection: model.sceneGroup, start: model.page, count: 8, ifStop: stop})};
         if (data.internal.stopId !== stop || (!journal && data.internal.available !== true))
@@ -798,7 +798,8 @@ function createController(vscode, context, sessions) {
           if (typeof target !== "string" || !target.startsWith("/") || /[\x00-\x1f]/.test(target))
             throw new Error("Enter an absolute new JSON file path on the VM host.");
           model.exportPath = target;
-          model.exportResult = await session.customRequest("uwvm/exportHostTrace", {family, path: target});
+          model.exportResult = await session.customRequest("uwvm/exportHostTrace", family === "rosv2" ?
+            {family, path: target, ...model.sceneTraceFilters, ifStop: expected} : {family, path: target});
           current(model, session, epoch); render(model); return;
         }
         if (model.permission !== "full") throw new Error("Changing recording requires full debugger permission.");
@@ -814,6 +815,19 @@ function createController(vscode, context, sessions) {
       }
       if (value.action === "thread-group" && model.kind === "wasithread" && ["policy", "members"].includes(value.group)) {
         model.threadGroup = value.group; model.page = 0; model.groupHistory = []; await refresh(model); return;
+      }
+      if (value.action === "scene-trace-filter" && model.kind === "scene" && model.sceneGroup === "journal") {
+        const filters = {};
+        for (const [key, text] of Object.entries(value.fields || {})) {
+          if (!["function", "namespace", "module", "result"].includes(key) || typeof text !== "string")
+            throw new Error("Unknown ROSv2 completion selector.");
+          if (!text) continue;
+          if (key === "result" ? !/^(0|[1-9][0-9]{0,9})$/.test(text) || Number(text) > 4294967295 : !/^[A-Za-z0-9_.-]{1,255}$/.test(text))
+            throw new Error("Invalid exact ROSv2 completion selector.");
+          filters[key] = text;
+        }
+        model.sceneTraceFilters = filters; model.page = 0; model.groupHistory = [];
+        model.exportResult = undefined; await refresh(model); return;
       }
       if (value.action === "scene-group" && model.kind === "scene" && Object.hasOwn(modelAPI.SCENE_GROUPS, value.group)) {
         model.sceneGroup = value.group; model.page = 0; model.groupHistory = []; await refresh(model); return;

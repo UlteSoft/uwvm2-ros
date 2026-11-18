@@ -35,4 +35,19 @@ int main()
     observe();
     assert(journal::records.size()==1 && journal::records.front()->id==journal::scene_record_limit+1);
     assert(journal::scene_dropped.load()==2);
+    journal::clear();
+    journal::observe_scene_result("uwvm_ros_v2","capability.open",13,"main",UINT64_MAX);
+    journal::observe_scene_result("uwvm_ros_v2","capability.open",0,"other",5);
+    journal::observe_scene_result("uwvm_ros_v2","abi",2,"",9);
+    assert(journal::records.back()->generation==0);
+    assert(trace::parse("trace host read family=rosv2 module=main function=capability.open namespace=uwvm_ros_v2 result=13 count=1",request));
+    auto page=trace::apply(request);
+    assert(page.find("module-name=\"main\"")!=page.npos && page.find("result=13 ")!=page.npos &&
+           page.find("generation=18446744073709551615")!=page.npos && page.find("more=0")!=page.npos);
+    assert(trace::parse("trace host read family=rosv2 result=0 module=main",request));
+    assert(trace::apply(request).find("host-call id=")==page.npos);
+    for(std::string_view text:{"trace host read family=ros1 result=1","trace host read family=rosv2 result=4294967296",
+                              "trace host on family=rosv2 function=abi","trace host read family=rosv2 module=bad/",
+                              "trace host read family=rosv2 function=abi function=abi","trace host read family=rosv2 alias=signal"})
+    {assert(!trace::parse({text.data(),text.size()},request));}
 }

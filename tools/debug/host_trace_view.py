@@ -1,6 +1,6 @@
 """Paged IDE views of retained observations; no collection or resource grants."""
 import re
-from export_host_trace import FAMILIES, U64, packet, fields, number, quoted, encoded, call_row, readable
+from export_host_trace import FAMILIES, SCENE_FILTERS, U64, checked_stop, scene_filters, validate_selection, packet, fields, number, quoted, encoded, call_row, readable
 
 
 def argument(value, default=None):
@@ -14,11 +14,13 @@ def argument(value, default=None):
 
 
 def query(request, checkpoint, arguments, *, byte_page=False):
-    allowed = {"call", "segment", "offset", "count"} if byte_page else {"family", "after", "count"}
+    allowed = {"call", "segment", "offset", "count"} if byte_page else ({"family", "after", "count", "ifStop"} | SCENE_FILTERS)
     if not isinstance(arguments, dict) or arguments.keys() - allowed:
         raise ValueError("unknown host observation query field")
     identity = checkpoint()
     stop = identity[-1]
+    if "ifStop" in arguments:
+        checked_stop(arguments["ifStop"], stop)
     if byte_page:
         call = argument(arguments.get("call"))
         segment = argument(arguments.get("segment"), 0)
@@ -33,7 +35,9 @@ def query(request, checkpoint, arguments, *, byte_page=False):
         count = argument(arguments.get("count"), 8)
         if family not in ("all", *FAMILIES.values()) or not 1 <= count <= 8:
             raise ValueError("host call page requires a family and count 1..8")
-        command = f"trace host read family={family} after={after} count={count}"
+        selected = scene_filters(family, {key: value for key, value in arguments.items() if key in SCENE_FILTERS})
+        suffix = "".join(f" {k}={v}" for k, v in selected.items())
+        command = f"trace host read family={family}{suffix} after={after} count={count}"
     journal, rows = packet(request(command + f" if-stop={stop}"))
     result = {"stopId": str(stop), "journal": {k: str(v) for k, v in journal.items()}}
     if byte_page:
@@ -68,6 +72,7 @@ def query(request, checkpoint, arguments, *, byte_page=False):
             if (not max(previous, journal["cleared-through"]) < row["id"] <= journal["newest"] or
                     family != "all" and FAMILIES[row["family"]] != family):
                 raise ValueError("host call order/family differs from request")
+            validate_selection(row, selected)
             previous = row["id"]
             public = {k: str(v) if type(v) is int else v for k, v in row.items()
                       if k not in ("namespace", "function", "module-name", "family")}

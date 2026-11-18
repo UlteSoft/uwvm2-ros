@@ -656,6 +656,8 @@
     if (family === "rosv2") return grid([
       {title: "#", width: "48px", cls: "num", render: row => row.id},
       {title: "Import module", cls: "wrap", render: row => row.namespace},
+      {title: "Caller", cls: "wrap", render: row => row.generation === "0" ? "Unavailable" : row.moduleName.utf8IfValid ?? row.moduleName.hex},
+      {title: "Generation", cls: "num", render: row => row.generation === "0" ? "—" : row.generation},
       {title: "Function", cls: "wrap", render: row => row.function},
       {title: "Raw result", cls: "num", render: row => row.result}
     ], shown, {key: row => "call:" + row.id});
@@ -842,6 +844,12 @@
     const nav = h("nav.nav", {"aria-label": "u2rosv2 robot scene sections"},
       Object.entries(scene.groups).map(([key, label]) => navItem(key, label, key === "authority" ? "key" : "database", "scene-group", scene.active)));
     const content = blocked() || (scene.unavailable ? emptyState("shield", "u2rosv2 is not built", scene.unavailable) : scene.active === "journal" && page ? [
+      h("form.toolrow", {on: {submit: event => {
+        event.preventDefault();
+        post({action: "scene-trace-filter", fields: Object.fromEntries(new FormData(event.target))});
+      }}}, ...[["module", "Caller"], ["function", "Function"], ["namespace", "Import module"], ["result", "Raw result"]].map(([name, label]) =>
+        h("label.field", label, h("input", {name, value: scene.filters[name] || "", size: 12}))),
+        h("button", {type: "submit"}, "Apply filters")),
       recordingBar(page, "rosv2"), h("div.toolrow", "Dropped ROSv2 completions: " + (page.journal?.["rosv2-dropped"] ?? "unavailable")),
       h("div.pane", callsTable(page, "rosv2")), pager(page, "group-previous", "group-next"),
       exportBar(scene.exportPath, scene.exportResult)] : [
