@@ -28,3 +28,8 @@ package. For an rclcpp exchange, `--cyclone-prefix` may point at a separate
 installation for the additional C compile. The echo process resolves its DDS
 library from `--peer-ros-prefix`. A direct Cyclone C run may use
 `--cyclone-system-libs` for its system runtime libraries.
+
+Dashing and Eloquent link against their installed rclcpp dependencies. The
+fixture includes statistics and tracing libraries when the release supplies
+them. Endpoint home and ROS log paths live under the run's output directory.
+This also contains the default logfile created by Eloquent's spdlog backend.
