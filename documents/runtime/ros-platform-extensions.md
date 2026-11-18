@@ -267,5 +267,8 @@ The following profiles use original files from the [MuJoCo Menagerie repository]
 | `ufactory_lite6` | `joint1` | [ufactory-lite6.json](../../test/0084.ros-runtime/mujoco_profiles/ufactory-lite6.json) |
 | `pal_tiago` | `arm_1_joint` | [pal-tiago.json](../../test/0084.ros-runtime/mujoco_profiles/pal-tiago.json) |
 | `booster_t1` | `AAHead_yaw` | [booster-t1.json](../../test/0084.ros-runtime/mujoco_profiles/booster-t1.json) |
+| `fanuc_crx5ia` | `J1` | [fanuc-crx5ia.json](../../test/0084.ros-runtime/mujoco_profiles/fanuc-crx5ia.json) |
+| `franka_emika_panda` | `joint1` | [franka-emika-panda.json](../../test/0084.ros-runtime/mujoco_profiles/franka-emika-panda.json) |
+| `universal_robots_ur5e` | `shoulder_pan_joint` | [universal-robots-ur5e.json](../../test/0084.ros-runtime/mujoco_profiles/universal-robots-ur5e.json) |
 
 A separate Unitree Go2 run compiled C, C++, Fortran and Lua controllers using their public SDK installations. Each controller passed the six wasm32 cases at memory index zero with the two engines, including rejection of an out-of-range command and loss of the receiver. These results exercise the simulated joint and the common external driver interface. Vendor controller firmware and physical stopping behavior have independent acceptance tests.
