@@ -909,7 +909,7 @@ namespace uwvm2::imported::ros::scene
         error module_call_plan(std::string_view name,module_exchange::plan value)
         {
             std::lock_guard lock{mutex};auto found=environments.find(name);
-            if(frozen||retired||found==environments.end()||!module_exchange::valid(value))return error::invalid;
+            if(frozen||retired||found==environments.end()||value.capture_stages||!value.capture_environment.empty()||!module_exchange::valid(value))return error::invalid;
             auto key=value.route;bool clear=value.clear_after_copy;
             if(!found->second.module_call_plans.emplace(std::move(key),std::move(value)).second)return error::conflict;
             auto& entry=found->second;
@@ -937,6 +937,23 @@ namespace uwvm2::imported::ros::scene
             for(auto const& [key,value]:found->second.module_call_plans)
             { (void)key;if(value.clear_after_copy!=clear_after_copy){selected=environment::input_policy::mixed;break;} }
             found->second.module_inputs=selected;return error::success;
+        }
+        /** @brief Opt in to one committed payload stage on an existing exact route.
+         * @details Configure the private journal first. The selector is frozen
+         * with deployment and supplies no messaging or query permissions.
+         */
+        error module_call_buffer_capture(std::string_view name,std::string_view route,module_buffer_audit::stage stage)
+        {
+            std::lock_guard lock{mutex};
+            auto env=environments.find(name);
+            if(frozen || retired || !module_buffer_audit::output.enabled() || env==environments.end() ||
+                static_cast<unsigned>(stage)<1 || static_cast<unsigned>(stage)>4)return error::invalid;
+            auto found=env->second.module_call_plans.find(route);
+            if(found==env->second.module_call_plans.end())return error::invalid;
+            auto& plan=found->second;auto mask=module_buffer_audit::bit(stage);
+            if(plan.capture_stages & mask)return error::conflict;
+            plan.capture_environment.assign(name.begin(),name.end());plan.capture_stages|=mask;
+            return error::success;
         }
         /** @brief Register a source-authored child in one existing ROSv2 environment.
          * @details Trusted initialization only: there is deliberately no CLI or

@@ -22,6 +22,7 @@
 #ifndef UWVM_SCENE_MODULE_EXCHANGE_MACROS_ONLY
 #include "authority.h"
 #include "erased_buffer.h"
+#include "module_buffer_audit.h"
 #include "wire.h"
 #include <uwvm2/utils/container/unique.h>
 #include <cstring>
@@ -67,10 +68,23 @@ namespace uwvm2::imported::ros::scene::module_exchange
          * and broker-storage erasure, quarantine and authority are unaffected.
          */
         bool clear_after_copy{true};
+        // Host deployment subscription only. An empty mask takes the ordinary
+        // path without touching the process-wide diagnostic writer.
+        std::uint8_t capture_stages{};
+        ::uwvm2::utils::container::std_string capture_environment{};
     };
+    /** @brief Dispatch only the successfully committed extent of an operator-selected stage. */
+    inline void capture_committed(plan const& p,module_buffer_audit::stage stage,caller who,
+                                  std::span<std::uint8_t const> body) noexcept
+    {
+        if(p.capture_stages & module_buffer_audit::bit(stage))
+            module_buffer_audit::output.capture(p.capture_environment,p.route,stage,who.generation,body);
+    }
     inline bool valid(plan const& value)noexcept
     {
-        return identifier(value.route)&&identifier(value.client)&&identifier(value.server)&&value.client!=value.server&&
+        return ((value.capture_stages==0 && value.capture_environment.empty()) ||
+                (value.capture_stages && value.capture_stages<=15 && identifier(value.capture_environment))) &&
+            identifier(value.route)&&identifier(value.client)&&identifier(value.server)&&value.client!=value.server&&
             identifier(value.semantic)&&identifier(value.request_schema)&&identifier(value.response_schema)&&
             value.request_bytes<=maximum_bytes&&value.response_bytes<=maximum_bytes&&value.slots&&value.slots<=maximum_slots&&
             value.deadline_ns&&value.deadline_ns<=static_cast<std::uint64_t>(INT64_MAX);
@@ -244,7 +258,9 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 if(!input.empty())std::memcpy(selected->request.writable().data(),input.data(),input.size());
                 selected->request_size=input.size();selected->token=id;selected->client=who;selected->server=route.server;selected->deadline=deadline;
                 selected->state=phase::queued;
-                if(!deliver(id,{})){selected->erase();return error::invalid;}return error::success;
+                if(!deliver(id,{})){selected->erase();return error::invalid;}
+                capture_committed(plan,module_buffer_audit::stage::submit,who,selected->request.view().first(input.size()));
+                return error::success;
             }
             if(action==operation::take)
             {
@@ -256,6 +272,7 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 selected->request_region=delivery;
                 if(!deliver(selected->token,selected->request.view().first(static_cast<std::size_t>(selected->request_size))))
                 {if(!selected->request_region.clear()){selected->state=phase::quarantined;return error::io;}return error::invalid;}
+                capture_committed(plan,module_buffer_audit::stage::take,who,selected->request.view().first(static_cast<std::size_t>(selected->request_size)));
                 selected->request.erase();selected->request_size=0;selected->server=who;selected->state=phase::received;return error::success;
             }
             for(auto& item:route.slots)if(item->token==token&&token){selected=item.get();break;}
@@ -279,7 +296,9 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 selected->state=phase::responded;
                 // A lost receipt retains the response. Replaying a response is
                 // refused; the client can still consume the committed result.
-                return deliver(token,{})?error::success:error::invalid;
+                if(!deliver(token,{}))return error::invalid;
+                capture_committed(plan,module_buffer_audit::stage::respond,who,selected->response.view().first(input.size()));
+                return error::success;
             }
             if(action==operation::result)
             {
@@ -290,6 +309,7 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 selected->response_region=delivery;
                 if(!deliver(token,selected->response.view().first(static_cast<std::size_t>(selected->response_size))))
                 {if(!selected->response_region.clear()){selected->state=phase::quarantined;return error::io;}return error::invalid;}
+                capture_committed(plan,module_buffer_audit::stage::result,who,selected->response.view().first(static_cast<std::size_t>(selected->response_size)));
                 selected->response.erase();selected->response_size=0;selected->state=phase::delivered;return error::success;
             }
             if(action==operation::acknowledge)
