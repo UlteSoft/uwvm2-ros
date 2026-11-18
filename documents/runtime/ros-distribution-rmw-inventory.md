@@ -209,6 +209,23 @@ XRCE session failed to open. The two wire legs were private plaintext UDPv4.
 The test binds the Agent, client and mapped Jazzy middleware libraries to this
 observation. [Reproduction and inputs](../../test/0084.ros-runtime/micro_xrce_dds/README.md)
 
+### GurumDDS and RTI Connext
+
+The Humble x86-64 echo process mapped the original GurumDDS 3.0.3 library and
+the ROS 3.4.2 GurumDDS RMW plugin. Their executable mappings matched the ELF
+files extracted from the recorded Debian packages. During startup the vendor
+library reported a missing `gurumdds-x86_64-linux` license feature and exited
+with status 255. The Jazzy requester received no reply. Repeating the same
+Int32 exchange with Humble Fast DDS returned the expected value. Humble
+printed `sequence size exceeds remaining buffer` diagnostics during that run.
+
+For RTI Connext, the Dashing and Eloquent ROS type-support libraries reference
+`libnddscore.so`, `libnddsc.so` and `libnddscpp.so`. The test host could
+not load those libraries. Native topic exchange and DDS Security remain
+unverified for both vendors. To reproduce the topic test, use a locally
+enabled vendor runtime and its matching ROS plugin.
+[Native RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md)
+
 ### Dust DDS
 
 In an x86-64 QEMU guest with one isolated Ethernet port, both the original Rust Dust DDS 0.16.0 pair and the Jazzy Fast DDS pair returned the incremented Int32 sample. With one of each vendor, both client directions discovered the other participant but matched zero application endpoints. The upstream Rust crate and Python wheel have independent controls. The [Dust DDS fixture](../../test/0084.ros-runtime/dds_interop/dust/README.md) identifies the build, network and wire type used.
