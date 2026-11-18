@@ -30,7 +30,7 @@ local stop = "18446744073709551615"
 local mode, used = "normal", {}
 function session:request(command, args, reply)
   assert(command == "uwvm/sceneState" and args.count == 8)
-  assert(args.selection == "authority" or args.selection == "resources" or args.selection == "audit")
+  assert(args.selection == "authority" or args.selection == "resources" or args.selection == "audit" or args.selection == "policy")
   used[#used+1] = vim.deepcopy(args)
   if mode == "denied" then reply({message = "Permission denied"}); return end
   local rows, total = {}, args.selection == "resources" and 9 or 1
@@ -49,7 +49,7 @@ end
 local function shown()
   return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
 end
-for _, name in ipairs({"authority", "resources", "audit"}) do
+for _, name in ipairs({"authority", "resources", "policy", "audit"}) do
   vim.cmd("UwvmScene " .. name)
   assert(vim.wait(1000, function() return vim.api.nvim_buf_get_name(0):find("/scene-" .. name, 1, true) end))
   assert(not vim.bo.modifiable and shown():find(stop, 1, true))

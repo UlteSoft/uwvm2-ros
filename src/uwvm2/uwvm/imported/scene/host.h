@@ -1427,6 +1427,35 @@ namespace uwvm2::uwvm::imported::scene
 #undef UWVM_EVENT_FUNCTION
             wrapper::native<&abi,wrapper::abi_name>,wrapper::native<&open,wrapper::open_name>,wrapper::native<&close,wrapper::close_name>>;
     };
+    /** @brief Check every policy catalogue entry against the actual linked wrapper tuple.
+     * @details Each ASCII operation must appear exactly once. Changes to either the
+     * host module or its configurable policy fail at compile time if the names drift.
+     */
+    template<typename... Functions>
+    consteval bool matches_policy_catalog(::uwvm2::utils::container::tuple<Functions...>*)
+    {
+        auto const& names=model::callable_names;
+        if(sizeof...(Functions)!=names.size())return false;
+        std::array<bool,sizeof...(Functions)> seen{};
+        auto take=[&](auto const& name)
+        {
+            std::array<char,64> ascii{};
+            if(name.empty()||name.size()>ascii.size())return false;
+            for(std::size_t i{};i<name.size();++i)
+            {
+                if(name[i]>127)return false;
+                ascii[i]=static_cast<char>(name[i]);
+            }
+            std::string_view key{ascii.data(),name.size()};
+            auto it=std::lower_bound(names.begin(),names.end(),key);
+            if(it==names.end()||*it!=key)return false;
+            auto i=static_cast<std::size_t>(it-names.begin());
+            if(seen[i])return false;
+            seen[i]=true;return true;
+        };
+        return (take(Functions::function_name)&&...);
+    }
+    static_assert(matches_policy_catalog(static_cast<local_imported_module_t::local_function_tuple*>(nullptr)));
     inline constexpr local_imported_module_t local_imported_module{};
     extern "C++"
     {

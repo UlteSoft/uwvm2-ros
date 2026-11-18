@@ -515,3 +515,28 @@ count. Reading the counters never drains a queue, replenishes a budget, reads
 a body or writes another audit record. These counters describe the operator's
 call-result journal. The debugger's independently enabled call trace has its
 own drop count.
+
+## Effective interface policy
+
+Use `info scene policy environment=robot operation=permission.report` to find
+the exact registered operation in a configured environment. Omit `operation`
+to enumerate the environment's imports in name order. Use `first` and
+`count` to page through the list, and pass the same `if-stop` on subsequent
+pages. In DAP, send `uwvm/sceneState` with `selection: "policy"`, optional
+`environment` and `operation`, and the existing `start`, `count` and
+`ifStop` fields. The page holds up to eight rows. Scope a large deployment
+to an individual environment when the bounded scan limit is reached.
+
+Each row shows `configured` (hidden, deny, allow, or unset), `effective`
+(hidden, deny, or allow), and `origin`. An explicit decision takes
+precedence. In an environment without that rule, `permission.report`
+has self-default allow, and ordinary interfaces have default hidden.
+A retired deployment overrides the effective decision to hidden while
+preserving the configured value. These decisions apply to bound modules.
+An unbound module has no parent scene authority. Permission-report scope,
+resource grants, revocation and call-specific constraints can narrow what
+an exposed import can actually do. The Authority and Resources pages display
+their own state independently. Reading policy leaves all three unchanged.
+
+Select **Import policy** in the VS Code Robot scene window, **policy** in the
+JetBrains ROSv2 scene tab, or run `:UwvmScene policy` in Neovim.

@@ -25,7 +25,7 @@ extern "C++" {
 namespace uwvm2::imported::ros::scene::debug
 {
     inline constexpr std::size_t maximum_rows=8,maximum_scan=4096;
-    enum class selection : std::uint8_t { authority, resources, audit };
+    enum class selection : std::uint8_t { authority, resources, audit, policy };
     enum class status : std::uint8_t { ok,invalid_request,not_selected,busy,forbidden,requires_cooperative_stop,stale_stop,resource_limit };
     enum class row_kind : std::uint8_t { grant,resource };
     /** @brief Fixed-capacity copied label with explicit truncation metadata. */
@@ -44,6 +44,7 @@ namespace uwvm2::imported::ros::scene::debug
     {
         selection selected{selection::authority};std::uint64_t first{},count{maximum_rows},stop{};
         text<255> environment,alias;
+        text<64> operation;
     };
     /** @brief One detached grant or runtime resource record.
      * @details IDs are diagnostic identities, not delegated capabilities.
@@ -319,11 +320,31 @@ namespace uwvm2::imported::ros::scene::debug
         return value.retained_receipts==1&&!value.reserved_bytes&&
             ((state=="none"&&!value.id&&!value.accepted_bytes)||((state=="aborted"||state=="removed")&&value.id));
     }
+    /** @brief Detached import rule. All descriptors below are static closed literals.
+     * Effective exposure applies to environment members and confers no resource grant.
+     */
+    struct policy_row
+    {
+        text<255> environment;
+        text<64> operation;
+        std::string_view configured{},effective{},origin{};
+    };
+    inline bool valid(policy_row const& value) noexcept
+    {
+        auto mode=[](std::string_view v){return v=="hidden"||v=="allow"||v=="deny";};
+        if(!value.environment.size||value.environment.truncated||!value.operation.size||value.operation.truncated||
+           (!mode(value.configured)&&value.configured!="unset")||!mode(value.effective))return false;
+        if(value.origin=="retired")return value.effective=="hidden";
+        if(value.configured!="unset")return value.origin=="explicit"&&value.effective==value.configured;
+        return value.operation.view()=="permission.report" ? value.origin=="self-default"&&value.effective=="allow" :
+                                                            value.origin=="default"&&value.effective=="hidden";
+    }
     /** @brief Bounded page; unavailable snapshots carry no partial rows. */
     struct view
     {
         status result{status::not_selected};selection selected{};
         call_audit::statistics audit{};
+        std::array<policy_row,maximum_rows> policy{};
         std::array<row,maximum_rows> rows{};std::size_t size{};
         std::uint64_t total{},next{};bool more{};
     };
@@ -331,7 +352,8 @@ namespace uwvm2::imported::ros::scene::debug
     inline bool valid(request const& value) noexcept
     {
         auto exact=[](auto const& label){return label.size<=label.bytes.size()&&!label.truncated;};
-        return value.selected<=selection::audit&&
+        return value.selected<=selection::policy&&exact(value.operation)&&
+            (value.selected==selection::policy?!value.alias.size:!value.operation.size)&&
             (value.selected!=selection::audit || (!value.environment.size && !value.alias.size))&&value.count&&value.count<=maximum_rows&&
             value.first<=maximum_scan&&exact(value.environment)&&exact(value.alias);
     }

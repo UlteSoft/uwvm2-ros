@@ -30,7 +30,7 @@ public final class UwvmScenePanelTest {
         var panel = new UwvmScenePanel[1];
         SwingUtilities.invokeAndWait(() -> panel[0] = new UwvmScenePanel(source));
         var view = panel[0];
-        for (String selected : new String[]{"authority", "resources", "audit"}) {
+        for (String selected : new String[]{"authority", "resources", "policy", "audit"}) {
             SwingUtilities.invokeAndWait(() -> {
                 view.selection.setSelectedItem(selected);
                 view.read.doClick();

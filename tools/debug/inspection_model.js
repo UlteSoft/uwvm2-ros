@@ -14,7 +14,7 @@ const WASI_ICONS = {args: "list-flat", env: "symbol-field", fds: "files", preope
 const ROS_GROUPS = {capabilities: "Capabilities", sessions: "Sessions", queues: "Queues", services: "Services", actions: "Actions",
   parameters: "Parameters", tf: "Transforms", graph: "Graph", stats: "Interface statistics", calls: "Call statistics",
   trace: "Call metadata", journal: "Recorded calls"};
-const SCENE_GROUPS = {authority: "Authority", resources: "Resources", journal: "Recorded calls", audit: "Audit counters"};
+const SCENE_GROUPS = {authority: "Authority", resources: "Resources", policy: "Import policy", journal: "Recorded calls", audit: "Audit counters"};
 const ROS_POLICY = "policy";
 const COLUMN_WIDTHS = [1, 2, 4, 8, 16, 32, 64];
 
@@ -306,6 +306,8 @@ function view(model) {
         back: !!(model.groupHistory && model.groupHistory.length)} : undefined};
     base.footer.push({icon: "shield", text: "Read-only scene metadata"});
     base.footer.push({icon: "info", text: "Guest self reports are read-only after ROSv2 binding; other-module inspection and message routes require separate explicit authority"});
+    if (model.sceneGroup === "policy")
+      base.footer.push({icon: "lock", text: "Import exposure applies to environment members. Resource grants are listed separately under Authority."});
     if (data && Array.isArray(data.rows) && data.rows.some(row => row && row.type && row.type.text === "module.call"))
       base.footer.push({icon: "info", text: "Registered message counts only; occupied slots retain cleanup responsibility. Quarantine means erasure could not be confirmed. Viewing never reads payloads or expires a call"});
     if (data && Array.isArray(data.rows) && data.rows.some(row => row?.type?.text === "module.call" && row.clear_after_copy === false))

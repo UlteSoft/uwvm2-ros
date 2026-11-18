@@ -1,6 +1,6 @@
 /** @file
  * @brief Read-only console grammar for the independent robot scene namespace.
- * @details `info scene authority|resources` is metadata inspection only.
+ * @details `info scene authority|resources|audit|policy` is metadata inspection only.
  * Filters cannot be interpreted as provider commands. The controller binds
  * requests to a cooperative stop and checks the existing debugger permission.
  */
@@ -21,7 +21,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
     inline bool valid(request const& query) noexcept{return data::valid(query);}
     inline void read(request const& query,view& output) noexcept{data::snapshot(query,output);}
     inline ::std::string_view selection_text(selection value) noexcept
-    {return value==selection::authority?"authority":value==selection::resources?"resources":value==selection::audit?"audit":"invalid";}
+    {return value==selection::authority?"authority":value==selection::resources?"resources":value==selection::audit?"audit":value==selection::policy?"policy":"invalid";}
     inline ::std::string_view status_text(status value) noexcept
     {
         switch(value)
@@ -52,6 +52,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
         if(words[2]=="authority")query.selected=selection::authority;
         else if(words[2]=="resources")query.selected=selection::resources;
         else if(words[2]=="audit")query.selected=selection::audit;
+        else if(words[2]=="policy")query.selected=selection::policy;
         else return false;
         unsigned seen{};
         for(::std::size_t i=3;i<count;++i)
@@ -59,11 +60,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
             auto token=words[i];auto equal=token.find_character('=');
             if(equal==::fast_io::containers::npos||!equal||equal+1==token.size())return false;
             auto key=token.subview(0,equal),value=token.subview(equal+1);unsigned bit{};
-            if(key=="environment"||key=="alias")
+            if(key=="environment"||key=="alias"||key=="operation")
             {
-                bit=key=="environment"?1:2;auto& label=key=="environment"?query.environment:query.alias;
+                bit=key=="environment"?1:key=="alias"?2:32;
                 for(char c:value)if(!((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9')||c=='_'||c=='-'||c=='.'))return false;
-                label.assign({value.data(),value.size()});
+                if(key=="operation")query.operation.assign({value.data(),value.size()});
+                else (key=="environment"?query.environment:query.alias).assign({value.data(),value.size()});
             }
             else
             {
@@ -96,6 +98,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
     {
         ::fast_io::io::print(output,"scene scope=process-owned stop=",stop," selection=",selection_text(value.selected)," status=",status_text(value.result),"\n");
         if(value.result!=status::ok)return;
+        if(value.selected==selection::policy)
+        {
+            if(value.size>value.policy.size()){::fast_io::io::print(output,"invalid bounded snapshot\n");return;}
+            for(::std::size_t i{};i<value.size;++i)
+            {
+                auto const& row=value.policy[i];
+                if(!data::valid(row)){::fast_io::io::print(output,"invalid policy snapshot\n");return;}
+                ::fast_io::io::print(output,"policy environment=");quoted(output,row.environment);
+                ::fast_io::io::print(output," operation=");quoted(output,row.operation);
+                ::fast_io::io::print(output," configured=",row.configured," effective=",row.effective," origin=",row.origin,"\n");
+            }
+            ::fast_io::io::print(output,"page total=",value.total," next=",value.next," more=",value.more,"\n");
+            return;
+        }
         if(value.selected==selection::audit)
         {
             auto const& counters=value.audit;

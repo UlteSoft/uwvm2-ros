@@ -51,7 +51,7 @@ alone is not that evidence.
 
 Pause the selected UWVM session and open **UWVM Inspection → ROSv2 scene**.
 Select **authority** to inspect effective grants, **resources** for admitted
-resource metadata, or **audit** for the process-wide delivery counters. **Read
+resource metadata, **policy** for configured and effective import exposure, or **audit** for the process-wide delivery counters. **Read
 scene** opens the first eight rows. **Next page** retains the stop ID and the
 selected VM session. Changing the selector clears the displayed page. A denied
 or expired request clears the result and shows its diagnostic. The operation

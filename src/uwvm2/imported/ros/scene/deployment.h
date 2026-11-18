@@ -24,45 +24,58 @@
 #include "communication_deployment_provider.h"
 #include "communication_creation_control_contract.h"
 #include "parameter_deployment_configuration.h"
+#include <algorithm>
 #include <charconv>
 
 namespace uwvm2::imported::ros::scene
 {
-    inline bool callable(std::string_view name) noexcept
+    /** @brief Enumerate the same contract names admitted by scene interface configuration. */
+    template<typename Visitor> constexpr void visit_callable_names(Visitor visit)
     {
-        if(name=="abi"||name=="capability.open"||name=="capability.close"||name==permission_report::import_name)return true;
-        for(auto action:permission_report::module_operations)if(name==action)return true;
-        for(auto action:module_exchange::names)if(name==action)return true;
-        for(auto action:drivers::names)if(name==action)return true;
-        if(name=="module.permission.report"||name==permission_report::vm_import_name)return true;
-        for(auto const& entry:revocation_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:runtime_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:artifact_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:output_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:managed_lifecycle_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:buffer_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:model_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:transform_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:log_diagnostic_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:recording_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:sensor_contract::operations)if(entry.name==name)return true;
+        visit("abi");visit("capability.open");visit("capability.close");visit(permission_report::import_name);
+        for(auto action:permission_report::module_operations)visit(action);
+        for(auto action:module_exchange::names)visit(action);
+        for(auto action:drivers::names)visit(action);
+        visit("module.permission.report");visit(permission_report::vm_import_name);
+        for(auto const& entry:revocation_contract::operations)visit(entry.name);
+        for(auto const& entry:runtime_contract::operations)visit(entry.name);
+        for(auto const& entry:artifact_contract::operations)visit(entry.name);
+        for(auto const& entry:output_contract::operations)visit(entry.name);
+        for(auto const& entry:managed_lifecycle_contract::operations)visit(entry.name);
+        for(auto const& entry:buffer_contract::operations)visit(entry.name);
+        for(auto const& entry:model_contract::operations)visit(entry.name);
+        for(auto const& entry:transform_contract::operations)visit(entry.name);
+        for(auto const& entry:log_diagnostic_contract::operations)visit(entry.name);
+        for(auto const& entry:recording_contract::operations)visit(entry.name);
+        for(auto const& entry:sensor_contract::operations)visit(entry.name);
         for(auto const& entry:robot_contract::operations)
-            if(entry.id<=robot_contract::operation::control_stop&&entry.name==name)return true;
+            if(entry.id<=robot_contract::operation::control_stop)visit(entry.name);
         for(auto const& entry:robot_contract::operations)
-            if(entry.id>=robot_contract::operation::media_open&&entry.id<=robot_contract::operation::media_close&&entry.name==name)return true;
+            if(entry.id>=robot_contract::operation::media_open&&entry.id<=robot_contract::operation::media_close)visit(entry.name);
         for(auto const& entry:robot_contract::operations)
-            if(entry.id>=robot_contract::operation::bridge_create&&entry.id<=robot_contract::operation::bridge_describe&&entry.name==name)return true;
+            if(entry.id>=robot_contract::operation::bridge_create&&entry.id<=robot_contract::operation::bridge_describe)visit(entry.name);
         // Removed: VM-owned native component process lifecycle imports.
-        for(auto const& entry:proposal_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:communication_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:communication_receive_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:communication_creation_control_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:parameter_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:action_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:graph_contract::operations)if(entry.name==name)return true;
-        for(auto const& entry:event_contract::operations)if(entry.name==name)return true;
-        return false;
+        for(auto const& entry:proposal_contract::operations)visit(entry.name);
+        for(auto const& entry:communication_contract::operations)visit(entry.name);
+        for(auto const& entry:communication_receive_contract::operations)visit(entry.name);
+        for(auto const& entry:communication_creation_control_contract::operations)visit(entry.name);
+        for(auto const& entry:parameter_contract::operations)visit(entry.name);
+        for(auto const& entry:action_contract::operations)visit(entry.name);
+        for(auto const& entry:graph_contract::operations)visit(entry.name);
+        for(auto const& entry:event_contract::operations)visit(entry.name);
     }
+    inline constexpr auto callable_names=[]() constexpr
+    {
+        constexpr auto count=[]() constexpr {std::size_t n{};visit_callable_names([&](std::string_view){++n;});return n;}();
+        std::array<std::string_view,count> result{};std::size_t i{};
+        visit_callable_names([&](std::string_view name){result[i++]=name;});
+        std::sort(result.begin(),result.end());
+        return result;
+    }();
+    static_assert(std::adjacent_find(callable_names.begin(),callable_names.end())==callable_names.end());
+    static_assert(std::all_of(callable_names.begin(),callable_names.end(),[](auto name){return !name.empty()&&name.size()<=64;}));
+    inline bool callable(std::string_view name) noexcept
+    {return std::binary_search(callable_names.begin(),callable_names.end(),name);}
     inline std::optional<purpose> parse_purpose(std::string_view text) noexcept
     {
         for(std::size_t i{};i<purpose_names.size();++i)if(text==purpose_names[i])return static_cast<purpose>(i);
@@ -140,6 +153,16 @@ namespace uwvm2::imported::ros::scene
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,model_attachment::configuration,std::less<>> model_worker_plans;
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,artifacts::input_plan,std::less<>> input_plans;
     };
+    /** @brief Resolve import exposure for a member of this environment.
+     * @details A missing self permission-report rule is allowed. Other missing
+     * rules are hidden. This check never grants a resource or invokes a provider.
+     */
+    inline std::pair<exposure,bool> interface_exposure(environment const& entry,std::string_view action)
+    {
+        auto rule=entry.interfaces.find(action);
+        if(rule!=entry.interfaces.end())return {rule->second,true};
+        return {action==permission_report::import_name?exposure::allow:exposure::hidden,false};
+    }
     /** @brief Frozen scene deployment with explicit, nonoverlapping environments.
      * @details Creating an environment, binding a module, exposing a function
      * and granting its resource are separate steps. No configuration operation
@@ -1989,8 +2012,7 @@ namespace uwvm2::imported::ros::scene
         {
             std::lock_guard lock{mutex};if(retired)return exposure::hidden;
             auto owner=memberships.find(module);if(owner==memberships.end())return exposure::hidden;
-            auto const& entry=environments.at(owner->second);auto it=entry.interfaces.find(action);
-            return it==entry.interfaces.end()?(action==permission_report::import_name?exposure::allow:exposure::hidden):it->second;
+            return interface_exposure(environments.at(owner->second),action).first;
         }
         /** @brief Check only observation policy; never activate or enroll a caller.
          * @details Explicit membership is the ROSv2 parent boundary. Only this
@@ -2035,9 +2057,7 @@ namespace uwvm2::imported::ros::scene
             if(!query.function.empty())
             {
                 if(!callable(query.function))return error::unsupported;
-                auto it=entry.interfaces.find(query.function);
-                auto state=retired?exposure::hidden:it!=entry.interfaces.end()?it->second:
-                    query.function==permission_report::import_name?exposure::allow:exposure::hidden;
+                auto state=retired?exposure::hidden:interface_exposure(entry,query.function).first;
                 return output.add("interface",query.function,static_cast<unsigned>(state))&&output.finish(true,!retired)?error::success:error::too_large;
             }
             if(!output.add("self","module",0,module)||!output.add("self","permission-group",0,owner->second)||
@@ -2281,6 +2301,48 @@ namespace uwvm2::imported::ros::scene
             }
             std::unique_lock lock{mutex,std::try_to_lock};if(!lock.owns_lock()){fail(debug::status::busy);return;}
             std::size_t scanned{};
+            if(query.selected==debug::selection::policy)
+            {
+                if(query.operation.size&&!callable(query.operation.view())){fail(debug::status::invalid_request);return;}
+                auto collect=[&](auto const& environment_item)
+                {
+                    auto const& [name,entry]=environment_item;
+                    auto emit=[&](std::string_view action)
+                    {
+                        auto index=output.total++;
+                        if(index<query.first)return;
+                        if(output.size==query.count){output.more=true;return;}
+                        auto const [mode,configured]=interface_exposure(entry,action);
+                        auto label=[](exposure v){return v==exposure::allow?"allow":v==exposure::deny?"deny":"hidden";};
+                        auto& item=output.policy[output.size++];
+                        item.environment.assign(name);item.operation.assign(action);
+                        item.configured=configured?label(mode):"unset";
+                        item.effective=retired?"hidden":label(mode);
+                        item.origin=retired?"retired":configured?"explicit":action==permission_report::import_name?"self-default":"default";
+                        output.next=index+1;
+                    };
+                    if(query.operation.size)
+                    {
+                        if(++scanned>debug::maximum_scan)return false;
+                        emit(query.operation.view());
+                    }
+                    else
+                    {
+                        if(callable_names.size()>debug::maximum_scan-scanned)return false;
+                        scanned+=callable_names.size();
+                        for(auto action:callable_names)emit(action);
+                    }
+                    return true;
+                };
+                if(query.environment.size)
+                {
+                    auto found=environments.find(query.environment.view());
+                    if(found!=environments.end()&&!collect(*found)){fail(debug::status::resource_limit);return;}
+                }
+                else for(auto const& item:environments)
+                    if(!collect(item)){fail(debug::status::resource_limit);return;}
+                output.result=debug::status::ok;return;
+            }
             for(auto const& [name,entry]:environments)
             {
                 if(++scanned>debug::maximum_scan){fail(debug::status::resource_limit);return;}

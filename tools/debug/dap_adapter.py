@@ -226,7 +226,7 @@ def parse_wasithread_state(reply, options, stop_id):
             "start": str(first), "total": str(total), "next": str(end), "more": end < total, "sealed": sealed, "stopId": str(stop_id)}
 
 
-SCENE_SELECTIONS = ("authority", "resources", "audit")
+SCENE_SELECTIONS = ("authority", "resources", "audit", "policy")
 
 
 def scene_state_options(arguments):
@@ -235,13 +235,15 @@ def scene_state_options(arguments):
     The request conveys no capability or provider operation. Exact ASCII IDs
     cannot introduce console syntax; pagination and reply size are bounded.
     """
-    if type(arguments) is not dict or set(arguments) - {"selection", "environment", "alias", "start", "count", "ifStop"}:
+    if type(arguments) is not dict or set(arguments) - {"selection", "environment", "alias", "operation", "start", "count", "ifStop"}:
         raise ValueError("closed read-only scene query arguments required")
     selected = arguments.get("selection", "authority")
     if type(selected) is not str or selected not in SCENE_SELECTIONS:
         raise ValueError("unknown scene metadata selection")
     if selected == "audit" and ("environment" in arguments or "alias" in arguments):
         raise ValueError("process audit counters cannot be restricted to a scene label")
+    if selected == "policy" and "alias" in arguments or selected != "policy" and "operation" in arguments:
+        raise ValueError("operation filter requires scene policy, alias requires resource or authority")
     options = {"selection": selected, "start": arguments.get("start", 0), "count": arguments.get("count", 8)}
     for key, lower, upper in (("start", 0, 4096), ("count", 1, 8), ("ifStop", 1, (1 << 64)-1)):
         if key not in options and key not in arguments:
@@ -252,10 +254,10 @@ def scene_state_options(arguments):
         if type(value) is not int or not lower <= value <= upper:
             raise ValueError("bounded exact scene integer required: " + key)
         options[key] = value
-    for key in ("environment", "alias"):
+    for key in ("environment", "alias", "operation"):
         if key in arguments:
             value = arguments[key]
-            if type(value) is not str or re.fullmatch(r"[A-Za-z0-9_.-]{1,255}", value) is None:
+            if type(value) is not str or re.fullmatch(r"[A-Za-z0-9_.-]{1,255}", value) is None or key == "operation" and len(value) > 64:
                 raise ValueError("exact scene logical identifier required: " + key)
             options[key] = value
     return options
@@ -317,6 +319,37 @@ def parse_scene_state(reply, options, stop_id):
              "counters_saturated", "pending_page", "busy", "exit_observed", "platform_enabled", "clear_after_copy"}
     rows = []
     for line in lines[1:-1]:
+        if options["selection"] == "policy":
+            values = fields(line.removeprefix("policy ")) if line.startswith("policy ") else {}
+            if set(values) != {"environment", "operation", "configured", "effective", "origin"}:
+                raise ValueError("invalid scene policy row schema")
+            env, operation = quoted(values["environment"], 255), quoted(values["operation"], 64)
+            name = operation["text"]
+            mode, current, origin = values["configured"], values["effective"], values["origin"]
+            if env["truncated"] or operation["truncated"] or re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", name) is None:
+                raise ValueError("incomplete policy environment or operation")
+            modes = {"hidden", "deny", "allow"}
+            if mode not in modes | {"unset"} or current not in modes:
+                raise ValueError("invalid scene exposure")
+            if origin == "retired":
+                valid = current == "hidden"
+            elif mode != "unset":
+                valid = origin == "explicit" and mode == current
+            elif name == "permission.report":
+                valid = origin == "self-default" and current == "allow"
+            else:
+                valid = origin == "default" and current == "hidden"
+            if not valid or ("operation" in options and name != options["operation"]) or (
+                    "environment" in options and env["text"] != options["environment"]):
+                raise ValueError("policy row differs from effective rule or selector")
+            if rows:
+                previous = rows[-1]
+                previous_key = (base64.b64decode(previous["environment"]["bytesBase64"]), previous["operation"])
+                if previous_key >= (base64.b64decode(env["bytesBase64"]), name):
+                    raise ValueError("duplicate or unordered scene policy row")
+            rows.append({"kind": "policy", "environment": env, "operation": name,
+                         "configured": mode, "effective": current, "origin": origin})
+            continue
         if options["selection"] == "audit":
             if rows or not line.startswith("audit "):
                 raise ValueError("one closed process audit row required")
@@ -4999,7 +5032,7 @@ class Adapter:
             raise ValueError("scene metadata request asserts a retired stop")
         words = ["info", "scene", options["selection"], "first="+str(options["start"]),
                  "count="+str(options["count"]), "if-stop="+str(stop_id)]
-        for key in ("environment", "alias"):
+        for key in ("environment", "alias", "operation"):
             if key in options:
                 words.append(key+"="+options[key])
         command = " ".join(words)

@@ -68,6 +68,7 @@ def main():
                 assert 'body' not in reply
                 assert 'body' not in client.request('uwvm/sceneState',{'selection':'audit'},success=False)
                 record['refusal']=reply
+                assert 'body' not in client.request('uwvm/sceneState',{'selection':'policy'},success=False)
             else:
                 # A prepared entry has no identified Wasm participant yet;
                 # configuration metadata is not a live cooperative snapshot.
@@ -105,6 +106,19 @@ def main():
                     assert again==resources,'metadata inspection changed resources'
                     repeated=client.request('uwvm/sceneState',{'selection':'authority','environment':'robot','alias':'signal'})['body']
                     assert repeated==authority,'metadata inspection admitted calls or refreshed authority'
+                    def policy(operation):
+                        body=client.request('uwvm/sceneState',{'selection':'policy','environment':'robot',
+                            'operation':operation,'ifStop':resources['stopId']})['body']
+                        assert body['total']==1 and body['more'] is False and body['payloadsRead'] is False
+                        row,=body['rows']
+                        assert row['environment']['text']=='robot' and row['operation']==operation
+                        return row
+                    snapshots={op:policy(op) for op in ('guard.trigger','permission.report','vm.describe')}
+                    assert [(r['configured'],r['effective'],r['origin']) for r in snapshots.values()]==[
+                        ('allow','allow','explicit'),('unset','allow','self-default'),('unset','hidden','default')]
+                    assert 'body' not in client.request('uwvm/sceneState',{'selection':'policy','alias':'signal'},success=False)
+                    assert client.request('uwvm/sceneState',{'selection':'authority','environment':'robot','alias':'signal'})['body']==authority
+                    record['policy']=snapshots
                     calls=client.request('uwvm/hostTrace',{'family':'rosv2'})['body']
                     assert calls['stopId']==resources['stopId'] and calls['journal']['rosv2-dropped']=='0'
                     assert [r['function'] for r in calls['calls']]==['capability.open','capability.open','guard.create','guard.trigger']

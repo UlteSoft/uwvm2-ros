@@ -15,7 +15,7 @@ final class UwvmScenePanel extends JPanel {
     }
 
     private final Source source;
-    final JComboBox<String> selection = new JComboBox<>(new String[]{"authority", "resources", "audit"});
+    final JComboBox<String> selection = new JComboBox<>(new String[]{"authority", "resources", "policy", "audit"});
     final JButton read = new JButton("Read scene"), next = new JButton("Next page");
     final JTextArea snapshot = new JTextArea();
     final JLabel status = new JLabel();

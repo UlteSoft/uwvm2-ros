@@ -173,8 +173,8 @@ local function read_scene(selection, start, stop, callback)
 end
 
 function M.scene_state(selection, callback)
-  assert(selection == "authority" or selection == "resources" or selection == "audit",
-    "Select authority, resources or audit")
+  assert(selection == "authority" or selection == "resources" or selection == "audit" or selection == "policy",
+    "Select authority, resources, policy or audit")
   read_scene(selection, 0, nil, callback)
 end
 
