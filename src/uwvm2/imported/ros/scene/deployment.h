@@ -2252,6 +2252,15 @@ namespace uwvm2::imported::ros::scene
             output={};output.selected=query.selected;
             auto fail=[&](debug::status reason){output={};output.selected=query.selected;output.result=reason;};
             if(!debug::valid(query)){fail(debug::status::invalid_request);return;}
+            // The result journal has its own mutex and needs no environment lock.
+            if(query.selected==debug::selection::audit)
+            {
+                if(!result_audit.inspect(output.audit)){fail(debug::status::busy);return;}
+                output.result=debug::status::ok;
+                output.total=1;
+                if(!query.first){output.size=1;output.next=1;}
+                return;
+            }
             std::unique_lock lock{mutex,std::try_to_lock};if(!lock.owns_lock()){fail(debug::status::busy);return;}
             std::size_t scanned{};
             for(auto const& [name,entry]:environments)

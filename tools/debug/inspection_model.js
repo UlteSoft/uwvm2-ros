@@ -14,7 +14,7 @@ const WASI_ICONS = {args: "list-flat", env: "symbol-field", fds: "files", preope
 const ROS_GROUPS = {capabilities: "Capabilities", sessions: "Sessions", queues: "Queues", services: "Services", actions: "Actions",
   parameters: "Parameters", tf: "Transforms", graph: "Graph", stats: "Interface statistics", calls: "Call statistics",
   trace: "Call metadata", journal: "Recorded calls"};
-const SCENE_GROUPS = {authority: "Authority", resources: "Resources", journal: "Recorded calls"};
+const SCENE_GROUPS = {authority: "Authority", resources: "Resources", journal: "Recorded calls", audit: "Audit counters"};
 const ROS_POLICY = "policy";
 const COLUMN_WIDTHS = [1, 2, 4, 8, 16, 32, 64];
 

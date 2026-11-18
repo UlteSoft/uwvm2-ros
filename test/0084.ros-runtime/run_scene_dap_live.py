@@ -40,6 +40,8 @@ def main():
     wat=out/'scene.wat';wasm=out/'scene.wasm';wat.write_text(WAT)
     subprocess.run(['wat2wasm','--debug-names',str(wat),'-o',str(wasm)],check=True)
     flags=['--wasm-set-main-module-name','main','--ros-scene-create','robot','--ros-scene-bind','robot','main']
+    # Permit one metadata record and exercise end-of-stream losses at a real stop.
+    flags+=['--ros-scene-call-audit','global','*','all','1','8192','1000','1']
     for action in ['capability.open','guard.create','guard.trigger']:
         flags+=['--ros-scene-interface','robot',action,'allow']
     flags+=['--ros-scene-grant','robot','signal','guard','signal','local','guard.create,guard.trigger,resource.observe']
@@ -64,6 +66,7 @@ def main():
             if permission=='limited':
                 reply=client.request('uwvm/sceneState',{},success=False)
                 assert 'body' not in reply
+                assert 'body' not in client.request('uwvm/sceneState',{'selection':'audit'},success=False)
                 record['refusal']=reply
             else:
                 # A prepared entry has no identified Wasm participant yet;
@@ -87,6 +90,12 @@ def main():
                     stopped=client.evaluate('wait')
                     assert b'stopped: breakpoint' in stopped,stopped
                     client.evaluate('delete '+match[1].decode())
+                    totals=client.request('uwvm/sceneState',{'selection':'audit'})['body']
+                    row=totals['rows'][0]
+                    assert row['configured'] and row['admitted']=='1' and row['limited']=='3'
+                    assert row['busy']=='0' and row['clock_failed']=='0' and int(row['sink_failed'])<=1
+                    assert totals==client.request('uwvm/sceneState',{'selection':'audit','ifStop':totals['stopId']})['body']
+                    record['audit_counters']=totals
                     authority=client.request('uwvm/sceneState',{'selection':'authority','environment':'robot','alias':'signal'})['body']
                     resources=client.request('uwvm/sceneState',{'selection':'resources'})['body']
                     assert authority['rows'][0]['open_handles']=='1' and authority['rows'][0]['admissions']=='2'

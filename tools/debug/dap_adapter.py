@@ -226,7 +226,7 @@ def parse_wasithread_state(reply, options, stop_id):
             "start": str(first), "total": str(total), "next": str(end), "more": end < total, "sealed": sealed, "stopId": str(stop_id)}
 
 
-SCENE_SELECTIONS = ("authority", "resources")
+SCENE_SELECTIONS = ("authority", "resources", "audit")
 
 
 def scene_state_options(arguments):
@@ -240,6 +240,8 @@ def scene_state_options(arguments):
     selected = arguments.get("selection", "authority")
     if type(selected) is not str or selected not in SCENE_SELECTIONS:
         raise ValueError("unknown scene metadata selection")
+    if selected == "audit" and ("environment" in arguments or "alias" in arguments):
+        raise ValueError("process audit counters cannot be restricted to a scene label")
     options = {"selection": selected, "start": arguments.get("start", 0), "count": arguments.get("count", 8)}
     for key, lower, upper in (("start", 0, 4096), ("count", 1, 8), ("ifStop", 1, (1 << 64)-1)):
         if key not in options and key not in arguments:
@@ -315,6 +317,20 @@ def parse_scene_state(reply, options, stop_id):
              "counters_saturated", "pending_page", "busy", "exit_observed", "platform_enabled", "clear_after_copy"}
     rows = []
     for line in lines[1:-1]:
+        if options["selection"] == "audit":
+            if rows or not line.startswith("audit "):
+                raise ValueError("one closed process audit row required")
+            values = fields(line[6:])
+            counts = ("admitted", "limited", "busy", "clock_failed", "sink_failed")
+            if set(values) != {"configured", *counts}:
+                raise ValueError("invalid process audit counter schema")
+            row = {key: str(integer(values[key])) for key in counts}
+            row["configured"] = boolean(values["configured"])
+            if int(row["sink_failed"]) > int(row["admitted"]) or (
+                    not row["configured"] and any(row[key] != "0" for key in counts)):
+                raise ValueError("inconsistent process audit counters")
+            rows.append(row)
+            continue
         if not line.startswith("row ") or len(rows) >= options["count"]:
             raise ValueError("unexpected or excessive scene row")
         values = fields(line[4:])
@@ -534,6 +550,8 @@ def parse_scene_state(reply, options, stop_id):
     if set(page) != {"total", "next", "more"}:
         raise ValueError("invalid scene page schema")
     total, next_value, more = integer(page["total"], 4096), integer(page["next"], 4096), boolean(page["more"])
+    if options["selection"] == "audit" and total != 1:
+        raise ValueError("missing process audit summary")
     expected_count = min(options["count"], max(0, total-options["start"]))
     if len(rows) != expected_count or next_value != (options["start"]+len(rows) if rows else 0) or more != (options["start"]+len(rows) < total):
         raise ValueError("incomplete or inconsistent scene page")

@@ -62,6 +62,22 @@ def packet(rows=(), total=None, next_value=None, more=0, selection="authority"):
     return (f"scene scope=process-owned stop=11 selection={selection} status=available\n"+
             ''.join(row+'\n' for row in rows)+f"page total={len(rows) if total is None else total} next={len(rows) if next_value is None else next_value} more={more}\n")
 class SceneTests(unittest.TestCase):
+    def test_process_audit_tail_losses(self):
+        row = "audit configured=1 admitted=1 limited=18446744073709551615 busy=2 clock_failed=3 sink_failed=1"
+        summary = self.parse(packet([row], selection="audit"), selection="audit")
+        self.assertEqual(summary["rows"][0]["limited"], "18446744073709551615")
+        self.assertTrue(summary["rows"][0]["configured"])
+        self.assertFalse(summary["payloadsRead"] or summary["nativeOperationsIssued"])
+        self.assertEqual(self.parse(packet((), total=1, selection="audit"), selection="audit", start=1)["rows"], [])
+        for invalid in (row + " bytes=0", row.replace("sink_failed=1", "sink_failed=2"),
+                        row.replace("configured=1", "configured=0"), row.replace("busy=2", "busy=-1")):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                self.parse(packet([invalid], selection="audit"), selection="audit")
+        for options in ({"alias": "signal"}, {"environment": "robot"}):
+            with self.assertRaises(ValueError):
+                dap.scene_state_options({"selection": "audit", **options})
+        with self.assertRaises(ValueError):
+            self.parse(packet((), selection="audit"), selection="audit")
     def test_registered_message_counts_and_quarantine(self):
         row=(ROW.replace('kind=grant','kind=resource').replace('id=18446744073709551615','id=0')
              .replace('admissions=1','admissions=0').replace('type="record"','type="module.call"')

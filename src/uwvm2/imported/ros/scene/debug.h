@@ -8,6 +8,7 @@
  */
 #pragma once
 #include "component_fault.h"
+#include "call_audit_statistics.h"
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -24,7 +25,7 @@ extern "C++" {
 namespace uwvm2::imported::ros::scene::debug
 {
     inline constexpr std::size_t maximum_rows=8,maximum_scan=4096;
-    enum class selection : std::uint8_t { authority, resources };
+    enum class selection : std::uint8_t { authority, resources, audit };
     enum class status : std::uint8_t { ok,invalid_request,not_selected,busy,forbidden,requires_cooperative_stop,stale_stop,resource_limit };
     enum class row_kind : std::uint8_t { grant,resource };
     /** @brief Fixed-capacity copied label with explicit truncation metadata. */
@@ -322,6 +323,7 @@ namespace uwvm2::imported::ros::scene::debug
     struct view
     {
         status result{status::not_selected};selection selected{};
+        call_audit::statistics audit{};
         std::array<row,maximum_rows> rows{};std::size_t size{};
         std::uint64_t total{},next{};bool more{};
     };
@@ -329,7 +331,8 @@ namespace uwvm2::imported::ros::scene::debug
     inline bool valid(request const& value) noexcept
     {
         auto exact=[](auto const& label){return label.size<=label.bytes.size()&&!label.truncated;};
-        return value.selected<=selection::resources&&value.count&&value.count<=maximum_rows&&
+        return value.selected<=selection::audit&&
+            (value.selected!=selection::audit || (!value.environment.size && !value.alias.size))&&value.count&&value.count<=maximum_rows&&
             value.first<=maximum_scan&&exact(value.environment)&&exact(value.alias);
     }
     /** @brief Append a matching row while preserving bounded deterministic pagination. */
