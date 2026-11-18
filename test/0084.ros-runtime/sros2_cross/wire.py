@@ -7,7 +7,9 @@ import struct
 from pathlib import Path
 
 DOMAIN = 74
-BASE_PORT = 7400 + 250 * DOMAIN
+def user_ports(domain):
+    base = 7400 + 250 * domain
+    return range(base+11,base+32,2)
 
 
 def submessages(data):
@@ -57,7 +59,7 @@ def app_pid(tracer):
     return children[0] if len(children) == 1 else None
 
 
-def receive_ports(pid):
+def receive_ports(pid, domain=DOMAIN):
     try:
         descriptors = list(Path(f'/proc/{pid}/fd').iterdir())
     except (FileNotFoundError, PermissionError, ProcessLookupError):
@@ -76,12 +78,12 @@ def receive_ports(pid):
         if fields[9] in inodes:
             address, port = fields[1].split(':')
             port = int(port,16)
-            if address in ('0100007F','00000000') and port in range(BASE_PORT+11,BASE_PORT+32,2):
+            if address in ('0100007F','00000000') and port in user_ports(domain):
                 ports.add(port)
     return ports
 
 
-def summarize(directory, roles, markers):
+def summarize(directory, roles, markers, domain=DOMAIN):
     clear, encrypted, total = Counter(), Counter(), Counter()
     identity = hashlib.sha256()
     for role in roles:
@@ -93,7 +95,7 @@ def summarize(directory, roles, markers):
                     for label, value in markers.items():
                         if value.encode() in packet:
                             clear[(role,label)] += 1
-                    if dest not in range(BASE_PORT + 11, BASE_PORT + 32, 2):
+                    if dest not in user_ports(domain):
                         continue
                     messages = list(submessages(packet))
                     for (kind,prefix), (body_id,body), (postfix,trailer) in zip(messages, messages[1:], messages[2:]):

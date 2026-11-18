@@ -41,16 +41,27 @@ def save(path, obj):
     path.write_text(json.dumps(obj, indent=2) + '\n')
 
 
-def build(prefix, system, path):
+def build(prefix, system, path, source=None, extra_libraries=()):
     inc = prefix / 'include'
     includes = [inc, *(p for p in sorted(inc.iterdir()) if (p/p.name).is_dir())]
     cmd = ['/usr/bin/clang++-22', '-std=c++20', '-O3', '-g', '-Wall', '-Wextra', '-Werror',
-           *(v for p in includes for v in ('-isystem', str(p))), HERE/'participant.cpp', '-L'+str(prefix/'lib'),
+           *(v for p in includes for v in ('-isystem', str(p))), source or HERE/'participant.cpp', '-L'+str(prefix/'lib'),
            '-L'+str(system), '-Wl,-rpath-link,'+str(prefix/'lib'), '-Wl,-rpath-link,'+str(system),
-           *['-l'+name for name in LIBS], '-o', path]
+           *['-l'+name for name in (*LIBS, *extra_libraries)], '-o', path]
     with path.with_suffix('.build.log').open('wb') as log:
         subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, check=True, timeout=90)
     return list(map(str, cmd))
+
+
+def generate_artifacts(rootfs, stage, output, domain):
+    cmd = ['/usr/bin/bwrap', '--die-with-parent', '--unshare-net', '--unshare-pid', '--unshare-ipc',
+           '--ro-bind', rootfs, '/', '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/tmp/home',
+           '--bind', stage, '/tmp/issued', '--ro-bind', output/'policy.xml', '/tmp/policy.xml',
+           '--clearenv', '--setenv', 'PATH', '/usr/bin:/bin', '--setenv', 'HOME', '/tmp/home',
+           '--setenv', 'LANG', 'C.UTF-8', '--setenv', 'ROS_DOMAIN_ID', str(domain), '/bin/bash', '-c',
+           '. /opt/ros/jazzy/setup.bash && exec ros2 security generate_artifacts -k /tmp/issued/keystore -p /tmp/policy.xml']
+    with (output/'issue.log').open('wb') as log:
+        subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=60, check=True)
 
 
 def issue(rootfs, policy, stage, output):
@@ -62,14 +73,7 @@ def issue(rootfs, policy, stage, output):
                              '</profile></profiles></enclave>')
     enclaves.append(observer)
     tree.write(output/'policy.xml', encoding='utf-8', xml_declaration=True)
-    cmd = ['/usr/bin/bwrap', '--die-with-parent', '--unshare-net', '--unshare-pid', '--unshare-ipc',
-           '--ro-bind', rootfs, '/', '--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/tmp/home',
-           '--bind', stage, '/tmp/issued', '--ro-bind', output/'policy.xml', '/tmp/policy.xml',
-           '--clearenv', '--setenv', 'PATH', '/usr/bin:/bin', '--setenv', 'HOME', '/tmp/home',
-           '--setenv', 'LANG', 'C.UTF-8', '--setenv', 'ROS_DOMAIN_ID', str(DOMAIN), '/bin/bash', '-c',
-           '. /opt/ros/jazzy/setup.bash && exec ros2 security generate_artifacts -k /tmp/issued/keystore -p /tmp/policy.xml']
-    with (output/'issue.log').open('wb') as log:
-        subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, timeout=60, check=True)
+    generate_artifacts(rootfs, stage, output, DOMAIN)
     keys = stage/'keystore/enclaves'
     policies = {}
     for enclave in ENCLAVES.values():
