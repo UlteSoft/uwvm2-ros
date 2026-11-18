@@ -1,0 +1,65 @@
+{
+  "scope": "native rclcpp, reliable std_msgs/msg/Int32, plaintext Zenoh loopback TCP via Jazzy rmw_zenohd",
+  "upstream": "https://github.com/ros2/rmw_zenoh",
+  "signedRepository": {
+    "suite": "noble",
+    "architecture": "amd64",
+    "fingerprint": "C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654",
+    "inReleaseSha256": "286b3fb89efc371a2316d8519c59e1124759a693922591820540949dac2a3959",
+    "packagesGzipSha256": "8cd3c0d44fbdd930c450e387f341f85131e057b7516ae42a5ed6a2274f321414"
+  },
+  "packages": {
+    "ros-jazzy-rmw-zenoh-cpp": {
+      "version": "0.2.13-1noble.20261104.171211",
+      "archiveUrl": "https://repo.ros2.org/ubuntu/main/pool/main/r/ros-jazzy-rmw-zenoh-cpp/ros-jazzy-rmw-zenoh-cpp_0.2.13-1noble.20261104.171211_amd64.deb",
+      "sha256": "340d6ca1be06b4a85758594eee2bdeeeffd10b2b962eeb6b5cb0eda6cfd69c46",
+      "packageLicenses": [
+        "Apache License 2.0",
+        "BSD"
+      ],
+      "copyrightSha256": "371b14dd170791fe55faaec62b4ebf91591f376695b0477e09375e07463a7ccf"
+    },
+    "ros-jazzy-zenoh-cpp-vendor": {
+      "version": "0.2.13-1noble.20261104.080457",
+      "archiveUrl": "https://repo.ros2.org/ubuntu/main/pool/main/r/ros-jazzy-zenoh-cpp-vendor/ros-jazzy-zenoh-cpp-vendor_0.2.13-1noble.20261104.080457_amd64.deb",
+      "sha256": "83191a9828bceb4a2d26b387fd8d4dae66557baa72cbb68812863a48d7897d6f",
+      "packageLicenses": [
+        "Apache License 2.0"
+      ],
+      "copyrightSha256": "c2a3e6539273acc1eb55b8ee779e5696bde952ad8978ab23361c038c3331b1b7"
+    },
+    "ros-kilted-rmw-zenoh-cpp": {
+      "version": "0.6.8-1noble.20260914.174811",
+      "archiveUrl": "https://repo.ros2.org/ubuntu/main/pool/main/r/ros-kilted-rmw-zenoh-cpp/ros-kilted-rmw-zenoh-cpp_0.6.8-1noble.20260914.174811_amd64.deb",
+      "sha256": "35c5d19ac458f7d788e22488ba879734a2536aff0718edceb399d4a775e037fb",
+      "packageLicenses": [
+        "Apache License 2.0",
+        "BSD"
+      ],
+      "copyrightSha256": "371b14dd170791fe55faaec62b4ebf91591f376695b0477e09375e07463a7ccf"
+    },
+    "ros-kilted-zenoh-cpp-vendor": {
+      "version": "0.6.8-1noble.20260914.172751",
+      "archiveUrl": "https://repo.ros2.org/ubuntu/main/pool/main/r/ros-kilted-zenoh-cpp-vendor/ros-kilted-zenoh-cpp-vendor_0.6.8-1noble.20260914.172751_amd64.deb",
+      "sha256": "d0d324c86fcec435d33b22180e7a60b5dd933f920e5a792533ddcb30a1739dbe",
+      "packageLicenses": [
+        "Apache License 2.0"
+      ],
+      "copyrightSha256": "c2a3e6539273acc1eb55b8ee779e5696bde952ad8978ab23361c038c3331b1b7"
+    }
+  },
+  "cases": {
+    "jazzy-jazzy": {
+      "receivedChallenge": 213579484,
+      "receivedReply": 213579485,
+      "resultSha256": "676ef197abf00284b4bf165db6cb439a22acd641b255289b198d2937e4f7f229",
+      "inputsSha256": "01ab4eab43c8406efb63fc25929522124c743330f1fe111369424e5f45f3c46f"
+    },
+    "jazzy-kilted": {
+      "receivedChallenge": 345760463,
+      "receivedReply": 345760464,
+      "resultSha256": "39cc2b288580f52c6e8e4f84b7c823a8f3d0855bc9d31006db85cb4446ad9f13",
+      "inputsSha256": "2d87180a574ac18ee695c3c548852aeae7f006e0ea794daaa07fe3eaebb6f5a3"
+    }
+  }
+}
