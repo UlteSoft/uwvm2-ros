@@ -122,7 +122,7 @@ namespace external_fixture
             for(std::size_t i{};i<7;++i)setting.pipes[i]=owned[i+1];
             setting.identity={{1,2},{3,4},{5,static_cast<std::uint64_t>(pid)},{7,8},{9,static_cast<std::uint64_t>(pid)},{11,12,13,14}};
             setting.startup_ns=10000000000ull;setting.session_until=static_cast<std::uint64_t>(resources::steady_now())+120000000000ull;setting.stderr_bytes=65536;
-            assert(attachment.profile(manifest.configuration,"/opt/ros/jazzy")==s::error::success&&attachment.channel(setting)==s::error::success&&attachment.freeze()==s::error::success);
+            assert(attachment.profile(manifest.configuration,manifest.ros_prefix.view())==s::error::success&&attachment.channel(setting)==s::error::success&&attachment.freeze()==s::error::success);
         }
         ~owner()
         {

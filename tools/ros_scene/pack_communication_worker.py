@@ -72,6 +72,53 @@ def logical(value):
     return str(path)
 
 
+def qualification_output(root, output):
+    """Allow test artifacts only below a VM or SDK scratch directory."""
+    roots = (root/'.tmp', root.parent/'uwvm2-ros-sdk-v2/.tmp', root.parent/'uwvm2-ros-sdk/.tmp')
+    return any(output != folder.resolve() and output.is_relative_to(folder.resolve()) for folder in roots)
+
+
+def ros2_prefix(root, distribution):
+    """Resolve the selected ROS 2 installation and pin its upstream environment declarations.
+
+    Read the two environment hooks as data, without sourcing vendor shell code.
+    A caller selects one installation in a possibly multi-distribution sysroot.
+    Filenames, unrelated shell commands and the ambient ROS_DISTRO have no authority.
+    """
+    if not isinstance(distribution, str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,30}', distribution):
+        raise ValueError('invalid ROS distribution name')
+    root = root.resolve(strict=True)
+    prefix = root/'opt/ros'/distribution
+    if prefix.resolve(strict=True) != prefix or not prefix.is_dir():
+        raise ValueError('ROS distribution prefix must be a directory inside the selected root')
+    declarations = {}
+    for field, value in [('ROS_DISTRO', distribution), ('ROS_VERSION', '2')]:
+        hook = prefix/'share/ros_environment/environment'/('1.'+field.lower()+'.dsv')
+        # Ardent through Dashing shipped generated sh hooks before the dsv format.
+        # Only read their literal export as metadata. Never evaluate shell syntax.
+        legacy = not os.path.lexists(hook) and distribution in ('ardent', 'bouncy', 'crystal', 'dashing')
+        if legacy:
+            hook = hook.with_suffix('.sh')
+        if not hook.resolve(strict=True).is_relative_to(prefix):
+            raise ValueError('ROS environment declaration escapes selected prefix')
+        fd = os.open(hook, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(fd, 'rb') as stream:
+            if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                raise ValueError('ROS environment declaration must be a regular file')
+            data = stream.read(4097)
+        if len(data) > 4096:
+            raise ValueError('ROS environment declaration exceeds 4096 bytes')
+        if legacy:
+            statements = [line.strip() for line in data.splitlines() if line.strip().startswith(b'export ')]
+            matches = statements == [('export '+field+'='+value).encode('ascii')]
+        else:
+            matches = data.splitlines() == [('set;'+field+';'+value).encode('ascii')]
+        if not matches:
+            raise ValueError('ROS environment declaration does not match '+field)
+        declarations[str(hook.relative_to(prefix))] = sha(data)
+    return prefix, declarations
+
+
 class Pack:
     def __init__(self, args):
         self.args = args
@@ -84,10 +131,11 @@ class Pack:
         if self.architecture != 'x86_64' and self.system_root == Path('/'):
             raise ValueError('cross-architecture packaging cannot fall back to host system libraries')
         self.ros_root = args.ros_root.resolve(strict=True)
-        self.ros = self.ros_root/'opt/ros/jazzy'
+        self.ros, self.release_hooks = ros2_prefix(self.ros_root, args.ros_distro)
+        self.prefix = '/opt/ros/'+args.ros_distro
         self.sysroot = self.ros_root/'system-libs'
-        if not self.ros.is_dir() or not self.sysroot.is_dir():
-            raise ValueError('expected a pinned Jazzy ROS root and system-libs directory')
+        if not self.sysroot.is_dir() or self.sysroot.resolve() != self.sysroot:
+            raise ValueError('expected system-libs inside the selected ROS root')
         self.system_destinations = [Path('/lib')/triple, Path('/usr/lib')/triple]
         self.system_destinations += [Path('/lib64')] if self.architecture == 'x86_64' else [Path('/lib'), Path('/usr/lib')]
         self.system = [self.system_root/str(p).lstrip('/') for p in self.system_destinations]
@@ -148,7 +196,7 @@ class Pack:
         # Preserve the requested soname, including a resolved symlink's alias.
         path = Path(path).absolute()
         if path.is_relative_to(self.ros):
-            return '/opt/ros/jazzy/'+str(path.relative_to(self.ros))
+            return self.prefix+'/'+str(path.relative_to(self.ros))
         if path.is_relative_to(self.sysroot):
             return '/usr/lib/uwvm-ros/'+str(path.relative_to(self.sysroot))
         for directory, destination in zip(self.system, self.system_destinations):
@@ -225,7 +273,7 @@ class Pack:
         source = self.ros/str(path)
         if not source.resolve(strict=True).is_relative_to(self.ros):
             raise ValueError('resource escapes selected ROS root')
-        self.add(source, '/opt/ros/jazzy/'+str(path), 'configuration', reason)
+        self.add(source, self.prefix+'/'+str(path), 'configuration', reason)
 
     def ingest_trace(self, trace):
         raw = trace.read_bytes()
@@ -286,6 +334,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for flag in ('bootstrap', 'backend', 'profile', 'ros-root', 'output'):
         parser.add_argument('--'+flag, type=Path, required=True)
+    parser.add_argument('--ros-distro', default='jazzy', help='ROS 2 distribution under opt/ros; verified against both upstream environment declarations')
     parser.add_argument('--launcher', type=Path, default=Path('/usr/bin/bwrap'))
     parser.add_argument('--architecture', choices=tuple(LINUX_ABIS), default='x86_64',
                         help='exact Linux compiler ABI for every executable/library in the closure')
@@ -305,7 +354,8 @@ def main():
             not Path(path).is_absolute() or not reason.strip() for path, reason in args.transient_probe):
         raise ValueError('transient probe dispositions require unique absolute paths and nonempty reasons')
     args.output = args.output.resolve()
-    assert args.output.is_relative_to((ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve())
+    if not qualification_output(ROOT, args.output):
+        raise ValueError('choose a fresh project .tmp directory for the sealed pack')
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output/'images').mkdir()
     receipt = dict(complete=False, qualified_runtime=False, kind='communication_sealed_image_pack',
@@ -337,7 +387,8 @@ def main():
             pack.ingest_trace(path)
         pack.elf_closure()
         receipt.update(complete=True, files=list(pack.files.values()), required_image_bytes=pack.image_bytes,
-            ros_prefix='/opt/ros/jazzy', profile_bytes=pack.files['/worker/profile']['bytes'],
+            ros_distribution=args.ros_distro, ros_prefix=pack.prefix, ros_environment=pack.release_hooks,
+            profile_bytes=pack.files['/worker/profile']['bytes'],
             profile_sha256=pack.files['/worker/profile']['sha256'], readelf=pack.readelf,
             traces=pack.trace, transient_probes=pack.ignored)
     except Exception as error:

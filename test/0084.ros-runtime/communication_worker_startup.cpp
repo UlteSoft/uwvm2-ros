@@ -32,7 +32,7 @@ static int execute(int argc,char** argv)
         if(image.destination.view()=="/worker/profile"){manifest.bound.profile_bytes=image.bytes;manifest.configuration.sha256=image.sha256;}
         manifest.files.emplace_back(std::move(image));
     }
-    if(!manifest.configuration.identity.assign("single-node-startup-qualification")||!manifest.ros_prefix.assign("/opt/ros/jazzy"))return 14;
+    if(!manifest.configuration.identity.assign("single-node-startup-qualification")||!select_image_prefix(manifest, true))return 14;
     auto profile_bytes=manifest.bound.profile_bytes;
     manifest.bound={image_bytes,2ull*1024*1024*1024,15,4096,manifest.files.size()+64,65536,0,request,response,65536,10000000000ull,1000000,1024u*1024u,profile_bytes,threads};
     x::process child;auto status=child.prepare(manifest);if(status!=error::success){std::fprintf(stderr,"prepare=%u\n",unsigned(status));return 15;}
@@ -64,6 +64,28 @@ static int execute(int argc,char** argv)
     drain();std::fprintf(stderr,"cleanup=%u child_status=%d stderr_bytes=%zu\n",unsigned(cleanup),exited,stderr_bytes);
     if(status!=error::success||cleanup!=error::success||!child.namespace_identity_confirmed())return 18;
     std::puts("PASS approved single-node sealed worker startup and attachment; startup_only=true; no ROS data-path claim");return 0;
+}
+/** @brief Select the external peer's ament prefix from its sealed ROS images.
+ * @details The caller supplies the hash and destination of every image. A mixed
+ * installation cannot establish the peer's identity. No host environment or
+ * process-global default selects a distribution during activation.
+ */
+[[maybe_unused]] static bool select_image_prefix(x::manifest& manifest, bool standalone_fixture = false)
+{
+    constexpr std::string_view root{"/opt/ros/"};
+    std::string_view prefix{};
+    for(auto const& image : manifest.files)
+    {
+        auto const path = image.destination.view();
+        if(!path.starts_with(root)) continue;
+        auto const end = path.find('/', root.size());
+        if(end == std::string_view::npos || end == root.size()) return false;
+        auto const candidate = path.substr(0, end);
+        if(!prefix.empty() && prefix != candidate) return false;
+        prefix = candidate;
+    }
+    if(prefix.empty() && standalone_fixture) prefix = "/opt/ros/fixture";
+    return !prefix.empty() && manifest.ros_prefix.assign(prefix);
 }
 int main(int argc,char** argv)
 {

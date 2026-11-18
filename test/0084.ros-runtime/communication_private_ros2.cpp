@@ -31,7 +31,7 @@ struct sealed_peer
             {manifest.bound.profile_bytes=image.bytes;manifest.configuration.sha256=image.sha256;bytes data(image.bytes);assert(::pread(image.source,data.data(),data.size(),0)==static_cast<ssize_t>(data.size()));assert(cfg::decode(data,16u*1024u*1024u,definition)==s::error::success);}
             manifest.files.emplace_back(std::move(image));
         }
-        assert(manifest.configuration.identity.assign("qualified-sealed-peer")&&manifest.ros_prefix.assign("/opt/ros/jazzy"));auto profile=manifest.bound.profile_bytes;
+        assert(manifest.configuration.identity.assign("qualified-sealed-peer")&&select_image_prefix(manifest));auto profile=manifest.bound.profile_bytes;
         manifest.bound={images,2ull*1024*1024*1024,30,4096,manifest.files.size()+64,65536,0,request,response,65536,10000000000ull,1000000,1024u*1024u,profile,threads};
         deployment=uwvm2::utils::container::make_unique<external_fixture::owner>(manifest);
         child=uwvm2::utils::container::make_shared<s::communication_attachment::connection>();assert(child->prepare(deployment->attachment)==error::success);

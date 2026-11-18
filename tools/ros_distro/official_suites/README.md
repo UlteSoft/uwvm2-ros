@@ -3,7 +3,7 @@
 This additional callable runs original upstream source/build/test workflows.
 It addresses a concrete limitation of `ros_distro/build.py`: that older lane
 builds the Gateway and optionally checks a same-process native String topic;
-those observations are not complete official suites. The26 distribution names
+those observations are not complete official suites. The distribution names
 in `distributions.json` remain targets, not passed cells.
 
 The initial explicit project scope is the ROS1 core projects `ros_comm`,

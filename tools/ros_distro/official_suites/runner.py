@@ -145,7 +145,7 @@ def run_cell(common, unitree, *, source, manifest_current, plan_current, out, gu
          'suite runs inside admitted caller cgroup, never an unproven OCI daemon')
     catalog = document(common.opened(source / 'tools/ros_distro/distributions.json'))
     target = (profile['backend'], profile['distro'])
-    need(target in {(row['backend'], row['distro']) for row in catalog['distributions']}, 'one of26 actual named targets required')
+    need(target in {(row['backend'], row['distro']) for row in catalog['distributions']}, 'distribution must be listed in the release catalog')
     metadata = document(plan['upstream_metadata']); lock = document(plan['source_lock'])
     need(lock.get('kind') == 'official-upstream-source-lock-v1' and lock.get('backend') == target[0] and
          lock.get('distro') == target[1] and lock.get('upstream_metadata') == plan['upstream_metadata'],

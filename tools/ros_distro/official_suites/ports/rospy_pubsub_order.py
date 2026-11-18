@@ -8,7 +8,7 @@ three distinct observations. No prior custom PASS substitutes for this run.
 
 The first supported provider is native Noetic/Focal x86_64. Other distros/arches
 remain missing port prerequisites until their real source/provider ABI is added;
-the26-target catalog is not a claim that this one port covers every target.
+the release catalog is not a claim that this one port covers every target.
 """
 import hashlib
 import http.client
