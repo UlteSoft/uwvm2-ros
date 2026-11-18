@@ -199,7 +199,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::scene_state
             else if(page.result!=status::busy && page.result!=status::resource_limit)return false;
             ::uwvm2::utils::container::std_string packet;
             ::uwvm2::utils::container::ostring_ref sink{&packet};
-            print(sink,page,stop);
+            ::uwvm2::uwvm::debugger::scene_state::print(sink,page,stop);
             if(packet.size()>65536u)return false;
             put(packet.size(),4u);
             auto const* first=reinterpret_cast<::std::byte const*>(packet.data());
