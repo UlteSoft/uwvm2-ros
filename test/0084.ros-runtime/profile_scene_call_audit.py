@@ -33,6 +33,22 @@ WAT = """(module
   (if (i32.ne (local.get $sum) (i32.const SUM)) (then unreachable))))"""
 
 
+def event_rows(path, key):
+    """Read a VTune TSV whose header may be preceded by diagnostic text."""
+    with path.open() as stream:
+        for header in stream:
+            if header.startswith(key+"\t"):
+                reader = csv.DictReader(stream, fieldnames=header.rstrip("\r\n").split("\t"), delimiter="\t")
+                yield from reader
+                return
+    raise ValueError(f"missing {key} table in {path}")
+
+
+def sampled(row):
+    return any(float(value.replace(",", "") or 0)>0 for key,value in row.items()
+               if key and key.startswith("Hardware Event Count:"))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", type=Path, required=True)
@@ -136,10 +152,13 @@ def main():
             target = out/name
             knobs = (["-knob", "sampling-mode=hw", "-knob", "enable-stack-collection=false"]
                      if analysis=="hotspots" else ["-knob", "pmu-collection-mode=detailed", "-knob", "dram-bandwidth-limits=false"])
+            pid_file = out / (name+"-pid")
+            record_pid = ("import os,sys; from pathlib import Path; Path(sys.argv[1]).write_text(str(os.getpid())); "
+                          "os.execv(sys.argv[2],sys.argv[2:])")
             task = [args.vtune, "-collect", analysis, *knobs, "-knob", f"sampling-interval={args.sampling_interval_ms}",
                     "-no-analyze-system", "-no-summary", *([] if args.all_pmus else ["-cpu-mask","4"]), "-data-limit=16",
                     "-return-app-exitcode", "-result-dir", target, "-source-search-dir", ROOT,
-                    "--", "/usr/bin/taskset", "-c", "4", *(jobs[HIGH] if kind=="wasm" else [native,str(profiled_native_calls)])]
+                    "--", "/usr/bin/taskset", "-c", "4", sys.executable, "-c", record_pid, pid_file, *(jobs[HIGH] if kind=="wasm" else [native,str(profiled_native_calls)])]
             code, _ = run(name+"-collect", task, optional=True, limit=300)
             profile = {"kind":kind,"analysis":analysis,"requested_ms":args.sampling_interval_ms,"all_pmus":args.all_pmus,
                        "iterations":HIGH if kind=="wasm" else profiled_native_calls,"collection_exit":code,
@@ -147,30 +166,35 @@ def main():
             report["profiles"].append(profile)
             save()
             if code: continue
+            pid = int(pid_file.read_text())
+            if pid <= 0: raise ValueError("missing client process identity")
+            profile["client_pid"] = pid
             binary = native.name if kind=="native" else vm.name
-            options = [args.vtune, "-report", "hw-events", "-result-dir", target, "-filter", "module="+binary,
+            options = [args.vtune, "-report", "hw-events", "-result-dir", target, "-filter", "process-id="+str(pid), "-filter", "module="+binary,
                        "-format", "csv", "-csv-delimiter", "tab"]
             table = out/(name+"-source.tsv")
             code, _ = run(name+"-source", [*options, "-group-by", "function,source-file,source-line",
                                            "-report-output", table], optional=True)
             if code: continue
-            def sampled(row):
-                return any(float(v.replace(",","") or 0)>0 for k,v in row.items() if k and k.startswith("Hardware Event Count:"))
-            with table.open() as stream:
-                rows = [row for row in csv.DictReader(stream, delimiter="\t") if row.get("Source Line","").isdigit() and sampled(row)]
+            rows = [row for row in event_rows(table,"Function") if row.get("Source Line","").isdigit() and sampled(row)]
             relevant = [row for row in rows if (kind=="native" and Path(row.get("Source File","")).name in {"abi.c","loop.c","scene_abi_native.cc","deployment.h","authority.h"}) or
                         (kind=="wasm" and "uwvm2::uwvm::imported::scene" in row.get("Function",""))]
             profile["source_rows"] = len(relevant)
             if relevant:
-                func = relevant[0]["Function"]
+                preferred = ({"main", "scene_abi"} if kind=="native" else
+                             {"uwvm2::uwvm::imported::scene::abi", "uwvm2::uwvm::imported::scene::wrapper::observe_result"})
+                chosen = max(relevant, key=lambda r:(r["Function"] in preferred,
+                             float(r.get("Hardware Event Count:INST_RETIRED.ANY","").replace(",","") or 0)))
+                func = chosen["Function"]
+                profile["sampled_function"] = func
+                profile["source_file"] = chosen["Source File"]
+                profile["source_line"] = int(chosen["Source Line"])
                 assembly = out/(name+"-asm.tsv")
                 code, _ = run(name+"-asm", [*options, "-source-object", "function="+func, "-group-by", "address",
                               "-column", "Assembly,Source Line,Hardware Event Count", "-report-output", assembly], optional=True)
                 if not code:
-                    with assembly.open() as stream:
-                        profile["function"] = func
-                        profile["assembly_rows"] = sum(1 for row in csv.DictReader(stream,delimiter="\t")
-                            if row.get("Address","").startswith("0x") and row.get("Source Line","").isdigit() and sampled(row))
+                    profile["assembly_rows"] = sum(1 for row in event_rows(assembly,"Address")
+                        if row.get("Address","").startswith("0x") and row.get("Source Line","").isdigit() and sampled(row))
             save()
     report["complete"] = all(p["source_rows"] and p["assembly_rows"] for p in report["profiles"])
     save()
