@@ -15,7 +15,7 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **293**.
+Advertised primary commands: **294**.
 
 ## `--debug-dump-force`
 
@@ -440,6 +440,14 @@ Require pinned mutual TLS 1.3 and provisioned peer clock evidence. Read the secr
 ```
 
 Require a compiled canonical operation shape for both driver request and reply.
+
+## `--ros-scene-dump-effective-policy`
+
+```text
+[--ros-scene-dump-effective-policy]
+```
+
+Validate and print bounded core scene authorization as JSON. Place last in a scene-only offline command.
 
 ## `--ros-scene-event-stream`
 
