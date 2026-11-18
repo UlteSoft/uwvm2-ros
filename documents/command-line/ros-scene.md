@@ -273,3 +273,26 @@ The former component process-lifecycle imports and launcher options are removed.
 Native driver lifetime belongs to the external deployment. See the
 [driver attachment protocol](../runtime/ros-driver-attachment.md) for inherited
 channels, fixed canonical schemas, exact module grants and detached status.
+
+### Host audit of completed ROSv2 imports
+
+Use `--ros-scene-call-audit SCOPE LABEL MODE RECORDS BYTES RATE_HZ BURST` before the deployment is frozen. The default emits no records. This option changes host diagnostics only. It cannot expose an import, enroll a guest, grant a resource or poll a provider.
+
+| Scope | Label | Charged events |
+| --- | --- | --- |
+| `global` | Literal `*` | Each completed registered core ROSv2 import in the process |
+| `group` | A previously created scene environment | Calls from a member of that environment |
+| `single` | Exact loaded module label | Calls attributed to that module |
+
+For example, use the following pair of options to observe refused calls for the `body` module with a shared process ceiling. Quote the asterisk in a shell.
+
+```sh
+--ros-scene-call-audit global '*' all 10000 4194304 1000 50
+--ros-scene-call-audit single body denied 100 32768 10 4
+```
+
+All matching ceilings apply. A process-wide rule also selects calls outside the single module. To select only that module, use the single rule alone. The `denied` selection covers access denied (13), bad handle (9) and stale identity or generation (116). The `all` selection preserves the raw return value, including `abi` success (2). Every limit is an explicit finite decimal integer. Byte counts include the newline. Record and byte quotas last for the deployment. The rate budget refills against monotonic time with the configured burst capacity. Zero in any ceiling prevents delivery. Repeating the same scope and label is an error.
+
+NDJSON records are emitted to host standard error. They contain the completed operation, raw result, admission sequence number, monotonic timestamp and the runtime caller's generation. The group and caller label use hexadecimal bytes. Caller labels exceeding 255 bytes are marked truncated. Diagnostic loss counters distinguish lock contention, admission limits, clock failure and sink failure. A sink failure consumes the admission. Concurrent outputs can arrive out of sequence. Counters are reported on subsequent accepted records, so a saturated or disconnected sink can leave the tail unobserved. A regular-file sink can add I/O latency; the writer holds no scene authority lock while emitting. Observation never alters the underlying operation's result.
+
+A hidden import is rejected during linking. A trap or process loss can prevent a normal return. The completed-call stream does not establish execution, cancellation or safe physical shutdown for any of those cases. It contains no arguments, request/response contents, native addresses, file descriptors or capability handles. Sensor values, model prompts and sealed cross-module messages remain outside this stream.
