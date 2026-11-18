@@ -56,7 +56,7 @@ static int run_actual(int argc,char** argv)
     int completed[2],release[2];assert(!::pipe2(completed,O_NONBLOCK|O_CLOEXEC)&&!::pipe2(release,O_NONBLOCK|O_CLOEXEC));
     auto peer=::fork();assert(peer>=0);if(!peer){::close(completed[0]);::close(release[1]);native_peer(definition.network,completed[1],release[0],true);::_exit(0);}
     ::close(completed[1]);::close(release[0]);assert(receive_marker(completed[0])=='R');
-    assert(manifest.configuration.identity.assign("actual-rpc-worker")&&manifest.ros_prefix.assign("/opt/ros/jazzy"));auto profile_bytes=manifest.bound.profile_bytes;
+    assert(manifest.configuration.identity.assign("actual-rpc-worker")&&select_image_prefix(manifest));auto profile_bytes=manifest.bound.profile_bytes;
     manifest.bound={image_bytes,2ull*1024*1024*1024,30,4096,manifest.files.size()+64,65536,0,request,response,65536,10000000000ull,1000000,1024u*1024u,profile_bytes,threads};
     x::process child;auto prepared=child.prepare(manifest);std::fprintf(stderr,"worker prepare valid=%d status=%u images=%zu profile=%lu\n",x::valid(manifest),unsigned(prepared),manifest.files.size(),profile_bytes);assert(prepared==error::success);
     auto launched=child.launch();std::fprintf(stderr,"worker launch=%u\n",unsigned(launched));assert(launched==error::success);std::size_t stderr_count{};

@@ -7,6 +7,7 @@ This receipt proves only its closed local profile, not arbitrary peers or codecs
 """
 import argparse,fcntl,hashlib,json,os,re,resource,shlex,shutil,subprocess,time
 from pathlib import Path
+from pack_communication_worker import ros2_prefix, qualification_output
 ROOT=Path(__file__).resolve().parents[2]
 GROUP=Path('/sys/fs/cgroup/system.slice/docker-af71cb24aa7993383f76ad9c06750b17eb66fd090a2c9ba64b544b19cda9c913.scope')
 def sha(path):
@@ -16,16 +17,19 @@ def guard():
  assert (GROUP/'memory.max').read_text().strip()=='68719476736' and (GROUP/'memory.swap.max').read_text().strip()=='0'
  assert os.sched_getaffinity(0).issubset({4,5,6,7})
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--seed-pack',type=Path,required=True);p.add_argument('--ros-root',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();guard()
- resource.setrlimit(resource.RLIMIT_CORE,(0,0));out=a.output.resolve();assert out.is_relative_to((ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve());out.mkdir(parents=True,exist_ok=False)
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--seed-pack',type=Path,required=True);p.add_argument('--ros-root',type=Path,required=True);p.add_argument('--ros-distro',default='jazzy');p.add_argument('--output',type=Path,required=True);a=p.parse_args();guard()
+ resource.setrlimit(resource.RLIMIT_CORE,(0,0));out=a.output.resolve();assert qualification_output(ROOT,out);out.mkdir(parents=True,exist_ok=False)
  seed=json.loads(a.seed_pack.read_text());assert seed['complete'];files={row['destination']:row for row in seed['files']}
  for row in [seed['launcher'],*seed['files']]:assert Path(row['path']).stat().st_size==row['bytes'] and sha(row['path'])==row['sha256']
- ros=a.ros_root.resolve()/'opt/ros/jazzy';system=a.ros_root.resolve()/'system-libs';assert ros.is_dir() and system.is_dir()
+ ros,hooks=ros2_prefix(a.ros_root,a.ros_distro);prefix='/opt/ros/'+a.ros_distro+'/'
+ if seed['ros_prefix']+'/'!=prefix or seed.get('ros_environment',hooks)!=hooks:raise ValueError('seed pack and ROS installation disagree')
+ system=a.ros_root.resolve()/'system-libs';assert ros.is_dir() and system.is_dir()
  compiler='/usr/bin/clang++-22';flags=['-std=c++23','-O3','-g','-Wall','-Wextra','-Werror','-pthread'];includes=[]
+ includes+=['-isystem',str(ros/'include')]
  for folder in sorted((ros/'include').iterdir()):
-  if folder.is_dir():includes+=['-isystem',str(folder)]
+  if (folder/folder.name).is_dir():includes+=['-isystem',str(folder)]
  backend=Path('tools/ros_scene/communication_worker_native_backend.cpp');fixture=Path('test/0084.ros-runtime/communication_worker_ros2.cpp');source=out/'source'
- report=dict(complete=False,scope=__doc__,cgroup=str(GROUP),inode=GROUP.stat().st_ino,memory_max=68719476736,swap_max=0,affinity=sorted(os.sched_getaffinity(0)),commands=[],sources={},external={},snapshots={},events_before=(GROUP/'memory.events').read_text(),seed_pack=str(a.seed_pack.resolve()),seed_pack_sha256=sha(a.seed_pack),compiler_sha256=sha(compiler))
+ report=dict(complete=False,ros_distribution=a.ros_distro,ros_environment=hooks,rmw='rmw_fastrtps_cpp',scope=__doc__,cgroup=str(GROUP),inode=GROUP.stat().st_ino,memory_max=68719476736,swap_max=0,affinity=sorted(os.sched_getaffinity(0)),commands=[],sources={},external={},snapshots={},events_before=(GROUP/'memory.events').read_text(),seed_pack=str(a.seed_pack.resolve()),seed_pack_sha256=sha(a.seed_pack),compiler_sha256=sha(compiler))
  def save():(out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
  def run(label,argv,env=None,timeout=300,ports=False):
   guard();started=time.monotonic()
@@ -56,11 +60,11 @@ def main():
   link=['-L'+str(ros/'lib'),'-L'+str(system),'-Wl,-rpath-link,'+str(ros/'lib'),'-Wl,-rpath-link,'+str(system),*['-l'+lib for lib in libraries],'-ldl']
   run('backend-compile',[compiler,*flags,*local,*includes,'-shared','-fPIC',str(source/backend),'-o',str(out/'backend.so'),*link])
   run('fixture-compile',[compiler,*flags,*local,*includes,str(source/fixture),'-o',str(out/'native'),*link])
-  pack=out/'pack';argv=['/usr/bin/python3',str(ROOT/'tools/ros_scene/pack_communication_worker.py'),'--bootstrap',files['/worker/bootstrap']['path'],'--backend',str(out/'backend.so'),'--profile',files['/worker/profile']['path'],'--ros-root',str(a.ros_root.resolve()),'--output',str(pack)]
+  pack=out/'pack';argv=['/usr/bin/python3',str(ROOT/'tools/ros_scene/pack_communication_worker.py'),'--bootstrap',files['/worker/bootstrap']['path'],'--backend',str(out/'backend.so'),'--profile',files['/worker/profile']['path'],'--ros-root',str(a.ros_root.resolve()),'--ros-distro',a.ros_distro,'--output',str(pack)]
   for library in sorted(set(re.findall(r'"(lib[A-Za-z0-9_]+\.so)"',(source/backend).read_text()))):argv+=['--dlopen',library]
   for row in files.values():
-   if row['role']=='configuration' and row['destination'].startswith('/opt/ros/jazzy/'):
-    argv+=['--resource',row['destination'][len('/opt/ros/jazzy/'):]]
+   if row['role']=='configuration' and row['destination'].startswith(prefix):
+    argv+=['--resource',row['destination'][len(prefix):]]
   run('pack',argv);packed=json.loads((pack/'manifest.json').read_text());assert packed['complete']
   argv=[str(out/'native'),packed['launcher']['path'],packed['launcher']['sha256'],str(packed['required_image_bytes']),'64','65536','65536']
   for row in packed['files']:argv.extend([row['role'],row['destination'],row['path'],row['sha256']])

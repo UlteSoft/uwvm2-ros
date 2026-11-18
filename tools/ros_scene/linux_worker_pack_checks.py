@@ -92,6 +92,10 @@ def main():
             ros = root/'ros'
             library.mkdir(parents=True)
             (ros/'opt/ros/jazzy/lib').mkdir(parents=True)
+            hooks = ros/'opt/ros/jazzy/share/ros_environment/environment'
+            hooks.mkdir(parents=True)
+            (hooks/'1.ros_distro.dsv').write_text('set;ROS_DISTRO;jazzy\n')
+            (hooks/'1.ros_version.dsv').write_text('set;ROS_VERSION;2\n')
             (ros/'system-libs').mkdir()
             profile = root/'profile'
             profile.write_bytes(b'bounded configuration, never executed')

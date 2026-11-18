@@ -27,7 +27,7 @@ int main(int argc,char** argv)
         if(image.destination.view()=="/worker/profile"){manifest.bound.profile_bytes=image.bytes;manifest.configuration.sha256=image.sha256;}
         manifest.files.emplace_back(std::move(image));
     }
-    assert(manifest.configuration.identity.assign("startup")&&manifest.ros_prefix.assign("/opt/ros/jazzy"));
+    assert(manifest.configuration.identity.assign("startup")&&select_image_prefix(manifest));
     auto profile_bytes=manifest.bound.profile_bytes;
     manifest.bound={image_bytes,2ull*1024*1024*1024,30,4096,manifest.files.size()+64,65536,0,request,response,65536,10000000000ull,1000000,1024u*1024u,profile_bytes,threads};
     std::uint64_t vm{};assert(::read(identity,&vm,sizeof(vm))==sizeof(vm)&&vm&&vm<=INT32_MAX);::close(identity);

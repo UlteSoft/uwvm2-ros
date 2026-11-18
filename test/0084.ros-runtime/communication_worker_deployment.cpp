@@ -71,8 +71,8 @@ int main(int argc,char** argv)
         auto& peer=peers[i];auto& member=members[i];auto start=at;peer.parse(argc,argv,at);text name="worker."+uwvm2::utils::container::to_string(i);
         std::size_t profile{};for(std::size_t n{};n<peer.manifest.files.size();++n)if(peer.manifest.files[n].destination.view()=="/worker/profile")profile=n;
         auto const& image=peer.manifest.files[profile];
-        assert(settings.load_worker(name,"startup","/opt/ros/jazzy",argv[start+7+profile*4+2],image.bytes,image.sha256)==s::error::success);
-        assert(settings.load_worker(name,"startup","/opt/ros/jazzy","/missing",image.bytes,image.sha256)==s::error::conflict);
+        assert(settings.load_worker(name,"startup",peer.manifest.ros_prefix.view(),argv[start+7+profile*4+2],image.bytes,image.sha256)==s::error::success);
+        assert(settings.load_worker(name,"startup",peer.manifest.ros_prefix.view(),"/missing",image.bytes,image.sha256)==s::error::conflict);
         peer.manifest.configuration.identity.assign("startup");
         external[i]=uwvm2::utils::container::make_unique<external_fixture::owner>(peer.manifest);
         assert(settings.worker_setting(name,[&](auto& attachment){return attachment.channel(external[i]->attachment.endpoints());})==s::error::success);

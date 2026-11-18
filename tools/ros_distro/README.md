@@ -25,7 +25,9 @@ and thirteen ROS2 distributions in the official
 including Lyrical and Rolling, plus five official historical ROS1 distributions
 named by [REP3](https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0003.rst):
 Box Turtle (`boxturtle`), C Turtle (`cturtle`), Diamondback, Electric and Fuerte.
-There are **thirteen ROS1 and thirteen ROS2 named targets**. Each pre-Groovy
+The catalog covers **thirteen ROS 1 and thirteen named ROS 2 distributions**, plus the eleven individually selectable ROS 2 development releases (Alpha 1–8 and Beta 1–3). Each prerelease requires its own immutable source lock. Rolling additionally needs an exact package snapshot for a reproducible comparison. [Upstream ROS 2 release history](https://github.com/ros2/ros2_documentation/blob/rolling/source/Releases.rst)
+
+Each pre-Groovy
 target requires an explicit source lock and an actually configured SDK or the
 `EXPLICIT` include/library discovery path. Legacy `manifest.xml` and `stack.xml`
 metadata are retained alongside modern `package.xml`. Missing public APIs fail
@@ -259,5 +261,5 @@ The new CI workflow runs them on pull requests and performs **real** serial
 Gateway builds/native SDK topic runs only on a manually selected, provisioned
 self-hosted Linux runner carrying at least two explicit host profiles. That
 runner can itself be the user's explicitly admitted container. Its evidence
-artifacts retain successes and failures; the workflow cannot auto-promote all26
+artifacts retain successes and failures; the workflow cannot auto-promote all release
 targets from a successful two-profile job.

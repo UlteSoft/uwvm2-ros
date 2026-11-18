@@ -31,7 +31,8 @@ ARCHES = {"x86_64": (62, 64, "little"), "i386": (3, 32, "little"), "aarch64": (1
 ROS1_HISTORICAL = ("boxturtle", "cturtle", "diamondback", "electric", "fuerte")
 ROS1_INDEXED = ("groovy", "hydro", "indigo", "jade", "kinetic", "lunar", "melodic", "noetic")
 ROS1 = ROS1_HISTORICAL + ROS1_INDEXED
-ROS2 = ("ardent", "bouncy", "crystal", "dashing", "eloquent", "foxy", "galactic",
+ROS2_PRERELEASE = tuple("alpha"+str(n) for n in range(1, 9)) + ("beta1", "beta2", "beta3")
+ROS2 = ROS2_PRERELEASE + ("ardent", "bouncy", "crystal", "dashing", "eloquent", "foxy", "galactic",
         "humble", "iron", "jazzy", "kilted", "lyrical", "rolling")
 FIELDS = {"schema_version", "id", "backend", "distro", "legacy_description", "target",
           "execution", "sdk", "tools", "cxx", "runtime", "limits", "custom", "features", "cmake_options"}
@@ -108,8 +109,8 @@ def validate(value):
     for key in ("ros_prefix", "setup", "distribution_index"):
         absolute(sdk[key], key)
     absolute(sdk["source_lock"], "source/archive lock", nullable=True)
-    require(value["distro"] not in ("legacy",) + ROS1_HISTORICAL or sdk["source_lock"] is not None,
-            "legacy/pre-Groovy named profile requires immutable source-lock metadata")
+    require(value["distro"] not in ("legacy",) + ROS1_HISTORICAL + ROS2_PRERELEASE or sdk["source_lock"] is not None,
+            "historical and prerelease profiles require an immutable source lock")
     tools = value["tools"]
     exact(tools, {"cxx", "cmake", "make", "bash", "host_python", "generator_python",
                   "toolchain_file", "sysroot", "roots"}, "tools")

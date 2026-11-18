@@ -5,6 +5,7 @@
  */
 #define UWVM_COMMUNICATION_FACTORY_FIXTURE_ONLY
 #include "communication_worker_provider.cpp"
+#include <sys/ioctl.h>
 #include <uwvm2/imported/ros/scene/communication_worker_endpoint_open.h>
 #include <uwvm2/imported/ros/scene/communication_worker_activation.h>
 #include <uwvm2/imported/ros/scene/communication_node_open_provider.h>
@@ -167,12 +168,13 @@ static void qualify(std::array<peer,2> const& peers,bool service)
         std::puts("attached real SetBool client and server");std::fflush(stdout);
         auto& client=sides[0];
         c::handle query{};assert(env.permissions.open(env.who[0],"readiness",query)==s::error::success);
-        auto observe=[&](c::handle source,bytes& result)
+        auto observe_as=[&](c::handle observer,c::handle source,bytes& result)
         {
             auto body=encode([&](auto& w){return w.u64(client.resource)&&w.u64(source);});std::size_t required{};
-            return client.dispatch->invoke(env.who[0],contract::operation::service_available,query,body,32,required,
+            return client.dispatch->invoke(env.who[0],contract::operation::service_available,observer,body,32,required,
                 [&](wire::bytes value){result.assign(value.begin(),value.end());return true;});
         };
+        auto observe=[&](c::handle source,bytes& result){return observe_as(query,source,result);};
         bytes result;
         assert(observe(0,result)==s::error::denied&&observe(env.service_caps[1],result)==s::error::denied&&result.empty());
         bool available{};auto until=c::now()+6000000000;
@@ -182,23 +184,55 @@ static void qualify(std::array<peer,2> const& peers,bool service)
             if(status==s::error::success){wire::reader read{result};assert(read.boolean(available)&&result.size()==32);}
             if(!available){pump();assert(c::now()<until);::poll(nullptr,0,1);}
         }
+        auto direct=encode([&](auto& w){return w.u64(client.resource)&&w.u64(0);});
+        auto check_direct=[&]
+        {
+            result.clear();
+            // An unrelated observer's previous result must never satisfy this client.
+            assert(client.call(contract::operation::service_available,direct,result)==s::error::again&&result.empty());
+            auto until_direct=c::now()+6000000000;
+            for(;;)
+            {
+                pump();
+                auto status=client.call(contract::operation::service_available,direct,result);
+                if(status==s::error::success)break;
+                assert(status==s::error::again&&c::now()<until_direct);::poll(nullptr,0,1);
+            }
+            wire::reader fresh{result};bool ready{};assert(fresh.boolean(ready)&&ready);
+        };
+        check_direct();
+
+        // The external process writes its complete answer before either the
+        // observer handle or the separate source capability is withdrawn. The
+        // response remains unread, so the guest delivery race is deterministic.
+        for(bool withdraw_source:{false,true})
+        {
+            c::handle transient{};assert(env.permissions.open(env.who[0],withdraw_source?"service.0":"readiness",transient)==s::error::success);
+            auto observer=withdraw_source?query:transient,source=withdraw_source?transient:client.cap;
+            auto response_fd=env.external[0]->owned[2];int unread{};
+            assert(::ioctl(response_fd,FIONREAD,&unread)==0&&unread==0);
+            result.clear();assert(observe_as(observer,source,result)==s::error::again&&result.empty());
+            assert(factory->pump_services()==c::error::ok);
+            auto until_reply=c::now()+6000000000;
+            while(true)
+            {
+                assert(::ioctl(response_fd,FIONREAD,&unread)==0);
+                if(unread>=static_cast<int>(s::communication_worker_protocol::header_bytes+8))break;
+                assert(c::now()<until_reply);::poll(nullptr,0,1);
+            }
+            assert(env.permissions.close(env.who[0],transient)==s::error::success);
+            assert(observe_as(observer,source,result)==s::error::bad_handle&&result.empty());
+            pump();
+            check_direct();
+        }
+        std::puts("complete native replies suppressed after independent observer and source withdrawal");std::fflush(stdout);
+
         result.clear();
         assert(observe(client.cap,result)==s::error::again);
         assert(env.permissions.revoke("readiness",[&](auto alias){client.dispatch->revoke(alias);})==s::error::success);
         for(unsigned i{};i<8;++i){pump();::poll(nullptr,0,1);}
         assert(observe(client.cap,result)!=s::error::success&&result.empty());
-        // The original client remains available after the observer is retired.
-        // Its own fresh RPC must never adopt the retired observer's reply.
-        auto direct=encode([&](auto& w){return w.u64(client.resource)&&w.u64(0);});
-        auto until_direct=c::now()+6000000000;
-        for(;;)
-        {
-            auto status=client.call(contract::operation::service_available,direct,result);
-            if(status==s::error::success)break;
-            assert(status==s::error::again);
-            pump();assert(c::now()<until_direct);::poll(nullptr,0,1);
-        }
-        wire::reader fresh{result};bool ready{};assert(fresh.boolean(ready)&&ready);
+        check_direct();
         std::puts("paired observation and client survival after withdrawal passed");std::fflush(stdout);
     }
     auto settle=[&](side& item,c::handle request)

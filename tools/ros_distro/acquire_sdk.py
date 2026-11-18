@@ -171,6 +171,8 @@ def validate_spec(spec):
     closed(spec["target"], ("backend", "distribution", "ubuntu_codename", "architecture", "route"), "target")
     target = spec["target"]; distro = target["distribution"]
     need(target["architecture"] in ("arm64", "amd64") and type(target["backend"]) is int and target["backend"] in (1, 2), "explicit supported target architecture required")
+    if distro in {"alpha"+str(i) for i in range(1, 9)} | {"beta1", "beta2", "beta3"}:
+        raise Blocked("ROS2_PRERELEASE_REQUIRES_A_LOCKED_UPSTREAM_SOURCE_SDK")
     if distro in HISTORICAL_SOURCE_ONLY:
         raise Blocked("PRE_GROOVY_REQUIRES_SEPARATELY_LOCKED_SOURCE_BACKPORT_NOT_THIS_APT_PRODUCER")
     if distro not in CODENAMES:

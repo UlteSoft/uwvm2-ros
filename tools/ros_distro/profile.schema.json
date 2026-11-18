@@ -14,7 +14,7 @@
   "properties": {
     "schema_version": {"const": 1}, "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,79}$"},
     "backend": {"enum": [1, 2]},
-    "distro": {"enum": ["boxturtle", "cturtle", "diamondback", "electric", "fuerte", "groovy", "hydro", "indigo", "jade", "kinetic", "lunar", "melodic", "noetic", "ardent", "bouncy", "crystal", "dashing", "eloquent", "foxy", "galactic", "humble", "iron", "jazzy", "kilted", "lyrical", "rolling", "legacy"]},
+    "distro": {"enum": ["boxturtle", "cturtle", "diamondback", "electric", "fuerte", "groovy", "hydro", "indigo", "jade", "kinetic", "lunar", "melodic", "noetic", "alpha1", "alpha2", "alpha3", "alpha4", "alpha5", "alpha6", "alpha7", "alpha8", "beta1", "beta2", "beta3", "ardent", "bouncy", "crystal", "dashing", "eloquent", "foxy", "galactic", "humble", "iron", "jazzy", "kilted", "lyrical", "rolling", "legacy"]},
     "legacy_description": {"type": "string"},
     "target": {
       "type": "object", "additionalProperties": false,
@@ -63,5 +63,5 @@
   "allOf": [
     {"if": {"properties": {"distro": {"enum": ["boxturtle", "cturtle", "diamondback", "electric", "fuerte", "legacy"]}}}, "then": {"properties": {"sdk": {"properties": {"source_lock": {"$ref": "#/$defs/path"}}}}}}
   ],
-  "description": "Twenty-six named ROS targets plus explicit private legacy profiles. profile.py additionally enforces backend/distro, exact ELF (including i386 EM386/32/little), original-cgroup, OCI descriptor, QEMU/sysroot/loader and custom all-or-nothing contracts. Pre-Groovy profiles require a source lock and an actually configured/EXPLICIT SDK, never an assumed stock catkin install. Schema validity is CONFIGURATION_ONLY, never a test PASS."
+  "description": "Named ROS distributions and eleven historical ROS 2 prereleases plus explicit private legacy profiles. profile.py additionally enforces backend/distro, exact ELF (including i386 EM386/32/little), original-cgroup, OCI descriptor, QEMU/sysroot/loader and custom all-or-nothing contracts. Pre-Groovy profiles require a source lock and an actually configured/EXPLICIT SDK, never an assumed stock catkin install. Schema validity is CONFIGURATION_ONLY, never a test PASS."
 }

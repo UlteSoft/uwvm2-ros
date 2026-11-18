@@ -1,0 +1,10 @@
+// ROS DDS type name for std_msgs/msg/Int32. Both peers use XCDR1.
+module std_msgs {
+    module msg {
+        module dds_ {
+            @final struct Int32_ {
+                long data;
+            };
+        };
+    };
+};

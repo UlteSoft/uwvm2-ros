@@ -409,6 +409,19 @@ namespace uwvm2::imported::ros::scene::communication_jobs
             if(!value||identity.caller_instance!=value->token.caller_instance||identity.caller_generation!=value->token.caller_generation||
                 identity.authority!=selected.authority||identity.resource!=selected.resource)return error::denied;
             if(!terminal(*value)||value->result.cleanup_debt||value->result.observed==effect::unknown||value->completion_pending)return error::busy;
+            // A readiness result is a single, unkeyed observation with an internal
+            // request ID. Once its exact origin consumes the terminal result, a
+            // different independently admitted observer can use the shared client.
+            // high_request continues to reject replay of every retired request.
+            if(value->operation==rpc::operation::service_available&&!value->token.session&&!value->token.sequence&&
+               value->result.observed==effect::none)
+            {
+                if(!same(value->token,identity))return error::denied;
+                erase_bytes({value->request.data(),value->request_size});
+                erase_bytes({value->reply.data(),static_cast<std::size_t>(value->result.bytes)});
+                value->token={};value->result={};value->request_size=0;
+                return error::ok;
+            }
             value->result.phase=state::released;return error::ok;
         }
         /** @brief Trusted positive namespace/endpoint teardown evidence only. */
