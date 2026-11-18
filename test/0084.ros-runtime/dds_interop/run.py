@@ -81,6 +81,11 @@ def main():
         interfaces = [row.split(':', 1)[0].strip() for row in Path('/proc/net/dev').read_text().splitlines()[2:]]
         if interfaces != ['lo']:
             raise RuntimeError('the DDS network must only contain loopback')
+        # Eloquent's logger writes under HOME even when ROS_LOG_DIR is set.
+        # Keep both endpoints' runtime files inside this run's writable mount.
+        home = out/'process-home'
+        home.mkdir(mode=0o700)
+        ros_env.update(HOME=str(home), ROS_HOME=str(home/'.ros'))
         challenge = str(1+secrets.randbelow(2**29))
         # Cyclone 0.7/0.8 use General/NetworkInterfaceAddress for a single
         # interface. Select the schema of the runtime peer, including when an
@@ -154,12 +159,16 @@ def main():
         # Ament installs package-scoped headers under include/pkg/pkg. Adding
         # include/dds itself would let Cyclone's features.h shadow glibc.
         includes = [str(include), *[str(p) for p in sorted(include.iterdir()) if (p/p.name).is_dir()]]
+        # Header-generated symbols vary across rclcpp releases. Dashing and
+        # Eloquent predate the statistics and tracing libraries used by Jazzy.
+        optional = ('libstatistics_collector','tracetools','rcl_interfaces__rosidl_typesupport_cpp',
+                    'rcpputils','statistics_msgs__rosidl_typesupport_cpp','rosgraph_msgs__rosidl_typesupport_cpp',
+                    'builtin_interfaces__rosidl_typesupport_cpp')
+        extra = ['-l'+name for name in optional if (ros_lib/('lib'+name+'.so')).is_file()]
         run('build-'+output,['/usr/bin/clang++-22','-std=c++'+standard,*flags,*[v for p in includes for v in ('-isystem',p)],
             HERE/'ros_client.cpp','-L'+str(ros_lib),'-L'+str(system_lib),'-Wl,-rpath-link,'+str(ros_lib),
             '-Wl,-rpath-link,'+str(system_lib),'-lrclcpp','-lrcl','-lrcutils','-lrmw','-lrmw_implementation',
-            '-lstd_msgs__rosidl_typesupport_cpp','-llibstatistics_collector','-ltracetools',
-            '-lrcl_interfaces__rosidl_typesupport_cpp','-lrcpputils','-lstatistics_msgs__rosidl_typesupport_cpp',
-            '-lrosgraph_msgs__rosidl_typesupport_cpp','-lbuiltin_interfaces__rosidl_typesupport_cpp','-o',out/output],ros_env)
+            '-lstd_msgs__rosidl_typesupport_cpp',*extra,'-o',out/output],ros_env)
     compile_ros(ros,system,'ros-client','20')
     if peer_opts:
         compile_ros(peer_ros,peer_system,'ros-echo', a.peer_cxx_standard)
