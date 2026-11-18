@@ -160,6 +160,9 @@ def main():
             report['wireReceiptSha256'] = sha(wire/'results.json')
             wire_report = json.loads((wire/'results.json').read_bytes())
             report['wireSteps'] = [{'name':step['name'],'exit':step['exit']} for step in wire_report['steps']]
+        if (wire/'exchange.json').is_file():
+            report['observedExchange'] = json.loads((wire/'exchange.json').read_bytes())
+            report['exchangeRecordSha256'] = sha(wire/'exchange.json')
         report['wireLogs'] = {log.name:sha(log) for log in sorted(wire.glob('*.log'))}
         report['diagnostics'] = {peer:peer_diagnostics(wire,report['wireLogs'],log) for peer,log in
                                  [('request','ros.log'),('reply','cyclone.log')]}

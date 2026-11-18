@@ -80,7 +80,7 @@ recheck their original byte identities in the new directory. An incomplete
 build or failed exchange retains its steps and exit statuses as a separate
 attempt. The isolated plaintext UDPv4 experiment covers this message type
 and these two peers. The `diagnostics` entry records each peer's log digest,
-rcutils error-state report count, and literal message counts for invalid data
+tagged ROS warning, error and fatal lines, rcutils error-state reports, and literal message counts for invalid data
 size and unterminated string data. A single rcutils report can mention both
 the prior and the new error. Counts measure log occurrences. Each completed row
 has the scope `reliable-Int32-topic-roundtrip`. ROS graph interoperability
