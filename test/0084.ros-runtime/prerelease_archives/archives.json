@@ -1,0 +1,74 @@
+{
+  "alpha1": {
+    "asset_id": 832170,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha1/ros2-alpha1-package-linux.tar.bz2",
+    "bytes": 53885469,
+    "sha256": "5b177276de1c7978eee54ce3fcc0972d68333cd997ae91939e0742be1a0bebfa",
+    "upstream_digest": null,
+    "linked_elf_sha256": "48d3fc225c5ca6e5c9522c22ac1d3d982e87e0d7677a986973c9e301f1d74c79"
+  },
+  "alpha2": {
+    "asset_id": 1003938,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha2/ros2-alpha2-package-linux.tar.bz2",
+    "bytes": 58602372,
+    "sha256": "eb168056d8293bf870d13736d398dcfb5eeb7e91da5d1c5785b6905239fd002c",
+    "upstream_digest": null,
+    "linked_elf_sha256": "4547c6d1e9dcd478ce48478248100d83a2c7f1bb301b530998ed195b89a3a593"
+  },
+  "alpha3": {
+    "asset_id": 1143697,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha3/ros2-alpha3-package-linux.tar.bz2",
+    "bytes": 62523390,
+    "sha256": "5f5d4b386a0722b1fd93046563adbe8c0d3153a27d30e49891c1264de6da33e3",
+    "upstream_digest": null,
+    "linked_elf_sha256": "82f5855e88a446d96fcd7d2bce9ccfd1921a13dc0a2428f605ec2e6903715db6"
+  },
+  "alpha4": {
+    "asset_id": 1323153,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha4/ros2-alpha4-package-linux.tar.bz2",
+    "bytes": 45678630,
+    "sha256": "c80d9abcc03514efbf288b8b625d8f6a61c07595c3365675cfdd23e8c1765b1c",
+    "upstream_digest": null,
+    "linked_elf_sha256": "c86cb154ec865634851c4d70ea792f261077b7c71e78088bb7c2005a0343b5b2"
+  },
+  "alpha5": {
+    "asset_id": 1514559,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha5/ros2-alpha5-package-linux.tar.bz2",
+    "bytes": 46425579,
+    "sha256": "bdc95128fca3686583f5f3b88e364442626406ac35d49db6bb87b5340882348e",
+    "upstream_digest": null,
+    "linked_elf_sha256": "5c1338dad6a17467e6ef714bdb27c83cbf3330c791da3d5df4fd268851568813"
+  },
+  "alpha6": {
+    "asset_id": 1778565,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha6/ros2-alpha6-package-linux.tar.bz2",
+    "bytes": 48671191,
+    "sha256": "682262138d910829c83df7a3e16918c1bf976bee584582667cb6f1ef5cef9b1e",
+    "upstream_digest": null,
+    "linked_elf_sha256": "fe2cada6680d0e928bca659042482df7d5a7b0a15706fa3ac537dcf91a596ced"
+  },
+  "alpha7": {
+    "asset_id": 2273340,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha7/ros2-alpha7-package-linux-fastrtps-1.tar.bz2",
+    "bytes": 44727493,
+    "sha256": "3dee2c1c8e845fc1b61127601b0de97c4ff4270d27bfb4b35efcce7b604993b5",
+    "upstream_digest": null,
+    "linked_elf_sha256": "21f5b81cde30f8f088431a9ca4c7dc3132222207013f2d275bc546e2b8bbae15"
+  },
+  "alpha8": {
+    "asset_id": 2422804,
+    "url": "https://github.com/ros2/ros2/releases/download/release-alpha8/ros2-alpha8-package-linux-fastrtps.tar.bz2",
+    "bytes": 47135376,
+    "sha256": "bdb2822e486760603094ff59950ae9352572e2fddabda939ba2934d4d27bc84d",
+    "upstream_digest": null,
+    "linked_elf_sha256": "94179c3fd005b97cb9d26a2829f68c5cf4aa3e06ff9c8103df8138f0175374f2"
+  },
+  "beta1": {
+    "asset_id": 2853086,
+    "url": "https://github.com/ros2/ros2/releases/download/release-beta1/ros2-beta1-package-linux-fastrtps.tar.bz2",
+    "bytes": 92371959,
+    "sha256": "216d0e1f6e883b8744ec42ac2d9f861c4dc0e5dec7ad40293b035c761c3da732",
+    "upstream_digest": null,
+    "linked_elf_sha256": "994c73a65a41a709629027d0331aa9e895e362e6d449269cbfd8d2f307eef9d0"
+  }
+}
