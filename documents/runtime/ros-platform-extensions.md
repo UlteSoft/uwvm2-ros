@@ -262,6 +262,17 @@ Use `test/0084.ros-runtime/mujoco_profiles/limx-tron1-pf.json` with both command
 
 The `limx` platform permission and isolated TLS receiver passed 24 cases for the motor driving `hip_L_Joint`. Both VM engines and all four memory layouts matched the direct native reference after 128 steps. Each refused command produced zero steps. Each receiver failure after a step left the VM running and the command outcome unknown. LimX SDK transport, IMU subscriptions, actuator firmware and an independent physical stop require separate tests.
 
+### Additional vendor-published models
+
+The following profiles fetch only the files needed for the selected simulation from the vendor’s pinned repository. Use the same qualification command as for Go2 and select the compiled size limit shown for each model.
+
+| Vendor model | Joint and actuator | Compiled limit |
+| --- | --- | --- |
+| [AgiBot X2 Ultra](../../test/0084.ros-runtime/mujoco_profiles/agibot-x2-ultra.json) | `left_hip_pitch_joint` / `motor_left_hip_pitch_joint` | 512 MiB |
+| [Deep Robotics Lite3](../../test/0084.ros-runtime/mujoco_profiles/deep-robotics-lite3.json) | `FL_HipX_joint` / `FL_HipX_joint_ctrl` | 64 MiB |
+
+Each original model completed eight 128-step native comparisons, eight command-range rejections with zero steps and eight isolated receiver failures after one step. The VM survived every receiver failure and retained an unknown command outcome. These tests exercise the named simulated joint and the common permission-scoped local driver channel.
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.

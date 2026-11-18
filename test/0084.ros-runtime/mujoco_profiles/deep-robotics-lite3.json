@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/DeepRoboticsLab/deep_robotics_model",
+  "commit": "52352f5bbf2a30b5d02ece91900415188e7abc74",
+  "sourceDirectory": "Lite3/mjcf",
+  "model": "Lite3.xml",
+  "platform": "deep_robotics",
+  "joint": "FL_HipX_joint",
+  "actuator": "FL_HipX_joint_ctrl",
+  "files": {
+    "Lite3.xml": "45ddd5323aacf125635c0018fe77cc7b68b060721735896734a3601a6a2b33fa",
+    "meshes/hip.STL": "3386fa94992dbfc4d3e06c6d9fb110e2c4abd87f94c3ac766fdcce85c43341f3",
+    "meshes/shank.STL": "5410bae3b9b1e9fbc30343041450a80fc609806c2a83418bd2288b0720aec098",
+    "meshes/thigh.STL": "f29ea97407a9a30cb4549206d080848350d8b455bf4b9a63441241cdacab1719",
+    "meshes/torso.STL": "6f3f5fc4b9985db56d741ac1b6b93e11d9fb283eb128f8800ad9603772bbcda2"
+  }
+}
