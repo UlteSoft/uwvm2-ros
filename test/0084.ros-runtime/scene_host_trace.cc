@@ -40,6 +40,16 @@ int main()
     journal::observe_scene_result("uwvm_ros_v2","capability.open",0,"other",5);
     journal::observe_scene_result("uwvm_ros_v2","abi",2,"",9);
     assert(journal::records.back()->generation==0);
+    std::string caller(255,'a');
+    caller.back()=static_cast<char>(0xff);
+    journal::observe_scene_result("uwvm_ros_v2","abi",2,caller,UINT64_MAX);
+    assert(journal::records.back()->generation==UINT64_MAX &&
+           std::string_view{journal::records.back()->module_name}==caller);
+    caller.push_back('b');
+    journal::observe_scene_result("uwvm_ros_v2","abi",2,caller,UINT64_MAX);
+    assert(journal::records.back()->generation==0 && journal::records.back()->module_name.empty());
+    journal::observe_scene_result("uwvm_ros_v2","abi",2,"unverified",0);
+    assert(journal::records.back()->generation==0 && journal::records.back()->module_name.empty());
     assert(trace::parse("trace host read family=rosv2 module=main function=capability.open namespace=uwvm_ros_v2 result=13 count=1",request));
     auto page=trace::apply(request);
     assert(page.find("module-name=\"main\"")!=page.npos && page.find("result=13 ")!=page.npos &&
