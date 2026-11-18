@@ -430,6 +430,10 @@ extern "C++"
                            function.function_type_ptr!=types.type_section_begin+static_cast<::std::size_t>(object->words[2u]) ||
                            (object->words[1u]==1u && !object->bytes.empty()) || (object->words[1u]>1u && object->bytes.empty()))
                         { return fail(preparation_status::source_mismatch); }
+                        if(object->words[1u]>1u && !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+                           ::uwvm2::extension::memtag::may_require_allocation_directory(
+                               {object->bytes.data(),object->bytes.size()}))
+                        { return fail(preparation_status::source_mismatch); }
                         // [actual FINAL typed function vector, local<locals] end
                         // [safe] genuine source record only; effective generation
                         // body is compiled later by the SAME fused native walker.

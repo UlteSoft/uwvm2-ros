@@ -812,7 +812,9 @@ extern "C++"
            (address_bits!=32u && address_bits!=64u) ||
            (operation!=static_cast<unsigned>(mt::opcode::random) &&
             operation!=static_cast<unsigned>(mt::opcode::randomstore) &&
-            operation!=static_cast<unsigned>(mt::opcode::randomstorez)))refuse();
+            operation!=static_cast<unsigned>(mt::opcode::randomstorez) &&
+            operation!=static_cast<unsigned>(mt::opcode::claim) && operation!=static_cast<unsigned>(mt::opcode::claimz) &&
+            operation!=static_cast<unsigned>(mt::opcode::reserve)))refuse();
         try
         {
             cp::object_id memory_id{};

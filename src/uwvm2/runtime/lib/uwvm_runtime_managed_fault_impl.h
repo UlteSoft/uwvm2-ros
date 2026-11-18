@@ -32,6 +32,7 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
         case llvm_jit_trap_kind::null_reference:
         case llvm_jit_trap_kind::array_out_of_bounds:
         case llvm_jit_trap_kind::gc_allocation_failure:
+        case llvm_jit_trap_kind::memtag_allocation_rejected:
         case llvm_jit_trap_kind::memtag_violation:
         case llvm_jit_trap_kind::cast_failure: break;
         default: return false;
@@ -83,6 +84,7 @@ bool runtime_managed_fault::raise(llvm_jit_trap_kind kind)
         case llvm_jit_trap_kind::array_out_of_bounds: diagnostic = trap_kind::array_out_of_bounds; break;
         case llvm_jit_trap_kind::gc_allocation_failure: diagnostic = trap_kind::gc_allocation_failure; break;
         case llvm_jit_trap_kind::cast_failure: diagnostic = trap_kind::cast_failure; break;
+        case llvm_jit_trap_kind::memtag_allocation_rejected: diagnostic = trap_kind::memtag_allocation_rejected; break;
         case llvm_jit_trap_kind::memtag_violation: diagnostic = trap_kind::memtag_violation; break;
         default: break;
     }

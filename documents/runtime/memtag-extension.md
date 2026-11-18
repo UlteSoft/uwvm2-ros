@@ -260,10 +260,9 @@ types are rejected.
 
 The instruction inventory is maintained in
 `src/uwvm2/extension/memtag/instruction.h`, outside the official Core opcode
-tables. There are 20 descriptors, of which 19 have executable semantics:
-`0x20` through `0x2f`, and `0x36` through `0x38`. Descriptor `0x33` remains
-reserved and rejected. These are operation identities inside the packed word,
-not independently allocated primary opcodes. All other low-16-bit values fail.
+tables. It defines 19 executable reference instructions (`0x20–0x2f` and
+`0x36–0x38`) and five UWVM managed-allocation instructions (`0x40–0x44`).
+The decoder rejects reserved descriptor `0x33` and unassigned operation numbers.
 
 | Operation | Mnemonic | Stack inputs, deepest first | Result | Allocation-tag / data effect |
 |---|---|---|---|---|
@@ -287,6 +286,58 @@ not independently allocated primary opcodes. All other low-16-bit values fail.
 | `36` | `memtag.hint` | pointer, tag-source pointer, tag offset | pointer | Derive pointer tag |
 | `37` | `memtag.hintstore` | pointer, byte length, tag-source pointer, tag offset | pointer | Derive and store tag |
 | `38` | `memtag.hintstorez` | pointer, byte length, tag-source pointer, tag offset | pointer | Derive/store tag and zero data |
+| `40` | `memtag.claim` | base, byte length | tagged pointer | Acquire and color an available extent |
+| `41` | `memtag.claimz` | base, byte length | tagged pointer | Acquire, color and zero an extent |
+| `42` | `memtag.reserve` | base, byte length | reserved pointer | Reserve a color for later activation |
+| `43` | `memtag.activate` | reserved pointer, byte length | tagged pointer | Publish the reserved color |
+| `44` | `memtag.release` | registered pointer, byte length | base | Cancel a reservation or release an active extent |
+
+### Managed linear allocations
+
+With MTE enabled, a new extent must start on a 16-byte boundary, have a positive
+multiple of 16 bytes, fit the selected memory, and present a zero-tagged pointer
+matching every granule. Extents within an existing allocation, including the
+nonzero backing region of a pthread stack, are rejected. Pass the original
+pointer and complete extent when activating or releasing. Registered manifest
+globals have permanent ownership. Guest code can read the allocation tag of a
+global and use it to access the object. It cannot release its registration.
+
+The memory owner holds one directory shared by imported aliases. Its exclusive
+tag lease covers checking, selecting a color, registering the extent and writing
+the shadow and any active hardware tags. Each live registration consumes space
+from the VM's memtag pool. The VM reports an allocation rejection when that
+budget is exhausted. Entropy is obtained outside the relocation and tag locks.
+Each retry examines the current directory and shadow again. A failed operation
+preserves data, shadow and registrations.
+
+Colors exclude zero and the tags of extents on the same backing memory whose
+nearest edges have a gap of 0 through 64 bytes, inclusive. Selection examines
+each of the five neighboring granules on either side, plus reservations. An
+AArch64 owner configured for physical MTE excludes matching low four bits as
+well. Beyond that radius, tags may coincide. A later allocation can reuse a
+released tag. This policy detects some stale-pointer accesses and gives no
+cryptographic authority within shared Wasm memory.
+
+A reserved pointer cannot access bytes until activation. Existing access through
+the original base continues while the extent is reserved. Activation and release
+preserve data. Only successful `claimz` initializes the bytes to zero. Legacy
+tag-writing operations reject writes overlapping a registered extent, and reject
+a proposed tag conflicting with a registered neighbor. Ordinary byte stores
+still use the configured MTE access policy.
+
+Disabling MTE makes all five operations return the input pointer. `claimz`
+still performs a bounds-checked zero fill. The existing checkpoint tag image
+carries shadow bytes only. During collection and fresh restore, enabled MTE
+requires each validated main and preloaded module to be compatible with that
+format. A managed instruction in any function, including unreachable code,
+or a nonempty linear global descriptor disqualifies the source. A replacement
+body is also refused if its bytes can encode a complete managed instruction.
+For replacement bodies this conservative check can match an immediate.
+Existing live registrations independently prevent capturing or overwriting the
+owner. Thread-history recording and replay apply the same source restriction
+before dispatching a guest instruction. Ordinary cold start independently
+constructs new owners and installs their manifest registrations.
+
 
 Normalization happens during validation and translation. Interpreter handlers,
 LLVM memory checks and shadow storage use the same internal operation identities;
@@ -369,6 +420,21 @@ even one granule, including byte-disjoint ranges sharing a granule. Admission
 sorts the ranges in O(n log n) time and then checks adjacent owner-local ranges,
 avoiding quadratic rejection behavior. Empty descriptors make no allocation-tag
 claim; an empty descriptor list is valid even in a module with no memory.
+
+The initializer reserves colors for every permanent global before publishing
+the first shadow change. A reservation excludes other objects on either side
+with at most 64 intervening bytes, including descriptors from another module
+importing the same memory. The selection sees both occupied shadow granules and
+unpublished reservations. A private thread instance uses its own directory.
+Threads borrowing a shared memory reuse the existing owner's directory.
+
+A signed memory reset stages the replacement tag image and its permanent
+directory while execution is drained. A tagged migration may copy a complete
+permanent extent to a matching permanent extent. It must preserve one color
+across the whole destination and the required distance from its neighbors,
+including raw colored padding. Partial transfers and copies of dynamic lifetimes
+or outstanding reservations require a format carrying those ownership records.
+Admission rejects such copies before publication.
 
 The decoder
 validates the complete immutable payload before invoking a visitor. It rejects

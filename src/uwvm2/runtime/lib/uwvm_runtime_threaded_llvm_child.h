@@ -68,12 +68,14 @@ extern "C++"
             if(e==nullptr)return; // Missing scope is rejected by raw entry, never guest success.
             using journal_fault=::uwvm2::runtime::wasm_threads::journal_fault;
             auto const recorded_fault=kind==static_cast<::std::uint32_t>(llvm_jit_trap_kind::unreachable)?journal_fault::unreachable:
-                kind==static_cast<::std::uint32_t>(llvm_jit_trap_kind::memtag_violation)?journal_fault::memtag:journal_fault::execution;
+                (kind==static_cast<::std::uint32_t>(llvm_jit_trap_kind::memtag_violation) ||
+                 kind==static_cast<::std::uint32_t>(llvm_jit_trap_kind::memtag_allocation_rejected))?journal_fault::memtag:journal_fault::execution;
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             bool specified_guest_trap{specified_guest_exception};
             switch(static_cast<llvm_jit_trap_kind>(kind))
             {
                 case llvm_jit_trap_kind::unreachable:
+                case llvm_jit_trap_kind::memtag_allocation_rejected:
                 case llvm_jit_trap_kind::memtag_violation:
                 case llvm_jit_trap_kind::invalid_conversion_to_integer:
                 case llvm_jit_trap_kind::integer_divide_by_zero:
@@ -102,6 +104,8 @@ extern "C++"
                 {category=crash::category::unreachable;reason="unreachable";}
                 if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memtag_violation)
                 {category=crash::category::memtag;reason="memory tag mismatch";}
+                if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memtag_allocation_rejected)
+                {category=crash::category::memtag;reason="managed memory allocation rejected";}
                 if(static_cast<llvm_jit_trap_kind>(kind)==llvm_jit_trap_kind::memory_out_of_bounds)
                 {reason="memory access out of bounds";}
                 crash::report(category,reason,2u,e->child->module_index_,e->function);

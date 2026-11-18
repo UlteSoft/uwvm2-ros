@@ -45,6 +45,7 @@
 # include <uwvm2/parser/wasm/binfmt/binfmt_ver1/impl.h>
 # include <uwvm2/validation/impl.h>
 # include <uwvm2/extension/memtag/usage.h>
+# include <uwvm2/extension/memtag/globals.h>
 # include <uwvm2/validation/standard/wasm1/impl.h>
 # include <uwvm2/validation/standard/wasm1p1/impl.h>
 # include <uwvm2/validation/standard/wasm3/impl.h>
@@ -229,6 +230,46 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
             }
 #endif
 
+        return true;
+    }
+
+    /// A flat shadow preserves allocation tags but cannot reconstruct managed
+    /// allocation extents, reservations or immutable static ownership. Check
+    /// each verified module (including importers) before accepting this format.
+    template<typename File>
+    [[nodiscard]] inline bool admits_tag_only_checkpoint(File const& file) noexcept
+    {
+        namespace mt = ::uwvm2::extension::memtag;
+        if(file.binfmt_ver != 1u || !file.has_owned_source_image()) { return false; }
+        auto const& module{file.wasm_module_storage.wasm_binfmt_ver1_storage};
+        mt::usage_sink usage{.classify_only=true};
+        if(!validate_all_wasm_code_for_module(module, file.wasm_parameter.binfmt1_para,
+                file.file_name, file.module_name, &usage) || !usage.valid || usage.uses_allocation_directory)
+        { return false; }
+
+        using custom_type = ::uwvm2::parser::wasm::standard::wasm1::features::custom_section_storage_t;
+        auto const& custom{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<custom_type>(module.sections)};
+        bool seen{};
+        for(auto const& section : custom.customs)
+        {
+            if(section.custom_name == mt::obsolete_globals_section_name) { return false; }
+            if(section.custom_name != mt::linear_globals_section_name) { continue; }
+            if(seen) { return false; }
+            seen=true;
+            auto const begin{reinterpret_cast<::std::uintptr_t>(section.custom_begin)};
+            auto const end{reinterpret_cast<::std::uintptr_t>(section.sec_span.sec_end)};
+            if(begin < reinterpret_cast<::std::uintptr_t>(module.module_span.module_begin) || end < begin ||
+               end > reinterpret_cast<::std::uintptr_t>(module.module_span.module_end)) { return false; }
+            ::std::span<::std::byte const> payload{reinterpret_cast<::std::byte const*>(begin), end-begin};
+            bool needs_directory{};
+            // An independent pass binds memory indices and bounds to actual
+            // owners at admission. Here only the existence of a nonempty
+            // descriptor matters. No record can grant access or restore state.
+            auto result{mt::visit_linear_globals(payload, [](::std::uint32_t, ::std::uint64_t& extent) noexcept
+                { extent=UINT64_MAX; return true; }, [&](mt::linear_global_descriptor item) noexcept
+                { needs_directory |= item.byte_length != 0u; })};
+            if(!result || needs_directory) { return false; }
+        }
         return true;
     }
 

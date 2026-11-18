@@ -21,6 +21,7 @@ import uwvm2.utils.mutex;
 import uwvm2.object.memory.platform_page;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.shadow;
+import uwvm2.extension.memtag.managed_allocations;
 import uwvm2.extension.memtag.hardware_mte;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export

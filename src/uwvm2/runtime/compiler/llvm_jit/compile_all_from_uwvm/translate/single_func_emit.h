@@ -14977,6 +14977,11 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                             case mt::opcode::randomstorez:effect=emit.template operator()<mt::opcode::randomstorez>();break;
                             case mt::opcode::hintstore:effect=emit.template operator()<mt::opcode::hintstore>();break;
                             case mt::opcode::hintstorez:effect=emit.template operator()<mt::opcode::hintstorez>();break;
+                            case mt::opcode::claim:effect=emit.template operator()<mt::opcode::claim>();break;
+                            case mt::opcode::claimz:effect=emit.template operator()<mt::opcode::claimz>();break;
+                            case mt::opcode::reserve:effect=emit.template operator()<mt::opcode::reserve>();break;
+                            case mt::opcode::activate:effect=emit.template operator()<mt::opcode::activate>();break;
+                            case mt::opcode::release:effect=emit.template operator()<mt::opcode::release>();break;
                             default:return {};
                         }
                         if(effect==nullptr) { return {}; }

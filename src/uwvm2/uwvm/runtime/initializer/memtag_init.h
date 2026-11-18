@@ -173,29 +173,34 @@ template<initialization_purpose Purpose>
         if(mt::is_hardware(delivery) && !mt::logging_requested() && !memory.memtag_shadow.hardware_selected())
         { return mt_init::error({},u8"hardware MTE owner selection failed"); }
     }
-    // Stage entropy before mutating any allocation tag; failures never leave a
-    // partially tagged global set available to an executing guest.
-    for(auto& global:globals)
+    // The entire graph is still unpublished. Canonical owners hold reservations
+    // across modules, including when two descriptors reach the same owner by import.
+    ::std::size_t staged{}, published{};
+    auto rollback = [&]() noexcept
     {
-        if(!rt_mt::next_nonzero_global_tag(global.memory->memory.memtag_shadow.width(),global.tag))
-        { return mt_init::error({},u8"cannot obtain a nonzero global allocation tag from host entropy"); }
-    }
-    for(auto const& global:globals)
-    {
-        auto const& memory{global.memory->memory};
-        auto apply{[&]<typename Address,bool Shared>() noexcept
+        while(published)
         {
-            using view=mt::shadow_view<Address,Shared>;
-            ::std::array<Address,2u> operands{
-                view::insert(static_cast<Address>(global.address),global.tag),static_cast<Address>(global.bytes)};
-            return static_cast<bool>(rt_mt::execute<true,Address,Shared>(memory,mt::opcode::store,operands));
-        }};
-        bool okay{};
-        if(memory.memtag_shadow.width()==mt::address_width::i32)
-        { okay=memory.memtag_shadow.shared()?apply.template operator()<::std::uint32_t,true>():apply.template operator()<::std::uint32_t,false>(); }
-        else
-        { okay=memory.memtag_shadow.shared()?apply.template operator()<::std::uint64_t,true>():apply.template operator()<::std::uint64_t,false>(); }
-        if(!okay) { return mt_init::error({},u8"global tag initialization failed"); }
+            auto const& g{globals[--published]};
+            (void)rt_mt::write_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,0);
+        }
+        while(staged)
+        {
+            auto const& g{globals[--staged]};
+            (void)g.memory->memory.memtag_shadow.allocation_directory().remove_permanent(
+                g.address/mt::granule_size,(g.address+g.bytes-1u)/mt::granule_size,g.tag);
+        }
+    };
+    for(auto& g:globals)
+    {
+        if(!rt_mt::stage_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,g.tag))
+        { rollback(); return mt_init::error({},u8"cannot reserve a disjoint neighboring color for a linear global"); }
+        ++staged;
+    }
+    for(auto const& g:globals)
+    {
+        if(!rt_mt::write_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,g.tag))
+        { rollback(); return mt_init::error({},u8"global tag publication failed"); }
+        ++published;
     }
     return true;
 }

@@ -12,6 +12,7 @@ module;
 export module uwvm2.runtime.memtag.bridge;
 import uwvm2.object.memory.linear;
 import uwvm2.extension.memtag.operations;
+import uwvm2.extension.memtag.allocation_transition;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.storage;

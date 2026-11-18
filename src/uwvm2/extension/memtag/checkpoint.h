@@ -17,7 +17,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     [[nodiscard]] inline bool restore_tag_image(shadow_storage& storage,
         ::std::uint64_t memory_bytes, ::std::span<::std::byte const> tags) noexcept
     {
-        if(!storage.enabled() || storage.hardware_active() || memory_bytes>storage.prepared_memory_bytes() ||
+        if(!storage.enabled() || storage.hardware_active() || !storage.allocation_directory().empty() || memory_bytes>storage.prepared_memory_bytes() ||
            !valid_tag_image(storage.width()==address_width::i32?32u:64u,
                storage.width()==address_width::i32?4u:8u,memory_bytes,tags)) { return false; }
         auto apply=[&]<typename Address, bool Shared>() noexcept

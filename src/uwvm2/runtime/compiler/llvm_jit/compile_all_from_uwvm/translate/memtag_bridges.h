@@ -67,12 +67,14 @@ template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shar
     {
         if(result.operation.error==mt::operation_error::memory_access)
         { llvm_jit_memtag_access_failure<ManagedTraps>(*memory,first,0u,descriptor->operand_count>1u ? second : 1u,result.operation.access); }
+        using trap = ::uwvm2::runtime::lib::llvm_jit_trap_kind;
+        auto const kind{mt::is_allocation_rejection(result.operation.error) ? trap::memtag_allocation_rejected : trap::runtime_invariant_failure};
         if constexpr(ManagedTraps)
         { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(
-            ::uwvm2::runtime::lib::llvm_jit_trap_kind::runtime_invariant_failure,0u,0u); }
+            kind,0u,0u); }
         else
         { ::uwvm2::runtime::lib::llvm_jit_runtime_trap(
-            ::uwvm2::runtime::lib::llvm_jit_trap_kind::runtime_invariant_failure,0u,0u); }
+            kind,0u,0u); }
         ::fast_io::fast_terminate();
     }
     return result.operation.value;

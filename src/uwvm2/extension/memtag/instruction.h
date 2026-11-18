@@ -24,7 +24,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     inline constexpr ::std::uint_least32_t linear_encoding_domain{1u};
     inline constexpr ::std::uint_least32_t linear_encoding_base{
         (encoding_version << 24u) | (linear_encoding_domain << 16u)};
-    inline constexpr ::std::size_t instruction_count{20u};
+    inline constexpr ::std::size_t instruction_count{25u};
     inline constexpr ::std::uint_least8_t granule_size_log2{4u};
     inline constexpr ::std::uint_least64_t granule_size{16u};
 
@@ -37,8 +37,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         store = 0x2bu, storez = 0x2cu, random = 0x2du,
         randomstore = 0x2eu, randomstorez = 0x2fu,
         add = 0x33u, hint = 0x36u, hintstore = 0x37u,
-        hintstorez = 0x38u
+        hintstorez = 0x38u,
+        claim = 0x40u, claimz = 0x41u, reserve = 0x42u, activate = 0x43u, release = 0x44u
     };
+
+    [[nodiscard]] inline constexpr bool is_allocation_operation(opcode operation) noexcept
+    { return operation >= opcode::claim && operation <= opcode::release; }
 
     [[nodiscard]] inline constexpr ::std::uint_least32_t encode_opcode(opcode operation) noexcept
     {
@@ -99,6 +103,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {opcode::hint, u8"memtag.hint", 3u, 1u, {operand_role::address, operand_role::tag_source, operand_role::tag_offset}, false, false, false, false},
         {opcode::hintstore, u8"memtag.hintstore", 4u, 1u, {operand_role::address, operand_role::byte_length, operand_role::tag_source, operand_role::tag_offset}, false, true, false, false},
         {opcode::hintstorez, u8"memtag.hintstorez", 4u, 1u, {operand_role::address, operand_role::byte_length, operand_role::tag_source, operand_role::tag_offset}, false, true, true, false},
+        {opcode::claim, u8"memtag.claim", 2u, 1u, {operand_role::address, operand_role::byte_length}, true, true, false, true},
+        {opcode::claimz, u8"memtag.claimz", 2u, 1u, {operand_role::address, operand_role::byte_length}, true, true, true, true},
+        {opcode::reserve, u8"memtag.reserve", 2u, 1u, {operand_role::address, operand_role::byte_length}, true, true, false, true},
+        {opcode::activate, u8"memtag.activate", 2u, 1u, {operand_role::address, operand_role::byte_length}, true, true, false, false},
+        {opcode::release, u8"memtag.release", 2u, 1u, {operand_role::address, operand_role::byte_length}, true, true, false, false},
     };
 
     [[nodiscard]] inline constexpr instruction_descriptor const* find_instruction(::std::uint_least32_t subopcode) noexcept
@@ -106,6 +115,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         if(subopcode >= 0x20u && subopcode <= 0x2fu) { return instructions + (subopcode - 0x20u); }
         if(subopcode == 0x33u) { return instructions + 16u; }
         if(subopcode >= 0x36u && subopcode <= 0x38u) { return instructions + (17u + subopcode - 0x36u); }
+        if(subopcode >= 0x40u && subopcode <= 0x44u) { return instructions + (20u + subopcode - 0x40u); }
         return nullptr;
     }
 

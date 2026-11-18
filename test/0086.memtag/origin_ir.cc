@@ -54,7 +54,7 @@ int main()
         REQUIRE(error.err_code==uwvm2::validation::error::code_validation_error_code::ok);
         REQUIRE(compiled.llvm_jit_module.emitted);
         REQUIRE(!llvm::verifyModule(*compiled.llvm_jit_module.llvm_module,&llvm::errs()));
-        REQUIRE(compiled.local_funcs.size()==19u);
+        REQUIRE(compiled.local_funcs.size()==mt::instruction_count-1u);
 
         unsigned boundaries{},duplicates{};
         for(auto const& function:*compiled.llvm_jit_module.llvm_module)
@@ -79,7 +79,7 @@ int main()
         std::printf("origin boundaries=%u duplicates=%u log=%u width=%u\n",boundaries,duplicates,unsigned(log),address64?64u:32u);
         std::fflush(stdout);
         REQUIRE(duplicates==0u);
-        if(log) { REQUIRE(boundaries>=19u); }
-        std::printf("PASS production Wasm -> LLVM unique MTE origins: 19 defined instructions, memory%u\n",address64?64u:32u);
+        if(log) { REQUIRE(boundaries>=mt::instruction_count-1u); }
+        std::printf("PASS production Wasm -> LLVM unique MTE origins: 24 defined instructions, memory%u\n",address64?64u:32u);
     }
 }

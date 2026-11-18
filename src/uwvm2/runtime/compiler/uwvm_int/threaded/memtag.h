@@ -21,6 +21,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         {
             if(result.operation.error==mt::operation_error::memory_access)
             { return access_failure(result.operation.access,arguments[0]); }
+            if(mt::is_allocation_rejection(result.operation.error)) { return fail(status::trap_allocation); }
             return fail(result.error==rt::bridge_error::entropy_unavailable?status::host_failure:status::invariant_failure);
         }
         return descriptor->result_count==0u || push(result.operation.value);

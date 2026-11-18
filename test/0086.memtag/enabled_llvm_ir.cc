@@ -42,6 +42,7 @@ template<class A>A expected(mt::opcode op,A a,A b,A c,A d){
  case mt::opcode::sub:return static_cast<A>((a&mask)-(b&mask));
  case mt::opcode::hint:return ins(a,static_cast<A>((b>>shift)+c));
  case mt::opcode::hintstore:case mt::opcode::hintstorez:return ins(a,static_cast<A>((c>>shift)+d));
+ case mt::opcode::claim:case mt::opcode::claimz:case mt::opcode::reserve:case mt::opcode::activate:case mt::opcode::release:
  case mt::opcode::load:case mt::opcode::random:case mt::opcode::randomstore:case mt::opcode::randomstorez:return static_cast<A>((a&mask)|tagmask);
  case mt::opcode::store:case mt::opcode::storez:return 0;
  default:std::abort();

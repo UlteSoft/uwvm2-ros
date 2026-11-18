@@ -17,6 +17,7 @@
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/object/memory/linear/impl.h>
 # include <uwvm2/extension/memtag/operations.h>
+# include <uwvm2/extension/memtag/allocation_transition.h>
 # include "random.h"
 # include "native_pointer.h"
 # include "deferred.h"
@@ -413,7 +414,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         if constexpr(Enabled)
         {
             bool const random_store{operation==mt::opcode::randomstore || operation==mt::opcode::randomstorez};
-            if(random_store)
+            bool const managed{mt::is_allocation_operation(operation)};
+            if(random_store || managed)
             {
                 // Validate before consuming entropy, then release the pin before
                 // a potentially blocking OS entropy refill. Recheck on execution:
@@ -426,6 +428,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                 if(!result.operation.access)
                 { result.operation.error=mt::operation_error::memory_access; return result; }
             }
+            if(managed)
+            {
+                // Scope every attempt separately. Entropy may refill from the OS,
+                // and a checkpoint hook may acquire its journal mutex.
+                if(!arguments[1] || (view_type::untag(arguments[0]) % mt::granule_size) ||
+                    (arguments[1] % mt::granule_size))
+                { result.operation.error=mt::operation_error::invalid_allocation; return result; }
+                for(unsigned attempt{}; attempt != 16u; ++attempt)
+                {
+                    ::std::uint8_t low{}, high{};
+                    if(descriptor->randomizes_tag && (!random_source(low) || !random_source(high)))
+                    {
+                        result.error=bridge_error::entropy_unavailable;
+                        result.operation.error=mt::operation_error::allocation_entropy;
+                        return result;
+                    }
+                    auto const word{static_cast<::std::uint16_t>(low | (unsigned(high) << 8u))};
+                    bool retry{};
+                    result.operation=details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
+                    {
+                        return memory.memtag_shadow.template with_shared_tag_lease<Shared,true>([&]() noexcept
+                        {
+                            return mt::transition_allocation(memory.memtag_shadow.allocation_directory(),
+                                memory.memtag_shadow.hardware_selected(),operation,arguments,data,
+                                memory.memtag_shadow.template view_under_tag_lease<Address,Shared>(data.size()),word,retry);
+                        });
+                    });
+                    if(!retry) { return result; }
+                }
+                result.error=bridge_error::entropy_unavailable;
+                result.operation.error=mt::operation_error::allocation_entropy;
+                return result;
+            }
             if(operation==mt::opcode::random || random_store)
             {
                 if(!random_source(random)) { result.error=bridge_error::entropy_unavailable; return result; }
@@ -437,8 +472,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             {
                 if constexpr(Enabled)
                 {
-                    return mt::execute_operation<true,Address,Shared>(operation,arguments,data,
-                        memory.memtag_shadow.template view_under_tag_lease<Address,Shared>(data.size()),generator);
+                    auto const view{memory.memtag_shadow.template view_under_tag_lease<Address,Shared>(data.size())};
+                    if(descriptor->writes_allocation_tags && !mt::allows_raw_write(memory.memtag_shadow.allocation_directory(),
+                        memory.memtag_shadow.hardware_selected(),operation,arguments,view,random))
+                    { return mt::operation_result<Address>{.error=mt::operation_error::allocation_conflict}; }
+                    return mt::execute_operation<true,Address,Shared>(operation,arguments,data,view,generator);
                 }
                 else
                 {

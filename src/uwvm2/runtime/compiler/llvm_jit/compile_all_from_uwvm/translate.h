@@ -185,7 +185,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         array_out_of_bounds,
         gc_allocation_failure,
         cast_failure,
-        memtag_violation
+        memtag_violation, memtag_allocation_rejected
     };
 
     extern "C++"

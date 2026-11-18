@@ -32,6 +32,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         return false;
     }
 
+    /// A replacement function body is checkpoint DATA and has not yet been
+    /// parsed with its replacement local declarations. Until a typed replacement
+    /// is available, refuse any body containing a complete managed instruction
+    /// word. This may conservatively refuse matching bytes in an immediate.
+    [[nodiscard]] inline constexpr bool may_require_allocation_directory(::std::span<::std::byte const> bytes) noexcept
+    {
+        for(::std::size_t index{}; index < bytes.size(); ++index)
+        {
+            if(bytes[index] != ::std::byte{opcode_prefix}) { continue; }
+            auto cursor{bytes.data() + index + 1u};
+            auto const instruction{scan_opcode(cursor, bytes.data() + bytes.size())};
+            if(instruction.error == encoding_error::none &&
+               is_allocation_operation(static_cast<opcode>(instruction.subopcode))) { return true; }
+        }
+        return false;
+    }
+
     struct memory_usage
     {
         bool used{};
@@ -45,8 +62,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         static constexpr bool retains_operations{false};
         ::std::span<memory_usage> memories{};
         bool valid{true};
+        bool classify_only{};
+        bool uses_allocation_directory{};
         inline constexpr void observe_memtag(::std::uint32_t index, opcode instruction, address_width width) noexcept
         {
+            uses_allocation_directory |= is_allocation_operation(instruction);
+            if(classify_only) { return; } // The typed validator already resolved the memory and operand widths.
             if(index>=memories.size()) {valid=false;return;}
             auto& entry{memories[index]};
             if(entry.used && entry.width!=width) {valid=false;return;}

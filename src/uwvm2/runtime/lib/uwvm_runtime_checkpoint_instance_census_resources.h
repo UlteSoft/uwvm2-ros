@@ -446,6 +446,10 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
                 if(transaction->section_bytes.size() > UINTPTR_MAX - base || first < base || last <= first ||
                     last - base > transaction->section_bytes.size()) { return state.fail(census_error::invalid_shape); }
                 auto const offset{static_cast<::std::size_t>(first - base)}, length{static_cast<::std::size_t>(last - first)};
+                if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+                   ::uwvm2::extension::memtag::may_require_allocation_directory(
+                       {reinterpret_cast<::std::byte const*>(first),length}))
+                { return state.fail(census_error::unavailable_capability); }
                 if(!state.charge_payload(length)) { return false; }
                 auto& bytes{state.object(wire)->bytes}; bytes.resize(length);
                 // [actual committed section owner ... offset][exact local-decls+body] end
@@ -515,6 +519,9 @@ struct census_allocator_quiescence
     auto const& tags{actual.memory.memtag_shadow};
     if(tags.enabled())
     {
+        // The collector has already parked all VM workers and closed host access.
+        // This state format stores raw shadow bytes, not managed extents or reservations.
+        if(!tags.allocation_directory().empty()) { return state.fail(census_error::unavailable_capability); }
         auto const count{length/16u};
         if(!state.charge_payload(count)) { return false; }
         memory->words[4u]=tags.width()==::uwvm2::extension::memtag::address_width::i32?4u:8u;
@@ -801,6 +808,8 @@ template<typename Memory>
         auto const& pin{state.actual.modules[owner]};
         auto const* file{pin.source->actual_validated_file(static_cast<::std::size_t>(pin.id), epoch_, pin.module)};
         if(file == nullptr || file->binfmt_ver != 1u || !file->has_owned_source_image() || file->source_size() < 8u ||
+            (!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+             !::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(*file)) ||
             !census_declaration_preflight(state, owner, *file, file->wasm_module_storage.wasm_binfmt_ver1_storage))
         { return state.fail(census_error::unavailable_capability); }
         auto const& module{*pin.module};

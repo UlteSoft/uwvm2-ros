@@ -90,7 +90,8 @@
                 if(!result)
                 {
                     if(result.operation.error==mt::operation_error::memory_access)memtag_access_failure(*memory,first,result.operation.access);
-                    else fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
+                    else fail(static_cast<::std::uint32_t>(mt::is_allocation_rejection(result.operation.error) ?
+                        llvm_jit_trap_kind::memtag_allocation_rejected : llvm_jit_trap_kind::runtime_invariant_failure));
                     return 0u;
                 }
                 return result.operation.value;
@@ -321,6 +322,11 @@
             operation.template operator()<mt::opcode::hint>();
             operation.template operator()<mt::opcode::hintstore>();
             operation.template operator()<mt::opcode::hintstorez>();
+            operation.template operator()<mt::opcode::claim>();
+            operation.template operator()<mt::opcode::claimz>();
+            operation.template operator()<mt::opcode::reserve>();
+            operation.template operator()<mt::opcode::activate>();
+            operation.template operator()<mt::opcode::release>();
 
             using code=emit::llvm_jit_simd_code;
             auto simd=[&]<code Op>() noexcept

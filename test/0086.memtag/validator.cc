@@ -40,7 +40,8 @@ int main()
         {0x20,0,1},{0x21,1,1},{0x22,2,1},{0x23,0,1},{0x24,0,1},
         {0x25,2,1},{0x26,2,1},{0x27,1,1},{0x28,1,1},{0x29,2,1},
         {0x2a,2,1},{0x2b,2,0},{0x2c,2,0},{0x2d,1,1},{0x2e,2,1},
-        {0x2f,2,1},{0x33,3,1},{0x36,3,1},{0x37,4,1},{0x38,4,1}};
+        {0x2f,2,1},{0x33,3,1},{0x36,3,1},{0x37,4,1},{0x38,4,1},
+        {0x40,2,1},{0x41,2,1},{0x42,2,1},{0x43,2,1},{0x44,2,1}};
     auto validate{[&](std::vector<std::byte> const& bytes)
     {
         uwvm2::validation::error::code_validation_error_impl error{};
@@ -83,6 +84,12 @@ int main()
                 validation::validate_code_to_sink(validation::wasm3_code_version{},module,0,
                     bytes.data(),bytes.data()+bytes.size(),error,parameters,sink);
                 REQUIRE(error.err_code==error_code::ok && sink.valid && uses[memory].used && !uses[1u-memory].used);
+                REQUIRE(sink.uses_allocation_directory==(instruction.opcode>=0x40u));
+                uwvm2::extension::memtag::usage_sink classified{.classify_only=true};
+                validation::validate_code_to_sink(validation::wasm3_code_version{},module,0,
+                    bytes.data(),bytes.data()+bytes.size(),error,parameters,classified);
+                REQUIRE(classified.valid && classified.uses_allocation_directory==sink.uses_allocation_directory);
+                REQUIRE(uwvm2::extension::memtag::may_require_allocation_directory(bytes)==sink.uses_allocation_directory);
                 REQUIRE(uses[memory].width == (memory==0u ? uwvm2::extension::memtag::address_width::i32 :
                     uwvm2::extension::memtag::address_width::i64));
                 REQUIRE(uses[memory].has_undefined_placeholder == (instruction.opcode==0x33u));++cases;

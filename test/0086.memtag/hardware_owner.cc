@@ -60,6 +60,23 @@ void exercise() {
  CHECK(rt::activate_owner_hardware(owner));
  CHECK(hw::load_tag(owner.memory_begin)==9 && hw::load_tag(owner.memory_begin+16)==9);
  CHECK(hw::load_tag(owner.memory_begin+32)==0);
+ // A shadow tag may carry eight bits, but neighboring allocation colors must
+ // also differ after projection into the four physical tag bits used by LDG.
+ auto managed=[&](mt::opcode operation,Address pointer) {
+  Address operands[]{pointer,16};
+  return rt::execute<true,Address,Shared>(owner,operation,operands);
+ };
+ auto reserved=managed(mt::opcode::reserve,128);CHECK(reserved);
+ CHECK(hw::load_tag(owner.memory_begin+128)==0);
+ auto active=managed(mt::opcode::claimz,208);CHECK(active); // exactly 64 bytes between extents
+ auto a=View::extract(active.operation.value)&15u, r=View::extract(reserved.operation.value)&15u;
+ CHECK(a && r && a!=r && hw::load_tag(owner.memory_begin+208)==a);
+ CHECK(managed(mt::opcode::activate,reserved.operation.value));
+ CHECK(hw::load_tag(owner.memory_begin+128)==r);
+ CHECK(rt::with_checked_access<Address,Shared>(owner,active.operation.value,0,16,
+  [](std::span<std::byte> bytes) noexcept { for(auto value:bytes) CHECK(value==std::byte{}); }));
+ CHECK(managed(mt::opcode::release,active.operation.value));CHECK(managed(mt::opcode::release,reserved.operation.value));
+ CHECK(hw::load_tag(owner.memory_begin+128)==0 && hw::load_tag(owner.memory_begin+208)==0);
  std::byte* native{};
  CHECK(rt::with_checked_access<Address,Shared>(owner,tag,0,32,[&](std::span<std::byte> bytes) noexcept {
   CHECK(bytes[0]==std::byte{42});CHECK((reinterpret_cast<std::uintptr_t>(bytes.data())>>56u)==9);
@@ -99,7 +116,7 @@ void threaded_growth() {
  CHECK(rt::activate_owner_hardware(owner));
  auto view=owner.memtag_shadow.view<std::uint32_t,true>(65536);
  CHECK(view.store(view.insert(0,8),16));
- std::stop_source stop;
+ uwvm2::utils::thread::stop_source stop;
  mt::details::storage_failure_test_hook=[](mt::storage_operation op,std::size_t){return op==mt::storage_operation::commit;};
  auto failed=owner.grow_threaded_profile(1,262144,stop.get_token());
  mt::details::storage_failure_test_hook=nullptr;
@@ -130,6 +147,7 @@ void partial_granule() {
 #endif
 int main() {
 #if defined(__linux__) && defined(__aarch64__) && defined(UWVM_SUPPORT_MMAP)
+ mt::selected_fault_delivery.store(mt::fault_delivery::hardware_sync);
  CHECK(hw::supported());CHECK(hw::enable_current_thread_sync());
  CHECK((prctl(56,0ul,0ul,0ul,0ul)&6)==2);
  std::thread worker([]{CHECK(hw::enable_current_thread_sync());CHECK((prctl(56,0ul,0ul,0ul,0ul)&6)==2);});worker.join();

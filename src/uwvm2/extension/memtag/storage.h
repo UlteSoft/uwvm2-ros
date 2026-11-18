@@ -22,6 +22,7 @@
 # include <uwvm2/utils/mutex/rw_spin_lock.h>
 # include "instruction.h"
 # include "shadow.h"
+# include "managed_allocations.h"
 # if defined(UWVM_SUPPORT_MMAP) && !(defined(_WIN32) || defined(__CYGWIN__))
 #  include <sys/mman.h>
 # endif
@@ -53,6 +54,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     // quiescence; allocator growth requires the owner's existing relocation pin.
     class shadow_storage
     {
+        mutable managed_allocations allocations_{};
         void* data_{};
         ::std::size_t allocated_bytes_{};
         ::std::size_t committed_bytes_{};
@@ -196,6 +198,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
         constexpr void take(shadow_storage& other) noexcept
         {
+            allocations_.take(other.allocations_);
             data_ = ::std::exchange(other.data_, nullptr);
             allocation_charge_ = ::std::move(other.allocation_charge_);
             shared_tag_gate_ = ::std::exchange(other.shared_tag_gate_, nullptr);
@@ -228,6 +231,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         [[nodiscard]] constexpr bool enabled() const noexcept { return backend_ != storage_backend::disabled; }
         [[nodiscard]] constexpr address_width width() const noexcept { return width_; }
+        // Access requires the same read/write lease used for shadow tags.
+        [[nodiscard]] managed_allocations& allocation_directory() const noexcept { return allocations_; }
         [[nodiscard]] constexpr bool shared() const noexcept { return shared_; }
         [[nodiscard]] constexpr bool shared_tag_lease_ready() const noexcept
         { return !shared_ || shared_tag_gate_ != nullptr; }
@@ -479,6 +484,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         constexpr void reset() noexcept
         {
+            allocations_.reset();
             // Configuration/move/reset remain quiescent operations. A tag lease
             // is not source-lifetime authority and cannot authorize retirement.
             if(shared_tag_gate_ != nullptr)

@@ -98,7 +98,7 @@ int main()
         REQUIRE(error.err_code==uwvm2::validation::error::code_validation_error_code::ok);
         REQUIRE(compiled.llvm_jit_module.emitted);
         REQUIRE(!llvm::verifyModule(*compiled.llvm_jit_module.llvm_module,&llvm::errs()));
-        REQUIRE(compiled.local_funcs.size()==19u);
+        REQUIRE(compiled.local_funcs.size()==mt::instruction_count-1u);
         std::string text;llvm::raw_string_ostream stream{text};
         compiled.llvm_jit_module.llvm_module->print(stream,nullptr);
         REQUIRE(text.find("memtag_shadow")==std::string::npos);
@@ -112,6 +112,6 @@ int main()
         }
         if(!log) { baseline[address64]=histogram; }
         else { REQUIRE(histogram==baseline[address64]); }
-        std::printf("PASS production Wasm -> LLVM disabled MTE: 19 defined instructions, memory%u\n",address64?64u:32u);
+        std::printf("PASS production Wasm -> LLVM disabled MTE: 24 defined instructions, memory%u\n",address64?64u:32u);
     }
 }

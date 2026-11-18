@@ -22,7 +22,10 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
-    enum class operation_error : unsigned { none, unknown_opcode, wrong_arity, undefined_placeholder, memory_access };
+    enum class operation_error : unsigned { none, unknown_opcode, wrong_arity, undefined_placeholder, memory_access, managed_state_required, invalid_allocation,
+        allocation_conflict, allocation_resource_limit, allocation_no_color, allocation_entropy };
+    [[nodiscard]] inline constexpr bool is_allocation_rejection(operation_error error) noexcept
+    { return error >= operation_error::invalid_allocation && error <= operation_error::allocation_entropy; }
     template<::std::unsigned_integral Address>
     struct operation_result
     {
@@ -49,6 +52,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         if(descriptor == nullptr) { result.error = operation_error::unknown_opcode; return result; }
         if(arguments.size() != descriptor->operand_count)
         { result.error = operation_error::wrong_arity; return result; }
+        if constexpr(Enabled)
+        {
+            if(is_allocation_operation(operation)) { result.error = operation_error::managed_state_required; return result; }
+        }
         // The published author presentation calls add a placeholder and neither
         // pinned implementation defines its arithmetic. Never invent a formula.
         if(operation == opcode::add)

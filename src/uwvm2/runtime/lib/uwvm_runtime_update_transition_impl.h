@@ -12,6 +12,7 @@
     if(g_runtime.modules.size()!=1u || !g_runtime.modules.front_unchecked().runtime_module) { return false; }
     auto const& module{*g_runtime.modules.front_unchecked().runtime_module};
     if(plan.memories.size()!=module.local_defined_memory_vec_storage.size()) { return false; }
+    if(plan.memories.size() > s.pending_directories.size()) { return false; }
     for(auto& memory:plan.memories)
     {
         auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(memory.index).memory};
@@ -42,12 +43,20 @@
             {
                 if(!valid || descriptor.byte_length==0u) { return; }
                 auto& memory{plan.memories[descriptor.memory_index]};
+                if(!memory.tagged) { valid=false;return; }
+                auto const first{descriptor.address/mt::granule_size};
+                auto const last{(descriptor.address+descriptor.byte_length-1u)/mt::granule_size};
                 ::std::uint8_t tag{};
-                if(!memory.tagged || !::uwvm2::runtime::memtag::next_nonzero_global_tag(mt::address_width::i32,tag))
-                { valid=false;return; }
-                auto const first{static_cast<::std::size_t>(descriptor.address/16u)};
-                auto const last{static_cast<::std::size_t>((descriptor.address+descriptor.byte_length-1u)/16u+1u)};
-                for(auto i{first};i<last;++i) { memory.allocation_tags[i]=tag; }
+                valid=::uwvm2::runtime::memtag::reserve_static_extent(
+                    s.pending_directories[descriptor.memory_index],mt::address_width::i32,false,
+                    memory.allocation_tags.size(),first,last,
+                    [&](::std::uint64_t i, ::std::uint8_t& value) noexcept
+                    { value=memory.allocation_tags[static_cast<::std::size_t>(i)];return true; },
+                    ::uwvm2::runtime::memtag::next_random_tag,tag);
+                if(valid)
+                {
+                    for(auto i{first};i<=last;++i) { memory.allocation_tags[static_cast<::std::size_t>(i)]=tag; }
+                }
             })};
         if(!checked || !valid) { return false; }
     }
@@ -103,6 +112,29 @@
         if(source.tagged!=destination.tagged || ((source.tagged || destination.tagged) &&
            ((row.source_offset|row.destination_offset|row.length)&15u)!=0u)) { return update::status::unsupported; }
     }
+    // The byte/tag migration format carries no dynamic allocation lifetimes.
+    // A permanent extent may migrate only as a whole to an equivalent
+    // permanent extent. Check both directions while the old graph is drained.
+    for(auto const& row:migration.memories)
+    {
+        if(!row.length || !s.module_plan->memories[row.source_memory].tagged) { continue; }
+        auto& before{module.local_defined_memory_vec_storage.index_unchecked(row.source_memory).memory.memtag_shadow.allocation_directory()};
+        auto& after{s.pending_directories[row.destination_memory]};
+        auto const source_first{row.source_offset/16u}, target_first{row.destination_offset/16u}, count{row.length/16u};
+        auto corresponds=[&](auto& from, auto& to, ::std::uint64_t start, ::std::uint64_t dest) noexcept
+        {
+            bool okay{true};
+            from.visit(start,start+count-1u,[&](auto const& item) noexcept
+            {
+                if(!item.permanent || item.first<start || item.last>=start+count) { okay=false;return; }
+                auto const* peer{to.exact(dest+(item.first-start),dest+(item.last-start))};
+                if(!peer || !peer->permanent) { okay=false; }
+            });
+            return okay;
+        };
+        if(!corresponds(before,after,source_first,target_first) || !corresponds(after,before,target_first,source_first))
+        { return update::status::unsupported; }
+    }
     ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_vector<unsigned char>> copies(s.module_plan->memories.size());
     ::uwvm2::utils::container::std_vector<::std::span<unsigned char const>> source_memories; source_memories.reserve(copies.size());
     for(auto const& memory : s.module_plan->memories)
@@ -140,6 +172,14 @@
             {destination.allocation_tags.data()+static_cast<::std::size_t>(row.destination_offset/16u),static_cast<::std::size_t>(row.length/16u)})};
         if(copied.status!=::uwvm2::extension::memtag::debug_tag_status::available) { return update::status::invalid_state; }
     }
+    // A copied color can conflict with an untouched neighbor. Validate the
+    // final image including raw-tagged padding before making any of it visible.
+    for(auto const& memory:s.module_plan->memories)
+    {
+        if(memory.tagged && !::uwvm2::runtime::memtag::bind_migrated_static_image(
+            s.pending_directories[memory.index], {memory.allocation_tags.data(),memory.allocation_tags.size()}))
+        { return update::status::unsupported; }
+    }
     return update::status::ok;
 }
 [[nodiscard]] inline bool publish_module_reset(session& s) noexcept
@@ -161,6 +201,7 @@
             if(!view.store(view.insert(static_cast<::std::uint32_t>(first*16u),memory.allocation_tags[first]),(last-first)*16u)) { return false; }
             first=last;
         }
+        actual.memtag_shadow.allocation_directory().take(s.pending_directories[memory.index]);
     }
     for(::std::size_t i{}; i < s.module_plan->data_segments.size(); ++i)
     {

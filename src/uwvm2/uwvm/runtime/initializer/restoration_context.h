@@ -922,6 +922,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& main{source_->file_};
                 if(main.binfmt_ver != 1u || !main.has_owned_source_image())
                 { return state_ = skeleton_result::invalid_source; }
+                if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)
+                {
+                    auto const compatible{[](auto const& file) noexcept
+                        { return ::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(file); }};
+                    if(!compatible(main)) { return state_ = skeleton_result::invalid_source; }
+                    for(auto const& file : source_->preload_files_)
+                    { if(!compatible(file)) { return state_ = skeleton_result::invalid_source; } }
+                }
                 // Count actual source and native adapter declarations BEFORE allocating
                 // any new map buckets. The source factory bounded preload extent to 4095.
                 auto const wasm_count{source_->preload_files_.size() + 1uz};

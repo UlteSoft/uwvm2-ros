@@ -54,6 +54,7 @@
 # include <uwvm2/extension/memtag/globals.h>
 # include <uwvm2/runtime/memtag/hardware_thread.h>
 # include <uwvm2/runtime/memtag/deferred.h>
+# include <uwvm2/runtime/memtag/static_allocation.h>
 # include <uwvm2/runtime/diagnostic/crash_policy.h>
 # include <uwvm2/runtime/diagnostic/crash_file.h>
 # include <uwvm2/runtime/diagnostic/wasm_coredump.h>
@@ -2247,7 +2248,7 @@ namespace uwvm2::runtime::lib
             array_out_of_bounds,
             gc_allocation_failure,
             cast_failure,
-            memtag_violation
+            memtag_violation, memtag_allocation_rejected
 
         };
 
@@ -2287,6 +2288,7 @@ namespace uwvm2::runtime::lib
                 case trap_kind::array_out_of_bounds: return {u8"array access out of bounds"};
                 case trap_kind::gc_allocation_failure: return {u8"GC allocation failed: memory or size limit"};
                 case trap_kind::cast_failure: return {u8"reference cast failed: value does not match target heap type"};
+                case trap_kind::memtag_allocation_rejected: return {u8"managed memory allocation rejected"};
                 case trap_kind::memtag_violation: return {u8"memory tag mismatch"};
                 case trap_kind::table_out_of_bounds:
                 {
@@ -3452,6 +3454,7 @@ namespace uwvm2::runtime::lib
                 case trap_kind::array_out_of_bounds:
                 case trap_kind::gc_allocation_failure:
                 case trap_kind::memtag_violation:
+                case trap_kind::memtag_allocation_rejected:
                 case trap_kind::cast_failure: break;
                 default: return;
             }
@@ -10777,8 +10780,14 @@ namespace uwvm2::runtime::lib
             auto reason{bridge_error == static_cast<unsigned>(::uwvm2::runtime::memtag::bridge_error::entropy_unavailable) ? view{u8"host tag entropy is unavailable"} :
                 bridge_error == static_cast<unsigned>(::uwvm2::runtime::memtag::bridge_error::invalid_owner) ? view{u8"memory has no matching tag owner"} :
                 operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::undefined_placeholder) ? view{u8"memtag.add has no defined execution semantics"} :
+                operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::invalid_allocation) ? view{u8"invalid managed allocation range, token or phase"} :
+                operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::allocation_conflict) ? view{u8"managed allocation conflicts with the owner directory"} :
+                operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::allocation_resource_limit) ? view{u8"managed allocation metadata limit reached"} :
+                operation_error == static_cast<unsigned>(::uwvm2::extension::memtag::operation_error::allocation_no_color) ? view{u8"no legal neighboring allocation tag"} :
                 view{u8"invalid internal memtag operation"}};
             ::fast_io::io::perrln(runtime_fault_output(),u8"uwvm: [fatal] Memtag operation failed: ",reason,u8".");
+            if(::uwvm2::extension::memtag::is_allocation_rejection(static_cast<::uwvm2::extension::memtag::operation_error>(operation_error)))
+            { trap_fatal(trap_kind::memtag_allocation_rejected); }
             trap_fatal(trap_kind::runtime_invariant_failure);
         }
 
@@ -13128,6 +13137,7 @@ namespace uwvm2::runtime::lib
             case llvm_jit_trap_kind::array_out_of_bounds: trap_fatal(trap_kind::array_out_of_bounds); return;
             case llvm_jit_trap_kind::gc_allocation_failure: trap_fatal(trap_kind::gc_allocation_failure); return;
             case llvm_jit_trap_kind::cast_failure: trap_fatal(trap_kind::cast_failure); return;
+            case llvm_jit_trap_kind::memtag_allocation_rejected: trap_fatal(trap_kind::memtag_allocation_rejected); return;
             case llvm_jit_trap_kind::memtag_violation: trap_fatal(trap_kind::memtag_violation); return;
             case llvm_jit_trap_kind::table_out_of_bounds:
             {

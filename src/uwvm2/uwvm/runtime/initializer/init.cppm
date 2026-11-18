@@ -88,6 +88,7 @@ import uwvm2.extension.memtag.storage;
 import uwvm2.runtime.memtag.bridge;
 import uwvm2.runtime.diagnostic.crash_policy;
 import uwvm2.runtime.memtag.random;
+import uwvm2.runtime.memtag.static_allocation;
 import :init_limit;
 import :threaded_registry_view;
 

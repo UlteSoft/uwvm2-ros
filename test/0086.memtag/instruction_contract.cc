@@ -26,7 +26,12 @@ namespace
         {0x2cu, u8"memtag.storez", 2, 0}, {0x2du, u8"memtag.random", 1, 1},
         {0x2eu, u8"memtag.randomstore", 2, 1}, {0x2fu, u8"memtag.randomstorez", 2, 1},
         {0x33u, u8"memtag.add", 3, 1}, {0x36u, u8"memtag.hint", 3, 1},
-        {0x37u, u8"memtag.hintstore", 4, 1}, {0x38u, u8"memtag.hintstorez", 4, 1}
+        {0x37u, u8"memtag.hintstore", 4, 1}, {0x38u, u8"memtag.hintstorez", 4, 1},
+        {0x40u, u8"memtag.claim", 2, 1},
+        {0x41u, u8"memtag.claimz", 2, 1},
+        {0x42u, u8"memtag.reserve", 2, 1},
+        {0x43u, u8"memtag.activate", 2, 1},
+        {0x44u, u8"memtag.release", 2, 1}
     };
     constexpr bool contract_matches_reference()
     {
@@ -61,11 +66,11 @@ namespace
         {
             auto const code{static_cast<unsigned>(instruction.operation)};
             bool const store{code == 0x29u || code == 0x2au || code == 0x2bu || code == 0x2cu ||
-                             code == 0x2eu || code == 0x2fu || code == 0x37u || code == 0x38u};
-            bool const zero{code == 0x2au || code == 0x2cu || code == 0x2fu || code == 0x38u};
+                             code == 0x2eu || code == 0x2fu || code == 0x37u || code == 0x38u || (code >= 0x40u && code <= 0x44u)};
+            bool const zero{code == 0x2au || code == 0x2cu || code == 0x2fu || code == 0x38u || code == 0x41u};
             if(instruction.writes_allocation_tags != store || instruction.zeroes_memory != zero ||
-               instruction.reads_allocation_tags != (code == 0x27u) ||
-               instruction.randomizes_tag != (code == 0x2du || code == 0x2eu || code == 0x2fu)) { return false; }
+               instruction.reads_allocation_tags != (code == 0x27u || (code >= 0x40u && code <= 0x44u)) ||
+               instruction.randomizes_tag != (code == 0x2du || code == 0x2eu || code == 0x2fu || (code >= 0x40u && code <= 0x42u))) { return false; }
             if(store && instruction.operands[1] != m::operand_role::byte_length) { return false; }
             for(unsigned index{}; index != instruction.operand_count; ++index)
             {

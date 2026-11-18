@@ -21,7 +21,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         cancelled, trap_unreachable, trap_divide_by_zero, trap_integer_overflow,
         trap_memory, trap_unaligned, trap_table, trap_null, trap_signature,
         proc_exit, host_denied, host_failure, invariant_failure, already_entered,
-        trap_invalid_conversion, trap_uncaught_exception, memory_failure, trap_memtag, trap_cast
+        trap_invalid_conversion, trap_uncaught_exception, memory_failure, trap_memtag, trap_cast, trap_allocation
     };
     struct execution_result
     {

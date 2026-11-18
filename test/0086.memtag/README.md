@@ -1,6 +1,6 @@
 # WasmMTE extension contract checks
 
-`instruction_contract.cc` pins 20 experimental descriptors and their memory-dependent integer signatures. Nineteen operations are defined; `memtag.add` is reserved and rejected. Their semantic identities follow the referenced LLVM `mt-2` revision, but the sole accepted wire is now `FF ULEB32((1<<24)|(1<<16)|operation) ULEB32(memoryidx)`. Historical FC MTE, abandoned FF/vendor fields and `memtag.globals` version 1 are not compatibility modes. The contract test also checks reserved holes, wide invalid values, tag geometry, byte-length roles, memory effects and globals-v2 identity at compile time and in the executable.
+`instruction_contract.cc` pins 20 reference descriptors and five UWVM allocation operations with their memory-dependent integer signatures. Twenty-four operations are defined. `memtag.add` is reserved and rejected. The reference operations follow the pinned LLVM `mt-2` revision, but the sole accepted wire is now `FF ULEB32((1<<24)|(1<<16)|operation) ULEB32(memoryidx)`. Historical FC MTE, abandoned FF/vendor fields and `memtag.globals` version 1 are not compatibility modes. The contract test also checks reserved holes, wide invalid values, tag geometry, byte-length roles, memory effects and globals-v2 identity at compile time and in the executable.
 
 That component alone does not establish parser, interpreter, JIT, memory-check or sandbox coverage. Separate executable suites exercise those paths. The private opcode table deliberately lives outside standard Core opcode enums; standard FC bulk/table operations remain standard.
 
@@ -234,7 +234,7 @@ internal status; report-path configuration errors use configuration status.
 action and then triggers a mismatch on cache hits; test output/cache ancestors
 must satisfy the existing private-directory admission rules.
 
-`disabled_wasm_ir.cc` validates and lowers all nineteen defined instructions,
+`disabled_wasm_ir.cc` validates and lowers all twenty-four defined instructions,
 both address widths and both report actions with MTE execution disabled. It
 checks the actual generated IR, rather than inferring absence of instrumentation
 from a timing sample. This does not establish zero whole-process performance
@@ -246,3 +246,9 @@ software-asynchronous crash / log contracts. Current and projected policy
 fingerprints must include the same immutable MTE execution-safety contract.
 
 `origin_ir.cc` checks all 19 defined operations at both address widths through the production parser and LLVM translator. Synchronous crash mode emits no MTE origin calls; synchronous log mode emits one per operation, with no adjacent duplicates. `disabled_wasm_ir.cc` also checks the unoptimized lowering directly: identities, constants, subtraction and required zero fills introduce no hidden tag work.
+
+`managed_checkpoint_vm.py` runs ordinary worker recording and replay against
+validated main and preloaded modules on both engines. It covers raw tags,
+instruction-shaped bytes inside a constant, enabled and disabled managed
+instructions, and zero-length and permanent manifest descriptors. A refusal
+must precede guest dispatch and leave the requested archive unpublished.

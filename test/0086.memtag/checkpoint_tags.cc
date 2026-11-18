@@ -41,6 +41,9 @@ template<class Address,bool Shared> static void restore() {
  std::vector<std::uint8_t> result(4096);
  auto read=[&] {auto r=mt::copy_debug_tags(storage,65536,0,65536,result);CHECK(r.status==mt::debug_tag_status::available && r.count==4096);for(std::size_t n{};n<bytes.size();++n)CHECK(result[n]==std::to_integer<unsigned>(bytes[n]));};
  read();CHECK(!mt::restore_tag_image(storage,65536,{bytes.data(),bytes.size()-1}));read();
+ CHECK(storage.allocation_directory().add_permanent(1,1,1));
+ CHECK(!mt::restore_tag_image(storage,65536,bytes)); read();
+ CHECK(storage.allocation_directory().remove_permanent(1,1,1));
  auto bad=bytes;bad.push_back(std::byte{});CHECK(!mt::restore_tag_image(storage,65536,bad));read();
  if constexpr(sizeof(Address)==4) {bad=bytes;bad.back()=std::byte{0xff};CHECK(!mt::restore_tag_image(storage,65536,bad));read();}
  CHECK(!mt::restore_tag_image(storage,65537,bytes));read();
@@ -49,7 +52,7 @@ template<class Address,bool Shared> static void restore() {
  auto const view=storage.view<Address,Shared>(65537);CHECK(view.load(static_cast<Address>(65536)).allocation_tag==3);
 }
 int main() {
- static_assert(cp::database_format_version==7);
+ static_assert(cp::database_format_version==10);
  for(bool shared:{false,true}) {codec(32,0,shared);codec(64,0,shared);codec(32,4,shared);codec(64,8,shared);}
  restore<std::uint32_t,false>();restore<std::uint32_t,true>();restore<std::uint64_t,false>();restore<std::uint64_t,true>();
  CHECK(mt::valid_tag_image(64,0,UINT64_MAX,{}));CHECK(!mt::valid_tag_image(64,8,UINT64_MAX,{}));CHECK(!mt::valid_tag_image(32,4,UINT64_C(0x10000001),{}));

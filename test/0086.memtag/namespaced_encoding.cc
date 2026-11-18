@@ -84,7 +84,7 @@ int main()
         auto const* first{wire.data()+1u};auto const* cursor{first};
         auto const result{mt::scan_opcode(cursor,wire.data()+wire.size())};
         bool const defined{(operation >= 0x20u && operation <= 0x2fu) ||
-                           (operation >= 0x36u && operation <= 0x38u)};
+                           (operation >= 0x36u && operation <= 0x38u) || (operation >= 0x40u && operation <= 0x44u)};
         require((result.error == mt::encoding_error::none) == defined);
         require(defined ? result.subopcode == operation && cursor == wire.data()+wire.size() : cursor == first);
         if(operation == 0x33u) { require(result.error == mt::encoding_error::reserved_operation); }

@@ -633,6 +633,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 char const* reason="threaded interpreter trap";
                 switch(result_.code){
                 case status::trap_unreachable:category=crash::category::unreachable;reason="unreachable";break;
+                case status::trap_allocation:category=crash::category::memtag;reason="managed memory allocation rejected";break;
                 case status::trap_memtag:category=crash::category::memtag;reason="memory tag mismatch";break;
                 case status::trap_memory:reason="memory access out of bounds";break;
                 case status::trap_divide_by_zero:reason="integer divide by zero";break;
@@ -660,7 +661,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(category==crash::category::internal) { ::fast_io::fast_terminate(); }
 #endif
                 auto const journal_category=result_.code==status::trap_unreachable?threads::journal_fault::unreachable:
-                    result_.code==status::trap_memtag?threads::journal_fault::memtag:threads::journal_fault::execution;
+                    (result_.code==status::trap_memtag || result_.code==status::trap_allocation)?threads::journal_fault::memtag:threads::journal_fault::execution;
                 lease.request_trap(static_cast<::std::uint32_t>(result_.code),result_.module,result_.function,result_.wasm_offset,journal_category);
             }
             auto const outcome{lease.read_outcome()};

@@ -505,7 +505,9 @@
                     auto id=source_order[m];auto* parent=g_runtime.modules.index_unchecked(id).runtime_module;
                     if(!parent)return false;
                     auto const* file=instance.source_owner()->actual_validated_file(id,state.admitted->source_validation_epoch(),parent);
-                    if(!file||!file->has_owned_source_image())return false;
+                    if(!file||!file->has_owned_source_image() ||
+                       (!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+                        !::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(*file)))return false;
                     auto name=g_runtime.modules.index_unchecked(id).module_name;
                     number(m);number(name.size());auto* text=reinterpret_cast<::std::byte const*>(name.data());
                     if(name.size())hash.update(text,text+name.size());number(file->source_size());
@@ -556,6 +558,7 @@
                         auto const& tags=owner.memtag_shadow;number(tags.enabled());
                         if(tags.enabled())
                         {
+                            if(!tags.allocation_directory().empty())return false;
                             number(static_cast<unsigned>(tags.width()));number(tags.shared());
                             auto const tag_count=length/16u+(length%16u!=0u);number(tag_count);
                             tag_owners.push_back({&owner,length,initial_tags.size(),tag_count});

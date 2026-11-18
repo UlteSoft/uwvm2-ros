@@ -83,6 +83,7 @@
 # include <uwvm2/extension/memtag/checkpoint.h>
 # include <uwvm2/extension/memtag/debug_view.h>
 # include <uwvm2/runtime/memtag/bridge.h>
+# include <uwvm2/runtime/memtag/static_allocation.h>
 # include <uwvm2/runtime/diagnostic/crash_policy.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_generated_wasm_bridge.h>
 # include "init_limit.h"

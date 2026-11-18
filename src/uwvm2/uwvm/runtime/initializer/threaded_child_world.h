@@ -327,18 +327,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             if(!owned)return;
                             if(!mem->memtag_shadow.enabled()){success=false;return;}
                             ::std::uint8_t tag{};
-                            auto const width{mem->memtag_shadow.width()};
-                            if(!::uwvm2::runtime::memtag::next_nonzero_global_tag(width,tag)){success=false;return;}
-                            auto apply=[&]<typename Address,bool Shared>() noexcept
-                            {
-                                using view=mt::shadow_view<Address,Shared>;
-                                ::std::array<Address,2> args{view::insert(static_cast<Address>(descriptor.address),tag),static_cast<Address>(descriptor.byte_length)};
-                                return static_cast<bool>(::uwvm2::runtime::memtag::execute<true,Address,Shared>(*mem,mt::opcode::store,args));
-                            };
-                            bool const shared=mem->memtag_shadow.shared();
-                            success=mem->memtag_shadow.width()==mt::address_width::i64?
-                                (shared?apply.template operator()<::std::uint64_t,true>():apply.template operator()<::std::uint64_t,false>()):
-                                (shared?apply.template operator()<::std::uint32_t,true>():apply.template operator()<::std::uint32_t,false>());
+                            auto const& shadow{mem->memtag_shadow};
+                            success=::uwvm2::runtime::memtag::stage_static_allocation(
+                                shadow,descriptor.address,descriptor.byte_length,tag) &&
+                                ::uwvm2::runtime::memtag::write_static_allocation(
+                                    shadow,descriptor.address,descriptor.byte_length,tag);
                         });
                     if(!checked||!success)return false;
                 }

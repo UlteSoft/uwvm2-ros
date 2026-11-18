@@ -13,7 +13,7 @@ namespace
             case trap_kind::memory_out_of_bounds: case trap_kind::unaligned_atomic:
             case trap_kind::atomic_wait_non_shared: case trap_kind::null_reference:
             case trap_kind::array_out_of_bounds: case trap_kind::gc_allocation_failure:
-            case trap_kind::cast_failure: case trap_kind::memtag_violation:
+            case trap_kind::cast_failure: case trap_kind::memtag_violation: case trap_kind::memtag_allocation_rejected:
             case trap_kind::uncatched_int_tag: return true;
             default: return false;
         }
@@ -23,7 +23,7 @@ namespace
     {
         namespace crash=::uwvm2::runtime::diagnostic::crash;
         if(kind==trap_kind::unreachable)return crash::category::unreachable;
-        if(kind==trap_kind::memtag_violation)return crash::category::memtag;
+        if(kind==trap_kind::memtag_violation || kind==trap_kind::memtag_allocation_rejected)return crash::category::memtag;
         return crash_policy_guest_fault(kind)?crash::category::execution:crash::category::internal;
     }
     inline void report_guest_fault(trap_kind kind,char const* reason,unsigned backend,

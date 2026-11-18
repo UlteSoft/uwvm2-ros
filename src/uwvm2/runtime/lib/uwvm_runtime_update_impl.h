@@ -114,6 +114,9 @@ namespace production_update_detail
         ::uwvm2::utils::container::std_vector<unsigned char> installed{}, target{};
         ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> functions{};
         ::uwvm2::utils::container::std_vector<update::scalar_reset_record> scalar_resets{};
+        // A transition accepts at most 16 private memories. Directory nodes are allocated
+        // during prepare and transferred together with the admitted tag image.
+        ::std::array<::uwvm2::extension::memtag::managed_allocations,16> pending_directories{};
         immutable_globals::owner current_global_binding{}, pending_global_binding{};
         ::uwvm2::utils::container::std_unique_ptr<update::module_transition_plan> module_plan{};
         ::std::shared_ptr<::uwvm2::utils::container::std_vector<unsigned char> const> current_data_image{}, pending_data_image{};
@@ -141,6 +144,7 @@ namespace production_update_detail
         void discard_candidate() noexcept
         {
             functions.clear(); scalar_resets.clear(); target.clear(); pending_global_binding.reset();
+            for(auto& directory : pending_directories) { directory.reset(); }
             module_plan.reset(); pending_data_image.reset(); pending_contract = {}; pending_policy_fingerprint = {}; pending_state_measurement = {};
             pending_policy_generation = 0u; pending_revocation_generation = 0u;
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
