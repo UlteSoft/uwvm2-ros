@@ -73,6 +73,9 @@ namespace uwvm2::imported::ros::scene::communication
          * describe capability after the node's original context.open capability;
          * both must name the same context resource and owner. action.respond adds exactly one explicit
          * tag-specific secondary claim on the same action capability/resource.
+         * A linked service.available observation includes its independently
+         * authorized client service.submit handle last. The client contributes
+         * validation only and must own this exact endpoint and native profile.
          * A missing context, omitted schema, truncation or nonempty tail rejects.
          */
         bool valid(permission expected,operation_family expected_family,owner expected_owner,std::uint64_t expected_resource,
@@ -83,20 +86,23 @@ namespace uwvm2::imported::ros::scene::communication
                 action==permission::unconfigured||permission_name(action).empty()||!retained_origins||(require_request&&!request))return false;
             bool response=action==permission::action_respond;
             if((family==operation_family::graph&&action==permission::resource_observe)?!watch:watch!=0)return false;
-            if(response?(family!=operation_family::action||secondary<permission::action_accept||secondary>permission::action_cancel_respond):secondary!=permission::unconfigured)return false;
+            bool linked=family==operation_family::service&&action==permission::service_available&&secondary==permission::service_submit;
+            if(response?(family!=operation_family::action||secondary<permission::action_accept||secondary>permission::action_cancel_respond):!linked&&secondary!=permission::unconfigured)return false;
             std::size_t schemas=family==operation_family::topic?1:family==operation_family::service?2:family==operation_family::action?3:0;
             std::size_t base=family==operation_family::context||family==operation_family::type?1:family==operation_family::node?2:3;
-            auto expected_count=base+schemas+static_cast<std::size_t>(response)+static_cast<std::size_t>(family==operation_family::graph);
+            auto expected_count=base+schemas+static_cast<std::size_t>(response||linked)+static_cast<std::size_t>(family==operation_family::graph);
             if(count!=expected_count||count>origins.size())return false;
             if(origins[0]!=operation_origin{authority,capability,resource,action})return false;
             for(std::size_t i{1};i<count;++i)
             {
                 auto const& origin=origins[i];if(!origin.authority||origin.authority.environment!=authority.environment||!origin.capability)return false;
-                auto required=response&&i==count-1?secondary:family==operation_family::node?permission::context_open:i==1?permission::node_open:i==2?permission::context_open:
+                auto required=(response||linked)&&i==count-1?secondary:family==operation_family::node?permission::context_open:i==1?permission::node_open:i==2?permission::context_open:
                     family==operation_family::graph?permission::context_describe:permission::type_describe;
                 if(origin.action!=required)return false;
                 if(required==secondary&&response)
                 {if(origin.authority!=authority||origin.capability!=capability||origin.resource!=resource)return false;}
+                else if(linked&&i==count-1)
+                {if(origin.authority!=authority||origin.capability==capability||origin.resource!=resource)return false;}
                 else if(required==permission::type_describe){if(origin.resource)return false;}
                 else if(!origin.resource)return false;
             }

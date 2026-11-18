@@ -162,6 +162,45 @@ static void qualify(std::array<peer,2> const& peers,bool service)
     }
     // Discovery allowance belongs to this semantic fixture, never a latency bound.
     auto discovery=c::now()+2000000000;while(c::now()<discovery){pump();::poll(nullptr,0,2);}
+    if(service)
+    {
+        std::puts("attached real SetBool client and server");std::fflush(stdout);
+        auto& client=sides[0];
+        c::handle query{};assert(env.permissions.open(env.who[0],"readiness",query)==s::error::success);
+        auto observe=[&](c::handle source,bytes& result)
+        {
+            auto body=encode([&](auto& w){return w.u64(client.resource)&&w.u64(source);});std::size_t required{};
+            return client.dispatch->invoke(env.who[0],contract::operation::service_available,query,body,32,required,
+                [&](wire::bytes value){result.assign(value.begin(),value.end());return true;});
+        };
+        bytes result;
+        assert(observe(0,result)==s::error::denied&&observe(env.service_caps[1],result)==s::error::denied&&result.empty());
+        bool available{};auto until=c::now()+6000000000;
+        while(!available)
+        {
+            auto status=observe(client.cap,result);assert(status==s::error::success||status==s::error::again);
+            if(status==s::error::success){wire::reader read{result};assert(read.boolean(available)&&result.size()==32);}
+            if(!available){pump();assert(c::now()<until);::poll(nullptr,0,1);}
+        }
+        result.clear();
+        assert(observe(client.cap,result)==s::error::again);
+        assert(env.permissions.revoke("readiness",[&](auto alias){client.dispatch->revoke(alias);})==s::error::success);
+        for(unsigned i{};i<8;++i){pump();::poll(nullptr,0,1);}
+        assert(observe(client.cap,result)!=s::error::success&&result.empty());
+        // The original client remains available after the observer is retired.
+        // Its own fresh RPC must never adopt the retired observer's reply.
+        auto direct=encode([&](auto& w){return w.u64(client.resource)&&w.u64(0);});
+        auto until_direct=c::now()+6000000000;
+        for(;;)
+        {
+            auto status=client.call(contract::operation::service_available,direct,result);
+            if(status==s::error::success)break;
+            assert(status==s::error::again);
+            pump();assert(c::now()<until_direct);::poll(nullptr,0,1);
+        }
+        wire::reader fresh{result};bool ready{};assert(fresh.boolean(ready)&&ready);
+        std::puts("paired observation and client survival after withdrawal passed");std::fflush(stdout);
+    }
     auto settle=[&](side& item,c::handle request)
     {
         auto until=c::now()+3000000000;
@@ -210,6 +249,7 @@ static void qualify(std::array<peer,2> const& peers,bool service)
     {
         auto end=c::now()+3000000000;auto close=[&]{return item.dispatch->close(env.who[item.index],item.cap,item.resource);};auto status=close();
         while(status==s::error::again){pump();assert(c::now()<end);status=close();if(status==s::error::again)::poll(nullptr,0,1);}
+        if(status!=s::error::success)std::fprintf(stderr,"endpoint close service=%d side=%zu status=%u\n",service,item.index,static_cast<unsigned>(status));
         assert(status==s::error::success);pump();
         auto body=encode([&](auto& out){return out.u64(item.request);});std::size_t required{};
         auto release=[&](bool copied){return controls[item.index]->invoke(env.who[item.index],s::communication_open_dispatch::operation::release,item.cap,body,8,required,

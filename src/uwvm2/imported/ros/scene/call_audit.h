@@ -8,6 +8,7 @@
 #pragma once
 #include "call_audit_statistics.h"
 #include <uwvm2/utils/container/standard.h>
+#include "service_observation_audit.h"
 #include <array>
 #include <atomic>
 #include <charconv>
@@ -122,7 +123,7 @@ namespace uwvm2::imported::ros::scene::call_audit
                      (ch >= '0' && ch <= '9') || ch == '.' || ch == '_' || ch == '-'))
                 { increment(limited); return; }
             // 1020 hex digits, 255 operation bytes and bounded integer fields.
-            std::array<char,2048> line;
+            std::array<char,2816> line;
             std::size_t used{};
             bool fits=true;
             auto text = [&](std::string_view v) noexcept {
@@ -142,6 +143,15 @@ namespace uwvm2::imported::ros::scene::call_audit
                 for(unsigned char c : v) { line[used++]=digits[c>>4]; line[used++]=digits[c&15]; }
             };
             text("{\"ros\":\"uwvm_ros_v2\",\"phase\":\"return\",\"sequence\":"); number(sequence+1);
+            auto pair=fn=="service.available"?service_observation_audit::current:nullptr;
+            if(pair&&pair->observer_length&&pair->source_length)
+            {
+                text(",\"observer_hex\":\"");hex({pair->observer.data(),pair->observer_length});
+                text("\",\"source_hex\":\"");hex({pair->source.data(),pair->source_length});
+                using loss=service_observation_audit::withdrawal;
+                text("\",\"authority_lost\":\"");
+                text(pair->lost==loss::observer?"observer":pair->lost==loss::source?"source":pair->lost==loss::both?"both":"none");text("\"");
+            }
             text(",\"generation\":"); number(generation); text(",\"steady_ns\":"); number(now);
             text(",\"caller_hex\":\""); hex(module.substr(0,255));
             text("\",\"caller_truncated\":"); text(module.size()>255 ? "true" : "false");

@@ -4810,6 +4810,10 @@
         {
           "name": "client",
           "type": "u64"
+        },
+        {
+          "name": "source_capability",
+          "type": "u64"
         }
       ],
       "result": [
@@ -4822,7 +4826,7 @@
           "type": "stamp"
         }
       ],
-      "contract": "Observation is not a promise for the next request.",
+      "contract": "Observe native readiness on the exact live client. Direct client grants supply source_capability zero. A service-observer grant requires its separately authorized registered source service.submit capability. Only the observer is charged. Either authorization may prevent result delivery.",
       "secondary_actions": [],
       "kind": "synchronous_observation",
       "verification": {

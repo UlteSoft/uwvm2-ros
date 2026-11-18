@@ -781,7 +781,15 @@ namespace uwvm2::imported::ros::scene
                 {
                     if(!implemented(cap))return error::unsupported;
                     if(cap.kind==purpose::module_call&&!entry.module_call_plans.contains(cap.resource))return error::invalid;
-                    if(broker::communication_policy(cap)&&!entry.communication.contains(alias))return error::invalid;
+                    if(service_observer(cap))
+                    {
+                        auto source=entry.grants.find(cap.resource);
+                        auto plan=entry.communication.definition(cap.resource);
+                        if(source==entry.grants.end()||source->second.kind!=purpose::service||source->second.binding!="native-communication"||
+                           !source->second.actions.contains("service.submit")||!plan||plan->kind!=communication_configuration::family::service||
+                           std::get<communication::service_plan>(plan->policy).direction!=communication::service_role::client)return error::invalid;
+                    }
+                    else if(broker::communication_policy(cap)&&!entry.communication.contains(alias))return error::invalid;
                     if(cap.binding=="local-parameters"&&!entry.parameters.contains(alias))return error::invalid;
                     if(cap.binding=="sealed-input"&&!entry.input_plans.contains(alias))return error::invalid;
                     if(cap.binding=="volatile-output"&&!entry.output_plans.contains(alias))return error::invalid;

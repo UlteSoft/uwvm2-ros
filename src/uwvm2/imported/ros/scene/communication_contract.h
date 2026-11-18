@@ -166,8 +166,8 @@ namespace uwvm2::imported::ros::communication_contract
             case operation::topic_describe:
             case operation::qos_describe:
             case operation::service_take:
-            case operation::service_describe:
-            case operation::service_available: valid = resource(); break;
+            case operation::service_describe: valid = resource(); break;
+            case operation::service_available: valid = resource() && input.u64(value.origin_capability); break;
             default: return false;
         }
         if(!valid || !input.done()) { return false; }

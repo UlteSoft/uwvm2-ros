@@ -1137,11 +1137,24 @@ namespace uwvm2::uwvm::imported::scene
             static void call(local_imported_function_type& call) noexcept
             {
                 [[maybe_unused]] fp_control_guard const controls;
-                auto entry=begin_trace();
-                auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
-                {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
-                ::uwvm2::utils::container::get<0>(call.res)=result;
-                observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry);
+                auto invoke=[&]()
+                {
+                    auto entry=begin_trace();
+                    auto result=[&]<std::size_t... I>(std::index_sequence<I...>) noexcept
+                    {return Fn(static_cast<A>(::uwvm2::utils::container::get<I>(call.params))...);}(std::make_index_sequence<sizeof...(A)>{});
+                    ::uwvm2::utils::container::get<0>(call.res)=result;
+                    observe_result({reinterpret_cast<char const*>(Name),sizeof(Name)-1},result,entry);
+                };
+                if constexpr(std::u8string_view{Name}==u8"service.available")
+                {
+                    if(configuration.auditing_calls())
+                    {
+                        model::service_observation_audit::frame frame{true};
+                        invoke();
+                    }
+                    else invoke();
+                }
+                else invoke();
             }
         };
         template<auto Fn,auto& Name> using native=function<decltype(Fn),Fn,Name>;
