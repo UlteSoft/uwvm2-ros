@@ -22,7 +22,10 @@ local function abi_flags(target)
     append_flags(all, target:get("cflags"))
     append_flags(all, config.get("cxflags"))
     append_flags(all, config.get("cflags"))
-    local out, take_next, skip_next = {"-O2", "-g0", "-fPIC"}, false, false
+    -- Preserve the optimized, source-addressable qualification contract for
+    -- dependency code too. These flags enter the cache identity below; an old
+    -- O2/no-debug archive must never silently stand in for this build.
+    local out, take_next, skip_next = {"-O3", "-g", "-fPIC"}, false, false
     for _, flag in ipairs(all) do
         if skip_next then
             skip_next = false

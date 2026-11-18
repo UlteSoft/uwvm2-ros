@@ -27,9 +27,32 @@ def compile_policy(argv):
         'An explicit -g and effective full debug information are required; line tables alone are insufficient'
     assert not any(arg in ('-s', '--strip-all', '-fno-debug-info') or
                    arg.startswith(('-debug-info-kind=', '-gmlt')) for arg in argv), 'Debug stripping or reduced debug information is forbidden'
-    return dict(optimization_options=optimization, debug_options=debug,
+    result = dict(optimization_options=optimization, debug_options=debug,
                 effective_optimization=optimization[-1], effective_debug=debug[-1],
                 explicit_full_debug=True)
+    dependency = openssl_policy(argv)
+    if dependency: result['openssl'] = dependency
+    return result
+
+
+def openssl_policy(argv):
+    """A debug wrapper cannot qualify an O2/g0 cryptographic dependency."""
+    assert not any(x in ('-lssl', '-lcrypto') for x in argv), 'Profiling requires exact OpenSSL archive paths'
+    archives = [Path(x) for x in argv if Path(x).name in ('libssl.a', 'libcrypto.a')]
+    if not archives: return None
+    roots = {p.parent.resolve() for p in archives}
+    assert len(roots) == 1 and all(p.is_absolute() for p in archives), 'Ambiguous OpenSSL build inputs'
+    root = next(iter(roots)); receipt = root/'receipt.json'
+    record = json.loads(receipt.read_text())
+    flags = record['identity']['spec']['cflags']
+    assert not any(Path(x).name in ('libssl.a', 'libcrypto.a') for x in flags), 'Invalid dependency compile specification'
+    policy = compile_policy(flags)
+    pinned = {}
+    for archive in archives:
+        expected = record['artifacts'][archive.name]
+        assert sha(archive) == expected, 'OpenSSL archive changed after its build receipt'
+        pinned[str(archive)] = expected
+    return dict(receipt=str(receipt), receipt_sha256=sha(receipt), archives=pinned, compile_policy=policy)
 
 
 def vm_policy(runtime):
@@ -39,6 +62,7 @@ def vm_policy(runtime):
         path = root / (unit + '.argv.json')
         report[unit] = dict(argv_file=str(path), argv_sha256=sha(path),
                             **compile_policy(json.loads(path.read_text())))
+    report['openssl'] = openssl_policy(json.loads((root/'link.argv.json').read_text()))
     return report
 
 

@@ -3,6 +3,15 @@
 The matched encrypted carrier benchmark and hardware profiling procedure are
 documented in [driver performance](ros-driver-performance.md).
 
+The external adapter can consume the deployment-owned fixed bootstrap using
+`provider_bootstrap.h`. Its 256-byte sealed record binds the exact local/peer
+credentials, deployment context, contract, limits and descriptor identities.
+Loading is transactional and allocation-free; it never creates a process,
+grants an operation or replaces the subsequent mutual-TLS checks. See the
+[Rust provisioning contract](https://github.com/UlteSoft/wasmros-deployer/blob/main/document/en/attachment-provisioning.md)
+for the byte layout and one-time descriptor delivery. This helper is for the
+separate adapter, and adds no Wasm import or VM lifecycle authority.
+
 This is the current VM contract. The deployment program is not implemented by
 this change. Historical component-launcher receipts do not qualify this path.
 Imports belong to `uwvm_ros_v2`: `driver.connect`, `driver.submit`,

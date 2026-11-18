@@ -44,6 +44,11 @@ hashes. A per-output file lock serializes simultaneous consumers of one provider
 Cross builds must select the real target compiler and real target sysroot using
 normal xmake toolchain/`--llvm-target`/`--sysroot` options. The dependency inherits
 SDK and ABI flags, including `-mfloat-abi`, endianness, `-mcpu`, and `-march`.
+Bundled builds default to `-O3 -g -fPIC`, including the cryptographic library
+objects. The optimization and debug flags are part of the cache identity;
+historical `-O2 -g0` archives do not qualify optimized source-level performance
+comparisons. Explicit overrides remain visible in the dependency receipt and
+must be checked before interpreting profiler results.
 `--openssl-cflags` and `--openssl-ldflags` provide additional explicit target
 flags; `--openssl-configure-target` overrides only OpenSSL's Configure profile.
 It cannot bypass the independent target object/ABI checks. ARM PCS is explicit
