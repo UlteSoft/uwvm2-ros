@@ -1080,14 +1080,22 @@ namespace uwvm2::uwvm::imported::scene
          */
         inline void observe_result(std::string_view name,std::uint32_t result) noexcept
         {
+            bool audit=configuration.auditing_calls();
 #if defined(UWVM_VERSION_DEV)
-            ::uwvm2::utils::debug::host_calls::observe_scene_result("uwvm_ros_v2",name,result);
+            namespace trace=::uwvm2::utils::debug::host_calls;
+            bool traced=trace::observing(trace::channel::rosv2);
+            if(!audit && !traced)return;
+#else
+            if(!audit)return;
 #endif
-            if(!configuration.auditing_calls())return;
             runtime::ros_caller_identity identity{};
             auto known=runtime::ros_caller_identity_host_api(identity,true);
             std::string_view module;
             if(known)module={reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
+#if defined(UWVM_VERSION_DEV)
+            if(traced)trace::observe_scene_result("uwvm_ros_v2",name,result,module,known?identity.generation:0);
+            if(!audit)return;
+#endif
             auto time=::uwvm2::utils::host_clock::now();
             auto ns=::uwvm2::utils::host_clock::available() ?
                 std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch()).count() : 0;
