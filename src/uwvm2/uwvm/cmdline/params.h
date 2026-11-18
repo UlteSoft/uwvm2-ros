@@ -162,6 +162,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_call_clear_input),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_check),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_dump_effective_policy),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_communication_budget),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_parameter_budget),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::ros_scene_parameter_profile),

@@ -71,6 +71,17 @@ namespace uwvm2::imported::ros::scene::permission_report
             if(function.empty()){if(denied[index])return false;denied[index]=true;return true;}
             return functions.emplace(target,::uwvm2::utils::container::std_string(function)).second;
         }
+        /** @brief Visit the immutable configured reductions under the deployment lock.
+         * Empty function names denote an entire family. This does not query guest state.
+         */
+        template<typename Visitor> bool visit_reductions(Visitor visit) const
+        {
+            for(std::size_t i{};i<names.size();++i)
+                if(denied[i]&&!visit(names[i],std::string_view{}))return false;
+            for(auto const& [target,name]:functions)
+                if(!visit(names[static_cast<std::size_t>(target)],std::string_view{name}))return false;
+            return true;
+        }
         bool allows(query const& request)const noexcept
         {
             auto index=static_cast<std::size_t>(request.target);if(index>=names.size()||denied[index])return false;

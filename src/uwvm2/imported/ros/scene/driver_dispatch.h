@@ -21,13 +21,26 @@ namespace uwvm2::imported::ros::scene
         struct entry
         {
             ::uwvm2::utils::container::std_string alias,module,resource;drivers::session connection;
-            drivers::limits capacity;drivers::protocol::binding identity;caller owner{};erased_buffer reply;
+            drivers::limits capacity;drivers::credentials peer;int declared_fd{-1};drivers::protocol::binding identity;caller owner{};erased_buffer reply;
             schema_contract::operation const* schema{};schema_contract::limits decode;bool platform_allowed{true};
         };
         mutable std::mutex mutex_;
         ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<entry>> entries_;
         std::size_t maximum_{},bytes_{},used_{};bool configured_{},frozen_{},retired_{};
+        bool declarations_only_{};
     public:
+        explicit driver_dispatch(bool declarations_only=false):declarations_only_{declarations_only}{}
+        /** @brief Visit immutable registration fields only. The visitor never touches the live channel. */
+        template<class Visitor> bool visit_registrations(Visitor visit)const
+        {
+            std::lock_guard lock{mutex_};
+            for(auto const& row:entries_)
+            {
+                if(!row->schema || !visit(row->alias,row->module,row->peer,row->identity,row->capacity,row->schema->name,row->decode))
+                    return false;
+            }
+            return true;
+        }
         /** @brief Claim all privately pinned endpoints during global static freeze.
          * @details No guest can call this method. All environment registries
          * share the same temporary ownership set before any broker is published.
@@ -37,7 +50,7 @@ namespace uwvm2::imported::ros::scene
             std::lock_guard lock{mutex_};
             for(auto const& row:entries_)
             {
-                auto status=registry.endpoint(row->connection.endpoint_identity());if(status!=error::success)return status;
+                auto status=declarations_only_?registry.descriptor(row->declared_fd):registry.endpoint(row->connection.endpoint_identity());if(status!=error::success)return status;
                 status=registry.session(row->identity.session);if(status!=error::success)return status;
             }
             return error::success;
@@ -50,14 +63,20 @@ namespace uwvm2::imported::ros::scene
         {
             std::lock_guard lock{mutex_};if(frozen_||retired_||!configured_)return error::denied;
             if(!identifier(alias)||module.empty()||module.size()>255||resource.empty()||resource.size()>255||
-               capacity.request_bytes>drivers::protocol::maximum_payload||capacity.response_bytes>drivers::protocol::maximum_payload)return error::invalid;
+               fd<0||!drivers::valid(peer)||!drivers::protocol::valid(identity)||!drivers::valid(capacity))return error::invalid;
             for(auto const& row:entries_)if(row->alias==alias||row->identity.session==identity.session)return error::conflict;
             auto needed=sizeof(entry)+drivers::protocol::header_bytes+capacity.request_bytes+2*capacity.response_bytes+16+alias.size()+module.size()+resource.size();
             if(capacity.tls_identity_fd>=0)needed+=attachment_tls::reservation(drivers::protocol::header_bytes+std::max(capacity.request_bytes,capacity.response_bytes));
             if(entries_.size()>=maximum_||used_>bytes_||needed>bytes_-used_)return error::too_large;
-            auto row=::uwvm2::utils::container::make_unique<entry>();row->alias=alias;row->module=module;row->resource=resource;row->capacity=capacity;row->identity=identity;row->reply.resize_for_overwrite(capacity.response_bytes+16);
-            auto result=row->connection.prepare(fd,peer,identity,capacity);if(result!=error::success)return result;
-            for(auto const& other:entries_)if(row->connection.same_endpoint(other->connection))return error::conflict;
+            auto row=::uwvm2::utils::container::make_unique<entry>();row->alias=alias;row->module=module;row->resource=resource;row->capacity=capacity;row->identity=identity;
+            row->peer=peer;
+            if(declarations_only_)row->declared_fd=fd;
+            else
+            {
+                row->reply.resize_for_overwrite(capacity.response_bytes+16);
+                auto result=row->connection.prepare(fd,peer,identity,capacity);if(result!=error::success)return result;
+                for(auto const& other:entries_)if(row->connection.same_endpoint(other->connection))return error::conflict;
+            }
             entries_.emplace_back(std::move(row));used_+=needed;return error::success;
         }
         bool contains(std::string_view alias)const noexcept
