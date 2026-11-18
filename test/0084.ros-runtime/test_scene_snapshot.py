@@ -28,7 +28,7 @@ def archive(header, rows):
     return bytes(data) + hashlib.sha256(data).digest()
 
 
-def interoperability(formatter, original, old_reader, directory):
+def interoperability(formatter, original, old_reader, native_reader, directory):
     # Keep the legacy dump bytes intact and append the actual native codec's
     # observation. The live case below separately tests the collector itself.
     original_data = original.read_bytes()
@@ -79,6 +79,8 @@ def interoperability(formatter, original, old_reader, directory):
         old = json.loads(subprocess.check_output([sys.executable, "-B", old_reader, "info", path]))
         assert old["records"] == observed["records"] and old["executableRestore"] is False
         assert "sceneObservation" not in old
+    if native_reader:
+        subprocess.run([native_reader.resolve(), original, path], check=True)
     recovered, = [r for r in snapshot.decode(extended).records if r.kind == 10 and r.identifier == 0]
     assert recovered.payload == core.payload
 
@@ -148,6 +150,7 @@ def main():
     parser.add_argument("--formatter", type=Path, help="compiled scene_snapshot.cc")
     parser.add_argument("--legacy-guard", type=Path, help="existing guard dump at stop 3")
     parser.add_argument("--legacy-reader", type=Path, help="optional previous snapshot.py")
+    parser.add_argument("--native-reader", type=Path, help="scene_snapshot_legacy_reader built against old headers")
     parser.add_argument("--output", type=Path, help="new directory to retain generated archives and logs")
     args = parser.parse_args()
     if bool(args.formatter) != bool(args.legacy_guard) or not (args.runtime or args.formatter):
@@ -160,7 +163,7 @@ def main():
             out = args.output.resolve()
             out.mkdir(parents=True, exist_ok=False)
         if args.formatter:
-            interoperability(args.formatter.resolve(), args.legacy_guard, args.legacy_reader, out)
+            interoperability(args.formatter.resolve(), args.legacy_guard, args.legacy_reader, args.native_reader, out)
         if args.runtime:
             live(args.runtime.resolve(), out)
     print("PASS scene snapshot")
