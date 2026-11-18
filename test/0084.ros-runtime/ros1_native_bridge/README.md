@@ -106,3 +106,33 @@ runtime and generated String class come from the selected release. The
 witness logs the Python release, verifies the String MD5 and checks the paths
 of its loaded ROS modules before opening a ROS endpoint. The upstream C++
 bridge continues to use Noetic roscpp and Humble rclcpp on this host.
+
+### Early ROS 1 stacks
+
+Fuerte, Electric, Diamondback, C Turtle and Box Turtle provide some or all of
+the Python node and its generated messages inside larger stacks. Prepare these
+archives with the same resource-limited invocation used for historical packages,
+substituting the following script and arguments:
+
+```sh
+test/0084.ros-runtime/ros1_native_bridge/rosbuild_packages.py \
+  --ros-keyring "$ROS_SNAPSHOT_KEYRING" --distro fuerte --distro electric \
+  --distro diamondback --distro cturtle --distro boxturtle --max-output-mib 24 \
+  --output "$PWD/.tmp/rosbuild-stacks"
+```
+
+The importer checks each signed archive index and reads the specified length
+of each package into an anonymous memory file. It checks its SHA-256 before
+extracting the selected paths. The importer records complete package file lists,
+original package versions and hashes, accepted files and archive links. The
+disk output ceiling applies to selected file contents. The filesystem also
+stores directory blocks and receipts.
+
+To test a stack, replace the two historical ROS arguments in the Wasm command
+with `--rosbuild-archives "$PWD/.tmp/rosbuild-stacks" --rosbuild-distro fuerte
+--python-runtime "$PWD/.tmp/historical-ros1"`. The support directory must
+include the verified Python 2.7 interpreter and Melodic's distribution-independent
+Python utilities. The test runs the original ROS client and original generated
+String class from the selected stack against the Noetic master and upstream
+Noetic–Humble C++ bridge. The node records its imported module paths, message
+type and ROS 1 MD5. Its network remains the private loopback-only exception.
