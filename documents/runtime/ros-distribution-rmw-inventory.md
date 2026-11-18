@@ -232,6 +232,8 @@ topic exchange provides no evidence about that service mapping.
 
 With the upstream SROS2 policies enforced, Jazzy Fast DDS 2.14.6 and Lyrical Fast DDS 3.6.2.0 exchanged a fresh String in both directions. Both application callbacks validated the payload. The fixture recorded AES-256-GCM protected user traffic to each receiving process’s UDP port. The unauthorized observer stayed online during the exchange and received zero samples. Both endpoints rejected an unissued identity. For Jazzy and Humble Fast DDS 2.6.12, plaintext worked but the default Enforce exchange failed. Humble rejected the permissions CA algorithm identifier advertised by Jazzy. See the [native strict-security fixture](../../test/0084.ros-runtime/sros2_cross/README.md) for the exact policies, endpoint diagnostics and reproducible controls.
 
+Two Lyrical Cyclone DDS 11.0.1 endpoints loaded the vendor authentication, access-control and cryptography plugins and exchanged the same protected String. The Jazzy Fast DDS to Lyrical Cyclone DDS plaintext control also returned the expected String. Under Enforce on those mixed endpoints, Cyclone reported a handshake key conversion error and neither authorized callback received a value. Site admission must qualify the actual middleware and security policies on both ends. The [cross-vendor fixture](../../test/0084.ros-runtime/sros2_cross/README.md) records the positive controls and the failed authenticated pair.
+
 An upstream SROS2 interoperability run covers the enclaves, policy files
 and endpoints used by that run. [ESROS2](https://www.csa.iisc.ac.in/~vg/papers/sigops_atc2026/)
 adds native application sandboxing using eBPF and Intel MPK. Qualifying it
