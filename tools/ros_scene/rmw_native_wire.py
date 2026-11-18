@@ -22,8 +22,12 @@ def peer_diagnostics(directory, outputs, name):
     log = directory / name
     require(digest(log) == checksum, f'output identity differs for {name}')
     content = log.read_text()
+    lines = content.splitlines()
     return {
         'status': 'examined', 'logSha256': checksum,
+        'rosWarnLines': sum('[WARN]' in line for line in lines),
+        'rosErrorLines': sum('[ERROR]' in line for line in lines),
+        'rosFatalLines': sum('[FATAL]' in line for line in lines),
         'rcutilsErrorStateReports': content.count('] rcutils_set_error_state()'),
         'invalidDataSizeMentions': content.count('invalid data size'),
         'unterminatedStringMentions': content.count('string data is not null-terminated'),

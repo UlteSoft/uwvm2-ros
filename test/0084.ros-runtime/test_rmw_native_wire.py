@@ -38,6 +38,8 @@ def main():
             lines = (path.parent/name).read_text().splitlines()
             diag = checked['diagnostics'][role]
             assert diag['status'] == 'examined'
+            for key, token in [('rosWarnLines', '[WARN]'), ('rosErrorLines', '[ERROR]'), ('rosFatalLines', '[FATAL]')]:
+                assert diag[key] == sum(token in line for line in lines)
             assert diag['rcutilsErrorStateReports'] == sum(line.endswith('] rcutils_set_error_state()') for line in lines)
             assert diag['invalidDataSizeMentions'] == sum('invalid data size' in line for line in lines)
             assert diag['unterminatedStringMentions'] == sum('string data is not null-terminated' in line for line in lines)
