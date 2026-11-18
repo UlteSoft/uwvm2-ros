@@ -60,7 +60,7 @@ Only the external ROS client participates in DDS discovery.
 The interpreter and AOT cases carry a fresh 32-character String between a Wasm
 module and a Noetic node in each direction. For publication the deployment
 waits for a real Noetic TCPROS connection, and the Wasm application submits a
-single String to the adapter. The Noetic subscriber checks the exact value.
+single String to the adapter. The native writer waits for a stable DDS match and remains alive until the independent ROS 1 subscriber checks the exact value. The fixed upstream ROS 2 subscription uses best-effort sensor-data QoS. The test requires observed end-to-end delivery even when the native middleware has already acknowledged a local write.
 For subscription the application checks every byte returned by
 `driver.result`. Each denial case omits the submission grant while leaving
 connect and disconnect available. The application must receive access denied,
@@ -82,3 +82,36 @@ the selected VM and retains MTE. The resulting core Wasm imports just the
 capability and driver operations exercised by that case. Both peers compare
 the payload to the same independently generated token. The provisioned
 legacy link still requires its explicit plaintext-loopback option.
+
+### Historical ROS 1 nodes
+
+The historical fixture retrieves each distribution's final signed APT index
+and checks the hashes and lengths of selected Debian packages before extracting
+their Python libraries, generated messages, master and package metadata.
+It also prepares a Bionic Python 2.7 interpreter and its support libraries.
+The test records each selected file digest. Pass `--resume` after a transfer failure to verify the indices again and reuse matching files. The previous incomplete receipt stays on disk. Package installation scripts are never invoked. The archive keys must already
+be trusted inputs to the test.
+
+```sh
+/usr/bin/python3 tools/ros_scene/in_existing_cgroup.py \
+  /usr/bin/taskset -c 4-7 /usr/bin/flock "$SDK_ROOT/.tmp/sdk-qualification.lock" \
+  /usr/bin/python3 -B test/0084.ros-runtime/ros1_native_bridge/historical_packages.py \
+  --ros-keyring "$ROS_SNAPSHOT_KEYRING" \
+  --distro melodic --distro kinetic --distro lunar --distro indigo \
+  --distro jade --distro hydro --distro groovy \
+  --output "$PWD/.tmp/historical-ros1"
+```
+
+Run the Wasm command above with a fresh output directory and three additional
+arguments, substituting the desired distribution for `melodic`:
+
+```sh
+--historical-packages "$PWD/.tmp/historical-ros1" \
+--historical-distro melodic --adapter-baseline "$PWD/.tmp/noetic-humble-wasm"
+```
+
+This mode reuses the two verified adapter binaries. The ROS 1 master, rospy
+runtime and generated String class come from the selected release. The
+witness logs the Python release, verifies the String MD5 and checks the paths
+of its loaded ROS modules before opening a ROS endpoint. The upstream C++
+bridge continues to use Noetic roscpp and Humble rclcpp on this host.

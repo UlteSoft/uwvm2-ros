@@ -231,6 +231,20 @@ def case(args):
                 'ROS_IP':'127.0.0.1','ROS_DISTRO':'noetic','ROS_VERSION':'1','ROS_PACKAGE_PATH':str(noetic/'share'),
                 'PYTHONHOME':str(focal),'PYTHONPATH':os.pathsep.join(map(str,(noetic/'lib/python3/dist-packages',
                                                                             focal/'lib/python3/dist-packages')))}
+    master_program = noetic/'bin/rosmaster'
+    witness_program = HERE/'ros1_witness.py'
+    if args.historical_distro:
+        release = args.historical_distro
+        distro = args.historical_packages/release
+        prefix = distro/'opt/ros'/release
+        pyroot = args.historical_packages/'python2/usr'
+        site = prefix/'lib/python2.7/dist-packages'
+        master_program = prefix/'bin/rosmaster'
+        witness_program = HERE/'historical_witness.py'
+        ros1_args = [pyroot/'bin/python2.7','-B','-S']
+        ros1_env.update(ROS_DISTRO=release,PYTHONHOME=str(pyroot),ROS_PACKAGE_PATH=str(prefix/'share'),
+                        WROS_ROS1_PYTHON_PREFIX=str(site),PYTHONPATH=os.pathsep.join(map(str,(
+                            site,distro/'usr/lib/python2.7/dist-packages',pyroot/'lib/python2.7/dist-packages'))))
     ros_env = {'PATH':'/usr/bin:/bin','HOME':str(output),'ROS_MASTER_URI':URI,'ROS_IP':'127.0.0.1',
                'ROS_DOMAIN_ID':'61','AMENT_PREFIX_PATH':str(ros2),'RMW_IMPLEMENTATION':'rmw_cyclonedds_cpp',
                'ROS_DISTRO':'humble','ROS_HOME':str(output),'ROS_LOG_DIR':str(output/'ros-log'),'CYCLONEDDS_URI':CYCLONE,
@@ -252,7 +266,7 @@ def case(args):
             owned.callback(stop,proc)
             return proc
         if not denied:
-            master = start('master',[*ros1_args,noetic/'bin/rosmaster','--core','-p','11311'],env=ros1_env)
+            master = start('master',[*ros1_args,master_program,'--core','-p','11311'],env=ros1_env)
             master_api = xmlrpc.client.ServerProxy(URI)
             for _ in range(80):
                 require(master.poll() is None,'master exited')
@@ -265,7 +279,7 @@ def case(args):
                 raise TimeoutError('ROS master')
             direction = '2_to_1' if role=='publish' else '1_to_2'
             bridge = start('bridge',[args.native_dir/direction],env=ros_env)
-            witness = start('noetic',[*ros1_args,HERE/'ros1_witness.py','receive' if role=='publish' else 'send',
+            witness = start('noetic',[*ros1_args,witness_program,'receive' if role=='publish' else 'send',
                                       token,'10'],env=ros1_env)
             # ROS master registration alone is earlier than TCPROS connection.
             for _ in range(100):
@@ -300,7 +314,8 @@ def case(args):
                      '--io-response',io.stdout.fileno()],stdin=subprocess.PIPE,
                      pass_fds=(right.fileno(),peer_key,io.stdin.fileno(),io.stdout.fileno()))
         right.close()
-        io.stdin.close()
+        if denied or role=='take':
+            io.stdin.close()
         io.stdout.close()
         clock_fd=os.open(f'/proc/{peer.pid}/ns/time',os.O_RDONLY|os.O_CLOEXEC)
         owned.callback(os.close,clock_fd)
@@ -320,7 +335,7 @@ def case(args):
         peer.stdin.write((str(vm.pid)+'\n').encode())
         peer.stdin.close()
         require(vm.wait(timeout=25)==0,'VM guest assertion or CLI failed')
-        require(peer.wait(timeout=3)==0 and io.wait(timeout=3)==0,'typed adapter failed')
+        require(peer.wait(timeout=3)==0,'typed adapter failed')
         requests=0 if denied else 1
         require('authenticatedRequests='+str(requests) in (output/'adapter.log').read_text(),'driver operation count')
         require(('activating DDS endpoint' in (output/'dds.log').read_text()) == (not denied),'DDS activation count')
@@ -330,7 +345,14 @@ def case(args):
             expected=(r'role=receive sent=0 received=1 unexpected=0 value=' if role=='publish'
                       else r'role=send sent=[1-9][0-9]* received=0 unexpected=0 value=')
             require(re.search(expected+token,text) and ('Passing along: ['+token+']') in (output/'bridge.log').read_text(),
-                    'Noetic witness and upstream bridge failed exact value check')
+                    'ROS 1 witness and upstream bridge failed exact value check')
+            if role=='publish':
+                # The publisher must remain live until the independent ROS 1
+                # subscriber and the upstream bridge have both observed the value.
+                require(io.poll() is None,'DDS publisher exited before external delivery confirmation')
+                io.stdin.write(b'A')
+                io.stdin.close()
+        require(io.wait(timeout=3)==0,'DDS endpoint failed')
         observed=dict(role=role,engine=engine,denied=denied,authenticatedRequests=requests,
                       value=None if denied else token,interfaces=names,argv=list(map(str,cmd)),
                       guestSHA256=digest(wasm),sdkBuildReceiptSHA256=sdk_receipt,logs={p.name:digest(p) for p in output.glob('*.log')})
@@ -344,6 +366,10 @@ def main():
         parser.add_argument('--'+arg,type=lambda value:Path(value).resolve(),required=True)
     parser.add_argument('--sdk',type=lambda value:Path(value).resolve(),
                         help='Compile C guests with this site-configured development installation')
+    parser.add_argument('--historical-packages',type=lambda p:Path(p).resolve())
+    parser.add_argument('--historical-distro',choices=('melodic','kinetic','lunar','indigo','jade','hydro','groovy'))
+    parser.add_argument('--adapter-baseline',type=lambda p:Path(p).resolve(),
+                        help='Reuse the two hashed adapter binaries from a successful prior run.')
     parser.add_argument('--allow-plaintext-loopback',action='store_true')
     parser.add_argument('--role',choices=ROLES,help=argparse.SUPPRESS)
     parser.add_argument('--engine',choices=('int','aot'),help=argparse.SUPPRESS)
@@ -354,6 +380,7 @@ def main():
     gate()
     require(args.allow_plaintext_loopback and '.tmp' in args.output.parts,
             'explicit --allow-plaintext-loopback and fresh .tmp output directory required')
+    require(bool(args.historical_packages) == bool(args.historical_distro),'historical package directory and distro must be paired')
     sys.path.insert(0,str(args.vm_source/'test/0084.ros-runtime'))
     if args.fd is not None:
         endpoint(args)
@@ -371,11 +398,53 @@ def main():
               'cgroup':Path('/proc/self/cgroup').read_text().strip(),'nativeReceipt':digest(args.native_dir/'results.json'),
               'runtimeSHA256':runtime['vm_sha256'],'cases':[]}
     try:
-        manifest['commands']=build(args,args.output)
+        if args.historical_distro:
+            receipt_path=args.historical_packages/'packages.json'
+            packages=json.loads(receipt_path.read_bytes())
+            distro=args.historical_distro
+            from historical_packages import PYTHON_PACKAGES, ROS_PACKAGES
+            # A different release can still be downloading. The two exact
+            # package sets needed by this test must already be in the receipt.
+            python_names={p['package'] for p in packages['packages'].get('python2',[])}
+            ros_names={p['package'] for p in packages['packages'].get(distro,[])}
+            required={'ros-'+distro+'-'+name for name in ROS_PACKAGES}
+            require(set(PYTHON_PACKAGES)==python_names and required<=ros_names and
+                    any(name.startswith('python-rospkg') for name in ros_names) and
+                    any(name.startswith('python-catkin-pkg') for name in ros_names),'historical package selection')
+            manifest['archiveBatchComplete']=packages['complete']
+            def verified(tier):
+                metadata=[]
+                for package in packages['packages'][tier]:
+                    files=package['files']
+                    require(len(files)==package['selectedFiles'],'file manifest extent')
+                    for relative,expected in files.items():
+                        path=Path(relative)
+                        require(not path.is_absolute() and '..' not in path.parts,'local package path')
+                        require(digest(args.historical_packages/tier/path)==expected,'historical file changed: '+relative)
+                    metadata.append({k:v for k,v in package.items() if k!='files'})
+                return metadata
+            manifest['historicalClient']={'distro':distro,'receipt':digest(receipt_path),
+                                          'archive':packages['sources'][distro],'packages':verified(distro),
+                                          'python':verified('python2')}
+        if args.adapter_baseline:
+            baseline=json.loads((args.adapter_baseline/'results.json').read_bytes())
+            require(baseline['complete'] and baseline['runtimeSHA256']==runtime['vm_sha256'],
+                    'adapter baseline must match VM')
+            helper_hashes=[value for path,value in baseline['inputs'].items() if Path(path).name=='ros2_string_io.cpp']
+            require(helper_hashes==[digest(HERE/'ros2_string_io.cpp')],'adapter source has changed; build without --adapter-baseline')
+            for name in ('tls.so','ros2_io'):
+                binary=args.adapter_baseline/name
+                require(baseline['inputs'][str(binary)]==digest(binary),'adapter binary digest mismatch')
+                (args.output/name).symlink_to(binary)
+            manifest['adapterReceipt']=digest(args.adapter_baseline/'results.json')
+        else:
+            manifest['commands']=build(args,args.output)
         files = [Path(__file__).resolve(),HERE/'ros2_string_io.cpp',HERE/'run.py',HERE/'ros1_witness.py',
                  args.output/'tls.so',args.output/'ros2_io', args.openssl_root/'libssl.a',args.openssl_root/'libcrypto.a']
         if args.sdk:
             files.extend((HERE/'driver_guest.c',args.sdk/'bin/wrc',args.sdk/'share/abi/ros.json'))
+        if args.historical_distro:
+            files.append(HERE/'historical_witness.py')
         for leaf in ('attachment_peer.cpp','attachment_peer.py','run_module_security_vm.py','run_scene_vm.py'):
             files.append(args.vm_source/'test/0084.ros-runtime'/leaf)
         manifest['inputs']={str(path):digest(path) for path in files}
