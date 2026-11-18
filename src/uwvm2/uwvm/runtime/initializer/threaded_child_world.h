@@ -326,15 +326,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                 owned|=&local.memory==mem;
                             if(!owned)return;
                             if(!mem->memtag_shadow.enabled()){success=false;return;}
-                            ::std::uint8_t random{};
-                            // The actual worker's entropy observer records this
-                            // input, before any Wasm body uses the fresh owner.
-                            if(!::uwvm2::runtime::memtag::next_random_tag(random)){success=false;return;}
+                            ::std::uint8_t tag{};
+                            auto const width{mem->memtag_shadow.width()};
+                            if(!::uwvm2::runtime::memtag::next_nonzero_global_tag(width,tag)){success=false;return;}
                             auto apply=[&]<typename Address,bool Shared>() noexcept
                             {
                                 using view=mt::shadow_view<Address,Shared>;
-                                constexpr unsigned mask=sizeof(Address)==4u?15u:255u;
-                                auto tag=static_cast<unsigned>(random)&mask;if(!tag)tag=mask;
                                 ::std::array<Address,2> args{view::insert(static_cast<Address>(descriptor.address),tag),static_cast<Address>(descriptor.byte_length)};
                                 return static_cast<bool>(::uwvm2::runtime::memtag::execute<true,Address,Shared>(*mem,mt::opcode::store,args));
                             };

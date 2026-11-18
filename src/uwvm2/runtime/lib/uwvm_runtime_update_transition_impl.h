@@ -42,9 +42,9 @@
             {
                 if(!valid || descriptor.byte_length==0u) { return; }
                 auto& memory{plan.memories[descriptor.memory_index]};
-                ::std::uint8_t random{};
-                if(!memory.tagged || !::uwvm2::runtime::memtag::next_random_tag(random)) { valid=false;return; }
-                auto const tag{static_cast<unsigned char>((random&15u)!=0u ? random&15u : 15u)};
+                ::std::uint8_t tag{};
+                if(!memory.tagged || !::uwvm2::runtime::memtag::next_nonzero_global_tag(mt::address_width::i32,tag))
+                { valid=false;return; }
                 auto const first{static_cast<::std::size_t>(descriptor.address/16u)};
                 auto const last{static_cast<::std::size_t>((descriptor.address+descriptor.byte_length-1u)/16u+1u)};
                 for(auto i{first};i<last;++i) { memory.allocation_tags[i]=tag; }

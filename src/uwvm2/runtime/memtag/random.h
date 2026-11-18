@@ -9,6 +9,7 @@
 # include <cerrno>
 # include <cstddef>
 # include <cstdint>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/utils/macro/push_macros.h>
 # if defined(__linux__)
 #  include <pthread.h>
@@ -88,6 +89,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     {
         auto* actual=current_tag_entropy_observer;
         return actual?actual->next(actual->context,tag,next_native_random_tag):next_native_random_tag(tag);
+    }
+    /// @brief Draw a uniform nonzero allocation tag for a newly instantiated linear global.
+    /// @details Each draw passes through the same entropy source as a random-tag instruction.
+    /// Worker recording and replay therefore observe every rejected byte in order. Independent
+    /// uniform bytes exhaust 32 draws with probability 2^-128 for memory32 or 2^-256 for
+    /// memory64. A source failure or exhaustion leaves the destination unmodified.
+    [[nodiscard]] inline bool next_nonzero_global_tag(::uwvm2::extension::memtag::address_width width,
+                                                      ::std::uint8_t& tag) noexcept
+    {
+        namespace mt = ::uwvm2::extension::memtag;
+        ::std::uint8_t mask{};
+        switch(width)
+        {
+            case mt::address_width::i32: mask = mt::memory32_geometry.tag_value_mask; break;
+            case mt::address_width::i64: mask = mt::memory64_software_geometry.tag_value_mask; break;
+            default: return false;
+        }
+        for(unsigned attempt{}; attempt != 32u; ++attempt)
+        {
+            ::std::uint8_t byte{};
+            if(!next_random_tag(byte)) { return false; }
+            auto const candidate{static_cast<::std::uint8_t>(byte & mask)};
+            if(candidate != 0u) { tag = candidate; return true; }
+        }
+        return false;
     }
 }
 #ifndef UWVM_MODULE

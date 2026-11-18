@@ -177,11 +177,8 @@ template<initialization_purpose Purpose>
     // partially tagged global set available to an executing guest.
     for(auto& global:globals)
     {
-        ::std::uint8_t random{};
-        if(!rt_mt::next_random_tag(random)) { return mt_init::error({},u8"host entropy unavailable for global allocation tags"); }
-        auto const mask{global.memory->memory.memtag_shadow.width()==mt::address_width::i32?15u:255u};
-        global.tag=static_cast<::std::uint8_t>(random&mask);
-        if(!global.tag) { global.tag=static_cast<::std::uint8_t>(mask); }
+        if(!rt_mt::next_nonzero_global_tag(global.memory->memory.memtag_shadow.width(),global.tag))
+        { return mt_init::error({},u8"cannot obtain a nonzero global allocation tag from host entropy"); }
     }
     for(auto const& global:globals)
     {
