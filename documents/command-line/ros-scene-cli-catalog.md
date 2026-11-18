@@ -15,7 +15,7 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **87**.
+Advertised primary commands: **88**.
 
 ## `--ros-scene`
 
@@ -96,6 +96,14 @@ Reserve aggregate buffer bytes, object slots, read workspace and sealed leases; 
 ```
 
 Register an exact caller, callee and bounded message contract; no arbitrary export invocation.
+
+## `--ros-scene-call-audit`
+
+```text
+[--ros-scene-call-audit] <scope:str> <label:str> <mode:str> <records:u64> <bytes:u64> <rate-hz:u64> <burst:u64>
+```
+
+Audit completed ROSv2 imports to stderr with intersecting host-only limits. No guest payload is recorded.
 
 ## `--ros-scene-call-budget`
 
