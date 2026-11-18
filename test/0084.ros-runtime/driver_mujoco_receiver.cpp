@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <csignal>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/ptrace.h>
 namespace s=uwvm2::imported::ros::scene;namespace p=s::drivers::protocol;
 static void require(bool value,char const* message)
@@ -46,18 +47,61 @@ static void filter_for(int fd,bool final_filter)
  require(replacements==1,"exact receive filter");
  auto size=source.size()*sizeof(sock_filter);require(::write(1,code.data(),size)==static_cast<ssize_t>(size),"filter output");
 }
+static mjModel* load_model(char const* path, bool compiled)
+{
+ if(compiled)
+ {
+  auto fd=::open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);
+  require(fd>=0,"compiled model file");
+  struct stat info{};
+  require(::fstat(fd,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0 && info.st_size<=(64<<20),"compiled model size");
+  auto size=static_cast<std::size_t>(info.st_size);
+  auto* bytes=::mmap(nullptr,size,PROT_READ,MAP_PRIVATE,fd,0);
+  ::close(fd);
+  require(bytes!=MAP_FAILED,"compiled model mapping");
+  mjVFS files;
+  ::mj_defaultVFS(&files);
+  require(!::mj_addBufferVFS(&files,"model.mjb",bytes,static_cast<int>(size)),"compiled model VFS");
+  ::munmap(bytes,size);
+  auto* model=::mj_loadModel("model.mjb",&files);
+  ::mj_deleteVFS(&files);
+  return model;
+ }
+ // Read only the externally sealed model; no generic filesystem resolution.
+ std::array<char,65536> xml{};auto file=::open(path,O_RDONLY|O_CLOEXEC);require(file>=0,"official model file");std::size_t extent{};
+ for(;;){auto n=::read(file,xml.data()+extent,xml.size()-extent-1);require(n>=0,"model read");if(!n)break;extent+=n;require(extent<xml.size()-1,"model bound");}::close(file);
+ mjVFS files;::mj_defaultVFS(&files);require(!::mj_addBufferVFS(&files,"model.xml",xml.data(),extent),"model VFS");
+ auto* model=::mj_loadXML("model.xml",&files,nullptr,0);::mj_deleteVFS(&files);return model;
+}
 int main(int argc,char** argv)
 {
  if(argc==3&&std::string_view(argv[1])=="--filter"){filter_for(static_cast<int>(number(argv[2])),false);return 0;}
+ bool const compiled=argc>=8 && std::string_view{argv[argc-3]}=="--compiled-joint";
+ auto const* joint_name=compiled?argv[argc-2]:"abdomen_z";
+ auto const* actuator_name=compiled?argv[argc-1]:"abdomen_z";
+ if(compiled)argc-=3;
  require(argc==5||argc==6||argc==7,"arguments");bool confined=argc==6;require(!confined||std::string_view(argv[5])=="confined","confinement selector");
  int fd=static_cast<int>(number(argv[1]));std::string_view mode{argv[2]};auto count=number(argv[4]);
- // Read only the externally sealed model; no generic filesystem resolution.
- std::array<char,65536> xml{};auto file=::open(argv[3],O_RDONLY|O_CLOEXEC);require(file>=0,"official model file");std::size_t extent{};
- for(;;){auto n=::read(file,xml.data()+extent,xml.size()-extent-1);require(n>=0,"model read");if(!n)break;extent+=n;require(extent<xml.size()-1,"model bound");}::close(file);
- mjVFS files;::mj_defaultVFS(&files);require(!::mj_addBufferVFS(&files,"model.xml",xml.data(),extent),"model VFS");
- auto* model=::mj_loadXML("model.xml",&files,nullptr,0);::mj_deleteVFS(&files);require(model,"official model");auto* data=::mj_makeData(model);require(data,"simulation data");
- auto actuator=::mj_name2id(model,mjOBJ_ACTUATOR,"abdomen_z"),joint=::mj_name2id(model,mjOBJ_JOINT,"abdomen_z");
- require(actuator>=0&&joint>=0&&model->jnt_type[joint]==mjJNT_HINGE,"fixed joint");auto q=model->jnt_qposadr[joint],v=model->jnt_dofadr[joint];::mj_forward(model,data);
+ auto* model=load_model(argv[3],compiled);
+ require(model,"official model");auto* data=::mj_makeData(model);require(data,"simulation data");
+ auto joint=::mj_name2id(model,mjOBJ_JOINT,joint_name);
+ require(joint>=0&&model->jnt_type[joint]==mjJNT_HINGE,"fixed joint");
+ int actuator=-1;
+ if(*actuator_name)
+ {
+  actuator=::mj_name2id(model,mjOBJ_ACTUATOR,actuator_name);
+ }
+ else
+ {
+  for(int i{};i<model->nu;++i)
+  {
+   if(model->actuator_trntype[i]!=mjTRN_JOINT || model->actuator_trnid[2*i]!=joint)continue;
+   require(actuator<0,"ambiguous actuator for the selected joint");
+   actuator=i;
+  }
+ }
+ require(actuator>=0&&joint>=0&&model->actuator_trntype[actuator]==mjTRN_JOINT&&model->actuator_trnid[2*actuator]==joint,"actuator must drive the selected joint");
+ auto q=model->jnt_qposadr[joint],v=model->jnt_dofadr[joint];::mj_forward(model,data);
  auto execute=[&](double angle){data->ctrl[actuator]=std::clamp(2.0*(angle-data->qpos[q])-.1*data->qvel[v],-1.0,1.0);::mj_step(model,data);require(std::isfinite(data->qpos[q])&&std::isfinite(data->time),"finite state");};
  if(mode=="direct")
  {for(std::uint64_t i=1;i<=count;++i)execute(i%2?.5:-.5);std::printf("{\"steps\":%llu,\"time\":%.17g,\"position\":%.17g}\n",(unsigned long long)count,data->time,data->qpos[q]);::mj_deleteData(data);::mj_deleteModel(model);return 0;}

@@ -220,3 +220,36 @@ python3 test/0084.ros-runtime/run_platform_tls_denials.py \
   --runtime "$VM" --platform-targets "$SDK/share/targets.json" \
   --output "$DENIAL_OUTPUT"
 ```
+
+## Checking a vendor's original MuJoCo model
+
+Place the vendor assets in a local directory and select their reviewed model
+profile. The profile names one platform, one simulated actuator and its hinge.
+It pins the original scene, included MJCF and meshes by SHA-256. The test
+copies and verifies those files before running the official MuJoCo compiler in
+a private network and mount namespace. Both the direct native reference and
+the external ROSv2 receiver load the resulting MJB. Wasm code has no path to
+the vendor assets. The fixture verifies that the specified actuator drives
+the selected joint.
+
+For the Unitree Go2, supply the contents of
+[the original model directory](https://github.com/unitreerobotics/unitree_mujoco/tree/1eb6642e3f3fdfb7fb13a9794fd6a2dd93ea0e7d/unitree_robots/go2)
+to the following command within the qualification cgroup. To retrieve just
+the public files referenced by this profile, set `GO2` to a new directory
+under the project `.tmp` and run the pinned asset fetcher first.
+
+```sh
+python3 -B test/0084.ros-runtime/mujoco_profiles/fetch.py \
+  --profile test/0084.ros-runtime/mujoco_profiles/unitree-go2.json --output "$GO2"
+python3 -B test/0084.ros-runtime/run_driver_mujoco.py \
+  --runtime "$VM" --source-root "$VM_SOURCE" --mujoco "$MUJOCO" \
+  --openssl-root "$OPENSSL" --audit-calls --platform-targets "$SDK/share/targets.json" \
+  --vendor-model test/0084.ros-runtime/mujoco_profiles/unitree-go2.json \
+  --vendor-assets "$GO2" --output "$NEW_RESULTS"
+```
+
+The test exercises the simulation command through the Unitree child permission
+and the common external driver session. It compares physics state after 128
+steps, rejects an out-of-range command before a step and records loss of the
+receiver after a step. The upstream DDS driver, the radio link and a physical
+protective stop each require separate hardware or protocol tests.

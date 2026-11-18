@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Actual registered-driver VM traffic to a separate official MuJoCo process.
 
-Qualified scope: fixed humanoid joint, canonical device.submit shape, exact
+The fixture exercises a fixed simulated hinge, the canonical device.submit shape, exact
 source credentials, physical range refusal and a crash after mj_step. The
 receiver enforces semantic limits. This fixture is not a deployer or a vendor
 adapter. Optional --namespace qualifies the recorded sealed closure, explicit
@@ -49,12 +49,16 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  parser.add_argument('--namespace',action='store_true',help='Use test-only external mount/user/network/IPC/UTS namespaces and syscall filters')
  parser.add_argument('--openssl-root',type=Path,help='Bundled TLS 1.3 build prefix for production VM driver sessions')
  parser.add_argument('--platform-targets',type=Path,help='Exercise the same simulated joint with each platform permission scope in an SDK share/targets.json')
+ parser.add_argument('--vendor-model',type=Path,help='Reviewed vendor model profile including platform, actuator, joint and asset digests')
+ parser.add_argument('--vendor-assets',type=Path,help='Locally supplied original vendor model source directory')
  parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
  a=parser.parse_args(argv)
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
   parser.error('guest widths must be unique and drawn from wasm32 and wasm64')
  if compile_guest is None and guest_widths!=(32,64):parser.error('the WAT reference covers both widths')
+ if bool(a.vendor_model)!=bool(a.vendor_assets) or (a.vendor_model and not a.platform_targets):
+  parser.error('a vendor simulation requires --vendor-model, --vendor-assets and --platform-targets')
  platforms=(None,)
  if a.platform_targets:
   if not a.openssl_root:parser.error('--platform-targets requires an authenticated TLS driver')
@@ -73,6 +77,16 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   p=subprocess.run(list(map(str,cmd)),capture_output=True,env=env,timeout=180);(out/(label+'.stdout')).write_bytes(p.stdout);(out/(label+'.stderr')).write_bytes(p.stderr)
   report['commands'].append(dict(name=label,argv=list(map(str,cmd)),exit=p.returncode));save();assert p.returncode==0,(label,p.stderr[-3000:]);return p.stdout
  fixture=ROOT/'test/0084.ros-runtime/driver_mujoco_receiver.cpp';binary=out/'receiver';model=a.mujoco/'model/humanoid/humanoid.xml'
+ selector=[]
+ if a.vendor_model:
+  from mujoco_profiles.compile_model import prepare
+  profile,model=prepare(a.vendor_model,a.vendor_assets,a.mujoco,out,platforms,run)
+  platforms=(profile['platform'],)
+  selector=['--compiled-joint',profile['joint'],profile['actuator'] or '']
+  report['platform_scope']='One original vendor model and its registered platform permission'
+  report['vendor_model']=profile
+  for path in (a.vendor_model,Path(__file__).with_name('mujoco_profiles')/'compile_model.py',a.mujoco/'bin/compile'):
+   report['inputs'][str(path.resolve())]=sha(path)
  for path in (Path(__file__),fixture,model,a.mujoco.parent/'provenance.json',*guest_inputs):report['inputs'][str(path.resolve())]=sha(path)
  try:
   compile_options=[]
@@ -84,7 +98,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
    for path in libraries[:2]:report['inputs'][str(path.resolve())]=sha(path)
   run('compile',['/usr/bin/clang++-22','-std=c++23','-O3','-g','-Wall','-Wextra','-Werror','-pthread',*compile_options,'-I'+str(a.source_root/'src'),'-isystem',a.source_root/'third-parties/fast_io/include','-I'+str(a.mujoco/'include'),fixture,'-L'+str(a.mujoco/'lib'),'-Wl,-rpath,'+str(a.mujoco/'lib'),'-lmujoco',*libraries,'-o',binary])
   report['inputs'][str(binary.resolve())]=sha(binary)
-  native=json.loads(run('native',[binary,'0','direct',model,'128']));report['native_reference']=native
+  native=json.loads(run('native',[binary,'0','direct',model,'128',*selector]));report['native_reference']=native
   if a.namespace:
    from run_driver_namespace import launch
    report['inputs'][str(Path(__file__).with_name('run_driver_namespace.py').resolve())]=sha(Path(__file__).with_name('run_driver_namespace.py'))
@@ -115,7 +129,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
      if a.namespace:
       filters=run(label+'-filter',[binary,'--filter',str(right.fileno())]);peer,peer_pid,confinement=launch(binary,model,mode,count,right.fileno(),closure,filters)
      else:
-      peer=subprocess.Popen([str(binary),str(right.fileno()),mode,str(model),str(count),'--identity-fd',str(peer_key)],pass_fds=(right.fileno(),peer_key),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE);peer_pid=peer.pid;confinement=None
+      peer=subprocess.Popen([str(binary),str(right.fileno()),mode,str(model),str(count),'--identity-fd',str(peer_key),*selector],pass_fds=(right.fileno(),peer_key),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE);peer_pid=peer.pid;confinement=None
      right.close();vm=None
      try:
       if a.openssl_root:
