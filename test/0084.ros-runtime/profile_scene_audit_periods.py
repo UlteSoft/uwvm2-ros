@@ -17,16 +17,23 @@ def main():
     ap.add_argument("--reference-context", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
     ap.add_argument("--vtune", type=Path, default=Path("/opt/intel/oneapi/vtune/latest/bin64/vtune"))
+    ap.add_argument("--target", choices=("both","native","wasm"), default="both")
+    ap.add_argument("--reference-period", type=int, default=24000)
+    ap.add_argument("--reference-only", action="store_true",
+                    help="Isolate the reference counter when simultaneous event streams were throttled.")
     args = ap.parse_args()
+    if not 1 <= args.reference_period <= 2**31: ap.error("reference period is outside the hardware counter range")
     verify_gate()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     source = json.loads(args.benchmark.read_bytes())
     assert source["timings_complete"]
     hz = reference_frequency(args.reference_context, socket.gethostname())
-    expected = {"CPU_CLK_UNHALTED.REF_TSC": 24000, "INST_RETIRED.ANY": 240000}
-    config = ("cpu_core/umask=0x3,period=24000,name=CPU_CLK_UNHALTED.REF_TSC/u,"
-              "cpu_core/event=0xc0,period=240000,name=INST_RETIRED.ANY/u")
+    expected = {"CPU_CLK_UNHALTED.REF_TSC":args.reference_period}
+    config = f"cpu_core/umask=0x3,period={args.reference_period},name=CPU_CLK_UNHALTED.REF_TSC/u"
+    if not args.reference_only:
+        expected["INST_RETIRED.ANY"] = 240000
+        config += ",cpu_core/event=0xc0,period=240000,name=INST_RETIRED.ANY/u"
     report = dict(benchmark_sha256=sha(args.benchmark), hardware_reference_hz=hz,
                   expected_periods=expected, commands=[], profiles=[], complete=False)
 
@@ -44,7 +51,7 @@ def main():
         if rc: raise RuntimeError((label, stderr.read_text(errors="replace")[-1500:]))
         return stdout
 
-    for kind in ("native","wasm"):
+    for kind in (("native","wasm") if args.target=="both" else (args.target,)):
         argv = list(source["commands"][kind]["100000"])
         binary = Path(argv[0])
         assert sha(binary) == (source["inputs"]["native"] if kind=="native" else source["runtime_sha256"])
