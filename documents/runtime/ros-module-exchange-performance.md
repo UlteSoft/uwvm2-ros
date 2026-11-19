@@ -21,7 +21,7 @@ guest cannot select this policy. See `--ros-scene-call-clear-input` in the
 [operator contract](../command-line/ros-scene.md#module-observation-and-registered-messages).
 Registered delivery extents remain readable until
 their corresponding response or acknowledgement. Cancellation, observed expiry,
-revocation and retirement also erase retained regions and host buffer capacity.
+revocation and retirement also erase retained delivery regions and all written host payload bytes. Each reserved slot starts fully zeroed. Writes begin at offset zero, and consumption clears the complete written prefix before reuse. The unused suffix stays zero. Final buffer destruction clears its entire allocation.
 Failed erasure quarantines the slot instead of making it reusable. Concurrent
 guest stores require byte-atomic access; replacing these stores with an ordinary
 vectorized `memset` would violate the memory-access contract.
@@ -44,6 +44,47 @@ DAP `uwvm/sceneState` view, return detached counters and labels only. They do no
 read payloads, consume queues or change erasure state. Full/read-only debugger
 memory reads are separate, explicitly authorized inspection operations; limited
 debugger permission cannot perform them.
+
+## Payload size and reserved capacity
+
+The broker accepts a route-specific upper bound on each message. An 8-byte
+reply on a route admitting 16 KiB uses the same checked copy and erasure
+path as an 8-byte reply on a smaller route. Reserving a larger buffer costs
+memory at registration. Completed transfers erase the bytes written to the
+slot. Guest delivery regions retain their independently registered extent
+and erasure rules.
+
+The following Linux x86-64 measurements used the VM built
+with `-O3 -g` and its AOT guest execution engine. The native program used the
+same broker, roles, authorization and input-clearing policy. Each observation
+covers submit, take, respond, result and acknowledge. Each of three interleaved
+runs measured 101 batches of 10,000 complete round trips pinned to the same
+P-core. The figures are medians of the per-run median ns per round trip.
+
+| Payload | Reservation per direction | Native | Wasm AOT | Wasm / native |
+| --- | --- | ---: | ---: | ---: |
+| 8 B | 8 B | 655 ns | 970 ns | 1.48 |
+| 256 B | 256 B | 900 ns | 1,196 ns | 1.33 |
+| 4 KiB | 4 KiB | 3,883 ns | 4,263 ns | 1.10 |
+| 8 B | 16 KiB | 655 ns | 966 ns | 1.48 |
+
+A separate interleaved comparison against the previous VM measured the
+8 B / 16 KiB case at 1,154 ns before and 967 ns after the erasure change.
+The VM binary used here has SHA-256
+`35d90a136f979b98a24defa5e83a40f0af15289931ab6c8ba341675f02f6262c`.
+The retained-byte unit test inspects the entire slot directly. Guest
+regressions cover input clearing, delivered frames, permission failure,
+retirement, payload auditing and debugger visibility.
+
+Intel VTune hardware Hotspots and detailed Microarchitecture Exploration
+resolved the broker's functions, source lines and assembly at the period
+accepted by the collector. VTune rejected an explicit 0.01 ms interval on
+this host. A separate user-mode hardware recording with Linux perf used
+24,000 reference cycles per sample. Median wall spacing was 10.394 µs
+for native and 10.421 µs for Wasm. Both recordings reported zero lost
+samples or throttling. These samples describe repeated work on one host.
+Physical I/O latency, distributed communication and worst-case execution
+time require separate measurements.
 
 ## Configurable caller input erasure
 
