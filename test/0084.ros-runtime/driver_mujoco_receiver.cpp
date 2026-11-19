@@ -83,7 +83,8 @@ static mjModel* load_model(char const* path, bool compiled)
 int main(int argc,char** argv)
 {
  if(argc==3&&std::string_view(argv[1])=="--filter"){filter_for(static_cast<int>(number(argv[2])),false);return 0;}
- bool const compiled=argc>=8 && std::string_view{argv[argc-3]}=="--compiled-joint";
+ bool const joint_effort=argc>=8 && std::string_view{argv[argc-3]}=="--urdf-effort";
+ bool const compiled=joint_effort || (argc>=8 && std::string_view{argv[argc-3]}=="--compiled-joint");
  auto const* joint_name=compiled?argv[argc-2]:"abdomen_z";
  auto const* actuator_name=compiled?argv[argc-1]:"abdomen_z";
  if(compiled)argc-=3;
@@ -94,7 +95,11 @@ int main(int argc,char** argv)
  auto joint=::mj_name2id(model,mjOBJ_JOINT,joint_name);
  require(joint>=0&&model->jnt_type[joint]==mjJNT_HINGE,"fixed joint");
  int actuator=-1;
- if(*actuator_name)
+ if(joint_effort)
+ {
+  require(!*actuator_name && model->nu==0,"expected an unactuated URDF model");
+ }
+ else if(*actuator_name)
  {
   actuator=::mj_name2id(model,mjOBJ_ACTUATOR,actuator_name);
  }
@@ -107,10 +112,18 @@ int main(int argc,char** argv)
    actuator=i;
   }
  }
- require(actuator>=0&&joint>=0&&model->actuator_trntype[actuator]==mjTRN_JOINT&&model->actuator_trnid[2*actuator]==joint,"actuator must drive the selected joint");
+ if(!joint_effort)require(actuator>=0&&model->actuator_trntype[actuator]==mjTRN_JOINT&&model->actuator_trnid[2*actuator]==joint,"actuator must drive the selected joint");
  auto q=model->jnt_qposadr[joint],v=model->jnt_dofadr[joint];::mj_forward(model,data);
- auto execute=[&](double angle){data->ctrl[actuator]=std::clamp(2.0*(angle-data->qpos[q])-.1*data->qvel[v],-1.0,1.0);::mj_step(model,data);require(std::isfinite(data->qpos[q])&&std::isfinite(data->time),"finite state");};
- if(mode=="direct")
+ bool const passive=joint_effort && mode=="passive";
+ auto execute=[&](double angle)
+ {
+  auto const command=std::clamp(2.0*(angle-data->qpos[q])-.1*data->qvel[v],-1.0,1.0);
+  if(joint_effort)data->qfrc_applied[v]=passive?0.0:command;
+  else data->ctrl[actuator]=command;
+  ::mj_step(model,data);
+  require(std::isfinite(data->qpos[q])&&std::isfinite(data->time),"finite state");
+ };
+ if(mode=="direct" || passive)
  {for(std::uint64_t i=1;i<=count;++i)execute(i%2?.5:-.5);std::printf("{\"steps\":%llu,\"time\":%.17g,\"position\":%.17g}\n",(unsigned long long)count,data->time,data->qpos[q]);::mj_deleteData(data);::mj_deleteModel(model);return 0;}
  require(mode=="success"||mode=="range"||mode=="crash","fault mode");
  auto* crash_page=::mmap(nullptr,4096,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);require(crash_page!=MAP_FAILED,"crash page");

@@ -90,7 +90,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   from mujoco_profiles.compile_model import prepare
   profile,model=prepare(a.vendor_model,a.vendor_assets,a.mujoco,out,platforms,run,a.vendor_model_max_mib << 20)
   platforms=(profile['platform'],)
-  selector=['--compiled-joint',profile['joint'],profile['actuator'] or '']
+  selector=['--urdf-effort' if profile.get('actuation')=='urdf-joint-effort' else '--compiled-joint',profile['joint'],profile['actuator'] or '']
   report['platform_scope']='One original vendor model and its registered platform permission'
   report['vendor_model']=profile
   report['vendor_model_max_bytes']=a.vendor_model_max_mib << 20
@@ -110,6 +110,11 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   run('compile',['/usr/bin/clang++-22','-std=c++23','-O3','-g','-Wall','-Wextra','-Werror','-pthread',*compile_options,'-I'+str(a.source_root/'src'),'-isystem',a.source_root/'third-parties/fast_io/include','-I'+str(a.mujoco/'include'),fixture,'-L'+str(a.mujoco/'lib'),'-Wl,-rpath,'+str(a.mujoco/'lib'),'-lmujoco',*libraries,'-o',binary])
   report['inputs'][str(binary.resolve())]=sha(binary)
   native=json.loads(run('native',[binary,'0','direct',model,'128',*selector]));report['native_reference']=native
+  if selector and selector[0]=='--urdf-effort':
+   passive=json.loads(run('native-passive',[binary,'0','passive',model,'128',*selector]))
+   if passive['steps']!=native['steps'] or passive['time']!=native['time'] or abs(passive['position']-native['position'])<=1e-9:
+    raise ValueError('applied joint effort did not produce a distinguishable physical response')
+   report['passive_reference']=passive
   if a.namespace:
    from run_driver_namespace import launch
    report['inputs'][str(Path(__file__).with_name('run_driver_namespace.py').resolve())]=sha(Path(__file__).with_name('run_driver_namespace.py'))

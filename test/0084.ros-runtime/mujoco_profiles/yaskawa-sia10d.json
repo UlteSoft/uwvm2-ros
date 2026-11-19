@@ -1,0 +1,29 @@
+{
+  "repository": "https://github.com/ros-industrial/motoman",
+  "commit": "f951b2863cb294eb4e049c8a1ff4b3da3548287a",
+  "sourceDirectory": "motoman_sia10d_support",
+  "model": "urdf/sia10d.urdf",
+  "platform": "yaskawa",
+  "joint": "joint_s",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "meshes/sia10d/collision/MOTOMAN_AXIS_B.stl": "2a399a178844d97c16de5d9583ae2a10f15250b0558ae96ff9c62842ef4247fb",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_E.stl": "2b3c360fc3b61c30230a7aa3c3cc1ab57bf8883635dff1ae49567b51c294fccc",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_L.stl": "ce5f6832d9c3ec30d5d3a962c02d9b1942175ed97966343bbd840393e3081bd5",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_R.stl": "7e27664748b3828221eeccccc1dbb0546e28ca865cd16bfe74b12f996f28dac4",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_S.stl": "6e1e645b81056df8e2c56c76d8672a60b47ceda02a41febd4c001867d35222bc",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_T.stl": "b69bd87776a2ca83dff51e83c6481bdd3ea8285dcc22094d75f866341ca3e853",
+    "meshes/sia10d/collision/MOTOMAN_AXIS_U.stl": "66eba8435ddca61bf6c5d11bba0e9c849265935464e37884020b3fd7de3139c5",
+    "meshes/sia10d/collision/MOTOMAN_BASE.stl": "d575ae9e3ffa05fff944dfaaf42aaad5307fd7f98bc6234c3fa23570ed4c68a7",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_B.stl": "2a399a178844d97c16de5d9583ae2a10f15250b0558ae96ff9c62842ef4247fb",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_E.stl": "2b3c360fc3b61c30230a7aa3c3cc1ab57bf8883635dff1ae49567b51c294fccc",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_L.stl": "ce5f6832d9c3ec30d5d3a962c02d9b1942175ed97966343bbd840393e3081bd5",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_R.stl": "7e27664748b3828221eeccccc1dbb0546e28ca865cd16bfe74b12f996f28dac4",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_S.stl": "6e1e645b81056df8e2c56c76d8672a60b47ceda02a41febd4c001867d35222bc",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_T.stl": "b69bd87776a2ca83dff51e83c6481bdd3ea8285dcc22094d75f866341ca3e853",
+    "meshes/sia10d/visual/MOTOMAN_AXIS_U.stl": "66eba8435ddca61bf6c5d11bba0e9c849265935464e37884020b3fd7de3139c5",
+    "meshes/sia10d/visual/MOTOMAN_BASE.stl": "d575ae9e3ffa05fff944dfaaf42aaad5307fd7f98bc6234c3fa23570ed4c68a7",
+    "urdf/sia10d.urdf": "22894290fe96a146c8b052836956cc32eb702460b86ef371fd0351acdfd09b83"
+  }
+}

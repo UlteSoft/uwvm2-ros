@@ -1,10 +1,80 @@
 """Prepare an individually pinned vendor simulation scene with the official MuJoCo compiler."""
 import json
+import math
 from pathlib import Path, PurePosixPath
 import re
 import tempfile
+import xml.etree.ElementTree as ET
 
 from run_scene_vm import sha
+
+
+def urdf_mesh_mounts(profile, snapshot, output):
+    """Resolve original ROS package mesh URIs inside MuJoCo's URDF basename lookup."""
+    model = PurePosixPath(profile['model'])
+    original = snapshot/model
+    if model.suffix != '.urdf' or profile['actuator'] is not None or original.stat().st_size > 1 << 20:
+        raise ValueError('expected an original bounded URDF without a native actuator')
+    data = original.read_bytes()
+    if b'<!DOCTYPE' in data or b'<!ENTITY' in data:
+        raise ValueError('URDF entity declarations are outside this fixture')
+    robot = ET.fromstring(data)
+    matches = [j for j in robot.findall('joint') if j.get('name') == profile['joint']]
+    if robot.tag != 'robot' or len(matches) != 1 or matches[0].get('type') not in ('revolute', 'continuous'):
+        raise ValueError('expected one declared rotary URDF joint')
+    joint = matches[0]
+    limit = joint.find('limit')
+    effort = float(limit.get('effort', 'nan')) if limit is not None else math.nan
+    if not math.isfinite(effort) or effort < 1:
+        raise ValueError('URDF joint must allow the one newton-metre fixture limit')
+    velocity = float(limit.get('velocity', 'nan'))
+    if not math.isfinite(velocity) or velocity <= 0:
+        raise ValueError('URDF joint has no positive rated velocity')
+    if joint.get('type') == 'revolute':
+        lower, upper = (float(limit.get(key, 'nan')) for key in ('lower', 'upper'))
+        if not (math.isfinite(lower) and math.isfinite(upper) and lower <= -.5 and .5 <= upper):
+            raise ValueError('both fixture target angles must lie within the URDF joint limits')
+    child = joint.find('child')
+    links = [link for link in robot.findall('link') if child is not None and link.get('name') == child.get('link')]
+    mass = links[0].find('inertial/mass') if len(links) == 1 else None
+    mass_kg = float(mass.get('value', 'nan')) if mass is not None else math.nan
+    tensor = links[0].find('inertial/inertia') if len(links) == 1 else None
+    if not math.isfinite(mass_kg) or mass_kg <= 0 or tensor is None:
+        raise ValueError('selected URDF link requires a positive mass and original inertia')
+    xx, yy, zz, xy, xz, yz = (float(tensor.get('i'+key, 'nan')) for key in ('xx','yy','zz','xy','xz','yz'))
+    determinant = xx*yy*zz + 2*xy*xz*yz - xx*yz*yz - yy*xz*xz - zz*xy*xy
+    if not (all(map(math.isfinite, (xx,yy,zz,xy,xz,yz,determinant))) and
+            xx > 0 and xx*yy > xy*xy and determinant > 0):
+        raise ValueError('selected URDF link requires a positive definite inertia tensor')
+    package = PurePosixPath(profile['sourceDirectory']).name
+    prefix = 'package://' + package + '/'
+    aliases = {}
+    mounts = []
+    for mesh in robot.iter('mesh'):
+        uri = mesh.get('filename', '')
+        if not uri.startswith(prefix) or uri[len(prefix):] not in profile['files']:
+            raise ValueError('URDF mesh must be a pinned member of the selected ROS package')
+        source = PurePosixPath(uri[len(prefix):])
+        # MuJoCo normally strips URDF mesh directories. Visual and collision
+        # meshes often share a basename, so give each pinned payload its own name.
+        alias = 'wros_mesh_' + profile['files'][str(source)] + source.suffix.lower()
+        target = model.parent/alias
+        if str(target) in profile['files']:
+            raise ValueError('URDF fixture mesh name collides with a declared input')
+        if alias not in aliases:
+            mounts.extend(('--ro-bind', snapshot/source, '/model/' + str(target)))
+            aliases[alias] = str(source)
+        mesh.set('filename', alias)
+    with tempfile.NamedTemporaryFile(dir=snapshot, suffix='.urdf', delete=False) as f:
+        ET.ElementTree(robot).write(f, encoding='utf-8', xml_declaration=True)
+        normalized = Path(f.name)
+    mounts.extend(('--ro-bind', normalized, '/model/' + str(model)))
+    (output/'urdf-intake.json').write_text(json.dumps({
+        'originalSha256': profile['files'][str(model)], 'normalizedSha256': sha(normalized),
+        'meshes': aliases, 'joint': profile['joint'], 'sourceEffortNm': effort, 'appliedLimitNm': 1,
+        'sourceVelocityRadPerSecond': velocity, 'selectedLinkMassKg': mass_kg,
+    }, indent=2) + '\n')
+    return mounts
 
 
 def prepare(profile_path, source, mujoco, output, platforms, run, maximum_bytes=64 << 20):
@@ -13,6 +83,8 @@ def prepare(profile_path, source, mujoco, output, platforms, run, maximum_bytes=
     profile = json.loads(profile_path.read_bytes())
     platform = profile['platform']
     inputs = profile['files']
+    if profile.get('actuation', 'actuator') not in ('actuator', 'urdf-joint-effort'):
+        raise ValueError('unsupported simulation actuation')
     if (platform not in platforms or not re.fullmatch('[0-9a-f]{40}',profile['commit'])
             or not 1 <= len(inputs) <= 1024 or profile['model'] not in inputs):
         raise ValueError('invalid vendor model profile')
@@ -58,6 +130,8 @@ def prepare(profile_path, source, mujoco, output, platforms, run, maximum_bytes=
                 raise ValueError('vendor source differs from the pinned model')
             sealed.chmod(0o400)
             args.extend(('--ro-bind',sealed,'/model/'+name))
+        if profile.get('actuation') == 'urdf-joint-effort':
+            args.extend(urdf_mesh_mounts(profile, Path(private), output))
         output_dir = Path(compiler_output)
         args.extend(('--bind',output_dir,'/output'))
         run('compile-vendor-model', ['/usr/bin/prlimit', '--fsize='+str(maximum_bytes)+':'+str(maximum_bytes),'--',*args,'/tool/compile',profile['model'],'/output/physics.mjb'])

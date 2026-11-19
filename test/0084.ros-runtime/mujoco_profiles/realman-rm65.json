@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/RealManRobot/ros2_rm_robot",
+  "commit": "5fc226e93358e73c165b2af54b583389f813049e",
+  "sourceDirectory": "rm_description",
+  "model": "urdf/rm_65.urdf",
+  "platform": "realman",
+  "joint": "joint1",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "meshes/rm_65_arm/base_link.STL": "cab60b1d90f964f4fdb89e55809e5aae844ab3b7f585babc6aa232b080e2b445",
+    "meshes/rm_65_arm/link1.STL": "14756351009a3a6be8916068d67ff8b1ac0ed046ace47ceebe28ed8a8f2d7995",
+    "meshes/rm_65_arm/link2.STL": "fe6457ac59723c6e35e0c12c809c171d21b9165bf2f1782ddc8998c492706383",
+    "meshes/rm_65_arm/link3.STL": "caa28db987ecec82f4b5584f53c0a4c10460177912bef8bdc70dff6f7e8e9219",
+    "meshes/rm_65_arm/link4.STL": "7fc66e41318399ee534fbfc59fd49b830a36ece4a558de133f31a7644bac0580",
+    "meshes/rm_65_arm/link5.STL": "482832743269f83b98599dfbb3b3fb59c876df6ba61b7954c9a1e2928996d219",
+    "meshes/rm_65_arm/link6.STL": "e1334db72ddbf360c16309350b76b5190b255c55cda24fcb6c8fadfa7f84474b",
+    "urdf/rm_65.urdf": "c679146e63ecc817d52a42d3491ba836e24149e3f5b05828906794faf598b20f"
+  }
+}

@@ -279,6 +279,18 @@ Each original model completed eight 128-step native comparisons, eight command-r
 
 The Kuavo scene exercises the upstream waist mechanism with gravity and contact disabled in its MJCF. The two NVIDIA files are sample assets from the Isaac Sim MJCF importer. The ant uses the `nvidia` permission scope and the humanoid uses `nvidia-isaac-sim`. MuJoCo supplies the physics engine for both.
 
+### Rotary joints from ROS package URDFs
+
+The following models retain the upstream joint, collision meshes, masses and inertia tensors. The model compiler receives a private copy of the URDF with mesh URIs rewritten to digest-derived names. This lets a visual mesh and a different collision mesh use the same original filename. The intake receipt identifies the original and rewritten XML, the mesh digests and the selected link's mass.
+
+| ROS package model | Selected joint | Source |
+| --- | --- | --- |
+| RealMan RM65 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/realman-rm65.json) |
+| Dobot CR16 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/dobot-cr16.json) |
+| Yaskawa Motoman SIA10D | `joint_s` | [ROS-Industrial support package profile](../../test/0084.ros-runtime/mujoco_profiles/yaskawa-sia10d.json) |
+
+For these URDFs MuJoCo has a passive hinge. The test receiver supplies a simulated torque controller on that hinge, limited to one newton-metre. Intake checks the upstream effort rating, velocity rating, target angle range and the selected link's inertia. The native control first runs the same initial state with zero torque to establish a passive reference. Each driven reference must differ from its passive control. The TLS receiver then compares the simulated joint position and elapsed time with direct native execution over 128 steps. The qualification covers this controller and the published mechanical model. Factory servo firmware, brakes and emergency stopping require independent evidence.
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.

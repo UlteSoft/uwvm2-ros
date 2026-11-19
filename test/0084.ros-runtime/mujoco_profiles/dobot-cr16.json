@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Dobot-Arm/DOBOT_6Axis_ROS2_V4",
+  "commit": "ec201c40d5db63185a3593ec9c39f80fe25aa527",
+  "sourceDirectory": "dobot_rviz",
+  "model": "urdf/cr16_robot.urdf",
+  "platform": "dobot",
+  "joint": "joint1",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "meshes/cr16/Link1.STL": "c41021710a040a212f8c9a02916c0880380a50138d785bcbbfe1781d1d563447",
+    "meshes/cr16/Link2.STL": "7b674cc6e349f19178f50ad391ed33c34bd6062ca37d0bc1e9ad181ce790218b",
+    "meshes/cr16/Link3.STL": "95f9b07a320ed2479c910bd1c87b6ae5e851999bfad99ec36c3bf56a65dd99d8",
+    "meshes/cr16/Link4.STL": "bb9ef08e6214b165b160d14fddbdfc318745dc585f7f13fb8a156b83babe0683",
+    "meshes/cr16/Link5.STL": "abcd915d2c29172bd8520514aa2d10ea4ca9699c5f85a1dd8f7cef387b3c5d5a",
+    "meshes/cr16/Link6.STL": "d408a1af322f60e85f799adf2beb3b239bc397a6c1e70e1ccb61981211a88fa0",
+    "meshes/cr16/base_link.STL": "193c36704967ac1899124787019d9be9b141a7d3266d33ab9210e5bf178c14ee",
+    "urdf/cr16_robot.urdf": "44dc87e7a7fdb8834cb3976d2120aa2a3d172393171910f72a042fa3ef60c5fc"
+  }
+}
