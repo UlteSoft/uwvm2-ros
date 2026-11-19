@@ -12,7 +12,42 @@ Debugging neither grants an import nor permits a denied operation. The source
 editor is a host UI; source-language evaluation never invokes a native host
 interpreter or replaces execution of the Wasm artifact.
 
-## Metadata providers
+## SDK v2 guest qualification
+
+The debugger consumes the metadata in the exact module loaded by the VM.
+A function name supports Wasm function breakpoints. An executable line row
+supports source stops and stepping. Reading a source variable also requires
+a valid location and type at the current stop. The SDK language setting
+alone provides no evidence for these capabilities.
+
+| SDK v2 producer | Evidence from application artifacts |
+| --- | --- |
+| Zig | The Zig 0.16.0 prototype reached the original source through the authenticated DBG broker and DAP at both Wasm widths. Line 10 exposed the read-only `v: u32 = 2`. Source stepping stopped at line 11 and the previous frame reference was refused. |
+| C | The optimized SDK ABI probe reaches an exact `body.c` breakpoint. Its next mapped position is another column on the same line. |
+| C++, Objective-C, D, Fortran, TinyGo | The sampled artifacts contain line tables naming original application files. Qualify breakpoints, stepping and variables for the specific producer and application. |
+| Rust | The sampled artifact names the original application file. The requested ROS ABI call line was unverified through DAP for that optimized artifact. |
+| C# | A sampled AOT module names the original `Filter.cs`. Source breakpoint and variable coverage for the C# producer is unqualified. |
+| Go register-only producer | Wasm function breakpoints use the emitted names. With `-g`, an embedded map built from Go SSA positions supports authenticated DAP source breakpoints and stepping between original statements. The map carries no variable types or locations. |
+| Java and Kotlin | Previously built TeaVM C modules support breakpoints in generated C. With the updated producer, authentic JVM paths and lines reach the original Java and Kotlin breakpoints through a trusted host source map. The checked source steps moved between locations on the same source line. Source variables still reflect generated C. |
+| Nim, F#, Visual Basic .NET | The sampled modules have DWARF but did not name the original application files. |
+| JavaScript, TypeScript, Lua, Python, Ruby | The sampled guest modules retain interpreter or bridge debug metadata. Inspecting that runtime is possible at the Wasm level. Original script locations and variables require a separate language-aware producer and debugger path. |
+
+This inventory covers sampled artifacts. A language with no artifact in the
+inventory still needs qualification. The authenticated DAP runs exercise the
+protocol used by IDEs. Each graphical IDE integration has its own UI tests.
+
+Run `test/0084.ros-runtime/run_sdk_source_debug.py` with the original guest
+source, module, two executable line numbers and the application's normal VM
+flags. Add `--value NAME=VALUE` to require an actual source variable value and
+`--source-map` if the compiler's trusted source root is mapped to the checkout.
+The runner hashes the guest and debugger inputs and checks the stop-scoped
+frame reference after resuming.
+
+Host ELF debug symbols are separate from guest debug metadata. Linux releases
+can keep the VM's original DWARF in an [ELF companion](../how-to-build/linux.md).
+Guest source debugging still uses the metadata emitted into the Wasm module.
+
+## Compiler metadata providers
 
 C, C++, C FFI, Objective-C, D, Nim, Odin, Rust, Swift, TinyGo and Zig use their
 genuine embedded DWARF where the compiler emits it. Rust's standard library may
@@ -35,15 +70,16 @@ directory. These maps provide source lines; they do not fabricate DWARF types
 or variable locations. MoonBit's C backend follows its C compiler's debug
 metadata path.
 
-The pinned Go frontend disables DWARF on `wasip1/wasm`. SDK debug and
-releasedbg builds use a version-checked source overlay to build its compiler
+The pinned upstream Go frontend disables DWARF on `wasip1/wasm`. The separate
+upstream Go compiler path uses a version-checked source overlay to build its compiler
 and linker with `-wasmsourcemap`. The assembler records real source positions
 at emitted byte offsets; the linker adjusts those offsets for variable-length
 relocation insertions and embeds Source Map v3. Go runtime `pclntab` virtual PCs
 are never interpreted as Wasm byte offsets. This provides line and column
 locations, not fabricated variable locations. The offline overlay builds only
 two private host tools and leaves the installed compiler closure unchanged.
-Release builds use the original tools. In debug mode, the exact non-standard
+That overlay is distinct from the SDK v2 register-only Go producer. Release
+builds on the upstream compiler path use the original tools. In debug mode, the exact non-standard
 package graph reported by Go is compiled with optimization and inlining
 disabled. The standard library retains optimization and genuine line maps;
 its source positions can be coalesced or optimized out. This avoids expanding

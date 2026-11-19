@@ -36,7 +36,7 @@ def require(value, message, detail=None):
 
 class Client:
     """Actual DAP stdio with bounded framing and exact queued response IDs."""
-    def __init__(self, adapter: Path, directory: Path, folder: Path, level: str):
+    def __init__(self, adapter: Path, directory: Path, folder: Path, level: str, *, source_map=None):
         self.command = [sys.executable, str(adapter)]
         self.stderr = (folder / (level + "-adapter.stderr")).open("wb")
         self.child = subprocess.Popen(self.command, stdin=subprocess.PIPE,
@@ -55,6 +55,8 @@ class Client:
             attach = {"socketDir": str(directory), "moduleId": 0}
             if level != "source":
                 attach["stepLevel"] = level
+            if source_map is not None:
+                attach["sourceMap"] = source_map
             self.request("attach", attach)
             self.request("configurationDone")
         except BaseException:
@@ -305,11 +307,11 @@ class BrokerSession:
             self.close()
             raise
 
-    def connect(self, level):
+    def connect(self, level, *, source_map=None):
         # Use a distinct transcript basename for genuine reconnects.
         folder = self.folder / f"session-{len(self.clients)}"
         folder.mkdir()
-        client = Client(self.adapter, self.directory, folder, level)
+        client = Client(self.adapter, self.directory, folder, level, source_map=source_map)
         self.clients.append(client)
         return client
 
