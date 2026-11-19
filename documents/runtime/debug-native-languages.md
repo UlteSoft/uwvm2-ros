@@ -1,5 +1,7 @@
 # SDK native-language debug metadata
 
+[简体中文](debug-native-languages.zh.md)
+
 Build SDK examples with `xmake f -m debug` followed by `xmake`. Debug builds
 retain compiler metadata and request the compiler's unoptimized mode. The
 `releasedbg` mode retains metadata with optimized code; variables can then be
@@ -22,7 +24,7 @@ alone provides no evidence for these capabilities.
 
 | SDK v2 producer | Evidence from application artifacts |
 | --- | --- |
-| Zig | The Zig 0.16.0 prototype reached the original source through the authenticated DBG broker and DAP at both Wasm widths. Line 10 exposed the read-only `v: u32 = 2`. Source stepping stopped at line 11 and the previous frame reference was refused. |
+| Zig | Guest modules built by the installed Zig 0.16.0 SDK reached the original source through the authenticated DBG broker and DAP at both Wasm widths. Line 10 exposed the read-only `v: u32 = 2`. Source stepping stopped at line 11 and the previous frame reference was refused. This check covers scalar variables. |
 | C | The optimized SDK ABI probe reaches an exact `body.c` breakpoint. Its next mapped position is another column on the same line. |
 | C++, Objective-C, D, Fortran, TinyGo | The sampled artifacts contain line tables naming original application files. Qualify breakpoints, stepping and variables for the specific producer and application. |
 | Rust | The sampled artifact names the original application file. The requested ROS ABI call line was unverified through DAP for that optimized artifact. |
