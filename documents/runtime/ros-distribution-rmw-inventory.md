@@ -199,6 +199,13 @@ samples during the authorized exchange. The
 records the three loaded identities and the default-deny grants for this
 same-release loopback.
 
+The optional syscall witness matched 58 distinct AES-256-GCM RTPS datagrams
+between the writer's completed sends and the authorized listener's completed
+receives during the same static TF workload. The count can include middleware
+control traffic. The listener's TF2 results independently identify the retained
+and live application samples. The denied reader remained online and delivered
+zero callbacks throughout.
+
 Run a locally licensed middleware through the
 [additional RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md).
 Run a ROS 1 network peer through the

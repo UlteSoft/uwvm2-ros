@@ -207,8 +207,28 @@ publish-to-validated-lookup p50 was 220.4 µs and p95 was 304.2 µs. The
 output contains public artifact digests and process observations. The
 keystore lives only in the temporary namespace. This test covers native
 Jazzy Enforce on local loopback with the named topic grants. Packet-level
-cryptographic checks, mixed releases and Wasm execution have separate
+integrity verification, mixed releases and Wasm execution have separate
 acceptance requirements.
+
+Add `--wire` to the same command to trace completed UDP sends from the
+publisher and receives by the authorized reader. The optional x86-64
+fixture binds host strace and its unwind libraries read-only into the
+namespace and records their digests. It uses the actual participant socket
+inodes to identify each role's user unicast port. It matches complete RTPS
+datagram digests across the traced send and receive calls and recognizes
+DDS Security AES-GCM envelopes with the existing wire decoder. The traces
+and credentials live in namespace memory. The output retains counts,
+digests, participant ports and application observations. Timing summaries
+come from the ordinary run with tracing disabled.
+
+One traced run matched 58 distinct AES-256-GCM protected datagrams at the
+authorized reader's UDP port. It found zero occurrences of either fixture
+frame name in the observed datagrams. The TF2 listener validated one
+retained transform batch and 24 live batches in that run. The wire count
+can include middleware control traffic, with the TF2 lookups validating the
+application data independently. The publisher sent five RTPS datagrams to
+the denied participant's user port. The participant's `/tf_static` reader
+creation was refused and its callback count remained zero.
 
 ## Native GetParameters service
 

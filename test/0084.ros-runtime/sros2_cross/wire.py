@@ -1,4 +1,4 @@
-"""Decode the fixture participants' successful loopback UDP sends."""
+"""Decode the fixture participants' successful loopback UDP transfers."""
 from collections import Counter
 import hashlib
 import os
@@ -28,16 +28,21 @@ HEX = r'(?:\\x[0-9a-f]{2})*'
 LOOPBACK = r'sin_addr=inet_addr\("(?:(?:127\.0\.0\.1)|(?:\\x31\\x32\\x37\\x2e\\x30\\x2e\\x30\\x2e\\x31))"\)'
 
 
-def datagrams(lines):
+BOUND_UDP = r'<UDP:\[(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)\]>'
+
+
+def datagrams(lines, *, receiving=False):
+    """Yield UDP destination ports and complete RTPS bytes from strace."""
+    message, buffer = ('recvmsg', 'recvfrom') if receiving else ('sendmsg', 'sendto')
     for line in lines:
         size = re.search(r' = (\d+)\s*$', line)
-        port = re.search(r'sin_port=htons\((\d+)\)', line)
+        port = re.search(BOUND_UDP if receiving else r'sin_port=htons\((\d+)\)', line)
         if not size or not port or 'AF_INET,' not in line or not re.search(LOOPBACK, line):
             continue
-        if 'sendmsg(' in line:
+        if message + '(' in line:
             values = re.findall(r'iov_base="('+HEX+')"', line)
-        elif 'sendto(' in line:
-            match = re.search(r'sendto\(\d+, "('+HEX+')"', line)
+        elif buffer + '(' in line:
+            match = re.search(buffer + r'\(\d+(?:<[^>]*>)?, "('+HEX+')"', line)
             values = [match[1]] if match else []
         else:
             continue
@@ -46,8 +51,9 @@ def datagrams(lines):
             yield int(port[1]), payload
 
 
-def trace_command(directory, role, argv):
-    return ['/usr/bin/strace', '-ff', '-qq', '-xx', '-v', '-s', '65535', '-e', 'trace=sendto,sendmsg',
+def trace_command(directory, role, argv, *, strace='/usr/bin/strace', receive=False):
+    network = ['-yy', '-e', 'trace=sendto,sendmsg,recvfrom,recvmsg'] if receive else ['-e', 'trace=sendto,sendmsg']
+    return [strace, '-ff', '-qq', '-xx', '-v', '-s', '65535', *network,
             '-o', directory/(role+'.udp'), *argv]
 
 
@@ -83,6 +89,15 @@ def receive_ports(pid, domain=DOMAIN):
     return ports
 
 
+def protected_transforms(packet):
+    """Report DDS Security AES-GCM submessage envelope identifiers."""
+    messages = list(submessages(packet))
+    for (kind,prefix), (body_id,body), (postfix,trailer) in zip(messages, messages[1:], messages[2:]):
+        if (kind == 0x31 and len(prefix) >= 20 and body_id == 0x30 and len(body) > 4
+                and postfix == 0x32 and len(trailer) >= 16 and prefix[:4] in (b'\0\0\0\2', b'\0\0\0\4')):
+            yield {2: 'AES128-GCM', 4: 'AES256-GCM'}[prefix[3]]
+
+
 def summarize(directory, roles, markers, domain=DOMAIN):
     clear, encrypted, total = Counter(), Counter(), Counter()
     identity = hashlib.sha256()
@@ -97,15 +112,12 @@ def summarize(directory, roles, markers, domain=DOMAIN):
                             clear[(role,label)] += 1
                     if dest not in user_ports(domain):
                         continue
-                    messages = list(submessages(packet))
-                    for (kind,prefix), (body_id,body), (postfix,trailer) in zip(messages, messages[1:], messages[2:]):
-                        if (kind == 0x31 and len(prefix) >= 20 and body_id == 0x30 and len(body) > 4
-                                and postfix == 0x32 and len(trailer) >= 16 and prefix[:4] in (b'\0\0\0\2', b'\0\0\0\4')):
-                            encrypted[(role,dest,prefix[3])] += 1
+                    for transform in protected_transforms(packet):
+                        encrypted[(role,dest,transform)] += 1
     return {'source':'successful participant UDP sendmsg/sendto syscalls', 'rtpsDatagrams':dict(total),
             'tracedDatagramsSha256':identity.hexdigest(),
             'clearMarkers':{r:{m:clear[(r,m)] for m in markers} for r in roles},
             'traceFiles':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(directory.glob('*.udp.*'))},
             'userPortEncryptedSubmessages':[{'sender':role, 'destination':port,
-                'transform':{2:'AES128-GCM',4:'AES256-GCM'}[kind], 'count':count}
-                for (role,port,kind),count in sorted(encrypted.items())]}
+                'transform':transform, 'count':count}
+                for (role,port,transform),count in sorted(encrypted.items())]}

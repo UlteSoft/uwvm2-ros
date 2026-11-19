@@ -119,7 +119,7 @@ def observations(lines, label):
     return observed
 
 
-def check_case(args, out, release, mode):
+def check_case(args, out, release, mode, *, traced=False):
     """Reconcile independent endpoint logs and retain exact timings and executable identities."""
     writer, reader = ((out / (role + ".stdout")).read_text().splitlines() for role in ("writer", "reader"))
     results = json.loads((out / "processes.json").read_bytes())
@@ -131,6 +131,7 @@ def check_case(args, out, release, mode):
     require(history in (0, 1) and (mode == "volatile" or history == int(mode == "transient")),
             "unexpected retention")
     results["retained_samples"] = history
+    results["live_samples"] = nlive
     results["documented_retained_samples"] = int(mode == "transient")
     results["documented_history_matches"] = history == results["documented_retained_samples"]
     results["writer_durability"] = "volatile" if mode == "both-volatile" else "transient"
@@ -148,11 +149,13 @@ def check_case(args, out, release, mode):
     require(published[0] < start, "historical publish must precede reader construction")
     if history:
         require(start <= received[0] < published[1], "retained sample arrived outside the history phase")
-        results["late_join_ns"] = received[0] - start
+        if not traced:
+            results["late_join_ns"] = received[0] - start
     raw = [received[index] - published[index] for index in range(1, nlive + 1)]
     require(all(ns > 0 for ns in raw), "publish and receipt clock order is invalid")
-    results["live_publish_to_validated_lookup_ns"] = {"raw": raw}
-    if raw and not args.sanitized:
+    if not traced:
+        results["live_publish_to_validated_lookup_ns"] = {"raw": raw}
+    if raw and not (args.sanitized or traced):
         tail = sorted(raw[4:])
         results["live_publish_to_validated_lookup_ns"].update(
             warmup=4, p50=statistics.median(tail), p95=tail[(95 * len(tail) + 99) // 100 - 1])

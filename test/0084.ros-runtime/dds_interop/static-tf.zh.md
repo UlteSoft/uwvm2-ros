@@ -58,6 +58,17 @@ Jazzy x86-64 根文件系统。
 其 `/tf_static` 订阅被 Fast DDS 在创建时拒绝。该进程在授权传输期间保持
 在线，数据回调为零。配置文件同时精确授予本机 ROS 客户端所需的
 `/parameter_events`。验收覆盖同版 Jazzy 原生客户端的回环通信与指定权限，
-报文级加密检查、跨发行版和 Wasm 执行需另行验证。
+报文完整性验证、跨发行版和 Wasm 执行需另行验收。
+
+在同一命令增加 `--wire`，可以匹配发布端成功发送与授权监听器成功接收的完整
+RTPS 数据报摘要。隔离环境只读挂载宿主 strace 及其依赖，按各参与者的实际
+套接字确认端口。原始跟踪和凭据只留在命名空间的临时内存。回执仅保留计数、
+摘要、端口和应用侧验证结果。性能统计使用默认不跟踪的运行。
+
+一次跟踪运行在授权端 UDP 端口匹配了 58 个不同的 AES-256-GCM 封装数据报。
+观测的报文中两个测试帧名的明文出现次数均为零。授权端校验了一份历史快照和
+24 次实时更新。报文计数可能包含中间件控制流量，应用数据则由 TF2 查询独立
+验证。发布端发往未授权参与者端口的 5 个 RTPS 报文也记录在案。该参与者仍
+无法创建 `/tf_static` 订阅，数据回调为零。
 
 [原版 Jazzy TF2 监听器](https://github.com/ros2/geometry2/blob/jazzy/tf2_ros_py/tf2_ros/transform_listener.py) · [English](README.md#static-tf-with-a-late-joining-rclpy-reader)
