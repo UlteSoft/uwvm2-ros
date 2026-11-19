@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/LejuRobotics/kuavo-ros-opensource",
+  "commit": "2634d9fa891bb9b4987cddc7977599922342a316",
+  "sourceDirectory": "src",
+  "model": "kuavo_solver/robot-descriptions/waists/biped_waist_7gen/mjcf/biped_waist.xml",
+  "platform": "leju",
+  "joint": "waist_yaw_joint",
+  "actuator": "waist_yaw_motor",
+  "files": {
+    "kuavo_assets/models/biped_s70/meshes/base_link.STL": "37a76c45ed13f319317661c22efb6216d7d377957ffb87c499f9efb048ecca40",
+    "kuavo_assets/models/biped_s70/meshes/head_connect.STL": "e6e5a7c6a83e736286b9594843211b60a8b3b0b5e7ec071fe10cf74c01db7270",
+    "kuavo_assets/models/biped_s70/meshes/l_arm_connect.STL": "7bb816897d981b34911ce8230dc927de0d3bbb7a4a177b5fdc6f154b3f254b83",
+    "kuavo_assets/models/biped_s70/meshes/l_leg_connect.STL": "4807a88b52c29b6795e67b9871d87539057dff2f498a3714faf270e9549a5a97",
+    "kuavo_assets/models/biped_s70/meshes/r_arm_connect.STL": "0fd1a7fc1e75598b0262c7a195abb112453df007da858e276d647a2c903a13c0",
+    "kuavo_assets/models/biped_s70/meshes/r_leg_connect.STL": "a8eaf3be247c81cf7b3b5b74ffd8b1874e4a5a83c4bfe2036a090aa81725efbd",
+    "kuavo_assets/models/biped_s70/meshes/waist_l_bar.STL": "599d400494c65582434c7c63f47e2b658a0a87514caff9e4f5e951e4d5232cb5",
+    "kuavo_assets/models/biped_s70/meshes/waist_l_bar_tendon.STL": "23167485680a80ec5f27713dcf9094110810b41770e4bb7ba475a6d0cf53a676",
+    "kuavo_assets/models/biped_s70/meshes/waist_pitch.STL": "68d3fcb297a9bee57fe7e051970cfe2cd3b57b010ef104c2217b993308cf236f",
+    "kuavo_assets/models/biped_s70/meshes/waist_r_bar.STL": "20f5243213120871ca830b0ad02f2066975af6288441905d40f4612b02eba131",
+    "kuavo_assets/models/biped_s70/meshes/waist_r_bar_tendon.STL": "0524f3f7a94c10dd49fb4bf726fcbb1504a1badc1a1a3f9b9c62c88e187cd18e",
+    "kuavo_assets/models/biped_s70/meshes/waist_roll.STL": "f7972f8e34a6fa2bdde8e3839d2af82880558153a117ee3cd5b18df5ec51fc14",
+    "kuavo_assets/models/biped_s70/meshes/waist_yaw.STL": "91c74205826e9d9c1df9cafad005d3c660991b9ff7e83ef541bbfcbce6159e83",
+    "kuavo_solver/robot-descriptions/waists/biped_waist_7gen/mjcf/biped_waist.xml": "6c3eecc92ba422863b630ae4c804871fc47db47578c539ffb9dab08db8f2889b"
+  }
+}

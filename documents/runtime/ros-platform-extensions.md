@@ -270,8 +270,14 @@ The following profiles fetch only the files needed for the selected simulation f
 | --- | --- | --- |
 | [AgiBot X2 Ultra](../../test/0084.ros-runtime/mujoco_profiles/agibot-x2-ultra.json) | `left_hip_pitch_joint` / `motor_left_hip_pitch_joint` | 512 MiB |
 | [Deep Robotics Lite3](../../test/0084.ros-runtime/mujoco_profiles/deep-robotics-lite3.json) | `FL_HipX_joint` / `FL_HipX_joint_ctrl` | 64 MiB |
+| [Doosan M0609](../../test/0084.ros-runtime/mujoco_profiles/doosan-m0609.json) | `joint_1` / unique joint actuator | 64 MiB |
+| [Leju Kuavo seventh-generation waist](../../test/0084.ros-runtime/mujoco_profiles/leju-kuavo-waist.json) | `waist_yaw_joint` / `waist_yaw_motor` | 64 MiB |
+| [NVIDIA Isaac Sim MJCF importer ant](../../test/0084.ros-runtime/mujoco_profiles/nvidia-ant.json) | `hip_4` / unique joint actuator | 64 MiB |
+| [NVIDIA Isaac Sim MJCF importer humanoid](../../test/0084.ros-runtime/mujoco_profiles/nvidia-isaac-humanoid.json) | `left_elbow` / `left_elbow` | 64 MiB |
 
 Each original model completed eight 128-step native comparisons, eight command-range rejections with zero steps and eight isolated receiver failures after one step. The VM survived every receiver failure and retained an unknown command outcome. These tests exercise the named simulated joint and the common permission-scoped local driver channel.
+
+The Kuavo scene exercises the upstream waist mechanism with gravity and contact disabled in its MJCF. The two NVIDIA files are sample assets from the Isaac Sim MJCF importer. The ant uses the `nvidia` permission scope and the humanoid uses `nvidia-isaac-sim`. MuJoCo supplies the physics engine for both.
 
 ## Models from MuJoCo Menagerie
 

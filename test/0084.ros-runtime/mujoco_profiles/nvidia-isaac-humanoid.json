@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/isaac-sim/IsaacSim",
+  "commit": "87c95274f50836068b44eeb030bf62aa2108bdf8",
+  "sourceDirectory": "source/extensions/isaacsim.asset.importer.mjcf/data/mjcf",
+  "model": "nv_humanoid.xml",
+  "platform": "nvidia-isaac-sim",
+  "joint": "left_elbow",
+  "actuator": "left_elbow",
+  "files": {
+    "nv_humanoid.xml": "87549d979ea5c0a603d808c0c3048062aa3d43932b0c862cacbf0563b9d20d60"
+  }
+}

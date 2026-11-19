@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/DoosanRobotics/doosan-robot2",
+  "commit": "6c5f3ba622bfa9d6f9cffebf21fa44f57db55b48",
+  "sourceDirectory": "dsr_description2/mujoco_models",
+  "model": "m0609/scene.xml",
+  "platform": "doosan",
+  "joint": "joint_1",
+  "actuator": null,
+  "files": {
+    "m0609/assets/MF0609_0_0.stl": "ea62e5f953d58d159efa28fbc7c13cd9e5cd2259b70f5935e8d390fcb65e2395",
+    "m0609/assets/MF0609_1_0.stl": "b2a3d20aa0a9e77c21bde6445edbd6f26a5cd4e399cab3c1ef6a59f9382324bf",
+    "m0609/assets/MF0609_2_0.stl": "d87201516ecfee29b576d23c204e16db0f9ceea265fe8125d9804615cd911250",
+    "m0609/assets/MF0609_2_1.stl": "9b43007675c529b8050a008667dd92e4d29d2803bf621ee9f002b447907838aa",
+    "m0609/assets/MF0609_2_2.stl": "0f5a187f18394ec9c819ef5fbdb26b262db7d8c20cb748f7ef035b96637b808c",
+    "m0609/assets/MF0609_3_0.stl": "60495caef539c8390897134fedb76f19484a1407f3eef6c0064ed301fa96d65e",
+    "m0609/assets/MF0609_4_0.stl": "0a43ab152af223b9fc501059cc91d397151ccec7cc2c081c7f0f6b20101ff20c",
+    "m0609/assets/MF0609_4_1.stl": "3d4104ba1ee995e3aac8c7fc6ef38a337ca546b032d5c5f0c87839d3e899a4e4",
+    "m0609/assets/MF0609_5_0.stl": "ba089913a4b22ef1246b5e062e9ef83def4577b0630e4614f415b9270c15bf58",
+    "m0609/assets/MF0609_6_0.stl": "7a8543131aec7f7c18221ee61ef384b35055b39ffce17b8c2759028a94b0d68e",
+    "m0609/m0609.xml": "b744fd5e889fd3f37759b949128294c15473de6cb8e4e6dc29aa3ec0ecbd94da",
+    "m0609/scene.xml": "3d90df7f0735ba95041ccf2710e520416eb3df19cb509df5e2c27849288cf823"
+  }
+}

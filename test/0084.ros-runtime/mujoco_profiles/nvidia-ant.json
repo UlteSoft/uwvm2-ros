@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/isaac-sim/IsaacSim",
+  "commit": "87c95274f50836068b44eeb030bf62aa2108bdf8",
+  "sourceDirectory": "source/extensions/isaacsim.asset.importer.mjcf/data/mjcf",
+  "model": "nv_ant.xml",
+  "platform": "nvidia",
+  "joint": "hip_4",
+  "actuator": null,
+  "files": {
+    "nv_ant.xml": "dce481d9a8b9a44266b60cf6b5479f3c4a4b38cf1ec1f134cf0106ca1bcd65a7"
+  }
+}
