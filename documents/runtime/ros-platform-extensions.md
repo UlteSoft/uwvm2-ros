@@ -271,6 +271,7 @@ The following profiles fetch only the files needed for the selected simulation f
 | [AgiBot X2 Ultra](../../test/0084.ros-runtime/mujoco_profiles/agibot-x2-ultra.json) | `left_hip_pitch_joint` / `motor_left_hip_pitch_joint` | 512 MiB |
 | [Deep Robotics Lite3](../../test/0084.ros-runtime/mujoco_profiles/deep-robotics-lite3.json) | `FL_HipX_joint` / `FL_HipX_joint_ctrl` | 64 MiB |
 | [Doosan M0609](../../test/0084.ros-runtime/mujoco_profiles/doosan-m0609.json) | `joint_1` / unique joint actuator | 64 MiB |
+| [UBTECH TienKung2 Lite](../../test/0084.ros-runtime/mujoco_profiles/ubtech-tienkung2-lite.json) | `hip_roll_l_joint` / `hip_roll_l_joint1` | 64 MiB |
 | [Leju Kuavo seventh-generation waist](../../test/0084.ros-runtime/mujoco_profiles/leju-kuavo-waist.json) | `waist_yaw_joint` / `waist_yaw_motor` | 64 MiB |
 | [NVIDIA Isaac Sim MJCF importer ant](../../test/0084.ros-runtime/mujoco_profiles/nvidia-ant.json) | `hip_4` / unique joint actuator | 64 MiB |
 | [NVIDIA Isaac Sim MJCF importer humanoid](../../test/0084.ros-runtime/mujoco_profiles/nvidia-isaac-humanoid.json) | `left_elbow` / `left_elbow` | 64 MiB |
@@ -285,11 +286,27 @@ The following models retain the upstream joint, collision meshes, masses and ine
 
 | ROS package model | Selected joint | Source |
 | --- | --- | --- |
+| ABB IRB1200-5/0.9 | `joint_3` | [ROS-Industrial Xacro profile](../../test/0084.ros-runtime/mujoco_profiles/abb-irb1200-xacro.json) |
 | RealMan RM65 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/realman-rm65.json) |
 | Dobot CR16 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/dobot-cr16.json) |
 | Yaskawa Motoman SIA10D | `joint_s` | [ROS-Industrial support package profile](../../test/0084.ros-runtime/mujoco_profiles/yaskawa-sia10d.json) |
 
 For these URDFs MuJoCo has a passive hinge. The test receiver supplies a simulated torque controller on that hinge, limited to one newton-metre. Intake checks the upstream effort rating, velocity rating, target angle range and the selected link's inertia. The native control first runs the same initial state with zero torque to establish a passive reference. Each driven reference must differ from its passive control. The TLS receiver then compares the simulated joint position and elapsed time with direct native execution over 128 steps. The qualification covers this controller and the published mechanical model. Factory servo firmware, brakes and emergency stopping require independent evidence.
+
+The ABB package uses Xacro to share its robot description and materials between models. Set `ABB` to a new absolute directory under the project `.tmp`, and `STAGED` to another unused path there. With the ROS 2 `xacro` program and its `ament_index_python` package installed, the following commands make both pinned ROS packages visible for expansion.
+
+```sh
+PROFILES=test/0084.ros-runtime/mujoco_profiles
+python3 -B "$PROFILES/fetch.py" --profile "$PROFILES/abb-irb1200-xacro.json" --output "$ABB/share"
+mkdir -p "$ABB/share/ament_index/resource_index/packages"
+touch "$ABB/share/ament_index/resource_index/packages/abb_irb1200_support" \
+      "$ABB/share/ament_index/resource_index/packages/abb_resources"
+AMENT_PREFIX_PATH="$ABB" xacro "$ABB/share/abb_irb1200_support/urdf/irb1200_5_90.xacro" > "$ABB/expanded.urdf"
+python3 -B "$PROFILES/stage_xacro.py" --profile "$PROFILES/abb-irb1200-xacro.json" \
+  --assets "$ABB/share" --expanded-urdf "$ABB/expanded.urdf" --output "$STAGED"
+```
+
+The stager verifies the original Xacro and mesh digests and checks the canonical expansion against its reviewed digest. Pass `--vendor-model "$STAGED/profile.json" --vendor-assets "$STAGED/assets"` to the qualification command above. The IRB1200 third joint and the TienKung2 Lite left hip each passed all 24 command, range and receiver-loss cases.
 
 ## Models from MuJoCo Menagerie
 

@@ -1,0 +1,32 @@
+{
+  "repository": "https://github.com/ros-industrial/abb",
+  "commit": "45f4769d826cf3ac62a65495f2db67b78b0c81df",
+  "sourceDirectory": ".",
+  "model": "abb_irb1200_support/urdf/irb1200_5_90.xacro",
+  "platform": "abb",
+  "package": "abb_irb1200_support",
+  "joint": "joint_3",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/base_link.stl": "64cbe8107da061ac3ee4b8805586c3a53428e385fd4a4ff6fef8329e64e3a33b",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_1.stl": "a4f7d692a8d40366bcc3441a28f30f1764d992791834cfab7ec2bb98b3e40ad4",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_2.stl": "f41662edd09517cf9bf070ec95f6e2d99af6705f1e6900b53fb8e4a32ee0e4de",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_3.stl": "e64b83b5d5251b9d1c32065a1e2e81950a5343b9971e2daeceefd6ce98dcc56a",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_4.stl": "c863465ca0d5c31aad4416f703604151ec9d632d44b62a92da8376b62dc44f9e",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_5.stl": "80662d2f6998f38573436f0b6f2871ab5374dee603e85ddceec8e2de90e7968f",
+    "abb_irb1200_support/meshes/irb1200_5_90/collision/link_6.stl": "2862c8dc2ba91815a7a6c4aaf2b861b6920292e25dce666d49e29212677ba213",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/base_link.dae": "c2d0dd670851f1ff072dbfe82379664b0792b32024fc35217dee22479638a9cd",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_1.dae": "b055f7e4520a26244df1dfe11577b536674060a796a0d8c1824f6389798a06fe",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_2.dae": "b6be34e84987223b383f38969d5c2855b7788535901f33b8035bdb8afa5c4ddd",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_3.dae": "f2577609502ee8c602cb0c247709b0100a3d8b4dda6542d75007f662fcb13f61",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_4.dae": "188d71c708602bbed929b6ea6f16a58ac53c93ae47433e7aaab05bf3cf62232d",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_5.dae": "d67f5b18c5dd03af52b20e93c32413068170711ba121f78d15cc242b37ce63ae",
+    "abb_irb1200_support/meshes/irb1200_5_90/visual/link_6.dae": "a711e5148ef7d4d105a8fb72bf839764cb67fc95e4f366a1ce837e10a8bf0a8c",
+    "abb_irb1200_support/urdf/irb1200_5_90.xacro": "e900dfe3fa6599798842a639a39ffa79d59e862237b22687073923c456d9eb50",
+    "abb_irb1200_support/urdf/irb1200_5_90_macro.xacro": "8aff73ba59bb0c31a1280e2f35c4241b9476aa0e3af2f15a627f2a3e200c52df",
+    "abb_resources/urdf/common_colours.xacro": "da5e23b29d6ee6a38ee85969f59310fad0dd6b5387e1d23516b2817882f0243a",
+    "abb_resources/urdf/common_materials.xacro": "4be8a1ba6cb0407d31c32143be106036777c74a869c2dc237f42704bc690d314"
+  },
+  "expandedUrdfSha256": "f753cfc0b801d49d1d56c335450730c91aaac86d81af052ec45ee4bb03f1986d"
+}

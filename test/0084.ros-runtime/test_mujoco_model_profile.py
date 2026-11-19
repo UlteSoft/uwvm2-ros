@@ -1,6 +1,8 @@
 """Verify that an invalid vendor model cannot reach the native model compiler."""
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -62,6 +64,45 @@ class ModelIntake(unittest.TestCase):
                     ET.ElementTree(edited).write(src)
                     with self.assertRaisesRegex(ValueError, error):
                         urdf_mesh_mounts(profile, work, work)
+
+    def test_xacro_expansion_and_sources_must_match(self):
+        verify_gate()
+        scratch = ROOT/'.tmp'
+        scratch.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=scratch) as tmp:
+            work = Path(tmp)
+            package = work/'arm'
+            package.mkdir()
+            original = package/'arm.xacro'
+            original.write_bytes(b'<robot name="arm"/>')
+            mesh = package/'joint.stl'
+            mesh.write_bytes(b'fixture mesh')
+            expanded = work/'arm.urdf'
+            expected = '<robot name="arm"><mesh filename="package://arm/joint.stl"/></robot>'
+            expanded.write_text(expected)
+            files = {'arm/'+f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in (mesh, original)}
+            canonical = ET.canonicalize(expected, strip_text=True).encode()
+            profile = work/'profile.json'
+            profile.write_text(json.dumps(dict(package='arm', sourceDirectory='.', model='arm/arm.xacro',
+                actuation='urdf-joint-effort', files=files, expandedUrdfSha256=hashlib.sha256(canonical).hexdigest())))
+            stager = Path(__file__).parent/'mujoco_profiles/stage_xacro.py'
+            command = [sys.executable, '-B', str(stager), '--profile', str(profile),
+                       '--assets', str(work), '--expanded-urdf', str(expanded), '--output']
+            for name in ('changed-expansion', 'changed-mesh', 'changed-xacro', 'original'):
+                with self.subTest(name=name):
+                    output = work/name
+                    expanded.write_text(expected.replace('"arm"', '"other"') if name == 'changed-expansion' else expected)
+                    mesh.write_bytes(b'wrong mesh' if name == 'changed-mesh' else b'fixture mesh')
+                    original.write_bytes(b'<robot/>' if name == 'changed-xacro' else b'<robot name="arm"/>')
+                    result = subprocess.run(command+[str(output)], capture_output=True, text=True, timeout=10)
+                    if name == 'original':
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual((output/'assets/expanded.urdf').read_bytes(), canonical)
+                        self.assertEqual((output/'source.json').read_bytes(), profile.read_bytes())
+                    else:
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn('differs', result.stderr)
+                        self.assertFalse(output.exists())
 
     def test_declined_before_compiler_start(self):
         verify_gate()

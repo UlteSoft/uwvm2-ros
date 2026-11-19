@@ -32,7 +32,9 @@ def main():
     files = profile['files']
     if not repo or not re.fullmatch(r'[a-f0-9]{40}',commit) or not 1<=len(files)<=1024:
         raise ValueError('expected a pinned public GitHub model profile')
-    root = 'https://raw.githubusercontent.com/'+ '/'.join((*repo.groups(),commit,relative(profile['sourceDirectory'])))
+    root = 'https://raw.githubusercontent.com/'+ '/'.join((*repo.groups(),commit))
+    if profile['sourceDirectory'] != '.':
+        root += '/' + relative(profile['sourceDirectory'])
     output = opts.output.absolute()
     if output.exists() or output.is_symlink() or '.tmp' not in output.resolve().parts:
         args.error('select a new asset directory under the project .tmp')

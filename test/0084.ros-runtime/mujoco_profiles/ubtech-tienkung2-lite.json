@@ -1,0 +1,33 @@
+{
+  "repository": "https://github.com/UBTECH-Robot/TienKung-Lab",
+  "commit": "243dfe2d9268581599b03bc2c87ba372546e30be",
+  "sourceDirectory": "legged_lab/assets/tienkung2_lite",
+  "model": "mjcf/tienkung.xml",
+  "platform": "ubtech",
+  "joint": "hip_roll_l_joint",
+  "actuator": "hip_roll_l_joint1",
+  "files": {
+    "mjcf/tienkung.xml": "adf989e6919c79e1cdc056a0b68aa1caface693e443527d887d48af5f7434792",
+    "meshes/pelvis.STL": "2706b3dad307c32ff31d617db016fef64470be83a4870dbee708b43fcb9ebd21",
+    "meshes/hip_roll_l_link.STL": "84d9320cd44e009edb4fa9880e77f7fda39d574cbfd9cab99dda5d35a657b2ca",
+    "meshes/hip_pitch_l_link.STL": "e496789de3c9932834e6a5c3e2bf8a8981018704969bbd782cb18d9177a0ec63",
+    "meshes/hip_yaw_l_link.STL": "15a7050907b0e662882c946988ab86870668e0d42460304f8e0be7c04dec7849",
+    "meshes/knee_pitch_l_link.STL": "788ca6de3c417b9a0b6f70d654232261e62541722e85ded2e568f1cac41129dd",
+    "meshes/ankle_pitch_l_link.STL": "68c3a1b6ed6bfae52c502aa363878fb8969215ade277c7ea9cb5dc4c85703579",
+    "meshes/ankle_roll_l_link.STL": "1d4bcaa2e83dc0ddab0e962747c82cf511c9caea013f0000c5c91677ed7a58b6",
+    "meshes/hip_roll_r_link.STL": "090fa393bff61ba7794fa76674bfbd0af97d19fc9177e02294bdc1a6b1489870",
+    "meshes/hip_pitch_r_link.STL": "12649b4a8df638db2f7a9b76ad3d79c9ceee3bac1b1575d0b5d04f59dd5c7f53",
+    "meshes/hip_yaw_r_link.STL": "d18b115305d8378aa97dc80235addbfb2437fa9aff4277b33d9301596122eeb4",
+    "meshes/knee_pitch_r_link.STL": "815f575d475dd04ab4c2f57e2259f35cbc9e01e969279d000e95c10af42ccd28",
+    "meshes/ankle_pitch_r_link.STL": "9f7ae5039a54670d0095e727f1d338b0161b05cf452736f590c21dc27f2218e4",
+    "meshes/ankle_roll_r_link.STL": "c9e9bfea2a87c85bcdeeff8e162cb3338ed909b7e0484b6dac7e97b739d2b76b",
+    "meshes/shoulder_pitch_l_link.STL": "a052e64b4a7f18951ef845f6e2e3bae1b2b0c8abf7ee3b6e9d994b84ffa31e42",
+    "meshes/shoulder_roll_l_link.STL": "dbc92c368e51377ba7d23b2f7a6046c5978d07b68f111befb41cb7ec19dc18fe",
+    "meshes/shoulder_yaw_l_link.STL": "2a9fa6aef1e4ba6eab526c8d0fec0c5531bcf84ade42ceb38074726a476aad7e",
+    "meshes/elbow_pitch_l_link.STL": "d837846699ff782b051f8f90198cbb636e5433bb8dfc1322f94ba16eb5d0c0e2",
+    "meshes/shoulder_pitch_r_link.STL": "e0be8e397f724a948b9cc20fc6ae48d50dc82c61f80d526ea3df0c8d777d22dc",
+    "meshes/shoulder_roll_r_link.STL": "7b2a2df0f8377ceaa832562fc8fb444303c735bab5d4360d1edf4fda79cc3c5d",
+    "meshes/shoulder_yaw_r_link.STL": "fd45e3effde9c2fac7e42de3f665cf3b7e5a00d98b461ae83670969eeacc1363",
+    "meshes/elbow_pitch_r_link.STL": "9929c5f41074279d8ca7c8666c082747488dbe73221a8cc89be9aa5cdaf6e5db"
+  }
+}
