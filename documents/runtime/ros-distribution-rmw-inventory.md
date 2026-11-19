@@ -173,6 +173,13 @@ and authentication on the legacy leg unqualified. Each table row represents
 one or more independent runs. A plaintext middleware run provides no DDS
 Security result. A successful data sample can coexist with graph diagnostics.
 
+The [native image fixture](../../test/0084.ros-runtime/dds_interop/README.md#bounded-native-image-exchange)
+also delivered and byte-verified 5,760- and 921,600-byte RGB8 images in both
+Jazzy Fast DDS and Humble Cyclone DDS orderings with its dedicated paced
+loopback profiles. It exercised the two same-installation controls and
+verified zero replies for reliability incompatibility and an invalid row
+stride. The observations apply to the named image endpoints and profiles.
+
 Run a locally licensed middleware through the
 [additional RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md).
 Run a ROS 1 network peer through the

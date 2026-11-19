@@ -1,5 +1,70 @@
 # ROS 2 and native DDS round trip
 
+## Bounded native image exchange
+
+`run_image.py` compiles one rclcpp witness against the generated
+`sensor_msgs/msg/Image` headers and type support of each installation. Select
+Jazzy with Fast DDS and Humble with Cyclone DDS. The peers use private IPv4
+loopback, unicast discovery and the dedicated image transport profiles.
+The output records the compiler and binary hashes, loaded middleware and
+type-support libraries, endpoint logs and individual round-trip measurements.
+
+Each permitted run transfers 36 images of each size through the same
+request/reply topics. Every endpoint checks the dimensions, row stride, RGB8
+encoding, sequence, fresh trial identity and every pixel byte. The 921,600-byte
+frame exceeds the largest UDP datagram. The 5,760-byte frame provides a smaller
+comparison. The four permitted runs exercise both same-installation controls
+and both orderings of the mixed installations.
+
+The Best Effort writer versus Reliable reader control requires graph
+visibility, zero request endpoint matches, an actual publication attempt
+and a reliability incompatibility event. The wrong-stride control uses
+matched endpoints and requires the echo application to observe and reject
+the invalid frame. The requester receives no reply in either control.
+
+The test transport profiles set a 32 KiB maximum message size, explicit
+Cyclone fragment sizing and a paced Fast DDS writer. An initial run with the
+ordinary loopback profiles exhausted the fixture's time bound during the
+mixed large-frame exchange. The image profiles are scoped to this local test.
+
+Run through the shared qualification launcher and lock from a fresh output
+directory under the VM project's `.tmp`. Each prefix needs its own rclcpp,
+generated Image package and middleware libraries.
+
+```sh
+"$GATE" /usr/bin/python3 -B test/0084.ros-runtime/dds_interop/run_image.py \
+  --jazzy-prefix "$JAZZY_PREFIX" --jazzy-system "$JAZZY_SYSTEM_LIBS" \
+  --humble-prefix "$HUMBLE_PREFIX" --humble-system "$HUMBLE_SYSTEM_LIBS" \
+  --output "$NEW_OUTPUT"
+```
+
+Use `--sanitized` in a separate run for ASan/UBSan checks of the witness.
+Use the optimized build without instrumentation for timing comparisons.
+The latency includes publish, asynchronous network delivery, the peer's
+content checks and reply, and the requester's final content check. The
+summary excludes four warm-up observations per frame size.
+
+Both builds passed all six cases in the x86-64 qualification cgroup.
+The 921,600-byte observations from one optimized run were as follows.
+
+| Requester → echo | Median round trip | 95th percentile |
+| --- | ---: | ---: |
+| Jazzy Fast DDS → Jazzy Fast DDS | 20.45 ms | 20.61 ms |
+| Humble Cyclone DDS → Humble Cyclone DDS | 1.99 ms | 199.89 ms |
+| Jazzy Fast DDS → Humble Cyclone DDS | 32.16 ms | 32.78 ms |
+| Humble Cyclone DDS → Jazzy Fast DDS | 31.21 ms | 32.33 ms |
+
+The mixed run with a Humble echo retained four rcutils error-state diagnostics
+alongside the verified image responses. This evidence covers the exact image
+exchange and local transport profiles. General ROS graph interoperability,
+Wasm, DDS Security, endpoint permissions and physical-device latency have
+separate qualification boundaries.
+
+[Image definition](https://github.com/ros2/common_interfaces/blob/jazzy/sensor_msgs/msg/Image.msg)
+and [Fast DDS pacing configuration](https://fast-dds.docs.eprosima.com/en/2.14.x/fastdds/use_cases/large_data/large_data.html).
+
+## Native Int32 exchange
+
 This fixture runs two processes in a fresh Linux network namespace containing only loopback. A native ROS node publishes a fresh positive integer on `/wros_dds_request`. The independent peer reads it and publishes its successor on `/wros_dds_reply`. Both directions use reliable DDS topics. The client rejects unexpected values and the test requires both processes to exit successfully.
 
 The client uses the selected installation's `rclcpp` and checks the RMW implementation identifier. With only `--cyclone-prefix`, the peer uses Cyclone's C API and compiles the ROS DDS type with that installation's `idlc`. With the two optional peer arguments, the second process compiles against its own installation's `rclcpp` and checks for `rmw_cyclonedds_cpp`. Each process receives its own library and resource search paths. Native code runs entirely in the test processes.

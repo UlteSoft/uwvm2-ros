@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>image_loopback_udp</transport_id>
+      <type>UDPv4</type>
+      <sendBufferSize>212992</sendBufferSize>
+      <receiveBufferSize>212992</receiveBufferSize>
+      <maxMessageSize>32768</maxMessageSize>
+      <interfaceWhiteList><address>127.0.0.1</address></interfaceWhiteList>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="wros_image_loopback" is_default_profile="true">
+    <rtps>
+      <builtin>
+        <metatrafficUnicastLocatorList>
+          <locator><udpv4><address>127.0.0.1</address></udpv4></locator>
+        </metatrafficUnicastLocatorList>
+        <initialPeersList>
+          <locator><udpv4><address>127.0.0.1</address></udpv4></locator>
+        </initialPeersList>
+      </builtin>
+      <userTransports><transport_id>image_loopback_udp</transport_id></userTransports>
+      <useBuiltinTransports>false</useBuiltinTransports>
+      <flow_controller_descriptor_list>
+        <flow_controller_descriptor>
+          <name>wros_image_pacer</name>
+          <scheduler>FIFO</scheduler>
+          <max_bytes_per_period>98304</max_bytes_per_period>
+          <period_ms>1</period_ms>
+        </flow_controller_descriptor>
+      </flow_controller_descriptor_list>
+    </rtps>
+  </participant>
+  <data_writer profile_name="wros_image_writer" is_default_profile="true">
+    <qos>
+      <publishMode>
+        <kind>ASYNCHRONOUS</kind>
+        <flow_controller_name>wros_image_pacer</flow_controller_name>
+      </publishMode>
+    </qos>
+    <times>
+      <heartbeatPeriod><sec>0</sec><nanosec>2000000</nanosec></heartbeatPeriod>
+    </times>
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+  </data_writer>
+  <data_reader profile_name="wros_image_reader" is_default_profile="true">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+  </data_reader>
+</profiles>
