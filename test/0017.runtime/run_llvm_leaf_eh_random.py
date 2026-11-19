@@ -16,7 +16,8 @@ from run_core3_engine_comparison import digest, verify_gate
 
 
 TYPES = ("i32", "i64", "f32", "f64", "v128")
-ROUTES = ("typed", "catch_all", "nested", "rethrow", "typed_rethrow", "ordinary", "effect")
+ROUTES = ("typed", "catch_all", "nested", "rethrow", "typed_rethrow", "ordinary", "effect",
+          "local_capture", "local_capture_all")
 
 
 def clause(name, types):
@@ -78,6 +79,24 @@ def make_case(rng, index, route):
               throw_ref)
             unreachable)
             {' '.join(expected)}"""
+    elif route in {"local_capture", "local_capture_all"}:
+        typed = route == "local_capture"
+        captured = clause("result", [*(payload if typed else []), "exnref"])
+        clause_kind = f"catch_ref {tag}" if typed else "catch_all_ref"
+        fields = " ".join(arguments[i] for i in selected)
+        check_captured = " ".join(expected) if typed else ""
+        execution = f"""(block $caught {result}
+            (try_table (catch {tag} $caught)
+              (block $reference {captured}
+                (try_table ({clause_kind} $reference) {fields} throw {tag})
+                unreachable)
+              global.set $saved
+              {check_captured}
+              global.get $saved
+              ref.null exn global.set $saved
+              throw_ref)
+            unreachable)
+            {' '.join(expected)}"""
     else:
         success = "br $caught" if route == "ordinary" else ""
         execution = f"""(block $caught {result}
@@ -98,7 +117,8 @@ def module(rng, batches, routes):
         routes[route] += 1
     functions = "\n".join(make_case(rng, index, route) for index, route in enumerate(picked))
     calls = " ".join(f"call $case{index}" for index in range(len(picked)))
-    return f'(module (global $effect (mut i32) (i32.const 0)) {functions} (func (export "_start") {calls}))\n'
+    return f"""(module (global $effect (mut i32) (i32.const 0))
+        (global $saved (mut exnref) (ref.null exn)) {functions} (func (export "_start") {calls}))\n"""
 
 
 def main():

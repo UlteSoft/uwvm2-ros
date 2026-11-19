@@ -527,6 +527,58 @@ struct llvm_jit_leaf_handler_match
     return builder.CreateCall(type, callee, arguments);
 }
 
+#if defined(UWVM_CPP_EXCEPTIONS) && \
+    !(defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1) && \
+    !(defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1)
+/// @brief Materialize the numeric throw in its actual frame and enter the reference catch.
+/// @details The synchronous bridge captures the existing trace, constructs an
+/// owned immutable value and issues the normal GC reference. The throw-site
+/// operands are already rooted and its native byte tuple is initialized.
+[[nodiscard]] inline bool emit_llvm_jit_local_numeric_capture(
+    runtime_local_func_llvm_jit_emit_state_t& state, llvm_jit_exception_handler_t const& handler,
+    ::std::size_t tag_index, ::std::size_t first_argument, ::std::size_t count,
+    ::llvm::Value* address, ::std::size_t bytes) noexcept
+{
+    auto const payload_count{handler.catch_all ? 0uz : count};
+    auto const arity{payload_count + 1uz};
+    auto const exnref_type{static_cast<runtime_operand_stack_value_type>(0x69u)};
+    if(get_runtime_block_result_count(handler.params) != arity ||
+       get_runtime_wasm_value_type_encoding(handler.params.begin[payload_count]) != 0x69u) { return false; }
+
+    auto& builder{*state.ir_builder};
+    auto const ref_type{get_llvm_type_from_wasm_value_type(builder.getContext(), exnref_type)};
+    if(ref_type == nullptr ||
+       !ref_type->isIntegerTy(static_cast<unsigned>(sizeof(::uwvm2::uwvm::runtime::storage::gc_reference) * CHAR_BIT))) { return false; }
+    auto const slot{create_llvm_jit_entry_block_alloca(builder, ref_type, nullptr, "guest.eh.local.reference")};
+    if(slot == nullptr) { return false; }
+
+    auto const intptr{builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
+    auto const bridge_type{::llvm::FunctionType::get(builder.getVoidTy(), {intptr, intptr, intptr, intptr, intptr}, false)};
+    auto const bridge{get_llvm_runtime_bridge_function_symbol_value<
+        ::uwvm2::runtime::lib::details::llvm_jit_capture_numeric_exception_abi_bridge>(builder, bridge_type)};
+    if(bridge == nullptr) { return false; }
+    // Host errors still retire this frame's GC and logical owners. The bridge
+    // returns a normal carrier on success and never raises a guest exception.
+    auto const issued{apply_llvm_jit_host_calling_conv(emit_runtime_local_func_llvm_jit_may_throw_call(state, bridge_type, bridge,
+        {::llvm::ConstantInt::get(intptr, state.local_func_storage_ptr->module_id), ::llvm::ConstantInt::get(intptr, tag_index),
+         address, ::llvm::ConstantInt::get(intptr, bytes), builder.CreatePtrToInt(slot, intptr)}, false))};
+    if(issued == nullptr) { return false; }
+
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
+    values.reserve(arity);
+    for(::std::size_t i{}; i != payload_count; ++i)
+    { values.push_back(state.operand_stack.index_unchecked(first_argument + i)); }
+    values.push_back({.type = exnref_type, .value = builder.CreateLoad(ref_type, slot)});
+    if(!snapshot_runtime_local_func_llvm_jit_gc_roots(state, {values.data(), values.size()})) { return false; }
+    llvm_jit_branch_target_t const target{.params = handler.params, .block = handler.block,
+        .phis = handler.phis, .control_stack_index = handler.control_stack_index};
+    if(!try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, target, values, builder.GetInsertBlock())) { return false; }
+    builder.CreateBr(target.block);
+    enter_runtime_local_func_llvm_jit_unreachable_control_context(state);
+    return true;
+}
+#endif
+
 [[nodiscard]] inline bool try_emit_runtime_local_func_llvm_jit_throw_tuple(runtime_local_func_llvm_jit_emit_state_t& state,
     ::std::size_t tag_index, runtime_block_result_type params) noexcept
 {
@@ -580,6 +632,19 @@ struct llvm_jit_leaf_handler_match
         stored->setAlignment(::llvm::Align{1u});
         offset += width;
     }
+#if !(defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1) && \
+    !(defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1)
+    if(state.emit_leaf_throw_branches && !contains_reference && count <= 8uz)
+    {
+        auto const* module{state.local_func_storage_ptr->runtime_module_ptr};
+        if(module != nullptr && module->imported_tag_vec_storage.empty() && tag_index < module->local_defined_tag_vec_storage.size())
+        {
+            auto const match{find_llvm_jit_leaf_handler(state, state.control_stack.size(), tag_index)};
+            if(match.handler != nullptr && match.handler->with_reference)
+            { return emit_llvm_jit_local_numeric_capture(state, *match.handler, tag_index, first, count, address, bytes); }
+        }
+    }
+#endif
     auto const throw_type{::llvm::FunctionType::get(builder.getVoidTy(), {intptr, intptr, intptr, intptr}, false)};
     // These debug-only observers retain the current Wasm activation until
     // unwind. A foreign-host wrapper would clear its real wait point first.

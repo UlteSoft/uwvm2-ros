@@ -234,6 +234,9 @@ namespace uwvm2::runtime::lib::details
     extern "C++" [[noreturn]] void llvm_jit_throw_numeric_abi_bridge(
         ::std::uintptr_t module_id, ::std::uintptr_t tag_index,
         ::std::uintptr_t buffer_address, ::std::size_t bytes) UWVM_THROWS;
+    extern "C++" void llvm_jit_capture_numeric_exception_abi_bridge(
+        ::std::uintptr_t module_id, ::std::uintptr_t tag_index,
+        ::std::uintptr_t buffer_address, ::std::size_t bytes, ::std::uintptr_t destination) UWVM_THROWS;
 #if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
     // Independent staged prototype: never a public Wasm-call/trace permission.
     extern "C++" [[noreturn]] void llvm_jit_throw_numeric_private_leaf_no_trace_wide_r1(

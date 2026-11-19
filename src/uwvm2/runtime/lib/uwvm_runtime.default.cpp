@@ -16862,6 +16862,49 @@ namespace uwvm2::runtime::lib
             // [safe             ] no guest-controlled address is interpreted as a store pointer.
             return *module->gc_store;
         }
+
+#ifdef UWVM_CPP_EXCEPTIONS
+        /// @brief Decode the immutable numeric fields of a validated native throw.
+        [[nodiscard]] inline auto decode_native_exception_numeric_fields(
+            ::uwvm2::uwvm::runtime::storage::local_defined_tag_storage_t const& tag,
+            ::std::uintptr_t buffer_address, ::std::size_t bytes) UWVM_THROWS
+        {
+            if(bytes != native_exception_numeric_bytes(tag) || (bytes != 0uz && buffer_address == 0u)) [[unlikely]]
+            { ::fast_io::fast_terminate(); }
+            auto const& parameters{tag.function_type_ptr->parameter};
+            auto const count{parameters.begin == parameters.end ? 0uz : static_cast<::std::size_t>(parameters.end - parameters.begin)};
+            // [generated native alloca: exactly bytes initialized argument bytes] end
+            // [safe                                                           ] only the validated emitter supplies this address.
+            ::std::span<::std::byte const> tuple{reinterpret_cast<::std::byte const*>(buffer_address), bytes};
+            ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
+            fields.reserve(count);
+            ::std::size_t offset{};
+            for(::std::size_t i{}; i != count; ++i)
+            {
+                auto const kind{native_exception_numeric_kind(parameters.begin[i])};
+                auto const width{::uwvm2::runtime::exception::payload_width(kind)};
+                // The complete signature sum equals bytes before any field is read.
+                auto field{::uwvm2::runtime::exception::payload_field::numeric(kind, tuple.subspan(offset, width))};
+                if(!field) [[unlikely]] { ::fast_io::fast_terminate(); }
+                fields.push_back(::std::move(*field));
+                offset += width;
+            }
+            return fields;
+        }
+#endif
+
+        /// @brief Publish the actual owned exception through the GC store.
+        inline void issue_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_store const& store,
+            ::uwvm2::runtime::exception::value_ref const& value, ::std::uintptr_t destination) noexcept
+        {
+            if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
+            ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
+            if(store.make_exn_reference(value, reference) !=
+               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+            { ::fast_io::fast_terminate(); }
+            // The generated caller supplies one complete writable native carrier.
+            ::std::memcpy(reinterpret_cast<void*>(destination), ::std::addressof(reference), sizeof(reference));
+        }
     }
 
     extern "C++" [[noreturn]] void details::llvm_jit_throw_numeric_abi_bridge(
@@ -16873,28 +16916,7 @@ namespace uwvm2::runtime::lib
         source_exception_guest_bridge::native_build_scope source_build{module_id};
 #endif
         auto const& tag{native_exception_tag(module_id, tag_index)};
-        if(bytes != native_exception_numeric_bytes(tag) || (bytes != 0uz && buffer_address == 0u)) [[unlikely]]
-        { ::fast_io::fast_terminate(); }
-        auto const& parameters{tag.function_type_ptr->parameter};
-        auto const count{parameters.begin == parameters.end ? 0uz : static_cast<::std::size_t>(parameters.end - parameters.begin)};
-        // [generated native alloca: exactly bytes initialized argument bytes] end
-        // [safe                                                           ] only the validated emitter supplies this address.
-        // ^^ tuple borrows it synchronously; all payload bits are copied before unwinding this frame.
-        ::std::span<::std::byte const> tuple{reinterpret_cast<::std::byte const*>(buffer_address), bytes};
-        ::uwvm2::utils::container::std_vector<::uwvm2::runtime::exception::payload_field> fields{};
-        fields.reserve(count);
-        ::std::size_t offset{};
-        for(::std::size_t i{}; i != count; ++i)
-        {
-            auto const kind{native_exception_numeric_kind(parameters.begin[i])};
-            auto const width{::uwvm2::runtime::exception::payload_width(kind)};
-            // [copied prefix][complete 4/8/16-byte field][remaining tuple] end
-            // [safe         ^^^^^^^^^^^^^^^^^^^^^^^^^^^] the full signature sum equals bytes before any read.
-            auto field{::uwvm2::runtime::exception::payload_field::numeric(kind, tuple.subspan(offset, width))};
-            if(!field) [[unlikely]] { ::fast_io::fast_terminate(); }
-            fields.push_back(::std::move(*field));
-            offset += width;
-        }
+        auto fields{decode_native_exception_numeric_fields(tag, buffer_address, bytes)};
         auto trace{capture_runtime_exception_trace()};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
@@ -16909,6 +16931,30 @@ namespace uwvm2::runtime::lib
         ::uwvm2::runtime::exception::throw_value(::std::move(value));
 #else
         static_cast<void>(module_id); static_cast<void>(tag_index); static_cast<void>(buffer_address); static_cast<void>(bytes);
+        ::fast_io::fast_terminate();
+#endif
+    }
+
+    /// @brief Issue one real exception for a proven catch in the same Wasm frame.
+    extern "C++" void details::llvm_jit_capture_numeric_exception_abi_bridge(
+        ::std::uintptr_t module_id, ::std::uintptr_t tag_index,
+        ::std::uintptr_t buffer_address, ::std::size_t bytes, ::std::uintptr_t destination) UWVM_THROWS
+    {
+#ifdef UWVM_CPP_EXCEPTIONS
+        if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
+        auto const& tag{native_exception_tag(module_id, tag_index)};
+        auto const& store{native_exception_receiving_store(module_id)};
+        auto fields{decode_native_exception_numeric_fields(tag, buffer_address, bytes)};
+        // The real throwing Wasm frame is still live, including its existing
+        // outer frames and code-range registrations.
+        auto trace{capture_runtime_exception_trace()};
+        auto const value{::uwvm2::runtime::exception::value::make_owned(
+            tag.exception_identity, ::std::move(fields), ::std::move(trace))};
+        if(!value) [[unlikely]] { ::fast_io::fast_terminate(); }
+        issue_native_exception_reference(store, value, destination);
+#else
+        static_cast<void>(module_id); static_cast<void>(tag_index); static_cast<void>(buffer_address);
+        static_cast<void>(bytes); static_cast<void>(destination);
         ::fast_io::fast_terminate();
 #endif
     }
@@ -17091,13 +17137,7 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
         source_exception_guest_bridge::before_actual_caught_value(module_id,*caught);
 #endif
-        ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
-        if(store.make_exn_reference(caught->instance(), reference) !=
-           ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-        { ::fast_io::fast_terminate(); }
-        // [generated native alloca: complete gc_reference] end
-        // [safe                                     ] the emitter supplies sizeof(reference) bytes.
-        ::std::memcpy(reinterpret_cast<void*>(destination), ::std::addressof(reference), sizeof(reference));
+        issue_native_exception_reference(store, caught->instance(), destination);
     }
 
     extern "C++" [[noreturn]] void details::llvm_jit_throw_ref_abi_bridge(

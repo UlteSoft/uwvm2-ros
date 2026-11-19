@@ -221,6 +221,27 @@ their first matching clause to be a plain catch. Both typed `catch_ref` and
 pass through loop headers or reach another reference-catching handler, keep
 materialized exception propagation.
 
+A numeric `throw` with a statically selected `catch_ref` or `catch_all_ref`
+in the same function can construct and publish its real exception before
+branching. The bridge decodes the same validated payload, captures the real
+live throwing frame and its callers, and issues the carrier through the
+ordinary GC registry. Full compilation snapshots the live roots before
+issuance and publishes the new carrier as a root before the catch branch.
+The handler can store the reference, use it after the originating function
+has returned and rethrow the original value with its original diagnostic
+trace. Native errors from the bridge still use the function's existing
+cleanup edge. A reference catcher in a different function and any tuple
+that carries reference payloads use native propagation.
+
+In a memory-fed Linux x86-64 workload, each of 100,000 throws retains a
+reference in one of 64 table slots. After timing, the workload rethrows
+every retained reference and checks its payload against the original data.
+The seven-run median fell from 504.541 ms to 217.915 ms. Native
+`std::exception_ptr` took 38.646 ms and Wasmtime Cranelift took 12.623 ms.
+The native reference keeps the exception payload without the VM's stack
+snapshot. Ordinary control medians were 83.415 µs and 82.870 µs in the VM
+builds. Both were built with `-O3 -g`.
+
 The focused executable test exercises clause ordering, distinct tag identity,
 loop targets, ordinary control flow, bit-exact mixed payloads and exception
 reference propagation.
