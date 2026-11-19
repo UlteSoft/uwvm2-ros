@@ -31,6 +31,7 @@ def main():
            'tools/debug/dap_adapter.py','tools/debug/inspection_ui.js','tools/debug/inspection_model.js',
            'tools/debug/media/inspector.js','test/0084.ros-runtime/scene_debug.cc',
            'test/0084.ros-runtime/test_scene_dap.py','test/0084.ros-runtime/test_scene_ui.cjs',
+           'test/0018.debugger/test_inspector_views.cjs','test/0018.debugger/test_inspector_lifecycle.cjs',
            'test/0084.ros-runtime/run_scene_debug.py']
     pins=lambda:{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in paths}
     report=dict(scope='scene console/DAP/editor contract qualification; no real VM or graphical IDE claim',
