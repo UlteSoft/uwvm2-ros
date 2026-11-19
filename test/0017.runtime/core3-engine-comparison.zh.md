@@ -45,3 +45,13 @@ VM 也出现同一差距。
 异常传播的对照样本中，Cranelift 更快。
 [Wasmtime 50.0.2](https://github.com/bytecodealliance/wasmtime/releases/tag/v50.0.2)
 · [WABT 1.0.42](https://github.com/WebAssembly/wabt/releases/tag/1.0.42)
+
+多线性内存复制另做了 15 轮复测，每进程执行 16 次内核。紧凑版与原版
+LLVM 的中位数分别为 8.323 和 8.373 ms，Cranelift 为 0.827 ms。
+
+固定提交的 21 个上游 WAST 另提供了 573 份不同二进制。Wasmtime
+50.0.1 按严格诊断通过 18 个脚本，放宽诊断文本匹配后再通过 3 个。
+WABT 1.0.42 在可转译的 15 个脚本中执行了 5,420 项断言。VM 对照
+二进制验证结果，并依据 WAST 注册记录补齐 22 份二进制的依赖。两种 VM
+引擎都成功实例化 12 份，另外 10 份按断言要求在导入类型检查时被拒绝。
+[固定提交的上游 WAST](https://github.com/WebAssembly/spec/tree/2e44bf79e68cc4fe689f43eea8e7d25b6fdfbce1/test/core)

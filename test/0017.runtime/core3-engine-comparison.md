@@ -70,3 +70,17 @@ Cranelift medians were 70.72, 443.98 and 40.47 μs. Cross-engine results for
 heavy allocation and actual exception propagation favored Cranelift.
 [Wasmtime 50.0.2](https://github.com/bytecodealliance/wasmtime/releases/tag/v50.0.2)
 · [WABT 1.0.42](https://github.com/WebAssembly/wabt/releases/tag/1.0.42)
+
+The multi-memory copy case was repeated with sixteen iterations of the
+kernel per process and 15 alternating samples. The compact and original
+LLVM binaries took 8.323 ms and 8.373 ms, respectively. Cranelift took
+0.827 ms on the same module.
+
+An independent pass over 21 pinned upstream WAST files supplied 573
+distinct binaries. Wasmtime 50.0.1 passed 18 scripts with strict diagnostics,
+and three more with text matching relaxed. WABT 1.0.42 executed 5,420
+assertions in 15 scripts it could translate. The VM compared the binary
+validation outcomes and reattached registered providers for 22 cases.
+Both VM engines instantiated 12 of those modules successfully and rejected
+the other 10 at the import type check, as expected by the WAST.
+[Pinned upstream WAST suite](https://github.com/WebAssembly/spec/tree/2e44bf79e68cc4fe689f43eea8e7d25b6fdfbce1/test/core)

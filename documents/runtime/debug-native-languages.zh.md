@@ -25,7 +25,8 @@ VM 从已加载的 Wasm 读取编译器元数据。函数名用于函数断点�
 | C++、Objective-C、D、Fortran、TinyGo | 样本行表含应用原始源码。各语言的断点、单步和变量还需针对实际项目分别验收。 |
 | Rust | 样本行表含应用原始源码。优化产物上指定 ABI 调用行的 DAP 断点未验证。 |
 | C# | AOT 样本含 `Filter.cs`。该路径的现场停点和变量暂未验收。 |
-| Nim、F#、Visual Basic .NET | 样本含 DWARF，尚未观察到原始应用文件。 |
+| Nim | 更新后的 `wrnim -g` 在两种内存宽度上保留入口与导入模块的 Nim 行表。实际停在 `compute.nim`，读取标量参数，在同一行内单步到下一处语句，并拒绝失效的栈帧引用。 |
+| F#、Visual Basic .NET | 样本含 DWARF，尚未观察到原始应用文件。 |
 | JavaScript、TypeScript、Lua、Python、Ruby | 当前样本含解释器或桥接层信息。脚本源码停点和变量需要对应语言的元数据和调试路径。 |
 
 认证后的 DBG 和 DAP 测试可验证 IDE 所用的协议。图形 IDE 另有界面验收，

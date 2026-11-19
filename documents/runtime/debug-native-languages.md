@@ -31,7 +31,8 @@ alone provides no evidence for these capabilities.
 | C# | A sampled AOT module names the original `Filter.cs`. Source breakpoint and variable coverage for the C# producer is unqualified. |
 | Go register-only producer | Wasm function breakpoints use the emitted names. With `-g`, an embedded map built from Go SSA positions supports authenticated DAP source breakpoints and stepping between original statements. The map carries no variable types or locations. |
 | Java and Kotlin | Previously built TeaVM C modules support breakpoints in generated C. With the updated producer, authentic JVM paths and lines reach the original Java and Kotlin breakpoints through a trusted host source map. The checked source steps moved between locations on the same source line. Source variables still reflect generated C. |
-| Nim, F#, Visual Basic .NET | The sampled modules have DWARF but did not name the original application files. |
+| Nim | With the updated `wrnim -g`, wasm32 and wasm64 retain original Nim lines from the entry and imported Nim modules. Both guests reached the `compute.nim` breakpoint, exposed the scalar argument value, stepped to another statement on the same line and refused the retired frame. |
+| F#, Visual Basic .NET | The sampled modules have DWARF but did not name the original application files. |
 | JavaScript, TypeScript, Lua, Python, Ruby | The sampled guest modules retain interpreter or bridge debug metadata. Inspecting that runtime is possible at the Wasm level. Original script locations and variables require a separate language-aware producer and debugger path. |
 
 This inventory covers sampled artifacts. A language with no artifact in the
