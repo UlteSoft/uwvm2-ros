@@ -99,6 +99,86 @@ fixture includes statistics and tracing libraries when the release supplies
 them. Endpoint home and ROS log paths live under the run's output directory.
 This also contains the default logfile created by Eloquent's spdlog backend.
 
+## Static TF with a late-joining rclpy reader
+
+[简体中文](static-tf.zh.md)
+
+`run_static_tf.py` builds a native rclcpp publisher against each selected ROS
+installation. Each run creates a fresh two-edge camera frame tree on
+`/tf_static`. The publisher writes its first sample before the Jazzy Python
+process starts. The reader invokes the installed TF2 listener and verifies
+both directions of the composed transform in its frame buffer at a nonzero
+query time. It verifies each update's timestamp token, sequence, frame IDs,
+finite translation and rotation before accepting it. See the
+[Jazzy TF2 listener implementation](https://github.com/ros2/geometry2/blob/jazzy/tf2_ros_py/tf2_ros/transform_listener.py).
+
+The Jazzy and Humble publishers each run against a Jazzy reader using the
+listener's default transient-local QoS. The runner repeats both pairs with a
+volatile reader and records whether the retained snapshot reaches it. Both
+participants verify the durability reported by their RMW. The Humble and
+Jazzy pair also runs with both ends volatile and must match without replaying
+the earlier snapshot. Each live pair checks 24 fresh transforms. The final
+control confirms that the publisher has exited before the listener starts.
+That listener must observe neither a publisher nor a snapshot.
+
+```sh
+"$QUALIFICATION_GATE" /usr/bin/python3 -B test/0084.ros-runtime/dds_interop/run_static_tf.py \
+  --jazzy-prefix "$JAZZY_PREFIX" --jazzy-system "$JAZZY_SYSTEM" \
+  --humble-prefix "$HUMBLE_PREFIX" --humble-system "$HUMBLE_SYSTEM" \
+  --python-home "$NOBLE_PYTHON_PREFIX" --python-site "$PYTHON_DEPENDENCIES" \
+  --output "$NEW_DIR"
+```
+
+The Jazzy prefix must contain rclpy, geometry_msgs, tf2_msgs, tf2_py and
+tf2_ros_py with their dependencies. The Python prefix must supply
+`bin/python3.12`, its standard library and
+`lib/x86_64-linux-gnu/libpython3.12.so.1.0` for the generated ROS extensions.
+Supply extra Python dependency
+directories with repeated `--python-site` options if needed. The Humble
+prefix must supply the native generated tf2_msgs type support and its
+dependencies. The reference run used Humble tf2_msgs 0.25.24 and Jazzy
+tf2_ros_py 0.36.22. Use package sources from each installation's signed
+archive.
+
+The runner uses `-O3 -g` and writes the publisher binary identities, loaded
+ROS libraries, Python TF2 modules, endpoint logs and monotonic observations
+under a new project `.tmp` directory. `--sanitized` adds ASan and UBSan to the
+compiled publisher witness while retaining the original RMW and Python
+libraries. The late-join time runs from the start of listener construction to
+the first validated composed transform. Each live time runs from the call
+to publish until the Python listener has checked the sample and both frame
+lookups, using the same Linux monotonic clock. Reported p50 and p95 omit four
+warm-up samples. A completed receipt can contain a mismatch under
+`documented_history_matches`. The field compares the observed number of
+retained samples with the expectation for the pair in the
+[Jazzy QoS guide](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst#qos-compatibilities).
+These measurements cover plaintext loopback and the named native clients and
+profiles. Wasm admission, target transforms on a physical robot, DDS Security
+and real-time guarantees require separate qualification.
+
+The optimized x86-64 run completed all six cases. Cyclone DDS 0.10.5
+replayed the pre-join snapshot to the Jazzy Fast DDS 2.14.6 listener even
+when its RMW graph reported volatile durability. The late reader validated
+its original sequence before the fixture issued any live publish. The
+Jazzy-to-Jazzy volatile-reader control and the Humble-to-Jazzy control with
+both ends volatile received no historical samples. The mixed durability
+pair differs from the Jazzy QoS guide. A site that requires fresh data must
+verify freshness independently of its DDS durability configuration.
+
+| Publisher → Jazzy TF2 listener | Retained | Live samples | Warmed p50 | Warmed p95 |
+| --- | ---: | ---: | ---: | ---: |
+| Jazzy transient → transient | 1 | 24 | 202.7 µs | 274.2 µs |
+| Humble transient → transient | 1 | 24 | 166.4 µs | 204.8 µs |
+| Jazzy transient → volatile | 0 | 24 | 196.7 µs | 287.6 µs |
+| Humble transient → volatile | 1 | 24 | 148.3 µs | 197.3 µs |
+| Humble volatile → volatile | 0 | 24 | 251.3 µs | 350.6 µs |
+| Humble writer exited before join | 0 | 0 | — | — |
+
+The first retained lookups took 106.8 ms in the same-installation transient
+control, 8.35 ms in the mixed transient pair, and 8.76 ms in the mixed pair
+with a volatile reader. The three active Humble publishers each logged two
+rcutils error-state reports. The listener validated every expected update.
+
 ## Native GetParameters service
 
 Supply both native rclcpp installations and add `--service` to the command

@@ -180,6 +180,16 @@ loopback profiles. It exercised the two same-installation controls and
 verified zero replies for reliability incompatibility and an invalid row
 stride. The observations apply to the named image endpoints and profiles.
 
+For static coordinate frames, the
+[native TF2 fixture](../../test/0084.ros-runtime/dds_interop/README.md#static-tf-with-a-late-joining-rclpy-reader)
+uses a Jazzy rclpy listener to compare a same-installation Fast DDS control
+and a Humble Cyclone DDS publisher. It distinguishes delivery of a retained
+transform from delivery of a live update and verifies the composed frame
+tree through the installed TF2 API. A Humble transient-local publisher sent
+the pre-join snapshot to a Jazzy volatile reader before sending any live
+update. The Jazzy same-installation control with a volatile reader and the
+Humble-to-Jazzy control with both ends volatile received zero snapshots.
+
 Run a locally licensed middleware through the
 [additional RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md).
 Run a ROS 1 network peer through the

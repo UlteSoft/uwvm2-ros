@@ -98,8 +98,8 @@ def run_peers(args, out):
     require(client.returncode == server == 0, "peer exited unsuccessfully")
 
 
-def compile_peer(prefix, system, release, out, sanitized):
-    """Compile against the installation's generated Image headers and type support."""
+def compile_peer(prefix, system, release, out, sanitized, *, witness="image", message_package="sensor_msgs"):
+    """Compile a native witness against the installation's generated type support."""
     include = prefix / "include"
     includes = [include, *(p for p in sorted(include.iterdir()) if (p / p.name).is_dir())]
     vendor = prefix / "lib"
@@ -107,13 +107,13 @@ def compile_peer(prefix, system, release, out, sanitized):
                 "rcpputils", "statistics_msgs__rosidl_typesupport_cpp", "rosgraph_msgs__rosidl_typesupport_cpp",
                 "builtin_interfaces__rosidl_typesupport_cpp")
     args = [COMPILER, "-std=c++20", "-O3", "-g", "-Wall", "-Wextra", "-Werror",
-            *[item for p in includes for item in ("-isystem", p)], HERE / "ros_image.cpp",
+            *[item for p in includes for item in ("-isystem", p)], HERE / ("ros_" + witness + ".cpp"),
             "-L" + str(vendor), "-L" + str(system), "-Wl,-rpath-link," + str(vendor),
             "-Wl,-rpath-link," + str(system), "-lrclcpp", "-lrcl", "-lrcutils", "-lrmw", "-lrmw_implementation",
-            "-lsensor_msgs__rosidl_typesupport_cpp", "-ldl",
+            "-l" + message_package + "__rosidl_typesupport_cpp", "-ldl",
             *["-l" + name for name in optional if (vendor / ("lib" + name + ".so")).is_file()],
             *(["-fsanitize=address,undefined", "-fno-sanitize-recover=all"] if sanitized else []),
-            "-o", out / (release + "-image")]
+            "-o", out / (release + "-" + witness)]
     return command(args, out / ("compile-" + release + ".log"), timeout=60)
 
 
