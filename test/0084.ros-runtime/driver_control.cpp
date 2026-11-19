@@ -9,13 +9,13 @@ namespace s=uwvm2::imported::ros::scene;namespace d=s::drivers;namespace p=d::pr
 using d::error;
 static constexpr d::credentials first{101,1000,1000},second{102,1000,1000};
 static p::binding identity(unsigned n)
-{return {{n+1,0},{n+11,0},{n+21,0},{41,0},{n+51,0},{1,2,3,4}};}
+{return {{1,0},{n+11,0},{n+21,0},{41,0},{n+51,0},{1,2,3,4}};}
 struct fixture
 {
     d::receiver_control gate;c::handle a{},b{};c::lease owner;
     fixture()
     {
-        auto one=identity(0);assert(gate.configure(one.driver,one.contract,7,2,{1000,100,10,true})==error::success);
+        auto one=identity(0);assert(gate.configure(one.deployment,one.driver,one.contract,7,2,{1000,100,10,true})==error::success);
         assert(gate.bind(one,first,5000,1000,a)==error::success);
         assert(gate.bind(identity(1),second,5000,1000,b)==error::success);
         assert(gate.freeze()==error::success);
@@ -28,12 +28,16 @@ static void closed_registration()
 {
     d::receiver_control gate;auto one=identity(0);c::handle id=77;
     assert(gate.bind(one,first,5000,1000,id)==error::denied&&id==77);
-    assert(gate.configure(one.driver,one.contract,7,0,{1000,100,10,true})==error::invalid);
-    assert(gate.configure(one.driver,one.contract,7,1,{1000,100,10,true})==error::success);
+    assert(gate.configure(one.deployment,one.driver,one.contract,7,0,{1000,100,10,true})==error::invalid);
+    assert(gate.configure({},one.driver,one.contract,7,1,{1000,100,10,true})==error::invalid);
+    assert(gate.configure(one.deployment,one.driver,one.contract,7,1,{1000,100,10,true})==error::success);
     auto wrong=one;wrong.driver[0]++;assert(gate.bind(wrong,first,5000,1000,id)==error::invalid);
+    wrong=one;wrong.deployment[1]++;
+    assert(gate.bind(wrong,first,5000,1000,id)==error::denied&&id==77);
     assert(gate.bind(one,first,5000,1000,id)==error::success);auto retained=id;
     assert(gate.bind(one,first,5000,1000,id)==error::conflict&&id==retained);
     assert(gate.bind(identity(1),second,5000,1000,id)==error::too_large&&id==retained);
+    assert(gate.bind(wrong,second,5000,1000,id)==error::denied&&id==retained);
     assert(gate.freeze()==error::success&&gate.bind(one,first,5000,1000,id)==error::denied);
 }
 static void registration_is_not_grant()
@@ -56,7 +60,7 @@ static void identities_deadlines_and_replay()
     auto accepted=effect;assert(f.gate.begin(f.a,first,request,17,f.owner.epoch,1001,effect)==error::conflict&&effect==accepted);
     assert(f.gate.finish(f.a,effect,c::effect_result::executed)==error::success);
 }
-static void cross_deployment_handover()
+static void same_deployment_handover()
 {
     fixture f;f.grant();c::handle effect{};c::lease next;
     assert(f.gate.begin(f.b,second,fixture::request(1),17,f.owner.epoch,1001,effect)==error::conflict&&!effect);
@@ -103,4 +107,4 @@ static void fork_rejected_before_mutex()
     int status{};assert(::waitpid(pid,&status,0)==pid&&WIFEXITED(status)&&!WEXITSTATUS(status));
 }
 int main()
-{closed_registration();registration_is_not_grant();identities_deadlines_and_replay();cross_deployment_handover();unknown_requires_independent_reconciliation();concurrent_effect_and_expiry();fork_rejected_before_mutex();std::puts("PASS 7 receiver ownership security groups");}
+{closed_registration();registration_is_not_grant();identities_deadlines_and_replay();same_deployment_handover();unknown_requires_independent_reconciliation();concurrent_effect_and_expiry();fork_rejected_before_mutex();std::puts("PASS 7 receiver ownership security groups");}

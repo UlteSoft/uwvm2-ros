@@ -14,7 +14,7 @@ int main(int argc,char** argv)
  bool gate=std::string_view(argv[1])=="receiver";assert(gate||std::string_view(argv[1])=="arbiter");
  d::protocol::binding origin{{1,0},{2,0},{3,0},{4,0},{5,0},{1,2,3,4}};d::credentials peer{1,1000,1000};
  d::receiver_control receiver;c::arbitration arbiter;c::handle route{};c::lease lease;c::principal caller{1,2,3,4};
- if(gate){assert(receiver.configure(origin.driver,origin.contract,1,1,{1000,100,1,false})==error::success);assert(receiver.bind(origin,peer,2000,1000,route)==error::success);assert(receiver.freeze()==error::success);assert(receiver.grant(route,1,900,1000,lease)==error::success);}
+ if(gate){assert(receiver.configure(origin.deployment,origin.driver,origin.contract,1,1,{1000,100,1,false})==error::success);assert(receiver.bind(origin,peer,2000,1000,route)==error::success);assert(receiver.freeze()==error::success);assert(receiver.grant(route,1,900,1000,lease)==error::success);}
  else{assert(arbiter.configure(1,3,1,{1000,100,1,false})==error::success);c::prepared value;assert(arbiter.prepare({caller,1,900},1000,value)==error::success);assert(arbiter.commit(value,1000)==error::success);lease=value.candidate;}
  std::uint64_t sum{};d::protocol::header request{d::protocol::kind::request,origin,1,1800,0};auto start=std::chrono::steady_clock::now();
  for(std::uint64_t i{};i<count;++i)

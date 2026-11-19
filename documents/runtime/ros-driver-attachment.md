@@ -261,9 +261,10 @@ guarantees by killing a process or trusting a reply.
 ### Shared receiver implementation
 
 `driver_control.h` supplies `drivers::receiver_control` for an external trusted
-receiver. It is not part of the VM import surface. One instance represents one
-actuator ownership domain; all its endpoints, including other VMs/deployments,
-must use that instance. Separate instances cannot prove global exclusivity.
+receiver. Its entry points are C++ integration functions outside the VM import
+surface. One instance represents one actuator under one owning deployment. All
+VMs controlling that actuator through the owning deployment share the instance.
+Separate instances cannot establish global exclusivity.
 Vendor-facing adapters must prevent alternate command paths bypassing this gate.
 The trusted gate must not share an address space with an untrusted native vendor
 library: that library could overwrite the gate or invoke the hardware directly.
@@ -275,12 +276,28 @@ the selected safety profile needs an independent controller or hardware interloc
 The MuJoCo fixture uses a pinned simulation library and proves the gate semantics,
 not containment of malicious code in that same receiver address space.
 
-Configuration fixes driver incarnation, contract digest, finite session count
-and lease policy. `bind` associates a complete wire identity with authenticated
-credentials; `freeze` ends registration. Neither grants control. Only trusted
-receiver management calls `grant`; priority and preemption follow immutable
-policy. Controller epochs originate at this receiver. A VM-local lease is not a
-shared-driver ownership lease.
+Trusted provisioning supplies the owning deployment identity to `configure`
+with the driver and contract binding, provider incarnation, finite session
+count and lease policy. `bind` rejects a foreign deployment before assigning a
+route, consuming a registry slot or granting control. It associates each
+accepted wire identity with its authenticated credentials. `freeze` ends
+registration. Only trusted receiver management calls `grant`. Priority and
+preemption apply to enrolled VMs within the owning deployment. A new client
+must be provisioned through that deployment. Controller epochs originate at
+the shared receiver.
+
+配置接收器时，由原部署提供固定的部署标识、驱动及协议摘要和会话上限。
+外部部署的注册在分配路由和占用会话槽之前即被拒绝。同一部署下的多个
+VM 可以通过受信仲裁共享执行器。进程间的物理设备独占仍由部署器和获取
+设备权限的受信层执行。
+
+The receiver ownership tests exercise five Linux userspace ABIs. In eight
+separate two-VM cases, the MuJoCo fixture rejects a foreign deployment before
+the first simulation step, then exercises same-deployment contention and
+handover over two mutually authenticated TLS channels. The three simulated
+steps match the direct native reference. The test requires a pinned MuJoCo
+distribution and an OpenSSL prefix supplied with `--openssl-root`.
+[MuJoCo 3.4.0 release](https://github.com/google-deepmind/mujoco/releases/tag/3.4.0)
 
 After complete canonical/physical validation, `begin` checks the selected
 channel, full origin, packet credentials, strict sequence, session expiry,

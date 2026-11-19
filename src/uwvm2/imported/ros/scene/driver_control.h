@@ -3,9 +3,9 @@
  * @details This object lives in the external trusted receiver, never inside a
  * vendor library or independently in each VM. All channels for the SAME physical
  * resource must use the SAME instance. A deployment registers exact protocol
- * bindings and observed credentials, freezes the registry and explicitly grants
- * control. Registration alone grants nothing. Management methods are C++ host
- * integration points, not guest imports or messages accepted from driver clients.
+ * bindings and observed credentials for the owning deployment, freezes the
+ * registry and explicitly grants control. Registration alone grants nothing.
+ * Management methods are C++ integration points outside the client protocol.
  *
  * The receiver first authenticates kernel credentials and validates the complete
  * canonical command, physical bounds, units and dependencies. Immediately before
@@ -45,6 +45,7 @@ namespace uwvm2::imported::ros::scene::drivers
 #if defined(__linux__)
         ::pid_t process_{::getpid()};
 #endif
+        protocol::identity deployment_;
         bool same_process()const noexcept
         {
 #if defined(__linux__)
@@ -58,27 +59,28 @@ namespace uwvm2::imported::ros::scene::drivers
     public:
         receiver_control()=default;receiver_control(receiver_control const&)=delete;
         receiver_control& operator=(receiver_control const&)=delete;
-        /** @brief Establish one resource's immutable driver/contract and finite lease policy.
-         * @details The supplied provider incarnation is trusted deployment state.
+        /** @brief Establish the actuator's owning deployment, driver contract and lease policy.
+         * @details The deployment identity and provider incarnation come from
+         * trusted provisioning. A channel cannot select the owning deployment.
          * Fresh construction does not recover a crashed receiver's unknown effects;
          * a replacement must remain ungranted until external reconciliation.
          */
-        error configure(protocol::identity driver,std::array<std::uint64_t,4> contract,
+        error configure(protocol::identity deployment,protocol::identity driver,std::array<std::uint64_t,4> contract,
                         resources::handle provider,std::size_t sessions,control::plan policy)noexcept
         {
             if(!same_process())return error::denied;
             std::lock_guard lock{mutex_};if(configured_)return error::conflict;
-            if(!protocol::present(driver)||!provider||!sessions||
+            if(!protocol::present(deployment)||!protocol::present(driver)||!provider||!sessions||
                !std::any_of(contract.begin(),contract.end(),[](auto value){return value!=0;}))return error::invalid;
             auto environment=resources::allocate_identity(),generation=resources::allocate_identity();
             if(!environment||!generation)return error::too_large;
             auto result=arbiter_.configure(environment,generation,provider,policy);if(result!=error::success)return result;
-            driver_=driver;contract_=contract;provider_=provider;maximum_=sessions;environment_=environment;generation_=generation;configured_=true;return error::success;
+            deployment_=deployment;driver_=driver;contract_=contract;provider_=provider;maximum_=sessions;environment_=environment;generation_=generation;configured_=true;return error::success;
         }
         /** @brief Register one exact authenticated session without conferring ownership.
-         * @details Distinct deployments/VMs may share a resource. Their local
-         * capability numbers are never receiver principals. The receiver assigns
-         * its own unforgeable-in-context handle and refuses duplicate sessions.
+         * @details Several VMs in the owning deployment may share a resource.
+         * The receiver assigns its own route handles, refuses duplicate sessions
+         * and rejects other deployments before reserving a slot or a handle.
          */
         error bind(protocol::binding const& origin,credentials peer,std::uint64_t until,
                    std::uint64_t request_ns,resources::handle& output)noexcept
@@ -87,6 +89,7 @@ namespace uwvm2::imported::ros::scene::drivers
             std::lock_guard lock{mutex_};if(!configured_||frozen_)return error::denied;
             if(!protocol::valid(origin)||origin.driver!=driver_||origin.contract!=contract_||!peer.pid||
                peer.pid>INT32_MAX||peer.uid>UINT32_MAX||peer.gid>UINT32_MAX||!until||until>INT64_MAX||!request_ns||request_ns>INT64_MAX)return error::invalid;
+            if(origin.deployment!=deployment_)return error::denied;
             for(auto const& row:entries_)if(row.origin.session==origin.session)return error::conflict;
             if(entries_.size()>=maximum_)return error::too_large;
             auto id=resources::allocate_identity();if(!id)return error::too_large;

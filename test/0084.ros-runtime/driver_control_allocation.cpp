@@ -14,7 +14,7 @@ extern "C" void* __wrap_realloc(void* p,std::size_t n){return reject()?nullptr:_
 int main()
 {
  d::receiver_control gate;d::protocol::binding binding{{1,0},{2,0},{3,0},{4,0},{5,0},{1,2,3,4}};c::handle id=999;
- assert(gate.configure(binding.driver,binding.contract,1,1,{1000,100,1,false})==d::error::success);
+ assert(gate.configure(binding.deployment,binding.driver,binding.contract,1,1,{1000,100,1,false})==d::error::success);
  fail=true;auto result=gate.bind(binding,{1,1000,1000},5000,1000,id);fail=false;
  assert(injected&&result==d::error::no_memory&&id==999);
  assert(gate.bind(binding,{1,1000,1000},5000,1000,id)==d::error::success&&id!=999);
