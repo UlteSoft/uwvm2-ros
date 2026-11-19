@@ -26,12 +26,18 @@ GC, relaxed SIMD and custom annotations. Choose `--seconds 900 --seed 1935627
 --iterations 4096` and a fresh output directory for a 15-minute randomized
 run of the same arithmetic and control-flow invariants.
 
-The execution timings include process creation, validation, compilation, the
-guest workload and exit. They measure end-to-end cost at a fixed workload size.
-Use `run_debug_core3_feature_performance.py` for the separate guest-clock
-measurements. The Wasmtime CLI cache and LLVM JIT cache are disabled. The
-ratio between two VM binaries addresses deployment regression. A ratio
-against Wasmtime or WABT answers a separate engine comparison.
+The fixed runner times process creation, validation, compilation, the guest
+workload and exit. For execution alone, pass the same `--runtime`,
+`--baseline`, `--wasmtime`, `--wasm-tools` and a fresh `--output` to
+`run_core3_kernel_performance.py`. That runner measures the interval between
+two guest monotonic clock reads, before formatting and printing the result.
+The only grants it uses are that clock and stdout.
+
+Both tools disable the Wasmtime CLI cache and the LLVM JIT cache. The kernel
+runner explicitly selects UWVM's maximum LLVM optimization level and
+Wasmtime's Cranelift compiler with its speed optimization policy. The ratio
+between two VM binaries addresses deployment regression. A ratio against
+another engine describes the given workload and compilation policy.
 
 A WABT validator rejection is retained with its diagnostic. The runner
 executes WABT where its validator accepts the module and requires the exported
@@ -50,3 +56,17 @@ original AOT median over successful cases. The exception payload and
 exception-reference rethrow cases took 27.2 and 25.0 times the corresponding
 Wasmtime 52.0.0-dev medians. These two workloads repeat genuine throws 100,000
 times. The original VM also shows the gap.
+
+The seeded 900-second run completed 11,110 cases with eight input values
+per case and no mismatched executions. WABT 1.0.36 executed 4,660 of
+those cases. All pinned binaries and the workload generator retained their
+original digests.
+
+The fixed matrix also passed against the official Wasmtime 50.0.2 and WABT
+1.0.42 releases. WABT executed 13 of the 20 cases. In the 19 successful
+kernel-only cases, the compact VM took 29.16 μs for Memory64, 136.48 μs
+for indirect tail calls and 20.14 μs for relaxed swizzle. The corresponding
+Cranelift medians were 70.72, 443.98 and 40.47 μs. Cross-engine results for
+heavy allocation and actual exception propagation favored Cranelift.
+[Wasmtime 50.0.2](https://github.com/bytecodealliance/wasmtime/releases/tag/v50.0.2)
+· [WABT 1.0.42](https://github.com/WebAssembly/wabt/releases/tag/1.0.42)
