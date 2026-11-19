@@ -8,8 +8,8 @@
  * in the receiving Wasm sandbox; the host never executes a decoder or native
  * function supplied by either endpoint.
  *
- * Requests and responses have separate, preallocated storage. Consumption
- * overwrites the entire reserved capacity. A delivered guest exchange region
+ * Requests and responses have separate, preallocated storage. Each slot starts fully zeroed. Consumption
+ * overwrites every byte written to that buffer. The unused suffix stays zero. A delivered guest exchange region
  * is registered by trusted runtime glue and retained until respond/acknowledge.
  * Cancellation, observed expiry, revocation and retirement erase both sides.
  * A failed erasure quarantines the slot; it cannot be reported complete or
@@ -98,9 +98,25 @@ namespace uwvm2::imported::ros::scene::module_exchange
         caller client{},server{};phase state{};
         resources::nanoseconds deadline{};
         region request_region,response_region;
+        /** @brief Allocate and zero both capacities before publishing the route. */
+        void prepare(std::size_t request_capacity,std::size_t response_capacity)
+        {
+            request.resize_for_overwrite(request_capacity);request.erase();
+            response.resize_for_overwrite(response_capacity);response.erase();
+        }
+        /** @brief Erase the complete written prefix. Only submit and respond write
+         * to these buffers, both from offset zero under the router lock. They set
+         * the corresponding size before any callback. The suffix stays zero from
+         * prepare or a previous erase, including after short writes and retries.
+         * Guest regions have independent lengths and still require full erasure.
+         */
+        void erase_request()noexcept
+        {erase_bytes(request.writable().first(static_cast<std::size_t>(request_size)));request_size=0;}
+        void erase_response()noexcept
+        {erase_bytes(response.writable().first(static_cast<std::size_t>(response_size)));response_size=0;}
         bool erase()noexcept
         {
-            request.erase();response.erase();request_size=response_size=0;
+            erase_request();erase_response();
             // Always attempt both regions, even if the first owner is unavailable.
             bool left=request_region.clear(),right=response_region.clear();
             if(!left||!right){state=phase::quarantined;return false;}
@@ -200,8 +216,7 @@ namespace uwvm2::imported::ros::scene::module_exchange
             for(std::uint64_t i{};i<value.slots;++i)
             {
                 auto item=::uwvm2::utils::container::make_unique<slot>();
-                item->request.resize_for_overwrite(static_cast<std::size_t>(value.request_bytes));
-                item->response.resize_for_overwrite(static_cast<std::size_t>(value.response_bytes));item->erase();
+                item->prepare(static_cast<std::size_t>(value.request_bytes),static_cast<std::size_t>(value.response_bytes));
                 next.slots.emplace_back(std::move(item));
             }
             routes.emplace(value.route,std::move(next));reserved+=bytes;return error::success;
@@ -273,7 +288,7 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 if(!deliver(selected->token,selected->request.view().first(static_cast<std::size_t>(selected->request_size))))
                 {if(!selected->request_region.clear()){selected->state=phase::quarantined;return error::io;}return error::invalid;}
                 capture_committed(plan,module_buffer_audit::stage::take,who,selected->request.view().first(static_cast<std::size_t>(selected->request_size)));
-                selected->request.erase();selected->request_size=0;selected->server=who;selected->state=phase::received;return error::success;
+                selected->erase_request();selected->server=who;selected->state=phase::received;return error::success;
             }
             for(auto& item:route.slots)if(item->token==token&&token){selected=item.get();break;}
             if(!selected)return error::bad_handle;
@@ -310,7 +325,7 @@ namespace uwvm2::imported::ros::scene::module_exchange
                 if(!deliver(token,selected->response.view().first(static_cast<std::size_t>(selected->response_size))))
                 {if(!selected->response_region.clear()){selected->state=phase::quarantined;return error::io;}return error::invalid;}
                 capture_committed(plan,module_buffer_audit::stage::result,who,selected->response.view().first(static_cast<std::size_t>(selected->response_size)));
-                selected->response.erase();selected->response_size=0;selected->state=phase::delivered;return error::success;
+                selected->erase_response();selected->state=phase::delivered;return error::success;
             }
             if(action==operation::acknowledge)
             {

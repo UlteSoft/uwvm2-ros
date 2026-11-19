@@ -263,8 +263,14 @@ def main():
     build=runtime.parent/'full-build-results.json'
     if build.is_file():
         built=json.loads(build.read_text());assert built['complete'] and built['binary_sha256']==sha(runtime)
-        inputs += [build,Path(built['source_root'])/'source-manifest.json']
-        result['production_source_root']=built['source_root']
+        inputs.append(build)
+        if 'source_manifest' in built:
+            manifest=Path(built['source_manifest'])
+            assert sha(manifest)==built['source_manifest_sha256']
+            inputs.append(manifest)
+        else:
+            inputs.append(Path(built['source_root'])/'source-manifest.json')
+            result['production_source_root']=built['source_root']
     result['inputs']={str(path):sha(path) for path in inputs}
     for path in inputs[:2]:
         target=out/'fixture-source'/path.name;target.parent.mkdir(exist_ok=True);target.write_bytes(path.read_bytes())

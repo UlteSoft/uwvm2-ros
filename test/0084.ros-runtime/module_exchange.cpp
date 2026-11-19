@@ -1,5 +1,6 @@
 /** @brief Registered-principal messaging and erasure on every terminal path. */
 #include <uwvm2/imported/ros/scene/module_exchange.h>
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -15,6 +16,25 @@ static bool wipe(s::caller who,std::uint64_t memory,std::uint64_t offset,std::ui
     if(length_size){if(length_offset>128||length_size>128-length_offset)return false;s::erase_bytes(std::span(owner->memory).subspan(length_offset,length_size));}return true;
 }
 static bool zero(endpoint const& value){for(auto c:value.memory)if(c)return false;return true;}
+// Inspect actual retained bytes across long, short, empty and cancellation paths.
+static void reserved_slot_stays_zero_outside_live_payload()
+{
+    x::slot slot;
+    slot.prepare(8192,256);
+    auto clean=[](s::erased_buffer const& buffer)
+    {return std::ranges::all_of(buffer.view(),[](auto byte){return byte==0;});};
+    assert(clean(slot.request)&&clean(slot.response));
+    for(std::size_t size:{8192u,7u,0u,512u,4u})
+    {
+        slot.request_size=size;slot.response_size=std::min(size,slot.response.view().size());
+        std::ranges::fill(slot.request.writable().first(size),0xab);
+        std::ranges::fill(slot.response.writable().first(slot.response_size),0xcd);
+        slot.erase_request();
+        assert(clean(slot.request));
+        assert(!slot.response_size||slot.response.view().front()==0xcd);
+        assert(slot.erase()&&clean(slot.response));
+    }
+}
 static void independent_retained_regions()
 {
     endpoint client,server;s::caller c{&client,1},who{&server,1};
@@ -120,6 +140,7 @@ static void indexed_authority()
 }
 int main()
 {
+    reserved_slot_stays_zero_outside_live_payload();
     indexed_authority();independent_retained_regions();
     endpoint client,server,intruder;s::caller c{&client,1},s{&server,1},bad{&intruder,1};
     x::router router;x::plan plan{"route","main","worker","solve","request-octets","response-octets",64,64,1,100};

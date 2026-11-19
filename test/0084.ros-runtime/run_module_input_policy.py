@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     verify_gate()
     runtime, out = args.runtime.resolve(), args.output.resolve()
-    assert out.is_relative_to((ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve())
+    assert any(out.is_relative_to(folder.resolve()) for folder in (ROOT/'.tmp', ROOT.parent/'uwvm2-ros-sdk/.tmp'))
     out.mkdir(parents=True, exist_ok=False)
     build = runtime.parent/'full-build-results.json'
     evidence = json.loads(build.read_text())
