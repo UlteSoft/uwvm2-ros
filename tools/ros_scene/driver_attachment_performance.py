@@ -5,7 +5,7 @@ Receiver timestamp interval excludes process startup/VM compilation. The native
 reference uses the same dispatcher, schemas, bounds and separate process. This
 is a 17-byte request / 24-byte response, not a direct function-call benchmark.
 """
-import argparse,contextlib,fcntl,json,os,socket,struct,subprocess,sys,time,statistics
+import argparse,contextlib,fcntl,json,math,os,socket,struct,subprocess,sys,time,statistics
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'test/0084.ros-runtime'))
@@ -13,6 +13,7 @@ from run_scene_vm import verify_gate,sha,GATE
 from run_module_security_vm import Fixture
 from run_driver_attachment_vm import NAMES,IDS,DIGEST,u64
 from performance_build_policy import vm_policy,compile_policy
+from hardware_sampling import vtune_periods
 VTUNE='/opt/intel/oneapi/vtune/latest/bin64/vtune'
 D='$'
 def fixture(count,deadline):
@@ -92,10 +93,20 @@ def connected_trial(a,kind,label,descriptors):
  assert client.returncode==0 and server.returncode==0,(label,ce[-3000:],se)
  value=json.loads(so);value.update(kind=kind,label=label,mutual_tls=a.tls,argv=command,client_pid=client.pid,receiver_pid=server.pid);print(json.dumps(value),flush=True);return value
 
+def positive_interval(value):
+    """@brief Parse a positive, finite VTune sampling interval in milliseconds."""
+    interval = float(value)
+    if not math.isfinite(interval) or interval <= 0:
+        raise argparse.ArgumentTypeError("expected a positive finite sampling interval")
+    return interval
+
+
 def main():
  p=argparse.ArgumentParser();p.add_argument('--runtime',required=True,type=Path);p.add_argument('--native',required=True,type=Path);p.add_argument('--output',required=True,type=Path)
  p.add_argument('--iterations',type=int,default=10000);p.add_argument('--rounds',type=int,default=7);p.add_argument('--cpu',type=int,default=2);p.add_argument('--peer-cpu',type=int,default=4)
  p.add_argument('--tls',action='store_true');p.add_argument('--one',choices=['native','wasm']);p.add_argument('--profile',action='store_true')
+ p.add_argument('--hotspots-interval-ms',type=positive_interval,default=0.1)
+ p.add_argument('--microarchitecture-interval-ms',type=positive_interval,default=1.0)
  a=p.parse_args();verify_gate();a.output.mkdir(parents=True,exist_ok=True)
  if a.one:trial(a,a.one,'profile-'+a.one);return
  build_path=a.runtime.parent/'full-build-results.json';build=json.loads(build_path.read_text())
@@ -105,7 +116,7 @@ def main():
  native_compile=next(row['argv'] for row in native['commands'] if row['name']=='compile')
  result=dict(complete=False,benchmark_complete=False,profiling_requested=a.profile,profiling_complete=False,scope=__doc__,runtime_sha256=sha(a.runtime),native_sha256=sha(a.native),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),trials=[],profiles=[],
   source_root=build['source_root'],build_policy=vm_policy(a.runtime),native_build_policy=compile_policy(native_compile),
-  inputs={str(path):sha(path) for path in (build_path,native_path,Path(__file__))})
+  inputs={str(path):sha(path) for path in (build_path,native_path,Path(__file__),Path(__file__).with_name('hardware_sampling.py'))})
  def save():(a.output/'results.json').write_text(json.dumps(result,indent=2)+'\n')
  try:
   for i in range(a.rounds):
@@ -116,10 +127,12 @@ def main():
    for kind in ['native','wasm']:
     for analysis in ['hotspots','uarch-exploration']:
      dest=a.output/(kind+'-'+analysis);knobs=['-knob','sampling-mode=hw','-knob','enable-stack-collection=true'] if analysis=='hotspots' else ['-knob','pmu-collection-mode=detailed','-knob','dram-bandwidth-limits=false']
-     command=[VTUNE,'-collect',analysis,*knobs,'-knob','sampling-interval=0.01','-no-analyze-system','-no-summary','-data-limit=400','-return-app-exitcode','-result-dir',str(dest),'-source-search-dir',build['source_root'],'-source-search-dir',str(ROOT),'--',sys.executable,__file__,'--one',kind,'--runtime',str(a.runtime),'--native',str(a.native),'--output',str(a.output/(kind+'-'+analysis+'-run')),'--iterations','200000','--cpu',str(a.cpu),'--peer-cpu',str(a.peer_cpu)]+(['--tls'] if a.tls else [])
+     interval=a.hotspots_interval_ms if analysis=='hotspots' else a.microarchitecture_interval_ms
+     command=[VTUNE,'-collect',analysis,*knobs,'-knob',f'sampling-interval={interval:g}','-no-analyze-system','-no-summary','-data-limit=400','-return-app-exitcode','-result-dir',str(dest),'-source-search-dir',build['source_root'],'-source-search-dir',str(ROOT),'--',sys.executable,__file__,'--one',kind,'--runtime',str(a.runtime),'--native',str(a.native),'--output',str(a.output/(kind+'-'+analysis+'-run')),'--iterations','200000','--cpu',str(a.cpu),'--peer-cpu',str(a.peer_cpu)]+(['--tls'] if a.tls else [])
      with (a.output/(kind+'-'+analysis+'.log')).open('w') as log:r=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,timeout=180)
-     row=dict(kind=kind,analysis=analysis,argv=command,exit=r.returncode,reports=[],client_identified=False,source_mapping=False,assembly_mapping=False);result['profiles'].append(row);save()
+     row=dict(kind=kind,analysis=analysis,requested_interval_ms=interval,argv=command,exit=r.returncode,reports=[],client_identified=False,source_mapping=False,assembly_mapping=False);result['profiles'].append(row);save()
      if r.returncode:continue
+     row['counter_periods']=vtune_periods(dest)
      for line in (a.output/(kind+'-'+analysis+'.log')).read_text().splitlines():
       if line.startswith('{"calls":'):
        profiled=json.loads(line);row.update(client_pid=profiled['client_pid'],receiver_pid=profiled['receiver_pid'],client_identified=True)

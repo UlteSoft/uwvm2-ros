@@ -55,6 +55,12 @@ databases are excluded from source publication.
 
 ## Hardware microarchitecture, source and assembly
 
+The matched round-trip tool's `--profile` flag uses hardware Hotspots at
+0.1 ms and Microarchitecture Exploration at 1 ms by default. Adjust them with
+`--hotspots-interval-ms` and `--microarchitecture-interval-ms` as needed by the
+host. The receipt records each requested interval and any collected counter
+periods or adjustments exposed by VTune.
+
 ```sh
 /usr/bin/python3 tools/ros_scene/in_existing_cgroup.py \
   /usr/bin/taskset -c 4-7 /usr/bin/python3 \
