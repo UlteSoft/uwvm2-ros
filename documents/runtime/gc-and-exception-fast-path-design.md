@@ -206,11 +206,24 @@ without constructing an exception or unwinding a native frame.
 
 The normal full-module validation pass still checks the original caller and
 callee before publication. Debug and patchable entries, checkpoint recording,
-threaded host execution, imported tags, effectful callees and handlers which
-capture an exception reference each use the applicable existing exception
-path. The focused executable test exercises clause ordering, distinct tag
-identity, loop targets, ordinary control flow, bit-exact mixed payloads and
-exception-reference propagation.
+threaded host execution, imported tags and effectful callees use the applicable
+existing exception path.
+
+An immediate `throw_ref` can also forward the original payload. The first
+matching reference clause must belong to the current `try_table` and target
+the end of its immediately enclosing plain block. The direct call's bounded
+instruction suffix must contain at most eight drops followed by the inner
+end, an unreachable instruction, the plain block end and `throw_ref`.
+The rethrow therefore consumes the caught reference before any guest
+observation. The compiler searches the surviving outer frames and requires
+their first matching clause to be a plain catch. Both typed `catch_ref` and
+`catch_all_ref` use that rule. Other reference flows, including those that
+pass through loop headers or reach another reference-catching handler, keep
+materialized exception propagation.
+
+The focused executable test exercises clause ordering, distinct tag identity,
+loop targets, ordinary control flow, bit-exact mixed payloads and exception
+reference propagation.
 [Focused Wasm regression](../../test/0017.runtime/llvm_eh_leaf_catch.wat)
 
 The design follows the explicit result edge seen in the Herbception compiler's
@@ -233,8 +246,15 @@ and XOR, loop backedges and return. VTune hardware samples filtered to the
 target PID identified libunwind's frame decoding in the baseline. The
 optimized JIT addresses lacked named VTune frames in this build. GDB captured
 the complete typed entry from the actual loaded JIT mapping for the assembly
-comparison. The separate `throw_ref` workload retains native propagation and
-remains materially slower than Cranelift.
+comparison.
+
+The immediate-rethrow variant uses the same 8 KiB data table, 100,000
+iterations and checksum 325217725. The pre-optimization Linux x86-64 VM
+measured 812.983 ms and the immediate-rethrow VM measured 71.398 µs. Native
+C++ took 76.566 µs and Wasmtime Cranelift took 28.576 ms. The ordinary control
+took 77.846 µs before the change and 71.478 µs after. These are seven-run
+execution medians from a single pinned CPU. An escaping or observable
+reference still incurs the costs of materializing an exception.
 
 The two Core 3 exception scripts at WebAssembly/spec revision
 `2e44bf79e68cc4fe689f43eea8e7d25b6fdfbce1` supplied 61 invocation assertions.

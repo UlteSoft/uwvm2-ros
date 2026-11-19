@@ -7006,6 +7006,9 @@ struct llvm_jit_control_context_t
     // True once at least one branch/fallthrough reaches `end_block`.
     bool end_block_has_incoming{};
 
+    // A try_table has a block-shaped continuation even without catch clauses.
+    bool is_try_table{};
+
     // Only private threaded instruction control uses this actual then-arm
     // terminator. Its lexical end offset is known later, when `end` is decoded.
     ::llvm::Instruction* threaded_then_end{};
@@ -11224,7 +11227,8 @@ template <bool DirectImport = false>
 // Lower Wasm `call`.  The emitter chooses, in order, direct typed JIT calls or the raw
 // runtime host bridge depending on import status and compilation mode.
 [[nodiscard]] inline constexpr bool try_emit_runtime_local_func_llvm_jit_call(runtime_local_func_llvm_jit_emit_state_t& state,
-                                                                              validation_module_traits_t::wasm_u32 func_index) noexcept
+                                                                              validation_module_traits_t::wasm_u32 func_index,
+                                                                              ::std::byte const* call_continuation = nullptr) noexcept
 {
     if(!state.valid || state.local_func_storage_ptr == nullptr || state.llvm_context_holder == nullptr || state.llvm_module == nullptr ||
        state.ir_builder == nullptr || state.control_stack.empty()) [[unlikely]]
@@ -11241,7 +11245,7 @@ template <bool DirectImport = false>
     auto callee_type_ptr{resolve_runtime_callee_function_type(*runtime_module_ptr, func_index)};
     if(callee_type_ptr == nullptr) [[unlikely]] { return false; }
 
-    auto const leaf_branch{try_emit_llvm_jit_leaf_throw_branch(state, *runtime_module_ptr, func_index)};
+    auto const leaf_branch{try_emit_llvm_jit_leaf_throw_branch(state, *runtime_module_ptr, func_index, call_continuation)};
     if(leaf_branch != llvm_jit_leaf_throw_branch::use_call)
     { return leaf_branch == llvm_jit_leaf_throw_branch::emitted; }
 

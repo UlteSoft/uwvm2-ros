@@ -57,7 +57,9 @@
     if(state.branch_target_stack.size() != outer_frame_count + 1uz || state.local_func_storage_ptr == nullptr) { return false; }
     auto const module{state.local_func_storage_ptr->runtime_module_ptr};
     if(module == nullptr) { return false; }
-    auto& output{state.control_stack.back().exception_handlers};
+    auto& frame{state.control_stack.back()};
+    frame.is_try_table = true;
+    auto& output{frame.exception_handlers};
     output.reserve(handlers.size());
     for(auto const& handler: handlers)
     {
@@ -95,15 +97,71 @@
 
 enum class llvm_jit_leaf_throw_branch { use_call, emitted, invalid };
 
+struct llvm_jit_leaf_handler_match
+{
+    llvm_jit_exception_handler_t const* handler{};
+    ::std::size_t depth{};
+};
+
+/// @brief Select the first matching clause in the supplied live frame prefix.
+[[nodiscard]] inline constexpr llvm_jit_leaf_handler_match find_llvm_jit_leaf_handler(
+    runtime_local_func_llvm_jit_emit_state_t const& state, ::std::size_t depth, ::std::size_t tag_index) noexcept
+{
+    for(; depth != 0uz; --depth)
+    {
+        for(auto const& handler : state.control_stack.index_unchecked(depth - 1uz).exception_handlers)
+        {
+            if(handler.catch_all || handler.tag_index == tag_index) { return {::std::addressof(handler), depth}; }
+        }
+    }
+    return {};
+}
+
+/// @brief Prove that the captured reference feeds only an immediate throw_ref.
+/// @details The matching try branches out of its immediately enclosing plain
+/// block. Its continuation consumes the genuine non-null caught reference as
+/// the first operation. The skipped fallthrough can only drop call results
+/// and trap, and cannot execute on the recognized leaf's exceptional edge.
+/// The returned depth is the exact remaining frame prefix at throw_ref.
+[[nodiscard]] inline constexpr ::std::size_t try_llvm_jit_leaf_rethrow_depth(
+    runtime_local_func_llvm_jit_emit_state_t const& state, llvm_jit_leaf_handler_match capture,
+    ::std::byte const* continuation, ::std::size_t payload_count) noexcept
+{
+    if(continuation == nullptr || capture.depth < 3uz || capture.depth != state.control_stack.size()) { return 0uz; }
+    auto const& handler{*capture.handler};
+    auto const reference_block{capture.depth - 2uz};
+    if(handler.control_stack_index != reference_block) { return 0uz; }
+    auto const& frame{state.control_stack.index_unchecked(reference_block)};
+    if(frame.type != llvm_jit_control_context_type::block || frame.is_try_table || handler.block != frame.end_block) { return 0uz; }
+    auto const tuple_count{handler.catch_all ? 1uz : payload_count + 1uz};
+    if(get_runtime_block_result_count(handler.params) != tuple_count ||
+       get_runtime_wasm_value_type_encoding(handler.params.begin[tuple_count - 1uz]) != 0x69u) { return 0uz; }
+
+    // [validated call immediate][continuation ... original body end]
+    // The fused caller supplies an instruction boundary in this pinned body.
+    // Each advance is capped and checks for the one-past boundary first.
+    auto const end{state.local_func_storage_ptr->code_end};
+    for(::std::size_t drops{}; drops != 8uz && continuation != end && *continuation == ::std::byte{0x1au}; ++drops)
+    { ++continuation; }
+    constexpr ::std::array suffix{::std::byte{0x0bu}, ::std::byte{0x00u}, ::std::byte{0x0bu}, ::std::byte{0x0au}};
+    for(auto const opcode : suffix) // end, unreachable, end, throw_ref
+    {
+        if(continuation == end || *continuation != opcode) { return 0uz; }
+        ++continuation;
+    }
+    return reference_block;
+}
+
 /// @brief Forward a side-effect-free local throw directly to its first lexical catch.
 /// @details The whole callee expression must consist of numeric parameter reads and
 /// its terminal throw. There is no live callee instruction after the edge, no
 /// callee-owned reference, and no exception identity that the catch can observe.
+/// An immediate rethrow can forward the same payload to its first plain catch.
 /// The normal full-module validator still checks every original function body.
 [[nodiscard]] inline constexpr llvm_jit_leaf_throw_branch try_emit_llvm_jit_leaf_throw_branch(
     runtime_local_func_llvm_jit_emit_state_t& state,
     ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module,
-    validation_module_traits_t::wasm_u32 func_index) noexcept
+    validation_module_traits_t::wasm_u32 func_index, ::std::byte const* call_continuation) noexcept
 {
     using result = llvm_jit_leaf_throw_branch;
     using index_type = validation_module_traits_t::wasm_u32;
@@ -166,36 +224,35 @@ enum class llvm_jit_leaf_throw_branch { use_call, emitted, invalid };
         if(payload.begin[i] != parameters.begin[fields[i]]) { return result::use_call; }
     }
 
-    for(auto depth{state.control_stack.size()}; depth != 0uz; --depth)
+    auto match{find_llvm_jit_leaf_handler(state, state.control_stack.size(), tag_index)};
+    if(match.handler != nullptr && match.handler->with_reference)
     {
-        for(auto const& handler : state.control_stack.index_unchecked(depth - 1uz).exception_handlers)
-        {
-            if(!handler.catch_all && handler.tag_index != tag_index) { continue; }
-            // The first match wins, including catches which materialize exnref.
-            if(handler.with_reference) { return result::use_call; }
-            auto const arity{handler.catch_all ? 0uz : payload_count};
-            if(arity != get_runtime_block_result_count(handler.params)) { return result::invalid; }
-            auto& builder{*state.ir_builder};
-            auto const block{builder.GetInsertBlock()};
-            if(block == nullptr || llvm_jit_basic_block_has_terminator(block)) { return result::invalid; }
-
-            auto const first_argument{state.operand_stack.size() - count};
-            ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
-            values.reserve(arity);
-            for(::std::size_t i{}; i != arity; ++i)
-            {
-                values.push_back(state.operand_stack.index_unchecked(first_argument + fields[i]));
-            }
-            llvm_jit_branch_target_t const target{.params = handler.params, .block = handler.block,
-                .phis = handler.phis, .control_stack_index = handler.control_stack_index};
-            if(!try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, target, values, block))
-            { return result::invalid; }
-            builder.CreateBr(target.block);
-            enter_runtime_local_func_llvm_jit_unreachable_control_context(state);
-            return result::emitted;
-        }
+        auto const rethrow_depth{try_llvm_jit_leaf_rethrow_depth(state, match, call_continuation, payload_count)};
+        if(rethrow_depth == 0uz) { return result::use_call; }
+        match = find_llvm_jit_leaf_handler(state, rethrow_depth, tag_index);
     }
-    return result::use_call;
+    if(match.handler == nullptr || match.handler->with_reference) { return result::use_call; }
+    auto const& handler{*match.handler};
+    auto const arity{handler.catch_all ? 0uz : payload_count};
+    if(arity != get_runtime_block_result_count(handler.params)) { return result::invalid; }
+    auto& builder{*state.ir_builder};
+    auto const block{builder.GetInsertBlock()};
+    if(block == nullptr || llvm_jit_basic_block_has_terminator(block)) { return result::invalid; }
+
+    auto const first_argument{state.operand_stack.size() - count};
+    ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
+    values.reserve(arity);
+    for(::std::size_t i{}; i != arity; ++i)
+    {
+        values.push_back(state.operand_stack.index_unchecked(first_argument + fields[i]));
+    }
+    llvm_jit_branch_target_t const target{.params = handler.params, .block = handler.block,
+        .phis = handler.phis, .control_stack_index = handler.control_stack_index};
+    if(!try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, target, values, block))
+    { return result::invalid; }
+    builder.CreateBr(target.block);
+    enter_runtime_local_func_llvm_jit_unreachable_control_context(state);
+    return result::emitted;
 }
 
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_USE_THREAD_LOCAL) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && defined(__linux__)

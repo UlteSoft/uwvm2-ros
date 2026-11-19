@@ -16,7 +16,7 @@ from run_core3_engine_comparison import digest, verify_gate
 
 
 TYPES = ("i32", "i64", "f32", "f64", "v128")
-ROUTES = ("typed", "catch_all", "nested", "rethrow", "ordinary", "effect")
+ROUTES = ("typed", "catch_all", "nested", "rethrow", "typed_rethrow", "ordinary", "effect")
 
 
 def clause(name, types):
@@ -68,10 +68,13 @@ def make_case(rng, index, route):
               {'drop ' * len(payload)})
             unreachable)
             {' '.join(expected)}"""
-    elif route == "rethrow":
+    elif route in {"rethrow", "typed_rethrow"}:
+        typed = route == "typed_rethrow"
+        captured = clause("result", [*(payload if typed else []), "exnref"])
+        clause_kind = f"catch_ref {tag}" if typed else "catch_all_ref"
         execution = f"""(block $caught {result}
             (try_table (catch {tag} $caught)
-              (block $reference (result exnref) (try_table (catch_all_ref $reference) {call}) unreachable)
+              (block $reference {captured} (try_table ({clause_kind} $reference) {call}) unreachable)
               throw_ref)
             unreachable)
             {' '.join(expected)}"""
@@ -104,7 +107,8 @@ def main():
         parser.add_argument("--" + name, required=True, type=Path)
     parser.add_argument("--seconds", type=int, default=900, choices=range(1, 901), metavar="[1..900]")
     parser.add_argument("--seed", type=int, default=715217)
-    parser.add_argument("--wasm-cases", type=int, default=24, choices=range(6, 49), metavar="[6..48]")
+    parser.add_argument("--wasm-cases", type=int, default=24, choices=range(len(ROUTES), 49),
+                        metavar=f"[{len(ROUTES)}..48]")
     config = parser.parse_args()
     verify_gate()
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))

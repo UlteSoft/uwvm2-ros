@@ -336,7 +336,9 @@ case wasm1_code::call:
                 static_cast<::std::size_t>(code_curr-code_begin), exact_after))
             { disable_inline_llvm_jit_emission(); }
         }
-        if(emit_llvm_jit_active && (!try_emit_runtime_local_func_llvm_jit_call(llvm_jit_emit_state, func_index) ||
+        // The direct-call immediate has been checked. The emitter can inspect
+        // this bounded continuation without consuming it or changing validation.
+        if(emit_llvm_jit_active && (!try_emit_runtime_local_func_llvm_jit_call(llvm_jit_emit_state, func_index, code_curr) ||
             !finish_runtime_local_func_llvm_jit_checkpoint_direct_call(llvm_jit_emit_state)))
         [[unlikely]] { disable_inline_llvm_jit_emission(); }
     }
