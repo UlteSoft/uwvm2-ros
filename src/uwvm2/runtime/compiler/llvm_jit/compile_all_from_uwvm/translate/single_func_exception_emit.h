@@ -93,6 +93,111 @@
     return true;
 }
 
+enum class llvm_jit_leaf_throw_branch { use_call, emitted, invalid };
+
+/// @brief Forward a side-effect-free local throw directly to its first lexical catch.
+/// @details The whole callee expression must consist of numeric parameter reads and
+/// its terminal throw. There is no live callee instruction after the edge, no
+/// callee-owned reference, and no exception identity that the catch can observe.
+/// The normal full-module validator still checks every original function body.
+[[nodiscard]] inline constexpr llvm_jit_leaf_throw_branch try_emit_llvm_jit_leaf_throw_branch(
+    runtime_local_func_llvm_jit_emit_state_t& state,
+    ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module,
+    validation_module_traits_t::wasm_u32 func_index) noexcept
+{
+    using result = llvm_jit_leaf_throw_branch;
+    using index_type = validation_module_traits_t::wasm_u32;
+    constexpr ::std::size_t max_fields{8uz};
+    if(!state.emit_leaf_throw_branches || module.local_defined_tag_vec_storage.empty()) { return result::use_call; }
+
+    // These index comparisons admit only this module's immutable definitions.
+    // An imported tag can alias other tag indices and needs the runtime matcher.
+    auto const imports{module.imported_function_vec_storage.size()};
+    if(func_index < imports || !module.imported_tag_vec_storage.empty()) { return result::use_call; }
+    auto const local{static_cast<::std::size_t>(func_index) - imports};
+    if(local >= module.local_defined_function_vec_storage.size()) { return result::use_call; }
+    auto const& callee{module.local_defined_function_vec_storage.index_unchecked(local)};
+    if(callee.function_type_ptr == nullptr || callee.wasm_code_ptr == nullptr ||
+       callee.wasm_code_ptr->all_local_count != 0u) { return result::use_call; }
+    auto const& parameters{callee.function_type_ptr->parameter};
+    auto const count{parameters.begin == nullptr ? 0uz : static_cast<::std::size_t>(parameters.end - parameters.begin)};
+    if(count > max_fields || state.operand_stack.size() < count) { return result::use_call; }
+
+    auto cursor{reinterpret_cast<::std::byte const*>(callee.wasm_code_ptr->body.expr_begin)};
+    auto const end{reinterpret_cast<::std::byte const*>(callee.wasm_code_ptr->body.code_end)};
+    if(cursor == nullptr || end == nullptr || cursor == end) { return result::use_call; }
+    auto const consume{[&](::std::byte opcode) constexpr noexcept
+    {
+        if(cursor == end || *cursor != opcode) { return false; }
+        ++cursor;
+        return true;
+    }};
+    ::std::array<index_type, max_fields> fields{};
+    ::std::size_t field_count{};
+    while(cursor != end && *cursor == ::std::byte{0x20u}) // local.get
+    {
+        ++cursor;
+        if(field_count == fields.size() || !parse_wasm_leb128_immediate(cursor, end, fields[field_count]) ||
+           fields[field_count] >= count) { return result::use_call; }
+        ++field_count;
+    }
+    index_type tag_index{};
+    if(!consume(::std::byte{0x08u}) || !parse_wasm_leb128_immediate(cursor, end, tag_index) || // throw
+       !consume(::std::byte{0x0bu}) || cursor != end ||                                     // end
+       tag_index >= module.local_defined_tag_vec_storage.size()) { return result::use_call; }
+
+    auto const* tag_type{module.local_defined_tag_vec_storage.index_unchecked(tag_index).function_type_ptr};
+    if(tag_type == nullptr) { return result::use_call; }
+    auto const& payload{tag_type->parameter};
+    auto const payload_count{payload.begin == nullptr ? 0uz : static_cast<::std::size_t>(payload.end - payload.begin)};
+    if(payload_count != field_count) { return result::use_call; }
+    auto const numeric{[](auto parameter) constexpr noexcept
+    {
+        using type = runtime_operand_stack_value_type;
+        auto const value{static_cast<type>(parameter)};
+        return value == type::i32 || value == type::i64 || value == type::f32 || value == type::f64 || value == type::v128;
+    }};
+    for(::std::size_t i{}; i != count; ++i)
+    {
+        if(!numeric(parameters.begin[i])) { return result::use_call; }
+    }
+    for(::std::size_t i{}; i != payload_count; ++i)
+    {
+        if(payload.begin[i] != parameters.begin[fields[i]]) { return result::use_call; }
+    }
+
+    for(auto depth{state.control_stack.size()}; depth != 0uz; --depth)
+    {
+        for(auto const& handler : state.control_stack.index_unchecked(depth - 1uz).exception_handlers)
+        {
+            if(!handler.catch_all && handler.tag_index != tag_index) { continue; }
+            // The first match wins, including catches which materialize exnref.
+            if(handler.with_reference) { return result::use_call; }
+            auto const arity{handler.catch_all ? 0uz : payload_count};
+            if(arity != get_runtime_block_result_count(handler.params)) { return result::invalid; }
+            auto& builder{*state.ir_builder};
+            auto const block{builder.GetInsertBlock()};
+            if(block == nullptr || llvm_jit_basic_block_has_terminator(block)) { return result::invalid; }
+
+            auto const first_argument{state.operand_stack.size() - count};
+            ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};
+            values.reserve(arity);
+            for(::std::size_t i{}; i != arity; ++i)
+            {
+                values.push_back(state.operand_stack.index_unchecked(first_argument + fields[i]));
+            }
+            llvm_jit_branch_target_t const target{.params = handler.params, .block = handler.block,
+                .phis = handler.phis, .control_stack_index = handler.control_stack_index};
+            if(!try_add_runtime_local_func_llvm_jit_branch_target_incoming(state, target, values, block))
+            { return result::invalid; }
+            builder.CreateBr(target.block);
+            enter_runtime_local_func_llvm_jit_unreachable_control_context(state);
+            return result::emitted;
+        }
+    }
+    return result::use_call;
+}
+
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_USE_THREAD_LOCAL) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE) && defined(__linux__)
 #include "threaded_exception_emit.h"
 #endif

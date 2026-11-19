@@ -196,6 +196,56 @@ The source-only identity and matching RT/CLI requirements are in
 
 ## Current exception candidate
 
+Full LLVM compilation can forward an exact local throwing leaf to a lexical
+catch. The emitter recognizes an immutable body containing only numeric
+parameter reads followed by a defined-tag throw and the function end. It
+selects the first matching clause from the innermost protected block outward.
+A plain typed catch receives the original scalar or vector SSA values. A plain
+catch-all discards them. Both become a branch to the existing target block
+without constructing an exception or unwinding a native frame.
+
+The normal full-module validation pass still checks the original caller and
+callee before publication. Debug and patchable entries, checkpoint recording,
+threaded host execution, imported tags, effectful callees and handlers which
+capture an exception reference each use the applicable existing exception
+path. The focused executable test exercises clause ordering, distinct tag
+identity, loop targets, ordinary control flow, bit-exact mixed payloads and
+exception-reference propagation.
+[Focused Wasm regression](../../test/0017.runtime/llvm_eh_leaf_catch.wat)
+
+The design follows the explicit result edge seen in the Herbception compiler's
+x86-64 output. That compiler returns a payload with a carry flag for the error
+edge and its caller can select that edge with an ordinary conditional jump.
+The Wasm lowering proves the edge before generating machine code. It reuses
+the existing catch PHIs and keeps the guest and native calling conventions.
+
+On Linux x86-64, an `-O3 -g` VM build compiled a memory-fed rolling checksum of
+100,000 iterations. Both VM builds read the same 8 KiB data table and produced
+checksum 325217725. The guest clock measured a median of 513.587 ms before the
+change and 70.482 µs afterward over seven runs on one core. The equivalent
+native C++ recurrence took 73.352 µs and Wasmtime Cranelift took 14.464 ms.
+The ordinary call inside the same try took 70.177 µs before and 70.479 µs
+after. These are execution timings and exclude LLVM compilation and startup.
+
+The relocated JIT function contained a call and exception handling calls
+before the change. Afterward it contained the indexed load, dependent multiply
+and XOR, loop backedges and return. VTune hardware samples filtered to the
+target PID identified libunwind's frame decoding in the baseline. The
+optimized JIT addresses lacked named VTune frames in this build. GDB captured
+the complete typed entry from the actual loaded JIT mapping for the assembly
+comparison. The separate `throw_ref` workload retains native propagation and
+remains materially slower than Cranelift.
+
+The two Core 3 exception scripts at WebAssembly/spec revision
+`2e44bf79e68cc4fe689f43eea8e7d25b6fdfbce1` supplied 61 invocation assertions.
+Both VM builds matched 48 returns, 11 uncaught exceptions and two traps when
+the unchanged binary modules were loaded with their original registration
+bindings. Authenticated debugger sessions stopped on the original leaf and
+on its replacement generation and observed the expected distinct results.
+The [seeded numerical test](../../test/0017.runtime/run_llvm_leaf_eh_random.py)
+also runs the generated Wasm through Wasmtime and checks the original payload
+bits after both direct and materialized catches.
+
 The R5C private numeric island uses a caller-owned native context, passed as the
 first hidden internal argument; the public function ABI is unchanged and a
 multi-result output buffer remains last. Actual validator/type admission rejects

@@ -7396,6 +7396,9 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // Forces Wasm calls through the runtime raw bridge instead of direct typed declarations.
     bool route_wasm_calls_through_runtime_bridge{};
 
+    // Full validation covers every immutable callee before publication.
+    bool emit_leaf_throw_branches{};
+
     // Set from the real preparation mode, never inferred from call routing.
     bool gc_array_access_ordinary_full{};
 #if defined(UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH) && UWVM_EXPERIMENTAL_INLINE_ARRAY_AUTH == 1
@@ -8497,6 +8500,9 @@ namespace sealed_compact_codegen {
     state = {};
     state.gc_direct_ordinary_full = compilation_mode == llvm_jit_compilation_mode::full;
     state.gc_array_access_ordinary_full = compilation_mode == llvm_jit_compilation_mode::full;
+    state.emit_leaf_throw_branches = compilation_mode == llvm_jit_compilation_mode::full &&
+        !route_wasm_calls_through_runtime_bridge && !emit_debug_safe_points && debug_full_patchable_typed_target_base_address == 0u && debug_full_patchable_typed_target_count == 0uz &&
+        pending_numeric_plan == nullptr && checkpoint_plan == nullptr && !threaded_host_emission_scope::selected();
 
     if(pending_numeric_plan != nullptr &&
        (!pending_numeric_plan->shape_valid_for_compilation() || pending_numeric_plan->module != local_func_storage.runtime_module_ptr ||
@@ -11234,6 +11240,10 @@ template <bool DirectImport = false>
 
     auto callee_type_ptr{resolve_runtime_callee_function_type(*runtime_module_ptr, func_index)};
     if(callee_type_ptr == nullptr) [[unlikely]] { return false; }
+
+    auto const leaf_branch{try_emit_llvm_jit_leaf_throw_branch(state, *runtime_module_ptr, func_index)};
+    if(leaf_branch != llvm_jit_leaf_throw_branch::use_call)
+    { return leaf_branch == llvm_jit_leaf_throw_branch::emitted; }
 
     auto const prepared_call{prepare_runtime_local_func_llvm_jit_wasm_call_operands(state, *callee_type_ptr)};
     if(!prepared_call.valid) [[unlikely]] { return false; }
