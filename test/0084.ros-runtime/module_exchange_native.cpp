@@ -37,6 +37,11 @@ namespace uwvm2::runtime::lib
         else out={&identities[actor],1,{u8"main"},false};
         return true;
     }
+    // Both native test actors have a fixed identity and no cross-module caller ancestry.
+    bool ros_observed_caller_identity_host_api(ros_caller_identity& out) noexcept
+    {
+        return ros_caller_identity_host_api(out, true);
+    }
     [[gnu::noinline]] std::uint32_t with_ros_exchange_memory_host_api(ros_exchange_memory_callback callback,void* context)noexcept
     {
         ros_exchange_memory_access access;
