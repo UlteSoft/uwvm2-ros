@@ -5899,6 +5899,29 @@ template<typename Reference = runtime_wasm_global_ref>
     return ref.kind == ::uwvm2::object::global::wasm_ref_kind::wasm_null ? runtime_wasm_i32{1} : runtime_wasm_i32{};
 }
 
+/// @brief Admit value tracking only on operands independent of unfinished PHIs.
+/// @details Structured branches and exception edges add PHI inputs during
+/// emission. The optimizer can analyze the full graph once emission finishes.
+/// The bounded walk retains value tracking for short, stable operand trees.
+[[nodiscard]] inline bool llvm_jit_has_no_phi_dependencies(::llvm::Value const* value) noexcept
+{
+    ::std::size_t budget{32uz};
+    auto const inspect{[&](auto const& recurse, ::llvm::Value const* operand) noexcept -> bool
+    {
+        if(operand == nullptr || budget == 0uz || ::llvm::isa<::llvm::PHINode>(operand)) { return false; }
+        --budget;
+        if(auto const* instruction{::llvm::dyn_cast<::llvm::Instruction>(operand)})
+        {
+            for(auto const& input : instruction->operands())
+            {
+                if(!recurse(recurse, input.get())) { return false; }
+            }
+        }
+        return true;
+    }};
+    return inspect(inspect, value);
+}
+
 // A reference is held in SSA as its native object bits. Query only its tag: the payload may be zero for a
 // non-null host reference, and payload/padding bytes of a null reference need not be zero. The template keeps
 // the byte-layout proof attached to the object type; the production caller uses runtime_wasm_global_ref.
@@ -5919,7 +5942,7 @@ template<typename Reference = runtime_wasm_global_ref>
     // remains null even with nonzero payload/padding. This compile-time proof adds no guest instructions.
     auto const block{builder.GetInsertBlock()};
     auto const module{block == nullptr ? nullptr : block->getModule()};
-    if(module != nullptr)
+    if(module != nullptr && llvm_jit_has_no_phi_dependencies(reference))
     {
         auto const shift{static_cast<unsigned>((little_endian ? offset : bytes - offset - kind_bytes) * CHAR_BIT)};
         auto const mask{::llvm::APInt::getBitsSet(static_cast<unsigned>(bytes * CHAR_BIT), shift,

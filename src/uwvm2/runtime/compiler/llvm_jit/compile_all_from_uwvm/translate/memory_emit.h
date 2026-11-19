@@ -9,13 +9,28 @@
 {
     if(address == nullptr || access_size == 0uz || minimum == 0u ||
        (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u))) { return false; }
+    auto const span_fits{[&](::std::uint64_t maximum) constexpr noexcept
+    {
+        return maximum <= minimum && static_offset <= minimum - maximum &&
+            access_size <= minimum - maximum - static_offset;
+    }};
+    // An AND with a constant is bounded by that constant for every input,
+    // including loop parameters whose incoming edges have yet to be emitted.
+    if(auto const* binary{::llvm::dyn_cast<::llvm::BinaryOperator>(address)};
+       binary != nullptr && binary->getOpcode() == ::llvm::Instruction::And)
+    {
+        for(auto const& operand : binary->operands())
+        {
+            if(auto const* mask{::llvm::dyn_cast<::llvm::ConstantInt>(operand.get())};
+               mask != nullptr && span_fits(mask->getZExtValue())) { return true; }
+        }
+    }
+    if(!llvm_jit_has_no_phi_dependencies(address)) { return false; }
     // This is an unsigned, conservative upper bound. Unknown bits stay one;
     // no assumption is made from memarg alignment, a current grown length,
     // profile data, or a pointer tag. In particular it reasons through the
     // original low address bits preserved by memtag.load/random lowering.
-    auto const maximum{::llvm::computeKnownBits(address, layout).getMaxValue().getZExtValue()};
-    return maximum <= minimum && static_offset <= minimum - maximum &&
-        access_size <= minimum - maximum - static_offset;
+    return span_fits(::llvm::computeKnownBits(address, layout).getMaxValue().getZExtValue());
 }
 
 [[nodiscard]] inline bool llvm_jit_memory_span_within_declared_minimum(

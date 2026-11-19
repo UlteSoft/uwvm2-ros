@@ -226,6 +226,17 @@ loop targets, ordinary control flow, bit-exact mixed payloads and exception
 reference propagation.
 [Focused Wasm regression](../../test/0017.runtime/llvm_eh_leaf_catch.wat)
 
+The rethrow fixture also checks a secondary branch into the capture block,
+a reference target at a different label depth, a visible effect between the
+capture and rethrow, and repeated access to the same mutable GC payload from a
+saved exception. [Rethrow regression](../../test/0017.runtime/llvm_eh_nonescaping_rethrow.wat)
+
+The same fixture verifies a nullable loop parameter whose later incoming
+reference comes from a catch. During LLVM emission, PHI-dependent reference
+tests keep their tag comparison until the control graph is complete.
+Memory bounds lowering likewise requires a proof independent of unfinished
+PHIs. A constant AND mask can still prove a bound for every incoming value.
+
 The design follows the explicit result edge seen in the Herbception compiler's
 x86-64 output. That compiler returns a payload with a carry flag for the error
 edge and its caller can select that edge with an ordinary conditional jump.
