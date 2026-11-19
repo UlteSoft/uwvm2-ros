@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/elephantrobotics/mycobot_ros",
+  "commit": "c0d6fbe8f7d9b18b46a9fcb0b041e5bc2d66196b",
+  "sourceDirectory": ".",
+  "model": "mycobot_pro/mycobotpro450_gazebo/config/mycobot_pro_450_force_gripper.urdf",
+  "platform": "elephant",
+  "joint": "joint1",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/mygripper_f100_connection.dae": "1eec05bfea9b72bd413b12a05e7cc099313db39de5225a30a1b46333a6ec84ba",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_base.dae": "4871c8e13581ee0912f196718fcf48265b87c331555fd61765efa2a04249153f",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_left1.dae": "6fb9e1a68d76984f68c4d64a018e8950f698c3677a25f50ad1dae42b1f992d09",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_left2.dae": "bf8f6747e8a1e885dcfed0915747e8bd9755fa3c2aac943efc63e1fc6cf35239",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_left3.dae": "60c9a53f15f48d5a8433ae14d7c9c920276ce536c6db3636359bd8141e01a38e",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_right1.dae": "6fb9e1a68d76984f68c4d64a018e8950f698c3677a25f50ad1dae42b1f992d09",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_right2.dae": "bf8f6747e8a1e885dcfed0915747e8bd9755fa3c2aac943efc63e1fc6cf35239",
+    "mycobot_description/urdf/mycobot_320_m5_2022/force_control_gripper/pro_gripper_right3.dae": "7e2e0b3cc6bf5a148b602f72eaebeb2760f0f6e47a22fae3ffe81715723ccd47",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J1.dae": "3db5e9d4881a8cde691ce4465cd9eadfdcc3a4477e2bb087b976084377497d97",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J2.dae": "de8fb353ab9aa10a523c402722b16c4965590301a3cdac005f5567e99dedec22",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J3.dae": "9f3783df6084b3d9676803fa0cd2be7f1c85b4afbbb84f01f360f7ed9c39b3e4",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J4.dae": "1f45fec5327c727f4cd6b7758dadfe81637d60b64775507c75f918d25803003f",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J5.dae": "823d5fe95a89368db335217e5e635235060f596484939d2898746d69149a4317",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J6.dae": "5c49ec128a08354d312c11764232f7d91246c1a97c15f96c3da1a9107be6df6d",
+    "mycobot_description/urdf/mycobot_pro_450/PRO450_J6_end.dae": "fcba579e204c34e5dc9f8547a22297f9c6f9694c8fb13edf27d0a7e4111d7ac4",
+    "mycobot_pro/mycobotpro450_gazebo/config/mycobot_pro_450_force_gripper.urdf": "f7d34a67b8e4014740447698623f07d399a3d063292b64e445ad0a999cf08e39"
+  }
+}

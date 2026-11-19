@@ -23,6 +23,8 @@ def urdf_mesh_mounts(profile, snapshot, output):
     if robot.tag != 'robot' or len(matches) != 1 or matches[0].get('type') not in ('revolute', 'continuous'):
         raise ValueError('expected one declared rotary URDF joint')
     joint = matches[0]
+    if joint.find('mimic') is not None:
+        raise ValueError('the selected fixture drive cannot actuate a dependent mimic joint')
     limit = joint.find('limit')
     effort = float(limit.get('effort', 'nan')) if limit is not None else math.nan
     if not math.isfinite(effort) or effort < 1:
@@ -46,8 +48,11 @@ def urdf_mesh_mounts(profile, snapshot, output):
     if not (all(map(math.isfinite, (xx,yy,zz,xy,xz,yz,determinant))) and
             xx > 0 and xx*yy > xy*xy and determinant > 0):
         raise ValueError('selected URDF link requires a positive definite inertia tensor')
+    # Package-root profiles omit the ROS package prefix from their pin names.
+    # Repository-root profiles pin each mesh using its complete package path.
+    repo_root = profile['sourceDirectory'] == '.'
     package = PurePosixPath(profile['sourceDirectory']).name
-    prefix = 'package://' + package + '/'
+    prefix = 'package://' if repo_root else 'package://' + package + '/'
     aliases = {}
     mounts = []
     for mesh in robot.iter('mesh'):

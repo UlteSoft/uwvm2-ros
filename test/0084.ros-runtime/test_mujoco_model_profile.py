@@ -54,6 +54,23 @@ class ModelIntake(unittest.TestCase):
             self.assertEqual(set(mounts[2:-3:3]), {'/model/'+alias for alias in aliases})
             self.assertEqual(src.read_bytes(), original)
             self.assertEqual(staged.find('joint/limit').attrib, robot.find('joint/limit').attrib)
+            repository = work/'repository'
+            (repository/'arm').mkdir(parents=True)
+            repo_inputs = {src.name: profile['files'][src.name]}
+            for name, digest in assets.items():
+                dest = repository/'arm'/name
+                dest.parent.mkdir()
+                dest.write_bytes((work/name).read_bytes())
+                repo_inputs['arm/'+name] = digest
+            (repository/src.name).write_bytes(original)
+            cross_package = dict(profile, sourceDirectory='.', files=repo_inputs)
+            mounts = urdf_mesh_mounts(cross_package, repository, work)
+            self.assertTrue(all(path.is_relative_to(repository) for path in mounts[1:-3:3]))
+            dependent = ET.fromstring(original)
+            ET.SubElement(dependent.find('joint'), 'mimic', joint='motor')
+            ET.ElementTree(dependent).write(src)
+            with self.assertRaisesRegex(ValueError, 'mimic'):
+                urdf_mesh_mounts(profile, work, work)
             checks = [('joint/limit','effort','0','newton-metre'), ('joint/limit','velocity','0','velocity'),
                       ('joint/limit','upper','0.2','target angles'), ('link/inertial/mass','value','0','mass'),
                       ('link/inertial/inertia','ixy','5','inertia'), ('.//mesh','filename','package://other/file','pinned')]

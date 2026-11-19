@@ -287,11 +287,14 @@ The following models retain the upstream joint, collision meshes, masses and ine
 | ROS package model | Selected joint | Source |
 | --- | --- | --- |
 | ABB IRB1200-5/0.9 | `joint_3` | [ROS-Industrial Xacro profile](../../test/0084.ros-runtime/mujoco_profiles/abb-irb1200-xacro.json) |
+| Elephant Robotics myCobot Pro 450 | `joint1` | [Vendor Gazebo URDF profile](../../test/0084.ros-runtime/mujoco_profiles/elephant-mycobot-pro450.json) |
 | RealMan RM65 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/realman-rm65.json) |
 | Dobot CR16 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/dobot-cr16.json) |
 | Yaskawa Motoman SIA10D | `joint_s` | [ROS-Industrial support package profile](../../test/0084.ros-runtime/mujoco_profiles/yaskawa-sia10d.json) |
 
 For these URDFs MuJoCo has a passive hinge. The test receiver supplies a simulated torque controller on that hinge, limited to one newton-metre. Intake checks the upstream effort rating, velocity rating, target angle range and the selected link's inertia. The native control first runs the same initial state with zero torque to establish a passive reference. Each driven reference must differ from its passive control. The TLS receiver then compares the simulated joint position and elapsed time with direct native execution over 128 steps. The qualification covers this controller and the published mechanical model. Factory servo firmware, brakes and emergency stopping require independent evidence.
+
+The Pro 450 fixture pins the Gazebo-specific robot description and its 15 visual meshes in the vendor repository. Its collision cylinders and simulation mass parameters come from that URDF. The arm's first joint passed all 24 cases. The test operates the arm joint through external effort control. Gazebo's optional gripper-mimic plugin and the physical gripper have separate behavior.
 
 The ABB package uses Xacro to share its robot description and materials between models. Set `ABB` to a new absolute directory under the project `.tmp`, and `STAGED` to another unused path there. With the ROS 2 `xacro` program and its `ament_index_python` package installed, the following commands make both pinned ROS packages visible for expansion.
 
