@@ -53,9 +53,13 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  parser.add_argument('--vendor-model-max-mib',type=int,default=64,help='Size limit for the compiled simulation model (1..512 MiB, default 64)')
  parser.add_argument('--vendor-assets',type=Path,help='Locally supplied original vendor model source directory')
  parser.add_argument('--audit-calls',action='store_true',help='Check four bounded host-result records and compare physics with direct native execution')
+ parser.add_argument('--guest-startup-seconds',type=int,default=180,
+                     help='Wall-time budget including cold compilation for a controller with steady-clock deadlines')
  a=parser.parse_args(argv)
  if not 1 <= a.vendor_model_max_mib <= 512 or (not a.vendor_model and a.vendor_model_max_mib!=64):
   parser.error('select a vendor model and a compiled model size limit from 1 through 512 MiB')
+ if not 1 <= a.guest_startup_seconds <= 600 or (not guest_steady_deadlines and a.guest_startup_seconds!=180):
+  parser.error('a custom guest startup budget requires steady-clock deadlines and a value from 1 through 600 seconds')
  if bool(a.openssl_root)==bool(a.namespace):parser.error('select --openssl-root for production TLS, or --namespace for the historical fixture-only VM')
  if guest_steady_deadlines and compile_guest is None:parser.error('run-time deadlines require an SDK controller with an authorized steady clock')
  if not guest_widths or any(w not in (32,64) for w in guest_widths) or len(set(guest_widths))!=len(guest_widths):
@@ -75,7 +79,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
  report=dict(complete=False,scope=__doc__,guest_language=guest_name,namespace_fixture=a.namespace,tls=bool(a.openssl_root),runtime_sha256=sha(a.runtime),cgroup=str(GATE),events_before=(GATE/'memory.events').read_text(),cases=[],inputs={},commands=[])
  if guest_steady_deadlines:
   report['driver_request_max_ns']=60_000_000_000
-  report['guest_timeout_seconds']=180
+  report['guest_timeout_seconds']=a.guest_startup_seconds
   report['deadline_source']='Guest reads an explicitly granted ROSv2 steady clock before submitting each command'
  if a.platform_targets:
   report['platform_targets_sha256']=sha(a.platform_targets)
@@ -162,7 +166,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
        flags+=['--ros-scene-grant','robot','steady','clock.steady','steady','local','clock.create,clock.read']
       # The external attachment lease covers cold compiler startup. Its independent
       # per-request budget applies to each actual driver call after guest readiness.
-      session_until=time.monotonic_ns()+181_000_000_000 if guest_steady_deadlines else deadline+1_000_000_000
+      session_until=time.monotonic_ns()+(a.guest_startup_seconds+1)*1_000_000_000 if guest_steady_deadlines else deadline+1_000_000_000
       if a.audit_calls:flags+=['--ros-scene-call-audit','single','main','all','4','8192','1000000','4']
       for name in ['capability.open']+NAMES:flags+=['--ros-scene-interface','robot',name,'allow']
       flags+=['--ros-scene-grant','robot','joint','driver','humanoid-abdomen-z','registered-driver',','.join(NAMES),'--ros-scene-driver-budget','robot','1','1048576' if a.openssl_root else '65536',
@@ -172,8 +176,16 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
        module='uwvm_ros_v2.platform_extension.'+platform+'.v1'
        flags+=['--ros-scene','robot','platform_extension',module,'enable','--ros-scene','robot','platform_extension.bind',module,'joint']
       cmd=[str(a.runtime),*guest_flags,'--wasm-set-main-module-name','main',f'--runtime-{engine}','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--run',str(wasm)]
+      started=time.monotonic_ns()
       vm=subprocess.Popen(cmd,pass_fds=((left.fileno(),vm_key,clock_fd) if a.openssl_root else (left.fileno(),)),stdout=subprocess.PIPE,stderr=subprocess.PIPE);left.close();peer.stdin.write((str(vm.pid)+'\n').encode());peer.stdin.close();peer.stdin=None
-      stdout,stderr=vm.communicate(timeout=180 if guest_steady_deadlines else 45);ps,pe=peer.communicate(timeout=5)
+      try:
+       stdout,stderr=vm.communicate(timeout=a.guest_startup_seconds if guest_steady_deadlines else 45)
+      except subprocess.TimeoutExpired as error:
+       (out/(label+'.vm.stderr')).write_bytes(error.stderr or b'')
+       report['failure']=dict(case=label,stage='vm-timeout',elapsed_ns=time.monotonic_ns()-started)
+       raise
+      vm_elapsed_ns=time.monotonic_ns()-started
+      ps,pe=peer.communicate(timeout=5)
       if confinement:pe=confinement['ready_line'].encode()+pe
       (out/(label+'.vm.stderr')).write_bytes(stderr);(out/(label+'.peer.stderr')).write_bytes(pe)
       expected_exit=128+signal.SIGSEGV if a.namespace else -signal.SIGSEGV
@@ -189,7 +201,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
       if a.namespace:assert [row for row in rows if row.get('kind')=='confined']==[dict(kind='confined',escape_checks=7)]
       assert len(effects)==count and effects[-1]['steps']==(0 if mode=='range' else count)
       if mode=='success':assert all(observed[k]==value for k,value in native.items())
-      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows,platform=platform));
+      report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,vm_elapsed_ns=vm_elapsed_ns,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows,platform=platform))
       if not platform or (width,memory)==layouts[-1] and engine=='aot' and mode=='crash':save()
       print('PASS '+label,flush=True)
      finally:
