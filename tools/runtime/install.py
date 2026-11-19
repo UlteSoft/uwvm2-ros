@@ -49,15 +49,20 @@ def digest(value: str) -> str:
 
 
 def regular_input(path: Path, maximum: int):
-    descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    pin = os.open(path, os.O_PATH | os.O_CLOEXEC | os.O_NOFOLLOW)
     try:
-        info = os.fstat(descriptor)
+        info = os.fstat(pin)
         require(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= maximum,
                 "Expected a bounded regular input file: " + str(path))
-        return os.fdopen(descriptor, "rb"), info
-    except BaseException:
-        os.close(descriptor)
-        raise
+        descriptor = os.open(f"/proc/self/fd/{pin}", os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
+        try:
+            require(unchanged(info, os.fstat(descriptor)), "Input changed before reading: " + str(path))
+            return os.fdopen(descriptor, "rb"), info
+        except BaseException:
+            os.close(descriptor)
+            raise
+    finally:
+        os.close(pin)
 
 
 def unchanged(before, after) -> bool:

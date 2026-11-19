@@ -17,6 +17,36 @@ After building, install into a host-owned destination with
 write authority. Installation does not configure a Gateway, grant guest
 permissions or authorize management.
 
+## Compact runtime with separate Linux debug information
+
+Compile and link the runtime with `-O3 -g` before preparing the distributable.
+Use GNU or LLVM `objcopy` with support for the executable's target. Give the
+packager the approved SHA-256 of the original runtime and the approved source
+identity recorded for the build.
+
+```sh
+python3 tools/runtime/split_linux_debug.py \
+  --image "$VM" --sha256 "$VM_SHA256" \
+  --source-identity "sha256:$SOURCE_SHA256" \
+  --objcopy "$OBJCOPY" --output "$NEW_PACKAGE"
+```
+
+The new directory contains `uwvm2-ros`, `uwvm2-ros.debug` and
+`producer-receipt.json`. The packager checks the prepared ELF's program headers,
+loader-visible bytes, detached DWARF and GNU debug link. Deployment can install
+the smaller executable through `tools/runtime/install.py` using the new
+artifact digest and the matching producer-receipt digest. Keep the original
+build and retain the companion for profiling and debugger use. Place the
+companion beside the executable or under the adjacent `.debug` directory for
+GDB. The debug file is data, and the debug link uses its basename and CRC.
+[GNU separate debug information](https://sourceware.org/gdb/current/onlinedocs/gdb.html/Separate-Debug-Files.html)
+
+The smaller artifact has its own SHA-256. Apply the deployment's ordinary
+review and executable pinning to that identity before activation. This process
+reduces the executable's distribution size. The original loaded code, data and
+unwind information have matching fingerprints. Qualification receipts for
+running code still identify the executable used by each test.
+
 ## ROS build configuration
 
 Run the commands below from the repository root. Their option names come from
