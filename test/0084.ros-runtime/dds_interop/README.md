@@ -179,6 +179,37 @@ control, 8.35 ms in the mixed transient pair, and 8.76 ms in the mixed pair
 with a volatile reader. The three active Humble publishers each logged two
 rcutils error-state reports. The listener validated every expected update.
 
+### Jazzy SROS2 Enforce
+
+Run the same native TF witnesses against an extracted Jazzy x86-64 root
+filesystem with rclcpp, rclpy, TF2, Fast DDS and the SROS2 CLI installed.
+
+```sh
+"$QUALIFICATION_GATE" /usr/bin/python3 -B test/0084.ros-runtime/dds_interop/run_static_tf_sros2.py \
+  --rootfs "$JAZZY_ROOTFS" --output "$NEW_DIR"
+```
+
+The runner compiles the publisher with `-O3 -g` and creates three distinct
+enclaves in the isolated namespace's temporary memory. It verifies the
+generated signatures, domain admission, default-deny permissions and
+encrypted topic metadata and data settings. The receipt identifies the
+security directory actually selected by each participant. The permission
+file also grants the exact `/parameter_events` endpoints required by the
+native clients and `/tf` for the TF2 listeners.
+
+The authorized Jazzy TF2 reader received the snapshot published before its
+process started and validated 24 subsequent transforms. The other signed
+identity successfully created an allowed `/tf` subscription. Fast DDS
+denied its same-type `/tf_static` reader at creation and the participant
+remained online with zero callbacks throughout authorized delivery. The
+first retained lookup took 217.0 ms in the reference run. Its warmed
+publish-to-validated-lookup p50 was 220.4 µs and p95 was 304.2 µs. The
+output contains public artifact digests and process observations. The
+keystore lives only in the temporary namespace. This test covers native
+Jazzy Enforce on local loopback with the named topic grants. Packet-level
+cryptographic checks, mixed releases and Wasm execution have separate
+acceptance requirements.
+
 ## Native GetParameters service
 
 Supply both native rclcpp installations and add `--service` to the command

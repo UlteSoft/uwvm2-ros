@@ -42,4 +42,22 @@ volatile 对照均未收到历史样本。该混合组合的观测与 ROS 2 QoS 
 同栈和 Humble 到 Jazzy 的稳态发布至校验查询耗时 p50 分别为 202.7 µs 和
 166.4 µs。每组有 24 次实时更新，混合组发布端各记录两次 rcutils 诊断。
 
+## Jazzy SROS2 Enforce
+
+在同一测试门控中运行带有 rclcpp、rclpy、TF2、Fast DDS 和 SROS2 CLI 的
+Jazzy x86-64 根文件系统。
+
+```sh
+"$QUALIFICATION_GATE" /usr/bin/python3 -B test/0084.ros-runtime/dds_interop/run_static_tf_sros2.py \
+  --rootfs "$JAZZY_ROOTFS" --output "$NEW_DIR"
+```
+
+程序在隔离环境的临时内存中生成三个独立身份，校验签名、默认拒绝和主题
+数据及元数据的加密配置。回执核对每个进程实际加载的身份。授权端收到了
+启动前的快照，并校验后续 24 次变换。另一签名身份成功订阅了获准的 `/tf`，
+其 `/tf_static` 订阅被 Fast DDS 在创建时拒绝。该进程在授权传输期间保持
+在线，数据回调为零。配置文件同时精确授予本机 ROS 客户端所需的
+`/parameter_events`。验收覆盖同版 Jazzy 原生客户端的回环通信与指定权限，
+报文级加密检查、跨发行版和 Wasm 执行需另行验证。
+
 [原版 Jazzy TF2 监听器](https://github.com/ros2/geometry2/blob/jazzy/tf2_ros_py/tf2_ros/transform_listener.py) · [English](README.md#static-tf-with-a-late-joining-rclpy-reader)

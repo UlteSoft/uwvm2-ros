@@ -1,6 +1,7 @@
 """Read native /tf_static through the installed Jazzy Python TF2 frame buffer."""
 
 import math
+import os
 from pathlib import Path
 import sys
 import time
@@ -8,6 +9,7 @@ import time
 import rclpy
 import tf2_py
 import tf2_ros
+from rclpy.parameter import Parameter
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.time import Time
 from rclpy.utilities import get_rmw_implementation_identifier
@@ -48,7 +50,10 @@ def main(expected_rmw, scenario, token):
     """Validate retained and live samples independently in the official listener."""
     rclpy.init(args=[])
     require(get_rmw_implementation_identifier() == expected_rmw, "active RMW changed")
-    node = rclpy.create_node("wros_static_tf_sink", enable_rosout=False, start_parameter_services=False)
+    overrides = [Parameter("start_type_description_service", value=False)] if (
+        os.getenv("ROS_SECURITY_ENABLE") == "true") else []
+    node = rclpy.create_node("wros_static_tf_sink", enable_rosout=False, start_parameter_services=False,
+                             parameter_overrides=overrides)
     tree = tf2_ros.Buffer()
     seen = []
     q = math.sqrt(0.5)

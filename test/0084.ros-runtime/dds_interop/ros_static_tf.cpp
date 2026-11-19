@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <link.h>
 #include <numbers>
@@ -73,7 +74,13 @@ int main(int argc, char** argv)
     rclcpp::init(0, nullptr);
     if(std::string_view(rmw_get_implementation_identifier()) != argv[1])
         return 2;
-    auto node = rclcpp::Node::make_shared("wros_static_tf_source");
+    rclcpp::NodeOptions options;
+    if(auto const* security = std::getenv("ROS_SECURITY_ENABLE"); security && std::string_view{security} == "true")
+    {
+        options.enable_rosout(false).start_parameter_services(false).start_parameter_event_publisher(false);
+        options.parameter_overrides({rclcpp::Parameter("start_type_description_service", false)});
+    }
+    auto node = rclcpp::Node::make_shared("wros_static_tf_source", options);
     auto qos = rclcpp::QoS(1).reliable();
     std::string_view const durability{argv[3]};
     if(durability == "volatile")

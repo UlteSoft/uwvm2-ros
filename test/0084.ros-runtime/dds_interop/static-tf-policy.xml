@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy version="0.2.0">
+  <enclaves>
+    <enclave path="/tf_writer">
+      <profiles>
+        <profile ns="/" node="wros_static_tf_source">
+          <topics publish="ALLOW"><topic>/tf_static</topic></topics>
+          <topics subscribe="ALLOW"><topic>/parameter_events</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+    <enclave path="/tf_reader">
+      <profiles>
+        <profile ns="/" node="wros_static_tf_sink">
+          <topics publish="ALLOW"><topic>/parameter_events</topic></topics>
+          <topics subscribe="ALLOW"><topic>/tf</topic><topic>/tf_static</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+    <enclave path="/tf_denied">
+      <profiles>
+        <profile ns="/" node="wros_static_tf_denied">
+          <topics publish="ALLOW"><topic>/parameter_events</topic></topics>
+          <topics subscribe="ALLOW"><topic>/tf</topic></topics>
+        </profile>
+      </profiles>
+    </enclave>
+  </enclaves>
+</policy>

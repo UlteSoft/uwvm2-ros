@@ -190,6 +190,15 @@ the pre-join snapshot to a Jazzy volatile reader before sending any live
 update. The Jazzy same-installation control with a volatile reader and the
 Humble-to-Jazzy control with both ends volatile received zero snapshots.
 
+With Jazzy SROS2 Enforce, an authorized Jazzy Python TF2 listener also
+received and verified the pre-join snapshot and 24 live updates. A separate
+signed identity was allowed to subscribe to `/tf` while Fast DDS refused
+creation of its `/tf_static` reader. It remained online and received zero
+samples during the authorized exchange. The
+[native Enforce fixture](../../test/0084.ros-runtime/dds_interop/README.md#jazzy-sros2-enforce)
+records the three loaded identities and the default-deny grants for this
+same-release loopback.
+
 Run a locally licensed middleware through the
 [additional RMW fixture](../../test/0084.ros-runtime/dds_rmw_plugins/README.md).
 Run a ROS 1 network peer through the
