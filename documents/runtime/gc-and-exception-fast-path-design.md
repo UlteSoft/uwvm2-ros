@@ -242,6 +242,11 @@ The native reference keeps the exception payload without the VM's stack
 snapshot. Ordinary control medians were 83.415 µs and 82.870 µs in the VM
 builds. Both were built with `-O3 -g`.
 
+The local-capture regression checks bit-exact numeric fields, tag ordering,
+preserved local and operand-stack roots, and a reference catch targeting a
+loop. It rethrows references after storage and checks mutation through the
+original reference-bearing payload. [Local capture regression](../../test/0017.runtime/llvm_eh_local_capture_observable.wat)
+
 The focused executable test exercises clause ordering, distinct tag identity,
 loop targets, ordinary control flow, bit-exact mixed payloads and exception
 reference propagation.
