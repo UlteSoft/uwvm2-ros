@@ -92,6 +92,9 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   platforms=(profile['platform'],)
   selector=['--urdf-effort' if profile.get('actuation')=='urdf-joint-effort' else '--compiled-joint',profile['joint'],profile['actuator'] or '']
   report['platform_scope']='One original vendor model and its registered platform permission'
+  if 'mobileBase' in profile:
+   if selector[0]!='--urdf-effort':raise ValueError('mobile scene requires a URDF effort profile')
+   selector[0]='--urdf-mobile-effort'
   report['vendor_model']=profile
   report['vendor_model_max_bytes']=a.vendor_model_max_mib << 20
   for path in (a.vendor_model,Path(__file__).with_name('mujoco_profiles')/'compile_model.py',a.mujoco/'bin/compile'):
@@ -110,7 +113,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
   run('compile',['/usr/bin/clang++-22','-std=c++23','-O3','-g','-Wall','-Wextra','-Werror','-pthread',*compile_options,'-I'+str(a.source_root/'src'),'-isystem',a.source_root/'third-parties/fast_io/include','-I'+str(a.mujoco/'include'),fixture,'-L'+str(a.mujoco/'lib'),'-Wl,-rpath,'+str(a.mujoco/'lib'),'-lmujoco',*libraries,'-o',binary])
   report['inputs'][str(binary.resolve())]=sha(binary)
   native=json.loads(run('native',[binary,'0','direct',model,'128',*selector]));report['native_reference']=native
-  if selector and selector[0]=='--urdf-effort':
+  if selector and selector[0] in ('--urdf-effort','--urdf-mobile-effort'):
    passive=json.loads(run('native-passive',[binary,'0','passive',model,'128',*selector]))
    if passive['steps']!=native['steps'] or passive['time']!=native['time'] or abs(passive['position']-native['position'])<=1e-9:
     raise ValueError('applied joint effort did not produce a distinguishable physical response')
@@ -185,7 +188,7 @@ def main(argv=None, *, compile_guest=None, guest_name="WAT", guest_inputs=(), gu
       observed=json.loads(ps) if ps else None;rows=[json.loads(line) for line in pe.splitlines() if line.startswith(b'{')];effects=[row for row in rows if 'sequence' in row]
       if a.namespace:assert [row for row in rows if row.get('kind')=='confined']==[dict(kind='confined',escape_checks=7)]
       assert len(effects)==count and effects[-1]['steps']==(0 if mode=='range' else count)
-      if mode=='success':assert all(observed[k]==native[k] for k in ('steps','time','position'))
+      if mode=='success':assert all(observed[k]==value for k,value in native.items())
       report['cases'].append(dict(name=label,passed=True,argv=cmd,vm_exit=vm.returncode,driver_exit=peer.returncode,result=observed,effects=len(effects),confinement=confinement,host_audit=audit_rows,platform=platform));
       if not platform or (width,memory)==layouts[-1] and engine=='aot' and mode=='crash':save()
       print('PASS '+label,flush=True)

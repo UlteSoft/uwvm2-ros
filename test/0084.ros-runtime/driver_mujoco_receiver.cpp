@@ -83,7 +83,8 @@ static mjModel* load_model(char const* path, bool compiled)
 int main(int argc,char** argv)
 {
  if(argc==3&&std::string_view(argv[1])=="--filter"){filter_for(static_cast<int>(number(argv[2])),false);return 0;}
- bool const joint_effort=argc>=8 && std::string_view{argv[argc-3]}=="--urdf-effort";
+ bool const mobile=argc>=8 && std::string_view{argv[argc-3]}=="--urdf-mobile-effort";
+ bool const joint_effort=mobile || (argc>=8 && std::string_view{argv[argc-3]}=="--urdf-effort");
  bool const compiled=joint_effort || (argc>=8 && std::string_view{argv[argc-3]}=="--compiled-joint");
  auto const* joint_name=compiled?argv[argc-2]:"abdomen_z";
  auto const* actuator_name=compiled?argv[argc-1]:"abdomen_z";
@@ -114,6 +115,25 @@ int main(int argc,char** argv)
  }
  if(!joint_effort)require(actuator>=0&&model->actuator_trntype[actuator]==mjTRN_JOINT&&model->actuator_trnid[2*actuator]==joint,"actuator must drive the selected joint");
  auto q=model->jnt_qposadr[joint],v=model->jnt_dofadr[joint];::mj_forward(model,data);
+ int floor_geom=-1,base_height=-1;
+ if(mobile)
+ {
+  auto const base=::mj_name2id(model,mjOBJ_JOINT,"wros_fixture_chassis");
+  floor_geom=::mj_name2id(model,mjOBJ_GEOM,"wros_fixture_floor");
+  require(base>=0 && model->jnt_type[base]==mjJNT_FREE && floor_geom>=0 && model->geom_bodyid[floor_geom]==0,"free chassis and stationary floor");
+  base_height=model->jnt_qposadr[base]+2;
+ }
+ double peak_wheel_load{};
+ auto report=[&](std::uint64_t steps)
+ {
+  std::printf("{\"steps\":%llu,\"time\":%.17g,\"position\":%.17g,\"mujoco\":%d",static_cast<unsigned long long>(steps),data->time,data->qpos[q],::mj_version());
+  if(mobile)
+  {
+   require((steps==0 || peak_wheel_load>0) && std::isfinite(data->qpos[base_height]),"wheel carries load on the floor");
+   std::printf(",\"peak_wheel_load_n\":%.17g,\"chassis_height_m\":%.17g",peak_wheel_load,data->qpos[base_height]);
+  }
+  std::puts("}");
+ };
  bool const passive=joint_effort && mode=="passive";
  auto execute=[&](double angle)
  {
@@ -121,10 +141,27 @@ int main(int argc,char** argv)
   if(joint_effort)data->qfrc_applied[v]=passive?0.0:command;
   else data->ctrl[actuator]=command;
   ::mj_step(model,data);
+  if(mobile)
+  {
+   for(int i{};i<data->ncon;++i)
+   {
+    auto const& geoms=data->contact[i].geom;
+    require(geoms[0]>=0 && geoms[0]<model->ngeom && geoms[1]>=0 && geoms[1]<model->ngeom,"rigid-body ground contact");
+    int other;
+    if(model->geom_bodyid[geoms[0]]==model->jnt_bodyid[joint])other=geoms[1];
+    else if(model->geom_bodyid[geoms[1]]==model->jnt_bodyid[joint])other=geoms[0];
+    else continue;
+    require(other==floor_geom,"wheel touches an unexpected fixture surface");
+    mjtNum force[6]{};
+    ::mj_contactForce(model,data,i,force);
+    require(std::isfinite(force[0]),"finite wheel contact load");
+    peak_wheel_load=std::max(peak_wheel_load,static_cast<double>(force[0]));
+   }
+  }
   require(std::isfinite(data->qpos[q])&&std::isfinite(data->time),"finite state");
  };
  if(mode=="direct" || passive)
- {for(std::uint64_t i=1;i<=count;++i)execute(i%2?.5:-.5);std::printf("{\"steps\":%llu,\"time\":%.17g,\"position\":%.17g}\n",(unsigned long long)count,data->time,data->qpos[q]);::mj_deleteData(data);::mj_deleteModel(model);return 0;}
+ {for(std::uint64_t i=1;i<=count;++i)execute(i%2?.5:-.5);report(count);::mj_deleteData(data);::mj_deleteModel(model);return 0;}
  require(mode=="success"||mode=="range"||mode=="crash","fault mode");
  auto* crash_page=::mmap(nullptr,4096,PROT_NONE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);require(crash_page!=MAP_FAILED,"crash page");
  if(!confined){rlimit core{0,0};require(!::setrlimit(RLIMIT_CORE,&core),"core limit");}
@@ -198,6 +235,6 @@ int main(int argc,char** argv)
 #endif
  }
  require(steps==(mode=="range"?0:count),"final effect count");
- std::printf("{\"steps\":%llu,\"time\":%.17g,\"position\":%.17g,\"mujoco\":%d}\n",(unsigned long long)steps,data->time,data->qpos[q],::mj_version());
+ report(steps);
  ::mj_deleteData(data);::mj_deleteModel(model);::close(fd);return 0;
 }

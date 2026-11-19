@@ -288,6 +288,7 @@ The following models retain the upstream joint, collision meshes, masses and ine
 | --- | --- | --- |
 | ABB IRB1200-5/0.9 | `joint_3` | [ROS-Industrial Xacro profile](../../test/0084.ros-runtime/mujoco_profiles/abb-irb1200-xacro.json) |
 | Elephant Robotics myCobot Pro 450 | `joint1` | [Vendor Gazebo URDF profile](../../test/0084.ros-runtime/mujoco_profiles/elephant-mycobot-pro450.json) |
+| Clearpath Husky A200 | `joint_front_left_wheel` | [Original Groovy vendor Xacro](../../test/0084.ros-runtime/mujoco_profiles/clearpath-husky-a200-xacro.json) |
 | RealMan RM65 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/realman-rm65.json) |
 | Dobot CR16 | `joint1` | [Vendor URDF profile](../../test/0084.ros-runtime/mujoco_profiles/dobot-cr16.json) |
 | Yaskawa Motoman SIA10D | `joint_s` | [ROS-Industrial support package profile](../../test/0084.ros-runtime/mujoco_profiles/yaskawa-sia10d.json) |
@@ -310,6 +311,14 @@ python3 -B "$PROFILES/stage_xacro.py" --profile "$PROFILES/abb-irb1200-xacro.jso
 ```
 
 The stager verifies the original Xacro and mesh digests and checks the canonical expansion against its reviewed digest. Pass `--vendor-model "$STAGED/profile.json" --vendor-assets "$STAGED/assets"` to the qualification command above. The IRB1200 third joint and the TienKung2 Lite left hip each passed all 24 command, range and receiver-loss cases.
+
+The Husky A200 profile pins the Clearpath Groovy description. Its continuous front-left wheel has a mass of 2.63657 kg and the URDF specifies limits of 100 Nm and 100 rad/s. MuJoCo normally fixes the root of a bare URDF to the world. For this mobile robot the intake adds a free joint above the original `base_footprint` and a stationary 4 m by 4 m floor, with its surface 10 mm below the initial footprint. These are test-environment additions. All original links, joints, collision shapes and inertia tensors remain in the description. The receiver checks that the selected wheel carries a positive normal load against that floor and compares wheel angle, chassis height and peak load against a native stepper. This tests the wheel and its load in MuJoCo. The 128-step run produced a peak normal load of 497.35 N on that wheel and a final wheel angle of 0.00120564 radians. The direct zero-torque control ended at −0.00005326 radians. Gazebo plugins, vehicle navigation and physical braking have separate behavior.
+
+To reproduce the Husky expansion, follow the ABB procedure with `clearpath-husky-a200-xacro.json`, create the single ament package marker `husky_description` and run Xacro on `$HUSKY/share/husky_description/urdf/base.urdf.xacro`. The source uses the historical syntax for macros without a namespace prefix. The ROS 2 Dashing release of Xacro accepts it. Use that release with its supported Python version to generate the expansion, then pass the same source directory and expansion to `stage_xacro.py`. [Clearpath Groovy description](https://github.com/clearpathrobotics/clearpath_husky/tree/0e11aac561d1077266175dd38c4c3b23f2f3c376/husky_description)
+
+### NVIDIA software scopes
+
+The `nvidia-groot` scope needs a qualified inference provider running a specific checkpoint with an observation and action contract. The `nvidia-isaac-ros` scope needs a working accelerated ROS graph with a defined input and a checked output. Robot meshes alone cannot establish either result. [NVIDIA Isaac GR00T](https://github.com/NVIDIA/Isaac-GR00T) · [NVIDIA Isaac ROS](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common)
 
 ## Models from MuJoCo Menagerie
 

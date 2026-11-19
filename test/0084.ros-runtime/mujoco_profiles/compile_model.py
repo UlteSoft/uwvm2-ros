@@ -70,6 +70,24 @@ def urdf_mesh_mounts(profile, snapshot, output):
             mounts.extend(('--ro-bind', snapshot/source, '/model/' + str(target)))
             aliases[alias] = str(source)
         mesh.set('filename', alias)
+    if 'mobileBase' in profile:
+        root_link = profile['mobileBase']
+        link_names = {link.get('name') for link in robot.findall('link')}
+        children = {child.get('link') for child in robot.findall('joint/child')}
+        if (not isinstance(root_link, str) or link_names - children != {root_link}
+                or root_link not in link_names or any(
+                    e.get('name', '').startswith('wros_fixture_') for e in robot.iter())):
+            raise ValueError('mobile scene requires an unambiguous original root link')
+        # A bare mobile URDF would weld the chassis to world. Add a separate
+        # fixed floor and free the original root; preserve every robot member.
+        floor = ET.SubElement(robot, 'link', name='wros_fixture_world')
+        collision = ET.SubElement(floor, 'collision', name='wros_fixture_floor')
+        ET.SubElement(collision, 'origin', xyz='0 0 -0.06')
+        geometry = ET.SubElement(collision, 'geometry')
+        ET.SubElement(geometry, 'box', size='4 4 0.1')
+        free = ET.SubElement(robot, 'joint', name='wros_fixture_chassis', type='floating')
+        ET.SubElement(free, 'parent', link='wros_fixture_world')
+        ET.SubElement(free, 'child', link=root_link)
     with tempfile.NamedTemporaryFile(dir=snapshot, suffix='.urdf', delete=False) as f:
         ET.ElementTree(robot).write(f, encoding='utf-8', xml_declaration=True)
         normalized = Path(f.name)

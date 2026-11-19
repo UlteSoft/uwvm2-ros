@@ -1,0 +1,24 @@
+{
+  "repository": "https://github.com/clearpathrobotics/clearpath_husky",
+  "commit": "0e11aac561d1077266175dd38c4c3b23f2f3c376",
+  "sourceDirectory": ".",
+  "model": "husky_description/urdf/base.urdf.xacro",
+  "package": "husky_description",
+  "platform": "clearpath",
+  "joint": "joint_front_left_wheel",
+  "actuator": null,
+  "actuation": "urdf-joint-effort",
+  "files": {
+    "husky_description/models/husky/meshes/base_link.stl": "52107dc0be1fc5a9b16549d1ea03e71a4732cd80dc261a8403f9d671173bd97a",
+    "husky_description/models/husky/meshes/bumper.stl": "c30766d745a5b0d817bdbfc1623cd028d6bef34e8b07fc5b44534a67653dec76",
+    "husky_description/models/husky/meshes/top_plate.stl": "b19fc4c116647c179714a9e50d0aa275feb833eeb84de83571a64f5e0ca15ae2",
+    "husky_description/models/husky/meshes/user_rail.stl": "9289df409dec6a91e0bf6be606b30b83c50864975361f57f629f8166fa913289",
+    "husky_description/models/husky/meshes/wheel.stl": "c6cdb0f65efac76467db6e27371420ed1275cb2c93ed7a41ed8b41b98a7da671",
+    "husky_description/urdf/base.urdf.xacro": "5162784125b22027111b74c6a40ab4d185ebb305f50ff976a5e694e32cf0e1d3",
+    "husky_description/urdf/materials.urdf.xacro": "ebe3b15ad11b3957b70bb7c57df3bc47d4aeca2562efc89ac64303ae975a0246",
+    "husky_description/urdf/parts.urdf.xacro": "3ce084c8f0f5293c8d0a602139307dbbe166dba8e78d3132d1d22e7446eeb4a6",
+    "husky_description/urdf/wheel.urdf.xacro": "e344010e705d553a1c38049d91de668f391331ac0dbedda1daf0e8ad35612841"
+  },
+  "expandedUrdfSha256": "1feefb39f45554656a538ab6c41393e4e07f429d2109dfc52bec6a7bdc954630",
+  "mobileBase": "base_footprint"
+}
