@@ -338,6 +338,13 @@ python3 -B test/0084.ros-runtime/check_isaac_ros_message_sync.py \
   --upstream "$ISAAC_ROS_COMMON" --googletest "$GTEST_SOURCE" --output "$NEW_RESULT_DIR"
 ```
 
+To exercise the same synchronizer inside the VM, use the signed C++ SDK installation and its qualified VM. The guest receives eleven timestamped inputs on two camera streams. It checks the five emitted pairs, their order and the absence of callbacks while a partner is missing. A second build deliberately expects six pairs, allowing the test to verify that both engines execute the guest and report its failed assertion. The runner also checks the module import section, the build receipt and the Wasm 3.0/MTE/EH profile.
+
+```sh
+python3 -B test/0084.ros-runtime/check_isaac_ros_sync_guest.py \
+  --upstream "$ISAAC_ROS_COMMON" --sdk "$WR_CPP_PREFIX" --vm "$UWVM" --output "$NEW_RESULT_DIR"
+```
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.
