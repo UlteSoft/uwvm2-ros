@@ -320,6 +320,17 @@ To reproduce the Husky expansion, follow the ABB procedure with `clearpath-husky
 
 The `nvidia-groot` scope needs a qualified inference provider running a specific checkpoint with an observation and action contract. The `nvidia-isaac-ros` scope needs a working accelerated ROS graph with a defined input and a checked output. Robot meshes alone cannot establish either result. [NVIDIA Isaac GR00T](https://github.com/NVIDIA/Isaac-GR00T) · [NVIDIA Isaac ROS](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common)
 
+The GR00T CPU preprocessing check uses the upstream LIBERO demonstration, including its recorded state and action vectors, modality layout and processor statistics. It runs the upstream `StateActionProcessor` and `PolicyHorizonSpec`. The check compares every state and action value against an independent min–max calculation, exercises saturation, and verifies rejection of missing state and invalid execution horizons. Episode 000000 supplied 214 consecutive frames, each with eight state and seven action values. The maximum absolute difference was below 6.0 × 10⁻⁸ after normalization and 2.2 × 10⁻⁷ after the inverse conversion. This covers the offline numerical stage before checkpoint inference.
+
+Use Python 3.12 with the locked versions of NumPy (1.26.4), SciPy (1.15.3) and PyArrow (23.0.1). Check out the pinned upstream revision and fetch the Git LFS object for `demo_data/libero_demo/data/chunk-000/episode_000000.parquet`. From the existing test cgroup, run the following with a new receipt path under the project's `.tmp`. [Pinned NVIDIA GR00T source and demonstration](https://github.com/NVIDIA/Isaac-GR00T/tree/dac54b313160c201c450f97df0fd74ebd379c892)
+
+```sh
+python3.12 -B test/0084.ros-runtime/check_groot_preprocessing.py \
+  --upstream "$GROOT" \
+  --episode "$GROOT/demo_data/libero_demo/data/chunk-000/episode_000000.parquet" \
+  --output "$RECEIPT"
+```
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.
