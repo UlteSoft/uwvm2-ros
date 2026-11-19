@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 import subprocess
 
-from capability_inventory import ROOT, GATE, guard, sha
+from capability_inventory import ROOT, GATE, guard, sha, valid_output
 
 
 OBLIGATIONS = {
@@ -73,7 +73,7 @@ def main():
     guard()
     corpus, out = args.corpus.resolve(), args.output.resolve()
     temporary = (ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve()
-    assert corpus.is_relative_to(temporary) and out.is_relative_to(temporary)
+    assert corpus.is_relative_to(temporary) and valid_output(out)
     out.mkdir(parents=True, exist_ok=False)
     pins = {}
 

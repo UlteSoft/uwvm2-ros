@@ -77,6 +77,13 @@ def shape(text, extension):
     return dict(status='SHAPES_EXTRACTED' if not issues else 'SYNTAX_REQUIRES_REVIEW', fields=fields, issues=issues, sections=sections)
 
 
+def valid_output(out):
+    """Keep qualification artifacts inside a project scratch directory."""
+    return any(out != base and out.is_relative_to(base) for base in (
+        (ROOT / '.tmp').resolve(), (ROOT.parent / 'uwvm2-ros-sdk/.tmp').resolve(),
+        (ROOT.parent / 'uwvm2-ros-sdk-v2/.tmp').resolve()))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
@@ -84,7 +91,7 @@ def main():
     args = parser.parse_args()
     guard()
     root, out = args.root.resolve(), args.output.resolve()
-    assert out.is_relative_to((ROOT.parent/'uwvm2-ros-sdk/.tmp').resolve())
+    assert valid_output(out)
     out.mkdir(parents=True, exist_ok=False)
     inventory_path = root/'reconciliation/package-effect-inventory.json'
     summary_path = root/'reconciliation/summary.json'
