@@ -335,6 +335,7 @@ def main():
     for case, entry in cases:
         for engine in args.engines.split(","):
             command = shlex.split(args.runner) + [str(args.vm), "-R"+engine, "--runtime-compile-threads", "0",
+                       "--debug-fault-action", "exit",
                        "--wasm-feature-enable-memory64",
                        "--wasm-feature-enable-multi-memory"]
             if engine == "aot":
