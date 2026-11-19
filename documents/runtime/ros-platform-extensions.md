@@ -331,6 +331,13 @@ python3.12 -B test/0084.ros-runtime/check_groot_preprocessing.py \
   --output "$RECEIPT"
 ```
 
+The Isaac ROS CPU messaging check compiles the two upstream C++ test sources against the original `isaac_common` headers. The four buffer cases cover insertion, removal, timestamp order, capacity and range selection. The camera synchronizer case supplies two streams, delays and drops frames, and checks the matched identifiers after recovery. Its receipt records the source and binary digests and the individual GoogleTest results. Supply the root of a GoogleTest source release containing `src/gtest-all.cc`. [NVIDIA Isaac ROS common](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common/tree/7bec6ae5dbb2faa11617f40226e8932a4a94e6e4/isaac_common)
+
+```sh
+python3 -B test/0084.ros-runtime/check_isaac_ros_message_sync.py \
+  --upstream "$ISAAC_ROS_COMMON" --googletest "$GTEST_SOURCE" --output "$NEW_RESULT_DIR"
+```
+
 ## Models from MuJoCo Menagerie
 
 The following profiles use original files from the [MuJoCo Menagerie repository](https://github.com/google-deepmind/mujoco_menagerie/tree/370c43965323c0944b433b202aac5058b5f907a9). Use the same fetch and test commands as for Go2, substituting the selected profile. Each row passed 24 cases covering wasm32 and wasm64, both carrier-memory positions, interpreter and AOT execution, the allowed command, range rejection, and receiver loss. Each allowed run compared 128 steps for the named joint against a native MuJoCo run.
