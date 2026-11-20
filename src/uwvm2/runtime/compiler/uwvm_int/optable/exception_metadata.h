@@ -128,9 +128,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                         {
                             ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
                             ::std::memcpy(::std::addressof(reference), bits.data(), sizeof(reference));
-                            if(!spec.receiving_store || spec.receiving_store->retain_gc_reference(reference) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                            { ::fast_io::fast_terminate(); }
+                            if(!spec.receiving_store) [[unlikely]] { ::fast_io::fast_terminate(); }
+                            require_exception_reference(spec.receiving_store->retain_gc_reference(reference));
                         }
                         // [immutable numeric field: 4/8/16 bytes] [checked destination remainder]
                         // [safe                                ] memcpy preserves unaligned packed
@@ -148,15 +147,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if(spec.with_reference)
                 {
                     ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
-                    using status_type = ::uwvm2::uwvm::runtime::storage::gc_object_status;
-                    auto const status{spec.receiving_store->make_exn_reference(instance, reference)};
-                    if(status != status_type::ok) [[unlikely]]
-                    {
-                        if((status == status_type::out_of_memory || status == status_type::size_overflow) &&
-                           trap_gc_allocation_failure_func != nullptr)
-                        { trap_gc_allocation_failure_func(); }
-                        ::fast_io::fast_terminate();
-                    }
+                    require_exception_reference(spec.receiving_store->make_exn_reference(instance, reference));
                     // [validated payload][full 16-byte exnref][spare operand capacity]
                     // [safe           ^^^^^^^^^^^^^^^^^^^^^] factory reserved the complete carrier.
                     //                  ^^ cursor advances only after memcpy, possibly to one-past.

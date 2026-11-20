@@ -122,6 +122,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     };
 
 # if defined(UWVM_CPP_EXCEPTIONS)
+    /// @brief Route an exception reference operation through the interpreter's runtime fault callback.
+    inline void require_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_status status) noexcept
+    {
+        using status_type = ::uwvm2::uwvm::runtime::storage::gc_object_status;
+        if(status != status_type::ok) [[unlikely]]
+        {
+            if((status == status_type::out_of_memory || status == status_type::size_overflow) &&
+               trap_gc_allocation_failure_func != nullptr)
+            { trap_gc_allocation_failure_func(); }
+            ::fast_io::fast_terminate();
+        }
+    }
+
     // Host-only cold diagnostic hook. Execution admission publishes a capture routine before Wasm
     // runs; the guest has no address/registration API. Nothing reads this atomic on ordinary calls,
     // instructions or memory accesses. The callback may allocate and must not be noexcept.
@@ -154,9 +167,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 //                 ^^ source starts at arguments.data() + offset.
                 ::std::memcpy(::std::addressof(reference), arguments.data() + offset, sizeof(reference));
                 auto const* store{site.source_store()};
-                if(store == nullptr || store->retain_gc_reference(reference) !=
-                   ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                { ::fast_io::fast_terminate(); }
+                if(store == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
+                require_exception_reference(store->retain_gc_reference(reference));
                 // A local managed reference is rooted by source_store_ itself, so taking an
                 // additional shared_ptr back to that store would form a store -> exn -> value
                 // -> store cycle. Foreign references get an independent root from this helper;

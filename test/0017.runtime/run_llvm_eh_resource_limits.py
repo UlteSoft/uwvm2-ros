@@ -19,6 +19,8 @@ HIGH = 64 * 1024 * 1024
 REASON = b"GC allocation failed: memory or size limit"
 AOT = ("-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable",
        "-Rllvm-exception-dispatch", "native-unwind")
+TRANSFER_ITERATIONS = 100_000
+TRANSFER_LOW = 11 * 1024 * 1024
 
 
 def fixture(route):
@@ -59,12 +61,65 @@ def fixture(route):
     """
 
 
+def transfer_source():
+    """@brief Issue the source tokens once and throw them as exception payloads."""
+    return f"""(module
+      (tag $inner (export "inner") (param i32))
+      (tag $envelope (export "envelope") (param exnref))
+      (table $held {TRANSFER_ITERATIONS} exnref)
+      (func (export "prepare") (local $index i32)
+        (loop $again
+          local.get $index
+          (block $captured (result (ref exn))
+            (try_table (catch_all_ref $captured) local.get $index throw $inner)
+            unreachable)
+          table.set $held
+          local.get $index i32.const 1 i32.add local.tee $index
+          i32.const {TRANSFER_ITERATIONS} i32.lt_u br_if $again))
+      (func (export "send") (param $index i32)
+        local.get $index table.get $held throw $envelope))
+    """
+
+
+def transfer_receiver(retain):
+    """@brief Compare a typed payload transfer with a catch that discards it."""
+    if retain:
+        receive = """
+          (block $received (result exnref)
+            (try_table (catch $envelope $received) local.get $index call $send)
+            unreachable)
+          local.set $reference
+          (block $checked (result i32)
+            (try_table (catch $inner $checked) local.get $reference throw_ref)
+            unreachable)
+          local.get $index i32.ne if unreachable end
+        """
+    else:
+        receive = """
+          (block $discarded
+            (try_table (catch_all $discarded) local.get $index call $send)
+            unreachable)
+        """
+    return f"""(module
+      (import "source" "inner" (tag $inner (param i32)))
+      (import "source" "envelope" (tag $envelope (param exnref)))
+      (import "source" "prepare" (func $prepare))
+      (import "source" "send" (func $send (param i32)))
+      (func (export "_start") (local $index i32) (local $reference exnref)
+        call $prepare
+        (loop $again
+          {receive}
+          local.get $index i32.const 1 i32.add local.tee $index
+          i32.const {TRANSFER_ITERATIONS} i32.lt_u br_if $again)))
+    """
+
+
 def main():
     """@brief Compare classified exhaustion with a successful execution of the same binary."""
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("runtime", "wasm-tools", "wasmtime", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--baseline", type=Path, help="Optional Linux x86-64 baseline with the legacy SIGILL")
+    parser.add_argument("--baseline", type=Path, help="Optional Linux x86-64 baseline with the legacy payload fault")
     args = parser.parse_args()
     verify_gate()
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -73,6 +128,7 @@ def main():
     if args.baseline:
         inputs.append(args.baseline)
     results = {"complete": False, "iterations": ITERATIONS, "auxiliary_live_limits": [LOW, HIGH],
+               "transfer_iterations": TRANSFER_ITERATIONS, "transfer_auxiliary_live_limits": [TRANSFER_LOW, HIGH],
                "cgroup": Path("/proc/self/cgroup").read_text().strip(),
                "pins": {str(path): digest(path) for path in inputs}, "cases": {}}
 
@@ -97,22 +153,43 @@ def main():
         if not passed:
             raise RuntimeError(f"Unexpected outcome in {log}")
 
-    save()
-    for route in ("loop", "acyclic", "cross-frame"):
-        source = args.output / f"{route}.wat"
+    def encode(name, contents):
+        source = args.output / f"{name}.wat"
         wasm = source.with_suffix(".wasm")
-        source.write_text(fixture(route))
-        run(f"{route}-encode", [args.wasm_tools, "parse", source, "-o", wasm], 0)
+        source.write_text(contents)
+        run(f"{name}-encode", [args.wasm_tools, "parse", source, "-o", wasm], 0)
         results["pins"][str(wasm)] = digest(wasm)
+        return wasm
+
+    save()
+    engines = (("aot", AOT), ("interpreter", ("-Rint",)))
+    for route in ("loop", "acyclic", "cross-frame"):
+        wasm = encode(route, fixture(route))
         run(f"{route}-oracle", [args.wasmtime, "run", "-W", "exceptions=y", "-W", "gc=y", wasm], 0)
-        for engine, options in (("aot", AOT), ("interpreter", ("-Rint",))):
+        for engine, options in engines:
             flags = ["-WF3", *options, "--debug-fault-action", "exit",
                      "--wasm-set-resource-limit", "runtime", "auxiliary-live-bytes"]
             stem = f"{route}-{engine}"
             run(stem + "-within-budget", [args.runtime, *flags, HIGH, "--run", wasm], 0)
             run(stem + "-over-budget", [args.runtime, *flags, LOW, "--run", wasm], 121, REASON)
             if args.baseline:
-                run(stem + "-baseline", [args.baseline, *flags, LOW, "--run", wasm], -signal.SIGILL)
+                run(stem + "-baseline", [args.baseline, *flags, LOW, "--run", wasm], 121, REASON)
+    source = encode("transfer-source", transfer_source())
+    retain = encode("transfer-retain", transfer_receiver(retain=True))
+    discard = encode("transfer-discard", transfer_receiver(retain=False))
+    for name, wasm in (("retain", retain), ("discard", discard)):
+        run(f"transfer-{name}-oracle",
+            [args.wasmtime, "run", "-W", "exceptions=y", "-W", "gc=y", "--preload", f"source={source}", wasm], 0)
+    for engine, options in engines:
+        flags = ["-WF3", *options, "--debug-fault-action", "exit", "--wasm-preload-library", source, "source",
+                 "--wasm-set-resource-limit", "runtime", "auxiliary-live-bytes"]
+        stem = f"transfer-{engine}"
+        run(stem + "-discard", [args.runtime, *flags, TRANSFER_LOW, "--run", discard], 0)
+        run(stem + "-within-budget", [args.runtime, *flags, HIGH, "--run", retain], 0)
+        run(stem + "-over-budget", [args.runtime, *flags, TRANSFER_LOW, "--run", retain], 121, REASON)
+        if args.baseline:
+            run(stem + "-baseline-discard", [args.baseline, *flags, TRANSFER_LOW, "--run", discard], 0)
+            run(stem + "-baseline", [args.baseline, *flags, TRANSFER_LOW, "--run", retain], -signal.SIGILL)
     results["complete"] = True
     save()
 

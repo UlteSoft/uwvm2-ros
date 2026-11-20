@@ -16893,20 +16893,25 @@ namespace uwvm2::runtime::lib
         }
 #endif
 
-        /// @brief Publish the actual owned exception through the GC store.
-        inline ::std::uintptr_t issue_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_store const& store,
-            ::uwvm2::runtime::exception::value_ref const& value, ::std::uintptr_t destination) noexcept
+        /// @brief Route an exception reference operation through the existing runtime fault policy.
+        inline void require_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_status status) noexcept
         {
-            if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
-            ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
             using status_type = ::uwvm2::uwvm::runtime::storage::gc_object_status;
-            auto const status{store.make_exn_reference(value, reference)};
             if(status != status_type::ok) [[unlikely]]
             {
                 if(status == status_type::out_of_memory || status == status_type::size_overflow)
                 { trap_fatal(trap_kind::gc_allocation_failure); }
                 ::fast_io::fast_terminate();
             }
+        }
+
+        /// @brief Publish the actual owned exception through the GC store.
+        inline ::std::uintptr_t issue_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_store const& store,
+            ::uwvm2::runtime::exception::value_ref const& value, ::std::uintptr_t destination) noexcept
+        {
+            if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
+            ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
+            require_native_exception_reference(store.make_exn_reference(value, reference));
             // The generated caller supplies one complete writable native carrier.
             ::std::memcpy(reinterpret_cast<void*>(destination), ::std::addressof(reference), sizeof(reference));
             return reinterpret_cast<::std::uintptr_t>(reference.storage.ptr);
@@ -17120,8 +17125,7 @@ namespace uwvm2::runtime::lib
             {
                 ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
                 ::std::memcpy(::std::addressof(reference), field_bits.data(), sizeof(reference));
-                if(store.retain_gc_reference(reference) != ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                { ::fast_io::fast_terminate(); }
+                require_native_exception_reference(store.retain_gc_reference(reference));
                 // The receiving store owns its local roots; foreign references receive an
                 // independent lease without making an exception -> own-store ownership cycle.
                 field = ::uwvm2::runtime::exception::payload_field::wasm_reference(field_bits, store.root_reference(reference));
@@ -17179,8 +17183,7 @@ namespace uwvm2::runtime::lib
                 auto const bits{fields[i].bits()};
                 ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
                 ::std::memcpy(::std::addressof(reference), bits.data(), sizeof(reference));
-                if(store.retain_gc_reference(reference) != ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                { ::fast_io::fast_terminate(); }
+                require_native_exception_reference(store.retain_gc_reference(reference));
             }
         }
         // [generated native alloca: exactly bytes writable bytes] end
@@ -17229,8 +17232,7 @@ namespace uwvm2::runtime::lib
         if(reference.kind == ref_kind::wasm_null ||
            (reference.kind == ref_kind::wasm_exn && reference.storage.ptr == nullptr)) [[unlikely]]
         { trap_fatal(trap_kind::null_reference); }
-        if(store.retain_gc_reference(reference) != ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-        { ::fast_io::fast_terminate(); }
+        require_native_exception_reference(store.retain_gc_reference(reference));
         auto value{
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             source_exception_guest_bridge::try_publish_ref(module_id,reference)

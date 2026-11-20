@@ -108,6 +108,13 @@ receiving module keeps its exception roots until the store is retired.
 Overwriting a table or dropping a reference therefore does not immediately
 refund that registry allocation.
 
+Moving an exception reference in a typed exception payload can also consume
+auxiliary budget. The receiving module needs a root for each token it retains
+for the first time. Later transfers of the same token into that module reuse
+the existing root. A resource refusal while retaining a payload reference uses
+the GC allocation fault policy. A handler that discards the payload does not
+create roots for its fields.
+
 ## Collection pressure and measurement
 
 Large managed arrays contribute to the normal collection-pressure decision
