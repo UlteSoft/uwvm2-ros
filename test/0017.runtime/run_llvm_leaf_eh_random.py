@@ -55,6 +55,7 @@ def make_case(rng, index, route):
     effect = "i32.const 1 global.set $effect " if route == "effect" else ""
     leaf = f"{effect}{reorder} throw {tag}" if route != "ordinary" else reorder
     callee_results = result if route == "ordinary" else ""
+    caller_locals = ""
 
     if route == "catch_all":
         # The later same-tag clause can never be selected.
@@ -97,6 +98,12 @@ def make_case(rng, index, route):
               throw_ref)
             unreachable)
             {' '.join(expected)}"""
+        # Visit one static capture site twice in the same activation.
+        caller_locals = "(local $round i32)"
+        execution = f"""(loop $again
+            {execution}
+            local.get $round i32.const 1 i32.add local.tee $round
+            i32.const 2 i32.lt_u br_if $again)"""
     else:
         success = "br $caught" if route == "ordinary" else ""
         execution = f"""(block $caught {result}
@@ -107,7 +114,7 @@ def make_case(rng, index, route):
     return f"""(tag {tag} {clause("param", payload)})
         (tag {other} {clause("param", payload)})
         (func {callee} {clause("param", parameters)} {callee_results} {leaf})
-        (func {caller} {execution})"""
+        (func {caller} {caller_locals} {execution})"""
 
 
 def module(rng, batches, routes):

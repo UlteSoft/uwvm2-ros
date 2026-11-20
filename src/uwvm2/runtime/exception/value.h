@@ -337,6 +337,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         mutable ::std::mutex materialization_{};
         mutable bool names_materialized_{};
         bool truncated_{};
+        bool native_boundary_confirmed_{};
         class construction_key
         {
             friend class diagnostic_trace;
@@ -354,8 +355,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         explicit inline diagnostic_trace(construction_key, ::uwvm2::utils::container::std_vector<diagnostic_frame>&& frames, bool truncated) noexcept
             : frames_{::std::move(frames)}, truncated_{truncated} {}
         explicit inline diagnostic_trace(construction_key, diagnostic_symbols_ref symbols,
-            ::uwvm2::utils::container::std_vector<diagnostic_frame_index>&& indices, bool truncated) noexcept
-            : indices_{::std::move(indices)}, symbols_{::std::move(symbols)}, truncated_{truncated} {}
+            ::uwvm2::utils::container::std_vector<diagnostic_frame_index>&& indices, bool truncated,
+            bool native_boundary_confirmed) noexcept
+            : indices_{::std::move(indices)}, symbols_{::std::move(symbols)}, truncated_{truncated},
+              native_boundary_confirmed_{native_boundary_confirmed} {}
 
         // A host-only builder supplies innermost-to-outermost frames. Passing an lvalue copies it;
         // moving an exclusive builder avoids duplicating every name on the actual throw cold path.
@@ -364,16 +367,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::exception
         { return ::uwvm2::utils::container::make_shared<diagnostic_trace>(construction_key{}, ::std::move(frames), truncated); }
 
         [[nodiscard]] static inline diagnostic_trace_ref make_compact(diagnostic_symbols_ref symbols,
-            ::uwvm2::utils::container::std_vector<diagnostic_frame_index> indices, bool truncated = false) UWVM_THROWS
+            ::uwvm2::utils::container::std_vector<diagnostic_frame_index> indices, bool truncated = false,
+            bool native_boundary_confirmed = false) UWVM_THROWS
         {
             // Reject even nonempty aliases with the wrong control block
             // before a compact trace claims independent symbol ownership.
             if(!diagnostic_symbols::has_canonical_owner(symbols)) { return {}; }
             for(auto const index: indices) { if(!symbols->contains(index)) { return {}; } }
-            return ::uwvm2::utils::container::make_shared<diagnostic_trace>(construction_key{}, ::std::move(symbols), ::std::move(indices), truncated);
+            return ::uwvm2::utils::container::make_shared<diagnostic_trace>(
+                construction_key{}, ::std::move(symbols), ::std::move(indices), truncated, native_boundary_confirmed);
         }
 
         [[nodiscard]] inline bool truncated() const noexcept { return truncated_; }
+        /// @brief Check that this complete snapshot begins at the proven live activation.
+        [[nodiscard]] inline bool matches_compact_origin(
+            diagnostic_symbols_ref const& symbols, diagnostic_frame_index first) const noexcept
+        {
+            return native_boundary_confirmed_ && !truncated_ && symbols_ && symbols_.get() == symbols.get() &&
+                   !symbols_.owner_before(symbols) && !symbols.owner_before(symbols_) && !indices_.empty() &&
+                   indices_.front().module_id == first.module_id && indices_.front().function_index == first.function_index;
+        }
+
         [[nodiscard]] inline ::std::size_t frame_count() const noexcept
         { return symbols_ ? indices_.size() : frames_.size(); }
 

@@ -7493,6 +7493,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     ::llvm::Argument* pending_numeric_context{};
 
     bool native_guest_exceptions{};
+    bool emitted_exception_trace_token{}; // one weak cache site per ordinary native function
     ::llvm::BasicBlock* native_exception_cleanup{}; // same function-owned frame cleanup
     ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declarations native_exception_imports{};
     ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::catch_runtime native_exception_runtime{};

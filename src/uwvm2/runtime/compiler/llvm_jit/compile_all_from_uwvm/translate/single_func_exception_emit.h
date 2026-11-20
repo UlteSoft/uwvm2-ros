@@ -553,15 +553,46 @@ struct llvm_jit_leaf_handler_match
     if(slot == nullptr) { return false; }
 
     auto const intptr{builder.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
-    auto const bridge_type{::llvm::FunctionType::get(builder.getVoidTy(), {intptr, intptr, intptr, intptr, intptr}, false)};
-    auto const bridge{get_llvm_runtime_bridge_function_symbol_value<
-        ::uwvm2::runtime::lib::details::llvm_jit_capture_numeric_exception_abi_bridge>(builder, bridge_type)};
+    ::llvm::SmallVector<::llvm::Value*, 8u> arguments{
+        ::llvm::ConstantInt::get(intptr, state.local_func_storage_ptr->module_id), ::llvm::ConstantInt::get(intptr, tag_index),
+        address, ::llvm::ConstantInt::get(intptr, bytes), builder.CreatePtrToInt(slot, intptr)};
+    ::llvm::FunctionType* bridge_type{};
+    ::llvm::Value* bridge{};
+#if defined(__linux__) && defined(__x86_64__)
+    if(!state.emitted_exception_trace_token && state.emit_unwind_call_stack_frames && state.self_tail_entry_block != nullptr &&
+       ::std::ranges::any_of(state.control_stack, [](auto const& context) constexpr noexcept
+       { return context.type == llvm_jit_control_context_type::loop; }))
+    {
+        auto const token_slot{create_llvm_jit_entry_block_alloca(builder, intptr, nullptr, "guest.eh.trace.token")};
+        if(token_slot == nullptr) { return false; }
+        token_slot->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
+        // A self-tail backedge begins a logical activation here too. Explicit
+        // initialization prevents reuse across either kind of frame reentry.
+        auto const entry{state.self_tail_entry_block};
+        ::llvm::IRBuilder<> activation_entry{entry, entry->getFirstInsertionPt()};
+        auto const reset{activation_entry.CreateStore(::llvm::ConstantInt::get(intptr, 0u), token_slot)};
+        reset->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
+        arguments.push_back(::llvm::ConstantInt::get(intptr, state.local_func_storage_ptr->function_index));
+        arguments.push_back(state.gc_root_frame.frame == nullptr ? ::llvm::ConstantInt::get(intptr, 0u) :
+                            builder.CreatePtrToInt(state.gc_root_frame.frame, intptr));
+        arguments.push_back(builder.CreatePtrToInt(token_slot, intptr));
+        bridge_type = ::llvm::FunctionType::get(builder.getVoidTy(), {intptr, intptr, intptr, intptr, intptr, intptr, intptr, intptr}, false);
+        bridge = get_llvm_runtime_bridge_function_symbol_value<
+            ::uwvm2::runtime::lib::details::llvm_jit_capture_numeric_exception_reuse_trace_abi_bridge>(builder, bridge_type);
+        state.emitted_exception_trace_token = true;
+    }
+    else
+#endif
+    {
+        bridge_type = ::llvm::FunctionType::get(builder.getVoidTy(), {intptr, intptr, intptr, intptr, intptr}, false);
+        bridge = get_llvm_runtime_bridge_function_symbol_value<
+            ::uwvm2::runtime::lib::details::llvm_jit_capture_numeric_exception_abi_bridge>(builder, bridge_type);
+    }
     if(bridge == nullptr) { return false; }
     // Host errors still retire this frame's GC and logical owners. The bridge
     // returns a normal carrier on success and never raises a guest exception.
-    auto const issued{apply_llvm_jit_host_calling_conv(emit_runtime_local_func_llvm_jit_may_throw_call(state, bridge_type, bridge,
-        {::llvm::ConstantInt::get(intptr, state.local_func_storage_ptr->module_id), ::llvm::ConstantInt::get(intptr, tag_index),
-         address, ::llvm::ConstantInt::get(intptr, bytes), builder.CreatePtrToInt(slot, intptr)}, false))};
+    auto const issued{apply_llvm_jit_host_calling_conv(
+        emit_runtime_local_func_llvm_jit_may_throw_call(state, bridge_type, bridge, arguments, false))};
     if(issued == nullptr) { return false; }
 
     ::uwvm2::utils::container::validation_vector<llvm_jit_stack_value_t> values{};

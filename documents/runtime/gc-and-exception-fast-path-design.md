@@ -233,6 +233,24 @@ trace. Native errors from the bridge still use the function's existing
 cleanup edge. A reference catcher in a different function and any tuple
 that carries reference payloads use native propagation.
 
+On Linux x86-64, the first eligible capture site inside a Wasm loop can
+reuse the compact stack of an earlier capture at that site. The LLVM emitter
+resets a private token slot on function entry and on direct self-tail
+reentry. Recursion allocates a separate slot for each frame. Only the
+generated capture call receives the slot address. The runtime checks the
+original tag, the current diagnostic symbol owner, the first Wasm frame
+and the active GC root frame when present. A trace qualifies only after
+the native unwind reached the proven outer boundary and completed the
+logical frame merge.
+
+The slot holds an opaque registry token and adds no GC root. A retired
+token or incomplete snapshot triggers a fresh unwind. Each capture still
+creates its own payload and issues its own exception reference. An escaped
+reference keeps the original immutable trace after the producing
+activation ends. Debug, checkpoint and other ineligible paths keep their
+existing capture behavior.
+[Activation regression](../../test/0017.runtime/llvm_eh_capture_activation_trace.wat)
+
 In a memory-fed Linux x86-64 workload, each of 100,000 throws retains a
 reference in one of 64 table slots. After timing, the workload rethrows
 every retained reference and checks its payload against the original data.
@@ -241,6 +259,19 @@ The seven-run median fell from 504.541 ms to 217.915 ms. Native
 The native reference keeps the exception payload without the VM's stack
 snapshot. Ordinary control medians were 83.415 µs and 82.870 µs in the VM
 builds. Both were built with `-O3 -g`.
+
+With activation-local trace reuse, the same 100,000-capture workload took
+15.487 ms against 220.468 ms in a new paired run. Native C++ with
+`std::exception_ptr` took 39.641 ms and Wasmtime Cranelift took 12.806 ms.
+A separate control made 16 million indirect calls to a function that
+contains a cold capture. It verified zero catches during timing, then
+entered that handler and checked its retained payload. The two VM medians
+were 23.072 ms and 23.069 ms.
+
+GDB observed ten captures in the baseline fixture and five with reuse.
+The retained exception traces preserved distinct caller and recursive
+frames. A separate test exceeded the bounded unwind depth and produced
+the same truncated trace on both builds, with two real captures each.
 
 The local-capture regression checks bit-exact numeric fields, tag ordering,
 preserved local and operand-stack roots, and a reference catch targeting a

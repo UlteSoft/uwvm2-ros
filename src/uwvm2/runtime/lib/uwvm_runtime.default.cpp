@@ -3300,7 +3300,7 @@ namespace uwvm2::runtime::lib
                 // Preserve the actual native/legacy merge order without
                 // resolving or copying names on a frequently caught throw.
                 auto trace{::uwvm2::runtime::exception::diagnostic_trace::make_compact(
-                    g_runtime.exception_diagnostic_symbols, ::std::move(identities), truncated)};
+                    g_runtime.exception_diagnostic_symbols, ::std::move(identities), truncated, backtrace.stopped_at_boundary)};
                 if(!trace) [[unlikely]] { ::fast_io::fast_terminate(); }
                 return trace;
             }
@@ -16894,7 +16894,7 @@ namespace uwvm2::runtime::lib
 #endif
 
         /// @brief Publish the actual owned exception through the GC store.
-        inline void issue_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_store const& store,
+        inline ::std::uintptr_t issue_native_exception_reference(::uwvm2::uwvm::runtime::storage::gc_object_store const& store,
             ::uwvm2::runtime::exception::value_ref const& value, ::std::uintptr_t destination) noexcept
         {
             if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -16904,6 +16904,7 @@ namespace uwvm2::runtime::lib
             { ::fast_io::fast_terminate(); }
             // The generated caller supplies one complete writable native carrier.
             ::std::memcpy(reinterpret_cast<void*>(destination), ::std::addressof(reference), sizeof(reference));
+            return reinterpret_cast<::std::uintptr_t>(reference.storage.ptr);
         }
     }
 
@@ -16955,6 +16956,72 @@ namespace uwvm2::runtime::lib
 #else
         static_cast<void>(module_id); static_cast<void>(tag_index); static_cast<void>(buffer_address);
         static_cast<void>(bytes); static_cast<void>(destination);
+        ::fast_io::fast_terminate();
+#endif
+    }
+
+    /// @brief Reuse an immutable trace from the same live activation without rooting its older exception.
+    extern "C++" void details::llvm_jit_capture_numeric_exception_reuse_trace_abi_bridge(
+        ::std::uintptr_t module_id, ::std::uintptr_t tag_index, ::std::uintptr_t buffer_address, ::std::size_t bytes,
+        ::std::uintptr_t destination, ::std::uintptr_t function_index, ::std::uintptr_t frame_address,
+        ::std::uintptr_t trace_token_slot) UWVM_THROWS
+    {
+#ifdef UWVM_CPP_EXCEPTIONS
+        if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
+        auto const& tag{native_exception_tag(module_id, tag_index)};
+        auto const& store{native_exception_receiving_store(module_id)};
+        auto fields{decode_native_exception_numeric_fields(tag, buffer_address, bytes)};
+        namespace exn = ::uwvm2::runtime::exception;
+        namespace gc = ::uwvm2::runtime::gc;
+        namespace storage = ::uwvm2::uwvm::runtime::storage;
+        auto const cache_allowed{trace_token_slot != 0u &&
+            runtime_llvm_jit_unwind_call_stack_requested() && runtime_llvm_jit_unwind_can_replace_instruction_frames() &&
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
+            g_runtime.debug_pause_control == nullptr &&
+#endif
+            (frame_address == 0u || reinterpret_cast<gc::root_frame const*>(frame_address) == gc::current_root_frames())};
+        exn::diagnostic_frame_index const first{module_id, function_index};
+        exn::diagnostic_trace_ref trace{};
+        if(cache_allowed)
+        {
+            // The compiler initialized this single machine word in the actual
+            // activation. It carries only a weak nonrecycled registry token.
+            ::std::uintptr_t token{};
+            ::std::memcpy(::std::addressof(token), reinterpret_cast<void const*>(trace_token_slot), sizeof(token));
+            if(token != 0u)
+            {
+                storage::gc_reference reference{};
+                reference.kind = ::uwvm2::object::global::wasm_ref_kind::wasm_exn;
+                reference.storage.ptr = reinterpret_cast<void*>(token);
+                auto const previous{storage::gc_object_store::lookup_exn_reference(reference)};
+                if(previous && previous->tag_identity() == tag.exception_identity.get())
+                {
+                    auto const& saved{previous->diagnostic()};
+                    if(saved && saved->matches_compact_origin(g_runtime.exception_diagnostic_symbols, first))
+                    { trace = saved; }
+                }
+            }
+        }
+        bool refresh_cache{static_cast<bool>(trace)};
+        if(!trace)
+        {
+            trace = capture_runtime_exception_trace();
+            refresh_cache = cache_allowed && trace->matches_compact_origin(g_runtime.exception_diagnostic_symbols, first);
+        }
+        auto const value{exn::value::make_owned(tag.exception_identity, ::std::move(fields), ::std::move(trace))};
+        if(!value) [[unlikely]] { ::fast_io::fast_terminate(); }
+        auto const token{issue_native_exception_reference(store, value, destination)};
+        if(cache_allowed)
+        {
+            // Updating this private word never retains the prior token. Each
+            // successful issuance returns a new actual exception and carrier.
+            auto const saved_token{refresh_cache ? token : 0u};
+            ::std::memcpy(reinterpret_cast<void*>(trace_token_slot), ::std::addressof(saved_token), sizeof(saved_token));
+        }
+#else
+        static_cast<void>(module_id); static_cast<void>(tag_index); static_cast<void>(buffer_address);
+        static_cast<void>(bytes); static_cast<void>(destination); static_cast<void>(function_index);
+        static_cast<void>(frame_address); static_cast<void>(trace_token_slot);
         ::fast_io::fast_terminate();
 #endif
     }
