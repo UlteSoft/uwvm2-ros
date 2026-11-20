@@ -16899,9 +16899,14 @@ namespace uwvm2::runtime::lib
         {
             if(destination == 0u) [[unlikely]] { ::fast_io::fast_terminate(); }
             ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
-            if(store.make_exn_reference(value, reference) !=
-               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-            { ::fast_io::fast_terminate(); }
+            using status_type = ::uwvm2::uwvm::runtime::storage::gc_object_status;
+            auto const status{store.make_exn_reference(value, reference)};
+            if(status != status_type::ok) [[unlikely]]
+            {
+                if(status == status_type::out_of_memory || status == status_type::size_overflow)
+                { trap_fatal(trap_kind::gc_allocation_failure); }
+                ::fast_io::fast_terminate();
+            }
             // The generated caller supplies one complete writable native carrier.
             ::std::memcpy(reinterpret_cast<void*>(destination), ::std::addressof(reference), sizeof(reference));
             return reinterpret_cast<::std::uintptr_t>(reference.storage.ptr);

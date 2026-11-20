@@ -78,6 +78,8 @@ original backing owner's charge and do not charge the same memory twice.
   recoverable WASI host vectors/scatter arrays and the threaded poll/I/O/socket
   scratch arrays. Existing WASI bad-allocation
   handling returns `ENOMEM`; do not interpret it as permission refusal.
+  Exception reference registry entries and module roots also draw from this
+  budget.
 * **Threads:** native Wasm-thread stacks and the existing per-child bounded
   construction account. The construction account conservatively retains all
   charged requests until its last owner dies, even if construction scratch
@@ -98,6 +100,13 @@ GC allocation failure is a classified execution fault: the default action is
 `crash`; `--debug-fault-action exit` returns 121, and `pause` retains the
 configured diagnostic pause behavior. No failed allocation is treated as a
 successful allocation or silently retried with reduced protection.
+
+Publishing the exception reference for `catch_ref` or `catch_all_ref` uses the
+same execution fault policy when the auxiliary budget or the exception
+reference identity space is exhausted. In the standard collector build, the
+receiving module keeps its exception roots until the store is retired.
+Overwriting a table or dropping a reference therefore does not immediately
+refund that registry allocation.
 
 ## Collection pressure and measurement
 

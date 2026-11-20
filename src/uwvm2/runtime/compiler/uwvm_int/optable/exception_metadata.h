@@ -148,9 +148,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if(spec.with_reference)
                 {
                     ::uwvm2::uwvm::runtime::storage::gc_reference reference{};
-                    if(spec.receiving_store->make_exn_reference(instance, reference) !=
-                       ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                    { ::fast_io::fast_terminate(); }
+                    using status_type = ::uwvm2::uwvm::runtime::storage::gc_object_status;
+                    auto const status{spec.receiving_store->make_exn_reference(instance, reference)};
+                    if(status != status_type::ok) [[unlikely]]
+                    {
+                        if((status == status_type::out_of_memory || status == status_type::size_overflow) &&
+                           trap_gc_allocation_failure_func != nullptr)
+                        { trap_gc_allocation_failure_func(); }
+                        ::fast_io::fast_terminate();
+                    }
                     // [validated payload][full 16-byte exnref][spare operand capacity]
                     // [safe           ^^^^^^^^^^^^^^^^^^^^^] factory reserved the complete carrier.
                     //                  ^^ cursor advances only after memcpy, possibly to one-past.
