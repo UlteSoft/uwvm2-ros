@@ -7,6 +7,10 @@
 typedef unsigned u32;
 typedef unsigned long long u64;
 
+#ifndef TEST_OUTPUT_REPETITIONS
+#define TEST_OUTPUT_REPETITIONS 1u
+#endif
+
 struct iovec
 {
     char const* data;
@@ -31,5 +35,8 @@ void _start(void)
         output.size = sizeof("AOT-WASI-DENIED:76\n") - 1;
     }
     else if(status != 0 || timestamp == 0) { __builtin_trap(); }
-    if(fd_write(1, &output, 1, &written) != 0 || written != output.size) { __builtin_trap(); }
+    for(unsigned i = 0; i != TEST_OUTPUT_REPETITIONS; ++i)
+    {
+        if(fd_write(1, &output, 1, &written) != 0 || written != output.size) { __builtin_trap(); }
+    }
 }

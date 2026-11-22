@@ -8,11 +8,23 @@
 #define TEST_MODULE "uwvm_ros2_v1"
 #endif
 
-__attribute__((import_module(TEST_MODULE), import_name("abi_version"))) extern unsigned ros_abi_version(void);
+#if defined(TEST_SCENE_ABI)
+#define TEST_INTERFACE "abi"
+#define TEST_VERSION 2u
+#else
+#define TEST_INTERFACE "abi_version"
+#define TEST_VERSION 1u
+#endif
+#ifdef TEST_NONDELEGATED_SCENE_CALL
+#undef TEST_VERSION
+#define TEST_VERSION 13u
+#endif
+
+__attribute__((import_module(TEST_MODULE), import_name(TEST_INTERFACE))) extern unsigned ros_abi_version(void);
 
 __attribute__((export_name("check_version"))) void check_version(void)
 {
-    if(ros_abi_version() != 1u) { __builtin_trap(); }
+    if(ros_abi_version() != TEST_VERSION) { __builtin_trap(); }
 }
 
 void _start(void)
