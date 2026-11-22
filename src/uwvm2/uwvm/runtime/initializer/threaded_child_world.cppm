@@ -63,6 +63,7 @@ import uwvm2.uwvm.imported.wasi.wasip1.storage;
 import uwvm2.uwvm.wasm;
 import uwvm2.uwvm.runtime.storage;
 import uwvm2.runtime.memtag.static_allocation;
+import uwvm2.extension.memtag.storage;
 #ifndef UWVM_MODULE
 #define UWVM_MODULE
 #endif

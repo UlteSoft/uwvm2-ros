@@ -30,6 +30,8 @@
     using custom_type=::uwvm2::parser::wasm::standard::wasm1::features::custom_section_storage_t;
     auto const& custom{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<custom_type>(
         file.wasm_module_storage.wasm_binfmt_ver1_storage.sections)};
+    ::std::array<::uwvm2::runtime::memtag::static_color_usage<16>,
+        ::std::tuple_size_v<decltype(s.pending_directories)>> static_colors{};
     for(auto const& section:custom.customs)
     {
         if(section.custom_name!=mt::linear_globals_section_name) { continue; }
@@ -48,11 +50,11 @@
                 auto const last{(descriptor.address+descriptor.byte_length-1u)/mt::granule_size};
                 ::std::uint8_t tag{};
                 valid=::uwvm2::runtime::memtag::reserve_static_extent(
-                    s.pending_directories[descriptor.memory_index],mt::address_width::i32,false,
+                    s.pending_directories[descriptor.memory_index],
                     memory.allocation_tags.size(),first,last,
                     [&](::std::uint64_t i, ::std::uint8_t& value) noexcept
                     { value=memory.allocation_tags[static_cast<::std::size_t>(i)];return true; },
-                    ::uwvm2::runtime::memtag::next_random_tag,tag);
+                    ::uwvm2::runtime::memtag::next_random_tag,static_colors[descriptor.memory_index],tag);
                 if(valid)
                 {
                     for(auto i{first};i<=last;++i) { memory.allocation_tags[static_cast<::std::size_t>(i)]=tag; }

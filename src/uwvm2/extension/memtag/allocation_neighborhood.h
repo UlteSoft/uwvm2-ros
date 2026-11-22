@@ -4,6 +4,7 @@
 # include <array>
 # include <bit>
 # include <cstdint>
+# include <span>
 # include "instruction.h"
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -94,6 +95,51 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 unsigned const value{wide_ ? unsigned(tag) : unsigned(tag & 15u)};
                 available_[value >> 6u] &= ~(word{1} << (value & 63u));
             }
+        }
+
+        /// @brief Identify the tag as seen by this owner's effective comparison.
+        [[nodiscard]] constexpr unsigned tag_class(unsigned tag) const noexcept
+        { return wide_ && !physical_ ? tag : tag & 15u; }
+
+        [[nodiscard]] constexpr bool empty() const noexcept
+        { return !(available_[0] | available_[1] | available_[2] | available_[3]); }
+
+        /// @brief Narrow the legal set if it intersects another set from the same owner.
+        [[nodiscard]] constexpr bool prefer(allocation_neighborhood const& subset) noexcept
+        {
+            auto intersection{available_};
+            for (unsigned i{}; i != intersection.size(); ++i) { intersection[i] &= subset.available_[i]; }
+            if (!(intersection[0] | intersection[1] | intersection[2] | intersection[3])) { return false; }
+            available_ = intersection;
+            return true;
+        }
+
+        /// @brief Keep the legal colors shared by the fewest permanent extents.
+        /// @details The startup planner supplies owner-local counts. Hard
+        /// exclusions are applied first, and dynamic allocations skip this step.
+        [[nodiscard]] constexpr bool prefer_least_used(::std::span<::std::uint64_t const> counts) noexcept
+        {
+            if (counts.size() <= tag_class(255u)) { return false; }
+            ::std::array<word, 4> preferred{};
+            ::std::uint64_t least{UINT64_MAX};
+            unsigned const words{wide_ && !physical_ ? 4u : 1u};
+            for (unsigned i{}; i != words; ++i)
+            {
+                for (word bits{physical_ ? available_[i] & 0xffffu : available_[i]}; bits; bits &= bits - 1u)
+                {
+                    auto const bit{static_cast<unsigned>(::std::countr_zero(bits))};
+                    auto const count{counts[64u * i + bit]};
+                    if (count < least)
+                    {
+                        preferred = {};
+                        least = count;
+                    }
+                    if (count == least) { preferred[i] |= word{1} << bit; }
+                }
+            }
+            if (physical_) { preferred.fill(preferred[0] * UINT64_C(0x0001000100010001)); }
+            available_ = preferred;
+            return true;
         }
 
         /// @brief Produce a tag only on success. Reject the incomplete entropy

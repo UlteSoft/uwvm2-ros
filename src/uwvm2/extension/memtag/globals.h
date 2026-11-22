@@ -135,6 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     {
         ::std::uintptr_t owner{};
         ::std::uint64_t first_granule{}, last_granule{};
+        ::std::size_t plan_index{};
     };
 
     // Independently assigning tags to one shared granule is forbidden,

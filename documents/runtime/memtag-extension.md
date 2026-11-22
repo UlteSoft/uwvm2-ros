@@ -425,11 +425,17 @@ The initializer reserves colors for every permanent global before publishing
 the first shadow change. A reservation excludes other objects on either side
 with at most 64 intervening bytes, including descriptors from another module
 importing the same memory. The selection sees both occupied shadow granules and
-unpublished reservations. A private thread instance uses its own directory.
-Threads borrowing a shared memory reuse the existing owner's directory.
+unpublished reservations. Among the remaining colors, it samples uniformly
+from the colors used by the fewest permanent objects on that owner. Hardware
+MTE counts colors by their low four bits. Each allocation minimizes the number
+of new same-color permanent pairs for the current set of legal colors. Distant
+objects can still share a color. Managed heap and stack allocations continue
+to sample over all legal colors. A private thread instance uses its own
+directory. Threads borrowing a shared memory reuse the existing owner's
+directory.
 
 A signed memory reset stages the replacement tag image and its permanent
-directory while execution is drained. A tagged migration may copy a complete
+directory with the same selection policy while execution is drained. A tagged migration may copy a complete
 permanent extent to a matching permanent extent. It must preserve one color
 across the whole destination and the required distance from its neighbors,
 including raw colored padding. Partial transfers and copies of dynamic lifetimes

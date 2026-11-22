@@ -134,17 +134,18 @@ template<initialization_purpose Purpose>
             if(!existing) { memories.push_back({memory,width,shared}); }
         }
     }
+    ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
     if(!globals.empty())
     {
-        ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
         global_ranges.reserve(globals.size());
-        for(auto const& global:globals)
+        for(::std::size_t i{};i<globals.size();++i)
         {
+            auto const& global{globals[i]};
             // Byte bounds were proved above, and only nonempty descriptors
             // enter the plan. Compare granules after canonical alias routing.
             global_ranges.push_back({reinterpret_cast<::std::uintptr_t>(global.memory),
                 global.address >> mt::granule_size_log2,
-                (global.address+global.bytes-1u) >> mt::granule_size_log2});
+                (global.address+global.bytes-1u) >> mt::granule_size_log2, i});
         }
         if(!mt::validate_global_tag_ranges(global_ranges))
         { return mt_init::error({},u8"linear globals descriptors overlap an allocation-tag granule on the same memory owner"); }
@@ -180,24 +181,38 @@ template<initialization_purpose Purpose>
     {
         while(published)
         {
-            auto const& g{globals[--published]};
+            auto const& g{globals[global_ranges[--published].plan_index]};
             (void)rt_mt::write_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,0);
         }
         while(staged)
         {
-            auto const& g{globals[--staged]};
+            auto const& g{globals[global_ranges[--staged].plan_index]};
             (void)g.memory->memory.memtag_shadow.allocation_directory().remove_permanent(
                 g.address/mt::granule_size,(g.address+g.bytes-1u)/mt::granule_size,g.tag);
         }
     };
-    for(auto& g:globals)
+    rt_mt::static_color_usage<> static_colors{};
+    mt_init::owner const* counted_owner{};
+    for(auto const& range:global_ranges)
     {
-        if(!rt_mt::stage_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,g.tag))
+        auto& g{globals[range.plan_index]};
+        auto& shadow{g.memory->memory.memtag_shadow};
+        if(counted_owner!=g.memory)
+        {
+            counted_owner=g.memory;
+            static_colors={shadow.width(),shadow.hardware_selected()};
+            shadow.allocation_directory().visit(0u,UINT64_MAX,[&](auto const& item) noexcept
+            {
+                if(item.permanent) { static_colors.record(item.tag); }
+            });
+        }
+        if(!rt_mt::stage_static_allocation(shadow,g.address,g.bytes,static_colors,g.tag))
         { rollback(); return mt_init::error({},u8"cannot reserve a disjoint neighboring color for a linear global"); }
         ++staged;
     }
-    for(auto const& g:globals)
+    for(auto const& range:global_ranges)
     {
+        auto const& g{globals[range.plan_index]};
         if(!rt_mt::write_static_allocation(g.memory->memory.memtag_shadow,g.address,g.bytes,g.tag))
         { rollback(); return mt_init::error({},u8"global tag publication failed"); }
         ++published;

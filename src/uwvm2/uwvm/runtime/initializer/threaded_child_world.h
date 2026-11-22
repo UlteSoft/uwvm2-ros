@@ -297,11 +297,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         [[nodiscard]] bool initialize_private_global_tags() const noexcept
         {
             namespace mt=::uwvm2::extension::memtag;
+            namespace rt_mt=::uwvm2::runtime::memtag;
             if(::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)return true;
             // Source sections were validated before admission. Resolve aliases
             // again against this private graph. Borrowed shared owners retain
             // their existing tags; only newly instantiated owners are tagged.
             using custom_t=::uwvm2::parser::wasm::standard::wasm1::features::custom_section_storage_t;
+            using shadow_key=mt::shadow_storage const*;
+            using color_usage=rt_mt::static_color_usage<>;
+            using color_allocator=threaded_std_allocator<::std::pair<shadow_key const,color_usage>>;
+            ::uwvm2::utils::container::std_map<shadow_key,color_usage,::std::less<shadow_key>,color_allocator>
+                static_colors{::std::less<shadow_key>{}, color_allocator{allocation_}};
             for(auto m:initialization_order_)
             {
                 auto const& parsed=file(m)->wasm_module_storage.wasm_binfmt_ver1_storage;
@@ -328,10 +334,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             if(!mem->memtag_shadow.enabled()){success=false;return;}
                             ::std::uint8_t tag{};
                             auto const& shadow{mem->memtag_shadow};
-                            success=::uwvm2::runtime::memtag::stage_static_allocation(
-                                shadow,descriptor.address,descriptor.byte_length,tag) &&
-                                ::uwvm2::runtime::memtag::write_static_allocation(
-                                    shadow,descriptor.address,descriptor.byte_length,tag);
+                            try
+                            {
+                                auto& colors{static_colors.try_emplace(&shadow,shadow.width(),shadow.hardware_selected()).first->second};
+                                success=rt_mt::stage_static_allocation(shadow,descriptor.address,descriptor.byte_length,colors,tag) &&
+                                    rt_mt::write_static_allocation(shadow,descriptor.address,descriptor.byte_length,tag);
+                            }
+                            catch(::std::bad_alloc const&) { success=false; }
                         });
                     if(!checked||!success)return false;
                 }

@@ -1,4 +1,6 @@
 module;
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 export module uwvm2.runtime.memtag.static_allocation;

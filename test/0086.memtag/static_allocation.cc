@@ -19,6 +19,7 @@ static void check_owner()
     constexpr unsigned raw_color = 7;
     assert(view.store(view.insert(0,raw_color),16));
     std::array<std::uint8_t,slots> tags{};
+    rt::static_color_usage counts{width,false};
     rt::tag_entropy_observer observer{nullptr, [](void*,std::uint8_t& value, bool(*)(std::uint8_t&) noexcept) noexcept
     { value=255;return true; }};
     rt::current_tag_entropy_observer=&observer;
@@ -27,11 +28,11 @@ static void check_owner()
     {
         auto const index=(n*127u)%slots;
         auto const address=(index+1u)*16u+3u;
-        assert(rt::stage_static_allocation(owner,address,7,tags[index]));
+        assert(rt::stage_static_allocation(owner,address,7,counts,tags[index]));
         assert(view.load(address).allocation_tag==0);
         if(index<5) { assert(tags[index]!=raw_color); }
         std::uint8_t unchanged{99};
-        assert(!rt::stage_static_allocation(owner,address+1u,1,unchanged) && unchanged==99);
+        assert(!rt::stage_static_allocation(owner,address+1u,1,counts,unchanged) && unchanged==99);
     }
     for(unsigned i=slots;i-- > 0;)
     {
@@ -43,15 +44,52 @@ static void check_owner()
     }
     rt::current_tag_entropy_observer=nullptr;
     std::uint8_t unchanged{99};
-    assert(!rt::stage_static_allocation(owner,bytes-1u,2,unchanged) && unchanged==99);
-    assert(!rt::stage_static_allocation(owner,0,1,unchanged) && unchanged==99);
-    assert(!rt::stage_static_allocation(owner,0,0,unchanged) && unchanged==99);
+    assert(!rt::stage_static_allocation(owner,bytes-1u,2,counts,unchanged) && unchanged==99);
+    assert(!rt::stage_static_allocation(owner,0,1,counts,unchanged) && unchanged==99);
+    assert(!rt::stage_static_allocation(owner,0,0,counts,unchanged) && unchanged==99);
     auto const spare=(slots+1u)*16u;
     rt::tag_entropy_observer failed{nullptr, [](void*,std::uint8_t&,bool(*)(std::uint8_t&) noexcept) noexcept { return false; }};
     rt::current_tag_entropy_observer=&failed;
-    assert(!rt::stage_static_allocation(owner,spare,1,unchanged) && unchanged==99);
+    auto const before{counts.counts()};
+    assert(!rt::stage_static_allocation(owner,spare,1,counts,unchanged) && unchanged==99);
+    assert(counts.counts()==before);
     rt::current_tag_entropy_observer=nullptr;
     assert(!owner.allocation_directory().exact(slots+1u,slots+1u));
+}
+
+static void check_distant_extents(mt::address_width width, bool physical, unsigned classes)
+{
+    constexpr unsigned step = 6u; // 80 bytes between single-granule extents.
+    auto const count = 2u*classes*step;
+    rt::static_color_usage counts{width,physical};
+    mt::managed_allocations directory;
+    auto shadow = [](std::uint64_t, std::uint8_t& out) noexcept { out=0; return true; };
+    auto entropy = [](std::uint8_t& out) noexcept { out=255; return true; };
+    for (unsigned n{}; n < 2u*classes; ++n)
+    {
+        auto const index = n*step;
+        std::uint8_t tag{};
+        assert(rt::reserve_static_extent(directory,count,index,index,shadow,entropy,counts,tag));
+        auto const color = physical ? tag & 15u : unsigned(tag);
+        assert(color > 0 && color <= classes && counts.counts()[color] == 1u + n/classes);
+    }
+    for (unsigned i{}; i <= classes; ++i) { assert(counts.counts()[i] == (i ? 2u : 0u)); }
+}
+
+static void check_excluded_minimum(mt::address_width width, bool physical)
+{
+    rt::static_color_usage usage{width,physical};
+    for (unsigned i{2}; i <= (physical || width == mt::address_width::i32 ? 15u : 255u); ++i)
+    { usage.record(static_cast<std::uint8_t>(i)); }
+    auto legal{usage.legal_colors()};
+    legal.forbid(1);
+    std::uint8_t tag{};
+    assert(usage.prefer_least_used(legal) && legal.select(65535,tag)==mt::tag_selection::selected);
+    assert(legal.tag_class(tag)!=1 && usage.counts()[legal.tag_class(tag)]==1);
+    usage.record(tag);
+    legal=usage.legal_colors();
+    assert(usage.prefer_least_used(legal) && legal.select(65535,tag)==mt::tag_selection::selected);
+    assert(legal.tag_class(tag)==1);
 }
 
 int main()
@@ -75,4 +113,10 @@ int main()
     check_owner<std::uint32_t,true>();
     check_owner<std::uint64_t,false>();
     check_owner<std::uint64_t,true>();
+    check_distant_extents(mt::address_width::i32,false,15);
+    check_distant_extents(mt::address_width::i64,false,255);
+    check_distant_extents(mt::address_width::i64,true,15);
+    check_excluded_minimum(mt::address_width::i32,false);
+    check_excluded_minimum(mt::address_width::i64,false);
+    check_excluded_minimum(mt::address_width::i64,true);
 }
