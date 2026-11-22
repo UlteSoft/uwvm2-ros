@@ -16293,6 +16293,18 @@ namespace uwvm2::runtime::lib
                         break;
                     }
                 }
+#if defined(UWVM_CPP_EXCEPTIONS)
+                // A restored generation is published at the root of the new
+                // world. Its effective parser body owns the restored locals,
+                // but is deliberately not a committed replacement transaction.
+                // Use its exact live generation only through the root seal.
+                if(current_code == nullptr)
+                {
+                    auto const* restored{checkpoint_root_generation_publication_bridge::current_restored_body(
+                        record, local_index, current_generation)};
+                    if(restored != nullptr) { current_code = ::std::addressof(restored->code); }
+                }
+#endif
                 if(current_code == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
             }
             auto const& parameters{function.function_type_ptr->parameter};

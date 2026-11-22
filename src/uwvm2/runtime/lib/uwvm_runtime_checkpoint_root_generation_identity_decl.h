@@ -16,6 +16,7 @@ class checkpoint_root_generation_identity final
         void const* wasm_code{};
         ::std::uintptr_t expression_begin{},expression_end{},typed{},raw{},resume{};
         ::std::uint64_t generation{};
+        llvm_jit_debug_replace_transaction const* restored_body{};
     };
     source_owner source_{};
     profile_owner profile_{};
@@ -44,6 +45,7 @@ private:
     [[nodiscard]] static bool matches_record(identity const&,compiled_module_record const&,
         ::std::size_t,bool) noexcept;
     [[nodiscard]] static bool matches_row(identity const&,compiled_module_record const&,::std::size_t,bool) noexcept;
+    [[nodiscard]] static identity const* current_root(compiled_module_record const&) noexcept;
     [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<identity> prepare(compiled_module_record const&,::std::size_t) noexcept;
     [[nodiscard]] static bool seal_actual_full(compiled_module_record&) noexcept;
     [[nodiscard]] static bool matches_private_prepared(compiled_module_record const&,::std::size_t) noexcept;
@@ -53,5 +55,9 @@ public:
     // Internal exact DATA lookup; caller still needs its real execution or
     // stopped/publication scope. No native read/step grant is issued here.
     [[nodiscard]] static bool matches_current_root(compiled_module_record const&,::std::size_t,::std::uint64_t) noexcept;
+    [[nodiscard]] static llvm_jit_debug_replace_transaction const* current_restored_body(
+        compiled_module_record const&,::std::size_t,::std::uint64_t) noexcept;
+    [[nodiscard]] static ::std::uint64_t retained_restored_generation(
+        compiled_module_record const&,llvm_jit_debug_replace_transaction const&) noexcept;
 };
 #endif

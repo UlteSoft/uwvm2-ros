@@ -53,15 +53,27 @@ extern "C++"
                 auto const& actual=g_runtime.modules.index_unchecked(m);
                 for(auto const& retained:actual.llvm_jit_debug_full_retained_generations)
                 {
-                    if(!retained || !retained->committed || retained->module_id!=m ||
-                       retained->expected_runtime_epoch!=epoch || retained->expected_generation==UINT64_MAX)return false;
+                    if(!retained)return false;
+                    ::std::uint64_t function{},generation{};
+                    if(retained->committed)
+                    {
+                        if(retained->module_id!=m || retained->expected_runtime_epoch!=epoch ||
+                           retained->expected_generation==UINT64_MAX)return false;
+                        function=retained->function_index;generation=retained->expected_generation+1u;
+                    }
+                    else
+                    {
+                        generation=checkpoint_root_generation_publication_bridge::retained_restored_generation(actual,*retained);
+                        if(!generation)return false;
+                        function=actual.runtime_module->imported_function_vec_storage.size()+retained->local_index;
+                    }
                     auto const begin=reinterpret_cast<::std::uintptr_t>(retained->code.body.code_begin);
                     auto const end=reinterpret_cast<::std::uintptr_t>(retained->code.body.code_end);
                     auto const base=reinterpret_cast<::std::uintptr_t>(retained->section_bytes.data());
                     if(begin<base || end<begin || end-base>retained->section_bytes.size() || end-begin>PTRDIFF_MAX-32u)return false;
                     static_image image{};image.owned.resize(32u+static_cast<::std::size_t>(end-begin));
-                    archive::detail::put(image.owned,0,m,8);archive::detail::put(image.owned,8,retained->function_index,8);
-                    archive::detail::put(image.owned,16,retained->expected_generation+1u,8);
+                    archive::detail::put(image.owned,0,m,8);archive::detail::put(image.owned,8,function,8);
+                    archive::detail::put(image.owned,16,generation,8);
                     archive::detail::put(image.owned,24,end-begin,8);
                     ::std::memcpy(image.owned.data()+32u,retained->code.body.code_begin,static_cast<::std::size_t>(end-begin));
                     records.push_back({archive::component::effective_code,archive::completeness::complete,id++,1u,image.owned.size()});
@@ -227,6 +239,11 @@ extern "C++"
                        retained->function_index==frame.function && retained->local_index==local &&
                        retained->expected_generation==frame.function_generation-1u)
                     { code=::std::addressof(retained->code);break; }
+                }
+                if(!code)
+                {
+                    auto const* body=checkpoint_root_generation_publication_bridge::current_restored_body(record,local,frame.function_generation);
+                    if(body)code=::std::addressof(body->code);
                 }
                 if(code==nullptr) return false;
             }

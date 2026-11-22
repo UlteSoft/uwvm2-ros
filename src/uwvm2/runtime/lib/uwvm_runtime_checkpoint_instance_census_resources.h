@@ -432,11 +432,13 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
             state.object(wire)->words = {imports + local, generation, type, 0u, 0u, 0u, 0u, 0u};
             if(generation != 1u)
             {
-                // The O(1) resolver above authenticated the actual committed
-                // record-owned transaction, engine/source/epoch/plan/current targets.
                 if(local >= record.llvm_jit_checkpoint_generation_owners.size())
                 { return state.fail(census_error::stale_generation); }
                 auto const* transaction{record.llvm_jit_checkpoint_generation_owners[local]};
+                // A restored native root holds the same effective source as an
+                // immutable parser object, independent of hot-commit authority.
+                if(!transaction)
+                { transaction=checkpoint_root_generation_publication_bridge::current_restored_body(record,local,generation); }
                 if(transaction == nullptr || transaction->section_bytes.empty() ||
                     transaction->section_bytes.size() > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))
                 { return state.fail(census_error::stale_generation); }

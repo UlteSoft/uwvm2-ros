@@ -6673,7 +6673,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                         // Host cleanup runs outside while_stopped's mutex.
                         ::uwvm2::runtime::lib::ros_retire_replaced_module_host_api(request->module);
                         { ::std::lock_guard lock{mutex_};
+                          // The code generation changed, but no worker moved.
+                          // Retire client handles without dispatching an already
+                          // evaluated breakpoint condition, callback or watch.
+                          auto const prior_stop{stop_identifier_};
+                          bool const breakpoint_checked{condition_checked_stop_ == prior_stop};
+                          bool const watch_checked{watch_checked_stop_ == prior_stop};
+                          bool const source_stop{source_statement_stop_};
                           advance_stop_identifier_locked();
+                          if(breakpoint_checked) { condition_checked_stop_ = stop_identifier_; }
+                          if(watch_checked) { watch_checked_stop_ = stop_identifier_; }
+                          source_statement_stop_ = source_stop;
                           // A numeric or source line site from the old body can
                           // name unrelated bytes in the new generation. Remove
                           // it before the still-paused guest may resume.
@@ -6704,6 +6714,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                       auto const actual{::uwvm2::runtime::lib::llvm_jit_debug_safe_points_host_api(request->module, request->function)};
                                       if(actual && actual.function_generation == replacement_result.generation &&
                                          actual.expression_size != 0u && actual.expression_size <= request->body.size() &&
+                                         actual.byte_count == actual.expression_size/8u + (actual.expression_size%8u != 0u) &&
                                          replacement_payload.size() == 32u + request->body.size())
                                       {
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
@@ -6720,12 +6731,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                                               // copied values are owned bytes, never decoded guest pointers.
                                               instruction_source.expression_bytes[byte] = static_cast<::std::byte>(replacement_payload[offset + byte]);
                                           }
+                                          instruction_source.instruction_safe_point_bits.assign(actual.bits, actual.bits+actual.byte_count);
                                           instruction_source.expression_size = actual.expression_size;
                                           instruction_source.function_generation = replacement_result.generation;
+                                          instruction_source.instruction_safe_points_complete = true;
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                                           }
                                           catch(...)
-                                          { instruction_source.expression_bytes.clear(); instruction_source.function_generation = 0u; }
+                                          {
+                                              instruction_source.expression_bytes.clear();
+                                              instruction_source.instruction_safe_point_bits.clear();
+                                          }
 #endif
                                       }
                                   }

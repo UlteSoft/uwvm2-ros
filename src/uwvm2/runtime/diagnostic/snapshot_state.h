@@ -180,9 +180,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::snapshot_state
         bool use_current_ros_environment = false, bool execution_replay = false) noexcept
     {
         if(archive.disclosure != archive::visibility::full) { return {error::disclosure_denied}; }
-        if(archive.origin.logical_abi != materialization::state_schema_revision ||
-           archive.origin.continuation_abi != materialization::native_resume_abi_revision)
-            { return {error::incompatible_schema}; }
         archive::record const* selected{};
         unsigned current_ros{};
         for(auto const& record : archive.records)
@@ -214,6 +211,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::snapshot_state
             selected = ::std::addressof(record);
         }
         if(!selected) { return {}; }
+        // Inspection-only archives deliberately omit a continuation ABI.
+        // Classify unavailable state before comparing executable ABI revisions.
+        if(archive.origin.logical_abi != materialization::state_schema_revision ||
+           archive.origin.continuation_abi != materialization::native_resume_abi_revision)
+            { return {error::incompatible_schema}; }
         try
         {
             auto graph = ::uwvm2::utils::container::make_shared<cp::state>();

@@ -94,8 +94,30 @@ checkpoint_root_generation_publication_bridge::prepare(compiled_module_record co
                 publication->checkpoint_resume_entries[local].address,record.llvm_jit_debug_full_entry_generations[local]});
         }
         if(!matches_record(*root,record,dense,false)) { return {}; }
+        // A restored native root owns the parser objects for its effective
+        // functions. Bind the exact private parser extent to the row before
+        // sealing it. Later hot replacement may retain this historical body.
+        for(auto const& body:record.llvm_jit_debug_full_retained_generations)
+        {
+            if(!body || body->committed || body->engine || body->context || body->local_index>=count ||
+               !same_owner(body->source,root->source_)) { return {}; }
+            auto& row=root->rows_[body->local_index];
+            auto const base=reinterpret_cast<::std::uintptr_t>(body->section_bytes.data());
+            auto const first=reinterpret_cast<::std::uintptr_t>(body->code.body.code_begin);
+            auto const expr=reinterpret_cast<::std::uintptr_t>(body->code.body.expr_begin);
+            auto const last=reinterpret_cast<::std::uintptr_t>(body->code.body.code_end);
+            if(row.generation<=1u || row.restored_body || row.wasm_code!=::std::addressof(body->code) ||
+               row.expression_begin!=expr || row.expression_end!=last || !base ||
+               body->section_bytes.size()>UINTPTR_MAX-base || first<base || expr<first ||
+               last<=expr || last-base>body->section_bytes.size()) { return {}; }
+            row.restored_body=body.get();
+        }
         for(::std::size_t local{};local<count;++local)
-        { if(!matches_row(*root,record,local,false)) { return {}; } }
+        {
+            auto const& row=root->rows_[local];
+            if((row.generation!=1u)!=(row.restored_body!=nullptr) ||
+               !matches_row(*root,record,local,false)) { return {}; }
+        }
         return root;
     }
     catch(...) { return {}; }
@@ -141,26 +163,46 @@ checkpoint_root_generation_publication_bridge::prepare(compiled_module_record co
     { if(!matches_row(root,record,local,true)) { return false; } }
     return true;
 }
-[[nodiscard]] bool checkpoint_root_generation_publication_bridge::matches_current_root(
-    compiled_module_record const& supplied,::std::size_t local,::std::uint64_t generation) noexcept
+[[nodiscard]] checkpoint_root_generation_publication_bridge::identity const*
+checkpoint_root_generation_publication_bridge::current_root(compiled_module_record const& supplied) noexcept
 {
     // Internal callers already selected a real runtime record under their
     // execution/metadata scope. This lookup never accepts a public opaque pointer.
     auto const* publication=supplied.llvm_jit_full_publication.get();
-    if(!publication || !publication->checkpoint_root_identity || !supplied.llvm_jit_ready || generation==0u) { return false; }
+    if(!publication || !publication->checkpoint_root_identity || !supplied.llvm_jit_ready) { return nullptr; }
     auto const& root=*publication->checkpoint_root_identity;
     if(root.module_id_>=g_runtime.modules.size() ||
-       ::std::addressof(g_runtime.modules.index_unchecked(root.module_id_))!=::std::addressof(supplied)) { return false; }
+       ::std::addressof(g_runtime.modules.index_unchecked(root.module_id_))!=::std::addressof(supplied)) { return nullptr; }
     auto const epoch=current_runtime_generation();
     if(epoch==0u || root.sealed_epoch_!=epoch || root.initializer_serial_==0u ||
        root.initializer_serial_!=::uwvm2::runtime::gc::published_initializer_serial.load(::std::memory_order_acquire) ||
-       !matches_record(root,supplied,root.module_id_,true) || local>=root.rows_.size() ||
-       root.rows_[local].generation!=generation ||
+       !matches_record(root,supplied,root.module_id_,true) ||
        !::uwvm2::uwvm::runtime::full::selected_full_source_matches_owner(root.source_) ||
        publication->debug_source_runtime_epoch!=epoch || supplied.llvm_jit_debug_source_fused_epoch!=epoch ||
        !supplied.runtime_module->gc_collection_phase.initialized_for(root.initializer_serial_) ||
-       root.source_->actual_validated_file(root.module_id_,epoch,supplied.runtime_module)==nullptr) { return false; }
-    return matches_row(root,supplied,local,true);
+       root.source_->actual_validated_file(root.module_id_,epoch,supplied.runtime_module)==nullptr) { return nullptr; }
+    return ::std::addressof(root);
+}
+[[nodiscard]] bool checkpoint_root_generation_publication_bridge::matches_current_root(
+    compiled_module_record const& record,::std::size_t local,::std::uint64_t generation) noexcept
+{
+    auto const* root=current_root(record);
+    return generation && root && local<root->rows_.size() && root->rows_[local].generation==generation &&
+        matches_row(*root,record,local,true);
+}
+[[nodiscard]] llvm_jit_debug_replace_transaction const* checkpoint_root_generation_publication_bridge::current_restored_body(
+    compiled_module_record const& record,::std::size_t local,::std::uint64_t generation) noexcept
+{
+    if(generation<=1u || !matches_current_root(record,local,generation)) { return nullptr; }
+    return record.llvm_jit_full_publication->checkpoint_root_identity->rows_[local].restored_body;
+}
+[[nodiscard]] ::std::uint64_t checkpoint_root_generation_publication_bridge::retained_restored_generation(
+    compiled_module_record const& record,llvm_jit_debug_replace_transaction const& body) noexcept
+{
+    auto const* root=current_root(record);
+    if(!root || body.local_index>=root->rows_.size()) { return 0u; }
+    auto const& row=root->rows_[body.local_index];
+    return row.restored_body==::std::addressof(body) ? row.generation : 0u;
 }
 }
 #endif
