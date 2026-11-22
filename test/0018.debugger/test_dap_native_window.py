@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import code, metadata
 
 PATH = Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py"
 SPEC = importlib.util.spec_from_file_location("uwvm_dap_native_window", PATH)
@@ -27,6 +28,11 @@ class Broker:
         self.begin, self.end, self.pc = 0x1000, 0x1600, 0x1100
     def request(self, command):
         self.commands.append(command)
+        if command.startswith(("wasm-meta ", "wasm-code ")):
+            stop = int(self.status.split("stop-id ")[1].split()[0])
+            if command.startswith("wasm-meta "):
+                return metadata(command, stop=stop, epoch=8, functions=3, thread=3)
+            return code(command, stop=stop, epoch=8, function=2, thread=3, generation=self.generation)
         if command == "status": return self.status
         if command == "bt 3":
             return self.status + ("" if "native-pc" in self.status else "  #0 module=0 function=2\n")
@@ -71,7 +77,9 @@ class Tests(unittest.TestCase):
         return response["body"]["stackFrames"][0]
     def test_native_top_physical_ref_requires_actual_query_and_fresh_same_stop(self):
         frame = self.frame(); self.assertTrue(frame["instructionPointerReference"].startswith("uwvm-native-code:"))
-        self.assertEqual(self.broker.commands, ["status", "bt 3", "frames 3 17", "status", "disassemble-range 3 17 1 0 0 0", "status"])
+        self.assertEqual(self.broker.commands[:6], ["status", "bt 3", "frames 3 17", "status", "disassemble-range 3 17 1 0 0 0", "status"])
+        self.assertTrue(all(command == "status" or command.startswith(("wasm-meta ", "wasm-code "))
+                            for command in self.broker.commands[6:]))
         self.assertEqual(len(self.adapter.native_code_refs), 1)
         old = list(self.broker.commands)
         self.assertFalse(self.send("readMemory", memoryReference=frame["instructionPointerReference"], count=1)["success"])
@@ -79,7 +87,7 @@ class Tests(unittest.TestCase):
     def test_repeated_stack_reads_preserve_all_references_at_same_stop(self):
         first = self.frame()
         second = self.frame()  # Both reads lack optional source metadata.
-        self.assertNotEqual(first["id"], second["id"])
+        self.assertEqual(first["id"], second["id"])
         for frame in (second, first):
             response = self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=2)
             self.assertTrue(response["success"], response)
@@ -153,7 +161,7 @@ class Tests(unittest.TestCase):
         self.broker.fail_query = True
         self.assertFalse(self.send("stackTrace", threadId=3)["success"]); self.assertFalse(self.adapter.native_code_refs)
         self.broker.fail_query = False; self.adapter.step_level = "source"; self.broker.commands.clear()
-        frame = self.frame(); self.assertTrue(frame["instructionPointerReference"].startswith("wasm:"))
+        frame = self.frame(); self.assertNotIn("instructionPointerReference", frame)
         self.assertFalse(any(value.startswith("disassemble-range ") for value in self.broker.commands))
 
     def test_unavailable_runtime_range_reports_one_actionable_diagnostic(self):
@@ -183,7 +191,7 @@ class Tests(unittest.TestCase):
         response = self.send("stackTrace", threadId=3)
         self.assertTrue(response["success"], response)
         frame = response["body"]["stackFrames"][0]
-        self.assertEqual(frame["instructionPointerReference"], "wasm:0:2:4")
+        self.assertNotIn("instructionPointerReference", frame)
         self.assertIn(frame["id"], self.adapter.frames)
         self.assertFalse(self.adapter.native_code_refs)
         self.assertFalse(self.adapter.native_frames)
@@ -201,6 +209,33 @@ class Tests(unittest.TestCase):
         self.assertNotIn("body", response)
         self.assertFalse(self.adapter.native_code_refs)
         self.assertFalse(self.adapter.frames)
+
+    def test_optional_native_position_accepts_only_current_protocol_refusals(self):
+        owner = "error: native disassembly unavailable: current private stop, live code owner or qualified native decoder is unavailable\n"
+        missing_range = "error: native disassembly range is unavailable\n"
+        for message, changed, success in ((owner, False, True), (missing_range, False, True),
+                                          (owner, True, False), (owner + "unexpected\n", False, False)):
+            with self.subTest(message=message, changed=changed):
+                original = self.broker.request
+                self.broker.status = COOP
+                def landing(command):
+                    if command == "info breakpoints":
+                        return "no breakpoints\n"
+                    if command == "disassemble-range 3 17 1 0 0 0":
+                        if changed:
+                            self.broker.status = COOP.replace("stop-id 17", "stop-id 18")
+                        return message
+                    return original(command)
+                self.broker.request = landing
+                try:
+                    response = self.send("uwvm/positions")
+                finally:
+                    self.broker.request = original
+                self.assertIs(response["success"], success, response)
+                self.assertFalse(self.adapter.native_code_refs)
+                if success:
+                    self.assertEqual(response["body"]["wasm"], {"module": "0", "function": "2", "offset": "4", "exact": True})
+                    self.assertIsNone(response["body"]["asm"])
 
     def test_external_same_site_repark_and_resume_retire_independent_code_ids(self):
         frame = self.frame(); reference = frame["instructionPointerReference"]

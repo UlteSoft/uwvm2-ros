@@ -51,6 +51,10 @@ def replacement_document(client, target, offset, target_file):
     decoded = [(int(offset, 16), op, operand.strip()) for offset, op, operand in instructions]
     require(decoded == [(0, "i32.const", "9"), (2, "local.set", "0"), (4, "local.get", "0"), (6, "end", "")],
             "exact replacement instruction offsets and operands", decoded)
+    positions = client.request("uwvm/positions")["body"]
+    require(positions["stopId"] == str(location["stop"]) and positions["source"] is None and
+            positions["wasm"] == {"module": "0", "function": str(target), "offset": str(offset), "exact": True},
+            "current Wasm position with optional native landing", positions)
     denied = client.request("uwvm/codeLocation", {"level": "source"}, success=False)
     require("No source position" in denied["message"], "retired source navigation", denied)
     require(b"local 0 i32=" in client.evaluate(f"locals {location['thread']}"), "actual replacement Wasm local")
@@ -59,7 +63,8 @@ def replacement_document(client, target, offset, target_file):
     require("result" not in locals_reply.get("body", {}), "original source locals unavailable", locals_reply)
     retired = source_breakpoints(client, target_file, [2])
     require(len(retired) == 1 and not retired[0]["verified"], "retired source breakpoint", retired)
-    return {"location": location, "document": source, "content": content, "source_breakpoint": retired[0]}
+    return {"location": location, "document": source, "content": content, "source_breakpoint": retired[0],
+            "native_position": positions["asm"]}
 
 
 def check(client, out, guest, body, target_file, driver_file, report):

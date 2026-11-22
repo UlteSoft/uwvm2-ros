@@ -37,6 +37,10 @@ class UnsupportedHoverFrame(LocalRequestRefusal):
     """A local frame-type refusal before any debugger/VM command is sent."""
 
 
+class NativeLandingUnavailable(RuntimeError):
+    """The runtime explicitly refused the optional native view of a cooperative stop."""
+
+
 class UpdateCoordinatorBusy(RuntimeError):
     """Authenticated pre-dispatch refusal; only observation may poll later."""
 
@@ -3851,11 +3855,12 @@ class Adapter:
                 raise RuntimeError(reply.strip())
             if (words[:1] == ["disassemble-range"] and len(words) == 7
                     and words[3:] == ["1", "0", "0", "0"]
-                    and reply == "error: native disassembly range is unavailable\n"):
+                    and reply in ("error: native disassembly range is unavailable\n",
+                                  "error: native disassembly unavailable: current private stop, live code owner or qualified native decoder is unavailable\n")):
                 # Optional landing qualification rechecks the complete stop
                 # before accepting this refusal. Ordinary disassembly requests
                 # still fail closed through handle()'s RuntimeError path.
-                raise RuntimeError(reply.strip())
+                raise NativeLandingUnavailable(reply.strip())
             had_stop = self.stop_key is not None
             self.invalidate_stop()
             if reply in ("error: signed update coordinator is busy", "error: signed update coordinator is busy\n"):
@@ -4877,6 +4882,13 @@ class Adapter:
             if reference is None: reference = self.new_reference()
             self.native_code_refs[reference] = (location["id"], expected_key, identity)
             return f"uwvm-native-code:{reference}"
+        except NativeLandingUnavailable:
+            # Full stop identity must still match after the optional read.
+            self.observe(self.command("status"), notify=False)
+            if (self.state != "stopped" or self.stop_key != expected_key
+                    or [entry for entry in self.threads if entry["id"] == location["id"]] != [location]):
+                raise ValueError("stop changed while native code was unavailable")
+            return None
         except (OSError, ValueError, RuntimeError, ConnectionError) as error:
             # No qualified owner/backend is an explicit lack of code reference;
             # it never becomes a source/locals/address capability.
@@ -4892,16 +4904,7 @@ class Adapter:
                         f"Details: {str(error)[:256]}\n"
                     ),
                 })
-            # Only the current native protocol's explicit unavailability is
-            # optional. Malformed ownership, transport failures and unknown
-            # error spellings still fail the entire request closed.
-            if not isinstance(error, RuntimeError) or str(error) != "error: native disassembly range is unavailable":
-                raise
-            self.observe(self.command("status"), notify=False)
-            if (self.state != "stopped" or self.stop_key != expected_key
-                    or [entry for entry in self.threads if entry["id"] == location["id"]] != [location]):
-                raise ValueError("stop changed while native code was unavailable")
-            return None
+            raise
 
     def disassemble_owned_range(self, request, args, reference, count, *, source_document=False):
         match = re.fullmatch(r"uwvm-native-(stop|code):([1-9][0-9]{0,9})", reference)
