@@ -15,7 +15,7 @@ A trusted binding supplies one immutable schema profile: its exact identity and
 data bytes, per-object bytes, transfer bytes, aggregate active copy workspace,
 sealed leases, rank and element count. Dtype, byte-order and color-space masks
 are explicit. Every zero is a zero allowance. Fixed capacities are independent
-of optional broker rate attenuation and cannot be replenished by closing and
+of optional broker rate limiting and cannot be replenished by closing and
 reopening a capability.
 
 Profile identity text is bounded to 96 bytes and must be valid UTF-8 without

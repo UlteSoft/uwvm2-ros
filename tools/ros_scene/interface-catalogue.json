@@ -39,7 +39,7 @@
     "zero",
     "explicit_elevation",
     "stable_authority",
-    "explicit_attenuation",
+    "explicit_usage_limits",
     "potentially_uncertain_guarantees"
   ],
   "status_definitions": {
@@ -54,7 +54,7 @@
     "unknown_enums": "reject",
     "trailing_bytes": "reject",
     "maximum_depth": "required_by_trusted_schema",
-    "default_limits": "Optional attenuation omitted means unlimited within exact authority; finite resource reservations required by effect profile.",
+    "default_limits": "An omitted rate adds no limit to an authorized operation. Each provider profile still requires its declared capacity reservations.",
     "variant_tags": "u64 discriminant from explicit variant_tags map, followed by only that alternative. JSON key order has no wire meaning.",
     "closed_text_selectors": "Text-typed fields remain length-prefixed UTF-8 and are validated against listed enums or the immutable profile schema; no numeric conversion is implied.",
     "immutable_input": "Exact checked records in scene/artifact_contract.h: raw 32-byte SHA256 and raw read data have no length prefix. Common result-length slot gives actual data bytes.",
@@ -2649,7 +2649,7 @@
           "i32"
         ]
       },
-      "contract": "Returns major 2 only when explicitly exposed; errors encoded in same i32 result.",
+      "contract": "ABI discovery returns the constant major version 2 to a bound caller by default. The host may deny the call (13) or hide the import. Reading the version does not enroll a caller, prepare a provider or consume a resource grant.",
       "family": "capability",
       "implementation": "registered_local",
       "wire": "special_signature",

@@ -97,6 +97,7 @@ namespace uwvm2::imported::ros::scene
             "\"secret-material-descriptors-and-host-paths\",\"runtime-state-and-live-attenuation\",\"other-host-modules\"],"
             "\"defaults\":{\"unboundExposure\":\"hidden\",\"unconfiguredExposure\":\"hidden\","
             "\"memberSelfReport\":{\"operation\":\"permission.report\",\"effective\":\"allow\"},"
+            "\"memberAbi\":{\"operation\":\"abi\",\"effective\":\"allow\"},"
             "\"ungrantedResources\":false,\"unselectedPlatformExtensions\":false},\"callAuditRules\":[");
         bool first_audit=true;
         if(!result_audit.visit_policy([&](call_audit::scope target,std::string_view label,bool denied,call_audit::ceiling limits){

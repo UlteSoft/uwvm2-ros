@@ -19,7 +19,7 @@ named assertions covering all five buffer imports, exact profile/layout
 admission, contiguous initialized writes, identical retries, mismatching
 retries, SHA256 sealing, sealed-write refusal, exact describe records, bounded
 readback, empty objects, cross-alias rejection, closed handles, default denial,
-independent grant limits and explicit rate attenuation. CLI checks reject
+independent grant limits and explicit rate limiting. CLI checks reject
 missing/duplicate/out-of-order plans, malformed digests, unknown masks and
 insufficient aggregate reservations.
 
@@ -37,7 +37,7 @@ maximum-sized append followed by publication, exact last-request replay,
 conflicting bytes, capacity-failure receipts, empty publication, independent
 reads/removal, and each missing action or exposed dependency. Separate cases
 prove default-zero and undersized scratch, atomic three-unit admission without
-partial debit, exact byte attenuation, no refill on capability reopening, and
+partial debit, exact byte budgets, no refill on capability reopening, and
 closed CLI configuration. See [the publication contract](ros-artifact-publication.md)
 for cancellation and retained-receipt rules.
 

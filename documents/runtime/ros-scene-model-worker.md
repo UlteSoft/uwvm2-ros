@@ -27,7 +27,7 @@ which cannot mount an anonymous memfd. Therefore runtime images use
 `--ro-bind-data`: the manifest's `image_bytes` includes **two full copies of
 every runtime/bootstrap image**, one copy of each weight and the launcher.
 This is a finite explicit preparation reservation, separate from a job's
-workspace or optional rate attenuation. The current service retains its sealed
+workspace or optional rate limiting. The current service retains its sealed
 copies until retirement; it does not silently refund the startup copy budget.
 
 All VM-owned containers, image metadata, shared ownership and supervisor stack

@@ -5,13 +5,13 @@
   "catalogue": "interface-catalogue.json",
   "decoder": "src/uwvm2/imported/ros/scene/robot_provider_contract.h",
   "common": {
-    "authority": "Zero authority by default; exact operation exposure, caller-bound capability, immutable target/profile and all independent secondary origins. Missing rate means unlimited inside the grant; explicit zero denies; capacity is independent.",
+    "authority": "Zero authority by default; exact operation exposure, caller-bound capability, immutable target/profile and all independent secondary origins. An omitted rate leaves traffic unrestricted within its grant. Zero blocks new ordinary work while the permission remains active. Capacity is accounted separately.",
     "admission": "Check primary and carrier extent before owned copy; decode completely; validate all source/controller/version claims against host registries; reserve complete reply, pins, work and recovery before effects.",
     "effect": "Revalidate current complete authority at every external effect and delivery boundary. Never hold an authority lock across IPC waits. Receiver independently fences generation, controller epoch, expiry and command schema.",
     "recovery": "Key session is the owned resource; its operation selects a declared sequence domain. Each domain admits strictly next sequence or exact last retry, with modified content rejected. Normal work and stop/close domains have independent replay capacity so lost normal receipts cannot block safety. Unknown/partial effects retain separate recovery debt and never trigger automatic retry.",
     "delivery": "Validate every guest result span before effects. Failed inert handle delivery rolls back; failed effect-result or queue delivery preserves the same receipt/item. Complete copy precedes consumption.",
     "retirement": "Logical close does not release borrowed data, native work, process trees, correlations or unknown effects. Capacity remains charged through positive cleanup evidence. Derived-resource close never closes unrelated sources.",
-    "stop": "Independent stop/fault capacity survives normal queue saturation, rate attenuation, revocation and unknown records. Guest stop needs its own grant. Requested, acknowledged, exited and physically stopped are distinct.",
+    "stop": "Independent stop/fault capacity survives normal queue saturation, rate limiting, revocation and unknown records. Guest stop needs its own grant. Requested, acknowledged, exited and physically stopped are distinct.",
     "configuration": "Trusted exact profiles bind protocol, peer, direction, type, effect class, content validator and finite reservations. Unknown fields fail. Static validation never launches or performs I/O on a native target.",
     "placement": "CPU/NUMA/native-thread/process/memory/queue reservations and required versus inherited guarantees are explicit. Check actual allowed sets at launch. No implicit exclusive core, real-time guarantee or zero-copy claim.",
     "isolation": "Native extensions run outside the VM. An OS backend lacking a required isolation, fencing, exit or placement guarantee refuses activation; no preloaddl or generic WASI fallback.",
@@ -502,7 +502,7 @@
       "result_schema": "control_submit__result",
       "secondary_admission": "Original device.submit, control lease and all retained source/dependency origins.",
       "effect": "Require same cycle sequence/epoch/schema/write deadline, then recheck original evidence.",
-      "commit_and_recovery": "Commit one actual device receipt. No attenuation silently skips an admitted phase; timeout/unknown latches stop.",
+      "commit_and_recovery": "Commit one actual device receipt. A rate limit cannot silently skip an admitted phase; timeout/unknown latches stop.",
       "inherits": [
         "authority",
         "admission",
@@ -1197,7 +1197,7 @@
     "stale": "Wrong owned generation, controller epoch, dependency revision, clock incarnation or input freshness; fence before effect.",
     "conflict": "Same key with modified content, out-of-order key, ownership conflict or incompatible state transition; keep prior recovery record.",
     "again": "No complete event, ownership transition pending or a bounded concurrent reservation is busy; do not consume input.",
-    "quota": "Explicit capacity or attenuation reached before admission; stop/fault reservations remain independent.",
+    "quota": "A configured capacity or rate limit blocked admission. Stop and fault handling have independent reservations.",
     "no_memory": "Recoverable fast_io allocation failed before effect; unwind only owned temporary reservations.",
     "deadline": "Admission/phase deadline expired; return the retained receipt if any effect may already have occurred.",
     "cancelled": "Local interest or admissible pending work was cancelled; do not assert remote rollback or safe physical stopping.",
@@ -1603,6 +1603,6 @@
     "Sequence starts at one per owned resource and declared domain; zero and wraparound are invalid. Unkeyed read/open/take operations do not invent an exactly-once sequence.",
     "Changing any canonical request field under an already admitted key conflicts; exact retries recover the retained result even after its original deadline, subject to current inspection authority.",
     "A new successful key acknowledges only that domain's previous replay receipt. It does not erase an unresolved external effect, release cleanup debt or acknowledge another domain.",
-    "Stop/close capacity and sequence progress are independent of saturated normal work. Trusted watchdog admission uses its reserved internal path and cannot be disabled by guest keys or guest stop rate attenuation."
+    "Stop/close capacity and sequence progress are independent of saturated normal work. Trusted watchdog admission uses its reserved internal path and cannot be disabled by guest keys or guest stop rate limiting."
   ]
 }

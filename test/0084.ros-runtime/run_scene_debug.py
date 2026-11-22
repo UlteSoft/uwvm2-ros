@@ -13,14 +13,9 @@ import subprocess
 import sys
 import time
 
+from run_scene_vm import GATE as GROUP, verify_gate as gate
+
 ROOT = Path(__file__).resolve().parents[2]
-GROUP = Path('/sys/fs/cgroup/system.slice/docker-af71cb24aa7993383f76ad9c06750b17eb66fd090a2c9ba64b544b19cda9c913.scope')
-
-
-def gate():
-    assert Path('/proc/self/cgroup').read_text().strip() == '0::/' + str(GROUP.relative_to('/sys/fs/cgroup'))
-    assert (GROUP/'memory.max').read_text().strip() == '68719476736'
-    assert (GROUP/'memory.swap.max').read_text().strip() == '0'
 
 
 def main():

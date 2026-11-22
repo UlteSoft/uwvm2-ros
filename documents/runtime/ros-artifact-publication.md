@@ -41,7 +41,7 @@ convention. A zero-cost, uncharged authority-only revalidation is supported,
 but cannot omit any of the four actions. Invalid enum values, undersized
 framing and arithmetic overflow fail before a debit or effect.
 
-## Optional attenuation and fixed reservations
+## Optional limits and fixed reservations
 
 Publication charges three logical call units and `payload_size + 280` byte
 units in one atomic admission. This is the cost of the existing nonempty
@@ -60,7 +60,7 @@ remain mandatory regardless of whether rates are configured.
 
 `outputs::plan` additionally has finite `publication_scratch_bytes` and
 `publication_scratch_calls`, both zero by default. They are independent capacity
-reservations, not rate attenuation, and do not change the existing staged
+reservations, not rate limiting, and do not change the existing staged
 operations. Each admitted publication carrier must acquire a move-only
 `outputs::registry::publication_scratch` before request allocation or copying.
 For request extent `N`, its scratch charge is:

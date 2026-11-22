@@ -339,7 +339,7 @@ def parse_scene_state(reply, options, stop_id):
                 valid = current == "hidden"
             elif mode != "unset":
                 valid = origin == "explicit" and mode == current
-            elif name == "permission.report":
+            elif name in ("abi", "permission.report"):
                 valid = origin == "self-default" and current == "allow"
             else:
                 valid = origin == "default" and current == "hidden"

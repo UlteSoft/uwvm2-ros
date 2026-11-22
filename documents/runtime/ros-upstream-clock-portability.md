@@ -39,7 +39,7 @@ Each grant is bounded to one open capability and one runtime resource.
 Ordinary stable grants impose no rate limit. A separate negative case opts
 into `delivery=may-reject` and a one-call, sixty-second budget: creation
 consumes the admitted call and the subsequent read fails. This follows the
-zero-authority → explicit stable authority → explicit attenuation sequence.
+zero-authority → explicit stable authority → explicit usage limits sequence.
 
 The existing WASI libc is used for local allocation and string/error support.
 Its incidental `clock_time_get`, `fd_close` and `fd_seek` imports are explicitly
@@ -70,7 +70,7 @@ compared across independent processes. Deterministic checks cover:
 The same native sources pass AddressSanitizer and UndefinedBehaviorSanitizer
 and produce the same transcript. Three Wasm refusal configurations pass ten
 checks each: no resource grants, create permission without read permission,
-and explicit rate attenuation. They leave the caller's timestamp untouched
+and explicit rate limiting. They leave the caller's timestamp untouched
 and set the upstream error state.
 
 One upstream distinction matters when translating errors: Jazzy RCL's

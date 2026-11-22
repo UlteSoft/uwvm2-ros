@@ -236,7 +236,7 @@ replay/restart or durable deduplication log. Revocation and caller retirement
 close affected sessions and erase bytes. Success, timeout and disconnect are
 not evidence that physical stop has occurred.
 
-Explicit attenuation can reject subsequent work. Setting calls-per-window to
+Explicit usage limits can reject subsequent work. Setting calls-per-window to
 zero does not block an already authorized disconnect: cleanup bypasses traffic
 metering, but still checks the caller, exact grant, interface exposure and
 platform policy. Inspection neither sends a handshake nor consumes a packet.

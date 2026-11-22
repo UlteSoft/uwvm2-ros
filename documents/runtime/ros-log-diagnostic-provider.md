@@ -41,7 +41,7 @@ destination. Guest names, locations and event times are claims; they cannot
 authorize a physical action or substitute for a security deadline.
 
 Full storage rejects by default without consuming the request sequence.
-`drop_oldest` is explicit attenuation after authorization. Its receipt exposes
+`drop_oldest` is an explicitly selected overflow policy. Its receipt exposes
 the exact cumulative loss count. A record reserved for export cannot be evicted,
 so a full ring rejects during that export. The last accepted request and receipt
 survive export/eviction for exact retry; changed bytes at the same key conflict.

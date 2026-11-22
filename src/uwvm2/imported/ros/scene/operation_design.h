@@ -15,11 +15,11 @@ namespace uwvm2::imported::ros::scene::operation_design
     {std::string_view name,behavior,meaning;unsigned primary_domain;bool registered;};
     inline constexpr std::array operations{
         /** @brief abi: discovery.
-         * @details Returns major 2 only when explicitly exposed; errors encoded in same i32 result.
+         * @details ABI discovery returns the constant major version 2 to a bound caller by default. The host may deny the call (13) or hide the import. Reading the version does not enroll a caller, prepare a provider or consume a resource grant.
          * Apply the complete origin, bounded delivery and recovery contract;
          * this descriptor neither exposes the operation nor grants authority.
          */
-        descriptor{"abi","discovery","Returns major 2 only when explicitly exposed; errors encoded in same i32 result.",1,true},
+        descriptor{"abi","discovery","ABI discovery returns the constant major version 2 to a bound caller by default. The host may deny the call (13) or hide the import. Reading the version does not enroll a caller, prepare a provider or consume a resource grant.",1,true},
         /** @brief capability.open: capability acquisition.
          * @details Exact existing alias; no grant creation or upgrade; undelivered handle rolled back.
          * Apply the complete origin, bounded delivery and recovery contract;

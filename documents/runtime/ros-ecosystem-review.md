@@ -139,10 +139,10 @@ The reviewed ros2_control loop performs read/update/write with a measured
 period, scheduling configuration and either simulation or wall time. This
 motivates a separate execution-guarantee state in addition to authorization:
 
-`zero authority -> explicit elevation -> stable granted authority -> explicit attenuation -> potentially uncertain guarantees`.
+`zero authority -> explicit elevation -> stable granted authority -> explicit usage limits -> potentially uncertain guarantees`.
 
 An admitted continuous cycle reserves its required capacity. Optional rate
-attenuation cannot silently skip a phase in the middle of that contract.
+a rate limit cannot silently skip a phase in the middle of that contract.
 Deployment chooses an explicit drain, cancel or safe-stop transition and a
 watchdog behavior. Scheduling privilege remains with the trusted host, and
 simulation-time jumps are distinguished from wall-clock deadlines. Stable

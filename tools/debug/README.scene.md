@@ -534,7 +534,7 @@ to an individual environment when the bounded scan limit is reached.
 Each row shows `configured` (hidden, deny, allow, or unset), `effective`
 (hidden, deny, or allow), and `origin`. An explicit decision takes
 precedence. In an environment without that rule, `permission.report`
-has self-default allow, and ordinary interfaces have default hidden.
+and `abi` have self-default allow. Ordinary interfaces default to hidden.
 A retired deployment overrides the effective decision to hidden while
 preserving the configured value. These decisions apply to bound modules.
 An unbound module has no parent scene authority. Permission-report scope,

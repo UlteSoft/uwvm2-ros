@@ -105,9 +105,9 @@ general-host acceptance gates.
 ## Faults, updates and control ownership
 
 The authority progression is zero authority, explicit stable grant, then
-optional attenuation. Finite storage, physical bounds, deadlines and stop
+optional limits. Finite storage, physical bounds, deadlines and stop
 reservations are mandatory safety constraints even during stable authority.
-Traffic attenuation is a separate explicit choice with uncertain-delivery
+Traffic limiting is a separate explicit choice with uncertain-delivery
 semantics; it never applies to the reserved stop/revocation path.
 
 A crash, hang, protocol failure or lost process identity fences the provider

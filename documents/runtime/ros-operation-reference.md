@@ -18,11 +18,11 @@ See [provider procedures](ros-robot-provider-procedures.md),
 
 ### Default authority
 
-No exposed operation or grant by default. Grant only an exact resource/action/profile and actual caller incarnation. Capacity does not imply authority. The sole default exception is read-only permission.report after explicit ROSv2 module binding; it can be hidden or reduced. Foreign observation and registered messages still require independent explicit grants.
+Binding exposes two read-only queries by default: abi returns the public ABI major and permission.report describes the caller's own permissions. The host can deny or hide each independently. All other imports require explicit exposure, and resource operations also require the matching grant. Reading another module or the VM requires separate authority.
 
 ### Rate progression
 
-Absent optional rate is unlimited inside an existing grant. Explicit zero denies; stable capacity reservations and independent fault/stop capacity are separate. Attenuation of a control phase requires an explicit qualified missed-phase policy.
+Call and byte limits govern admissions within an existing grant. An omitted rate allows unrestricted traffic within that scope. A zero window allowance refuses ordinary work with again (11) while the grant stays valid. A missing or revoked permission yields denied (13). A control phase with a rate limit needs an explicit missed-phase policy and independently reserved stop capacity.
 
 ### Origin closure
 
@@ -314,7 +314,7 @@ A schema, decoded record, registered import, native provider, VM qualification, 
 
 **Authority:** exact `abi`; additional named actions: none listed. Actual ancestor, source, profile and target checks still apply.
 
-Returns major 2 only when explicitly exposed; errors encoded in same i32 result.
+ABI discovery returns the constant major version 2 to a bound caller by default. The host may deny the call (13) or hide the import. Reading the version does not enroll a caller, prepare a provider or consume a resource grant.
 
 ### capability.open
 
@@ -1720,7 +1720,7 @@ Check same cycle/sequence/deadline; no attenuation skips an admitted phase.
 
 **Effect boundary.** Require same cycle sequence/epoch/schema/write deadline, then recheck original evidence.
 
-**Commit and recovery.** Commit one actual device receipt. No attenuation silently skips an admitted phase; timeout/unknown latches stop.
+**Commit and recovery.** Commit one actual device receipt. A rate limit cannot silently skip an admitted phase; timeout/unknown latches stop.
 
 ### control.result
 

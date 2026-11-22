@@ -44,7 +44,7 @@ extent from model workspace before recoverable fast_io allocation. Model job
 parameters, native copies and output copies also have explicit reservations.
 Native scratch cannot use the same bytes simultaneously for multiple copies;
 the token outlives the actual allocation and keeps its job charged even after
-the guest releases its receipt. Capacities and optional rate attenuation are
+the guest releases its receipt. Capacities and optional rate limiting are
 separate. Missing rate limits are unrestricted within an explicit grant; an
 explicit zero rate remains zero.
 

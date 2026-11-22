@@ -47,7 +47,7 @@ Prepared factories are inert. `node.open` and endpoint creation still require
 the existing independently granted context, node, type and topic origins. Native
 factory matching includes the exact frozen profile and descriptor. All grants
 start absent. Stable authorized execution remains separate from optional,
-explicit attenuation; the adapter does not introduce a rate limit or new scope.
+explicit usage limits; the adapter does not introduce a rate limit or new scope.
 Closing or revoking a capability uses the ordinary retirement and cleanup path.
 
 The generated typed publisher and subscription use rclcpp's serialized-message

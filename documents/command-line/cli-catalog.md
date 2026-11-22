@@ -503,7 +503,7 @@ Bind a finite local lifecycle graph; no native node or device authority.
 [--ros-scene-limit] <environment:str> <alias:str> <field:str> <value:str>
 ```
 
-Set a capacity or explicit attenuation field; finite window budgets require delivery=may-reject.
+Set a capacity or rate limit. Finite window budgets require delivery=may-reject.
 
 ## `--ros-scene-log-diagnostic-budget`
 
@@ -599,7 +599,7 @@ Reserve aggregate model sessions, requests, pinned inputs, outputs and workspace
 [--ros-scene-model-capacity] <environment:str> <alias:str> <sessions:u64> <requests:u64> <input-bytes:u64> <input-count:u64> <parameter-bytes:u64> <output-bytes:u64> <output-items:u64> <workspace:u64> <deadline-ns:u64>
 ```
 
-Set one model binding's finite reservations and deadline; independent of optional rate attenuation.
+Set one model binding's finite reservations and deadline independently of optional rate limits.
 
 ## `--ros-scene-model-channel`
 
@@ -815,7 +815,7 @@ Select a trusted inherited descriptor; activation requires a nonblocking read-on
 [--ros-scene-sensor-limit] <environment:str> <alias:str> <name:str> <value:u64>
 ```
 
-Set one mandatory finite sensor capacity after its definition; does not add rate attenuation.
+Set one mandatory finite sensor capacity after its definition. Configure rate limits separately.
 
 ## `--ros-scene-sensor-profile`
 

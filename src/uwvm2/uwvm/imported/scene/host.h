@@ -293,11 +293,13 @@ namespace uwvm2::uwvm::imported::scene
             return invoke_module_call_bound<Operation>(access,a.cap,a.memory,a.request,a.size,a.output,a.capacity,a.length);
         },&args);
     }
-    /** @brief Return the major ABI number only through an exposed scene entry. */
+    /** @brief Read the scene ABI major for the actual caller without preparing a broker. */
     inline std::uint32_t abi() noexcept
     {
-        try{model::caller caller;std::shared_ptr<model::broker> state;if(auto code=identify("abi",caller,state))return code;return 2;}
-        catch(std::bad_alloc const&){return 12;}catch(std::length_error const&){return 90;}
+        runtime::ros_caller_identity identity{};
+        if(!runtime::ros_caller_identity_host_api(identity,true))return 13;
+        std::string_view module{reinterpret_cast<char const*>(identity.module_name.data()),identity.module_name.size()};
+        return configuration.visible(module,"abi")==model::exposure::allow?2u:13u;
     }
     /** @brief Open an exact granted alias and atomically deliver its handle.
      * @details An invalid output, wrong caller or hidden/denied interface has

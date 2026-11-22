@@ -9,7 +9,7 @@ Historical core cohorts below describe their original narrower scope. They are
 not the current integration status. Production vendor module registration,
 qualified hardware transport and physical stop validation remain separate.
 See [platform extensions](ros-platform-extensions.md) for concrete conversion
-scope, live attenuation and performance evidence. SDK production code is outside
+scope, live limits and performance evidence. SDK production code is outside
 this implementation scope; these changes do not alter legacy WASIp1 or ROSv1.
 
 Sensor resources are ingress-only. Their immutable profile fixes transport
@@ -59,10 +59,10 @@ that capability. No latch is rearmed by capability reopening or lifecycle
 activation.
 
 All deployment limits start at zero. Granting a named operation establishes its
-stable scope. Optional call/byte attenuation is a later explicit restriction;
+stable scope. Optional call and byte limits restrict already authorized calls;
 missing rate limits are unlimited within the granted scope, while explicit zero
 refuses an operation. Stable storage, worker, stop and recovery capacity remain
-separate from rate attenuation. Hot paths use preallocated or explicitly
+separate from rate limiting. Hot paths use preallocated or explicitly
 reserved storage and the recoverable fast_io allocator; allocation failure is a
 reported error and cannot terminate the host.
 
@@ -399,7 +399,7 @@ be assigned exactly once before freezing:
 Every zero is literal and missing configuration cannot activate a source.
 Native retained bytes include the real fast_io array prefix; source core,
 detached carrier workspace, receiver storage and sealed-buffer storage have
-separate bounds. Ingress has no additional rate attenuation in this provider:
+separate bounds. Ingress has no additional rate limiting in this provider:
 an explicitly enabled source can continue within its configured scope/capacity.
 `ingress.read.bytes` limits one syscall, not reads per second. Optional guest
 delivery rate budgets remain independent and missing rate fields are unlimited

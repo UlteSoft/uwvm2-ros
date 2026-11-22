@@ -7,7 +7,7 @@
  * linearizes effects with revocation. Blocking operations release the lease
  * and reacquire without charging again before delivering a result.
  *
- * Optional attenuation starts only after authority exists. Missing budgets
+ * Optional rate and byte limits apply only after authority exists. Missing budgets
  * mean unrestricted execution WITHIN the grant. Explicit zero means no
  * admissions. Fixed capacity reservations are independent of rate limits.
  */
@@ -170,7 +170,7 @@ namespace uwvm2::imported::ros::scene
     /** @brief Closed, independently exposed cleanup operations with reserved capacity.
      * @details These release an owned record or close an owned resource; they
      * cannot disclose payloads, acknowledge consumption or create resources. Their explicit capability and
-     * exposure remain mandatory, but traffic attenuation cannot prevent cleanup.
+     * exposure remain mandatory, and ordinary traffic limits leave reserved cleanup capacity available.
      */
     inline bool cleanup_action(std::string_view action)noexcept
     {return action=="driver.disconnect"||action=="topic.release"||action=="service.release"||action=="resource.close"||action=="communication.open.cancel"||action=="request.release"||action=="bridge.stop"||action=="device.stop"||action=="control.stop"||action=="component.stop";}

@@ -64,10 +64,10 @@ implementation qualification; a syntactically valid request does not establish
 them. Owned state uses the project's recoverable fast_io allocator. The ordinary
 terminating allocator is not permitted on untrusted admission paths.
 
-## Authority, capacity and attenuation
+## Authority, capacity and rate limits
 
 The progression is **zero authority → explicit elevation → stable authority →
-explicit attenuation → potentially uncertain service guarantees**. No implicit
+explicit usage limits → potentially uncertain service guarantees**. No implicit
 rate applies inside a stable grant. An absent optional rate is unlimited inside
 that grant; an explicit zero is zero. Finite storage, process, thread, queue and
 workspace reservations are separate admission requirements.
@@ -83,7 +83,7 @@ Physical execution, configuration, maintenance and data export can coexist;
 selecting one supposedly strongest label must not discard the other predicates.
 Unknown effect classification refuses activation.
 
-Rate attenuation of a continuous control phase must select a qualified missed-
+Rate limiting of a continuous control phase must select a qualified missed-
 phase policy. It cannot silently skip a write or consume the stop reservation.
 Deployment may fence and stop a controller independently of guest grants.
 Guest-requested stop still requires its own grant. Normal throughput, logging,

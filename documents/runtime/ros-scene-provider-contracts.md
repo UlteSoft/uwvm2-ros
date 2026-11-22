@@ -136,9 +136,9 @@ semantic comparison before being advertised as supported.
 
 ## Admission and execution guarantees
 
-The transition is **zero authority → explicit elevation → stable granted
-authority → explicit attenuation → potentially uncertain guarantees**.
-An environment starts with hidden imports and no grants. Every effect requires
+Binding exposes ABI discovery and the caller's permission report by default.
+The operator controls those queries individually. All other imports start hidden.
+Every effect requires
 the exact function exposure, caller generation, resource grant, operation,
 purpose, provider binding and any secondary capability described below.
 `capability.open` resolves an existing alias; it never grants or upgrades it.
@@ -147,7 +147,7 @@ Different environments remain separate even when aliases have the same text.
 Stable authority has no implicit request-rate throttle. Finite resource
 capacity is a distinct admission condition: a stream, recording, inference
 or control cycle reserves the capacity required by its accepted contract.
-Optional calls/bytes/sampling limits are attenuation and must explicitly state
+Optional calls/bytes/sampling limits must explicitly state
 the resulting rejection, loss or timing semantics. A value of zero is zero;
 an omitted optional rate is unlimited within the granted scope. Provider and
 hardware failure remain possible under stable authority.
@@ -481,7 +481,7 @@ to disable the trusted watchdog.
 `control.open/sample/submit/result/stop` describes a continuous read-update-write
 cycle with sequence/deadline, missed-cycle and watchdog semantics. The fixed
 profile defines whether a missed or revoked phase holds, brakes or invokes a
-certified stop. Attenuation cannot skip one write phase silently. A simulated
+certified stop. A rate limit cannot skip one write phase silently. A simulated
 provider must label its observations and cannot establish physical safety.
 
 The immutable control profile must identify the controller owner, priority,
@@ -495,7 +495,7 @@ designed as a registered operation and would need its own explicit authority.
 
 Stop/watchdog configuration reserves its own queue, execution capacity and
 deadline, including a documented duplicate-stop coalescing rule. Ordinary
-rate attenuation, full inference queues and unknown-outcome ledger entries
+rate limiting, full inference queues and unknown-outcome ledger entries
 cannot exhaust that reservation. Deployment must provide an independent
 watchdog where stopping must survive guest stalls, VM failure or link loss.
 A stop request, a driver acknowledgement and independent evidence of stopped

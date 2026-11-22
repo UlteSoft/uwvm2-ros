@@ -83,7 +83,7 @@ hard limits and the existing cgroup still apply during that phase.
 `process` enforces its startup deadline during identity, readiness and activation.
 Its owner must enforce the configured RPC and cumulative stderr budgets, retain
 cleanup debt after cancellation, and prevent publication until every startup
-check succeeds. There is no automatic rate attenuation: operational authority
+check succeeds. There is no automatic rate limiting: operational authority
 and finite capacity reservations are distinct. Request stop is idempotent and
 uses retained pidfds; `reap` never substitutes elapsed time for observed exit.
 The owner joins every I/O user before destroying the process.
@@ -173,8 +173,7 @@ namespace-init pidfds and both complete startup profile hashes, checks reciproca
 participant/direction policies, and attaches four one-way anonymous pipes to each
 worker. A port, DDS GUID, process number or UDP source is never authentication.
 Both workers must complete attachment before explicit bilateral activation.
-Discovery and user traffic have separate bounded queues. Optional attenuation is
-applied only to an already admitted direction; absent limits preserve its stable
+Discovery and user traffic have separate bounded queues. Optional limits apply only to an already admitted direction; absent limits preserve its stable
 scope, explicit zero drops that direction and reports uncertainty. Malformed or
 replayed framing, partial-frame timeout, queue exhaustion or either process exit
 fences the pair. Already forwarded effects are not rolled back.

@@ -128,7 +128,7 @@ again. Every snapshot also retains its original source
 timestamp and host capture time. A model-supplied time cannot extend freshness.
 
 `fence_source_authority` advances a permission revision immediately without
-requiring a new sensor sample. Thus an authorization withdrawal or attenuation
+requiring a new sensor sample. Thus an authorization withdrawal or rate limit
 invalidates old proposals under both policies, independently of sampling rate.
 Source revocation, restart, clock/frame change, calibration/transform change and
 target provider fencing likewise reject an old proposal under both policies.
@@ -191,16 +191,16 @@ is expressly insufficient. A native provider with an unknown execution outcome
 also needs its own deduplication/reconciliation receipt; this core makes no
 exactly-once claim across native ROS or hardware connections.
 
-## Authority followed by explicit attenuation
+## Authority followed by explicit usage limits
 
 An ordinary grant omits `calls`, allowing stable execution within its exact
 scope. `attenuate_reader` can later install a finite window limit under a
 strictly newer authority epoch. The transition is zero authority, explicit
-grant, stable rights, then explicit attenuation. Explicit zero calls rejects
+grant, stable rights, then explicit usage limits. A zero call allowance rejects
 every new admission; waiting for another window does not turn zero into
 unlimited execution.
 
-Once a finite rate exists, further attenuation may only reduce its call count
+Once a finite rate exists, later updates may only lower its call count
 and lengthen its window. It retains the consumed count and original window
 start; changing configuration cannot refund use. Revoked reader slots remain
 tombstones, so reopening cannot reset rate or request history. Capacity limits
@@ -219,7 +219,7 @@ inherited mutexes.
 tests the core's exact authority, immutable extents, all eight physical target
 action classifications, receipt recovery, stale observations, independent
 epoch fences, callback reentry/revocation, three rate windows, explicit zero,
-progressive attenuation, concurrent acceptance and fork isolation. The two
+progressively tighter rate limits, concurrent acceptance and fork isolation. The two
 observation policies additionally cover fast-sensor/slow-model reuse, expiry of
 the original sample's age, calibration/transform/clock/incarnation fencing,
 source authority changes without new samples, frame/clock A-to-B-to-A rejection,

@@ -10,6 +10,12 @@ The [CLI contract](../command-line/ros-scene.md#module-observation-and-registere
 defines exposure and grants. The [operation reference](ros-operation-reference.md)
 defines the canonical request/result records.
 
+The two default queries for a bound module are `abi` and `permission.report`.
+The former returns the public major version. The latter reports the caller's
+identity and own policy. The host can deny or hide either independently.
+Read-only queries of other modules, VM configuration, ROS graphs, sensor data
+and driver state require explicit authority for the corresponding target.
+
 ## Self scope
 
 `permission.report` is allowed after the caller is explicitly bound to an

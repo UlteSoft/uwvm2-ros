@@ -77,6 +77,8 @@ def check_cli(runtime):
                  '--ros-scene-call-clear-input', 'robot', 'sample', 'false', *journal_flags,
                  '--ros-scene-call-buffer-capture', 'robot', 'sample', 'take']
         report = run([*flags, DUMP], fds=(journal.fileno(),))
+        assert report['defaults']['memberAbi'] == dict(operation='abi', effective='allow')
+        assert report['defaults']['memberSelfReport'] == dict(operation='permission.report', effective='allow')
         text = json.dumps(report)
         assert all(value not in text for value in ['secret-calibration', '1023456', '1023457', '1023458'])
         assert report['payloadJournal'] == dict(records='10', bytes='4096', payloadBytes='64')

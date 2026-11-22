@@ -42,7 +42,7 @@ Payload/recovery buffers are preallocated. Native middleware and generated ROS
 message objects can allocate before a callback; the dedicated worker must also
 enforce its native memory/process limits. Buffer reservations do not prove hard
 realtime deadlines or bound the DDS implementation's internal receive allocation.
-Traffic attenuation remains separate from capacity reservations.
+Traffic limiting remains separate from capacity reservations.
 
 ## Deferred decisions and real state
 

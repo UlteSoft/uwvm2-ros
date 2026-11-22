@@ -9,6 +9,7 @@
 #include <uwvm2/utils/container/standard.h>
 #include <uwvm2/utils/container/shared.h>
 #include "broker.h"
+#include "bound_queries.h"
 #include "debug.h"
 #include "call_audit.h"
 #include "model_policy.h"
@@ -154,14 +155,14 @@ namespace uwvm2::imported::ros::scene
         ::uwvm2::utils::container::std_map<::uwvm2::utils::container::std_string,artifacts::input_plan,std::less<>> input_plans;
     };
     /** @brief Resolve import exposure for a member of this environment.
-     * @details A missing self permission-report rule is allowed. Other missing
-     * rules are hidden. This check never grants a resource or invokes a provider.
+     * @details Public ABI discovery and the caller's own report default to
+     * allow. All resource and foreign metadata imports require explicit exposure.
      */
     inline std::pair<exposure,bool> interface_exposure(environment const& entry,std::string_view action)
     {
         auto rule=entry.interfaces.find(action);
         if(rule!=entry.interfaces.end())return {rule->second,true};
-        return {action==permission_report::import_name?exposure::allow:exposure::hidden,false};
+        return {is_bound_query(action)?exposure::allow:exposure::hidden,false};
     }
     /** @brief Frozen scene deployment with explicit, nonoverlapping environments.
      * @details Creating an environment, binding a module, exposing a function
@@ -2044,9 +2045,8 @@ namespace uwvm2::imported::ros::scene
             return interface_exposure(environments.at(owner->second),action).first;
         }
         /** @brief Check only observation policy; never activate or enroll a caller.
-         * @details Explicit membership is the ROSv2 parent boundary. Only this
-         * read-only import defaults to allow. Other imports and all resources
-         * still default to hidden/zero authority. The supplied name must come
+         * @details Explicit membership is the ROSv2 parent boundary. ABI
+         * discovery and self reporting require no resource grant. The name comes
          * from the runtime's immediate caller identity, never from guest bytes.
          */
         error report_allowed(std::string_view module,permission_report::query const& query)const
@@ -2091,11 +2091,14 @@ namespace uwvm2::imported::ros::scene
             }
             if(!output.add("self","module",0,module)||!output.add("self","permission-group",0,owner->second)||
                !output.add("self","retired",retired)||!output.add("self","frozen",frozen)||
-               !output.add("self","providers-ready",providers_ready)||!output.add("interface","default",0)||
-               !output.add("interface",permission_report::import_name,static_cast<unsigned>(
-                    entry.interfaces.contains(permission_report::import_name)?entry.interfaces.find(permission_report::import_name)->second:exposure::allow)))return error::too_large;
+               !output.add("self","providers-ready",providers_ready)||!output.add("interface","default",0))return error::too_large;
+            for(auto name:bound_queries)
+            {
+                auto state=retired?exposure::hidden:interface_exposure(entry,name).first;
+                if(!output.add("interface",name,static_cast<unsigned>(state)))return error::too_large;
+            }
             for(auto const& [name,state]:entry.interfaces)
-                if(name!=permission_report::import_name&&!output.add("interface",name,static_cast<unsigned>(state)))return error::too_large;
+                if(!is_bound_query(name)&&!output.add("interface",name,static_cast<unsigned>(retired?exposure::hidden:state)))return error::too_large;
             if(entry.live)
             {if(auto status=entry.live->permissions.report_permissions(output);status!=error::success)return status;}
             else
@@ -2347,7 +2350,7 @@ namespace uwvm2::imported::ros::scene
                         item.environment.assign(name);item.operation.assign(action);
                         item.configured=configured?label(mode):"unset";
                         item.effective=retired?"hidden":label(mode);
-                        item.origin=retired?"retired":configured?"explicit":action==permission_report::import_name?"self-default":"default";
+                        item.origin=retired?"retired":configured?"explicit":is_bound_query(action)?"self-default":"default";
                         output.next=index+1;
                     };
                     if(query.operation.size)

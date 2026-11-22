@@ -254,7 +254,7 @@ revocation, rate accounting and authority locking. Unknown enum values fail
 before any bit shift. These indices are not a guest ABI or a new permission
 surface. Differential tests compare the indexed and string paths across all
 grant/exposure/action combinations, unauthorized identities, exhaustion,
-zero-budget attenuation and revocation.
+zero-budget limits and revocation.
 
 An `erased_buffer` now clears its live extent once at destruction. Shrinking or
 changing storage already erases the complete previous extent; unused inline

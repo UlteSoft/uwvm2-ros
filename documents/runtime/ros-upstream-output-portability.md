@@ -323,7 +323,7 @@ parsing or delivering any byte. Cache readback resolves the registry once and
 copies initialized bytes under its lock into detached storage before invoking
 the sink. Exact artifact/output action admission uses indexed bits, with
 invalid indices rejected before shifting. Preflight remains uncharged;
-effect-time admission still checks current authority and optional attenuation.
+effect-time admission still checks current authority and optional limits.
 
 The audited local output and scheduler wrappers now restore native FP control
 with an existing architecture-specific guard surrounding the entire wrapper,

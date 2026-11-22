@@ -19,7 +19,7 @@ sessions cannot submit into a replacement generation.
 
 All sessions, requests, retained input bytes/count, parameter bytes, output
 bytes/items, workspace and deadline capacities default to zero. They are finite
-reservations, independent of optional action rate attenuation. `open` also obeys
+reservations, independent of optional action rate limiting. `open` also obeys
 the authority grant's resource capacity. `reserve_workspace` charges heap input
 carriers before allocation; the carrier and copied job parameters coexist and
 therefore consume separate parts of the same workspace budget. The token must

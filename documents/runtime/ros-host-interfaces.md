@@ -119,24 +119,26 @@ reviewed deployment bindings and separately granted operations.
 
 ## Authority and ownership
 
-The authority progression is **zero authority -> explicit elevation -> stable
-granted authority -> explicit attenuation -> potentially uncertain execution
-guarantees**. Elevation grants an exact resource/operation scope. Attenuation
-never adds scope; it applies budgets or restrictions to an already granted
-capability. Unspecified optional quotas add no throttling after authorization,
-while a finite zero is an actual zero allowance. Stable granted authority is
-not a promise that physical providers can never fail.
+Most scene imports require explicit exposure and a grant for the named resource and operation.
+Two read-only imports are available after binding: `abi` returns the ABI major, and
+`permission.report` reports the caller's own policy. The host can reduce access to
+either with `deny` or `hidden`.
+
+Rate and capacity limits control how much already-authorized work can proceed.
+For ordinary calls using the grant's window meter, exhausting the call or byte budget
+returns `again` (11). A zero allowance continues to return 11 in later windows.
+Withdrawing the permission returns `denied` (13). Changing a budget leaves the
+resource, allowed action set and caller identity intact.
 
 Authority and execution guarantees are separate state. Admission must report
 when a configured restriction can affect delivery completeness, timing or
 continuity. Stream drop/sampling, reject-before-start, wait-before-start and
 stop-during-execution are distinct policies. Operations requiring atomic or
-continuous execution reserve their admitted budget before starting. Runtime
-attenuation cannot silently rewrite an already accepted execution contract;
+continuous execution reserve their admitted budget before starting. A change to limits cannot silently rewrite an already accepted execution contract;
 the deployment selects drain, cancel or a defined safe-stop transition.
 Model predictions never upgrade either authority or execution guarantees.
 
-Every interface starts hidden. Enabling a namespace grants no function, resource,
+Imports that perform work or observe another principal start hidden. Enabling a namespace grants no function, resource,
 node, clock, model, tensor, filesystem, network, environment or device authority.
 Interface `allow` and a matching resource capability are independent checks.
 Deployment creates named environments and binds exact modules. Several modules
@@ -301,7 +303,7 @@ identity across aliases/environments; reboot reconstructs or verifies usage.
 Physical hard bounds need a host-enforced volume/project quota and bounded
 journal reserve. A directory preopen alone never establishes that guarantee.
 Lifecycle limits are deployment capacity reservations, separate from optional
-rate attenuation. Refuse admission before side effects if a complete operation
+rate limiting. Refuse admission before side effects if a complete operation
 cannot be reserved. Recording drop, stop, block and rotation must be explicit;
 never silently discard control/state data to meet a storage budget.
 
@@ -382,7 +384,7 @@ effect occurs. A deployment needs validated joint/workspace/velocity/force
 limits, mutually exclusive controller leases, explicit priority arbitration
 and defined loss-of-link behavior. A safety-stop/watchdog path must have
 independently reserved capacity and authority, so ordinary queue pressure,
-model inference or optional traffic attenuation cannot obstruct it. A stop
+model inference or optional traffic limiting cannot obstruct it. A stop
 request and confirmed stopped equipment are different states; unknown physical
 outcomes must remain unknown until independent evidence resolves them.
 
@@ -416,3 +418,12 @@ Throughput medians from the XML cache slice do not establish deterministic
 execution, native ROS equivalence, a SIL/PL rating or completeness over the
 acquired package corpus. The local lifecycle provider checks deadlines on
 access and is expressly not an autonomous safety watchdog.
+
+Developers can launch builds, test fixtures and profilers with
+`python3 tools/ros_scene/in_existing_cgroup.py COMMAND [ARG ...]`. The
+launcher verifies the current cgroup v2 memory cap of 64 GiB and zero swap
+before executing the command. It points TMPDIR, TMP and TEMP at the checkout's
+on-disk `.tmp/ros-scene-command-tmp`. From an ordinary shell it can enter an
+already capped user `wrosvendor.slice` or the original pinned Docker keeper.
+Place explicit compiler caches, profiler results and output paths under the
+project's `.tmp` as well.

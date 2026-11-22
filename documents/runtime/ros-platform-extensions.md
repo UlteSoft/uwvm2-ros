@@ -69,18 +69,18 @@ module name cannot load a driver. A production extension requires only reviewed
 semantic restrictions and common-carrier mapping; its native provider must be
 qualified through the external process manager separately.
 
-## Stable grants and live attenuation
+## Stable grants and live limits
 
 The authority lifecycle is zero authority, explicit stable grant, then optional
-traffic attenuation. Stable authority permits the declared operations within
+traffic limiting. Stable authority permits the declared operations within
 their resource scope and fixed reservations; it does not remove deadlines,
 physical bounds, provenance checks, controller arbitration or safety stops.
 
-The trusted `deployment::attenuate(environment, alias, limits)` operation reduces
-the existing live parent account. It is not a guest import, debugger command or
-live CLI mutation. The first reduction starts prospective call/byte accounting
+The trusted `deployment::attenuate(environment, alias, limits)` operation tightens the usage limits
+on the existing parent grant. It is not a guest import, debugger command or
+live CLI mutation. Installing the first limit starts prospective call/byte accounting
 and requires explicit `uncertain=true`, a positive window and a selected meter.
-Previously admitted work keeps its reservation. Later reductions may lower a
+Previously admitted work keeps its reservation. Later updates may lower a
 limit or add a meter; they cannot widen/remove a meter, change its window, reset
 usage, re-enable a child or renew a controller. Repeating an identical update is
 idempotent. All handles and both common/platform paths share that account.

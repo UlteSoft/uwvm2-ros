@@ -15,6 +15,12 @@ int main()
     assert(deploy.create("other")==model::error::success);
     assert(deploy.bind("robot","main")==model::error::success);
     assert(deploy.bind("other","peer")==model::error::success);
+    for(auto op:model::callable_names)
+    {
+        const bool query=op=="abi"||op=="permission.report";
+        assert(deploy.visible("main",op)==(query?model::exposure::allow:model::exposure::hidden));
+        assert(deploy.visible("unbound",op)==model::exposure::hidden);
+    }
     assert(deploy.expose("robot","guard.create",model::exposure::deny)==model::error::success);
     assert(deploy.expose("robot","guard.trigger",model::exposure::allow)==model::error::success);
     assert(deploy.expose("robot","guard.describe",model::exposure::hidden)==model::error::invalid);

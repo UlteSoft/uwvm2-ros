@@ -29,7 +29,7 @@ def main():
     vm = args.runtime.resolve()
     global_rule = audit("global", "*", "denied")
     group_rule = audit("group", "robot", "all")
-    bind = ["--ros-scene-bind", "robot", "main"]
+    bind = ["--ros-scene-bind", "robot", "main", "--ros-scene-interface", "robot", "abi", "hidden"]
     alias = ["--wasm-reset-import", "main", "uwvm_ros_v2", "wasm_alias", "uwvm_ros_v2", "abi"]
     names = {"known": b"abi", "unknown": b"unknown.op", "unicode": 'a"\n机器'.encode(),
              "long": b"f" * 256, "empty": b"", "rewritten": b"wasm_alias"}
@@ -77,10 +77,10 @@ def main():
             if not ok:
                 raise RuntimeError((engine, label, run.returncode, run.stderr[-1600:]))
     # An ordinary Wasm library may be linked and called. Its own exposed
-    # import still checks the immediate runtime ancestry before performing work.
+    # capability cleanup import checks the actual call ancestry before looking up a handle.
     helper_wat = out / "helper.wat"
-    helper_wat.write_text('(module (import "uwvm_ros_v2" "abi" (func $abi (result i32)))'
-                          ' (func (export "check") (result i32) call $abi))')
+    helper_wat.write_text('(module (import "uwvm_ros_v2" "capability.close" (func $close (param i64) (result i32)))'
+                          ' (func (export "check") (result i32) i64.const 1 call $close))')
     caller_wat = out / "application.wat"
     caller_wat.write_text('(module (import "helper" "check" (func $check (result i32)))'
                           ' (func (export "_start") call $check i32.const 13 i32.ne if unreachable end))')
@@ -92,14 +92,14 @@ def main():
             cmd = [vm, "--runtime-"+engine, "--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable",
                    "--wasm-set-main-module-name", "main", "--wasm-preload-library", helper_wat.with_suffix(".wasm"), "helper",
                    "--ros-scene-create", "library", "--ros-scene-bind", "library", "helper",
-                   "--ros-scene-interface", "library", "abi", "allow", *audit("single",principal,"denied"),
+                   "--ros-scene-interface", "library", "capability.close", "allow", *audit("single",principal,"denied"),
                    "--run", caller_wat.with_suffix(".wasm")]
             run = subprocess.run(cmd, capture_output=True, timeout=60)
             rows = [json.loads(line) for line in run.stderr.splitlines() if line.startswith(b'{"ros":"uwvm_ros_v2",')]
             ok = run.returncode==0 and len(rows)==int(principal=="helper")
             if rows:
                 row=rows[0]
-                ok &= (row["phase"]=="return" and row["function"]=="abi" and row["result"]==13 and
+                ok &= (row["phase"]=="return" and row["function"]=="capability.close" and row["result"]==13 and
                        row["generation"]>0 and row["group_hex"]==b"library".hex() and row["caller_hex"]==b"helper".hex())
             report["cases"].append(dict(engine=engine, case="library-authority", scope=principal,
                                         exit=run.returncode, rows=rows, passed=ok))

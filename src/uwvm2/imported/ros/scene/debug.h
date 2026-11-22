@@ -8,6 +8,7 @@
  */
 #pragma once
 #include "component_fault.h"
+#include "bound_queries.h"
 #include "call_audit_statistics.h"
 #include <array>
 #include <atomic>
@@ -336,7 +337,7 @@ namespace uwvm2::imported::ros::scene::debug
            (!mode(value.configured)&&value.configured!="unset")||!mode(value.effective))return false;
         if(value.origin=="retired")return value.effective=="hidden";
         if(value.configured!="unset")return value.origin=="explicit"&&value.effective==value.configured;
-        return value.operation.view()=="permission.report" ? value.origin=="self-default"&&value.effective=="allow" :
+        return is_bound_query(value.operation.view()) ? value.origin=="self-default"&&value.effective=="allow" :
                                                             value.origin=="default"&&value.effective=="hidden";
     }
     /** @brief Bounded page; unavailable snapshots carry no partial rows. */

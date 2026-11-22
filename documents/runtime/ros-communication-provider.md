@@ -36,7 +36,7 @@ node or context revocation. No grant implies ambient ROS discovery permissions.
 
 Receive queues and service correlation slots are reserved before native creation.
 Payload buffers, current/attempt replay buffers and native object counts have
-separate finite reservations. Optional traffic attenuation belongs to broker
+separate finite reservations. Optional traffic limiting belongs to broker
 admission; it is not inferred from queue depth. A full queue never silently gains
 unbounded storage. Topic overflow is an explicit reject/drop-oldest plan; a
 borrowed front record cannot be overwritten. Service slots never drop an older
@@ -669,7 +669,7 @@ receipt qualifies exactly its retained hashes, not later workspace edits.
 receive queues with an actual node lease. Publishers reserve a separate DDS
 acknowledgement observation slot. Subscribers reserve a complete detached payload
 and acknowledgement/release capacity. Aggregate capacity is explicit and
-independent of optional traffic attenuation. All owning allocations use the
+independent of optional traffic limiting. All owning allocations use the
 recoverable fast_io adapters. Configuration does not start a process, a thread,
 or a native operation.
 
@@ -789,7 +789,7 @@ therefore prevent another allocation even after native close and receipt release
 An expired `weak_ptr` is insufficient evidence of completed destruction and is
 not used to return this capacity. Failed preparation retains its reservation for
 an exact retry; there is no double charge and no hidden allocation of a second
-endpoint. This fixed per-binding capacity does not implement traffic attenuation.
+endpoint. This fixed per-binding capacity does not implement traffic limiting.
 
 `communication-public-close-current/results.json` records nine passing commands
 for the canonical public dispatcher, including exhausted traffic budgets,
@@ -861,7 +861,7 @@ fresh full origin authority and returns a separate 64-byte typed result. A lost
 copy retains the same resource and does not repeat the take debit.
 
 Cancellation and receipt release require independent current grants. Their
-reserved cleanup admission is independent of traffic attenuation. Cancellation
+reserved cleanup admission is independent of traffic limiting. Cancellation
 cannot close a published resource; the caller must use `resource.close`. Release
 cannot discard a live endpoint, an unknown outcome or unconfirmed cleanup debt.
 Descriptions inspect cached state and do not pump IPC or advance a deadline.

@@ -119,7 +119,7 @@ proof; a portable copied-message provider remains a valid baseline.
 ## Robot workflow decomposition
 
 Every workflow starts with zero authority. Explicit elevation grants a stable
-resource/operation scope; optional attenuation may then weaken timing or
+resource/operation scope; optional limits may then weaken timing or
 completeness guarantees. Omitted rates add no throttling, explicit zero permits
 zero traffic, and finite resource reservations remain a separate requirement.
 Already accepted work follows its reserved contract or an explicitly defined

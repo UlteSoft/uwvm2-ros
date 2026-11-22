@@ -59,7 +59,8 @@ int main()
     assert(groups.bind("absent","unbound")==s::error::invalid);
     assert(groups.expose("arm","abi",s::exposure::allow)==s::error::success);
     for(auto name:{"planner","controller"})assert(groups.visible(name,"abi")==s::exposure::allow);
-    for(auto name:{"perception","recorder","unbound","unknown"})assert(groups.visible(name,"abi")==s::exposure::hidden);
+    for(auto name:{"perception","recorder"})assert(groups.visible(name,"abi")==s::exposure::allow);
+    for(auto name:{"unbound","unknown"})assert(groups.visible(name,"abi")==s::exposure::hidden);
     assert(groups.validate()==s::error::success);
     assert(groups.bind("arm","late")!=s::error::success&&groups.visible("late","abi")==s::exposure::hidden);
     groups.retire();assert(groups.visible("controller","abi")==s::exposure::hidden);

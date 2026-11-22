@@ -25,7 +25,7 @@ work and maximum nesting depth. Every sequence and string supplies a finite
 bound. An upstream unbounded field needs an explicit deployment restriction;
 there is no automatic unlimited policy. A zero sequence/string bound permits
 only the empty value. Permissions remain zero until explicitly granted, and
-optional traffic attenuation remains a separate parent-authority policy.
+optional traffic limiting remains a separate parent-authority policy.
 
 Primitive nodes cover boolean, signed/unsigned 8/16/32/64-bit integers and IEEE
 binary32/binary64. Records retain ordered named fields. Arrays and sequences

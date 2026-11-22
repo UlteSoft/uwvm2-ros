@@ -449,7 +449,7 @@ evidence, not full RealMan driver, firmware, transport or hardware acceptance.
 
 Authority starts at zero. A stable grant authorizes an exact role and resource
 within fixed physical, storage, queue, lifetime and freshness constraints.
-Optional traffic attenuation is a later reduction and explicitly permits
+Optional traffic limiting is a later reduction and explicitly permits
 refusal. It cannot reduce the reserved stop/revocation lane or invalidate an
 already committed command by silently dropping its remaining phases.
 

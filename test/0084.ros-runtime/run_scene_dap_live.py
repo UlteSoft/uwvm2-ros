@@ -113,9 +113,9 @@ def main():
                         row,=body['rows']
                         assert row['environment']['text']=='robot' and row['operation']==operation
                         return row
-                    snapshots={op:policy(op) for op in ('guard.trigger','permission.report','vm.describe')}
+                    snapshots={op:policy(op) for op in ('guard.trigger','abi','permission.report','vm.describe')}
                     assert [(r['configured'],r['effective'],r['origin']) for r in snapshots.values()]==[
-                        ('allow','allow','explicit'),('unset','allow','self-default'),('unset','hidden','default')]
+                        ('allow','allow','explicit'),('unset','allow','self-default'),('unset','allow','self-default'),('unset','hidden','default')]
                     assert 'body' not in client.request('uwvm/sceneState',{'selection':'policy','alias':'signal'},success=False)
                     assert client.request('uwvm/sceneState',{'selection':'authority','environment':'robot','alias':'signal'})['body']==authority
                     record['policy']=snapshots

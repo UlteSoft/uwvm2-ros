@@ -143,7 +143,7 @@ its authority alive until parameter callers drain. No callback comes from
 guest bytes, and a numeric resource alone never proves node ownership.
 
 All permission starts at zero. An explicit scope enables stable execution;
-optional call/byte attenuation is a later independent restriction. An absent
+optional call and byte limits apply to already authorized calls. An absent
 rate is unlimited within the grant, while an explicit zero rejects the call.
 The actual parameter request and measured reply are charged after output fits.
 No short output or denied final admission commits a mutation. A revision race

@@ -15,7 +15,17 @@ import time
 
 
 ROOT = Path(__file__).resolve().parents[2]
-GATE = Path('/sys/fs/cgroup/system.slice/docker-af71cb24aa7993383f76ad9c06750b17eb66fd090a2c9ba64b544b19cda9c913.scope')
+def current_group():
+    """Locate this test process in the cgroup v2 unified hierarchy."""
+    rows = Path('/proc/self/cgroup').read_text().splitlines()
+    member, = (row.removeprefix('0::/') for row in rows if row.startswith('0::/'))
+    relative = Path(member)
+    if relative.is_absolute() or '..' in relative.parts:
+        raise ValueError('invalid cgroup membership')
+    return Path('/sys/fs/cgroup') / relative
+
+
+GATE = current_group()
 
 
 def sha(path):
@@ -27,9 +37,9 @@ def sha(path):
 
 
 def verify_gate():
-    assert Path('/proc/self/cgroup').read_text().strip() == '0::/' + str(GATE.relative_to('/sys/fs/cgroup'))
-    assert (GATE / 'memory.max').read_text().strip() == '68719476736'
-    assert (GATE / 'memory.swap.max').read_text().strip() == '0'
+    if (current_group() != GATE or (GATE / 'memory.max').read_text().strip() != '68719476736'
+            or (GATE / 'memory.swap.max').read_text().strip() != '0'):
+        raise RuntimeError('scene tests require a 64 GiB cgroup with swap disabled')
 
 
 class Guest:

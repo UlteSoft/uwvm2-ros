@@ -15,6 +15,8 @@ see [logging controls](logging.md). New robot deployments should select the
 specific qualified ROSv2 provider for each required capability. A planned
 provider name does not establish a working replacement for a legacy operation.
 
+See the [authorization and usage limits](../runtime/ros-host-interfaces.md#authority-and-ownership) or the [Chinese permission guide](../runtime/ros-permissions.zh.md).
+
 ## Review a scene policy offline
 
 Use `--ros-scene-dump-effective-policy` as the last option in a scene-only
@@ -31,9 +33,9 @@ uwvm --ros-scene-create robot --ros-scene-bind robot main \
 The schema version is 1. To find a module’s policy, locate its exact
 `moduleHex` in `memberships`, then inspect the matching `environments` entry.
 Printable ASCII names also have a `module` display string. Unbound modules are
-hidden. For members, an explicit `configuredImports` rule wins. An absent
-`permission.report` rule allows self-reporting, and all other absent rules are
-hidden. Resource authority also requires a grant. Each grant includes its
+hidden. For members, an explicit `configuredImports` rule wins. Absent rules allow `abi` to return the public ABI major and
+`permission.report` to report the caller’s own settings. All other imports
+start hidden. Resource authority also requires a grant. Each grant includes its
 purpose, resource and binding IDs, exact action set, platform owner, handle,
 resource and wait limits, delivery policy, and call/byte window ceilings.
 `platformSelections` reports explicit enable and disable choices. A bound
@@ -105,7 +107,7 @@ inspection schemas as opaque records.
 
 ## Current implementation boundary
 
-The VM source registers 160 imports: `abi`, `capability.open`, `capability.close`, `capability.revoke`, and
+The VM source registers 163 imports, including `abi`, `capability.open`, `capability.close`, `capability.revoke`, and
 the 16 scheduling operations, `artifact.open/read/describe`, eight volatile
 cache operations, six managed lifecycle operations and five bounded-buffer
 operations, plus five model, two shared request, nine transform and two private
@@ -129,7 +131,7 @@ the older direct-take dispatcher path does not consume from these providers.
 The CLI rejects unsupported purposes and provider bindings.
 
 The [complete design reference](../runtime/ros-operation-reference.md) covers all
-160 operations. The [robot binding guide](../runtime/ros-robot-bindings.md) lists
+163 operations. The [robot binding guide](../runtime/ros-robot-bindings.md) lists
 the exact registered device/control/media/bridge/component options, complete
 mandatory limits, directional grants, recovery and platform boundaries. Their
 [profile and deployment procedures](../runtime/ros-robot-provider-procedures.md)
@@ -137,6 +139,10 @@ also define the obligations for additional adapters. Only registered options
 should be advertised by an IDE.
 
 ## Module observation and registered messages
+
+Both bound queries support independent `allow`, `deny` and `hidden` rules.
+For example, `--ros-scene-interface robot abi deny` makes the version call
+return 13. With `hidden`, a module that imports it fails to link.
 
 `permission.report` is a read-only self query. Binding a module to a ROSv2
 environment exposes this query by default; it does not enable resource use.
@@ -297,7 +303,7 @@ All numeric values are exact unsigned decimal integers. Digests are exactly
 32 bytes in lowercase hexadecimal. Unknown names, duplicate assignments,
 missing fields, arithmetic overflow and unsupported families fail closed.
 An explicit zero remains zero. Capacity settings never issue a capability or
-silently add a traffic rate. Optional rate attenuation remains controlled by
+silently add a traffic rate. Optional rate limits are configured by
 the separate exact grant policy.
 
 ### Communication capacities

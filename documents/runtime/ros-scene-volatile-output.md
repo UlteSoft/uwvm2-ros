@@ -44,7 +44,7 @@ metadata only and does not authorize content access.
 
 This follows zero authority → explicit grant → stable authority → optional
 attenuation. Finite retained capacity is an explicit deployment reservation.
-Optional call/byte rate attenuation separately requires `delivery=may-reject`;
+Optional call/byte rate limiting separately requires `delivery=may-reject`;
 it can reject an otherwise authorized request and is never silently enabled.
 Retries and read-only queries require current authority and consume normal
 admissions. Reopening a capability does not reset the grant's rate accounting.
@@ -172,7 +172,7 @@ Artifact and output operations use exact action bits derived from configured
 names when authority is frozen. Each dispatch validates its trusted operation
 index before a shift. The bit test replaces repeated string-tree searches;
 live caller membership, interface exposure, handle ownership, revocation,
-optional attenuation and the admission lease are still checked. It does not
+optional limits and the admission lease are still checked. It does not
 accept guest masks or give a family of operations implicit permission. The
 independent broker entry retains its request-size check, as well as the host's
 pre-allocation check and the provider's effect validation, preserving short

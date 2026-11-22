@@ -101,7 +101,7 @@ Every applicable field must be present even when its allowed value is zero.
 Missing fields do not acquire permissive defaults. Required positive capacities
 reject zero, and zero feedback payload capacity is valid for the empty
 LookupTransform feedback schema. Capacities are reservations, not rates.
-Optional attenuation belongs to explicit granted authority and must preserve the
+Optional rate limits apply to an authorized flow. Preserve the
 distinction between unlimited within the grant and an explicitly zero rate.
 
 The aggregate budget counts contexts, nodes, types, topics, services, actions,

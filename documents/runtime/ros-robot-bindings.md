@@ -17,7 +17,7 @@ ROS endpoints and component roles remain independent. Neither a profile hash nor
 an allocated provider supplies a missing permission.
 
 Unspecified rate limits are unlimited within an existing grant. Explicit zero is
-zero. Rates are optional attenuation of usable authority; they do not replace
+zero. Rates limit work within an existing grant. Configure them separately from
 queue, buffer, process, stack or stop reservations. Control admission reserves a
 complete sample/write phase. Its submit/result paths revalidate the original
 authority without charging a second phase allowance. Explicit stop operations

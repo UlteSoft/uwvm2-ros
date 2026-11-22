@@ -33,7 +33,7 @@ provider by silently granting the same application broad filesystem/network
 access. CPU-only libraries should not gain WASIp1 access merely because their
 toolchain targets `wasm32-wasip1`.
 
-## Membership, sharing and attenuation
+## Membership, sharing and usage limits
 
 The current ROSv2 implementation binds exact module names to named environments.
 One environment with one member provides single-module policy; several explicit
@@ -53,8 +53,8 @@ legacy permissive fallback semantics or bypass per-module caller checks.
 
 Stable authority enables exactly the granted operations on their named
 resources, subject to fixed capacity/deadline/physical constraints. Optional
-call/byte attenuation begins only after that authority exists. Explicit zero
-traffic means no new ordinary work, not absence of authorization. Attenuation
+call and byte limits apply only after that authority exists. Explicit zero
+traffic means no new ordinary work, while the grant remains active. Limiting traffic
 requires uncertain-delivery acknowledgement and cannot replenish usage,
 resurrect a revoked handle or consume the independent stop reservation. Debugger
 inspection observes cached state without admitting a call or starting a worker.
