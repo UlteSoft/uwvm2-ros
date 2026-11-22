@@ -5043,6 +5043,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     {
                         auto const& function{target.functions[i]};
                         auto const sites{::uwvm2::runtime::lib::llvm_jit_debug_safe_points_host_api(id, function.function)};
+                        if(sites.function_generation > 1u) { target.invalidated[i] = true; continue; }
                         if(!sites || sites.function_generation != 1u || sites.expression_size != function.expression_size) { continue; }
                         bool found{}; ::std::size_t byte{};
                         for(; byte < sites.byte_count && !found; ++byte)
@@ -5352,13 +5353,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
             ::std::lock_guard lock{mutex_};
             if(!source_installation_permitted_locked() || id >= source_modules_.size()) { return false; }
             auto& target{source_modules_[static_cast<::std::size_t>(id)]};
-            if(image.functions.size() != target.functions.size()) { return false; }
+            if(image.functions.size() != target.functions.size() || target.invalidated.size() != target.functions.size())
+            { return false; }
             for(::std::size_t i{}; i != image.functions.size(); ++i)
             {
                 auto const& actual{image.functions[i]}; auto const& mapped{target.functions[i]};
-                if(actual.function != mapped.function || actual.expression_begin != mapped.expression_begin ||
-                   actual.expression_size != mapped.expression_size || actual.function_generation != 1u) { return false; }
+                if(actual.function != mapped.function || actual.function_generation == 0u) { return false; }
+                if(actual.function_generation == 1u)
+                {
+                    if(actual.expression_begin != mapped.expression_begin || actual.expression_size != mapped.expression_size)
+                    { return false; }
+                }
+                else if(actual.expression_begin != UINT64_MAX || actual.expression_size == 0u ||
+                        actual.expression_bytes.size() != actual.expression_size) { return false; }
             }
+            for(::std::size_t i{}; i != image.functions.size(); ++i)
+            { if(image.functions[i].function_generation != 1u) { target.invalidated[i] = true; } }
             if(status == source_dwarf::error::none && metadata && target.status == source_map_error::none && !target.line_only)
             {
                 source_map_sections mapped_sections{};

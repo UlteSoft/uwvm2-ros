@@ -51,7 +51,7 @@
         auto const& original{binding->image_.functions[static_cast<::std::size_t>(local)]};
         auto const& point{rec.llvm_jit_debug_full_safe_points[static_cast<::std::size_t>(local)]};
         auto const generation{rec.llvm_jit_debug_full_entry_generations[static_cast<::std::size_t>(local)]};
-        if(original.function != actual.function || original.function_generation != generation || point.function_generation != generation ||
+        if(generation != 1u || original.function != actual.function || original.function_generation != generation || point.function_generation != generation ||
            actual.offset >= original.expression_size || !point.contains(actual.offset) ||
            original.expression_begin > binding->image_.code_section_content_size ||
            actual.offset > binding->image_.code_section_content_size - original.expression_begin) { return false; }
@@ -214,18 +214,27 @@
                 {
                     auto const& point{rec.llvm_jit_debug_full_safe_points[local]};
                     auto const* body{functions.index_unchecked(local).wasm_code_ptr};
+                    auto const generation{rec.llvm_jit_debug_full_entry_generations[local]};
                     if(body == nullptr || local > (::std::numeric_limits<::std::uint_least64_t>::max)() - imports ||
-                       rec.llvm_jit_debug_full_entry_generations[local] != 1u || point.function_generation != 1u)
+                       generation == 0u || point.function_generation != generation)
                     { valid = false; return; }
                     auto const expression{reinterpret_cast<::std::uintptr_t>(body->body.expr_begin)};
                     auto const expression_end{reinterpret_cast<::std::uintptr_t>(body->body.code_end)};
-                    if(expression < code_begin || expression_end <= expression || expression_end > code_end ||
-                       point.expression_size != expression_end - expression) { valid = false; return; }
+                    if(expression < code_begin || expression_end <= expression || expression_end > code_end)
+                    { valid = false; return; }
                     // [actual owned Code section][locals][expression ... end]
                     // [safe                     ][safe  ][safe               ] one-past
                     //  ^^ only checked integer offsets are copied, not parser pointers.
                     llvm_jit_debug_source_function saved{imports + local, expression - code_begin, expression_end - expression, 1u};
+                    if(generation != 1u)
+                    {
+                        // The private binding describes only original source coordinates. A replaced
+                        // function's current bytes and emitted boundaries are copied separately.
+                        candidate->image_.functions.push_back(::std::move(saved));
+                        continue;
+                    }
                     auto const bytes{expression_end - expression};
+                    if(point.expression_size != bytes) { valid = false; return; }
                     // Every expression belongs to this immutable Code section.
                     // Bound aggregate copies by its real extent, not a fixed
                     // per-function or per-module debug capacity.
@@ -296,7 +305,66 @@
                publication->debug_source_binding.owner_before(binding) || binding.owner_before(publication->debug_source_binding) ||
                publication->debug_source_runtime_epoch != canonical->runtime_epoch_ ||
                !canonical->source_ || canonical->source_->actual_full_validation_epoch() != canonical->runtime_epoch_) { return false; }
-            out = canonical->image_; return true;
+            auto image{canonical->image_};
+            auto const count{image.functions.size()};
+            if(rec.llvm_jit_debug_full_entry_generations.size() != count || rec.llvm_jit_debug_full_safe_points.size() != count)
+            { return false; }
+            // Scan retained bodies once. The original source spans remain private to the binding.
+            // A detached Wasm row identifies a replacement only by its real function and generation.
+            for(auto const& retained : rec.llvm_jit_debug_full_retained_generations)
+            {
+                if(!retained || retained->local_index >= count) { return false; }
+                auto const local{retained->local_index};
+                auto const generation{rec.llvm_jit_debug_full_entry_generations[local]};
+                auto& row{image.functions[local]};
+                auto const& point{rec.llvm_jit_debug_full_safe_points[local]};
+                ::std::span<::std::uint_least8_t const> bitmap{};
+                if(retained->committed)
+                {
+                    if(generation <= 1u || retained->expected_generation != generation - 1u) { continue; }
+                    if(retained->module_id != canonical->module_id_ || retained->function_index != row.function ||
+                       retained->expected_runtime_epoch != canonical->runtime_epoch_ || !retained->metadata_ready ||
+                       !retained->engine || !retained->context || retained->source.get() != canonical->source_.get() ||
+                       retained->source.owner_before(canonical->source_) || canonical->source_.owner_before(retained->source))
+                    { return false; }
+                    bitmap = {retained->debug_safe_point_bits.data(), retained->debug_safe_point_bits.size()};
+                }
+                else
+                {
+                    if(checkpoint_root_generation_publication_bridge::current_restored_body(rec, local, generation) != retained.get())
+                    { continue; }
+                    if(local >= rec.llvm_jit_compiled.local_funcs.size()) { return false; }
+                    auto const& owned{rec.llvm_jit_compiled.local_funcs.index_unchecked(local).debug_safe_point_bits};
+                    bitmap = {owned.data(), owned.size()};
+                }
+                auto const base{reinterpret_cast<::std::uintptr_t>(retained->section_bytes.data())};
+                auto const first{reinterpret_cast<::std::uintptr_t>(retained->code.body.expr_begin)};
+                auto const end{reinterpret_cast<::std::uintptr_t>(retained->code.body.code_end)};
+                if(row.function_generation != 1u || point.function_generation != generation || !base ||
+                   retained->section_bytes.size() > PTRDIFF_MAX || retained->section_bytes.size() > UINTPTR_MAX - base ||
+                   first < base || end <= first || end - base > retained->section_bytes.size() || point.expression_size != end - first)
+                { return false; }
+                // [actual section owner][effective expression ... end] one-past
+                // Both slice coordinates are proved inside this immutable parser owner before copying.
+                auto const bytes{::std::span<::std::byte const>{retained->section_bytes.data(), retained->section_bytes.size()}
+                                     .subspan(first - base, end - first)};
+                row.expression_begin = UINT64_MAX; // This separate Code body has no original DWARF coordinate.
+                row.expression_size = bytes.size(); row.function_generation = generation;
+                row.expression_bytes.assign(bytes.begin(), bytes.end());
+                row.instruction_safe_point_bits.clear(); row.instruction_safe_points_complete = false;
+                if(g_runtime.debug_granularity == llvm_jit_debug_safe_point_granularity::instruction &&
+                   point.bits == bitmap.data() && point.byte_count == bitmap.size() &&
+                   bitmap.size() == bytes.size() / 8u + (bytes.size() % 8u != 0u))
+                {
+                    row.instruction_safe_point_bits.assign(bitmap.begin(), bitmap.end());
+                    row.instruction_safe_points_complete = true;
+                }
+            }
+            for(::std::size_t local{}; local != count; ++local)
+            {
+                if(image.functions[local].function_generation != rec.llvm_jit_debug_full_entry_generations[local]) { return false; }
+            }
+            out = ::std::move(image); return true;
         }
         catch(...) { out = {}; return false; }
 #else
