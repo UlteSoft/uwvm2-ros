@@ -23,6 +23,8 @@
 #if defined(UWVM_WSEA_OPENSSL)
 #include <openssl/evp.h>
 #include <openssl/cms.h>
+#include <openssl/cmserr.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
 #endif
 namespace uwvm2::utils::security::trusted_driver
@@ -42,7 +44,7 @@ namespace uwvm2::utils::security::trusted_driver
 #endif
         }
         [[nodiscard]] bool selected()const noexcept{return selected_;}
-        [[nodiscard]] char const* select(char const* certificate)noexcept{
+        [[nodiscard]] char const* select(char const* certificate, bool require_current=false)noexcept{
             if(selected_)return "driver signature verification was already selected";
 #if defined(UWVM_WSEA_OPENSSL)
             BIO* file=BIO_new_file(certificate,"rb");
@@ -51,9 +53,13 @@ namespace uwvm2::utils::security::trusted_driver
             if(!cert)return "expected one PEM X.509 signer certificate";
             auto* key=X509_get0_pubkey(cert);
             if(!key || EVP_PKEY_get_security_bits(key)<112){X509_free(cert);return "signer key strength is below 112 security bits";}
+            if(require_current &&
+               (X509_cmp_current_time(X509_get0_notBefore(cert))>=0 ||
+                X509_cmp_current_time(X509_get0_notAfter(cert))<=0))
+            {X509_free(cert);return "host-pinned signer certificate is outside its validity interval";}
             signer_=cert;selected_=true;return nullptr;
 #else
-            (void)certificate;return "OpenSSL driver verifier unavailable";
+            (void)certificate;(void)require_current;return "OpenSSL driver verifier unavailable";
 #endif
         }
 #if defined(UWVM_WSEA_OPENSSL)
@@ -61,9 +67,41 @@ namespace uwvm2::utils::security::trusted_driver
 #endif
     };
     inline launch_verifier process_verifier{};
+    enum class refusal { policy, unsigned_elf, invalid_signature };
     class image final
     {
         int fd_{-1};
+#if defined(__linux__) && defined(UWVM_WSEA_OPENSSL)
+        [[nodiscard]] static char const* check_elf(int fd,bool executable) noexcept
+        {
+            unsigned char elf[64]{};
+            auto n=::pread(fd,elf,sizeof(elf),0);
+            if(n<(sizeof(void*)==8u?64:52) ||
+                elf[0]!=0x7f || elf[1]!='E' || elf[2]!='L' || elf[3]!='F' ||
+                elf[4]!=(sizeof(void*)==8u?2u:1u) || elf[5]!=1u || elf[6]!=1u ||
+                elf[17]!=0u || (elf[16]!=3u && (!executable || elf[16]!=2u)))
+                return "driver must be a matching little-endian ELF image of the selected kind";
+            unsigned const machine=elf[18]+256u*elf[19];
+#if defined(__x86_64__)
+            if(machine!=62u)return "driver architecture is not x86_64";
+#elif defined(__i386__)
+            if(machine!=3u)return "driver architecture is not i686";
+#elif defined(__aarch64__)
+            if(machine!=183u)return "driver architecture is not AArch64";
+#elif defined(__arm__)
+            if(machine!=40u)return "driver architecture is not ARM";
+            unsigned const flags=elf[36]|(unsigned(elf[37])<<8u)|(unsigned(elf[38])<<16u)|(unsigned(elf[39])<<24u);
+#if defined(__ARM_PCS_VFP)
+            if((flags&0x600u)!=0x400u)return "driver must use the ARM hard-float ABI";
+#else
+            if((flags&0x400u)!=0u)return "driver must use the ARM soft-float ABI";
+#endif
+#else
+            return "unsupported trusted-driver host architecture";
+#endif
+            return nullptr;
+        }
+#endif
     public:
         constexpr image() noexcept = default;
         image(image const&)=delete;
@@ -81,7 +119,8 @@ namespace uwvm2::utils::security::trusted_driver
             fd_=-1;
         }
         [[nodiscard]] int descriptor()const noexcept{return fd_;}
-        [[nodiscard]] char const* prepare(char const* path) noexcept
+        [[nodiscard]] char const* prepare(char const* path,bool executable=false,refusal* why=nullptr,
+                                          ::std::uint64_t limit=UINT64_MAX) noexcept
         {
 #if defined(__linux__) && defined(UWVM_WSEA_OPENSSL)
             if(fd_>=0)return "driver image already prepared";
@@ -92,13 +131,18 @@ namespace uwvm2::utils::security::trusted_driver
             struct stat status{};
             if(::fstat(input.fd_,&status)!=0 || !S_ISREG(status.st_mode))
                 return "driver input must be a regular file";
+            if(status.st_size<0 || static_cast<::std::uint64_t>(status.st_size)>limit)
+                return "driver input exceeds its byte limit";
             copy.fd_=static_cast<int>(::syscall(SYS_memfd_create,"uwvm-trusted-driver",MFD_CLOEXEC|MFD_ALLOW_SEALING));
             if(copy.fd_<0)return "cannot create immutable driver image";
             unsigned char buffer[65536];
+            ::std::uint64_t read_bytes{};
             for(;;){
                 auto n=::read(input.fd_,buffer,sizeof(buffer));
                 if(n<0){if(errno==EINTR)continue;return "driver read failed";}
                 if(!n)break;
+                if(static_cast<::std::uint64_t>(n)>limit-read_bytes)return "driver input exceeds its byte limit";
+                read_bytes+=static_cast<::std::uint64_t>(n);
                 ::std::size_t written{};
                 while(written<static_cast<::std::size_t>(n)){
                     auto v=::write(copy.fd_,buffer+written,static_cast<::std::size_t>(n)-written);
@@ -109,15 +153,19 @@ namespace uwvm2::utils::security::trusted_driver
             auto seal=[](int fd)noexcept{return ::fcntl(fd,F_ADD_SEALS,F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL)==0;};
             if(!seal(copy.fd_))return "driver image could not be sealed";
             if(::fstat(copy.fd_,&status)!=0)return "cannot stat sealed driver";
+            if(auto error=check_elf(copy.fd_,executable))return error;
             // Linux UAPI layout: CMS bytes, 12-byte module_signature, marker.
             // Read bytes explicitly: no alignment or native-endian struct casts.
             constexpr char marker[]="~Module signature appended~\n";
             constexpr ::std::size_t trailer_size=12u+sizeof(marker)-1u;
             unsigned char trailer[trailer_size]{};
-            if(status.st_size<=static_cast<off_t>(trailer_size) ||
-                ::pread(copy.fd_,trailer,trailer_size,status.st_size-trailer_size)!=static_cast<ssize_t>(trailer_size) ||
-                ::std::memcmp(trailer+12u,marker,sizeof(marker)-1u)!=0)
+            if(::pread(copy.fd_,trailer,trailer_size,status.st_size-trailer_size)!=static_cast<ssize_t>(trailer_size))
+                return "cannot read Linux signature trailer";
+            if(::std::memcmp(trailer+12u,marker,sizeof(marker)-1u)!=0)
+            {
+                if(why)*why=refusal::unsigned_elf;
                 return "driver has no Linux appended module signature";
+            }
             for(unsigned i{};i<8u;++i)
                 if(trailer[i]!=(i==2u?2u:0u))return "invalid Linux signature trailer";
             ::std::uint64_t signature_size{};
@@ -181,39 +229,24 @@ namespace uwvm2::utils::security::trusted_driver
             // Explicitly pinned signer, like a trusted kernel keyring entry.
             // External deployment performs PKI policy; NEVER disable content
             // or attribute verification. Do not trust certificates in the CMS.
-            if(!data.value || CMS_verify(cms.value,certs.value,nullptr,data.value,nullptr,
+            if(!data.value)return "cannot read signed driver payload";
+            ERR_clear_error();
+            if(CMS_verify(cms.value,certs.value,nullptr,data.value,nullptr,
                 CMS_BINARY|CMS_NOINTERN|CMS_NO_SIGNER_CERT_VERIFY)!=1)
+            {
+                auto const error=ERR_peek_last_error();
+                auto const reason=ERR_GET_REASON(error);
+                if(why && ERR_GET_LIB(error)==ERR_LIB_CMS &&
+                    (reason==CMS_R_VERIFICATION_FAILURE || reason==CMS_R_CONTENT_VERIFY_ERROR))
+                    *why=refusal::invalid_signature;
                 return "driver signature invalid or signer is not the host-pinned certificate";
+            }
             copy=::std::move(payload);
-            unsigned char elf[64]{};
-            auto n=::pread(copy.fd_,elf,sizeof(elf),0);
-            if(n<52 || elf[0]!=0x7f || elf[1]!='E' || elf[2]!='L' || elf[3]!='F' ||
-                elf[4]!=(sizeof(void*)==8u?2u:1u) || elf[5]!=1u || elf[6]!=1u ||
-                elf[16]!=3u || elf[17]!=0u)
-                return "driver must be a matching little-endian ELF shared object";
-            unsigned const machine=elf[18]+256u*elf[19];
-#if defined(__x86_64__)
-            if(machine!=62u)return "driver architecture is not x86_64";
-#elif defined(__i386__)
-            if(machine!=3u)return "driver architecture is not i686";
-#elif defined(__aarch64__)
-            if(machine!=183u)return "driver architecture is not AArch64";
-#elif defined(__arm__)
-            if(machine!=40u)return "driver architecture is not ARM";
-            unsigned const flags=elf[36]|(unsigned(elf[37])<<8u)|(unsigned(elf[38])<<16u)|(unsigned(elf[39])<<24u);
-#if defined(__ARM_PCS_VFP)
-            if((flags&0x600u)!=0x400u)return "driver must use the ARM hard-float ABI";
-#else
-            if((flags&0x400u)!=0u)return "driver must use the ARM soft-float ABI";
-#endif
-#else
-            return "unsupported trusted-driver host architecture";
-#endif
-            if(sizeof(void*)==8u && n!=64)return "truncated ELF64 driver";
+            if(auto error=check_elf(copy.fd_,executable))return error;
             fd_=::std::exchange(copy.fd_,-1);
             return nullptr;
 #else
-            (void)path;return "trusted-driver verifier is unavailable";
+            (void)path;(void)executable;(void)why;(void)limit;return "trusted-driver verifier is unavailable";
 #endif
         }
     };

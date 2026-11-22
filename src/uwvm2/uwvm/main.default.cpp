@@ -29,6 +29,10 @@
 // import
 # include <uwvm2/uwvm/crtmain/impl.h>
 #endif
+#if defined(__linux__) && defined(UWVM_WSEA_OPENSSL)
+# include <cstdio>
+# include <uwvm2/utils/security/trusted_driver.h>
+#endif
 
 /// @brief      (crt) main func. The main function is a special function, but there are still meaningless [[gnu::used]].
 /// @details    winnt avoid using int main(argc argv), use int main() directly to avoid wasting time parsing and transcoding ACP.
@@ -43,6 +47,32 @@ UWVM_GNU_USED int main(
 #endif
 )
 {
+#if defined(__linux__) && defined(UWVM_WSEA_OPENSSL)
+    if(argc>=2 && ::std::string_view{argv[1]}=="--verify-elf-driver")
+    {
+        using namespace ::uwvm2::utils::security::trusted_driver;
+        if(argc!=5 || (::std::string_view{argv[2]}!="executable" && ::std::string_view{argv[2]}!="shared-library"))
+        {
+            ::std::fputs("usage: uwvm2-ros --verify-elf-driver executable|shared-library ELF SIGNER.pem\n",stderr);
+            return 1;
+        }
+        if(auto error=process_verifier.select(argv[4],true))
+        {
+            ::std::fprintf(stderr,"ELF trust policy: %s\n",error);
+            return 1;
+        }
+        image verified;
+        refusal why{refusal::policy};
+        if(auto error=verified.prepare(argv[3],::std::string_view{argv[2]}=="executable",&why,256u*1024u*1024u))
+        {
+            ::std::fprintf(stderr,"ELF verification: %s\n",error);
+            if(why==refusal::unsigned_elf)return 2;
+            if(why==refusal::invalid_signature)return 3;
+            return 1;
+        }
+        return 0;
+    }
+#endif
 #if !((defined(_WIN32) && !defined(__CYGWIN__)) && !defined(_WIN32_WINDOWS))  // NOT WINNT
     return ::uwvm2::uwvm::uwvm_main_non_winnt(argc, argv);
 #else

@@ -57,6 +57,23 @@ ROS permanently disables weak-symbol provider discovery. Explicit trusted
 native drivers remain supported; implicit weak registration is not an
 alternative admission route.
 
+## Offline ELF verification
+
+Linux builds with WSEA OpenSSL support provide a standalone offline command.
+The command works with native preload compiled out and exits after verification.
+
+```sh
+uwvm2-ros --verify-elf-driver executable driver.signed signer.pem
+uwvm2-ros --verify-elf-driver shared-library driver.signed.so signer.pem
+```
+
+The command uses the same sealed-image CMS implementation, requires the pinned
+certificate to be current and limits the signed file to 256 MiB. Exit status
+0 means verified. Status 2 means a matching ELF with no appended signature
+marker. Status 3 means a recognized CMS signature or content verification
+failure. Status 1 includes trust failures, malformed envelopes and I/O errors.
+WSEA `--secure` and wasm-cosign retain their Wasm-only scope.
+
 References: [Linux module signing](https://docs.kernel.org/admin-guide/module-signing.html),
 [Linux signature envelope](https://github.com/torvalds/linux/blob/master/include/uapi/linux/module_signature.h),
 [OpenSSL CMS verification](https://docs.openssl.org/3.1/man3/CMS_verify/).
