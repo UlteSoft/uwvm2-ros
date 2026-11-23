@@ -7,8 +7,11 @@ unwind witness and crash stack recovery are mandatory and cannot be disabled.
 
 Interpreter-enabled builds also accept `--runtime-int` (`-Rint`). Both backends
 use the same host namespace, exact interface and operation/resource policy.
-The interpreter does not provide the LLVM source/Wasm/assembly debugger. LLVM
-AOT rejects unsupported lowering instead of silently falling back to the
+Live debugging requires LLVM AOT. The interpreter rejects `-Rdbg`,
+`--runtime-debug`, `-m debug` and `--mode debug` at every debugger permission
+level. It exits with status 126 before starting the guest. An inherited debugger
+control endpoint also requires LLVM AOT, including with `--wasi-threads`.
+LLVM AOT rejects unsupported lowering instead of silently falling back to the
 interpreter or instruction-based exception propagation.
 
 Source focus:

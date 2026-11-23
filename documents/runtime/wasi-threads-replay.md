@@ -70,13 +70,12 @@ channel and native embedding APIs also accept nonterminal recorded prefixes.
 
 ## DAP and IDE control
 
-The normal secure broker, DAP adapter and VS Code Diagnostics view recognize an
-explicit `--wasi-threads` launch. Full debugger permission and full dump
-disclosure are required. The private interpreter and LLVM driver both use the
-same authenticated host channel; this does not enable native instruction
-debugging in the interpreter. Recording starts before the first real Wasm
-instruction. Without a managed channel or explicit history option, ordinary
-execution does not enable recording.
+Use LLVM AOT for live thread control through the secure broker, DAP adapter
+or VS Code Diagnostics view. The launch requires `--wasi-threads`, an
+authenticated debugger endpoint, full debugger permission and full dump
+disclosure. Recording starts before the first Wasm instruction. For an
+interpreter launch, use `--debug-thread-history` in ordinary run mode to record
+or replay a completed history.
 
 A managed launch can also select `--debug-thread-history replay`. Its initial
 debug stop waits for the actual journal boundary, rather than confusing an

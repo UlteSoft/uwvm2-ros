@@ -152,11 +152,11 @@ publishing an incomplete archive. These are process-termination tests, not
 synthetic native-call providers. Imported active data is supported: do not
 classify a valid active segment as an unsupported input. The `active-data`
 fixture checks actual reinitialization rather than copying parent bytes.
-Add `--managed` to exercise the authenticated debugger channel and confirm that
-connecting an IDE does not suppress the trusted terminal decision.
+On an LLVM launch, add `--managed` to verify the trusted terminal decision
+while an IDE is connected through the authenticated debugger channel.
 
 Ordinary DAP integration uses `test/0018.debugger/run_thread_replay_dap.py`.
-It consumes an actual embedding `*.argv.json`, reuses only the authorized
+It consumes an actual LLVM embedding `*.argv.json`, reuses only the authorized
 options after `--`, and starts the product CLI with its authenticated channel.
 `--pending` uses a real blocking pipe and same-process retained-call reattachment.
 `run_thread_replay_broker.py` additionally launches the normal secure broker and
@@ -168,9 +168,10 @@ replaying managed launch, requiring zero real writes from process start. Add
 `--initial-state joined` when using the completed archive saved by that test;
 this verifies that a terminal replay endpoint keeps the IDE session available.
 `run_thread_replay_ros_v1_dap.py` reuses the real native ROS matrix's authorized
-options and gateway installation. It pauses the gateway after startup, captures
-an actually admitted unresolved u2ros1 call through DAP, reattaches it in
-process, and verifies that both subsequent replays leave the gateway's publish
+options and gateway installation. Interpreter cases check the authenticated
+endpoint rejection before gateway startup. LLVM cases pause the gateway after
+startup, capture an admitted unresolved u2ros1 call through DAP, reattach it
+in process, and verify that both subsequent replays leave the gateway's publish
 and bind counters unchanged. A retained native participant waiting for admission
 is distinguished from a genuinely unknown native result. An already-dispatched
 publish can finish externally while paused, but the Wasm instruction locations

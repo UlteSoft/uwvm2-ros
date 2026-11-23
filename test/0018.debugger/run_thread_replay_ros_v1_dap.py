@@ -55,6 +55,16 @@ def main():
                 actor = subprocess.Popen(command, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
                 actors.append(actor); return actor
             try:
+                original = json.loads((old / "argv.json").read_text()); options = original[original.index("--") + 1:]
+                at = options.index(f"--ros{version}-single-gateway-socket")
+                options[at + 2] = str(address)
+                if case["engine"] == "int":
+                    vm = VM([str(args.binary.resolve()), *options], folder, prefix)
+                    row["exit"] = vm.process.wait(timeout=30)
+                    require(row["exit"] == 126 and b"debug-jit control FD is unsupported" in (folder / "vm.log").read_bytes(),
+                            "interpreter accepted live thread control or reached gateway setup")
+                    row["passed"] = True
+                    continue
                 if version == 1:
                     master = launch("master", [str(args.native_root / "tools/roscore"), "-p", "11393"])
                     deadline = time.monotonic() + 30
@@ -63,9 +73,6 @@ def main():
                             if check.connect_ex(("127.0.0.1", 11393)) == 0: break
                         require(master.poll() is None and time.monotonic() < deadline, "native master startup")
                         time.sleep(.01)
-                original = json.loads((old / "argv.json").read_text()); options = original[original.index("--") + 1:]
-                at = options.index(f"--ros{version}-single-gateway-socket")
-                options[at + 2] = str(address)
                 vm = VM([str(args.binary.resolve()), *options], folder, prefix, start_paused=True)
                 deadline = time.monotonic() + 20
                 while "\nState:\tT" not in Path(f"/proc/{vm.process.pid}/status").read_text():

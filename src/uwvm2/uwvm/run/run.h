@@ -1935,13 +1935,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     {
         if(::uwvm2::uwvm::wasm::storage::execute_wasm_mode != ::uwvm2::uwvm::wasm::base::mode::debug_jit) { return true; }
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT)
-        ::uwvm2::runtime::wasm_threads::threaded_profile_limits thread_limits{};
-        if(::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd>=0 &&
-           mode::global_runtime_mode==mode::runtime_mode_t::full_compile &&
-           ::uwvm2::runtime::lib::runtime_threaded_profile_policy_host_api(thread_limits)==::uwvm2::runtime::lib::threaded_policy_status::configured)
-            return true;
-#endif
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         if(mode::global_runtime_mode == mode::runtime_mode_t::full_compile &&
            mode::global_runtime_compiler == mode::runtime_compiler_t::llvm_jit_only) { return true; }
@@ -2043,14 +2036,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     inline bool prepare_debug_control_fd_mode() noexcept
     {
         if(::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd < 0) { return true; }
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT)
-        // The private interpreter exposes authenticated cohort replay, not
-        // ordinary native instruction debugging. It owns this same transport.
-        ::uwvm2::runtime::wasm_threads::threaded_profile_limits thread_limits{};
-        if(::uwvm2::runtime::lib::runtime_threaded_profile_policy_host_api(thread_limits)==::uwvm2::runtime::lib::threaded_policy_status::configured &&
-           ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_mode==::uwvm2::uwvm::runtime::runtime_mode::runtime_mode_t::full_compile)
-            return true;
-#endif
 #if ((defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)) || \
      (defined(__APPLE__) && defined(__MACH__))) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -2093,6 +2078,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #include "threaded_debug_cli.h"
     inline constexpr int run() noexcept
     {
+        // Check the requested debugger backend before permissions can change debug mode to run.
+        // An inherited debugger endpoint requests live control even in ordinary run mode.
+        if(!prepare_debug_jit_mode() || !prepare_debug_control_fd_mode() || !prepare_debug_control_handle_mode())
+        { return static_cast<int>(retval::parameter_error); }
+
 #if defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         ::uwvm2::utils::container::std_unique_ptr<production_update_cli::channel> update_channel{};
         {
@@ -2255,8 +2245,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         threaded_signal_cli::controller signal_cli;
         threaded_history_cli thread_history_cli;
 #endif
-        if(!prepare_debug_jit_mode() || !prepare_debug_control_fd_mode() ||
-           !prepare_debug_control_handle_mode() || !prepare_debug_console_input())
+        if(!prepare_debug_console_input())
         { return static_cast<int>(::uwvm2::uwvm::run::retval::parameter_error); }
 #if ((defined(__linux__) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)) || \
      (defined(__APPLE__) && defined(__MACH__)) || (defined(_WIN32) && !defined(__CYGWIN__))) && \
