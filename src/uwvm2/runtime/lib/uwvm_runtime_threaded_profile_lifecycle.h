@@ -3,6 +3,7 @@
 #include "uwvm_runtime_threaded_signal_host.h"
     private:
         enum class backend : unsigned { integer, llvm };
+        using llvm_ir_limits = ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits;
         struct main_result
         {
             ::uwvm2::utils::container::std_vector<::std::byte> bytes;
@@ -24,6 +25,7 @@
             int signal_retirement_error{};
             ::uwvm2::uwvm::runtime::full::full_source_destruction_completion::owner old_source_completion;
             backend selected{};
+            llvm_ir_limits ir_limits{};
             ::std::uint_least64_t generation{};
             bool joined{}, ordinary_reopened{}, requires_reset{};
             ::uwvm2::runtime::wasm_threads::group_outcome outcome{};
@@ -71,6 +73,7 @@
             ::std::atomic_bool builtin_requested{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_observation observation{::uwvm2::runtime::wasm_threads::threaded_debug_observation::none};
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits configured{};
+            llvm_ir_limits ir_limits{};
             bool cli_storage_derived{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits debug_control{};
             ::std::shared_ptr<::uwvm2::runtime::wasm_threads::threaded_execution_journal> journal{};
@@ -153,15 +156,25 @@
                 // worker. Ordinary/idle execution pays no additional poll.
                 ::uwvm2::runtime::memtag::deferred::poll(true);
             }
-            [[nodiscard]] bool prepare(backend selected, group::CompilerLease const& compiler) noexcept
+            [[nodiscard]] bool prepare(profile_state const& state, group::CompilerLease const& compiler,
+                ::uwvm2::runtime::wasm_threads::termination_kind& failure)
             {
                 if(!compiler.owns_current_native_thread() || &compiler.admission() != admission_.get() ||
                    compiler.cancellation().stop_requested()) { return false; }
                 auto const& limits{admission_->limits()};
+                auto reject_budget=[&](char const* stage)
+                {
+                    failure=::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected;
+                    ::fast_io::perrln("uwvm: [error] WASI Threads ",::fast_io::mnp::os_c_str(stage),
+                        " exceeded a preparation resource limit (per-child-storage=",limits.max_child_storage_bytes,
+                        ", per-child-code=",limits.max_child_code_bytes,").");
+                    return false;
+                };
                 // Cold, quota-checked dependency traversal. No allocation is
                 // introduced on a running Guest stack for module-start order.
                 auto const count=world_->module_count();
-                if(count>limits.max_child_storage_bytes/(4u*sizeof(::std::size_t)))return false;
+                if(count==0u)return false;
+                if(count>limits.max_child_storage_bytes/(4u*sizeof(::std::size_t)))return reject_budget("module traversal");
                 struct start_frame{::std::size_t module{},next{};};
                 ::uwvm2::utils::container::std_vector<unsigned char> visited(count);
                 ::uwvm2::utils::container::std_vector<start_frame> starts;
@@ -181,8 +194,8 @@
                     if(world_->initialization_function_index(module))initialization_order_.push_back(module);
                 }
                 auto const before{owned_storage_bytes()};
-                if(before >= limits.max_child_storage_bytes) { return false; }
-                if(selected == backend::integer)
+                if(before >= limits.max_child_storage_bytes) { return reject_budget("instance storage"); }
+                if(state.selected == backend::integer)
                 {
                     namespace integer = ::uwvm2::runtime::compiler::uwvm_int::threaded;
                     integer::limits budget{};
@@ -196,22 +209,35 @@
                     for(::std::size_t m{};m<world_->module_count();++m)
                     {
                         auto const* module=world_->module(m);
-                        auto const n=module->imported_function_vec_storage.size()+module->local_defined_function_vec_storage.size();
-                        if(n>SIZE_MAX-budget.functions)return false;budget.functions+=n;
+                        for(auto n : {module->imported_function_vec_storage.size(),module->local_defined_function_vec_storage.size()})
+                        {
+                            if(n>SIZE_MAX-budget.functions)return reject_budget("function count");
+                            budget.functions+=n;
+                        }
                     }
                     budget.host_bytes = limits.max_value_stack_bytes;
                     budget.exception_objects = limits.max_call_frames;
                     budget.exception_values = budget.values;
                     ::uwvm2::validation::error::code_validation_error_impl error{};
                     auto built{integer::engine::compile(world_, budget, error,!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)};
-                    if(!built.code || !built.outcome.normal()) { ::fast_io::perrln("uwvm: [error] WASI Threads interpreter preparation rejected: ",static_cast<unsigned>(built.outcome.code)); return false; }
+                    if(!built.code && built.outcome.code==integer::status::resource_limit)return reject_budget("interpreter");
+                    if(!built.code || !built.outcome.normal())
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads interpreter preparation failed: ",static_cast<unsigned>(built.outcome.code));
+                        return false;
+                    }
                     integer_ = ::std::move(built.code);
                 }
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                 else
                 {
-                    auto built{ThreadedLlvmChild::prepare(world_, compiler, limits.max_child_storage_bytes - before)};
-                    if(!built.child || built.status != ThreadedLlvmChild::preparation_status::ok) { ::fast_io::perrln("uwvm: [error] WASI Threads LLVM preparation rejected: ",static_cast<unsigned>(built.status)); return false; }
+                    auto built{ThreadedLlvmChild::prepare(world_,compiler,limits.max_child_storage_bytes-before,state.ir_limits)};
+                    if(!built.child && built.status==ThreadedLlvmChild::preparation_status::budget)return reject_budget("LLVM");
+                    if(!built.child || built.status!=ThreadedLlvmChild::preparation_status::ok)
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM preparation failed: ",static_cast<unsigned>(built.status));
+                        return false;
+                    }
                     llvm_ = ::std::move(built.child);
                 }
 #else
@@ -219,9 +245,10 @@
 #endif
                 auto const storage{owned_storage_bytes()};
                 auto const world_storage{world_->owned_storage_bytes()};
-                return storage <= limits.max_child_storage_bytes && storage >= world_storage &&
-                    owned_code_bytes() <= limits.max_child_code_bytes &&
-                    world_->reserve_execution_storage(storage - world_storage);
+                if(storage<world_storage)return false;
+                if(storage>limits.max_child_storage_bytes || owned_code_bytes()>limits.max_child_code_bytes)
+                    return reject_budget("retained code or storage");
+                return world_->reserve_execution_storage(storage-world_storage);
             }
             [[nodiscard]] bool refresh_after_actual_parent_active() noexcept
             {
@@ -433,11 +460,15 @@
                 auto work{::uwvm2::utils::container::make_unique<concrete_work>(::std::move(created.world),
                     main ? state.result : nullptr, entry, parameters, ::std::move(permission))};
                 work->bind_guest_exit(state.guest_exit);
-                if(!work->prepare(state.selected, compiler) || compiler.cancellation().stop_requested()) { return {}; }
+                if(!work->prepare(state,compiler,failure) || compiler.cancellation().stop_requested()) { return {}; }
                 return work;
             }
             catch(::std::bad_alloc const&)
-            { failure=::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected; return {}; }
+            {
+                ::fast_io::perrln("uwvm: [error] WASI Threads could not allocate instance preparation storage.");
+                failure=::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected;
+                return {};
+            }
             catch(...) { return {}; }
         }
 
@@ -1054,14 +1085,18 @@
             return true;
         }
         [[nodiscard]] static bool configure(::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
-            bool cli_storage_derived=false) noexcept
+            bool cli_storage_derived, llvm_ir_limits ir_limits) noexcept
         {
-            if(!group::limits_admitted(limits)) { return false; }
+            if(!group::limits_admitted(limits) || !ir_limits.valid()) { return false; }
             ::std::unique_lock registry{control_owner().registry, ::std::try_to_lock};
             if(!registry.owns_lock()) { return false; }
             if(control_owner().profile || control_owner().blocked_generation == current_runtime_generation()) { return false; }
             bool const accepted{g_runtime.execution_domain.with_quiescent_configuration([&]() noexcept
-            { control_owner().configured=limits;control_owner().cli_storage_derived=cli_storage_derived; })};
+            {
+                control_owner().configured=limits;
+                control_owner().ir_limits=ir_limits;
+                control_owner().cli_storage_derived=cli_storage_derived;
+            })};
             if(accepted) { control_owner().builtin_requested.store(true, ::std::memory_order_release); }
             return accepted;
         }
@@ -1167,6 +1202,7 @@
                     state->result = ::uwvm2::utils::container::make_shared<main_result>(); state->result->bytes.resize(result_bytes);
                     if(state->result->bytes.capacity()>control_owner().configured.max_value_stack_bytes) { throw ::std::bad_alloc{}; }
                     state->selected = backend::integer;
+                    state->ir_limits = control_owner().ir_limits;
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     if(runtime_compiler_requests_llvm_jit_translation()) { state->selected = backend::llvm; }
 #endif

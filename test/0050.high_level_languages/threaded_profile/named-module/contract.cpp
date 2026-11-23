@@ -15,6 +15,7 @@
 #error "This explicit module contract requires the genuine Linux/TLS/native-thread/C++-exception backend profile."
 #endif
 import uwvm2.runtime;
+import uwvm2.utils.container;
 import uwvm2.uwvm.cmdline.params;
 import uwvm2.uwvm.cmdline.callback;
 import uwvm2.uwvm.cmdline;
@@ -29,6 +30,7 @@ extern "C" void const* named_module_signal_state() noexcept;
 extern "C" void const* named_module_ros_state() noexcept;
 namespace runtime=::uwvm2::runtime::lib;
 namespace detail=::uwvm2::uwvm::cmdline::params::details;
+namespace threads=::uwvm2::runtime::wasm_threads;
 namespace ros=::uwvm2::uwvm::imported::ros;
 static_assert(!::std::is_default_constructible_v<::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld>);
 static_assert(!::std::is_default_constructible_v<::uwvm2::runtime::compiler::uwvm_int::threaded::engine>);
@@ -46,6 +48,27 @@ int main()
     assert(!detail::wasi_thread_signal_config.selected());
     assert(!ros::policy_configured && !ros::policy_any_enabled);
     assert(!detail::wasi_threads_existed && !detail::wasi_thread_signals_existed);
+    threads::threaded_llvm_ir_limits ir{};
+    ::std::size_t code{};
+    assert(detail::wasi_threads_parse_code_budget(u8"536870912:4194304",code,ir));
+    assert(code==536870912u && ir.instructions==4194304u);
+    assert(detail::wasi_threads_parse_code_budget(u8"536870912",code,ir));
+    assert(code==536870912u && ir.instructions==1048576u);
+    assert(detail::wasi_threads_parse_code_budget(u8"4096:1",code,ir));
+    assert(code==4096u && ir.instructions==1u);
+    constexpr ::uwvm2::utils::container::u8string_view invalid_budgets[]{
+        u8":1",u8"0:1",u8"128:",u8"128:0",u8"128:4194305",u8"128:1:2",
+        u8"128:+1",u8"128:-1",u8"128:unlimited",u8"128:18446744073709551616",
+        u8"18446744073709551616:1"};
+    for(auto argument : invalid_budgets)
+    {
+        assert(!detail::wasi_threads_parse_code_budget(argument,code,ir));
+        assert(code==4096u && ir.instructions==1u);
+    }
+    threads::threaded_profile_limits byte_limits{};
+    assert(detail::wasi_threads_derive_limits({1u,2u,1048576u,16777216u,67108864u,65536u},byte_limits));
+    assert(!runtime::runtime_threaded_profile_configure_with_ir_limits_host_api(byte_limits,{0u}));
+    assert(!runtime::runtime_threaded_profile_configure_with_ir_limits_host_api(byte_limits,{4194305u}));
     detail::wasi_thread_signal_policy result{};
     assert(detail::wasi_thread_signals_derive({3u,UINT64_MAX,1u,4096u,100u,100u},result));
     assert(result.channel.cookie==UINT64_MAX && result.channel.read_fd==3u);

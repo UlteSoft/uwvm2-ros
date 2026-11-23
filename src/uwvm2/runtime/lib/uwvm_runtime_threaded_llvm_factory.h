@@ -19,20 +19,24 @@
             }
             return true;
         }
-        [[nodiscard]] bool build_reference_type_ids()
+        [[nodiscard]] preparation_status build_reference_type_ids()
         {
-            if(!reference_dispatch_)return true;
-            if(!account_retained_storage())return false;
+            using status=preparation_status;
+            if(!reference_dispatch_)return status::ok;
+            auto const charged=account_retained_storage();
+            if(charged!=status::ok)return charged;
             auto const remaining=storage_limit_-storage_bytes_;
             auto const modules=world_->module_count();
-            if(modules>remaining/sizeof(decltype(reference_type_ids_)::value_type))return false;
+            if(modules>remaining/sizeof(decltype(reference_type_ids_)::value_type))return status::budget;
             auto bytes=modules*sizeof(decltype(reference_type_ids_)::value_type);
             for(::std::size_t m{};m<modules;++m)
             {
                 auto const& peer=*world_->module(m);
-                auto const count=peer.imported_function_vec_storage.size()+peer.local_defined_function_vec_storage.size();
-                if(count>(remaining-bytes)/sizeof(::std::uint_least32_t))return false;
-                bytes+=count*sizeof(::std::uint_least32_t);
+                for(auto count : {peer.imported_function_vec_storage.size(),peer.local_defined_function_vec_storage.size()})
+                {
+                    if(count>(remaining-bytes)/sizeof(::std::uint_least32_t))return status::budget;
+                    bytes+=count*sizeof(::std::uint_least32_t);
+                }
             }
             reference_type_ids_.resize(modules);
             for(::std::size_t m{};m<modules;++m)
@@ -42,11 +46,11 @@
             }
             compiled_module_record record{};record.runtime_module=module_;
             record.type_canon_index=build_type_canon_index(*module_);
-            if(reference_type_ids_.size()!=world_->module_count())return false;
+            if(reference_type_ids_.size()!=world_->module_count())return status::invalid_world;
             for(::std::size_t m{};m<reference_type_ids_.size();++m)
             {
                 auto const& module=*world_->module(m);auto const imported=module.imported_function_vec_storage.size();
-                if(reference_type_ids_[m].size()!=imported+module.local_defined_function_vec_storage.size())return false;
+                if(reference_type_ids_[m].size()!=imported+module.local_defined_function_vec_storage.size())return status::invalid_world;
                 for(::std::size_t f{};f<reference_type_ids_[m].size();++f)
                 {
                     auto const* type=f<imported?module.imported_function_vec_storage.index_unchecked(f).import_type_ptr->imports.storage.function:
@@ -56,7 +60,7 @@
                     reference_type_ids_[m][f]=find_canonical_type_id_for_type_uncached(record,module,type);
                 }
             }
-            return true;
+            return status::ok;
         }
         [[nodiscard]] ::std::size_t actual_table_local(
             ::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t const* function) const noexcept
@@ -74,7 +78,7 @@
         }
         [[nodiscard]] bool refresh_table_targets_noalloc() noexcept
         {bound_tables_=validate_table_targets_noalloc();return bound_tables_;}
-        [[nodiscard]] bool check_object(::llvm::object::ObjectFile const& object,::std::size_t& charge,
+        [[nodiscard]] preparation_status check_object(::llvm::object::ObjectFile const& object,::std::size_t& charge,
             ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions)
         {
             // A finite, deliberately conservative native ELF loader charge:
@@ -82,34 +86,35 @@
             // allowance and three native page groups. No null allocator is used
             // to pretend RuntimeDyld's fatal allocation path is recoverable.
             charge=3u*65536u;::std::size_t sections{},relocations{},symbols{};
-            auto reject=[&](char const* reason)
+            using status=preparation_status;
+            auto reject=[&](char const* reason,status why=status::native_failure)
             {
                 ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
                     " (",::fast_io::mnp::os_c_str(reason),") sections=",sections," relocations=",relocations,
                     " symbols=",symbols," charged-bytes=",charge," code-limit=",code_limit_);
-                return false;
+                return why;
             };
             if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)
                 return reject("native ELF target");
             auto add=[&](::std::size_t value){if(charge>code_limit_||value>code_limit_-charge)return false;charge+=value;return true;};
             for(auto const& section:object.sections())
             {
-                if(++sections>4096u)return reject("section count exceeds 4096");
-                if(section.getAlignment().value()>65536u)return reject("section alignment exceeds 65536");
+                if(++sections>4096u)return reject("section count exceeds 4096",status::budget);
+                if(section.getAlignment().value()>65536u)return reject("section alignment exceeds 65536",status::budget);
                 auto name=section.getName();if(!name){::llvm::consumeError(name.takeError());return reject("section name");}
                 auto const size=section.getSize();
-                if(size>code_limit_||!add(static_cast<::std::size_t>(size)))return reject("section byte charge");
-                if(!add(2u*65536u))return reject("section alignment charge");
+                if(size>code_limit_||!add(static_cast<::std::size_t>(size)))return reject("section byte charge",status::budget);
+                if(!add(2u*65536u))return reject("section alignment charge",status::budget);
                 for(auto const& relocation:section.relocations())
                 {
                     static_cast<void>(relocation);
-                    if(++relocations>65536u)return reject("relocation count exceeds 65536");
-                    if(!add(512u))return reject("relocation byte charge");
+                    if(++relocations>65536u)return reject("relocation count exceeds 65536",status::budget);
+                    if(!add(512u))return reject("relocation byte charge",status::budget);
                 }
             }
             for(auto const& symbol:object.symbols())
             {
-                if(++symbols>262144u)return reject("symbol count exceeds 262144");
+                if(++symbols>262144u)return reject("symbol count exceeds 262144",status::budget);
                 auto flags=symbol.getFlags();auto name=symbol.getName();
                 if(!flags){::llvm::consumeError(flags.takeError());return reject("symbol flags");}
                 if(!name){::llvm::consumeError(name.takeError());return reject("symbol name");}
@@ -147,7 +152,7 @@
                                 ::fast_io::mnp::strvw(spelling.begin(),spelling.end()));
                             return reject("unbound native symbol");
                         }
-                        if(externals_.size()>=256u)return reject("external binding count exceeds 256");
+                        if(externals_.size()>=256u)return reject("external binding count exceeds 256",status::budget);
                         externals_.push_back({::uwvm2::utils::container::copy_string(*name),pointer});
                     }
                 }
@@ -158,11 +163,19 @@
                 }
             }
             if(!check_static_stack_object(object))return reject("native stack witness");
-            return charge<=code_limit_||reject("initial arena charge");
+            if(guest_fixed_stack_charge_>guest_native_stack_usable_bytes_)
+            {
+                ::fast_io::perrln("uwvm: [error] WASI Threads JIT requires ",guest_fixed_stack_charge_,
+                    " bytes of proven Guest native frames; --wasi-threads native-stack-bytes provides ",
+                    guest_native_stack_usable_bytes_," usable bytes. Increase that native stack quota, including guard pages.");
+                return status::budget;
+            }
+            return charge<=code_limit_ ? status::ok : reject("initial arena charge",status::budget);
         }
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            [[maybe_unused]] ::std::size_t backend_storage_budget, ::std::size_t module_index) noexcept
+            [[maybe_unused]] ::std::size_t backend_storage_budget, ::std::size_t module_index,
+            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -187,8 +200,9 @@
                 data->compiler_native_stack_usable_bytes_=compiler.native_stack_usable_bytes();
                 if(data->guest_native_stack_usable_bytes_==0u||data->compiler_native_stack_usable_bytes_==0u)
                     return {{},status::invalid_world};
-                if(data->call_limit_==0u||data->call_limit_>65536u||data->code_limit_==0u||
-                   limits.max_child_storage_bytes==0u)return {{},status::budget};
+                if(data->call_limit_==0u||data->code_limit_==0u||limits.max_child_storage_bytes==0u)
+                    return {{},status::invalid_world};
+                if(data->call_limit_>65536u)return {{},status::budget};
                 data->imports_=module.imported_function_vec_storage.size();
                 auto const count=module.local_defined_function_vec_storage.size();
                 data->start_=module_index==0u?data->world_->thread_start_function_index():data->imports_;
@@ -255,7 +269,8 @@
                     auto const begin=reinterpret_cast<::std::uintptr_t>(local.wasm_code_ptr->body.code_begin);
                     auto const expression=reinterpret_cast<::std::uintptr_t>(local.wasm_code_ptr->body.expr_begin);
                     auto const end=reinterpret_cast<::std::uintptr_t>(local.wasm_code_ptr->body.code_end);
-                    if(begin<base||expression<begin||end<=expression||end-base>bytes||end-begin>(1u<<20u)||
+                    if(begin<base||expression<begin||end<=expression||end-base>bytes)return {{},status::invalid_body};
+                    if(end-begin>(1u<<20u)||
                        bodies>limits.max_child_storage_bytes||end-begin>limits.max_child_storage_bytes-bodies)return {{},status::budget};
                     bodies+=end-begin;if(bodies>(8u<<20u))return {{},status::budget};
                 }
@@ -304,8 +319,9 @@
                     if(elements>(remaining-table_shape_charge)/sizeof(target_type))return {{},status::budget};
                     // Dynamic indirect targets are copied under the actual private instance lease.
                 }
-                if(elements>(SIZE_MAX-table_shape_charge)/sizeof(target_type)||
-                   !data->prepare_exception_schemas(table_shape_charge+elements*sizeof(target_type)))return {{},status::budget};
+                if(elements>(SIZE_MAX-table_shape_charge)/sizeof(target_type))return {{},status::budget};
+                auto const schemas=data->prepare_exception_schemas(table_shape_charge+elements*sizeof(target_type));
+                if(schemas!=status::ok)return {{},schemas};
                 ::uwvm2::validation::error::code_validation_error_impl error{};
                 emit::require_runtime_module_declaration_policy(module,*data->world_->feature_parameter(module_index),error);
                 if(count==0u)
@@ -318,7 +334,8 @@
                     ::uwvm2::utils::container::std_vector<native_bridge>{}.swap(data->emitted_bridges_);
                     ::uwvm2::utils::container::std_vector<external>{}.swap(data->externals_);
                     ::uwvm2::utils::container::std_vector<native_frame_record>{}.swap(data->native_frames_);
-                    if(!data->account_retained_storage())return {{},status::budget};
+                    auto const charged=data->account_retained_storage();
+                    if(charged!=status::ok)return {{},charged};
                     return {::std::move(data),status::ok};
                 }
                 auto validation=emit::build_runtime_validation_module(module);
@@ -341,11 +358,12 @@
                     for(auto const& f:llvm_module)for(auto const& b:f)
                     {
                         auto const count=b.size();
-                        if(++blocks>262144u||count>1048576u-instructions)
+                        if(++blocks>ir_limits.maximum_blocks || count>ir_limits.instructions-instructions)
                         {
+                            auto const observed=count>SIZE_MAX-instructions ? SIZE_MAX : instructions+count;
                             ::fast_io::perrln("uwvm: [error] WASI Threads LLVM IR limit in module ",module_index,
-                                " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/262144 instructions=",
-                                static_cast<::std::uint64_t>(instructions)+count,"/1048576");
+                                " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/",ir_limits.maximum_blocks,
+                                " instructions=",observed,"/",ir_limits.instructions);
                             return false;
                         }
                         instructions+=count;
@@ -388,13 +406,13 @@
                     if(!data->add_control(llvm_module))
                     {
                         ::fast_io::perrln("uwvm: [error] WASI Threads LLVM control insertion rejected in module ",module_index);
-                        return {{},status::budget};
+                        return {{},status::native_failure};
                     }
                     if(!ir_fits("after control"))return {{},status::budget};
                     if(!data->check_static_stack_ir(llvm_module))
                     {
                         ::fast_io::perrln("uwvm: [error] WASI Threads LLVM static stack IR rejected in module ",module_index);
-                        return {{},status::budget};
+                        return {{},status::native_failure};
                     }
                     if(!owner.valid())return {{},status::unsupported_bridge};
                 }
@@ -406,7 +424,8 @@
                     {
                         auto const* call=::llvm::dyn_cast<::llvm::CallBase>(use);
                         auto const* count_value=call && call->arg_size()==7u ? ::llvm::dyn_cast<::llvm::ConstantInt>(call->getArgOperand(5u)) : nullptr;
-                        if(!count_value || count_value->getZExtValue()>limits.max_value_stack_bytes/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
+                        if(!count_value)return {{},status::invalid_body};
+                        if(count_value->getZExtValue()>limits.max_value_stack_bytes/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
                         gc_inputs=(::std::max)(gc_inputs,static_cast<::std::size_t>(count_value->getZExtValue()));
                     }
                 }
@@ -425,10 +444,13 @@
                 target->Options.EmitStackSizeSection=true;
                 set_llvm_module_target_triple_from_machine(llvm_module,*target);llvm_module.setDataLayout(target->createDataLayout());
                 apply_runtime_llvm_jit_native_target_function_attrs(llvm_module,cpu,cpu,*target);
-                if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false)||
-                   !ir_fits("after optimization"))return {{},status::native_failure};
+                if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false))
+                    return {{},status::native_failure};
+                if(!ir_fits("after optimization"))return {{},status::budget};
                 data->reuse_control_targets(llvm_module);
-                if(!ir_fits("after control target loads")||!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))return {{},status::native_failure};
+                if(!ir_fits("after control target loads"))return {{},status::budget};
+                if(!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))
+                    return {{},status::native_failure};
                 if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                    !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
                 if(!data->record_native_call_graph(llvm_module))return {{},status::native_failure};
@@ -460,14 +482,15 @@
                 {
                     ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object stream rejected in module ",module_index,
                         " emitted-bytes=",output.tell()," code-limit=",data->code_limit_);
-                    return {{},status::budget};
+                    return {{},output.exceeded_budget() ? status::budget : status::native_failure};
                 }
                 auto buffer=::llvm::MemoryBuffer::getMemBufferCopy(output.bytes(),"uwvm.threaded.child.object");
                 if(!buffer)return {{},status::native_failure};
                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());
                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
                 ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> definitions;
-                if(!data->check_object(**parsed,data->native_bytes_,definitions))return {{},status::budget};
+                auto const checked=data->check_object(**parsed,data->native_bytes_,definitions);
+                if(checked!=status::ok)return {{},checked};
                 for(auto const& entry:data->entries_)
                 {
                     bool raw{},typed{};for(auto const& name:definitions){raw|=name==entry.raw_name;typed|=name==entry.typed_name;}
@@ -557,7 +580,10 @@
                 for(auto& entry:data->entries_)
                 {::uwvm2::utils::container::std_string{}.swap(entry.typed_name);::uwvm2::utils::container::std_string{}.swap(entry.raw_name);}
                 ::uwvm2::utils::container::std_vector<external>{}.swap(data->externals_);
-                if(!data->build_reference_type_ids()||!data->account_retained_storage())return {{},status::budget};
+                auto const types=data->build_reference_type_ids();
+                if(types!=status::ok)return {{},types};
+                auto const charged=data->account_retained_storage();
+                if(charged!=status::ok)return {{},charged};
                 return {::std::move(data),status::ok};
             }
             catch(::fast_io::error const&){return {{},status::invalid_body};}

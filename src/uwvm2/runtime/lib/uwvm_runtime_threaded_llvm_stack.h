@@ -364,19 +364,7 @@
                 if(!bound.valid)return false;
                 if(bound.acyclic)guest_fixed_stack_charge_=(::std::min)(guest_fixed_stack_charge_,bound.bytes);
             }
-            if(guest_fixed_stack_charge_==SIZE_MAX)return false;
-            // max_value_stack_bytes grants the interpreter's separate operand
-            // storage. The JIT's actual native frame/locals reservation is bounded
-            // by the explicitly admitted native mapping, excluding its guards.
-            // These are different resources; neither may borrow the other's quota.
-            if(guest_native_stack_usable_bytes_==0u||guest_fixed_stack_charge_>guest_native_stack_usable_bytes_)
-            {
-                ::fast_io::perrln("uwvm: [error] WASI Threads JIT requires ",guest_fixed_stack_charge_,
-                    " bytes of proven Guest native frames; --wasi-threads native-stack-bytes provides ",
-                    guest_native_stack_usable_bytes_," usable bytes. Increase that native stack quota, including guard pages.");
-                return false;
-            }
-            return true;
+            return guest_fixed_stack_charge_!=SIZE_MAX;
         }
 #pragma pop_macro("R_ARM_ABS32")
 #pragma pop_macro("R_AARCH64_ABS64")

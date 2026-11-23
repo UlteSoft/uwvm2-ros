@@ -22,6 +22,16 @@ namespace uwvm2::uwvm::runtime::storage { struct wasm_module_storage_t; }
 namespace uwvm2::runtime::wasm_threads
 {
     enum class threaded_debug_observation : unsigned { none, readonly_metadata };
+    // Per-module structural limits for the dedicated LLVM compiler.
+    struct threaded_llvm_ir_limits
+    {
+        static constexpr ::std::size_t default_instructions{1uz << 20u};
+        static constexpr ::std::size_t maximum_instructions{4uz << 20u};
+        static constexpr ::std::size_t maximum_blocks{1uz << 18u};
+        ::std::size_t instructions{default_instructions};
+        [[nodiscard]] constexpr bool valid() const noexcept
+        { return instructions != 0u && instructions <= maximum_instructions; }
+    };
     // Host policy DATA. Zero does not grant any threaded execution. The bridge
     // validates every finite bound and overflow BEFORE retaining a generation,
     // building a child world/code object or creating an OS thread.

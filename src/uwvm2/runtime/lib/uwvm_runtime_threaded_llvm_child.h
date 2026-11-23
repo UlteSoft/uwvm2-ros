@@ -386,9 +386,10 @@ extern "C++"
         // No synchronous Guest-stack fallback and no externally set ready bit.
         [[nodiscard]] static preparation_result prepare(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget) noexcept
+            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
         {
-            auto result=build(world,compiler,backend_storage_budget,0u);
+            if(!ir_limits.valid())return {{},preparation_status::invalid_world};
+            auto result=build(world,compiler,backend_storage_budget,0u,ir_limits);
             if(!result.child)return result;
             auto& root=*result.child;
             auto const& limits=world->admission().limits();
@@ -399,7 +400,7 @@ extern "C++"
                 for(::std::size_t m{1u};m<world->module_count();++m)
                 {
                     if(storage>=backend_storage_budget)return {{},preparation_status::budget};
-                    auto next=build(world,compiler,backend_storage_budget-storage,m);
+                    auto next=build(world,compiler,backend_storage_budget-storage,m,ir_limits);
                     if(!next.child)return next;
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
@@ -446,7 +447,8 @@ extern "C++"
                             root.debug_->cfi_.insert(root.debug_->cfi_.end(),peer->debug_->cfi_.begin(),peer->debug_->cfi_.end());
                         }
                         auto const after=root.debug_->allocated_bytes();
-                        if(after<before || after-before>backend_storage_budget-storage)return {{},preparation_status::budget};
+                        if(after<before)return {{},preparation_status::invalid_world};
+                        if(after-before>backend_storage_budget-storage)return {{},preparation_status::budget};
                         storage+=after-before;
                     }
                 }

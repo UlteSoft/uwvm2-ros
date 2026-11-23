@@ -37,6 +37,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         if(parsed==0u||parsed==maximum)return false;
         value=parsed;return true;
     }
+    [[nodiscard]] inline constexpr bool wasi_threads_parse_code_budget(
+        ::uwvm2::utils::container::u8string_view text, ::std::size_t& code,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits& ir_limits) noexcept
+    {
+        auto const separator{text.find_character(u8':')};
+        auto const has_limit{separator < text.size()};
+        ::std::size_t parsed_code{};
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits parsed_ir{};
+        if(!wasi_threads_parse_positive(has_limit ? text.subview(0u,separator) : text, parsed_code)) { return false; }
+        if(has_limit && (!wasi_threads_parse_positive(text.subview(separator+1u),parsed_ir.instructions) ||
+                         !parsed_ir.valid())) { return false; }
+        code=parsed_code;ir_limits=parsed_ir;
+        return true;
+    }
     [[nodiscard]] inline bool wasi_threads_derive_limits(::std::array<::std::size_t,6> const& numbers,
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits& output) noexcept
     {
@@ -155,14 +169,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
     {
         using kind=::uwvm2::utils::cmdline::parameter_parsing_results_type;
         auto usage=[]() noexcept
-        {::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] --wasi-threads requires max-active/max-spawns (positive decimal or unlimited), followed by four positive finite storage capacities. Usage: ",
+        {::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] --wasi-threads requires max-active/max-spawns (positive decimal or unlimited), followed by four positive finite byte capacities. The code capacity accepts an optional :llvm-ir-instructions suffix in 1..",
+            ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits::maximum_instructions,u8". Usage: ",
             ::uwvm2::utils::cmdline::print_usage(::uwvm2::uwvm::cmdline::params::wasi_threads),u8"\n\n");};
         ::std::array<::std::size_t,6> numbers{};auto next=current+1u;
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits{};
         for(::std::size_t i{};i<numbers.size();++i)
         {
             if(next==end||(next->type!=kind::arg&&next->type!=kind::occupied_arg))
             {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
             if(i<2u&&next->str==u8"unlimited") { numbers[i]=(::std::numeric_limits<::std::size_t>::max)(); }
+            else if(i==4u)
+            {
+                if(!wasi_threads_parse_code_budget(next->str,numbers[i],ir_limits))
+                {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
+            }
             else if(!wasi_threads_parse_positive(next->str,numbers[i]))
             {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
             ++next;
@@ -173,7 +194,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         {usage();return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;}
         // Exactly one actual cold Runtime policy publication. A parsed value,
         // caller bool or explicit CLI token alone grants no source/child lease.
-        if(!::uwvm2::runtime::lib::runtime_threaded_profile_configure_cli_host_api(limits))
+        if(!::uwvm2::runtime::lib::runtime_threaded_profile_configure_cli_with_ir_limits_host_api(limits,ir_limits))
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                 u8"uwvm: [error] Cannot configure WASI Threads limits for the actual quiescent Runtime.\n\n");

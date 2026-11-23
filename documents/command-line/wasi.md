@@ -405,10 +405,10 @@ Explicit Linux CLI SIGINT/SIGTERM delivery to the Source-owned WASI pipe; separa
 ### `--wasi-threads`
 
 ```text
-[--wasi-threads] <max-active:count|unlimited> <max-spawns:count|unlimited> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>
+[--wasi-threads] <max-active:count|unlimited> <max-spawns:count|unlimited> <native-stack-bytes> <per-child-storage> <per-child-code[:llvm-ir-instructions]> <shared-memory-bytes>
 ```
 
-Select finite WASI Threads quotas; the stack value bounds each Guest AND compiler mapping, including guards.
+Select WASI Threads quotas. The stack value bounds each Guest and compiler mapping, including guards. The code argument takes bytes and an optional per-module LLVM instruction limit, for example `536870912:4194304`. A plain byte count uses the default of 1,048,576 instructions. The suffix accepts decimal values from 1 through 4,194,304.
 
 ### `--wasip1-allow-overlapping-mount-paths`
 

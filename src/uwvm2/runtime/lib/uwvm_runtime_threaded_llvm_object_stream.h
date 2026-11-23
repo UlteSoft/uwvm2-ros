@@ -7,7 +7,8 @@
             ::uwvm2::utils::container::std_unique_ptr<char[]> bytes_{};
             ::std::size_t capacity_{},maximum_{},used_{};
             ::std::uint64_t position_{};
-            bool overflow_{};
+            enum class failure { none, budget, invalid_write };
+            failure failure_{};
             void grow(::std::size_t required)
             {
                 if(required<=capacity_)return;
@@ -20,9 +21,9 @@
             }
             void write_impl(char const* data,::std::size_t size) override
             {
-                if(!overflow_)
+                if(failure_==failure::none)
                 {
-                    if(position_>maximum_||size>maximum_-static_cast<::std::size_t>(position_))overflow_=true;
+                    if(position_>maximum_||size>maximum_-static_cast<::std::size_t>(position_))failure_=failure::budget;
                     else if(size!=0u)
                     {
                         auto const end=static_cast<::std::size_t>(position_)+size;
@@ -31,18 +32,19 @@
                         used_=(::std::max)(used_,end);
                     }
                 }
-                if(size>UINT64_MAX-position_){position_=UINT64_MAX;overflow_=true;}else position_+=size;
+                position_=size>UINT64_MAX-position_ ? UINT64_MAX : position_+size;
             }
             void pwrite_impl(char const* data,::std::size_t size,::std::uint64_t offset) override
             {
-                if(overflow_)return;
-                if(offset>used_||size>used_-static_cast<::std::size_t>(offset)){overflow_=true;return;}
+                if(failure_!=failure::none)return;
+                if(offset>used_||size>used_-static_cast<::std::size_t>(offset)){failure_=failure::invalid_write;return;}
                 if(size!=0u)::std::memcpy(bytes_.get()+static_cast<::std::size_t>(offset),data,size);
             }
             [[nodiscard]] ::std::uint64_t current_pos() const override{return position_;}
         public:
             explicit bounded_object_stream(::std::size_t maximum):maximum_{maximum}{SetUnbuffered();}
             ~bounded_object_stream() override=default;
-            [[nodiscard]] bool valid() const noexcept{return !overflow_&&used_!=0u;}
+            [[nodiscard]] bool valid() const noexcept{return failure_==failure::none&&used_!=0u;}
+            [[nodiscard]] bool exceeded_budget() const noexcept{return failure_==failure::budget;}
             [[nodiscard]] ::llvm::StringRef bytes() const noexcept{return {bytes_.get(),used_};}
         };

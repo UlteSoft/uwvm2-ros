@@ -164,16 +164,17 @@
             // engine. Physical Group join precedes actual arena destruction.
             void deregisterEHFrames() override{}
         };
-        [[nodiscard]] bool account_retained_storage() noexcept
+        [[nodiscard]] preparation_status account_retained_storage() noexcept
         {
-            if(!world_)return false;
+            using status=preparation_status;
+            if(!world_)return status::invalid_world;
             // Only import-only side modules have no executable allocation.
             // Every module with a local body must retain its genuine arena.
             if(!native_arena_ && (module_index_==0u||!entries_.empty()||native_bytes_!=0u||
-               module_==nullptr||!module_->local_defined_function_vec_storage.empty()))return false;
+               module_==nullptr||!module_->local_defined_function_vec_storage.empty()))return status::invalid_world;
             auto const source_cap=world_->admission().limits().max_child_storage_bytes;
             auto const world_bytes=world_->owned_storage_bytes();
-            if(world_bytes>source_cap||storage_limit_>source_cap-world_bytes)return false;
+            if(world_bytes>source_cap||storage_limit_>source_cap-world_bytes)return status::budget;
             auto const cap=storage_limit_;
             ::std::size_t total=sizeof(*this);
             auto add=[&](::std::size_t bytes)
@@ -187,16 +188,16 @@
                !array(table_targets_.capacity(),sizeof(decltype(table_targets_)::value_type))||
                !array(table_views_.capacity(),sizeof(decltype(table_views_)::value_type))||
                !array(externals_.capacity(),sizeof(external))||!array(emitted_bridges_.capacity(),sizeof(native_bridge))||
-               !array(locals_.capacity(),sizeof(local_type))||(native_arena_&&!add(native_arena_->retained_storage_bytes())))return false;
+               !array(locals_.capacity(),sizeof(local_type))||(native_arena_&&!add(native_arena_->retained_storage_bytes())))return status::budget;
             if(!array(eh_schemas_.capacity(),sizeof(eh_schema))||!array(eh_fields_.capacity(),sizeof(eh_field))||
-               !array(eh_records_.capacity(),sizeof(eh_record))||!array(eh_payload_.capacity(),1u))return false;
-            if(!array(native_frames_.capacity(),sizeof(native_frame_record)))return false;
-            if(debug_&&(!add(sizeof(::uwvm2::runtime::wasm_threads::code_debug_image))||!add(debug_->allocated_bytes())))return false;
-            for(auto const& frame:native_frames_)if(!add(frame.name.capacity()+1u))return false;
+               !array(eh_records_.capacity(),sizeof(eh_record))||!array(eh_payload_.capacity(),1u))return status::budget;
+            if(!array(native_frames_.capacity(),sizeof(native_frame_record)))return status::budget;
+            if(debug_&&(!add(sizeof(::uwvm2::runtime::wasm_threads::code_debug_image))||!add(debug_->allocated_bytes())))return status::budget;
+            for(auto const& frame:native_frames_)if(!add(frame.name.capacity()+1u))return status::budget;
             for(auto const& entry:entries_)
-                if(!add(entry.typed_name.capacity()+1u)||!add(entry.raw_name.capacity()+1u))return false;
-            for(auto const& entry:externals_)if(!add(entry.name.capacity()+1u))return false;
-            for(auto const& targets:table_targets_)if(!array(targets.capacity(),sizeof(target_type)))return false;
-            for(auto const& types:reference_type_ids_)if(!array(types.capacity(),sizeof(::std::uint_least32_t)))return false;
-            storage_bytes_=total;return true;
+                if(!add(entry.typed_name.capacity()+1u)||!add(entry.raw_name.capacity()+1u))return status::budget;
+            for(auto const& entry:externals_)if(!add(entry.name.capacity()+1u))return status::budget;
+            for(auto const& targets:table_targets_)if(!array(targets.capacity(),sizeof(target_type)))return status::budget;
+            for(auto const& types:reference_type_ids_)if(!array(types.capacity(),sizeof(::std::uint_least32_t)))return status::budget;
+            storage_bytes_=total;return status::ok;
         }

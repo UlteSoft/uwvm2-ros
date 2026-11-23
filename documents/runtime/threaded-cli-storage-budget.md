@@ -72,9 +72,25 @@ the function's ABI. Successful returns and `musttail` transfers keep their own
 frame exits. This shares the cold instructions while preserving each runtime
 check, its ordering with Guest effects, and ROS caller provenance on host calls.
 
-Threaded compilation checks each module against 1,048,576 LLVM instructions
-and 262,144 basic blocks before control insertion, after insertion and after
-optimization. Native objects have a ceiling of 65,536 relocations. Each
+Threaded compilation checks each module before control insertion, after
+insertion, after optimization and after rewriting control target loads. The
+default is 1,048,576 LLVM instructions per module. To select an instruction
+limit from 1 through 4,194,304 inclusive, append `:COUNT` to the existing
+per-child code byte argument. For example, `536870912:4194304` grants 512 MiB
+of code storage per child and 4,194,304 instructions per module. A plain
+decimal byte argument uses the default at every code capacity. Each stage
+also enforces 262,144 basic blocks. These limits count IR at the stage
+boundaries. LLVM can use additional temporary heap space while optimizing.
+
+Native embedders can publish both the existing byte policy and a
+`threaded_llvm_ir_limits` value in one call to
+`runtime_threaded_profile_configure_with_ir_limits_host_api`. The existing
+`runtime_threaded_profile_configure_host_api` installs the default instruction
+limit on every successful call. Each new profile takes its own copy of the
+host grant. A main-thread preparation budget refusal reports a diagnostic
+and returns status 126 before the Guest starts.
+
+Native objects have a ceiling of 65,536 relocations. Each
 relocation also reserves 512 bytes of the per-child executable storage
 allowance, together with the section sizes and alignment reserves.
 

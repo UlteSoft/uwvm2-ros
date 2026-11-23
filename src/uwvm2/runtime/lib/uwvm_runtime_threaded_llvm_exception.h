@@ -55,8 +55,9 @@
             }
             return at==schema.bytes;
         }
-        [[nodiscard]] bool prepare_exception_schemas(::std::size_t already_charged)
+        [[nodiscard]] preparation_status prepare_exception_schemas(::std::size_t already_charged)
         {
+            using status=preparation_status;
             auto const& types=module_->type_section_storage;
             auto type_count=types.type_section_count;
             bool rich=types.owned_signature_begin!=nullptr&&types.owned_signature_end!=nullptr&&
@@ -73,7 +74,7 @@
             // reference carrier; it is not an exception payload schema.
             auto imported=module_->imported_tag_vec_storage.size();
             auto count=imported+module_->local_defined_tag_vec_storage.size();
-            if(count<imported||count>65536u)return false;
+            if(count<imported||count>65536u)return status::budget;
             ::std::size_t fields{},largest{};
             auto get=[&](::std::size_t i)->eh_tag const*
             {return i<imported?module_->imported_tag_vec_storage.index_unchecked(i).resolved_tag:
@@ -84,16 +85,16 @@
                 {auto p=module_->imported_tag_vec_storage.index_unchecked(i).import_type_ptr;return p==nullptr?SIZE_MAX:p->imports.storage.tag_type_index;}
                 return module_->local_defined_tag_vec_storage.index_unchecked(i-imported).type_index;
             };
-            auto shape=[&](eh_tag const& tag,::std::size_t index,::std::size_t& bytes)->bool
+            auto shape=[&](eh_tag const& tag,::std::size_t index,::std::size_t& bytes)->status
             {
                 bytes=0u;
                 if(tag.function_type_ptr==nullptr||!tag.exception_identity||
-                   tag.function_type_ptr->result.begin!=tag.function_type_ptr->result.end)return false;
+                   tag.function_type_ptr->result.begin!=tag.function_type_ptr->result.end)return status::invalid_world;
                 auto const& params=tag.function_type_ptr->parameter;
                 auto n=params.begin==params.end?0u:static_cast<::std::size_t>(params.end-params.begin);
-                if(n>65536u)return false;
-                if(index>=type_count)return false;
-                if(rich&&types.owned_signature_begin[index].parameters.size()!=n)return false;
+                if(n>65536u)return status::budget;
+                if(index>=type_count)return status::invalid_world;
+                if(rich&&types.owned_signature_begin[index].parameters.size()!=n)return status::invalid_world;
                 for(::std::size_t k{};k<n;++k)
                 {
                     auto code=static_cast<unsigned>(params.begin[k]);::std::size_t width{};
@@ -103,19 +104,22 @@
                     else if((code==0x69u||code==0x70u||code==0x6fu)&&rich&&
                         types.owned_signature_begin[index].parameters.index_unchecked(k).kind==::uwvm2::parser::wasm::standard::wasm3::type::value_kind::reference&&
                         supported(types.owned_signature_begin[index].parameters.index_unchecked(k)))width=sizeof(eh_reference);
-                    else return false;
+                    else return status::unsupported_shape;
                     if(bytes>world_->admission().limits().max_value_stack_bytes||
-                       width>world_->admission().limits().max_value_stack_bytes-bytes)return false;
+                       width>world_->admission().limits().max_value_stack_bytes-bytes)return status::budget;
                     bytes+=width;
                 }
-                return true;
+                return status::ok;
             };
             for(::std::size_t i{};i<count;++i)
             {
-                auto tag=get(i);::std::size_t bytes{};if(tag==nullptr||!shape(*tag,type_index(i),bytes))return false;
+                auto tag=get(i);::std::size_t bytes{};
+                if(tag==nullptr)return status::invalid_world;
+                auto const checked=shape(*tag,type_index(i),bytes);
+                if(checked!=status::ok)return checked;
                 auto const& params=tag->function_type_ptr->parameter;
                 auto n=params.begin==params.end?0u:static_cast<::std::size_t>(params.end-params.begin);
-                if(fields>65536u-n)return false;fields+=n;
+                if(fields>65536u-n)return status::budget;fields+=n;
                 largest=(::std::max)(largest,bytes);
             }
             auto records=(::std::min)(world_->admission().limits().max_call_frames,::std::size_t{65536u});
@@ -123,18 +127,20 @@
             for(::std::size_t m{};m<world_->module_count();++m)
             {auto const* module=world_->module(m);any_tags=any_tags||!module->imported_tag_vec_storage.empty()||!module->local_defined_tag_vec_storage.empty();}
             auto payload=!any_tags?0u:world_->admission().limits().max_value_stack_bytes;
-            if(any_tags&&records==0u)return false;
+            if(any_tags&&records==0u)return status::invalid_world;
             ::std::size_t charge=already_charged;
             auto add=[&](::std::size_t n,::std::size_t size)
             {if(n>SIZE_MAX/size||charge>storage_limit_||n*size>storage_limit_-charge)return false;charge+=n*size;return true;};
             if(!add(count,sizeof(eh_schema))||!add(fields,sizeof(eh_field))||
-               !add(!any_tags?0u:records,sizeof(eh_record))||!add(payload,1u)||largest>payload)return false;
+               !add(!any_tags?0u:records,sizeof(eh_record))||!add(payload,1u)||largest>payload)return status::budget;
             eh_schemas_.resize(count);eh_fields_.resize(fields);
             eh_records_.resize(!any_tags?0u:records);eh_payload_.resize(payload);
             ::std::size_t field_at{};
             for(::std::size_t i{};i<count;++i)
             {
-                auto tag=get(i);auto index=type_index(i);::std::size_t bytes{};if(!shape(*tag,index,bytes))return false;
+                auto tag=get(i);auto index=type_index(i);::std::size_t bytes{};
+                auto const checked=shape(*tag,index,bytes);
+                if(checked!=status::ok)return checked;
                 auto const& params=tag->function_type_ptr->parameter;
                 auto n=params.begin==params.end?0u:static_cast<::std::size_t>(params.end-params.begin);
                 eh_schemas_[i]={tag,field_at,n,bytes};
@@ -152,7 +158,7 @@
                     eh_fields_[field_at++]={static_cast<::std::uint8_t>(width),reference,nullable,nonnull,exception,type};
                 }
             }
-            return field_at==fields;
+            return field_at==fields ? status::ok : status::invalid_world;
         }
         static ::std::uintptr_t exception_pending() noexcept
         {return active_==nullptr||stopped()?0u:active_->child->graph_->eh_pending_;}
