@@ -86,7 +86,7 @@ def suite(checker, rebinder, *, inputs, scratch, guard):
             self.rejected('sdk/origin/csharp/roswasm_bridge.c','return uwvm_ros1_capability_close(handle);','return uwvm_ros2_capability_close(handle);')
         def test_python_wrong_backend_order_and_output_kind_refused(self):
             self.rejected('sdk/origin/python/roswasm/_native.c','slot = uwvm_ros1_abi_version();','slot = uwvm_ros2_abi_version();')
-            self.rejected('sdk/origin/python/roswasm/_native.c','uwvm_ros1_event_watch(handle, other, correlation)','uwvm_ros1_event_watch(handle, correlation, other)')
+            self.rejected('sdk/origin/python/roswasm/_native.c','uwvm_ros1_event_stream_watch(handle, other, correlation)','uwvm_ros1_event_stream_watch(handle, correlation, other)')
             self.rejected('sdk/origin/python/roswasm/_native.c','slot = uwvm_ros1_abi_version(); output_kind = 4;','slot = uwvm_ros1_abi_version(); output_kind = 0;')
         def test_refresh_requires_exact_both_input_hashes(self):
             host=(self.root/rebinder.HOST).read_bytes();catalog=(self.root/rebinder.CATALOG).read_bytes()

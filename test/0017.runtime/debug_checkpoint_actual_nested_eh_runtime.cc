@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual original parse/initializer/single fused compiler/native pause ->
 // retire+drain -> restored native parent/child -> guest catch_all_ref/catch_ref ->
 // new current stops -> throw_ref with GC payload. No file/new-world restore claim.
@@ -176,6 +177,8 @@ static void check_caught_state(observer& state,domain::pause_ticket const& ticke
 }
 int main(int argc,char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc!=2) { return 2; }
 

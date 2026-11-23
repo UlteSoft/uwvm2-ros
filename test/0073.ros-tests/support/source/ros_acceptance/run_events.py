@@ -85,14 +85,14 @@ def selection(version):
 def advance(lane,worker,row,marker,gateway):
     """One finite Guest attempt at a time; never resend submit/goal operations."""
     for _ in range(200):
-        prior=lane.read(row).count("EVENT_POLL_AGAIN\n")
+        prior=lane.read(row).count("MESSAGE_POLL_AGAIN\n")
         lane.send(worker,row,b"R","independent native phase ready; one bounded event poll")
         deadline=time.monotonic()+12
         while time.monotonic()<deadline:
             lane.check();text=lane.read(row)
             if marker+"\n" in text:return
             require(gateway.poll() is None,"native Gateway retired during live Guest event exchange")
-            if text.count("EVENT_POLL_AGAIN\n")>prior:break
+            if text.count("MESSAGE_POLL_AGAIN\n")>prior:break
             require(worker.poll() is None,"real Guest retired before complete event validation")
             time.sleep(.005)
         else:raise TimeoutError("one finite unified-event poll did not complete")
@@ -151,7 +151,7 @@ def main():
         lane.wait_marker(peer,peer_row,"ACTION_NATIVE_SENT")
         for marker in EVENTS[5:]:advance(lane,worker,row,marker,gateway)
         lane.wait_marker(worker,row,"PASS_WASM_SEVEN_EVENTS");lane.finish(worker,row)
-        lines=lane.read(row).splitlines();require([line for line in lines if line!="EVENT_POLL_AGAIN"]==
+        lines=lane.read(row).splitlines();require([line for line in lines if line!="MESSAGE_POLL_AGAIN"]==
             ["EVENTS_READY",*EVENTS[:4],"EVENT_GOAL_WATCHED",*EVENTS[4:],"PASS_WASM_SEVEN_EVENTS"],"exact real Wasm event sequence differs")
         lane.send(peer,peer_row,b"Q","real Guest all7 header/payload checks and actual exit0")
         lane.finish(peer,peer_row);native=lane.read(peer_row).splitlines()

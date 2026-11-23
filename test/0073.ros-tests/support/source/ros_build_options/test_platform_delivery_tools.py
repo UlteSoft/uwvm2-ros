@@ -59,7 +59,7 @@ def main():
                 yes = name in ('fanuc', 'kuka')
                 assert '--' + prefix + name + '=' + ('y' if yes else 'n') in argv
                 assert '--' + prefix + name + '-registry-header=' + (str(header) if yes else 'none') in argv
-        assert '--import-ros1=n' in argv and '--import-ros2=y' in argv
+        assert '--import-u2rosv1-ros1=n' in argv and '--import-u2rosv1-ros2=y' in argv
         assert '--ros-platform-jetson=n' in argv and result['default_authority'] == []
         (out / 'actual-selected-command.json').write_text(json.dumps(result, indent=2) + '\n')
     check('A+B-explicitly-close-every-other-platform', selection)

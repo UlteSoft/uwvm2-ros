@@ -919,7 +919,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
 
             // Internal header-only type-erasure vtable: providers enter through the constrained local_imported_module
             // constructor, and the sole implementation is local_imported_module_derv_impl below. This is not the
-            // versioned preload/weak-symbol C ABI; every C++ participant must be rebuilt from the same uwvm2 headers.
+            // versioned native-preload C ABI; every C++ participant must be rebuilt from the same uwvm2 headers.
             // Keep new slots appended nevertheless, so source-level changes remain reviewable and existing slots stay put.
             virtual ::uwvm2::uwvm::wasm::type::local_imported_wasm_fp_control_policy_t
                 function_wasm_fp_control_policy_from_index(::std::size_t index) const noexcept = 0;

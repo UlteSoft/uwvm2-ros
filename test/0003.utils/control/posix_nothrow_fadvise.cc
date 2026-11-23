@@ -86,9 +86,10 @@ int main()
     compare_with_sdk(raw, 0, 0, POSIX_FADV_NORMAL, 0);
     compare_with_sdk(raw, wide, wide, POSIX_FADV_NORMAL, 0);
     compare_with_sdk(raw, largest, largest, POSIX_FADV_NORMAL, 0);
-    // A lost high 32-bit word would turn these invalid negative values into
-    // small positive 13 and return success; these are ABI truncation oracles.
-    compare_with_sdk(raw, negative_wide, 0, POSIX_FADV_NORMAL, EINVAL);
+    // Linux accepts a negative offset for this no-op advisory range, but
+    // rejects a negative length. Compare the independent wide SDK call;
+    // a truncated length would incorrectly become positive 13 and succeed.
+    compare_with_sdk(raw, negative_wide, 0, POSIX_FADV_NORMAL, 0);
     compare_with_sdk(raw, 0, negative_wide, POSIX_FADV_NORMAL, EINVAL);
     compare_with_sdk(raw, 0, 0, bad_advice, EINVAL);
     CHECK(owner.native_handle() == raw);

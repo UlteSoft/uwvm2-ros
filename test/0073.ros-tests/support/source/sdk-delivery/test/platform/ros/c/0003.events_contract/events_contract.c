@@ -28,13 +28,13 @@ int main(void){
         if(kind==2||kind==4||kind==5){record[64]=18;assert(roswasmc_event_decode(record,size,&h)==22);}}
     make_record(6);record[9]=2;roswasmc_event_header h;assert(roswasmc_event_decode(record,64,&h)==0&&h.flags==2);record[9]=4;assert(roswasmc_event_decode(record,64,&h)==22);
     roswasmc_backend base={0};base.version=2;roswasmc_context context={&base};roswasmc_capability observer={&context,5},source={&context,9};
-    roswasmc_event_backend api={2,fake_watch,fake_poll,fake_ready,fake_submit};assert(roswasmc_event_watch(&api,&observer,&source,0)==0&&calls==1);
-    roswasmc_event_backend wrong=api;wrong.version=1;assert(roswasmc_event_watch(&wrong,&observer,&source,0)==22&&calls==1);
-    roswasmc_capability closed={&context,0};assert(roswasmc_event_watch(&api,&closed,&source,0)==9&&calls==1);
-    make_record(1);unsigned char out[64];memset(out,0xa5,sizeof out);roswasmc_result result=roswasmc_event_poll(&api,&observer,out,63);assert(result.error==90&&result.has_length&&result.length==64&&pending==1&&out[0]==0xa5);
-    result=roswasmc_event_poll(&api,&observer,out,64);assert(result.error==0&&result.length==64&&pending==0&&roswasmc_event_decode(out,64,&h)==0);
-    result=roswasmc_event_poll(&api,&observer,out,64);assert(result.error==11&&!result.has_length);
-    roswasmc_event_readiness ready;assert(roswasmc_event_ready(&api,&observer,&ready)==0&&ready.ready_events==0&&ready.next_event_bytes==0);
+    roswasmc_event_backend api={2,fake_watch,fake_poll,fake_ready,fake_submit};assert(roswasmc_event_stream_watch(&api,&observer,&source,0)==0&&calls==1);
+    roswasmc_event_backend wrong=api;wrong.version=1;assert(roswasmc_event_stream_watch(&wrong,&observer,&source,0)==22&&calls==1);
+    roswasmc_capability closed={&context,0};assert(roswasmc_event_stream_watch(&api,&closed,&source,0)==9&&calls==1);
+    make_record(1);unsigned char out[64];memset(out,0xa5,sizeof out);roswasmc_result result=roswasmc_event_stream_poll(&api,&observer,out,63);assert(result.error==90&&result.has_length&&result.length==64&&pending==1&&out[0]==0xa5);
+    result=roswasmc_event_stream_poll(&api,&observer,out,64);assert(result.error==0&&result.length==64&&pending==0&&roswasmc_event_decode(out,64,&h)==0);
+    result=roswasmc_event_stream_poll(&api,&observer,out,64);assert(result.error==11&&!result.has_length);
+    roswasmc_event_readiness ready;assert(roswasmc_event_stream_ready(&api,&observer,&ready)==0&&ready.ready_events==0&&ready.next_event_bytes==0);
     uint64_t request=0;assert(roswasmc_service_submit(&api,&source,&observer,0,0,&request)==0&&request==UINT64_C(0x9000000000000021));
     unsigned before=calls;assert(roswasmc_service_submit(&api,&source,&observer,0,1,&request)==22&&calls==before);
     static char const marker[]="PASS_C_UNIFIED_EVENTS\n";assert(write(1,marker,sizeof marker-1)==(ssize_t)(sizeof marker-1));

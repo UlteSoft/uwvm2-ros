@@ -2,6 +2,8 @@
 #include <uwvm2/uwvm/debugger/checkpoint_codec.h>
 #include <uwvm2/uwvm/debugger/checkpoint_state_identity.h>
 #include <uwvm2/uwvm/debugger/checkpoint_replay.h>
+#include <uwvm2/runtime/diagnostic/snapshot_state.h>
+#include <fast_io_dsal/string_view.h>
 #include <bit>
 #include <array>
 #include <string_view>
@@ -56,12 +58,14 @@ int main(int argc,char** argv)
 {
     if(argc==2) { REQUIRE(::std::string_view{argv[1]}=="--require-big" && ::std::endian::native==::std::endian::big); }
     else { REQUIRE(argc==1); }
-    static_assert(cp::database_format_version==7u && cp::binding::state_version==7u);
+    static_assert(cp::database_format_version==10u && cp::binding::state_version==10u);
     auto original{sample()};REQUIRE(cp::validate_graph(original)==cp::error::none);
     REQUIRE(original.objects[3u].links[0u]!=original.objects[4u].links[0u] && original.objects[5u].bytes==original.objects[6u].bytes);
     auto wire{encode(original)};cp::state decoded{};
     REQUIRE(cp::decode_database(wire,decoded)==cp::error::none && decoded==original && encode(decoded)==wire);
-    auto old{wire};put<64>(old,0u,cp::legacy_database_magic5);put<16>(old,8u,::std::uint16_t{5u});
+    auto old{wire};put<64>(old,0u,cp::legacy_database_magic7);put<16>(old,8u,::std::uint16_t{7u});
+    REQUIRE(cp::decode_database(old,decoded)==cp::error::unsupported_version && decoded==original);
+    old=wire;put<64>(old,0u,cp::legacy_database_magic5);put<16>(old,8u,::std::uint16_t{5u});
     REQUIRE(cp::decode_database(old,decoded)==cp::error::unsupported_version && decoded==original);
     old=wire;put<64>(old,0u,cp::legacy_database_magic4);put<16>(old,8u,::std::uint16_t{4u});
     REQUIRE(cp::decode_database(old,decoded)==cp::error::unsupported_version && decoded==original);
@@ -89,6 +93,42 @@ int main(int argc,char** argv)
     REQUIRE(altered.observation==cp::state_identity::status::derived_data && altered.functions!=identity.functions);
     bad=original;++bad.objects[5u].words[2u];put<64>(bad.objects[5u].bytes,12u,::std::uint64_t{4u});altered=cp::state_identity::derive(bad);
     REQUIRE(altered.observation==cp::state_identity::status::derived_data && altered.functions!=identity.functions);
+    for(::std::uint64_t family{1u};family<=4u;++family)
+    {
+        auto ros=original;auto& adapter=ros.objects[5u];
+        adapter.words[0u]=cp::builtin_ros_v1_binding_kind;adapter.words[1u]=family;
+        constexpr ::std::string_view magic{"UWVMROSV1B01"};
+        for(::std::size_t i{};i<magic.size();++i)adapter.bytes[i]=static_cast<::std::byte>(magic[i]);
+        put<64>(adapter.bytes,20u,family);
+        REQUIRE(cp::validate_graph(ros)==cp::error::none);
+        auto encoded=encode(ros);cp::state copy{};
+        REQUIRE(cp::decode_database(encoded,copy)==cp::error::none && copy==ros);
+        REQUIRE(cp::replay_log{}.bind(ros)==cp::error::non_replayable_import);
+        namespace ar=::uwvm2::runtime::diagnostic::snapshot_archive;
+        namespace ss=::uwvm2::runtime::diagnostic::snapshot_state;
+        ss::state_stream stream;REQUIRE(stream.bind(::std::make_shared<cp::state const>(ros)));
+        ar::decoded envelope{};envelope.origin=ar::native_platform();stream.describe(envelope.origin);
+        envelope.disclosure=ar::visibility::full;
+        envelope.records.push_back({ar::component::wasm_state,ar::completeness::complete,ros.checkpoint_id,cp::database_format_version,encoded});
+        ::std::shared_ptr<cp::state const> restored;
+        REQUIRE(ss::decode(envelope,restored,{},true).status==ss::error::inconsistent_manifest && !restored);
+        envelope.records.push_back({family<=2u?ar::component::ros1:ar::component::ros2,ar::completeness::unavailable,0u,1u,{}});
+        REQUIRE(ss::decode(envelope,restored).status==ss::error::unsupported_component && !restored);
+        REQUIRE(ss::decode(envelope,restored,{},true) && restored && *restored==ros);
+        auto retained=restored;auto manifest=envelope;
+        manifest.records.back().capture=ar::completeness::complete;
+        REQUIRE(ss::decode(manifest,restored,{},true).status==ss::error::unsupported_component && restored==retained);
+        manifest=envelope;manifest.records.push_back(envelope.records.back());
+        REQUIRE(ss::decode(manifest,restored,{},true).status==ss::error::unsupported_component && restored==retained);
+        manifest=envelope;manifest.records.back().kind=family<=2u?ar::component::ros2:ar::component::ros1;
+        REQUIRE(ss::decode(manifest,restored,{},true).status==ss::error::inconsistent_manifest && restored==retained);
+        auto wrong=ros;wrong.objects[5u].words[1u]=5u;
+        REQUIRE(cp::validate_graph(wrong)==cp::error::invalid_shape);
+        wrong=ros;wrong.objects[5u].words[0u]=cp::builtin_wasip1_binding_kind;
+        REQUIRE(cp::validate_graph(wrong)==cp::error::invalid_shape);
+        wrong=ros;wrong.objects[5u].words[2u]=65u;put<64>(wrong.objects[5u].bytes,12u,::std::uint64_t{64u});
+        REQUIRE(cp::validate_graph(wrong)==cp::error::invalid_shape);
+    }
     ::fast_io::io::println("checkpoint builtin binding DATA PASS checks=",::fast_io::mnp::dec(checks),
         " endian=",::fast_io::mnp::os_c_str(::std::endian::native==::std::endian::big ? "big":"little"),
         " actual-provider=false capture=false externalrestore=false");

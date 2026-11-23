@@ -49,7 +49,7 @@ func denied(alias string) error {
 }
 func refusal(handle uint64,expected uint32) error {
     var bytes [64]byte;for i:=range bytes {bytes[i]=0xa5};length:=uint64(0xffffffffffffffff)
-    code:=ros.RawEventPoll(handle,0,address(unsafe.Pointer(&bytes[0])),64,address(unsafe.Pointer(&length)))
+    code:=ros.RawMessagePoll(handle,0,address(unsafe.Pointer(&bytes[0])),64,address(unsafe.Pointer(&length)))
     if err:=check(code==expected&&length==0xffffffffffffffff);err!=nil{return err};for _,byteValue:=range bytes {if byteValue!=0xa5{return ros.Error{Code:ros.Invalid}}};return nil
 }
 func run() (first error) {

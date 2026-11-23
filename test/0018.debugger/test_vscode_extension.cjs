@@ -65,7 +65,7 @@ assert.strictEqual(registered.configurationAttributes.attach.properties.stepLeve
 assert.ok(registered.configurationSnippets.every(item => item.body.stepLevel === "source"));
 const uri = (changes={}) => ({
   scheme: "uwvm-wasm", authority: "", fragment: "",
-  path: "/module-0/function-6/stop-13.wat", query: "session="+id+"&ref=5",
+  path: "/module-0/function-6/code-13-1.uwvm-wat", query: "session="+id+"&ref=5",
   toString() { return this.scheme+":"+this.path+"?"+this.query; }, ...changes
 });
 (async () => {
@@ -77,7 +77,7 @@ const uri = (changes={}) => ({
   assert.strictEqual(requests[0].args.source.path, uri().toString());
   const invalid = [
     {scheme: "debug"}, {scheme: "file"}, {authority: "another-host"}, {fragment: "suffix"},
-    {path: "/etc/passwd"}, {path: "/module-0/../function-6/stop-13.wat"},
+    {path: "/etc/passwd"}, {path: "/module-0/../function-6/code-13-1.uwvm-wat"}, {path: "/module-0/function-6/stop-13.wat"},
     {query: "session="+id+"&ref=0"}, {query: "session="+id+"&ref=-1"},
     {query: "session="+id+"&ref=9007199254740992"},
     {query: "session="+id+"&ref=5&ref=6"}, {query: "ref=5&session="+id},

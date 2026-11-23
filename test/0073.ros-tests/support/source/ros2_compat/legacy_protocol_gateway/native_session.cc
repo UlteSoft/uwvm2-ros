@@ -229,13 +229,13 @@ int main(int argc,char** argv)
     assert(!call(client,"topic.publish","topic-publish",encode<ChildCodec>(child(3))).error);
     eventually([&]{return topic_calls>=1;});assert(!call(client,"topic.subscribe","topic-subscribe").error);
     eventually([&]{return topic_publisher->get_subscription_count()==1;});topic_publisher->publish(child(4));
-    auto subscribed=poll(client,"event.poll","topic-subscribe");same(decode<ChildCodec>(subscribed.payload),4);
+    auto subscribed=poll(client,"message.poll","topic-subscribe");same(decode<ChildCodec>(subscribed.payload),4);
     note("real-production-gateway-bidirectional-topics: PASS\n");
 
     assert(!call(client,"service.advertise","service-advertise").error);
     auto native_client=node->create_client<Transform>("gateway_service");assert(native_client->wait_for_service(8s));
     auto pending_service=native_client->async_send_request(std::make_shared<Transform::Request>(request(2)));
-    auto service_event=poll(client,"event.poll","service-advertise");assert(service_event.payload.size()>=8);
+    auto service_event=poll(client,"message.poll","service-advertise");assert(service_event.payload.size()>=8);
     auto service_id=ipc::get(service_event.payload.data(),8);assert(service_id);same(decode<RequestCodec>(service_event.payload,8),2);
     auto service_answer=id_bytes(service_id);auto response_bytes=encode<ResponseCodec>(response(2));service_answer.insert(service_answer.end(),response_bytes.begin(),response_bytes.end());
     assert(!call(client,"service.respond","service-respond",service_answer).error);same(*ready(pending_service),2);
@@ -268,7 +268,7 @@ int main(int argc,char** argv)
     native_options.feedback_callback=[&](rclcpp_action::ClientGoalHandle<Traverse>::SharedPtr,std::shared_ptr<Traverse::Feedback const> value){same(*value,6);++native_feedback;};
     auto pending_goal=native_action->async_send_goal(goal(6),native_options);auto accepted_goal=ready(pending_goal);assert(accepted_goal);
     auto pending_result=native_action->async_get_result(accepted_goal);
-    auto incoming=poll(client,"event.poll","action-advertise");assert(incoming.payload.size()>=8);
+    auto incoming=poll(client,"message.poll","action-advertise");assert(incoming.payload.size()>=8);
     auto incoming_id=ipc::get(incoming.payload.data(),8);assert(incoming_id&&incoming_id!=goal_id&&incoming_id!=cancel_id);same(decode<GoalCodec>(incoming.payload,8),6);
     assert(!call(client,"action.respond","action-respond",framed<FeedbackCodec>(incoming_id,1,feedback(6))).error);
     eventually([&]{return native_feedback==1;});assert(!call(client,"action.respond","action-respond",framed<ResultCodec>(incoming_id,2,result(6))).error);

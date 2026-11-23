@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 #include "buffer_helpers.h"
 using namespace control_test;
 // Run only through the SSH cgroup runner. Assertions are void helpers, including
@@ -17,6 +18,7 @@ static ctl::launch_config config()
 {
     ctl::launch_config c;
     c.debug_enabled=c.replacement_enabled=true;
+    c.profile=ctl::debug_permissions::permission_level::full;
     c.compiler=ctl::backend::llvm;
     c.mode=ctl::compile_mode::full;
     c.instance[0]=42u; c.vm_process=100; c.launcher_process=200; c.channel_binding=999;
@@ -52,6 +54,8 @@ static void denied_packet(std::vector<ctl::wire_byte> const& packet,ctl::error e
 }
 int main()
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     static_assert(!std::is_copy_constructible_v<ctl::launch_permit>);
     static_assert(!std::is_copy_constructible_v<ctl::request_ticket>);
     static_assert(!std::is_default_constructible_v<ctl::request_ticket>);

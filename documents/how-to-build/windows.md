@@ -61,8 +61,8 @@ $ xmake i -o <install_path>
 ## ROS development from Windows
 
 ROS host imports in the current repository require a **Linux Runtime target**.
-[`xmake.lua`](../../xmake.lua) rejects `--import-ros1=y` and
-`--import-ros2=y` for native `windows`, MinGW and other non-Linux Runtime
+[`xmake.lua`](../../xmake.lua) rejects `--import-u2rosv1-ros1=y` and
+`--import-u2rosv1-ros2=y` for native `windows`, MinGW and other non-Linux Runtime
 targets because the Gateway boundary uses AF_UNIX and Linux `SO_PEERCRED`.
 A native Windows ROS installation does not bypass that build-time check.
 
@@ -84,7 +84,7 @@ xmake f -y -c -m release -p windows -a x86_64 -o build/windows-runtime `
   --use-llvm-compiler=y "--sysroot=$WindowsSysroot" `
   --use-cxx-module=n --march=none `
   --execution-int=uwvm-int --execution-jit=none `
-  --import-ros1=n --import-ros2=n
+  --import-u2rosv1-ros1=n --import-u2rosv1-ros2=n
 xmake -j1 uwvm2-ros
 ```
 
@@ -109,7 +109,7 @@ cd "$HOME/src/uwvm2-ros"
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2 \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y
+  --import-u2rosv1-ros1=n --import-u2rosv1-ros2=y
 xmake -j1 uwvm2-ros
 ```
 
@@ -140,9 +140,9 @@ The following selections belong to that Linux configure command:
 
 | Intended Runtime | Root Xmake options |
 | --- | --- |
-| ROS1 only | `--import-ros1=y --import-ros2=n` |
-| ROS2 only | `--import-ros1=n --import-ros2=y` |
-| Both import namespaces | `--import-ros1=y --import-ros2=y` |
+| ROS1 only | `--import-u2rosv1-ros1=y --import-u2rosv1-ros2=n` |
+| ROS2 only | `--import-u2rosv1-ros1=n --import-u2rosv1-ros2=y` |
+| Both import namespaces | `--import-u2rosv1-ros1=y --import-u2rosv1-ros2=y` |
 | ABB schemas | `--ros-vendor-abb=y --ros-vendor-abb-registry-header=<absolute-header>` |
 | Other vendor schemas | The corresponding `--ros-vendor-<name>` and matching `-registry-header` |
 | Original ROS2 control | `--ros-original-control-manifest-header=<absolute-header>` with ROS2 imports |

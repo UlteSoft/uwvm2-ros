@@ -196,7 +196,8 @@ def main():
                  "--wasi-threads", "3", "3", "1048576", "16777216", "67108864", "131072",
                  "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main", "--wasip1-single-enable", "main",
                  "--wasip1-single-interface", "main", "proc_exit", "allow", "--wasip1-single-grant", "main", "proc-exit",
-                 "--wasip1-single-interface", "main", "thread-spawn", "allow", "--wasip1-single-grant", "main", "thread-spawn",
+                 "--wasithread-single-create", "main", "--wasithread-single-enable", "main",
+                 "--wasithread-single-interface", "main", "thread-spawn", "allow",
                  "--wasm-preload-library", str(owner), "env"]
         if args.engine == "aot":
             flags += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-llvm-jit-policy", "debug"]

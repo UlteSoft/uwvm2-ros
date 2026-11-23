@@ -56,12 +56,47 @@ class Wasip1Protocol(unittest.TestCase):
         self.assertTrue(copied["more"]); self.assertEqual(copied["next"],18); self.assertEqual(copied["variables"][0]["descriptor"],17)
         for altered in (packet.replace("next=18","next=58"),packet.replace("fd=17","fd=2147483648"),packet.replace("rights-base=0x2","rights-base=0x10000000000000000")):
             with self.assertRaises(ValueError): dap.parse_wasip1_state(altered,"fds",0,0,1,41)
+    def test_live_descriptor_path_is_bounded_observation_only(self):
+        prefix = 'wasip1-stop 41\nwasip1 module=0 status=ok epoch=7 applied=0 shared-environment=0 total=1\n'
+        descriptor = '  fd=3 storage-kind=directory rights-base=0x6000 rights-inheriting=0x2 preopened=1 guest-name="/tour" managed-resource=0\n'
+        path = '    current-path="/private/tour" (live native handle)\n'
+        copied = dap.parse_wasip1_state(prefix+descriptor+path, "preopens", 0, 0, 1, 41)
+        row = copied['variables'][0]
+        self.assertEqual(row['currentPath'], '/private/tour')
+        self.assertEqual(row['guestName'], '/tour')
+        self.assertEqual(row['variablesReference'], 0)
+        for invalid in (prefix+path+descriptor, prefix+descriptor+path+path,
+                        prefix+descriptor+path.replace('live native handle', 'cached'),
+                        prefix+descriptor+path.replace('/private/tour', 'x'*4097)):
+            with self.assertRaises(ValueError):
+                dap.parse_wasip1_state(invalid, "preopens", 0, 0, 1, 41)
+        copied = dap.parse_wasip1_state(prefix+descriptor+'    current-path=unavailable (no cached pathname used)\n', "preopens", 0, 0, 1, 41)
+        self.assertIsNone(copied['variables'][0]['currentPath'])
+
     def test_stale_native_and_mid_copy_refuse(self):
         self.broker.after=lambda:setattr(self.broker,"stop",self.broker.stop+1)
         self.assertFalse(self.send("uwvm/wasip1State",selection="env")["success"])
         self.broker.after=None; self.broker.native=True; self.adapter.observe(self.broker.status(),notify=False)
         before=len(self.broker.commands); self.assertFalse(self.send("uwvm/wasip1State",selection="env")["success"])
         self.assertEqual(self.broker.commands[before:],["status"])
+    def test_native_view_refusal_keeps_unrelated_native_capabilities(self):
+        self.broker.native=True; self.adapter.observe(self.broker.status(),notify=False)
+        expected=self.adapter.stop_key
+        self.adapter.frames[17]=(1,-1,0,1)
+        self.adapter.native_frames.add(17)
+        self.adapter.native_register_scopes[18]=(expected,17)
+        for command,args in (("uwvm/wasip1State",dict(selection="env")),("uwvm/wasip1Policy",{})):
+            before=len(self.broker.commands)
+            self.assertFalse(self.send(command,**args)["success"])
+            self.assertEqual(self.broker.commands[before:],["status"])
+            self.assertEqual(self.adapter.stop_key,expected)
+            self.assertEqual(self.adapter.frames[17],(1,-1,0,1))
+            self.assertIn(17,self.adapter.native_frames)
+            self.assertEqual(self.adapter.native_register_scopes[18],(expected,17))
+        self.assertFalse(self.send("uwvm/diagnostics")["body"]["cooperative"])
+        self.broker.native=False
+        self.assertTrue(self.send("uwvm/diagnostics")["body"]["cooperative"])
+
     def test_no_mutation_or_unbounded_page_from_read_request(self):
         for args in ({"selection":"set env"},{"selection":"env","moduleId":True},{"selection":"env","count":65},{"selection":"env","start":-1}):
             before=len(self.broker.commands);self.assertFalse(self.send("uwvm/wasip1State",**args)["success"])

@@ -26,6 +26,8 @@ struct alignas(64) mmap_layout_before
     unsigned custom_page_size_log2; bool require_dynamic_determination_memory_size_cached;
     linear::mmap_memory_status_t status; uwvm2::utils::mutex::mutex_t* growing_mutex_p;
     std::size_t reservation_limit_bytes; std::size_t diagnostic_owner_memory_index;
+    uwvm2::extension::memtag::shadow_storage memtag_shadow;
+    uwvm2::utils::allocator::resource::reservation<uwvm2::utils::allocator::resource::pool::memory> allocation_charge;
 };
 static_assert(sizeof(linear::mmap_memory_t)==sizeof(mmap_layout_before));
 static_assert(offsetof(linear::mmap_memory_t,status)==offsetof(mmap_layout_before,status));

@@ -46,7 +46,7 @@ int main(int argc,char** argv) {
             auto receive=[&](std::string const& alias,std::vector<std::uint8_t> const& expected) {
                 auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(3);
                 while(std::chrono::steady_clock::now()<deadline) {
-                    auto result=client.call("event.poll",alias,{},1000);
+                    auto result=client.call("message.poll",alias,{},1000);
                     if(!result.error) {
                         if(result.payload!=expected) {
                             fast_io::io::perrln("MISMATCH alias=",alias," expected_bytes=",expected.size()," actual_bytes=",result.payload.size());
@@ -85,7 +85,7 @@ int main(int argc,char** argv) {
                     }
                     auto selected=value(kind,2);publisher->publish(event(name,selected,2,200+rejection_batches));
                     receive(kind,bytes(name,selected,2,200+rejection_batches));
-                    auto empty=client.call("event.poll",kind,{},1000);require(empty.error==11&&empty.payload.empty(),"rejected native batch leaves no queued disclosure after its ordered marker");++rejection_batches;
+                    auto empty=client.call("message.poll",kind,{},1000);require(empty.error==11&&empty.payload.empty(),"rejected native batch leaves no queued disclosure after its ordered marker");++rejection_batches;
                 }
                 close(kind);
                 if(kind=="int64-array") {
@@ -109,7 +109,7 @@ int main(int argc,char** argv) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     auto first=overflow=="drop-oldest"?19u:1u;
                     receive(queue_name,bytes(queue_name,selected,2,first));receive(queue_name,bytes(queue_name,selected,2,first+1));
-                    auto empty=client.call("event.poll",queue_name,{},1000);require(empty.error==11&&empty.payload.empty(),"expanded exact byte/depth queue contains precisely two retained events");
+                    auto empty=client.call("message.poll",queue_name,{},1000);require(empty.error==11&&empty.payload.empty(),"expanded exact byte/depth queue contains precisely two retained events");
                     positive+=2;++overflow_contracts;close(queue_name);
                 }
                 auto auto_alias=fast_io::concat_std(kind,"_auto"),auto_name=fast_io::concat_std("auto_",name);subscribe(auto_alias);
@@ -120,7 +120,7 @@ int main(int argc,char** argv) {
                 auto drain_auto=[&](unsigned expected_kind,ipc::parameter_value const& expected) {
                     auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(3);
                     while(std::chrono::steady_clock::now()<deadline) {
-                        auto result=client.call("event.poll",auto_alias,{},1000);
+                        auto result=client.call("message.poll",auto_alias,{},1000);
                         if(!result.error) {
                             uwvm_ros::typed_parameter_event decoded;require(uwvm_ros::decode(result.payload,decoded),"official Node event canonical timestamp and shape");
                             auto exact=bytes(auto_name,expected,expected_kind,decoded.nanoseconds);for(unsigned i=0;i<4;++i) exact[i]=static_cast<std::uint8_t>(decoded.seconds>>(8*i));

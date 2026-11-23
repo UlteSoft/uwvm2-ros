@@ -20,8 +20,8 @@ def guest(versions, mode):
     for v in versions:
         signatures={'open':('capability_open','i32 i64 i64 i64'),'close':('capability_close','i64'),
                     'publish':('topic_publish','i64 i32 i64 i64'),'subscribe':('topic_subscribe','i64'),
-                    'receive':('event_poll','i64 i32 i64 i64 i64'),'watch':('event_watch','i64 i64 i64'),
-                    'poll':('event_poll_v1','i64 i32 i64 i64 i64')}
+                    'receive':('message_poll','i64 i32 i64 i64 i64'),'watch':('event_stream_watch','i64 i64 i64'),
+                    'poll':('event_stream_poll','i64 i32 i64 i64 i64')}
         for short,(name,sig) in signatures.items():
             lines.append(f'(import "uwvm_ros{v}_v1" "{name}" (func ${short}{v} (param {sig}) (result i32)))')
     lines += ['(import "wasi_snapshot_preview1" "fd_write" (func $write (param i32 i32 i32 i32) (result i32)))',

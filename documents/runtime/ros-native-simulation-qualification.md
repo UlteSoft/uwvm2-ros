@@ -1,5 +1,12 @@
 # ROSv2 native simulation and fault qualification
 
+> Historical qualification cohort. The component process owner described below
+> has been removed from the production source tree and retained only in
+> `test/0084.ros-runtime/support/legacy_process`. Current driver/model/ROS
+> providers use [external ownership and attachment](ros-external-ownership.md).
+> Use the exact current VM's receipts for current behavior; these historical
+> runs do not qualify the newer attachment path.
+
 This qualification exercises actual Wasm imports, the VM device/control
 dispatcher, an external native physics engine, framed sensor ingress and the
 component process sandbox. It covers the closed scalar and isolated component

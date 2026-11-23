@@ -613,7 +613,13 @@ void PMTopLevelManager::collectLastUses(SmallVectorImpl<Pass *> &LastUses,
     return;
 
   auto &LU = DMI->second;
-  LastUses.append(LU.begin(), LU.end());
+  if (LU.empty())
+    return;
+  // SmallPtrSet already knows its size. append(begin, end) would traverse its
+  // sparse buckets once to compute the distance and again to copy the entries.
+  LastUses.reserve(LastUses.size() + LU.size());
+  for (Pass *LastUse : LU)
+    LastUses.push_back(LastUse);
 }
 
 AnalysisUsage *PMTopLevelManager::findAnalysisUsage(Pass *P) {
@@ -1074,15 +1080,40 @@ void PMDataManager::collectRequiredAndUsedAnalyses(
 //
 void PMDataManager::initializeAnalysisImpl(Pass *P) {
   AnalysisUsage *AnUsage = TPM->findAnalysisUsage(P);
+  const auto &Required = AnUsage->getRequiredSet();
+  if (Required.empty())
+    return;
 
-  for (const AnalysisID ID : AnUsage->getRequiredSet()) {
+  AnalysisResolver *AR = P->getResolver();
+  assert(AR && "Analysis Resolver is not set");
+  auto &Impls = AR->AnalysisImpls;
+  const bool InitiallyEmpty = Impls.empty();
+  size_t MatchingPrefix = 0;
+  bool PrefixMatches = true;
+  for (const AnalysisID ID : Required) {
     Pass *Impl = findAnalysisPass(ID, true);
     if (!Impl)
       // This may be analysis pass that is initialized on the fly.
       // If that is not the case then it will raise an assert when it is used.
       continue;
-    AnalysisResolver *AR = P->getResolver();
-    assert(AR && "Analysis Resolver is not set");
+    if (InitiallyEmpty) {
+      // AnalysisUsage makes Required unique, so the initial population cannot
+      // contain duplicate IDs. Avoid a growing linear search for every entry.
+      Impls.emplace_back(ID, Impl);
+      continue;
+    }
+    // Function passes usually reuse the same bindings on the next function.
+    // A matching prefix contains distinct IDs from Required, so this entry is
+    // necessarily the first binding for ID, just as findImplPass would return.
+    // Do not use this shortcut after any mismatch: on-the-fly analyses and
+    // changed bindings must retain addAnalysisImplsPair's original semantics.
+    if (PrefixMatches && MatchingPrefix < Impls.size() &&
+        Impls[MatchingPrefix].first == ID &&
+        Impls[MatchingPrefix].second == Impl) {
+      ++MatchingPrefix;
+      continue;
+    }
+    PrefixMatches = false;
     AR->addAnalysisImplsPair(ID, Impl);
   }
 }

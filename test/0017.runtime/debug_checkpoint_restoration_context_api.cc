@@ -53,7 +53,7 @@ static_assert(!::std::is_constructible_v<in::restoration_context, full::full_sou
 static_assert(!::std::is_copy_constructible_v<in::restoration_context>);
 static_assert(!::std::is_move_constructible_v<in::restoration_context>);
 static_assert(::std::is_same_v<decltype(&in::details::linked_gc_function_reference_type_matches), st::gc_function_type_match_callback>);
-static_assert(::std::is_same_v<decltype(&in::initialize_runtime), void(*)(bool) noexcept>);
+static_assert(::std::is_same_v<decltype(&in::initialize_runtime), bool(*)(bool) noexcept>);
 
 static void require(bool passed)
 {

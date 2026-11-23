@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata, code
 
 ADAPTER_PATH = Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py"
 SPEC = importlib.util.spec_from_file_location("uwvm_dap_disassembly", ADAPTER_PATH)
@@ -25,7 +26,19 @@ class Broker:
         self.after = None
     def request(self, text):
         self.commands.append(text)
+        inventory = metadata(text, stop=17, epoch=8, functions=3, thread=3)
+        if inventory is not None: return inventory
+        instructions = code(text, stop=17, epoch=8, function=2, thread=3, generation=2)
+        if instructions is not None: return instructions
         if text == "status" or text == "bt 3": return self.status
+        if text.startswith("disassemble-range "):
+            _, thread, stop, count, byte, offset, symbols = text.split()
+            header = self.header.replace("native-disassembly ", "native-disassembly-range ").rstrip("\n")
+            header += f" reference-pc=0x1234 owner-begin=0x1000 owner-end=0x1300 byte-offset={byte} instruction-offset={offset} resolve-symbols={symbols}\n"
+            import re
+            rows = re.sub(r"instruction (\d+) pc=(\S+) function-offset=(\d+)", r"instruction \1 function-offset=\3 pc=\2", self.rows)
+            if self.after is not None: self.status = self.after
+            return header + rows + END
         if text.startswith("disassemble 3 17 "):
             result = self.header + self.rows + END
             if self.after is not None: self.status = self.after
@@ -56,12 +69,12 @@ class Tests(unittest.TestCase):
         frame = self.frame(); self.broker.commands.clear()
         response = self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=1)
         self.assertTrue(response["success"], response)
-        self.assertEqual(self.broker.commands, ["status", "bt 3", "disassemble 3 17 1", "status"])
+        self.assertEqual(self.broker.commands, ["status", "status", "disassemble-range 3 17 1 0 0 0", "status"])
         self.assertEqual(response["body"]["instructions"], [{"address": "0x1234", "instructionBytes": "48 83 c0 01",
                          "instruction": "addq $1, %rax", "presentationHint": "normal"}])
     def test_exact_invalid_filler_at_actual_boundary(self):
         frame = self.frame()
-        self.broker.rows = ROWS + "  instruction 1 pc=0x1238 unavailable\n  instruction 2 pc=0x1238 unavailable\n"
+        self.broker.rows = ROWS + "  instruction 1 unavailable\n  instruction 2 unavailable\n"
         response = self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=3)
         self.assertTrue(response["success"], response)
         rows = response["body"]["instructions"]
@@ -86,13 +99,13 @@ class Tests(unittest.TestCase):
                 self.assertEqual(self.broker.commands, old)
     def test_native_display_without_stop_label_has_no_query(self):
         self.broker.status = STATUS.replace("stop-id 17\n", "")
-        frame = self.frame(); old = list(self.broker.commands)
-        self.assertFalse(self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=1)["success"])
-        self.assertEqual(self.broker.commands, old)
+        self.assertFalse(self.send("stackTrace", threadId=3)["success"])
+        self.assertFalse(self.adapter.native_frames)
+        self.assertFalse(any(cmd.startswith("disassemble") for cmd in self.broker.commands))
     def test_invisible_resume_same_pc_new_stop_retires_reference(self):
         frame = self.frame(); self.broker.status = STATUS.replace("stop-id 17", "stop-id 18")
         self.assertFalse(self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=1)["success"])
-        self.assertFalse(any(command.startswith("disassemble ") for command in self.broker.commands))
+        self.assertFalse(any(command.startswith("disassemble") for command in self.broker.commands))
     def test_resume_after_copy_declines_old_output(self):
         frame = self.frame(); self.broker.after = STATUS.replace("stop-id 17", "stop-id 18")
         self.assertFalse(self.send("disassemble", memoryReference=frame["instructionPointerReference"], instructionCount=1)["success"])

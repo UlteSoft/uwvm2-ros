@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Detached WASIp1 scope protocol DATA; real environment authority tested separately."""
+"""Detached pager protocol DATA. GUI uses uwvm/wasip1State, not Variables scopes.
+
+Private pager references below are unit fixtures, not public capture authority.
+Real environment ownership is tested by native/runtime drivers.
+"""
 import io
 import unittest
 import test_dap_wasm_state as state
@@ -60,7 +64,11 @@ class Wasip1Scopes(unittest.TestCase):
     def scopes(self):
         frame=self.send("stackTrace",threadId=1)["body"]["stackFrames"][0]
         return self.send("scopes",frameId=frame["id"])["body"]["scopes"]
-    def scope(self,selected): return next(s["variablesReference"] for s in self.scopes() if s["name"] == TITLES[selected])
+    def scope(self,selected):
+        self.scopes()
+        reference = self.adapter.new_reference()
+        self.adapter.wasip1_scope_stops[reference] = (self.adapter.stop_key, 0, selected)
+        return reference
     def page(self,selected,args,indices):
         ref=self.scope(selected); reply=self.send("variables",variablesReference=ref,**args)
         self.assertTrue(reply["success"],reply); values=reply["body"]["variables"]
@@ -69,11 +77,12 @@ class Wasip1Scopes(unittest.TestCase):
         self.assertTrue(all(v["variablesReference"] == 0 and "memoryReference" not in v and "evaluateName" not in v and v["presentationHint"]["attributes"] == ["readOnly"] for v in values))
         self.assertTrue(all(int(c.split()[-1]) <= 64 for c in self.broker.commands if c.startswith("info wasip1 ")))
         return reply
-    def test_four_scopes_on_source_and_wasm_physical_frames(self):
+    def test_wasip1_is_separate_from_execution_variable_scopes(self):
         for level in ("source","wasm"):
             self.setUp(); self.adapter.step_level=level
             rows=self.scopes(); wasi=[s for s in rows if s["name"] in TITLES.values()]
-            self.assertEqual([s["name"] for s in wasi],list(TITLES.values())); self.assertTrue(all(s["expensive"] for s in wasi))
+            self.assertEqual(wasi, [])
+            self.assertFalse(self.adapter.wasip1_scope_stops)
             self.assertEqual(self.broker.pages,0)
     def test_dense_fd_ordinals_cross_64_boundary_tail_and_empty(self):
         for selected in TITLES:

@@ -58,6 +58,12 @@ class WasmMemoryWrites(unittest.TestCase):
     def setUp(self):
         self.output = io.BytesIO(); self.adapter = dap.Adapter(self.output)
         self.adapter.broker = self.broker = Broker(); self.sequence = 0
+        # This broker models memory commits, not the module metadata endpoint.
+        self.adapter.wasm_function_name = lambda module, function: f"func {function}"
+        self.adapter.wasm_document_source = lambda *args: {"name": "fixture.wat"}
+        self.adapter.wasm_document_line = lambda *args: 1
+        self.adapter.wasm_metadata = lambda *args: {'globals': 0, 'tables': 0}
+        self.adapter.wasm_scope_description = lambda *args: {'total': 1}
 
     def write(self, data=b'\x00\x01\x7f\xff', module=0, memory=0, address=17, offset=0, **extra):
         return self.send("writeMemory", memoryReference=f"wasm-memory:{module}:{memory}:{address}",
@@ -86,7 +92,7 @@ class WasmMemoryWrites(unittest.TestCase):
                 self.setUp(); data = bytes(i & 255 for i in range(count))
                 reply = self.write(data, memory=memory, address=64, offset=-47, allowPartial=False)
                 self.assertTrue(reply['success'], reply)
-                self.assertEqual(reply['body'], {'offset':-47, 'bytesWritten':count})
+                self.assertEqual(reply['body'], {'offset':-47, 'bytesWritten':count, 'stopId':'42'})
                 self.assertEqual(self.broker.commands, ['status', f'set wasm memory 0 {memory} 1 17 bytes {data.hex()}'])
                 self.assertEqual(bytes(self.broker.storage[0, memory, 17+i] for i in range(count)), data)
                 self.assertIsNone(self.adapter.stop_key); self.assertEqual(self.events(), [])
@@ -206,11 +212,14 @@ class WasmMemoryWrites(unittest.TestCase):
     def test_events_are_negotiated_and_follow_the_committed_response(self):
         for memory, invalidated in ((False, False), (True, False), (False, True), (True, True)):
             self.setUp(); self.send('initialize', supportsMemoryEvent=memory, supportsInvalidatedEvent=invalidated)
+            self.adapter.configuration_complete = True
             reply = self.write(address=64, offset=-47); self.assertTrue(reply['success'], reply)
             messages = state.messages(self.output.getvalue()); self.assertEqual(messages[0]['type'], 'response')
             expected = []
             if memory: expected.append(('memory', {'memoryReference':'wasm-memory:0:0:64', 'offset':-47, 'count':4}))
-            if invalidated: expected.append(('invalidated', {'areas':['stacks', 'variables']}))
+            if invalidated: expected.append(('stopped', {'reason':'pause', 'threadId':1,
+                'allThreadsStopped':True, 'uwvmStateMutation':True, 'uwvmStopId':'42',
+                'description':'Memory write committed; stopped state refreshed'}))
             self.assertEqual([(m['event'], m['body']) for m in self.events()], expected)
         self.setUp(); self.send('initialize', supportsMemoryEvent=True, supportsInvalidatedEvent=True)
         self.broker.refusal = 'Wasm index or page is out of range'; self.assertFalse(self.write()['success'])
@@ -221,7 +230,39 @@ class WasmMemoryWrites(unittest.TestCase):
         reply = self.write(b'\xff', module=module, memory=memory, address=address, offset=-1)
         self.assertTrue(reply['success'], reply)
         self.assertEqual(self.broker.commands[-1], f'set wasm memory {module} {memory} 1 {address-1} bytes ff')
-        self.assertEqual(reply['body'], {'offset':-1, 'bytesWritten':1})
+        self.assertEqual(reply['body'], {'offset':-1, 'bytesWritten':1, 'stopId':'42'})
+
+    def test_failed_post_commit_refresh_never_relabels_or_replays_write(self):
+        self.send('initialize', supportsMemoryEvent=True, supportsInvalidatedEvent=True)
+        self.adapter.configuration_complete = True
+        self.broker.after_commit = lambda:setattr(self.broker, 'reject_status', True)
+        reply = self.write()
+        self.assertTrue(reply['success'], reply)
+        self.assertEqual(reply['body']['stopId'], '42')
+        self.assertEqual(sum(c.startswith('set wasm memory ') for c in self.broker.commands), 1)
+        self.assertEqual([m['event'] for m in self.events()], ['memory', 'invalidated'])
+        self.assertIsNone(self.adapter.stop_key)
+
+    def test_mutation_refresh_uses_fresh_scopes_without_forcing_expansion(self):
+        self.adapter.step_level = 'wasm'
+        self.adapter.configuration_complete = True
+        self.adapter.supports_invalidated_event = True
+        frame = self.send('stackTrace', threadId=1)['body']['stackFrames'][0]['id']
+        scopes = self.send('scopes', frameId=frame)['body']['scopes']
+        self.assertFalse(scopes[0]['expensive'])
+        old_scope = scopes[0]['variablesReference']
+        self.assertTrue(self.write()['success'])
+        stop = next(m['body'] for m in self.events() if m['event'] == 'stopped')
+        self.assertFalse(stop.get('preserveFocusHint', False))
+        self.assertNotIn(old_scope, self.adapter.wasm_scope_stops)
+        self.assertNotIn(frame, self.adapter.frames)
+        fresh = self.send('stackTrace', threadId=1)['body']['stackFrames'][0]['id']
+        scopes = self.send('scopes', frameId=fresh)['body']['scopes']
+        self.assertTrue(all(s['expensive'] for s in scopes if s['name'].startswith('Wasm ')))
+        self.assertTrue(all(s['variablesReference'] != old_scope for s in scopes))
+        self.broker.stop += 1
+        self.adapter.observe(self.broker.status(), notify=False)
+        self.assertIsNone(self.adapter.mutation_stop_key)
 
 
 if __name__ == '__main__': unittest.main()

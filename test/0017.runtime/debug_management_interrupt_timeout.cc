@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual cooperative-domain/controller management timeout component.
 // This does NOT simulate JIT frames/native traps or qualify source step/NI.
 #include <uwvm2/uwvm/debugger/controller.h>
@@ -20,6 +21,7 @@ static void check(bool value, char const* message) noexcept
 static ctl::launch_config config()
 {
     ctl::launch_config value{}; value.debug_enabled = true;
+    value.profile=ctl::debug_permissions::permission_level::full;
     value.compiler = ctl::backend::llvm; value.mode = ctl::compile_mode::full;
     value.origin = ctl::launch_origin::console; value.instance[0] = 1u;
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -33,6 +35,8 @@ static ctl::launch_config config()
 }
 int main()
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     for(bool interrupt : {false, true})
     {
         auto owner{dbg::controller::create(config(), 1u)};

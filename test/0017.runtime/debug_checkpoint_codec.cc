@@ -1,10 +1,13 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 /*************************************************************
  * UlteSoft WebAssembly Virtual Machine (Version 2)          *
  * Copyright (c) 2025-present UlteSoft. All rights reserved. *
  * Licensed under the APL-2.0 License (see LICENSE file).    *
  *************************************************************/
 #include <uwvm2/uwvm/debugger/checkpoint_database.h>
+#include <uwvm2/runtime/diagnostic/snapshot_state.h>
 #include <uwvm2/uwvm/debugger/checkpoint_replay.h>
+#include <uwvm2/uwvm/debugger/checkpoint_state_identity.h>
 #include <fast_io_dsal/string_view.h>
 #include <bit>
 #include <limits>
@@ -66,7 +69,7 @@ static cp::state sample()
     auto& control{item(18u, cp::object_kind::control)}; control.words = {100u, 200u, 0u, 1u};
     auto& handler{item(19u, cp::object_kind::handler)}; handler.flags = 1u; handler.links = {9u}; handler.words = {0u, 333u, 14u};
     auto& wait{item(20u, cp::object_kind::atomic_wait)};
-    wait.links = {4u}; wait.words = {(::std::numeric_limits<::std::uint64_t>::max)() - 3u, 4u, 0u, 999u};
+    wait.links = {4u}; wait.words = {(::std::numeric_limits<::std::uint64_t>::max)() - 3u, 4u, 0u, 999u, 0u, (::std::numeric_limits<::std::uint64_t>::max)() - 3u, 0u, 64u};
     auto& host{item(21u, cp::object_kind::host_resource)}; host.flags = 2u; host.words = {42u, 1u, 1u}; host.bytes = {::std::byte{0x7fu}};
     auto& event{item(22u, cp::object_kind::event)}; event.flags = 2u; event.links = {21u};
     event.words = {1u, 100u, 1u, 7u, 1u, 1u, 0u, 5u}; event.values = {number(cp::value_kind::i32, 4u), number(cp::value_kind::i32, 111u)};
@@ -105,7 +108,7 @@ static cp::state empty_nonnullable_tables()
     declaration.flags = 1u; // A declarative segment is already dropped.
     return result;
 }
-static ::std::vector<::std::byte> encode(cp::state const& snapshot)
+static ::uwvm2::utils::container::std_vector<::std::byte> encode(cp::state const& snapshot)
 {
     ::std::vector<unsigned char> buffer(65536u);
     // [65536 bytes owned by buffer] end
@@ -117,11 +120,84 @@ static ::std::vector<::std::byte> encode(cp::state const& snapshot)
     // [safe                                       ] unsafe (one-past)
     //                           ^^ output.curr_ptr remains inside this owner.
     auto const size{static_cast<::std::size_t>(output.curr_ptr - buffer.data())};
-    ::std::vector<::std::byte> bytes(size);
+    ::uwvm2::utils::container::std_vector<::std::byte> bytes(size);
     for(::std::size_t i{}; i != size; ++i) { bytes[i] = static_cast<::std::byte>(buffer[i]); }
     return bytes;
 }
-template<unsigned Bits, typename T> static void overwrite(::std::vector<::std::byte>& bytes, ::std::size_t offset, T value)
+static void snapshot_archive_roundtrip(cp::state const& source)
+{
+    // Event matching is a separate component; the normal snapshot restore
+    // decoder must not silently accept an embedded unhandled journal.
+    auto original=source;
+    for(auto& item:original.objects)if(item.kind==cp::object_kind::event)
+    {
+        item={};item.kind=cp::object_kind::host_resource;item.words[0u]=1u;item.words[1u]=1u;
+    }
+    original.replay_event_cursor=0u;
+    namespace ar = ::uwvm2::runtime::diagnostic::snapshot_archive;
+    namespace snapshot = ::uwvm2::runtime::diagnostic::snapshot_state;
+    auto const graph = ::std::make_shared<cp::state const>(original);
+    snapshot::state_stream stream;
+    require(bool(stream.bind(graph)), "snapshot state stream validates graph before publication");
+    auto origin = ar::native_platform();stream.describe(origin);
+    ::std::array records{stream.record()};
+    ::uwvm2::utils::container::std_vector<::std::byte> bytes;
+    auto write = +[](void* context, ::std::span<::std::byte const> part) noexcept
+    {
+        try { auto& out = *static_cast<::uwvm2::utils::container::std_vector<::std::byte>*>(context);out.insert(out.end(),part.begin(),part.end());return true; }
+        catch(...) { return false; }
+    };
+    require(bool(ar::encode_stream(origin,records,&bytes,write)), "unified archive streams complete state without duplicate buffer");
+    ar::decoded parsed;
+    require(bool(ar::decode(bytes,parsed)), "unified archive outer integrity and framing");
+    require(::std::ranges::equal(parsed.records.front().payload,encode(original)), "streaming state is exactly canonical database bytes");
+    ::std::shared_ptr<cp::state const> decoded;
+    require(bool(snapshot::decode(parsed,decoded)) && decoded && *decoded==original, "unified archive decodes detached exact state");
+    require(!snapshot::result::grants_restore_authority(), "decoded graph does not grant execution authority");
+    auto retained = decoded;
+    auto event_state=original;cp::object event{};event.kind=cp::object_kind::event;
+    event.words[0u]=1u;event.words[2u]=1u;event.words[3u]=1u;event_state.objects.push_back(event);
+    auto event_bytes=encode(event_state);auto embedded=parsed;embedded.records.front().payload=event_bytes;
+    require(snapshot::decode(embedded,decoded).status==snapshot::error::unsupported_component && decoded==retained,
+        "typed replay history cannot be silently ignored by ordinary restoration");
+    auto bad = parsed;bad.disclosure=ar::visibility::diagnostic;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::disclosure_denied && decoded==retained, "diagnostic archive never restores dynamic state");
+    bad=parsed;bad.records.front().capture=ar::completeness::partial;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::incomplete_state && decoded==retained, "partial state leaves prior output intact");
+    bad=parsed;--bad.origin.logical_abi;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::incompatible_schema && decoded==retained, "old logical ABI rejected");
+    bad=parsed;--bad.origin.continuation_abi;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::incompatible_schema && decoded==retained, "old continuation ABI rejected");
+    bad=parsed;bad.origin.features^=1u;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::inconsistent_manifest && decoded==retained, "feature header cannot contradict typed graph");
+    bad=parsed;bad.records.front().id++;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::inconsistent_manifest && decoded==retained, "checkpoint IDs must agree");
+    bad=parsed;bad.records.push_back(parsed.records.front());
+    require(snapshot::decode(bad,decoded).status==snapshot::error::inconsistent_manifest && decoded==retained, "multiple complete state records rejected");
+    for(auto kind : {ar::component::ros1, ar::component::ros2, ar::component::events})
+    {
+        for(auto completeness : {ar::completeness::complete, ar::completeness::partial,
+                                 ar::completeness::redacted, ar::completeness::unavailable})
+        {
+            bad=parsed;bad.records.push_back({kind,completeness,0u,1u,{}});
+            require(snapshot::decode(bad,decoded).status==snapshot::error::unsupported_component && decoded==retained,
+                "unadapted environment/event records cannot be silently dropped during restore");
+        }
+    }
+    bad=parsed;
+    auto module=::std::find_if(original.objects.begin(),original.objects.end(),[](auto const& object){return object.kind==cp::object_kind::module;});
+    require(module!=original.objects.end(), "fixture module exists");
+    bad.records.push_back({ar::component::wasm_module,ar::completeness::complete,0u,1u,module->bytes});
+    require(bool(snapshot::decode(bad,decoded)) && *decoded==original, "extraction module agrees with state code");
+    auto wrong=module->bytes;wrong[0]^=::std::byte{1u};bad.records.back().payload=wrong;
+    retained=decoded;
+    require(snapshot::decode(bad,decoded).status==snapshot::error::inconsistent_manifest && decoded==retained, "contradictory static Wasm copy rejected");
+    ::std::size_t calls{};
+    auto fail = +[](void* context, ::std::span<::std::byte const>) noexcept { return ++*static_cast<::std::size_t*>(context)<7u; };
+    auto failure=ar::encode_stream(origin,records,&calls,fail);
+    require(!failure && failure.status==ar::error::write_failed && calls==7u, "failed streaming stops output with no commit footer");
+}
+template<unsigned Bits, typename T> static void overwrite(::uwvm2::utils::container::std_vector<::std::byte>& bytes, ::std::size_t offset, T value)
 {
     require(offset <= bytes.size() && Bits / 8u <= bytes.size() - offset, "mutation range bounded before deriving pointers");
     // [owned bytes ... offset][exact Bits/8 mutation bytes] ... end
@@ -134,7 +210,7 @@ template<unsigned Bits, typename T> static void overwrite(::std::vector<::std::b
     // [safe                              ] unsafe (one-past)
     //                                      ^^ output cursor is now one-past.
 }
-static void resign(::std::vector<::std::byte>& bytes)
+static void resign(::uwvm2::utils::container::std_vector<::std::byte>& bytes)
 {
     require(bytes.size() >= cp::header_bytes + cp::footer_bytes, "complete file before re-signing malicious fixture");
     // [owned header+body][48-byte owned footer] end
@@ -146,13 +222,15 @@ static void resign(::std::vector<::std::byte>& bytes)
 }
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     require(argc == 2 || argc == 3, "fresh output path and optional --require-big");
     if(argc == 3)
     {
         require(::fast_io::string_view{::fast_io::mnp::os_c_str(argv[2])} == "--require-big", "exact endian selector");
         require(::std::endian::native == ::std::endian::big, "real native big-endian target, not a swapped little-endian simulation");
     }
-    static_assert(cp::database_format_version == 7u);
+    static_assert(cp::database_format_version == 10u);
     auto const empty_tables{empty_nonnullable_tables()};
     require(cp::validate_graph(empty_tables) == cp::error::none, "empty nonnullable table32/table64 retain only exact declared type");
     auto const empty_bytes{encode(empty_tables)}; cp::state empty_decoded{};
@@ -207,6 +285,48 @@ int main(int argc, char** argv)
     require(cp::decode_database(old_state3, empty_decoded) == cp::error::unsupported_version && empty_decoded == empty_before,
         "old state3 cannot be guessed into new empty-table representation");
     auto const original{sample()}; require(cp::validate_graph(original) == cp::error::none, "full schema graph including GC cycles/aliases/exception/thread and 64-bit final memory byte");
+    auto ancestry{original}; ancestry.objects[16u].words[7u]=1u;
+    cp::state ancestry_decoded{};
+    require(cp::decode_database(encode(ancestry),ancestry_decoded)==cp::error::none && ancestry_decoded==ancestry,
+        "state9 preserves ROS cross-module ancestry on a restored frame");
+    ancestry.objects[16u].words[7u]=2u;
+    require(cp::validate_graph(ancestry)==cp::error::invalid_shape,"reserved ancestry bits rejected");
+    auto old_state9{encode(original)};overwrite<64>(old_state9,0u,cp::legacy_database_magic9);
+    overwrite<16>(old_state9,8u,::std::uint16_t{9u});resign(old_state9);
+    auto const before9=ancestry_decoded;
+    require(cp::decode_database(old_state9,ancestry_decoded)==cp::error::unsupported_version && ancestry_decoded==before9,
+        "State9 cannot encode completed timeout continuations or modify output");
+    auto old_state8{encode(original)};overwrite<64>(old_state8,0u,cp::legacy_database_magic8);
+    overwrite<16>(old_state8,8u,::std::uint16_t{8u});resign(old_state8);
+    auto const wait_before=ancestry_decoded;
+    require(cp::decode_database(old_state8,ancestry_decoded)==cp::error::unsupported_version && ancestry_decoded==wait_before,
+        "state8 cannot invent native wait FIFO/operand geometry or modify output");
+    auto old_state7{encode(original)}; overwrite<64>(old_state7,0u,cp::legacy_database_magic7);
+    overwrite<16>(old_state7,8u,::std::uint16_t{7u}); resign(old_state7);
+    auto const ancestry_before{ancestry_decoded};
+    require(cp::decode_database(old_state7,ancestry_decoded)==cp::error::unsupported_version && ancestry_decoded==ancestry_before,
+        "old state7 cannot invent missing ROS ancestry or modify output");
+    // The actual capture producer uses policy revision 3, explicit Core 3.0
+    // mode 5, and the independent MTE disable bit. Validate the same schema.
+    auto module_policy{original};
+    module_policy.objects[0u].flags = 1u;
+    module_policy.objects[0u].words = {3u, 5u, ::std::uint64_t{1u} << 19u, 3u, 0u, 0u, 0u, 0u};
+    require(cp::validate_graph(module_policy) == cp::error::none, "current Core 3.0 and MTE policy accepted");
+    cp::state policy_decoded{};
+    require(cp::decode_database(encode(module_policy), policy_decoded) == cp::error::none && policy_decoded == module_policy,
+        "current policy exact canonical roundtrip");
+    for(auto revision : {0u, 1u, 2u, 4u})
+    {
+        auto bad{module_policy}; bad.objects[0u].words[0u] = revision;
+        require(cp::validate_graph(bad) == cp::error::invalid_shape, "unknown or obsolete module policy rejected");
+    }
+    for(auto field : {1u, 2u, 3u, 4u})
+    {
+        auto bad{module_policy};
+        bad.objects[0u].words[field] = field == 1u ? 6u : field == 2u ? (::std::uint64_t{1u} << 20u) : field == 3u ? 4u : 1u;
+        require(cp::validate_graph(bad) == cp::error::invalid_shape, "reserved policy fields rejected");
+    }
+    snapshot_archive_roundtrip(original);
     auto const bytes{encode(original)}; cp::state decoded{};
     require(cp::decode_database(bytes, decoded) == cp::error::none && decoded == original, "exact canonical roundtrip including NaN/v128/i31/typed refs");
     require(encode(decoded) == bytes, "single canonical endian representation");
@@ -274,14 +394,69 @@ int main(int argc, char** argv)
     require(cp::validate_graph(malformed) == cp::error::overlapping_chunks, "overlapping sparse memory chunk rejected");
     cp::limits small{}; small.max_values = 1u;
     require(cp::decode_database(bytes, decoded, small) == cp::error::limit_exceeded, "allocation budget checked");
+    auto coherent = original;
+    coherent.objects[2].words[1] = coherent.objects[16].words[5] = 1u;
+    require(cp::state_identity::compatible_restore_code(coherent, coherent) == cp::error::none,
+        "saved image binds to identical coherent code");
+    {
+        auto later = coherent;
+        later.objects[7].values[0] = reference(cp::heap_kind::defined, cp::reference_kind::null);
+        require(cp::state_identity::compatible_restore_code(coherent, later) == cp::error::none,
+            "mutable GC/global state may differ across checkpoints");
+        later = coherent; ++later.objects[2].words[1]; ++later.objects[16].words[5];
+        later.objects[2].bytes = {::std::byte{}, ::std::byte{0x0b}};
+        require(cp::state_identity::compatible_restore_code(coherent, later) == cp::error::stale_generation,
+            "restore cannot roll back a committed function generation");
+        later = coherent; later.objects[0].bytes.push_back(::std::byte{});
+        require(cp::state_identity::compatible_restore_code(coherent, later) == cp::error::stale_generation,
+            "different source is not restore-compatible");
+        later = coherent; later.required_features ^= 1u;
+        require(cp::state_identity::compatible_restore_code(coherent, later) == cp::error::stale_generation,
+            "changed feature policy is not restore-compatible");
+        later = coherent; later.objects[16].links[0] = UINT64_MAX;
+        require(cp::state_identity::compatible_restore_code(later, coherent) != cp::error::none,
+            "malformed saved references rejected before any candidate allocation");
+    }
     cp::replay_log log{}; require(log.bind(original) == cp::error::none, "owned replay log binding");
     ::std::array<cp::object_id, 1u> resources{21u}; ::std::array<cp::value, 1u> arguments{number(cp::value_kind::i32, 4u)};
     cp::replay_request request{1u, 100u, 1u, 7u, 2u, resources, arguments}; request.logical_thread = 2u;
     require(log.consume(request).status == cp::error::replay_diverged && log.cursor() == 0u, "wrong logical thread cannot consume event");
-    request.logical_thread = 1u; auto const replay{log.consume(request)};
+    request.logical_thread = 1u;
+    unsigned commits{};
+    auto commit = [&](cp::replay_result const&) noexcept { ++commits; };
+    auto rejected = log.apply(request, [](cp::replay_result const&) { return cp::error::invalid_reference; }, commit);
+    require(rejected.status == cp::error::invalid_reference && log.cursor() == 0u && commits == 0u,
+        "invalid guest range consumes no event or effect");
+    try
+    {
+        (void)log.apply(request, [](cp::replay_result const&) -> cp::error { throw 7; }, commit);
+        require(false, "throwing preparation must propagate");
+    }
+    catch(int) { require(log.cursor() == 0u && commits == 0u, "throwing preparation releases transaction without mutation"); }
+    auto const replay{log.apply(request, [&](cp::replay_result const& view)
+    {
+        require(view.results.size() == 1u && view.results[0].low_bits == 111u, "prepare sees exact immutable results");
+        require(log.bind(original) == cp::error::unavailable_capability, "nested bind cannot replace active payload");
+        require(log.consume(request).status == cp::error::unavailable_capability, "nested consume cannot advance active cursor");
+        return cp::error::none;
+    }, commit)};
+    require(commits == 1u, "validated payload committed exactly once");
     require(replay.status == cp::error::none && replay.results.size() == 1u && replay.results[0].low_bits == 111u && replay.effect_ordinal == 5u && log.exhausted(),
         "exact event match returns recorded typed result without host execution");
     require(log.consume(request).status == cp::error::replay_diverged, "event cannot replay twice");
+    require(log.bind(original) == cp::error::none && replay.results[0].low_bits == 111u,
+        "returned payload stays alive across rebind");
+    auto invalid_binding{original}; invalid_binding.next_logical_thread = 0u;
+    require(log.bind(invalid_binding) != cp::error::none && log.cursor() == 0u,
+        "rejected bind keeps previous complete recording and cursor");
+    cp::replay_result retained{};
+    {
+        cp::replay_log temporary{};
+        require(temporary.bind(original) == cp::error::none, "temporary replay image binds");
+        retained = temporary.consume(request);
+    }
+    require(retained.status == cp::error::none && retained.results[0].low_bits == 111u,
+        "returned typed result survives log destruction");
     ::std::array<cp::checkpoint_index, 4u> catalog{{{1u, 0u, 10u, 0u}, {2u, 1u, 30u, 1u}, {3u, 1u, 25u, 1u}, {4u, 2u, 50u, 2u}}};
     auto const reverse{cp::plan_reverse(catalog, 4u, 70u, 28u)};
     require(reverse.status == cp::error::none && reverse.origin.identifier == 1u && reverse.target_instruction == 28u, "reverse plan follows exact ancestry, not another branch's nearer checkpoint");

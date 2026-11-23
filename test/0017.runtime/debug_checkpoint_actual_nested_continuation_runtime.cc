@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine original Wasm parse+initializer+single fused compiler+actual pause
 // capture+retirement+actual engine-resolved logical continuation execution.
 // This qualifies the execution slice, not complete instance/file/GC rollback.
@@ -64,6 +65,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 2; }
 

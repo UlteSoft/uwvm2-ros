@@ -14,6 +14,8 @@ import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
+# Match the sibling-module search path used by the launched adapter scripts.
+sys.path.insert(0, str(ROOT / "tools/debug"))
 def module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     result = importlib.util.module_from_spec(spec)
@@ -209,7 +211,8 @@ class RealSupervisorCancellation(unittest.TestCase):
                     client = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
                     with client:
                         client.settimeout(5)
-                        client.connect(str(root/"control.sock"))
+                        from private_unix_socket import connect_private
+                        connect_private(client, root/"control.sock")
                         client.send((root/"capability").read_bytes())
                         self.assertEqual(client.recv(64), b"ready\n")
                         client.send(b"status")

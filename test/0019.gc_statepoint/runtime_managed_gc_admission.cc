@@ -11,6 +11,8 @@
 #include <uwvm2/runtime/gc/instance_phase.h>
 #include <uwvm2/runtime/gc/managed_collection.h>
 
+// Re-derive private capability macros after public headers restore their scope.
+#include <uwvm2/utils/macro/push_macros.h>
 namespace gc = ::uwvm2::runtime::gc;
 namespace
 {
@@ -137,3 +139,5 @@ int main()
 #endif
     ::fast_io::io::println(::fast_io::u8out(), u8"[PASS] managed GC native boundary checks=", checks);
 }
+
+#include <uwvm2/utils/macro/pop_macros.h>

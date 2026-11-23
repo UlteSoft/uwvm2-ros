@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(root / "tools/debug"))
 
 
 def load(path, name):

@@ -125,7 +125,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             }};
         bool expose_host_api{is_exposed(api_target_kind, api_target_name)};
         // The actual setter identifies a shared native cache across both DL
-        // and weak-symbol registrations. Each invocation still checks its target.
+        // and their explicit library aliases. Each invocation still checks its target.
 # if defined(UWVM_SUPPORT_PRELOAD_DL)
         for(auto const& candidate: ::uwvm2::uwvm::wasm::storage::preloaded_dl)
         {

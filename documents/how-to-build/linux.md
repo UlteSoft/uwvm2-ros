@@ -62,9 +62,9 @@ There are three independent build products:
 | ROS1 or ROS2 Gateway | Matching native Gateway CMake project | Yes; use the chosen distribution's headers, libraries and generated interfaces |
 | Guest application, normally a `.wasm` | Each SDK example's `xmake.lua` | Not for the Wasm build; execution needs the deployed Runtime and Gateway |
 
-Both ROS import families, WASI Preview 1 memory32/memory64, and socket
-implementations are mandatory. Disabling one at build time is rejected before
-dependency acquisition. Compiling an implementation neither exposes it to a
+ROSv2, WASI Preview 1 memory32/memory64, and socket implementations are
+mandatory build components. Deprecated ROSv1 imports and unisolated native
+preloading default to off. Compiling an implementation neither exposes it to a
 guest nor grants any operation: all such authority is runtime policy.
 
 ### Combined ROS runtime build
@@ -78,7 +78,7 @@ xmake f -y -c -m release -p linux -a x86_64 -o build/ros \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=llvm \
   --llvm-build-jobs=1 --llvm-build-targets=Native \
-  --import-ros1=y --import-ros2=y
+  --import-u2rosv2=y
 xmake -j1 uwvm2-ros
 ```
 
@@ -136,7 +136,7 @@ REGISTRY=/absolute/reviewed/abb/manifest.hpp
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2-abb \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=llvm \
-  --import-ros1=y --import-ros2=y \
+  --import-u2rosv1-ros1=y --import-u2rosv1-ros2=y \
   --ros-vendor-abb=y \
   --ros-vendor-abb-registry-header="$REGISTRY"
 xmake -j1 uwvm2-ros
@@ -153,7 +153,7 @@ REGISTRY=/absolute/reviewed/fanuc-kuka/manifest.hpp
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2-fanuc-kuka \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=llvm \
-  --import-ros1=y --import-ros2=y \
+  --import-u2rosv1-ros1=y --import-u2rosv1-ros2=y \
   --ros-vendor-fanuc=y --ros-vendor-fanuc-registry-header="$REGISTRY" \
   --ros-vendor-kuka=y --ros-vendor-kuka-registry-header="$REGISTRY" \
   --ros-registry-max-interfaces=256 --ros-registry-max-cells=32768
@@ -167,7 +167,7 @@ enabled another vendor, explicitly turn its switch off and reset its header to
 | Additional root option | Meaning and required configuration |
 | --- | --- |
 | `--ros-custom-registry-header=<path>` | Select a reviewed common registry directly; requires at least one ROS import. If vendor switches are also enabled, their registry path must agree. Default: `none`. |
-| `--ros-original-control-manifest-header=<path>` | Add the separate original ROS2 control schema; requires `--import-ros2=y`. It does not replace the vendor registry. Default: `none`. |
+| `--ros-original-control-manifest-header=<path>` | Add the separate original ROS2 control schema; requires `--import-u2rosv1-ros2=y`. It does not replace the vendor registry. Default: `none`. |
 | `--ros-registry-max-interfaces=<integer>` | Compiled Topic/Service/Action interface ceiling, `1..512`, default `128`. |
 | `--ros-registry-max-cells=<integer>` | Aggregate compiled schema-cell ceiling, `1..1048576`, default `16384`. Runtime byte, node, depth and capability limits remain separate. |
 | `--ros-platform-isaac-ros=y` | Select reviewed Isaac ROS schema source; requires ROS2 and `--ros-platform-isaac-ros-registry-header=<path>`. |
@@ -248,7 +248,7 @@ xmake f -y -c -m release -p linux -a arm64 -o build/ros2-arm64 \
   --sysroot="$TARGET_SYSROOT" \
   --llvm-cmake-toolchain=/absolute/toolchains/aarch64-linux-gnu/llvm.cmake \
   --execution-int=uwvm-int --execution-jit=llvm \
-  --import-ros1=y --import-ros2=y
+  --import-u2rosv2=y
 xmake -j1 uwvm2-ros
 ```
 

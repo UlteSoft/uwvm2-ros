@@ -49,7 +49,7 @@ int main()
         check(ledger.compiler_observer_packet(root,2,payload,flags),"bound typed packet cold path");
         check(!ledger.compiler_observer_packet(root,1,payload,flags) &&
               !ledger.compiler_observer_packet(root,2,payload.subspan(1),flags),"foreign site/range cannot borrow");
-        std::vector<cp::native_value> oracle;
+        uwvm2::utils::container::std_vector<cp::native_value> oracle;
         check(cp::shadow_ledger::decode_compiler_packet(source,2,payload,flags,oracle)==cp::status::ok,"full decoder oracle");
         unsigned roots{};check(ledger.visit_recorded_native_references([&](auto ref)
         { ++roots;return ref.kind==uwvm2::object::global::wasm_ref_kind::wasm_i31; })==cp::status::ok && roots==(initialized ? 3u:2u),"actual live references, unset local skipped");

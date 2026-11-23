@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools/debug"))
 SPEC = importlib.util.spec_from_file_location("queued_credentials_server", ROOT / "tools/debug/secure_server.py")
 server = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(server)
@@ -67,17 +68,18 @@ class QueuedCredentialsTest(unittest.TestCase):
                 worker = threading.Thread(target=run_server, name="queued-credentials-server")
                 worker.start()
                 try:
-                    self.assertTrue(ready.wait(10))
+                    self.assertTrue(ready.wait(10), errors)
                     capability = (directory / server.CAPABILITY_NAME).read_bytes()
                     self.assertEqual(len(capability), server.CAPABILITY_BYTES)
                     client_code = ("import pathlib,socket,sys; p=pathlib.Path(sys.argv[1]); "
+                                   "sys.path.insert(0,sys.argv[2]); from private_unix_socket import connect_private; "
                                    "s=socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET); s.settimeout(10); "
-                                   "s.connect(str(p/'control.sock')); print('connected',flush=True); "
+                                   "connect_private(s,p/'control.sock'); print('connected',flush=True); "
                                    "assert sys.stdin.readline()=='send\\n'; token=(p/'capability').read_bytes(); "
                                    "assert s.send(token)==32; print('queued',flush=True); "
                                    "assert s.recv(65536)==b'ready\\n'; assert s.send(b'status')==6; "
                                    "assert s.recv(65536)==b'running\\n'; s.close()")
-                    client = original_popen([sys.executable, "-c", client_code, str(directory)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    client = original_popen([sys.executable, "-c", client_code, str(directory), str(Path(server.__file__).parent)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     clients.append(client)
                     self.assertEqual(client.stdout.readline(), b"connected\n")
                     self.assertTrue(accepted.wait(10))

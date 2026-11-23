@@ -14,8 +14,8 @@ class Fixture extends Api{
   version():u32{return 1;}
   open(_m:u32,_a:u64,_n:u64,slot:u64):u32{store<u64>(<usize>slot,this.next++);return 0;}
   close(_id:u64):u32{this.closes++;return 0;}
-  watchEvents(o:u64,s:u64,c:u64):u32{return o==1&&s==2&&c==0?0:Status.Denied;}
-  pollEventV1(_o:u64,_m:u32,out:u64,capacity:u64,slot:u64):u32{
+  watchEventStream(o:u64,s:u64,c:u64):u32{return o==1&&s==2&&c==0?0:Status.Denied;}
+  pollEventStream(_o:u64,_m:u32,out:u64,capacity:u64,slot:u64):u32{
     this.polls++;if(this.idle)return Status.Again;store<u64>(<usize>slot,64);if(capacity<64)return Status.TooLarge;
     const p=<usize>out;memory.fill(p,0,64);store<u32>(p,0x45525755);store<u16>(p+4,1);store<u16>(p+6,1);store<u8>(p+8,2);
     store<u64>(p+16,this.source);store<u64>(p+32,this.sequence);store<u64>(p+40,17);store<u64>(p+48,this.session);store<u64>(p+56,this.malformed?1:0);return 0;

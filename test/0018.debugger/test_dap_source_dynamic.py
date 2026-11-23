@@ -102,7 +102,8 @@ class DynamicRouting(unittest.TestCase):
                 self.assertFalse(reply["success"], reply)
                 self.assertIn("512-byte command packet capacity", reply["message"])
                 self.assertEqual(self.broker.commands[before:], [])
-                self.assert_retired()
+                self.assertIn(frame["id"], self.adapter.source_frame_ordinals)
+                self.assertTrue(self.send("scopes", frameId=frame["id"])["success"])
         self.assertEqual(dap.MAX_COMMAND, 8448)
         self.assertEqual(dap.breakpoint_condition_suffix({"condition": "a" * 256}), " if " + "a" * 256)
         with self.assertRaises(ValueError):
@@ -136,7 +137,8 @@ class DynamicRouting(unittest.TestCase):
             reply = self.send("evaluate", frameId=frame["id"], context="variables", expression=expression)
             self.assertFalse(reply["success"], reply)
             self.assertEqual(self.broker.commands[before:], [])
-            self.assert_retired()
+            self.assertIn(frame["id"], self.adapter.source_frame_ordinals)
+            self.assertTrue(self.send("scopes", frameId=frame["id"])["success"])
         self.setUp()
         frame = self.frames()[0]
         before = len(self.broker.commands)

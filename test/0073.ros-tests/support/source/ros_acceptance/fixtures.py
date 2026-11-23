@@ -23,7 +23,7 @@ def memory_guest(versions):
                                 ("subscribe", "(param i64)"), ("poll", "(param i64 i32 i64 i64 i64)"),
                                 ("close", "(param i64)")):
             external = {"open": "capability_open", "publish": "topic_publish", "subscribe": "topic_subscribe",
-                        "poll": "event_poll", "close": "capability_close"}[name]
+                        "poll": "message_poll", "close": "capability_close"}[name]
             imports.append(f'(import "uwvm_ros{version}_v1" "{external}" (func ${name}{version} {signature} (result i32)))')
     records = [(128, b"\x0f\0\0\0warmup-js-relay"), (160, b"\x14\0\0\0roswasm-js-relay-out"),
                (256, b"\x13\0\0\0roswasm-js-relay-in"), (384, b"pub"), (400, b"sub"), (416, b"ungranted")]

@@ -85,7 +85,7 @@ namespace
     { require(!client.call("param.subscribe-events",alias,{},2000).error,"explicit event activation"); }
     void legacy_receive(ipc::client& client,ipc::parameter_value const& value,unsigned kind)
     {
-        auto result{client.call("event.poll","legacy",{},1000)};uwvm_ros::parameter_event event;
+        auto result{client.call("message.poll","legacy",{},1000)};uwvm_ros::parameter_event event;
         require(!result.error&&uwvm_ros::decode(result.payload,event),"legacy String event remains decodable");
         require(event.node==gateway_name&&event.name==name_of("string")&&event.kind==kind&&event.value==(kind==3?std::string{}:value.string_value),"legacy String exact selected content");empty(client,"legacy");
     }
@@ -117,8 +117,8 @@ int main(int argc,char** argv)
                     require(one==two,"same shared-Node mutation has identical bytes in two independent sessions");++complete;
                     if(phase==2) { receive(first,deleted,name,value,3,true); }else { empty(first,deleted); }
                     for(auto const& selected:negative) { empty(first,selected);++rejections; }
-                    auto inactive{first.call("event.poll",kind+"_inactive",{},1000)};require(inactive.error==9&&inactive.payload.empty(),"grant presence alone never activates a route");
-                    auto absent{first.call("event.poll","ungranted",{},1000)};require(absent.error==13&&absent.payload.empty(),"absent authority rejected");
+                    auto inactive{first.call("message.poll",kind+"_inactive",{},1000)};require(inactive.error==9&&inactive.payload.empty(),"grant presence alone never activates a route");
+                    auto absent{first.call("message.poll","ungranted",{},1000)};require(absent.error==13&&absent.payload.empty(),"absent authority rejected");
                     if(kind=="string") { legacy_receive(first,value,phase+1); }
                 }
                 for(auto const& selected:negative) { require(!first.call("capability.close",selected,{},1000).error,"negative alias closes"); }
@@ -132,10 +132,10 @@ int main(int argc,char** argv)
             receive(first,"bool_event",name,sample("bool"),1);receive(second,"bool_event",name,sample("bool"),1);
             require(!first.call("capability.close","bool_event",{},1000).error,"one owner's close succeeds");
             require(!sender.call("param.set","bool_set",request(sample("bool",1)),2000).error,"sibling mutation after close");receive(second,"bool_event",name,sample("bool",1),2);
-            auto closed{first.call("event.poll","bool_event",{},1000)};require(closed.error==9&&closed.payload.empty(),"closed owner has no queue");++retirement;
+            auto closed{first.call("message.poll","bool_event",{},1000)};require(closed.error==9&&closed.payload.empty(),"closed owner has no queue");++retirement;
             activate(first,"bool_event");require(!first.call("capability.revoke","bool_event",{},1000).error,"one owner's explicit revoke succeeds");
             require(!sender.call("param.set","bool_set",request(sample("bool")),2000).error,"sibling mutation after revoke");receive(second,"bool_event",name,sample("bool"),2);
-            auto revoked{first.call("event.poll","bool_event",{},1000)};require(revoked.error==125&&revoked.payload.empty(),"revoked owner remains denied");++retirement;
+            auto revoked{first.call("message.poll","bool_event",{},1000)};require(revoked.error==125&&revoked.payload.empty(),"revoked owner remains denied");++retirement;
             second.close();std::this_thread::sleep_for(std::chrono::milliseconds(100));session.connect(second);activate(second,"bool_event");empty(second,"bool_event");
             require(!sender.call("param.set","bool_set",request(sample("bool",1)),2000).error,"new session mutation");receive(second,"bool_event",name,sample("bool",1),2);++retirement;
             require(!sender.call("param.undeclare","bool_undeclare",{},2000).error,"retirement control cleanup");receive(second,"bool_event",name,sample("bool",1),3);
@@ -150,7 +150,7 @@ int main(int argc,char** argv)
                 unsigned first_value{policy=="drop-oldest"?5u:1u};
                 for(unsigned index=first_value;index<=first_value+1;++index)
                 {
-                    auto result{second.call("event.poll",policy,{},1000)};uwvm_ros::typed_parameter_event event;auto value{sample("int64")};value.integer_value=index;
+                    auto result{second.call("message.poll",policy,{},1000)};uwvm_ros::typed_parameter_event event;auto value{sample("int64")};value.integer_value=index;
                     require(!result.error&&uwvm_ros::decode(result.payload,event)&&result.payload==expected(name_of("int64"),value,2,event.seconds,event.nanoseconds),"overflow retains exact selected ordered events");
                 }
                 empty(second,policy);require(!second.call("capability.close",policy,{},1000).error,"overflow alias closed");++overflow_checks;

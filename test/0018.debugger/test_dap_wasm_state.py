@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata, code
 
 SPEC = importlib.util.spec_from_file_location("typed_wasm_dap", Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py")
 dap = importlib.util.module_from_spec(SPEC)
@@ -81,17 +82,14 @@ class Broker:
 
     def request(self, command):
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop, epoch=7, functions=10, globals=2, tables=3, memories=1)
+        if inventory is not None: return inventory
         if command == "status": return self.status()
         if command == "bt 1": return self.status() + ("  backtrace unavailable for this stop\n" if self.native else "  #0 module=0 function=1 [demo] run\n")
         if command == f"frames 1 {self.stop}":
             return "error: source debug info unavailable\n"  # This formatter fixture has no DWARF.
-        if command.startswith("wasm-code 1 "):
-            _, _, stop, count, byte, first = command.split()
-            count, first = int(count), int(first)
-            assert int(stop) == self.stop and int(byte) == 0
-            header = f"wasm-code thread=1 stop={self.stop} module=0 function=1 epoch=7 generation=1 pc=4 size=5 first={first} count={count}\n"
-            return header + "".join("wasm-op offset=4 size=1 safe=0 text=end\n" if i == 0 else "wasm-op unavailable\n"
-                                   for i in range(first, first+count))
+        instructions = code(command, stop=self.stop, epoch=7, function=1)
+        if instructions is not None: return instructions
         if command.startswith("frames wasm 1 "):
             words = command.split(); first = min(int(words[-2]), 1)
             count = 1 - first
@@ -101,7 +99,12 @@ class Broker:
             tokens = command.split(); root, first, count = map(int, tokens[6:9]); path = tuple(map(int, tokens[9:]))
             result = member_graph(self.stop, root, first, count, path) if self.member_packet is None else self.member_packet
         elif command.startswith("globals 1 0 "):
-            result = graph(self.stop) if self.packet is None else self.packet
+            first, count = map(int, command.split()[-2:])
+            result = graph(self.stop, first) if self.packet is None else self.packet
+            if self.packet is None:
+                result = "\n".join(line for line in result.splitlines()
+                    if not line.startswith("global ") or first <= int(line.split()[1]) < first + count) + "\n"
+                if first + count < 2: result += f"Wasm state truncated: rows={min(count,2-first)} objects=2\n"
         elif command.startswith("locals wasm 1 0 "):
             result = f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch=7 first=0 total=1\nlocal 0 (ref null type-index=3 module=0) = struct #1\nobject #1 struct module=0 type=3 members=0\n"
         elif command.startswith("controls 1 0 "):
@@ -152,12 +155,19 @@ class StateProtocol(unittest.TestCase):
         result = self.send("uwvm/wasmState", threadId=1, selection="controls")
         self.assertTrue(result["success"],result)
         self.assertEqual(result["body"]["variables"][1]["name"],"control 1")
-        self.assertIn("saved-count=1",result["body"]["variables"][1]["value"])
-        self.assertTrue(all(v["variablesReference"]==0 for v in result["body"]["variables"]))
+        row = result["body"]["variables"][1]
+        self.assertEqual(row["value"], "if-else")
+        self.assertGreater(row["variablesReference"], 0)
+        fields = self.send("variables", variablesReference=row["variablesReference"])["body"]["variables"]
+        saved = next(field for field in fields if field["name"] == "Saved parameters")
+        self.assertGreater(saved["variablesReference"], 0)
+        details = self.send("variables", variablesReference=saved["variablesReference"])["body"]["variables"]
+        self.assertTrue(any(field["value"] == "1" for field in details))
+        self.assertTrue(all("readOnly" in field["presentationHint"]["attributes"] for field in fields))
         result = self.send("uwvm/wasmState", threadId=1, selection="handlers")
         self.assertTrue(result["success"],result)
-        self.assertIn("catch=catch-ref",result["body"]["variables"][0]["value"])
-        self.assertEqual(self.broker.commands,["status","controls 1 0 0 64","status","status","handlers 1 0 0 64","status"])
+        self.assertEqual(result["body"]["variables"][0]["value"], "catch-ref")
+        self.assertEqual([c for c in self.broker.commands if c != "status"], ["controls 1 0 0 64", "handlers 1 0 0 64"])
 
     def test_exact_large_declared_tuple_page_and_saved_values(self):
         result=self.send("uwvm/wasmState",threadId=1,selection="control-params",index=1,start=128,count=2)
@@ -290,18 +300,13 @@ class StateProtocol(unittest.TestCase):
     def test_wasm_level_standard_scopes_use_typed_packets(self):
         frame = self.send("stackTrace", threadId=1)["body"]["stackFrames"][0]
         scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
-        expected = ["Wasm locals", "Typed Wasm locals", "Wasm operand stack (last safepoint; may differ from native state)", "Wasm saved if parameters", "Wasm control stack", "Wasm handler clauses", "Wasm globals", "Wasm table 0", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"]
-        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
-        if hasattr(self.adapter, "ros_scope_stops"):
-            expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
-            selections = ("capabilities", "instances", "events")
-            for row, selection in zip(scopes[-3:], selections):
-                self.assertTrue(row["expensive"] and row["variablesReference"] > 0)
-                self.assertEqual(self.adapter.ros_scope_stops[row["variablesReference"]],
-                                 (self.adapter.stop_key, selection))
-            self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
-        self.assertEqual([s["name"] for s in scopes], expected)
-        scope = next(s for s in scopes if s["name"] == "Wasm operand stack (last safepoint; may differ from native state)")
+        expected = ["Wasm locals", "Wasm operand stack", "Wasm globals", "Wasm control stack",
+                    "Wasm saved parameters", "Wasm exception handlers", "Wasm tables", "Frame details"]
+        self.assertEqual([scope["name"] for scope in scopes], expected)
+        self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
+        tables = next(scope for scope in scopes if scope["name"] == "Wasm tables")
+        self.assertEqual(tables["indexedVariables"], 3)
+        scope = next(scope for scope in scopes if scope["name"] == "Wasm operand stack")
         reply = self.send("variables", variablesReference=scope["variablesReference"])
         self.assertTrue(reply["success"], reply)
         self.assertEqual(reply["body"]["variables"][0]["value"], "1234")

@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine setup once, then two read-only LLVM-full guest entries -> actual
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // GC/exn/global/table/local/operand VIEW. No fake capture or restore authority.
@@ -62,7 +63,7 @@ struct source_setup
         {
             // The existing source API owns a standard UTF-8 string. Adapt only
             // at this boundary; the fixture's path storage remains fast_io.
-            auto candidate{full::full_source_instance::create_unparsed(::fast_io::u8concat_std(state.path), u8"gc-state")};
+            auto candidate{full::full_source_instance::create_unparsed(::uwvm2::utils::container::u8concat(state.path), u8"gc-state")};
             if(!full::select_unparsed_full_source_after_drain(candidate)) { return false; }
             // SAME exclusive source image is adopted BEFORE magic/section parse,
             // not copied from a mutable file mapping after compiler validation.
@@ -74,7 +75,7 @@ struct source_setup
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) { return false; }
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -147,6 +148,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 64; }
     auto const policy{::fast_io::cstring_view{::fast_io::mnp::os_c_str("mandatory-native")}};
@@ -177,7 +180,7 @@ int main(int argc, char** argv)
     // [actual finalized global CLI argument allocation] end
     // [safe] cursor installed AFTER all vector growth, retained through reset.
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = ::std::addressof(arguments.back());
-    auto bytes{image::owned_file_image::read(::fast_io::u8concat_std(setup.path), 1048576u)}; REQUIRE(bytes);
+    auto bytes{image::owned_file_image::read(::uwvm2::utils::container::u8concat(setup.path), 1048576u)}; REQUIRE(bytes);
     auto const original{bytes.image->bytes()}; REQUIRE(original.size() >= 8u && original.size() <= PTRDIFF_MAX);
     setup.immutable = ::std::move(bytes.image);
     REQUIRE(lib::replace_full_source_after_drain_host_api(source_setup::prepare, ::std::addressof(setup)) &&

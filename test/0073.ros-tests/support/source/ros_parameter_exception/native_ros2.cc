@@ -51,7 +51,7 @@ namespace
             auto until{std::chrono::steady_clock::now()+std::chrono::seconds(5)};
             while(std::chrono::steady_clock::now()<until)
             {
-                publish(expected);auto reply{client.call("event.poll","pulse",{},1000)};
+                publish(expected);auto reply{client.call("message.poll","pulse",{},1000)};
                 if(!reply.error&&body(reply)==expected) { return; }
                 require(!reply.error||reply.error==11,"live sibling event poll remains usable");std::this_thread::sleep_for(std::chrono::milliseconds(20));
             }

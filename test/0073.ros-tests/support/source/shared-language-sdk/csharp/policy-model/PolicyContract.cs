@@ -11,7 +11,7 @@ internal static class PolicyContract {
             Calls++;if(operation=="capability_open")return new Result(0,value:Next++);
             if(operation=="capability_close") { Closes++;if(FailFirstClose&&Closes==1)throw new InvalidOperationException("injected model close failure");return new Result(0); }
             if(operation==Reject)return new Result(OperationError,required:OperationError==90?999UL:null);
-            if(operation=="event_poll"||operation=="event_poll_v1")return new Result(0,Poll);
+            if(operation=="message_poll"||operation=="event_stream_poll")return new Result(0,Poll);
             return Reply??new Result(0);
         }
     }

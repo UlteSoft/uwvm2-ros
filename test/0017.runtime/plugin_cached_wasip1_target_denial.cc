@@ -130,12 +130,18 @@ int main()
     }
     auto& environment=st::default_wasip1_env;
     environment.argv.emplace_back(u8"one");
+    environment.interface_enabled=true;
+    namespace interfaces=::uwvm2::utils::control::host_interfaces;
+    for(auto name:{::fast_io::u8string_view{u8"args_sizes_get"},::fast_io::u8string_view{u8"args_sizes_get_wasm64"}})
+    { CHECK(environment.interfaces.set(interfaces::find(interfaces::family::wasip1,name),interfaces::access::allow)); }
     ::uwvm2::object::memory::linear::native_memory_t memory{};
     memory.init_by_page_count(1,4);
     st::scoped_current_wasip1_env_t selected{environment};
     st::scoped_current_wasip1_memory_t binding{environment,&memory};
     st::scoped_current_wasip1_target_t permitted{st::wasip1_module_target_kind_t::preloaded_dl,u8"permitted-cache"};
     CHECK(ty::uwvm_get_wasip1_host_api_v1()!=nullptr);
+    CHECK(api->args_sizes_get(0,4)==abi::errno_t::enotcapable);
+    environment.non_fd_permissions=::uwvm2::imported::wasi::wasip1::environment::permission_t::args;
     CHECK(api->args_sizes_get(0,4)==abi::errno_t::esuccess);
     ::std::uint_least32_t count{},size{};
     ::std::memcpy(&count,memory.memory_begin,4);

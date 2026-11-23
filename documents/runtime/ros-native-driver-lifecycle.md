@@ -4,6 +4,8 @@
 > VM-owned component launch/stop interfaces in historical sections below are
 > removed. Their receipts qualify the historical implementation only. The VM
 > does not implement the deployment process supervisor.
+> Historical launcher code now lives only under
+> `test/0084.ros-runtime/support/legacy_process`, outside production sources.
 
 This design extends the [native driver boundary](ros-native-driver-isolation.md).
 The final driver boundary is attachment-only: the deployment layer creates,

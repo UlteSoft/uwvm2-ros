@@ -13,7 +13,7 @@ int main()
     auto const ros=a::find(a::family::ros1,std::string_view{"uwvm_ros1_v1.abi_version"});
     assert(original.interfaces.set(random,a::access::allow));
     assert(original.interfaces.set(write,a::access::deny));
-    std::vector<unsigned char> bytes;
+    uwvm2::utils::container::std_vector<unsigned char> bytes;
     assert(u::encode_wasi_policy(original,bytes));
     u::wasi_policy_spec restored;
     assert(u::wasi_policy_detail::decode(bytes,restored));
@@ -25,7 +25,7 @@ int main()
     for(std::size_t n{};n<bytes.size();++n)
         assert(!u::wasi_policy_detail::decode(std::span<unsigned char const>{bytes.data(),n},restored));
     auto denied=original;denied.interfaces.entries[random]=a::access::deny;
-    std::vector<unsigned char> denied_bytes;assert(u::encode_wasi_policy(denied,denied_bytes));
+    uwvm2::utils::container::std_vector<unsigned char> denied_bytes;assert(u::encode_wasi_policy(denied,denied_bytes));
     assert(denied_bytes!=bytes);
     std::cout<<"policy roundtrip, removed wire format, truncation and cross-family checks passed\n";
 }

@@ -42,7 +42,7 @@ inline std::uint32_t submit(std::uint64_t s,std::uint64_t o,std::uint32_t,std::u
  if(s!=source||o!=observer||!find(o)||!find(s))return 9;++submits;if(submit_error)return submit_error;if(n!=16)return 22;
  auto raw=reinterpret_cast<unsigned char const*>(static_cast<std::uintptr_t>(p));last_request.assign(raw,raw+n);slot(id,next_request++);return 0;
 }
-inline std::uint32_t event_poll(std::uint64_t o,std::uint32_t,std::uint64_t out,std::uint64_t cap,std::uint64_t len){
+inline std::uint32_t event_stream_poll(std::uint64_t o,std::uint32_t,std::uint64_t out,std::uint64_t cap,std::uint64_t len){
  if(o!=observer||!find(o))return 9;if(event.empty())return 11;slot(len,event.size());if(cap<event.size())return 90;
  std::memcpy(reinterpret_cast<void*>(static_cast<std::uintptr_t>(out)),event.data(),event.size());event.clear();return 0;
 }
@@ -51,7 +51,7 @@ inline void queue(std::uint16_t kind,std::uint64_t id,std::int64_t value=42,std:
  store_u64(event.data()+16,source);store_u64(event.data()+24,id);store_u64(event.data()+32,++sequence);store_u64(event.data()+40,77);store_u64(event.data()+48,88);store_u64(event.data()+56,event.size()-64);if(kind==3)store_u64(event.data()+64,std::bit_cast<std::uint64_t>(value));
 }
 inline roswasmc_backend const* backend(){static roswasmc_backend b=[] {roswasmc_backend v{};v.version=2;v.abi_version=abi;v.open=open;v.close=close;v.poll=poll;v.advertise_service=advertise;v.log=log;v.request[ROSWASMC_TIME_READ_STEADY]=time_read;v.request[ROSWASMC_SERVICE_CALL]=sync;v.request[ROSWASMC_SERVICE_RESPOND]=respond;return v;}();return &b;}
-inline roswasmc_event_backend const api{2,watch,event_poll,nullptr,submit};
+inline roswasmc_event_backend const api{2,watch,event_stream_poll,nullptr,submit};
 inline roswasm_rclcpp::NodeBinding const nodes[]{{"minimal_service","","log"},{"minimal_client","","log"}};
 inline roswasm_rclcpp::ServiceBinding rows[]{
  {"minimal_service","add_two_ints","example_interfaces/srv/AddTwoInts","official-default-service-profile",roswasm_rclcpp::ServiceRole::server,"","","advertise","respond",2},

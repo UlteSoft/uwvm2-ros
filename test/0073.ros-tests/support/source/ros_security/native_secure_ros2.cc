@@ -41,7 +41,7 @@ int main(int argc,char** argv)
         for(unsigned n{};n!=250&&(incoming.error||!received.load());++n)
         {
             require(!client.call("topic.publish","pubString",data(0),1000).error,"secure Gateway publication");publisher->publish(m);
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));incoming=client.call("event.poll","subString",{},1000);
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));incoming=client.call("message.poll","subString",{},1000);
             require(!incoming.error||incoming.error==11,"secure incoming queue");
         }
         require(received.load()>0&&!incoming.error&&incoming.payload==data(0),"actual signed DDS-Security bidirectional exact content");

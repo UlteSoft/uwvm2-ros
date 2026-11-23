@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual LLVM-full opt-in entry producer/activation qualification. This does
 // not accept whole-instance restore, replay, GC graph export or native-PC jump.
 #include "mandatory_native_fixture.h"
@@ -61,6 +62,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 2; }
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;

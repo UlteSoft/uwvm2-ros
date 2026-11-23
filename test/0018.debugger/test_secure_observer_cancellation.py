@@ -13,6 +13,8 @@ import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
+# Import the real transport helpers without depending on caller PYTHONPATH.
+sys.path.insert(0, str(ROOT / "tools/debug"))
 spec = importlib.util.spec_from_file_location("secure_observer_server", ROOT / "tools/debug/secure_server.py")
 server = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(server)

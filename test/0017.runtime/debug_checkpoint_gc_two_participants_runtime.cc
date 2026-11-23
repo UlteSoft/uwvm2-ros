@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine two ordinary LLVM-full guest entries -> two actual before-park
 // producers -> current ONE-domain complete census -> immutable input DATA.
 // No synthetic participant/capture owner, host wait in observer or restore permission.
@@ -20,9 +21,14 @@
 #include <string>
 #include <thread>
 #include <vector>
+// Derive private capabilities only within their paired macro scope.
+#include <uwvm2/utils/macro/push_macros.h>
+#include <uwvm2/uwvm/runtime/macro/push_macros.h>
 #if !defined(UWVM_RUNTIME_LLVM_JIT) || !defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) || !defined(UWVM_CPP_EXCEPTIONS)
 # error Actual checkpoint census fixture requires LLVM full/native threads/C++ EH
 #endif
+#include <uwvm2/uwvm/runtime/macro/pop_macros.h>
+#include <uwvm2/utils/macro/pop_macros.h>
 namespace lib = ::uwvm2::runtime::lib;
 namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
 namespace threads = ::uwvm2::utils::thread;
@@ -40,7 +46,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{};
+    ::uwvm2::utils::container::std_u8string path{};
     image::owned_file_image::owner immutable{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -63,7 +69,7 @@ struct source_setup
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) { return false; }
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -128,6 +134,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 64; }
     auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
@@ -151,7 +159,7 @@ int main(int argc, char** argv)
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = ::std::addressof(arguments.back());
     auto bytes{image::owned_file_image::read(setup.path, 1048576u)}; REQUIRE(bytes);
     auto const original{bytes.image->bytes()}; REQUIRE(original.size() >= 8u && original.size() <= PTRDIFF_MAX);
-    ::std::vector<::std::byte> expected{original.begin(), original.end()}; // SAME bounded actual owner
+    ::uwvm2::utils::container::std_vector<::std::byte> expected{original.begin(), original.end()}; // SAME bounded actual owner
     setup.immutable = ::std::move(bytes.image);
     REQUIRE(lib::replace_full_source_after_drain_host_api(source_setup::prepare, ::std::addressof(setup)) &&
         setup.ready && setup.source && setup.source->file().has_owned_source_image());

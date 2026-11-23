@@ -4,6 +4,8 @@
 > uses [externally provisioned attachment](ros-model-attachment.md). Launcher,
 > image, placement and worker-limit CLI options below are removed. The receipts
 > here apply only to their recorded historical builds.
+> The historical process owner and image configuration headers have been moved
+> to `test/0084.ros-runtime/support/legacy_process`; they are not VM dependencies.
 
 This provider executes an explicitly approved synchronous native backend in a
 separate Linux process. It implements the execution side of `local-model`;

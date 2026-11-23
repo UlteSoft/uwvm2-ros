@@ -46,7 +46,7 @@ inline void ros2_native_typed_events(rclcpp::Node::SharedPtr const& node,char co
         auto until{std::chrono::steady_clock::now()+std::chrono::seconds(2)};
         while(std::chrono::steady_clock::now()<until)
         {
-            auto result{client.call("event.poll",alias,{},1000)};
+            auto result{client.call("message.poll",alias,{},1000)};
             if(!result.error)
             {
                 ipc::typed_parameter_event decoded;require(!ipc::decode_typed_parameter_event(result.payload,decoded)&&result.payload==expected,
@@ -58,7 +58,7 @@ inline void ros2_native_typed_events(rclcpp::Node::SharedPtr const& node,char co
         throw std::runtime_error{"native typed-event exact receipt deadline"};
     };
     auto absent=[&](std::string const& alias) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(25));auto result{client.call("event.poll",alias,{},1000)};
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));auto result{client.call("message.poll",alias,{},1000)};
         require(result.error==11&&result.payload.empty(),"unselected/malformed/over-budget native typed event is not disclosed");
     };
     for(std::string const kind:{"bool","int64","float64"})
@@ -126,7 +126,7 @@ inline void ros2_native_typed_events(rclcpp::Node::SharedPtr const& node,char co
         {
             auto changed{value(kind,1)};require(node->set_parameter(rclcpp::Parameter{automatic_name,ros2_scalar_native(changed)}).successful,
                 "official native typed parameter mutation succeeded");
-            std::this_thread::sleep_for(std::chrono::milliseconds(25));auto result{client.call("event.poll",automatic_alias,{},1000)};
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));auto result{client.call("message.poll",automatic_alias,{},1000)};
             if(!result.error)
             {
                 ipc::typed_parameter_event decoded;

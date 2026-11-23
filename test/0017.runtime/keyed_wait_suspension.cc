@@ -38,6 +38,9 @@ struct actual_policy
     bool have_snapshot{}, refused_wrong{};
     bool abort_after_resume{};
     unsigned visits{};
+    ::std::atomic<unsigned>* completions{};
+    void completed(result) const noexcept
+    {if(completions)completions->fetch_add(1u,::std::memory_order_release);}
     [[nodiscard]] auto register_waker(void* context,void (*wake)(void*) noexcept) const noexcept
     { return participant.register_pause_waker(context,wake); }
     [[nodiscard]] bool requested() const noexcept { return control.wait_interrupt_requested(); }
@@ -69,11 +72,13 @@ int main()
         ::std::array<waits::suspension_snapshot,2u> snapshots{};
         ::std::array<unsigned,2u> compare_count{},visits{};
         ::std::array<bool,2u> snap_ok{},refused{};
+        ::std::array<::std::atomic<unsigned>,2u> completions{};
         auto execute=[&](unsigned index)
         {
             auto participant{control.enter()};
             if(!participant) { ::fast_io::fast_terminate(); }
             actual_policy policy{control,participant,key,::std::addressof(wrong)};
+            policy.completions=::std::addressof(completions[index]);
             outcomes[index]=registry.wait_suspendable(key,-1,[&]
             { ++compare_count[index];compared[index].count_down();return true; },policy);
             snapshots[index]=policy.captured;visits[index]=policy.visits;
@@ -89,6 +94,8 @@ int main()
         require(registry.notify(key,1u)==1u,"first notify selects exactly queue head while paused");
         require(registry.notify(key,1u)==1u,"second notify excludes already selected head");
         require(registry.notify(key,2u)==0u,"paused selected nodes cannot count twice");
+        require(completions[0].load(::std::memory_order_acquire)==1u && completions[1].load(::std::memory_order_acquire)==1u,
+            "notification completion is published even while both workers remain parked");
         require(control.resume(ticket),"resume real parked cohort");first.join();second.join();control.drain();
         require(outcomes[0].outcome==result::notified && outcomes[1].outcome==result::notified,"notifications survive real pause");
         require(!outcomes[0].aborted_by_suspension && !outcomes[1].aborted_by_suspension,"normal resume is original guest result");
@@ -100,9 +107,19 @@ int main()
         require(snapshots[0].remaining_nanoseconds==-1 && snapshots[1].remaining_nanoseconds==-1,"infinite timeout typed marker");
         require(!snapshots[0].notified && !snapshots[1].notified,"prepark snapshot precedes controlled notify");
         require(registry.notify(key,9u)==0u,"returned stack nodes are unlinked");
+        require(completions[0].load()==1u && completions[1].load()==1u,"native return cannot publish the same completion twice");
     }
     {
-        domain control{1u};waits registry{};::std::latch compared{1u};::std::stop_source stop{};
+        domain control{1u};waits registry{};auto participant=control.enter();
+        actual_policy policy{control,participant,key,::std::addressof(wrong)};
+        ::std::atomic<unsigned> completions{};policy.completions=::std::addressof(completions);
+        require(registry.wait_suspendable(key,0,[]{return false;},policy).outcome==result::not_equal,"unequal wins before zero timeout");
+        require(registry.wait_suspendable(key,0,[]{return true;},policy).outcome==result::timed_out,"zero timeout completes without queueing");
+        require(registry.wait_suspendable(key,1'000'000,[]{return true;},policy).outcome==result::timed_out,"queued timeout completes before unlink");
+        require(completions.load()==3u && registry.notify(key,1u)==0u,"every completed wait reports once and retains no native callback");
+    }
+    {
+        domain control{1u};waits registry{};::std::latch compared{1u};th::stop_source stop{};
         waits::suspension_result outcome{};unsigned comparisons{};bool snapshot_ok{};
         ::std::thread worker{[&]
         {

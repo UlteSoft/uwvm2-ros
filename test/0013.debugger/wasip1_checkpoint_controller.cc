@@ -73,7 +73,15 @@ namespace
         ws::view output{};
         void execute(ws::request const& query)
         {
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
+            // This is an isolated branch unit, not a publicly admitted ROS
+            // operation. Launch contracts remain immutable even in full mode.
+            require(!ws::valid(query),"ROS admission denies environment checkpoint mutation");
+            require(query.index < 8u && query.name.empty() && query.value.empty(),
+                "isolated branch input obeys checkpoint storage bounds");
+#else
             require(ws::valid(query),"requests obey original admission bounds");
+#endif
             output={};output.module=query.module;output.operation=query.operation;
             struct reply { ws::view& wasip1_state_values; } result{output};
             int pause_{1};::std::array<int,1u> captures{7};::std::size_t count{1u};

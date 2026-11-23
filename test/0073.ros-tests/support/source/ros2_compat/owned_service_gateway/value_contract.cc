@@ -38,7 +38,7 @@ int main(int argc,char** argv)
         need(!gw::owned_service_pair(cfg,c,ros::ipc::rmw_endpoint::role::client));o=observer();o.resource="/other";cfg.policy.capabilities[o.alias]=o;
         need(!gw::owned_service_pair(cfg,c,ros::ipc::rmw_endpoint::role::client));});
     run([]{need(gw::owned_service_operation("rmw.service-v1")&&gw::owned_service_operation("rmw.service-retire-v1"));
-        for(auto name:{"service.call","service.submit","service.respond","event.poll","rmw.publish-v1"})need(!gw::owned_service_operation(name));});
+        for(auto name:{"service.call","service.submit","service.respond","message.poll","rmw.publish-v1"})need(!gw::owned_service_operation(name));});
     run([]{ // Actual default seam is honest unsupported, not a fake endpoint.
         gw::owned_service_backend unselected;need(unselected.owned_rmw_service_capacity()==0);
         auto r=unselected.owned_rmw_service({}, {},nullptr,0,ros::ipc::after(1));need(r.error==95&&r.payload.empty());});

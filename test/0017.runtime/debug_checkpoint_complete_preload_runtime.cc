@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual setup then two read-only LLVM-full guests. New instance census under
 // one real pause/cohort/hostclose/N/publication, not a copied debugger VIEW.
 // The const graph is logical DATA; whole-instance restoration is not claimed.
@@ -45,7 +46,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{}, provider_path{};
+    ::uwvm2::utils::container::std_u8string path{}, provider_path{};
     image::owned_file_image::owner immutable{}, provider_image{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -56,7 +57,7 @@ struct source_setup
         auto& state{*static_cast<source_setup*>(pointer)};
         try
         {
-            ::std::vector<full::full_preload_input> inputs{};
+            ::uwvm2::utils::container::std_vector<full::full_preload_input> inputs{};
             full::full_preload_input preload{}; preload.file_name = state.provider_path;
             preload.module_name = u8"checkpoint-instance-provider"; preload.parameters = ::uwvm2::uwvm::wasm::storage::wasm_parameter;
             preload.image = ::std::move(state.provider_image); inputs.push_back(::std::move(preload));
@@ -84,7 +85,7 @@ struct source_setup
             // These modules have no start functions. Complete ordinary segment
             // instantiation, including passive expression payloads, BEFORE any
             // setup guest entry or source seal; true would leave it deferred.
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(false);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(false)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -195,7 +196,7 @@ static bool stable_operand_window(cp::state const& graph)
     return threads == 2u && frames == 2u;
 }
 static void check_graph(cp::state const& graph, cp::limits const& cap, ::std::array<::std::byte,16u> const& label,
-    ::std::size_t main_id, ::std::size_t provider_id, ::std::vector<::std::byte> const& main_bytes, ::std::vector<::std::byte> const& provider_bytes)
+    ::std::size_t main_id, ::std::size_t provider_id, ::uwvm2::utils::container::std_vector<::std::byte> const& main_bytes, ::uwvm2::utils::container::std_vector<::std::byte> const& provider_bytes)
 {
     REQUIRE(cp::validate_graph(graph,cap) == cp::error::none && graph.recording_id == label);
     REQUIRE(graph.root_instances.size() == 2u && graph.next_logical_thread == 3u && main_id < graph.root_instances.size() && provider_id < graph.root_instances.size() && main_id != provider_id);
@@ -291,6 +292,8 @@ static void check_graph(cp::state const& graph, cp::limits const& cap, ::std::ar
 }
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 3) { return 64; }
     auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
@@ -301,6 +304,7 @@ int main(int argc, char** argv)
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
+    features.disable_threads = true; features.disable_relaxed_simd = true;
     features.disable_gc = false; features.explicit_enable_gc = true;
     features.disable_function_references = false; features.explicit_enable_function_references = true;
     features.disable_reference_types = false; features.explicit_enable_reference_types = true;
@@ -313,8 +317,8 @@ int main(int argc, char** argv)
     features.disable_simd = false; features.explicit_enable_simd = true;
     features.disable_bulk_memory = false; features.explicit_enable_bulk_memory = true;
     source_setup setup{};
-    setup.path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
-    setup.provider_path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[2])));
+    setup.path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
+    setup.provider_path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[2])));
     auto& arguments{::uwvm2::uwvm::cmdline::parsing_result};
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = nullptr; arguments.clear();
     arguments.emplace_back(::uwvm2::utils::cmdline::parameter_parsing_results{
@@ -328,13 +332,13 @@ int main(int argc, char** argv)
     auto bytes{image::owned_file_image::read(setup.path, 1048576u)}; REQUIRE(bytes);
     auto const original{bytes.image->bytes()}; REQUIRE(original.size() >= 8u && original.size() <= PTRDIFF_MAX);
     // [complete immutable pre-parse main bytes] end; PTRDIFF extent proved above.
-    ::std::vector<::std::byte> main_original{original.begin(),original.end()};
+    ::uwvm2::utils::container::std_vector<::std::byte> main_original{original.begin(),original.end()};
     setup.immutable = ::std::move(bytes.image);
     auto provider_input{image::owned_file_image::read(setup.provider_path,1048576u)}; REQUIRE(provider_input);
     auto const provider_original_view{provider_input.image->bytes()};
     REQUIRE(provider_original_view.size() >= 8u && provider_original_view.size() <= PTRDIFF_MAX);
     // [complete immutable pre-parse provider bytes] end; checked owned extent.
-    ::std::vector<::std::byte> provider_original{provider_original_view.begin(),provider_original_view.end()};
+    ::uwvm2::utils::container::std_vector<::std::byte> provider_original{provider_original_view.begin(),provider_original_view.end()};
     REQUIRE(main_original != provider_original); setup.provider_image = ::std::move(provider_input.image);
     REQUIRE(lib::replace_full_source_after_drain_host_api(source_setup::prepare, ::std::addressof(setup)) &&
         setup.ready && setup.source && setup.source->file().has_owned_source_image());
@@ -441,7 +445,7 @@ int main(int argc, char** argv)
                 {
                     if(object.kind != cp::object_kind::module) { continue; }
                     ++policy_modules;
-                    REQUIRE(object.flags == 1u && object.words[0u] == 1u);
+                    REQUIRE(object.flags == 1u && object.words[0u] == ::uwvm2::runtime::checkpoint::module_feature_policy::revision);
                     REQUIRE((object.words[2u] & (::std::uint64_t{1u} << 18u)) != 0u);
                     REQUIRE((actual.graph->required_features & (::std::uint64_t{1u} << 16u)) == 0u);
                 }

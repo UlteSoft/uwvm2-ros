@@ -31,6 +31,7 @@ class TrapPackets(unittest.TestCase):
         self.adapter.observe(self.broker.status(), notify=False); self.sequence = 0
     def test_exception_event_has_no_native_authority(self):
         output = io.BytesIO(); adapter = dap.Adapter(output)
+        adapter.configuration_complete = True
         adapter.observe(self.broker.status())
         event = state.messages(output.getvalue())[0]
         self.assertEqual(event['event'], 'stopped')
@@ -48,11 +49,14 @@ class TrapPackets(unittest.TestCase):
         frame = self.send('stackTrace', threadId=1)['body']['stackFrames'][0]
         reply = self.send('scopes', frameId=frame['id']); self.assertTrue(reply['success'], reply)
         scopes = reply['body']['scopes']
-        scope = next(s for s in scopes if s['name'] == 'Wasm pre-trap inputs (no instruction result)')
+        scope = next(s for s in scopes if s['name'] == 'Wasm operand stack')
         self.assertFalse(any(s['name'] == 'Registers' for s in scopes))
         reply = self.send('variables', variablesReference=scope['variablesReference'])
         self.assertTrue(reply['success'], reply)
-        rows = reply['body']['variables']; self.assertEqual(len(rows), 1)
+        rows = reply['body']['variables']; self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['type'], 'warning')
+        self.assertIn(NOTE, rows[0]['value'])
+        rows = rows[1:]
         self.assertEqual((rows[0]['type'], rows[0]['value']), ('i64', '1234'))
         self.assertEqual(rows[0]['presentationHint']['attributes'], ['readOnly'])
         self.assertNotIn('memoryReference', rows[0])

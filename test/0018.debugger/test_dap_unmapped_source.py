@@ -39,7 +39,7 @@ class UnmappedSourceTests(unittest.TestCase):
         for row in rows:
             self.assertEqual((row["line"], row["column"]), (0, 0))
             self.assertNotIn("source", row)
-        self.assertEqual(rows[2]["instructionPointerReference"], "wasm:0:1:4")
+        self.assertNotIn("instructionPointerReference", rows[2])
         self.assertEqual(len(self.adapter.source_frame_ordinals), 4)
         for ordinal in (0, 1, 2):
             scope = self.source_scope(rows[ordinal])
@@ -107,7 +107,8 @@ class UnmappedSourceTests(unittest.TestCase):
             self.assertFalse(any(s["name"] == "Source variables" for s in scopes["body"]["scopes"]))
         result = self.send("evaluate", frameId=rows[-1]["id"], context="watch", expression="value")
         self.assertFalse(result["success"], result)
-        self.assert_retired()
+        self.assertFalse(self.adapter.source_frame_ordinals)
+        self.assertTrue(self.send("scopes", frameId=rows[-1]["id"])["success"])
 
     def test_native_stop_never_queries_language_page(self):
         self.broker.native = True
@@ -127,6 +128,28 @@ class UnmappedSourceTests(unittest.TestCase):
         scopes = self.send("scopes", frameId=rows[0]["id"])
         self.assertTrue(scopes["success"], scopes)
         self.assertFalse(any(s["name"] == "Source variables" for s in scopes["body"]["scopes"]))
+
+    def test_source_watch_on_wasm_frame_does_not_retire_variables(self):
+        self.adapter.step_level = "wasm"
+        frame = self.frames()[0]
+        key = self.adapter.stop_key
+        for context in ("watch", "hover", "variables"):
+            with self.subTest(context=context):
+                before = len(self.broker.commands)
+                refused = self.send("evaluate", frameId=frame["id"], context=context, expression="next")
+                self.assertFalse(refused["success"], refused)
+                self.assertEqual(self.broker.commands[before:], [])
+                self.assertEqual(self.adapter.stop_key, key)
+                scopes = self.send("scopes", frameId=frame["id"])
+                self.assertTrue(scopes["success"], scopes)
+                local = next(row for row in scopes["body"]["scopes"] if row["name"] == "Wasm locals")
+                values = self.send("variables", variablesReference=local["variablesReference"])
+                self.assertTrue(values["success"], values)
+                self.assertEqual(values["body"]["variables"][0]["value"], "5")
+        self.broker.stop += 1
+        self.assertFalse(self.send("scopes", frameId=frame["id"])["success"])
+        self.assertNotIn(frame["id"], self.adapter.frames)
+        self.assertFalse(self.adapter.scopes)
 
 
 if __name__ == "__main__":

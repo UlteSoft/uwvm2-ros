@@ -43,7 +43,7 @@ fn denied(alias:&str)->Result<(),Error> {
 }
 fn refused_poll(handle:u64,expected:u32)->Result<(),Error> {
     let mut bytes=[0xa5u8;64]; let mut length=u64::MAX;
-    let status=unsafe{raw::event_poll(handle,0,address(bytes.as_mut_ptr()),64,address(&mut length))};
+    let status=unsafe{raw::message_poll(handle,0,address(bytes.as_mut_ptr()),64,address(&mut length))};
     fail_if(status!=expected || length!=u64::MAX || bytes.iter().any(|b| *b!=0xa5))
 }
 fn run()->Result<(),Error> {

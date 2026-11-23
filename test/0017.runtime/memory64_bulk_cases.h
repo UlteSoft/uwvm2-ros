@@ -107,7 +107,7 @@ template<typename Memory,typename Invoke>void concurrent_grow(Invoke invoke)
   for(unsigned id=0;id<4;++id)
   {
    auto offset=64+id*512;std::memset(a.memory_begin+offset,id+7,64);std::memset(b.memory_begin+offset,id+7,64);
-   workers[id]=std::thread([&,id,offset]
+   workers[id]=std::thread([&,offset]
    {
     while(!start.load(std::memory_order_acquire)){}
     for(unsigned i=0;i<1000;++i)

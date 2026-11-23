@@ -23,7 +23,7 @@ namespace ros_probe
         {
             for(unsigned n{};n!=40;++n)
             {
-                auto event{client.call("event.poll","server",{},1000)};
+                auto event{client.call("message.poll","server",{},1000)};
                 if(!event.error){require(event.payload.size()==8&&ipc::get(event.payload.data(),8),"actual native Trigger request opaque ID");return ipc::get(event.payload.data(),8);}
                 require(event.error==11,"native Trigger request bounded pending");std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }

@@ -12,7 +12,7 @@
  *              all command-line options have been parsed and after the initial module paths have been
  *              recorded:
  *
- *              - load the executable, local, and weak-symbol WebAssembly modules;
+ *              - load the executable and explicitly preloaded WebAssembly modules;
  *              - build the process-wide module registry and reject duplicate module names;
  *              - serve non-executing modes such as section-detail printing and parser validation;
  *              - validate cross-module imports and initialize runtime storage;
@@ -1917,7 +1917,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
      *          initialization and backend dispatch for executable mode.
      *
      *          High-level control flow:
-     *          1. load the executable module, local modules, and weak-symbol modules;
+     *          1. load the executable module and explicitly preloaded modules;
      *          2. construct the global `all_module` registry and reject duplicate module names;
      *          3. serve `section_details` and parser `validation` modes without initializing executable runtime state;
      *          4. reject executable mode in builds compiled without runtime backends;
@@ -2363,7 +2363,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         u8"uwvm: [error] Cannot configure private thread history. Require full debug/full dump authority, valid control storage, and a new output path or a complete checked input archive. Prefix and retained-native checkpoints require the live private control API. No Guest was launched.");
                     return static_cast<int>(retval::parameter_error);
                 }
-                // The actual helper also rejects native DL/weak providers,
+                // The actual helper also rejects native DL providers,
                 // retains exact immutable main/preload input bytes BEFORE
                 // parsing and runs the original actual native initializer.
                 auto const prepared{prepare_owned_full_cli_source(true)};
@@ -2418,7 +2418,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #endif
         if(!owned_full_prepared)
         {
-        // Load the executable wasm module first.  Later local/weak modules may satisfy imports used by the executable.
+        // Load the executable wasm module first.  Later explicitly preloaded modules may satisfy imports used by the executable.
         if(auto const ret{::uwvm2::uwvm::run::load_exec_wasm_module()}; ret != static_cast<int>(::uwvm2::uwvm::run::retval::ok)) [[unlikely]] { return ret; }
 
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)

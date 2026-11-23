@@ -102,7 +102,7 @@ function fixture({openHandles=null,hook=null}={}){
     if(row.name==='service_call')return output(row,word(42));
     if(row.name==='action_send_goal')return output(row,ticket(state.goalId));
     if(row.name==='action_advertise'||row.name==='service_respond'||row.name==='action_respond')return output(row,empty);
-    if(row.name==='event_poll'||row.name==='event_poll_v1'){
+    if(row.name==='message_poll'||row.name==='event_stream_poll'){
       const queue=state.queues.get(args[0]);return queue?.length?output(row,queue.shift()):answer(row,Status.AGAIN);
     }
     return answer(row,Status.UNSUPPORTED);
@@ -316,7 +316,7 @@ await test('awaited server handler holds local lease; thrown false releases it w
   server.respond(id,{value:5});const response=calls(state,'service_respond');assert.equal(response.length,1);
   assert.equal(new DataView(response[0].input.buffer).getBigUint64(0,true),id);
   refused(()=>server.respond(id,{value:6}),9);assertAllEntered(server.closeChecked(),2);
-  assert.equal(calls(state,'event_poll').length,1);assert.equal(calls(state,'service_respond').length,1);
+  assert.equal(calls(state,'message_poll').length,1);assert.equal(calls(state,'service_respond').length,1);
 });
 
 await test('actual typed client submit and full response decode use genuine source and observer before checked cleanup',()=>{

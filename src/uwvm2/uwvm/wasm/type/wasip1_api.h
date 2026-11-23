@@ -46,7 +46,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         - disabled by default;
         - enabled via command line;
         - preload modules may export `uwvm_set_wasip1_host_api_v1()` to receive the table automatically;
-        - weak-symbol plugins may also call `uwvm_get_wasip1_host_api_v1()` directly and must handle `nullptr`.
 
         The functions operate on the currently selected WASI Preview 1 environment.
         Pointer / length arguments are linear-memory offsets in the immediate Wasm caller's memory[0].

@@ -13,16 +13,7 @@
 # error This allocation-unwind fixture requires real C++ exceptions; never count SKIP as PASS.
 #endif
 namespace dbg = ::uwvm2::uwvm::debugger;
-static ::std::atomic_bool fail_context_sized_new{};
-static ::std::atomic_uint failures{};
-void* operator new(::std::size_t bytes)
-{
-    if(bytes == sizeof(::llvm::MCContext) && fail_context_sized_new.exchange(false, ::std::memory_order_acq_rel))
-    { failures.fetch_add(1u, ::std::memory_order_relaxed); throw ::std::bad_alloc{}; }
-    return ::fast_io::native_global_allocator::allocate(bytes);
-}
-void operator delete(void* allocation) noexcept { ::fast_io::native_global_allocator::deallocate(allocation); }
-void operator delete(void* allocation, ::std::size_t) noexcept { ::fast_io::native_global_allocator::deallocate(allocation); }
+#include "fast_io_allocation_probe.h"
 static void require(bool value, char const* message) noexcept
 {
     if(!value) { ::fast_io::io::perrln("native MC allocation: ", ::fast_io::mnp::os_c_str(message)); ::fast_io::fast_terminate(); }
@@ -58,24 +49,24 @@ int main()
     require(actual != nullptr, "actual registered host target");
     auto registers{dbg::native_owned_instruction_semantics::details::make_registers(*actual,triple)};
     require(bool(registers), "actual MC register table");
-    auto assembly{dbg::native_owned_instruction_semantics::details::make_assembly(*actual,*registers,triple)};
+    auto assembly{dbg::native_owned_instruction_semantics::details::make_assembly(*actual,*registers,triple,::llvm::MCTargetOptions{})};
     auto subtarget{dbg::native_owned_instruction_semantics::details::make_subtarget(*actual,triple)};
     require(assembly && subtarget, "actual target assembly/subtarget");
-    target.maximum_instruction_bytes = dbg::native_owned_instruction_semantics::details::maximum_instruction_length(*assembly,*subtarget);
+    target.maximum_instruction_bytes = dbg::native_owned_instruction_semantics::details::maximum_instruction_length(*assembly,*subtarget,triple);
     target.minimum_instruction_alignment = assembly->getMinInstAlignment(); target.little_endian = assembly->isLittleEndian();
     require(dbg::native_target_metadata::valid(target), "actual tables produce bounded structural DATA");
     {
-        fail_context_sized_new.store(true, ::std::memory_order_release);
+        fast_io_allocation_probe::selected_size=sizeof(::llvm::MCContext);fast_io_allocation_probe::once=true;fast_io_allocation_probe::armed=true;
         dbg::native_owned_instruction_semantics::decoder failed{};
-        auto const still_armed{fail_context_sized_new.exchange(false, ::std::memory_order_acq_rel)};
-        require(!still_armed && failures.load(::std::memory_order_relaxed) == 1u && !failed,
+        auto const still_armed{::std::exchange(fast_io_allocation_probe::armed,false)};
+        require(!still_armed && fast_io_allocation_probe::failures == 1u && !failed,
             "default constructor catches one genuine context-sized C++ allocation failure and supplies no provider");
     }
     {
-        fail_context_sized_new.store(true, ::std::memory_order_release);
+        fast_io_allocation_probe::selected_size=sizeof(::llvm::MCContext);fast_io_allocation_probe::once=true;fast_io_allocation_probe::armed=true;
         dbg::native_owned_instruction_semantics::decoder failed{target};
-        auto const still_armed{fail_context_sized_new.exchange(false, ::std::memory_order_acq_rel)};
-        require(!still_armed && failures.load(::std::memory_order_relaxed) == 2u && !failed,
+        auto const still_armed{::std::exchange(fast_io_allocation_probe::armed,false)};
+        require(!still_armed && fast_io_allocation_probe::failures == 2u && !failed,
             "owned target constructor catches allocation failure and supplies no provider");
     }
     dbg::native_owned_instruction_semantics::decoder recovered{target};

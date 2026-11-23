@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine setup once, then two read-only LLVM-full guest entries -> actual
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // GC/exn/global/table/local/operand VIEW. No fake capture or restore authority.
@@ -21,9 +22,14 @@
 #include <string>
 #include <thread>
 #include <vector>
+// Derive private capabilities only within their paired macro scope.
+#include <uwvm2/utils/macro/push_macros.h>
+#include <uwvm2/uwvm/runtime/macro/push_macros.h>
 #if !defined(UWVM_RUNTIME_LLVM_JIT) || !defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) || !defined(UWVM_CPP_EXCEPTIONS)
 # error Actual checkpoint census fixture requires LLVM full/native threads/C++ EH
 #endif
+#include <uwvm2/uwvm/runtime/macro/pop_macros.h>
+#include <uwvm2/utils/macro/pop_macros.h>
 namespace ws = ::uwvm2::uwvm::debugger::wasm_state;
 namespace lib = ::uwvm2::runtime::lib;
 namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
@@ -42,7 +48,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{}, provider_path{};
+    ::uwvm2::utils::container::std_u8string path{}, provider_path{};
     image::owned_file_image::owner immutable{}, provider_image{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -53,7 +59,7 @@ struct source_setup
         auto& state{*static_cast<source_setup*>(pointer)};
         try
         {
-            ::std::vector<full::full_preload_input> inputs{};
+            ::uwvm2::utils::container::std_vector<full::full_preload_input> inputs{};
             full::full_preload_input preload{}; preload.file_name = state.provider_path;
             preload.module_name = u8"gc-state-provider"; preload.parameters = ::uwvm2::uwvm::wasm::storage::wasm_parameter;
             preload.image = ::std::move(state.provider_image); inputs.push_back(::std::move(preload));
@@ -74,7 +80,7 @@ struct source_setup
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) { return false; }
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -147,6 +153,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 3) { return 64; }
     auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};

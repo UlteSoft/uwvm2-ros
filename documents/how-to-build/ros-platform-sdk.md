@@ -23,7 +23,7 @@ for the actual qualified scope.
 
 The VM's ROS import and vendor selection options remain in this repository's
 root `xmake.lua` and `xmake/ros_vendors.lua`. See the
-[Linux build guide](linux.md) for explicit `import-ros1`, `import-ros2`,
+[Linux build guide](linux.md) for explicit `import-u2rosv1-ros1`, `import-u2rosv1-ros2`,
 `ros-vendor-*` and registry-header configuration.
 
 Vendor selections require the coherent reviewed registry and matching native

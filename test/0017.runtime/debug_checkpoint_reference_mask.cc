@@ -54,7 +54,7 @@ int main()
             auto carrier=uwvm2::object::global::make_wasm_i31_reference(-7);carrier.kind=static_cast<kind>(tag);
             std::array<std::byte,cp::native_slot_bytes> payload{};std::memcpy(payload.data(),&carrier,sizeof(carrier));
             std::array<std::uint8_t,1> flags{1};bool expected=accepted(type,carrier.kind);
-            std::vector<cp::native_value> decoded{{{{cp::types::value_kind::i32},true},{}}};decoded[0].bits[0]=std::byte{0x71};
+            uwvm2::utils::container::std_vector<cp::native_value> decoded{{{{cp::types::value_kind::i32},true},{}}};decoded[0].bits[0]=std::byte{0x71};
             auto snapshot=decoded;
             auto result=cp::shadow_ledger::decode_compiler_packet(plan,2,payload,flags,decoded);
             require(result==(expected ? cp::status::ok:cp::status::invalid_reference),"every bounded/unbounded tag matches independent truth set");
@@ -78,7 +78,7 @@ int main()
             live.unbind_observer_storage(owner.data());require(stack.leave(reinterpret_cast<std::uintptr_t>(bytes.data())),"exact parent buffer retires");
             ++cases;
         }
-        std::array<std::byte,cp::native_slot_bytes> payload{};std::array<std::uint8_t,1> bad{2};std::vector<cp::native_value> values;
+        std::array<std::byte,cp::native_slot_bytes> payload{};std::array<std::uint8_t,1> bad{2};uwvm2::utils::container::std_vector<cp::native_value> values;
         require(cp::shadow_ledger::decode_compiler_packet(plan,2,payload,bad,values)==cp::status::invalid_layout,"bad initialization tag checked before carrier");
         bad[0]=0;require(cp::shadow_ledger::decode_compiler_packet(plan,2,payload,bad,values)==cp::status::invalid_layout,"required local flag cannot be unset");
         bad[0]=1;require(cp::shadow_ledger::decode_compiler_packet(plan,2,std::span<std::byte const>{payload}.first(15),bad,values)==cp::status::invalid_layout,"short payload cannot expose carrier");

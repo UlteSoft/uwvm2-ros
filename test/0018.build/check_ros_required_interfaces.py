@@ -14,8 +14,8 @@ def main():
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     out = args.out.resolve()
-    if not out.is_relative_to(root / ".tmp"):
-        raise SystemExit("configuration artifacts must stay under uwvm2-ros/.tmp")
+    if not (out.is_relative_to(root / ".tmp") or out.is_relative_to(root.parent / "uwvm2-ros-sdk/.tmp")):
+        raise SystemExit("configuration artifacts must stay under a VM or SDK .tmp directory")
     relative = Path("/proc/self/cgroup").read_text().strip().split("0::", 1)[1]
     group = Path("/sys/fs/cgroup") / relative.lstrip("/")
     if ((group / "memory.max").read_text().strip() != str(64 * 1024**3)
@@ -33,8 +33,7 @@ def main():
     shutil.copy2(root / "xmake.lua", source / "xmake.lua")
     shutil.copytree(root / "xmake", source / "xmake", dirs_exist_ok=True)
     cases = [
-        ("--import-ros1=n", "--import-ros1=false"),
-        ("--import-ros2=n", "--import-ros2=false"),
+        ("--import-u2rosv2=n", "--import-u2rosv2=false"),
         ("--disable-local-imported-wasip1=y", "--disable-local-imported-wasip1"),
         ("--enable-local-imported-wasip1-wasm64=n", "--enable-local-imported-wasip1-wasm64=false"),
         ("--enable-local-imported-wasip1-socket=none", "--enable-local-imported-wasip1-socket"),

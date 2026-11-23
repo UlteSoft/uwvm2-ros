@@ -46,7 +46,7 @@ SELECTIONS=tuple((language,version,role) for language in LANGUAGES for version i
 GENERATED_REQUIRED=frozenset(("bounded_interfaces.h","bounded_interfaces.hpp","bounded_records.h","bounded_records.hpp",
     "bounded_records.rs","bounded_records.go","bounded_records.mjs","bounded_records.ts","manifest.hpp","native_ros1.hpp","native_ros2.hpp","generation.json"))
 REQUIRED={"client":frozenset(("capability_open","capability_close","service_call","action_send_goal","action_receive_feedback","action_receive_result")),
-          "server":frozenset(("capability_open","capability_close","service_advertise","service_respond","action_advertise","action_respond","event_poll"))}
+          "server":frozenset(("capability_open","capability_close","service_advertise","service_respond","action_advertise","action_respond","message_poll"))}
 
 
 def regular_files(root):

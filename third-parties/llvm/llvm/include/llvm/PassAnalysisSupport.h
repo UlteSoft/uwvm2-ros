@@ -156,6 +156,9 @@ public:
 /// the pass.
 ///
 class AnalysisResolver {
+  // The manager initializes the unique required-analysis sequence in bulk.
+  friend class PMDataManager;
+
 public:
   AnalysisResolver() = delete;
   explicit AnalysisResolver(PMDataManager &P) : PM(P) {}

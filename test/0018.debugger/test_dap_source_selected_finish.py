@@ -42,6 +42,7 @@ class SelectedFinishBroker(fixtures.Broker):
 class SelectedFinishTests(fixtures.SourceFrameTests):
     def setUp(self):
         super().setUp()
+        self.adapter.configuration_complete = True
         self.broker = SelectedFinishBroker()
         self.adapter.broker = self.broker
 

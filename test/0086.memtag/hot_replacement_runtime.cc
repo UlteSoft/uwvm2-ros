@@ -41,11 +41,13 @@ struct observer {
 };
 int main(int argc,char** argv) {
  if(argc!=5)return 64;
+ namespace crash=uwvm2::runtime::diagnostic::crash;
+ check(crash::process_policy.seal(crash::action::exit),"trusted host stable-fault exit policy");
  bool disabled=std::strcmp(argv[3],"disabled")==0;
  if(!disabled && std::strcmp(argv[3],"enabled")!=0)return 64;
  unsigned expected=static_cast<unsigned>(std::strtoul(argv[4],nullptr,10));
  check(uwvm2::utils::control::debug_permissions::configure_trusted_launch(
-  uwvm2::utils::control::debug_permissions::permission_level::full),"trusted host DEV launch");
+  uwvm2::utils::control::debug_permissions::permission_level::full),"trusted host full debugger launch");
  fast_io::native_file_loader replacement{fast_io::mnp::os_c_str(argv[2])};
  mode::global_runtime_mode=mode::runtime_mode_t::full_compile;
  mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
@@ -109,8 +111,10 @@ int main(int argc,char** argv) {
  check(state->control->resume(ticket),"resume original caller");guest.join();
  if(lib::runtime_guest_fault_detected_host_api()) {
   check(result==0xdeadbeefu,"fault does not publish a function result");
+  auto const status=crash::exit_status();
+  check(status==static_cast<unsigned>(crash::category::memtag),"managed replacement fault retains MTE category");
   lib::reset_runtime_state_host_api();
-  return 126;
+  return static_cast<int>(status);
  }
  check(result==expected,"replacement result obeys original execution policy");
  lib::reset_runtime_state_host_api();

@@ -1,7 +1,7 @@
 (module
  (import "uwvm_ros2_v1" "capability_open" (func $open (param i32 i64 i64 i64) (result i32)))
  (import "uwvm_ros2_v1" "parameter_subscribe_events" (func $subscribe (param i64) (result i32)))
- (import "uwvm_ros2_v1" "event_poll" (func $poll (param i64 i32 i64 i64 i64) (result i32)))
+ (import "uwvm_ros2_v1" "message_poll" (func $poll (param i64 i32 i64 i64 i64) (result i32)))
  (import "uwvm_ros2_v1" "capability_revoke" (func $revoke (param i64) (result i32)))
  (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
  (import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))

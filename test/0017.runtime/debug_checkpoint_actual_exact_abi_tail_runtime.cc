@@ -67,6 +67,8 @@ int main(int argc, char** argv)
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 2; }
 
+    require(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full), "explicit trusted full checkpoint authority");
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
 
@@ -94,6 +96,11 @@ int main(int argc, char** argv)
     ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = u8"checkpoint-call-continuation";
     require(::uwvm2::uwvm::run::prepare_owned_full_cli_source(true) == static_cast<int>(::uwvm2::uwvm::run::retval::ok),
         "real full-source parse and initializer of modern nondefaultable i31 syntax");
+    // This host fixture bypasses the CLI start dispatcher. Complete its
+    // deferred active segments once before entering any Wasm function.
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"checkpoint-call-continuation") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok,
+        "actual active element/data initialization before execution");
     auto state{::std::make_shared<observer>()};
     auto profile{checkpoint::compilation_profile::create_for_trusted_manager()}; require(bool(profile), "immutable actual profile");
     require(lib::llvm_jit_configure_debug_session_host_api(state->control, {state, observer::point, observer::before_park},

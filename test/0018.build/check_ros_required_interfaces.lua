@@ -28,8 +28,8 @@ function main(output)
             admitted=observed ~= nil, reason=reason})
     end
     for _, arch in ipairs({"x86_64", "i686", "aarch64", "arm", "armhf"}) do
-        run(arch, {}, true, "complete-default-interface-set")
-        for _, option in ipairs({"import-ros1", "import-ros2", "enable-local-imported-wasip1-wasm64"}) do
+        run(arch, {}, true, "default-wasi-and-rosv2")
+        for _, option in ipairs({"import-u2rosv2", "enable-local-imported-wasip1-wasm64"}) do
             for _, value in ipairs({false, "n", "no", "false", "FALSE"}) do
                 run(arch, {[option]=value}, false, option .. "-removed-" .. tostring(value))
             end
@@ -37,6 +37,13 @@ function main(output)
                 run(arch, {[option]=value}, true, option .. "-present-" .. tostring(value))
             end
             run(arch, {[option]=true}, false, option .. "-explicit-no-overrides-saved-yes", {[option]="n"})
+            run(arch, {[option]=false}, true, option .. "-explicit-yes-overrides-saved-no", {[option]="y"})
+        end
+        for _, option in ipairs({"import-u2rosv1-ros1", "import-u2rosv1-ros2", "enable-preload-dl"}) do
+            for _, value in ipairs({false, "n", "no", "false", "FALSE", true, "y", "yes", "true"}) do
+                run(arch, {[option]=value}, true, option .. "-optional-" .. tostring(value))
+            end
+            run(arch, {[option]=true}, true, option .. "-explicit-no-overrides-saved-yes", {[option]="n"})
             run(arch, {[option]=false}, true, option .. "-explicit-yes-overrides-saved-no", {[option]="y"})
         end
         for _, value in ipairs({true, "y", "yes", "true"}) do
@@ -50,11 +57,11 @@ function main(output)
             "explicit-socket-removal-overrides-saved", {["enable-local-imported-wasip1-socket"]="none"})
         for _, flags in ipairs({"-DUWVM_DISABLE_LOCAL_IMPORTED_WASIP1",
             "-U UWVM_IMPORT_ROS1", "-UUWVM_IMPORT_ROS2", "-U UWVM_ENABLE_WASIP1_SOCKET",
-            "-DUWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64=0"}) do
+            "-DUWVM_ENABLE_LOCAL_IMPORTED_WASIP1_WASM64=0", "-UUWVM_IMPORT_ROSV2", "-DUWVM_ENABLE_PRELOAD_DL=1"}) do
             run(arch, {cxxflags=flags}, false, "raw-flag-" .. flags)
         end
     end
-    assert(#results == 245)
+    assert(#results == 365)
     if output then json.savefile(output, {status="PASS", checks=#results, results=results}) end
-    print("mandatory interface product policy: " .. #results .. " checks PASS")
+    print("default and legacy opt-in product policy: " .. #results .. " checks PASS")
 end

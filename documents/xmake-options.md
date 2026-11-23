@@ -8,7 +8,8 @@ dependencies. The reference below also describes retained upstream option
 machinery; values outside that policy are rejected, not alternative supported
 ROS builds. In particular, Linux and one of the five ROS ABIs, LLVM execution,
 paired libc++/libunwind, exceptions, thread-local storage, WSEA, WASI32/64, socket
-implementations, ROS1 and ROS2 are required. Native host MTE is a separate
+implementations and ROSv2 are required. Deprecated ROSv1 hosts and unisolated
+native preloading are independent default-off build options. Native host MTE is a separate
 [provider qualification gate](toolchain/native-host-mte.md), currently with no
 qualified complete provider. Use the [Linux build examples](how-to-build/linux.md)
 for an admitted configuration.
@@ -363,7 +364,7 @@ Selects the WebAssembly linear memory backend.
 ### Mandatory WASI and ROS interfaces
 
 The ROS product always compiles WASI Preview 1 for memory32 and memory64,
-both socket ABI implementations, ROS1 and ROS2. Removing an interface at
+both socket ABI implementations and ROSv2. Removing one of these interfaces at
 build time is rejected during configuration, before compiler dependencies are
 acquired. These settings do not grant a module any host authority.
 
@@ -372,8 +373,21 @@ The following options have exactly one admitted value:
 - `--disable-local-imported-wasip1=n`
 - `--enable-local-imported-wasip1-wasm64=y`
 - `--enable-local-imported-wasip1-socket=wasip1`
-- `--import-ros1=y`
-- `--import-ros2=y`
+- `--import-u2rosv2=y` (default)
+
+The following independent options default to `n`:
+
+- `--import-u2rosv1-ros1`: compile deprecated ROS1 host imports and CLI options.
+- `--import-u2rosv1-ros2`: compile deprecated ROS2 host imports and CLI options.
+- `--enable-preload-dl`: compile unisolated native library registration and its
+  optional signature verifier on supported platforms.
+
+The corresponding compiler gates are `UWVM_IMPORT_ROSV2`, `UWVM_IMPORT_ROS1`,
+`UWVM_IMPORT_ROS2` and `UWVM_ENABLE_PRELOAD_DL=1`. The latter enables the derived
+platform gate `UWVM_SUPPORT_PRELOAD_DL`. Use Xmake options, not raw macro
+overrides. The previous `import-ros1`, `import-ros2` and `import-rosv2` option
+spellings are not compatibility aliases. Enabling a legacy build option does
+not grant runtime permission or suppress its warning.
 
 The socket build option's `none` and `wasix` values are rejected. Select
 the wasm32 socket ABI at process startup with
@@ -390,7 +404,12 @@ interface implementations.
 
 ROS does not expose weak-symbol provider build options. The product policy rejects
 legacy weak-provider settings and raw attempts to define the support macro. This
-fallback served upstream emergency/platform integration; ROS uses explicit native
-driver registration. Dynamic-library registration remains compiled and available.
-Optional secondary signature verification is selected at runtime with
-`--wasm-driver-verify`; see [trusted drivers](security/trusted-drivers.md).
+fallback served upstream emergency/platform integration. ROSv2 runs all native
+drivers in external isolated processes. Platform extensions contain permission
+metadata and closed common routes only; they cannot install driver code.
+
+With an explicit `--enable-preload-dl=y` rebuild, the retained legacy
+`--wasm-register-dl` and `--wasm-driver-verify` options become available. This
+path executes inside the VM and is incompatible with ROSv2 scene deployment;
+signatures do not provide isolation. See [legacy native verification](security/trusted-drivers.md)
+and [native driver isolation](runtime/ros-native-driver-isolation.md).

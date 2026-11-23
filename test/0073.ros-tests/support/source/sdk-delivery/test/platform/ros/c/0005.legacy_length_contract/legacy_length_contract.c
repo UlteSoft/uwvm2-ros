@@ -6,11 +6,11 @@
 #include <platform/ros1/c/roswasm/detail/ros1/abi.h>
 #include <platform/ros2/c/roswasm/detail/ros2/abi.h>
 /** @brief Model error90 before any output slot write. */
-uint32_t uwvm_ros1_event_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {
+uint32_t uwvm_ros1_message_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {
     (void)h;(void)m;(void)o;(void)c;(void)l;return UWVM_ROS_TOO_LARGE;
 }
 /** @brief Model error90 before any output slot write for the other backend. */
-uint32_t uwvm_ros2_event_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {
+uint32_t uwvm_ros2_message_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {
     (void)h;(void)m;(void)o;(void)c;(void)l;return UWVM_ROS_TOO_LARGE;
 }
 /** @brief Neither backend may replace caller length with uninitialized/default slot bytes. */

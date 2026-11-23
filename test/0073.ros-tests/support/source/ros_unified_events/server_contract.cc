@@ -98,30 +98,30 @@ int main()
         ++frame.request_id;assert(ipc::encode_request({operation,alias,std::move(data)},frame.payload));
         assert(ipc::write_frame(sockets[0],frame,ipc::after(2000))&&ipc::read_frame(sockets[0],reply,ipc::after(2000)));
         assert(reply.response_id==frame.request_id&&reply.session_id==frame.session_id);return ipc::call_result{reply.error,reply.payload};};
-    auto watch=[&](char const* alias,std::uint64_t handle,std::uint64_t correlation=0){auto data=number(handle);ipc::put(data,47,8);ipc::put(data,correlation,8);return call("event.watch",alias,std::move(data));};
+    auto watch=[&](char const* alias,std::uint64_t handle,std::uint64_t correlation=0){auto data=number(handle);ipc::put(data,47,8);ipc::put(data,correlation,8);return call("event.stream.watch",alias,std::move(data));};
     assert(!call("session.bind","target",ros::serialize_manifest(cfg.policy)).error);
     // Legacy queue exists before a metadata-only watch. Attaching/detaching the
     // latter must neither seize its consumer nor destroy its native resource.
     assert(!call("topic.subscribe","sub").error&&state->subscriptions==1);
     assert(!watch("subEvents",11).error&&state->subscriptions==1);
     std::shared_ptr<gw::event_queue> legacy;{std::lock_guard<std::mutex> guard{state->mutex};legacy=state->legacy;}
-    assert(legacy&&legacy->enqueue({1,0,0,0,'x'}));auto old=call("event.poll","sub");assert(!old.error&&old.payload==std::vector<std::uint8_t>({1,0,0,0,'x'}));
-    assert(call("event.peek-v1","subEvents",number(64)).error==11);
+    assert(legacy&&legacy->enqueue({1,0,0,0,'x'}));auto old=call("message.poll","sub");assert(!old.error&&old.payload==std::vector<std::uint8_t>({1,0,0,0,'x'}));
+    assert(call("event.stream.peek","subEvents",number(64)).error==11);
     assert(!call("capability.close","subEvents").error&&state->source_closes==0);
-    assert(legacy->enqueue({1,0,0,0,'y'})&&!call("event.poll","sub").error);
+    assert(legacy->enqueue({1,0,0,0,'y'})&&!call("message.poll","sub").error);
     // Only an explicitly selected error record is visible. The source Native
     // operation fails once; the metadata has no copied payload or correlation.
     assert(!watch("pubEvents",12).error);assert(call("topic.publish","pub",{1,0,0,0,'z'}).error==5&&state->publishes==1);
-    auto error=call("event.peek-v1","pubEvents",number(64));ipc::event_header header{};
+    auto error=call("event.stream.peek","pubEvents",number(64));ipc::event_header header{};
     assert(!error.error&&ipc::decode_event(error.payload.data(),error.payload.size(),header)&&header.kind==ipc::event_kind::resource_error&&header.error==5&&header.flags==2&&header.payload_bytes==0&&header.correlation==0);
-    assert(call("event.commit","pubEvents",number(header.sequence+1)).error==22);
-    assert(call("event.peek-v1","pubEvents",number(64)).payload==error.payload);
-    assert(!call("event.commit","pubEvents",number(header.sequence)).error);
+    assert(call("event.stream.commit","pubEvents",number(header.sequence+1)).error==22);
+    assert(call("event.stream.peek","pubEvents",number(64)).payload==error.payload);
+    assert(!call("event.stream.commit","pubEvents",number(header.sequence)).error);
     // A metadata-only outgoing Action watch has correlation zero, does not
     // attest/consume a goal, and does not turn a legacy result into error90.
     assert(watch("actionEvents",13,99).error==22&&state->action_observes==0);
-    assert(!watch("actionEvents",13).error);assert(!call("event.ready","actionEvents").error);
-    assert(call("event.peek-v1","actionEvents",number(64)).error==11&&state->action_reads==0&&state->action_observes==0);
+    assert(!watch("actionEvents",13).error);assert(!call("event.stream.ready","actionEvents").error);
+    assert(call("event.stream.peek","actionEvents",number(64)).error==11&&state->action_reads==0&&state->action_observes==0);
     assert(!call("event.detach","actionEvents").error);
     // The same native goal/result queue cannot be consumed through a second
     // independently granted alias. Refusals happen before adapter dispatch AND
@@ -141,12 +141,12 @@ int main()
     // it. Observer credit does not substitute for the independently denied
     // Source budget, and repeated peeks cannot repeat the Native service call.
     assert(!watch("serviceEvents",14).error);auto request=number(71);request.push_back(1);assert(!call("service.submit","serviceEvents",request).error);
-    bool completed{};for(unsigned attempt=0;attempt<40&&!completed;++attempt){auto ready=call("event.ready","serviceEvents");assert(!ready.error&&ready.payload.size()==32);completed=ipc::get(ready.payload.data(),8)==1;if(!completed)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+    bool completed{};for(unsigned attempt=0;attempt<40&&!completed;++attempt){auto ready=call("event.stream.ready","serviceEvents");assert(!ready.error&&ready.payload.size()==32);completed=ipc::get(ready.payload.data(),8)==1;if(!completed)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
     assert(completed&&state->services==1);
-    for(unsigned attempt=0;attempt<3;++attempt){assert(call("event.peek-v1","serviceEvents",number(69)).error==11);auto ready=call("event.ready","serviceEvents");assert(!ready.error&&ipc::get(ready.payload.data(),8)==1&&ipc::get(ready.payload.data()+8,8)==69);}
+    for(unsigned attempt=0;attempt<3;++attempt){assert(call("event.stream.peek","serviceEvents",number(69)).error==11);auto ready=call("event.stream.ready","serviceEvents");assert(!ready.error&&ipc::get(ready.payload.data(),8)==1&&ipc::get(ready.payload.data()+8,8)==69);}
     assert(state->services==1);assert(!call("capability.close","client").error);
-    auto closed=call("event.peek-v1","serviceEvents",number(69));assert(!closed.error&&ipc::decode_event(closed.payload.data(),closed.payload.size(),header)&&header.kind==ipc::event_kind::resource_closed&&header.error==0&&header.payload_bytes==0);
-    assert(!call("event.commit","serviceEvents",number(header.sequence)).error);
+    auto closed=call("event.stream.peek","serviceEvents",number(69));assert(!closed.error&&ipc::decode_event(closed.payload.data(),closed.payload.size(),header)&&header.kind==ipc::event_kind::resource_closed&&header.error==0&&header.payload_bytes==0);
+    assert(!call("event.stream.commit","serviceEvents",number(header.sequence)).error);
     ::shutdown(sockets[0],SHUT_RDWR);server.join();if(failure)std::rethrow_exception(failure);
     // C++17 Native IO does not admit vendored concepts-based fast_io. One
     // checked bounded POSIX write exposes a fixed verdict, never arbitrary text.

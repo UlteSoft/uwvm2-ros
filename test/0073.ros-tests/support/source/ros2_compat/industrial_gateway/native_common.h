@@ -101,7 +101,7 @@ template<class Native>void run_message(context& ctx,char const* root,char const*
         eventually([&]{std::lock_guard<std::mutex> lock{seen->mutex};
             return std::find(seen->observed.begin()+begin,seen->observed.end(),oracle<Native>::value(mode))!=seen->observed.end();});
         publisher->publish(oracle<Native>::value(mode));
-        auto incoming=poll(ctx.client,"event.poll",alias(root,"_sub"));
+        auto incoming=poll(ctx.client,"message.poll",alias(root,"_sub"));
         assert(incoming.payload==oracle<Native>::bytes(mode));++ctx.topic_cases;
     }
     ++ctx.messages;fast_io::io::println("PASS real-bidirectional-topic ",fast_io::mnp::os_c_str(name)," modes=3");
@@ -130,7 +130,7 @@ template<class Native>void run_service(context& ctx,char const* root,char const*
     for(unsigned mode=0;mode!=3;++mode)
     {
         auto future=client->async_send_request(std::make_shared<Request>(oracle<Request>::value(mode)));
-        auto event=poll(ctx.client,"event.poll",alias(root,"_adv"));assert(event.payload.size()>=8);
+        auto event=poll(ctx.client,"message.poll",alias(root,"_adv"));assert(event.payload.size()>=8);
         auto id=ipc::get(event.payload.data(),8);assert(id);body_equals(event.payload,8,oracle<Request>::bytes(mode));
         auto bytes=prefix(id,oracle<Response>::bytes(mode));
         assert(!call(ctx.client,"service.respond",alias(root,"_respond"),bytes).error);
@@ -184,7 +184,7 @@ template<class Native>void run_action(context& ctx,char const* root,char const* 
         options.feedback_callback=[seen,mode](typename rclcpp_action::ClientGoalHandle<Native>::SharedPtr,std::shared_ptr<Feedback const> value)
             {assert(*value==oracle<Feedback>::value(mode));++seen->feedback;};
         auto goal=client->async_send_goal(oracle<Goal>::value(mode),options);auto handle=ready(goal);assert(handle);
-        auto result=client->async_get_result(handle);auto event=poll(ctx.client,"event.poll",alias(root,"_adv"));assert(event.payload.size()>=8);
+        auto result=client->async_get_result(handle);auto event=poll(ctx.client,"message.poll",alias(root,"_adv"));assert(event.payload.size()>=8);
         auto id=ipc::get(event.payload.data(),8);assert(id);body_equals(event.payload,8,oracle<Goal>::bytes(mode));
         auto feedback=id_bytes(id);feedback.push_back(1);auto body=oracle<Feedback>::bytes(mode);feedback.insert(feedback.end(),body.begin(),body.end());
         assert(!call(ctx.client,"action.respond",alias(root,"_respond"),feedback).error);eventually([&]{return seen->feedback==mode+1;});

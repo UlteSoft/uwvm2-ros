@@ -13,10 +13,10 @@ namespace ros_probe
             {
                 ipc::client client;f.connect(client);require(!client.call("topic.subscribe","subString",{},1000).error,"actual racing subscription created");
                 for(unsigned n{};n!=300&&!count();++n){std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(count(),"native live publisher sees actual subscriber");
-                bool received{};for(unsigned n{};n!=300&&!received;++n){auto event{client.call("event.poll","subString",{},1000)};if(!event.error){received=true;}else{require(event.error==11,"live ingress pending only");}std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(received,"actual callback ran before teardown");
+                bool received{};for(unsigned n{};n!=300&&!received;++n){auto event{client.call("message.poll","subString",{},1000)};if(!event.error){received=true;}else{require(event.error==11,"live ingress pending only");}std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(received,"actual callback ran before teardown");
                 bool revoke{round%2!=0};require(!client.call(revoke?"capability.revoke":"capability.close","subString",{},1000).error,"teardown races native ingress callbacks");
                 for(unsigned n{};n!=300&&count();++n){std::this_thread::sleep_for(std::chrono::milliseconds(10));}require(!count(),"actual native subscriber removed during ingress");
-                for(unsigned n{};n!=5;++n){auto event{client.call("event.poll","subString",{},1000)};require(event.error==(revoke?125u:9u)&&event.payload.empty(),"no late callback events after close/revoke");std::this_thread::sleep_for(std::chrono::milliseconds(5));}client.close();
+                for(unsigned n{};n!=5;++n){auto event{client.call("message.poll","subString",{},1000)};require(event.error==(revoke?125u:9u)&&event.payload.empty(),"no late callback events after close/revoke");std::this_thread::sleep_for(std::chrono::milliseconds(5));}client.close();
             }
         }
         catch(...){running=false;ingress.join();throw;}

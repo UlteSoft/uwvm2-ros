@@ -27,9 +27,9 @@ def main():
     text=sdk.read_text();arithmetic=text[text.index("  (func"):text.rindex(")")]
     reports=[]
     def family(row):
-        return "wasip1" if row["ns"] in ("wasi_snapshot_preview1","wasi") else "ros1" if row["ns"].startswith("uwvm_ros1_") else "ros2"
+        return "wasithread" if row["ns"]=="wasi" else "wasip1" if row["ns"]=="wasi_snapshot_preview1" else "ros1" if row["ns"].startswith("uwvm_ros1_") else "ros2"
     def key(row):
-        return row["name"] if family(row)=="wasip1" else row["ns"]+"."+row["name"]
+        return row["name"] if family(row) in ("wasip1","wasithread") else row["ns"]+"."+row["name"]
     def declare(row,n):
         return '(import "'+row["ns"]+'" "'+row["name"]+'" (func $f'+str(n)+\
             (" (param "+" ".join(row["params"])+")" if row["params"] else "")+\
@@ -67,7 +67,7 @@ def main():
         group=family(row)
         if row["ns"] not in namespaces:
             run("namespace-absent-"+group+"-"+str(index),"interpreter",[],file,False,
-                ("namespace permission is disabled","--"+group+("-global-enable" if group in ("ros1","ros2") else "-single-enable")))
+                ("namespace permission is disabled","--"+group+("-global-enable" if group in ("ros1","ros2","wasithread") else "-single-enable")))
             if row["ns"] != "wasi":
                 run("validate-disabled-"+str(index),"interpreter",["--mode","validation"],file,False,
                     ("namespace permission is disabled",))
@@ -146,7 +146,7 @@ def main():
                 "--"+group+"-group-add-module","operators","worker",
                 "--"+group+"-group-interface","operators",key(sample),"deny"]
             run(group+"-worker-group",engine,own+preload+group_policy,caller,True,("denied for group 'operators'",))
-            if group in ("ros1","ros2"):
+            if group in ("ros1","ros2","wasithread"):
                 global_policy=["--"+group+"-global-enable","--"+group+"-global-interface",key(sample),"deny"]
                 run(group+"-global-default-member",engine,own+preload+global_policy,caller,True,
                     ("denied for global",))
@@ -166,7 +166,7 @@ def main():
             for iteration in range(args.thread_start_repetitions if row["ns"]=="wasi" else 1):
                 label="denied-"+row["name"]+("-start-"+str(iteration) if iteration else "")
                 run(label,engine,policy([row],"deny")+ (thread_flags if row["ns"]=="wasi" else []),file,bool(row["results"]),
-                    ("wasip1."+row["name"]+" denied","'main'"))
+                    (family(row)+"."+row["name"]+" denied","'main'"))
     # The separately admitted thread adapter must preserve exposed-deny semantics.
     threaded_random=compile("thread-random","(module "+declare(random,0)+
         ' (import "env" "memory" (memory 4 256 shared)) (export "memory" (memory 0)) (func (export "wasi_thread_start") (param i32 i32))'+

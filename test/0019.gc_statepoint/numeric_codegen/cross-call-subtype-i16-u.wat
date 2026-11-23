@@ -1,0 +1,17 @@
+(module
+  ;; The callee's exact-type fast path must decline a genuine subtype.
+  ;; Each checked fallback must preserve the real reference and raw bits.
+  (type $base (sub (array (mut i16))))
+  (type $child (sub $base (array (mut i16))))
+  (func $step (param $p (ref null $base)) (result i32)
+    local.get $p i32.const 0
+    local.get $p i32.const 0 array.get_u $base
+    i32.const 1 i32.add
+    array.set $base
+    local.get $p i32.const 0 array.get_u $base)
+  (func (export "_start")
+    i64.const 1234605616436508552
+    i32.const 32768 i32.const 1 array.new $child
+    call $step
+    i32.const 32769 i32.ne if unreachable end
+    i64.const 1234605616436508552 i64.ne if unreachable end))

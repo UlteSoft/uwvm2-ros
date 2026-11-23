@@ -796,7 +796,7 @@ def source_models(root, scope):
     wat = (root / 'test/0073.ros-tests/support/source/ros_security/guest_enforce_ros2.wat').read_text()
     executable = '\n'.join(line.split(';;', 1)[0] for line in wat.splitlines())
     imported = re.findall(r'\(import "([^"]+)" "([^"]+)"', executable)
-    expected = [('uwvm_ros2_v1', name) for name in ('capability_open', 'capability_close', 'topic_publish', 'topic_subscribe', 'event_poll')]
+    expected = [('uwvm_ros2_v1', name) for name in ('capability_open', 'capability_close', 'topic_publish', 'topic_subscribe', 'message_poll')]
     expected += [('wasi_snapshot_preview1', name) for name in ('fd_read', 'fd_write', 'proc_exit', 'clock_time_get')]
     check('Guest imports closed to five ROS2 and four explicit WASI functions', imported == expected)
     check('Guest has sole fixed Wasm32 exported memory', executable.count('(memory (export "memory") 1 1)') == 1 and executable.count('(memory ') == 1)
@@ -841,7 +841,7 @@ def source_models(root, scope):
           literals.get(4416) == b'PASS_SECURE_GUEST\n' and len(literals[4352]) == 25 and len(literals[4416]) == 18)
     abi = json.loads((root / 'sdk/origin/abi/abi-v1.json').read_text())
     declared = {item['name']: item for item in abi['modules']['uwvm_ros2_v1']['functions']}
-    for name in ('capability_open', 'capability_close', 'topic_publish', 'topic_subscribe', 'event_poll'):
+    for name in ('capability_open', 'capability_close', 'topic_publish', 'topic_subscribe', 'message_poll'):
         match = re.search(r'\(import "uwvm_ros2_v1" "' + name + r'" \(func \$\w+ \(param ([^)]*)\) \(result ([^)]*)\)\)\)', executable)
         check('raw ROS2 imported ABI agrees with current catalog: ' + name, match is not None and
               match.group(1).split() == [p['type'] for p in declared[name]['params']] and match.group(2).split() == declared[name]['results'])

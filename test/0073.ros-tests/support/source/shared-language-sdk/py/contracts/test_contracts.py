@@ -164,7 +164,7 @@ class Ownership(unittest.TestCase):
             observed.extend((sibling.revoke().error, self.session.close().outcomes[0].error))
             self.assertEqual(value, 'hello')
         subscription = self.node.create_subscription(codecs.String, 'topic', callback)
-        self.backend.replies['event_poll'] = [Result(0, codecs.String.encode('hello'))]
+        self.backend.replies['message_poll'] = [Result(0, codecs.String.encode('hello'))]
         subscription.poll_once().checked()
         self.assertEqual(observed, [17, 17])
         self.assertNotEqual(subscription.owner.handle, 0)
@@ -174,7 +174,7 @@ class Ownership(unittest.TestCase):
         def callback(value):
             raise LookupError(value)
         sub = self.node.create_subscription(codecs.String, 'sub', callback)
-        self.backend.replies['event_poll'] = [Result(0, codecs.String.encode('value'))]
+        self.backend.replies['message_poll'] = [Result(0, codecs.String.encode('value'))]
         with self.assertRaises(LookupError):
             sub.poll_once()
         sub.close().checked()
@@ -197,9 +197,9 @@ class Ownership(unittest.TestCase):
 
     def test_capacity_failure_is_never_replayed(self):
         subscription = self.node.create_subscription(codecs.String, 'topic', lambda _: self.fail('callback on error'))
-        self.backend.replies['event_poll'] = [Result(90, required=None)]
+        self.backend.replies['message_poll'] = [Result(90, required=None)]
         self.assertIsNone(subscription.poll_once().required)
-        self.assertEqual(len([c for c in self.backend.calls if c[0] == 'event_poll']), 1)
+        self.assertEqual(len([c for c in self.backend.calls if c[0] == 'message_poll']), 1)
 
     def test_round_robin_and_reentrant_executor(self):
         executor = Executor(2); delivered = []
@@ -211,7 +211,7 @@ class Ownership(unittest.TestCase):
             self.assertEqual(error.exception.error, 17)
         second = self.node.create_subscription(codecs.String, 'second', second_callback)
         executor.add(first); executor.add(second)
-        self.backend.replies['event_poll'] = [Result(0, codecs.String.encode('first')), Result(0, codecs.String.encode('second'))]
+        self.backend.replies['message_poll'] = [Result(0, codecs.String.encode('first')), Result(0, codecs.String.encode('second'))]
         executor.spin_once().checked(); executor.spin_once().checked()
         self.assertEqual(delivered, ['first', 'second'])
 
@@ -219,14 +219,14 @@ class Ownership(unittest.TestCase):
         first, second = self.session.open('first'), self.session.open('second')
         observer = self.node.create_observer('observer')
         observer.watch(first).checked(); observer.watch(second).checked()
-        self.backend.replies['event_poll_v1'] = [Result(0, event(1, first.handle)), Result(0, event(2, second.handle))]
+        self.backend.replies['event_stream_poll'] = [Result(0, event(1, first.handle)), Result(0, event(2, second.handle))]
         self.assertEqual(observer.poll_once()[1].sequence, 1)
         self.assertEqual(observer.poll_once()[1].sequence, 2)
 
     def test_observer_failed_binding_does_not_commit(self):
         observer = self.node.create_observer('observer')
         first = self.session.open('source'); observer.watch(first).checked()
-        self.backend.replies['event_poll_v1'] = [Result(0, event(2, first.handle)), Result(0, event(1, first.handle))]
+        self.backend.replies['event_stream_poll'] = [Result(0, event(2, first.handle)), Result(0, event(1, first.handle))]
         with self.assertRaises(ValueError):
             observer.poll_once()
         self.assertEqual(observer.sequence, 0)
@@ -318,7 +318,7 @@ class Ownership(unittest.TestCase):
         first = self.node.create_subscription(codecs.String, 'first', values.append)
         second = self.node.create_subscription(codecs.String, 'second', values.append)
         executor.add(first); executor.add(second)
-        self.backend.replies['event_poll'] = [Result(110), Result(0, codecs.String.encode('second'))]
+        self.backend.replies['message_poll'] = [Result(110), Result(0, codecs.String.encode('second'))]
         self.assertEqual(executor.spin_once().error, 110)
         executor.spin_once().checked()
         self.assertEqual(values, ['second'])

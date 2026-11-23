@@ -68,7 +68,9 @@ int main(int argc, char** argv)
     if(argc != 3) { return 2; }
 
     auto const kind{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};
-    require(kind == "indirect32" || kind == "indirect64" || kind == "ref-global" || kind == "ref-local" || kind == "ref-subtype-eh", "explicit dynamic Core3 fixture");
+    require(kind == "indirect32" || kind == "indirect64" || kind == "ref-global" || kind == "ref-local" || kind == "ref-subtype-eh" || kind == "ref-subtype-eh-scalar", "explicit dynamic Core3 fixture");
+    require(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full), "explicit trusted full checkpoint authority");
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
     mode::global_runtime_compiler = mode::runtime_compiler_t::llvm_jit_only;
 
@@ -97,6 +99,11 @@ int main(int argc, char** argv)
     ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = u8"checkpoint-call-continuation";
     require(::uwvm2::uwvm::run::prepare_owned_full_cli_source(true) == static_cast<int>(::uwvm2::uwvm::run::retval::ok),
         "real full-source parse and initializer of modern nondefaultable i31 syntax");
+    // This host fixture bypasses the CLI start dispatcher. Complete its
+    // deferred active segments once before entering any Wasm function.
+    require(::uwvm2::uwvm::runtime::initializer::apply_runtime_active_segments(u8"checkpoint-call-continuation") ==
+        ::uwvm2::uwvm::runtime::initializer::details::active_segment_result::ok,
+        "actual active element/data initialization before execution");
     auto state{::std::make_shared<observer>()};
     auto profile{checkpoint::compilation_profile::create_for_trusted_manager()}; require(bool(profile), "immutable actual profile");
     require(lib::llvm_jit_configure_debug_session_host_api(state->control, {state, observer::point, observer::before_park},
@@ -134,6 +141,26 @@ int main(int argc, char** argv)
     require(lib::llvm_jit_checkpoint_retire_saved_execution_host_api(ticket, foreign_owners) ==
         lib::llvm_jit_checkpoint_execution_retirement_status::rejected_current_cohort,
         "foreign shared_ptr control block does not authorize original retirement");
+    if(kind == "ref-subtype-eh")
+    {
+        // Execution-only retirement has no detached GC/exception root graph.
+        // A live exnref must use whole-instance preparation, never the scalar
+        // continuation adapter. Rejection must preserve the genuine old stack.
+        require(lib::llvm_jit_checkpoint_retire_saved_execution_host_api(ticket, owners) ==
+            lib::llvm_jit_checkpoint_execution_retirement_status::rejected_current_cohort,
+            "unrooted exception cannot authorize execution-only retirement");
+        require(state->control->wait_until_paused(ticket, deadline()) == threads::cooperative_pause_result::paused &&
+            original == 0xa5a5a5a5u, "rejected retirement preserves original paused execution");
+        require(state->control->resume(ticket), "original exception-bearing execution remains resumable");
+        guest.join();
+        require(original == 1176u, "original EH, covariant return and dynamic call complete exactly");
+        lib::reset_runtime_state_host_api();
+        require(lib::llvm_jit_checkpoint_continue_saved_thread_host_api(original_capture, ::std::addressof(output), sizeof(output)) !=
+            lib::llvm_jit_checkpoint_continuation_status::continued && output == 0xdeadbeefu,
+            "retired exception-bearing capture cannot regain authority");
+        ::fast_io::io::println("checkpoint_actual_dynamic_call_continuation: PASS live-exception scalar-route rejection and unchanged original execution; complete_instance_restore=false");
+        return 0;
+    }
     ::std::mutex watchdog_mutex; ::std::condition_variable watchdog_changed; bool drained{};
     ::std::thread watchdog{[&]
     {

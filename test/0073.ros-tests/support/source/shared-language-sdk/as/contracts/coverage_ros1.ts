@@ -16,7 +16,7 @@ case 2: return raw.capability_close((<u64>0));
 case 3: return raw.capability_revoke((<u64>0));
 case 4: return raw.topic_publish((<u64>0), (<u32>0), (<u64>0), (<u64>0));
 case 5: return raw.topic_subscribe((<u64>0));
-case 6: return raw.event_poll((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0));
+case 6: return raw.message_poll((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0));
 case 7: return raw.service_call((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0));
 case 8: return raw.service_advertise((<u64>0));
 case 9: return raw.service_respond((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0));
@@ -44,9 +44,9 @@ case 30: return raw.graph_list_services((<u64>0), (<u32>0), (<u64>0), (<u64>0), 
 case 31: return raw.time_read_ros((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0));
 case 32: return raw.time_read_wall((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0), (<u64>0));
 case 33: return raw.log_write((<u64>0), (<u32>0), (<u64>0), (<u64>0));
-case 34: return raw.event_watch((<u64>0), (<u64>0), (<u64>0));
-case 35: return raw.event_poll_v1((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0));
-case 36: return raw.event_ready((<u64>0), (<u32>0), (<u64>0));
+case 34: return raw.event_stream_watch((<u64>0), (<u64>0), (<u64>0));
+case 35: return raw.event_stream_poll((<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0));
+case 36: return raw.event_stream_ready((<u64>0), (<u32>0), (<u64>0));
 case 37: return raw.service_submit((<u64>0), (<u64>0), (<u32>0), (<u64>0), (<u64>0), (<u64>0));
 default: return 95;
 }

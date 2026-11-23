@@ -31,14 +31,14 @@ static uint32_t fixture_version(void);
 #define uwvm_ros2_capability_revoke fixture_revoke
 #define uwvm_ros2_capability_open fixture_open
 #define uwvm_ros2_topic_subscribe fixture_subscribe
-#define uwvm_ros2_event_poll fixture_poll
+#define uwvm_ros2_message_poll fixture_poll
 #define uwvm_ros2_abi_version fixture_version
 #define PyInit__roswasm_native fixture_original_init
 #define ROSWASM_BACKEND 2
 #include "../../../../../../../sdk/origin/python/roswasm/_native.c"
 #undef PyInit__roswasm_native
 #undef uwvm_ros2_abi_version
-#undef uwvm_ros2_event_poll
+#undef uwvm_ros2_message_poll
 #undef uwvm_ros2_topic_subscribe
 #undef uwvm_ros2_capability_open
 #undef uwvm_ros2_capability_revoke

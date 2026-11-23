@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata, code
 p=Path(__file__).resolve().parents[2]/"tools/debug/dap_adapter.py"
 s=importlib.util.spec_from_file_location("dap_regs",p); dap=importlib.util.module_from_spec(s); s.loader.exec_module(dap)
 STATUS="stopped: native instruction step\nstop-id 17\nthread 3 module=0 function=2 byte-offset=4 generation=8\n  native-pc=0x0000000000001234\n"
@@ -14,6 +15,10 @@ class Broker:
     def __init__(self): self.commands=[]; self.status=STATUS; self.reply=REPLY; self.after=None; self.fail=False
     def request(self,text):
         self.commands.append(text)
+        inventory = metadata(text, stop=17, epoch=8, functions=3, thread=3)
+        if inventory is not None: return inventory
+        instructions = code(text, stop=17, epoch=8, function=2, thread=3, generation=2)
+        if instructions is not None: return instructions
         if text in ("status","bt 3"): return self.status
         if text == "info registers 3 17 all":
             if self.after: self.status=self.after
@@ -34,7 +39,7 @@ class Tests(unittest.TestCase):
     def scope(self):
         frame=self.send("stackTrace",threadId=3)["body"]["stackFrames"][0]["id"]
         result=self.send("scopes",frameId=frame); self.assertTrue(result["success"],result)
-        scopes=result["body"]["scopes"]; self.assertEqual([row["name"] for row in scopes],["Registers"])
+        scopes=result["body"]["scopes"]; self.assertEqual([row["name"] for row in scopes],["Registers", "Frame details"])
         return frame,scopes[0]["variablesReference"]
     def test_positive_partial_values_paging_and_aliases(self):
         frame,ref=self.scope(); result=self.send("variables",variablesReference=ref,start=0,count=1)

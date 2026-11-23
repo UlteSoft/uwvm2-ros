@@ -42,14 +42,14 @@ namespace
             for(unsigned n{};n!=200&&!publisher->get_subscription_count();++n){std::this_thread::sleep_for(std::chrono::milliseconds(10));}
             require(publisher->get_subscription_count(),"actual event flood subscriber discovery");
             std_msgs::msg::String warmup;warmup.data="warmup";ipc::call_result connected{11,{}};
-            for(unsigned n{};n!=100&&connected.error;++n){publisher->publish(warmup);std::this_thread::sleep_for(std::chrono::milliseconds(30));connected=client.call("event.poll","subString",{},1000);require(!connected.error||connected.error==11,"actual event readiness handshake");}
+            for(unsigned n{};n!=100&&connected.error;++n){publisher->publish(warmup);std::this_thread::sleep_for(std::chrono::milliseconds(30));connected=client.call("message.poll","subString",{},1000);require(!connected.error||connected.error==11,"actual event readiness handshake");}
             require(!connected.error&&connected.payload==encode(warmup),"actual DDS/TCPROS data path readiness");std::this_thread::sleep_for(std::chrono::milliseconds(200));
-            for(unsigned n{};n!=100;++n){auto drained{client.call("event.poll","subString",{},1000)};if(drained.error==11){break;}require(!drained.error&&drained.payload==encode(warmup),"drain only readiness warmup");std::this_thread::sleep_for(std::chrono::milliseconds(10));}
-            std_msgs::msg::String oversized;oversized.data.assign(65,'x');for(unsigned n{};n!=2;++n){publisher->publish(oversized);std::this_thread::sleep_for(std::chrono::milliseconds(30));}require(client.call("event.poll","subString",{},1000).error==11,"actual native oversized String dropped before bounded bridge copy/queue");
+            for(unsigned n{};n!=100;++n){auto drained{client.call("message.poll","subString",{},1000)};if(drained.error==11){break;}require(!drained.error&&drained.payload==encode(warmup),"drain only readiness warmup");std::this_thread::sleep_for(std::chrono::milliseconds(10));}
+            std_msgs::msg::String oversized;oversized.data.assign(65,'x');for(unsigned n{};n!=2;++n){publisher->publish(oversized);std::this_thread::sleep_for(std::chrono::milliseconds(30));}require(client.call("message.poll","subString",{},1000).error==11,"actual native oversized String dropped before bounded bridge copy/queue");
             for(unsigned n{1};n<=20;++n){std_msgs::msg::String message;message.data="event-"+std::to_string(n);publisher->publish(message);std::this_thread::sleep_for(std::chrono::milliseconds(30));}
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            for(unsigned n{};n!=2;++n){std_msgs::msg::String message;message.data="event-"+std::to_string(std::string{overflow}=="drop-oldest"?19+n:1+n);auto result{client.call("event.poll","subString",{},1000)};require(!result.error&&result.payload==encode(message),"actual native event overflow exact retained frame expected="+message.data+" error="+std::to_string(result.error)+" actual="+(result.payload.size()>=4?std::string{result.payload.begin()+4,result.payload.end()}:"<empty>"));std::this_thread::sleep_for(std::chrono::milliseconds(10));}
-            require(client.call("event.poll","subString",{},1000).error==11,"actual event queue bounded to exactly two frames");client.close();
+            for(unsigned n{};n!=2;++n){std_msgs::msg::String message;message.data="event-"+std::to_string(std::string{overflow}=="drop-oldest"?19+n:1+n);auto result{client.call("message.poll","subString",{},1000)};require(!result.error&&result.payload==encode(message),"actual native event overflow exact retained frame expected="+message.data+" error="+std::to_string(result.error)+" actual="+(result.payload.size()>=4?std::string{result.payload.begin()+4,result.payload.end()}:"<empty>"));std::this_thread::sleep_for(std::chrono::milliseconds(10));}
+            require(client.call("message.poll","subString",{},1000).error==11,"actual event queue bounded to exactly two frames");client.close();
             ::ros_probe::print_fixture(STDOUT_FILENO,"PASS ROS2 actual native20-message event flood depth2/128bytes ",overflow," exact retained frames\n");
         }
     }
@@ -83,12 +83,12 @@ namespace
         }
         require(verified,"gateway DDS endpoint discovered");
         ipc::call_result incoming{11,{}};
-        for(unsigned n{};n!=500;++n) { publisher->publish(message);std::this_thread::sleep_for(std::chrono::milliseconds(10));incoming=client.call("event.poll","sub"+name,{},1000);if(!incoming.error) { break; } require(incoming.error==11,"poll pending"); }
+        for(unsigned n{};n!=500;++n) { publisher->publish(message);std::this_thread::sleep_for(std::chrono::milliseconds(10));incoming=client.call("message.poll","sub"+name,{},1000);if(!incoming.error) { break; } require(incoming.error==11,"poll pending"); }
         require(!incoming.error&&incoming.payload==expected,"native -> gateway exact "+name);
         unsigned before;{std::lock_guard<std::mutex> lock{mutex};before=count;}
         require(client.call("topic.publish","denied",data(index),1000).error==13,"unauthorized denied");std::this_thread::sleep_for(std::chrono::milliseconds(30));
         {std::lock_guard<std::mutex> lock{mutex};require(count==before,"denial no actual DDS publication");}
-        require(!client.call("capability.revoke","sub"+name,{},1000).error,"revoke");publisher->publish(message);require(client.call("event.poll","sub"+name,{},1000).error==125,"revoked no receipt");
+        require(!client.call("capability.revoke","sub"+name,{},1000).error,"revoke");publisher->publish(message);require(client.call("message.poll","sub"+name,{},1000).error==125,"revoked no receipt");
         require(!client.call("capability.close","pub"+name,{},1000).error,"close");
         ::ros_probe::print_fixture(STDOUT_FILENO,"PASS ROS2 ",name," bidirectional exact message, real DDS discovery/QoS, denial/no side effect, revoke\n");
     }
@@ -161,7 +161,7 @@ int main(int argc,char** argv)
             ipc::client incompatible;f.connect(incompatible);require(!incompatible.call("topic.subscribe","subString",{},1000).error,"QoS mismatch subscriber");
             auto mismatch{node->create_publisher<std_msgs::msg::String>("/uwvm_test/subString",rclcpp::QoS{8}.best_effort())};
             for(unsigned n{};n!=30;++n) { mismatch->publish(s);std::this_thread::sleep_for(std::chrono::milliseconds(50)); }
-            require(incompatible.call("event.poll","subString",{},1000).error==11,"best-effort publisher cannot deliver to reliable subscriber");incompatible.close();
+            require(incompatible.call("message.poll","subString",{},1000).error==11,"best-effort publisher cannot deliver to reliable subscriber");incompatible.close();
             ::ros_probe::print_fixture(STDOUT_FILENO,"PASS actual ROS2 QoS incompatibility has no delivered message\n");
         }
         catch(...) {executor.cancel();spinner.join();rclcpp::shutdown();throw;}

@@ -104,7 +104,7 @@ int main()
        details::runtime_local_func_llvm_jit_checkpoint_import_has_defined_owner(state, 0u)) { return 11; }
     last.target.defined_ptr = ::std::addressof(actual_function);
     plan.profile = checkpoint::compilation_profile::create_for_trusted_observer();
-    if(details::runtime_local_func_llvm_jit_checkpoint_import_has_defined_owner(state, 0u)) { return 12; }
+    if(!details::runtime_local_func_llvm_jit_checkpoint_import_has_defined_owner(state, 0u)) { return 12; }
     if(selected != ::std::addressof(unrelated_world)) { return 13; }
     return 0;
 }

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Original guest exit truth at the unsequenced transport boundary."""
 from pathlib import Path
-import importlib.util,subprocess,unittest
+import importlib.util,subprocess,sys,unittest
+# Match normal secure_server.py launch; the harness supplies its own path.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/debug"))
 from unittest.mock import Mock,patch
 spec=importlib.util.spec_from_file_location('terminal_exit_server',Path(__file__).resolve().parents[2]/'tools/debug/secure_server.py')
 server=importlib.util.module_from_spec(spec);spec.loader.exec_module(server)

@@ -99,7 +99,7 @@ int main()
     check(queue.try_statistics(stats)&&stats.dequeued==0&&stats.pending_depth==0,"queue accounting remains unchanged after reads");
 
     debug::trace_store trace;debug::trace_record call{};call.backend=2;call.instance=identity;call.generation=7;
-    call.module.assign("real_module");call.alias.assign("sub");call.operation.assign("event.poll");call.function.assign("event_poll_v1");call.error=11;
+    call.module.assign("real_module");call.alias.assign("sub");call.operation.assign("message.poll");call.function.assign("event_stream_poll");call.error=11;
     for(unsigned i=0;i!=258;++i) {trace.append(call);}
     query={};query.selected=debug::selection::trace;query.count=16;query.after=1;
     trace.read(query,first);trace.read(query,second);
@@ -111,8 +111,8 @@ int main()
           "trace queries are nonconsuming and reset reused output");
     query.after=first.next;trace.read(query,second);check(second.trace[0].sequence==19,"cursor continuation does not replay previous page");
     query.function.assign("service_submit");trace.read(query,second);check(second.total==0,"exact import filter does not match another function");
-    query.function.assign("event_poll_v1");query.operation.assign("event.poll");trace.read(query,second);
-    check(second.total>0&&second.trace[0].function.view()=="event_poll_v1","matching import/operation filters retain real trace entries");
+    query.function.assign("event_stream_poll");query.operation.assign("message.poll");trace.read(query,second);
+    check(second.total>0&&second.trace[0].function.view()=="event_stream_poll","matching import/operation filters retain real trace entries");
     query.error_filter=true;query.error=13;trace.read(query,second);check(second.total==0,"errno filter never invents matching calls");
     query.first=1;trace.read(query,second);check(second.result==debug::status::invalid_request&&second.trace_size==0,
           "trace refuses ignored positional paging");

@@ -15,6 +15,11 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/DynamicLibrary.h>
+#if defined(__arm__) && defined(__ARM_EABI__)
+#include <unwind.h>
+extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr0(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
+#endif
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
 #include <uwvm2/runtime/lib/uwvm_runtime_pending_code_ranges.h>
@@ -148,6 +153,11 @@ namespace
 }
 int main()
 {
+#if defined(__arm__) && defined(__ARM_EABI__)
+    // Match the product resolver: ARM objects retain their real EHABI provider
+    // dependency even when this numeric fixture does not execute an unwind.
+    ::llvm::sys::DynamicLibrary::AddSymbol("__aeabi_unwind_cpp_pr0", reinterpret_cast<void*>(&__aeabi_unwind_cpp_pr0));
+#endif
     if(::llvm::InitializeNativeTarget() || ::llvm::InitializeNativeTargetAsmPrinter()) { return 12; }
     if(auto result{check_ordinary()};result != 0) { return result; }
     if(auto result{check_retirement(event_order::before_collection)};result != 0) { return 20+result; }

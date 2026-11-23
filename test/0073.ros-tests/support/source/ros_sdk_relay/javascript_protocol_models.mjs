@@ -71,8 +71,8 @@ function argumentsFor(entry,layout,handle=HI,input=new Uint8Array()) {
   // The additive forms are selected by name before the legacy arity forms.
   // Their two handles, correlation, fixed readiness record and submit ID slot
   // have distinct meanings; a seven-argument RPC is not a substitute for them.
-  if(entry.name==='event_watch') return [handle,handle-1n,37n];
-  if(entry.name==='event_ready') return [handle,0,layout.output];
+  if(entry.name==='event_stream_watch') return [handle,handle-1n,37n];
+  if(entry.name==='event_stream_ready') return [handle,0,layout.output];
   if(entry.name==='service_submit') return [handle,handle-1n,0,layout.input,BigInt(input.length),layout.slot];
   const n=entry.parameters.length;
   if(n===0) return [];
@@ -84,8 +84,8 @@ function argumentsFor(entry,layout,handle=HI,input=new Uint8Array()) {
   return [handle,0,layout.input,BigInt(input.length),layout.output,64n,layout.slot];
 }
 function snapshotFor(entry) {
-  if(entry.name==='event_watch'||entry.name==='service_submit') return 0;
-  if(entry.name==='event_ready') return 32;
+  if(entry.name==='event_stream_watch'||entry.name==='service_submit') return 0;
+  if(entry.name==='event_stream_ready') return 32;
   return 64;
 }
 
@@ -124,23 +124,23 @@ for(const version of [1,2]) {
   const before=peer.calls.length;
   await assert.rejects(()=>channel.call('topic_publish',[Number(HI),0,channel.layout.input,0n]),TypeError);checks++;
   await assert.rejects(()=>channel.call('topic_publish',[HI,1,channel.layout.input,0n]),RelayError);checks++;
-  await assert.rejects(()=>channel.call('event_poll',[HI,0,channel.layout.input,64n,channel.layout.slot]),RelayError);checks++;
-  await assert.rejects(()=>channel.call('event_poll',[HI,0,channel.layout.output,4081n,channel.layout.slot]),RelayError);checks++;
+  await assert.rejects(()=>channel.call('message_poll',[HI,0,channel.layout.input,64n,channel.layout.slot]),RelayError);checks++;
+  await assert.rejects(()=>channel.call('message_poll',[HI,0,channel.layout.output,4081n,channel.layout.slot]),RelayError);checks++;
   await assert.rejects(()=>channel.call('function_from_another_version',[]),RelayError);checks++;
   // Every additive form also refuses malformed local arguments before a frame
   // is written. These are transport/scratch checks, not synthetic ROS grants.
   const watch=[HI,HI-1n,37n],ready=[HI,0,channel.layout.output],
     submit=[HI,HI-1n,0,channel.layout.input,0n,channel.layout.slot];
   const invalidAdditiveCalls=[
-    ['event_watch',watch.slice(0,-1),{snapshot:0},TypeError],
-    ['event_ready',ready.slice(0,-1),{snapshot:32},TypeError],
+    ['event_stream_watch',watch.slice(0,-1),{snapshot:0},TypeError],
+    ['event_stream_ready',ready.slice(0,-1),{snapshot:32},TypeError],
     ['service_submit',submit.slice(0,-1),{snapshot:0},TypeError],
-    ['event_watch',watch,{input:Uint8Array.of(1),snapshot:0},RelayError],
-    ['event_watch',watch,{snapshot:1},RelayError],
-    ['event_ready',[HI,1,channel.layout.output],{snapshot:32},RelayError],
-    ['event_ready',[HI,0,channel.layout.input],{snapshot:32},RelayError],
-    ['event_ready',ready,{snapshot:31},RelayError],
-    ['event_ready',ready,{snapshot:33},RelayError],
+    ['event_stream_watch',watch,{input:Uint8Array.of(1),snapshot:0},RelayError],
+    ['event_stream_watch',watch,{snapshot:1},RelayError],
+    ['event_stream_ready',[HI,1,channel.layout.output],{snapshot:32},RelayError],
+    ['event_stream_ready',[HI,0,channel.layout.input],{snapshot:32},RelayError],
+    ['event_stream_ready',ready,{snapshot:31},RelayError],
+    ['event_stream_ready',ready,{snapshot:33},RelayError],
     ['service_submit',[HI,HI-1n,1,channel.layout.input,0n,channel.layout.slot],{snapshot:0},RelayError],
     ['service_submit',[HI,HI-1n,0,channel.layout.output,0n,channel.layout.slot],{snapshot:0},RelayError],
     ['service_submit',[HI,HI-1n,0,channel.layout.input,1n,channel.layout.slot],{snapshot:0},RelayError],
@@ -176,7 +176,7 @@ for(const version of [1,2]) {
   const peer=new SyntheticPeer(2,q=>{
     if(q.name==='capability_open') return {status:0,slot:next++};
     if(q.name==='capability_close') {closed++;return {status:0};}
-    if(q.name==='event_poll') {if(polled) return {status:11};polled=true;return {status:0,slot:BigInt(replies.length),bytes:replies};}
+    if(q.name==='message_poll') {if(polled) return {status:11};polled=true;return {status:0,slot:BigInt(replies.length),bytes:replies};}
     return {status:0};
   });
   const session=new AsyncSession(await peer.attach()),node=new AsyncNode(session);

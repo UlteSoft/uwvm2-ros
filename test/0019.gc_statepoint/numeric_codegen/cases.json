@@ -359,5 +359,143 @@
     "source": "borrow-array-same-index-multiple-write.wat",
     "entry": 0,
     "trap": false
+  },
+  {
+    "name": "cross-call-subtype-i8-s",
+    "source": "cross-call-subtype-i8-s.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-subtype-i8-u",
+    "source": "cross-call-subtype-i8-u.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-subtype-i16-s",
+    "source": "cross-call-subtype-i16-s.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-subtype-i16-u",
+    "source": "cross-call-subtype-i16-u.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-subtype-i32",
+    "source": "cross-call-subtype-i32.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-subtype-f32-bits",
+    "source": "cross-call-subtype-f32-bits.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "cross-call-identical-roots-collect",
+    "source": "cross-call-identical-roots-collect.wat",
+    "entry": 2,
+    "trap": false
+  },
+  {
+    "name": "cross-call-rebound-roots-collect",
+    "source": "cross-call-rebound-roots-collect.wat",
+    "entry": 2,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-aliases",
+    "source": "private-crosscall-aliases.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-late-publication",
+    "source": "private-crosscall-late-publication.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-callee-publication",
+    "source": "private-crosscall-callee-publication.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-dead-target",
+    "source": "private-crosscall-dead-target.wat",
+    "entry": 2,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-loop-target",
+    "source": "private-crosscall-loop-target.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-null",
+    "source": "private-crosscall-null.wat",
+    "entry": 1,
+    "trap": true
+  },
+  {
+    "name": "private-crosscall-oob",
+    "source": "private-crosscall-oob.wat",
+    "entry": 1,
+    "trap": true
+  },
+  {
+    "name": "private-crosscall-allocation-boundaries",
+    "source": "private-crosscall-allocation-boundaries.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-loop",
+    "source": "private-crosscall-loop.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-shared-loop",
+    "source": "private-crosscall-shared-loop.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-abi-wide-args",
+    "source": "private-crosscall-abi-wide-args.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-abi-subtype-args",
+    "source": "private-crosscall-abi-subtype-args.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-abi-mixed-results",
+    "source": "private-crosscall-abi-mixed-results.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-abi-reference-args",
+    "source": "private-crosscall-abi-reference-args.wat",
+    "entry": 1,
+    "trap": false
+  },
+  {
+    "name": "private-crosscall-outlined-subtype",
+    "source": "private-crosscall-outlined-subtype.wat",
+    "entry": 1,
+    "trap": false
   }
 ]

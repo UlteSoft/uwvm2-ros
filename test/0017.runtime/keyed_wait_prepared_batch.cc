@@ -48,6 +48,28 @@ int main()
     unsigned resource{},other{};
     th::wait_key const key{::std::addressof(resource),32u},different{::std::addressof(other),32u};
     {
+        waits registry{};domain control{1u};auto participant=control.enter();actual_policy policy{control,participant,key};
+        ::std::array<spec,2u> inputs{{{key,-1,0u,ready::pending},{key,-1,1u,ready::pending}}};
+        auto batch=registry.prepare_ordered_waits(inputs);require(bool(batch),"prepare native completion registration cohort");
+        ::std::atomic<unsigned> completed{};
+        auto callback=+[](void* context,outcome value) noexcept
+        {if(value==outcome::notified)static_cast<::std::atomic<unsigned>*>(context)->fetch_add(1u,::std::memory_order_release);};
+        {
+            auto first=batch->bind_completion(0u,key,::std::addressof(completed),callback);
+            auto second=batch->bind_completion(1u,key,::std::addressof(completed),callback);
+            require(bool(first) && bool(second),"bind authentic prelinked nodes before consumers enter");
+            require(!batch->bind_completion(0u,key,::std::addressof(completed),callback),"completion registration is exclusive");
+            require(!batch->bind_completion(2u,key,::std::addressof(completed),callback) &&
+                !batch->bind_completion(0u,different,::std::addressof(completed),callback),"full resource and ordinal checked");
+            batch->start_deadlines();
+            require(registry.notify(key,1u)==1u && completed.load(::std::memory_order_acquire)==1u,
+                "unclaimed native waiter publishes readiness before notification returns");
+        }
+        require(registry.notify(key,1u)==1u && completed.load()==1u,"detached completion context cannot be called later");
+        require(batch->consume(0u,key,policy).outcome==outcome::notified && batch->consume(1u,key,policy).outcome==outcome::notified,
+            "callback registration does not consume or duplicate notification");
+    }
+    {
         waits registry{};domain control{2u};
         ::std::array<spec,2u> input{{{key,-1,0u,ready::pending},{key,-1,1u,ready::pending}}};
         auto batch{registry.prepare_ordered_waits(input)};
@@ -56,6 +78,12 @@ int main()
         auto before_open{batch->consume(0u,key,owner_policy)};
         require(before_open.aborted_by_suspension,"unarmed startup cannot consume a queue node");
         batch->start_deadlines();
+        waits::suspension_snapshot staged{};
+        require(batch->inspect_unclaimed(1u,key,[&](auto const& copy) noexcept{staged=copy;}) &&
+            staged.position==32u && staged.pending_predecessors==1u && staged.remaining_nanoseconds==-1 && !staged.notified,
+            "capture actual prelinked queue before its restored worker enters");
+        require(!batch->inspect_unclaimed(1u,different,[&](auto const&) noexcept{}) &&
+            !batch->inspect_unclaimed(2u,key,[&](auto const&) noexcept{}),"unclaimed inspection validates resource and full ordinal");
         auto wrong_key{batch->consume(0u,different,owner_policy)};
         auto bad_index{batch->consume(2u,key,owner_policy)};
         require(wrong_key.aborted_by_suspension && bad_index.aborted_by_suspension,"actual key and full index must match before claim");
@@ -97,6 +125,12 @@ int main()
         auto batch{registry.prepare_ordered_waits(ready_nodes)};
         require(batch && registry.notify(key,9u)==0u && registry.notify(different,9u)==0u,"recorded ready outcomes never enter pending queue");
         batch->start_deadlines();
+        waits::suspension_snapshot staged{};
+        require(batch->inspect_unclaimed(0u,key,[&](auto const& copy) noexcept{staged=copy;}) && staged.notified,
+            "completed notification is capturable before actual consume without a linked node");
+        require(batch->inspect_unclaimed(1u,different,[&](auto const& copy) noexcept{staged=copy;}) &&
+            staged.timed_out && !staged.notified && staged.remaining_nanoseconds==0 && staged.pending_predecessors==SIZE_MAX,
+            "completed timeout remains capturable without a native queue node or renewed credit");
         auto notified{batch->consume(0u,key,policy)},expired{batch->consume(1u,different,policy)};
         require(notified.outcome==outcome::notified && !notified.aborted_by_suspension,"actual owned ready0 consumed without new comparison");
         require(expired.outcome==outcome::timed_out && !expired.aborted_by_suspension,"actual owned ready2 consumed without new timer or insertion");

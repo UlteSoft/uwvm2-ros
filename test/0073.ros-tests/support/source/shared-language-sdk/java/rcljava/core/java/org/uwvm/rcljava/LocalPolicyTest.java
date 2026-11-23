@@ -48,7 +48,7 @@ public final class LocalPolicyTest {
             if(operation.equals("topic_subscribe"))return new Result(subscribeError);
             if(operation.equals("topic_publish")){published.add(bytes.clone());return new Result(0);}
             if(operation.equals("time_read_steady")){if(clockFailure instanceof Error)throw (Error)clockFailure;if(clockFailure instanceof RuntimeException)throw (RuntimeException)clockFailure;return clockError!=0?new Result(clockError):new Result(0,Codecs.INT64.encode(clock),null,null);}
-            if(operation.equals("event_poll"))return poll;
+            if(operation.equals("message_poll"))return poll;
             return new Result(0);
         }
         int count(String name) { int n=0;for(String c:calls)if(c.equals(name))++n;return n; }
@@ -140,8 +140,8 @@ public final class LocalPolicyTest {
     }
     static void testDeadlineAndNoAutomaticReplay() {
         Model m=new Model();MigrationContext c=context(m,8,topic("/a",false));Node n=c.createNode("a","");n.createSubscription(std_msgs.msg.String.class,"topic",v->{throw new AssertionError();});Object x=new Object();c.attachExecutor(n,x);
-        m.poll=new Result(90);code(90,()->c.poll(n,x));check(m.count("event_poll")==1);
-        m.poll=new Result(110);code(110,()->c.poll(n,x));check(m.count("event_poll")==2);c.detachExecutor(n,x);c.shutdown();
+        m.poll=new Result(90);code(90,()->c.poll(n,x));check(m.count("message_poll")==1);
+        m.poll=new Result(110);code(110,()->c.poll(n,x));check(m.count("message_poll")==2);c.detachExecutor(n,x);c.shutdown();
     }
     static void testBoundedDriverEvenIfItAlwaysReturnsTrue() {
         Model m=new Model();final int[] credits={0};MigrationContext c=new MigrationContext(new Deployment.Profile(m,new Deployment.Binding[0],()->{++credits[0];return true;},4,8,4,2));c.init();

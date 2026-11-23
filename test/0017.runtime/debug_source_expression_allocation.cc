@@ -3,21 +3,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <new>
-static std::size_t remaining{};
-static bool inject{};
-void* operator new(std::size_t bytes) {
-    if(inject) {
-        if(remaining==0) throw std::bad_alloc{};
-        --remaining;
-    }
-    if(auto* memory=std::malloc(bytes ? bytes : 1)) return memory;
-    throw std::bad_alloc{};
-}
-void operator delete(void* pointer) noexcept { std::free(pointer); }
-void operator delete(void* pointer,std::size_t) noexcept { std::free(pointer); }
-void* operator new[](std::size_t bytes) { return ::operator new(bytes); }
-void operator delete[](void* pointer) noexcept { std::free(pointer); }
-void operator delete[](void* pointer,std::size_t) noexcept { std::free(pointer); }
+#include "fast_io_allocation_probe.h"
 static void require(bool ok) {
     if(!ok) { std::fputs("FAIL source-expression allocation cleanup\n",stderr);std::abort(); }
 }
@@ -29,9 +15,9 @@ int main() {
     unsigned failures{};
     for(std::size_t limit=0;limit!=64;++limit) {
         d::source_expression value{"previous_root",{{d::source_expression_step_kind::member,"previous_member",0}}};
-        remaining=limit;inject=true;
+        fast_io_allocation_probe::remaining=limit;fast_io_allocation_probe::armed=true;
         auto status=d::parse_source_expression(text,value);
-        inject=false;
+        fast_io_allocation_probe::armed=false;
         require(status==d::object_selector_error::allocation_failure);
         require(value.root_name.empty()&&value.steps.empty());
         ++failures;

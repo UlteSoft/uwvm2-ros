@@ -174,7 +174,7 @@ two native receives.
 The witness publishes the distinct reply at a bounded rate until completion.
 The Guest permits only errno 11 for an empty queue, preserving all output
 sentinels, while checking its explicit monotonic ten-second deadline both before
-and after `event_poll`. Successful delivery requires length 23 and equality of
+and after `message_poll`. Successful delivery requires length 23 and equality of
 all 23 canonical bytes, plus protected buffer/length guards and the unused
 41-byte buffer tail. This deadline rejects late poll success; it cannot interrupt
 a host import that is already running. The external owned-process deadline

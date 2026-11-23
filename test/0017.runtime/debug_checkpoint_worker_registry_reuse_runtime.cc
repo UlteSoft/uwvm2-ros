@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual setup then two read-only LLVM-full guests. New instance census under
 // one real pause/cohort/hostclose/N/publication, not a copied debugger VIEW.
 // The const graph is logical DATA; whole-instance restoration is not claimed.
@@ -45,7 +46,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{};
+    ::uwvm2::utils::container::std_u8string path{};
     image::owned_file_image::owner immutable{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -71,7 +72,7 @@ struct source_setup
             // These modules have no start functions. Complete ordinary segment
             // instantiation, including passive expression payloads, BEFORE any
             // setup guest entry or source seal; true would leave it deferred.
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(false);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(false)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -132,6 +133,8 @@ static void point(void*,::std::uint_least64_t,threads::cooperative_pause_locatio
 static void before_park(void*,::std::uint_least64_t,threads::cooperative_pause_location,lib::llvm_jit_debug_local_view) noexcept {}
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 64; }
     auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
@@ -154,7 +157,7 @@ int main(int argc, char** argv)
     features.disable_simd = false; features.explicit_enable_simd = true;
     features.disable_bulk_memory = false; features.explicit_enable_bulk_memory = true;
     source_setup setup{};
-    setup.path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
+    setup.path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
     auto& arguments{::uwvm2::uwvm::cmdline::parsing_result};
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = nullptr; arguments.clear();
     arguments.emplace_back(::uwvm2::utils::cmdline::parameter_parsing_results{
@@ -196,14 +199,26 @@ int main(int argc, char** argv)
         ::std::unique_lock lock{cohort->mutex};
         REQUIRE(cohort->changed.wait_until(lock,deadline(),[&] { return cohort->bodies==256u; }));
     }
-    auto forbidden{::std::make_shared<run_once>()};
-    auto quota=[&]
+    // The registry grows; 256 is a regression boundary, not a product quota.
+    // New canonical owners must coexist with every unjoined old OS/TLS owner.
+    ::std::vector<lib::llvm_jit_debug_guest_worker_owner> growth{};
+    auto grow=[&]
     {
-        auto result{lib::runtime_launch_llvm_jit_debug_guest_worker_host_api(control,forbidden,run_once::body)};
-        REQUIRE(result.status==lib::llvm_jit_debug_guest_worker_launch_status::quota && !result.worker);
-        REQUIRE(forbidden->result==0xa5a5a5a5u);
+        auto state{::std::make_shared<run_once>()};
+        auto result{lib::runtime_launch_llvm_jit_debug_guest_worker_host_api(control,state,run_once::body)};
+        REQUIRE(result.status==lib::llvm_jit_debug_guest_worker_launch_status::started && result.worker);
+        REQUIRE(lib::runtime_join_llvm_jit_debug_guest_worker_until_host_api(result.worker,deadline()).actual.status==
+            ::fast_io::thread_join_status::joined);
+        REQUIRE(state->result==42u);
+        for(auto const& old:retained)
+        {
+            REQUIRE(old.get()!=result.worker.get());
+            REQUIRE(old.owner_before(result.worker) || result.worker.owner_before(old));
+            REQUIRE(lib::runtime_llvm_jit_debug_guest_worker_matches_control_host_api(old,control));
+        }
+        growth.push_back(::std::move(result.worker));
     };
-    quota();
+    grow();
     {
         ::std::lock_guard lock{cohort->mutex};cohort->release_body=true;cohort->changed.notify_all();
     }
@@ -216,7 +231,10 @@ int main(int argc, char** argv)
     auto pending{lib::runtime_join_llvm_jit_debug_guest_worker_until_host_api(retained[first],
         ::std::chrono::steady_clock::now()+::std::chrono::milliseconds{10})};
     REQUIRE(pending.actual.status==::fast_io::thread_join_status::pending);
-    quota(); // A finished body or released execution lease does not free an OS/TLS owner.
+    grow(); // Growing or reusing a completed extra slot cannot retire an old TLS owner.
+    REQUIRE(lib::runtime_join_llvm_jit_debug_guest_worker_until_host_api(retained[first],
+        ::std::chrono::steady_clock::now()+::std::chrono::milliseconds{10}).actual.status==
+        ::fast_io::thread_join_status::pending);
     lib::llvm_jit_debug_guest_worker_owner bad_address{retained[first],
         reinterpret_cast<lib::llvm_jit_debug_guest_worker const*>(::std::uintptr_t{1u})};
     lib::llvm_jit_debug_guest_worker_owner bad_control_block{retained[first].get(),[](auto*) noexcept {}};
@@ -231,8 +249,8 @@ int main(int argc, char** argv)
     }
     REQUIRE(lib::runtime_join_llvm_jit_debug_guest_worker_until_host_api(retained[first],deadline()).actual.status==
         ::fast_io::thread_join_status::joined);
-    // All 256 old control blocks are STILL retained. Only one has actually been
-    // OS joined. Reuse that single live slot while keeping its retry identity.
+    // All 256 original control blocks are STILL retained. One original and
+    // the two growth workers are joined; free slots preserve every retry identity.
     auto fresh{::std::make_shared<run_once>()};
     auto reuse{lib::runtime_launch_llvm_jit_debug_guest_worker_host_api(control,fresh,run_once::body)};
     ::fast_io::print(::fast_io::out(),"REGISTRY first_actual_join_slot_reuse_status=",
@@ -270,7 +288,7 @@ int main(int argc, char** argv)
             ::fast_io::thread_join_status::joined);
         REQUIRE(state->result==42u);
     }
-    for(auto const& old:{oldest,newest})
+    for(auto const& old:{oldest,newest,growth[0u],growth[1u]})
     {
         REQUIRE(lib::runtime_llvm_jit_debug_guest_worker_matches_control_host_api(old,control));
         REQUIRE(lib::runtime_join_llvm_jit_debug_guest_worker_until_host_api(old,deadline()).actual.status==
@@ -280,10 +298,10 @@ int main(int argc, char** argv)
     REQUIRE(!lib::runtime_llvm_jit_debug_guest_worker_matches_control_host_api(bad_control_block,control));
     lib::reset_runtime_state_host_api();::uwvm2::uwvm::cmdline::wasm_file_ppos=nullptr;
     ::fast_io::print(::fast_io::out(),"WORKER_REGISTRY policy=",policy,
-        " live_limit=256 body_exit_not_reused=1 tls_pending_not_reused=1",
-        " retained_old_handles=256 actual_os_join_frees_one_slot=1",
+        " initial_live_workers=256 dynamic_growth=2 tls_pending_owners_retained=1",
+        " retained_old_handles=256 actual_os_join_frees_slot=1",
         " canonical_retry_preserved=1 invalid_address_rejected=1 wrong_control_block_rejected=1",
-        " actual_workers=585 actual_guest_returns_42=329 weak_holes_reused=320 PASS\n");
+        " actual_workers=587 actual_guest_returns_42=331 weak_holes_reused=320 PASS\n");
 }
 #include <uwvm2/uwvm/runtime/macro/pop_macros.h>
 #include <uwvm2/utils/macro/pop_macros.h>

@@ -42,13 +42,14 @@ xmake f -y -c -m release -p linux -a x86_64 -o build/ros \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=llvm \
   --llvm-build-jobs=1 --llvm-build-targets=Native \
-  --import-ros1=y --import-ros2=y
+  --import-u2rosv2=y
 xmake -j1 uwvm2-ros
 xmake run uwvm2-ros --version
 ```
 
 The mandatory [product gate](../xmake/utility/ros_product.lua) rejects removal
-of WASI32/64, ROS1, ROS2 and socket implementations. It also requires the
+of WASI32/64, ROSv2 and socket implementations. Deprecated ROSv1 hosts and
+unisolated native preloading are independent default-off build options. It also requires the
 LLVM execution backend, native unwind path, source-owned paired libc++ and
 libunwind, thread-local storage, exceptions, WSEA and the mmap memory backend.
 The interpreter can be omitted with `--execution-int=none`. Raw compiler flags
@@ -134,6 +135,12 @@ permissions merely because they share a process or memory. Consult
 [host permissions](command-line/host-permissions.md), [WASI](command-line/wasi.md),
 [ROS1](command-line/ros1.md) and [ROS2](command-line/ros2.md) for exact API,
 resource, group and operation configuration.
+
+The legacy ROS VM ABI family and its `--ros1-*` / `--ros2-*` deployment options
+are deprecated. Existing behavior remains unchanged. New deployments should
+use [`uwvm_ros_v2`](command-line/ros-scene.md), after checking its implemented
+provider coverage; migrating an import never transfers existing grants.
+This status does not deprecate WASIp1 or the ROS1 bridge design.
 
 The host may preload a Wasm library or explicitly trust a native dynamic library.
 A native library executes host code and is outside Wasm memory isolation.
@@ -362,6 +369,7 @@ On the Linux ROS executable:
 - With that explicit exit policy, **121** reports other unhandled Wasm execution faults or exceptions.
 - With that explicit exit policy, **122** reports a rejected memory-tag access.
 - **123** is an internal-failure record category; internal VM failures always retain native crash termination.
+- **125** reports a refused execution-replay transaction; unrecorded native imports are not dispatched.
 - **126** is used for invalid launch parameters and explicitly promoted warnings.
 - **127** is used for module loading and validation/check failures.
 - **75** reports a missing required authenticated production-update launch
@@ -452,3 +460,14 @@ never follow that MTE path. Report-opening failures exit126; report-write
 failures exit123. Old MTE action/output/worker aliases are not accepted.
 See the [extension contract](runtime/memtag-extension.md) for hardware and async
 delivery limits.
+## Dump disclosure and binary snapshots
+
+The `debug` command-line category provides mutually exclusive
+`--debug-dump-max diagnostic|full` and `--debug-dump-force
+none|diagnostic|full`. The maximum defaults to `full`, is narrowed by the
+debugger permission level, and permits a lower per-export choice. Forced
+disclosure cannot be changed by a session; `none` disables exports. Diagnostic
+snapshots include original static Wasm and fault coordinates while physically
+excluding dynamic sensitive state. Full disclosure and executable restore
+completeness are distinct. See [the binary snapshot contract](runtime/unified-snapshot.md)
+for the current implementation boundary, offline reader and restore limitations.

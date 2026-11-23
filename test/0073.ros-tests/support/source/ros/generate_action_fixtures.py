@@ -52,7 +52,7 @@ for v in (1,2):
  for i,value in enumerate(SEQ):guest+=reject(f'(i32.ne (i32.load (i32.const {141+i*4})) (i32.const {value}))')
  guest+=reject('(i32.ne '+invoke('receive_result',32)+' (i32.const 9))')+'))\n'
  (ROOT/f'examples/ros{v}/action_client.wat').write_text(guest)
- imports=rpc(v,'advertise','advertise')+'\n '+rpc(v,'respond','respond')+f'\n (import "uwvm_ros{v}_v1" "event_poll" (func $event (param i64 i32 i64 i64 i64) (result i32)))'
+ imports=rpc(v,'advertise','advertise')+'\n '+rpc(v,'respond','respond')+f'\n (import "uwvm_ros{v}_v1" "message_poll" (func $event (param i64 i32 i64 i64 i64) (result i32)))'
  guest=common(v,imports,'(data (i32.const 0) "server") (data (i32.const 4096) "responder") (data (i32.const 8192) "'+literal(bytes(8)+bytes([1])+struct.pack('<I6i',6,*SEQ))+'")')
  guest+=poll('incoming',8,'(call $event (i64.load (i32.const 8)) (i32.const 0) (i64.const 128) (i64.const 4096) (i64.const 16))')
  guest+=' (func (export "_start")\n'+opened(0,6,8)+opened(4096,9,24)+'  (call $check '+invoke('advertise',8,8208,0)+')\n  (call $incoming)\n'

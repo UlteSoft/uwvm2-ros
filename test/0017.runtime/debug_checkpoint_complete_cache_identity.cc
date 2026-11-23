@@ -49,17 +49,17 @@ static cache::cache_context context(containers::u8string const& tuple)
 }
 int main()
 {
-    // Explicit v7 cache dependency; this fixture remains metadata/key DATA.
-    // State schema6 and native resume ABI2 remain independent compatibility inputs.
-    static_assert(cache::cache_format_version == 7u);
+    // Explicit v8 cache dependency; this fixture remains metadata/key DATA.
+    // State schema10 and native resume ABI2 remain independent compatibility inputs.
+    static_assert(cache::cache_format_version == 8u);
     auto const profile{cp::compilation_profile::create_for_trusted_manager()};
     require(bool(profile), "actual profile factory");
     auto const tuple{profile->cache_identity()};
     auto const canonical{text(tuple)};
     containers::u8string const expected{containers::u8concat_uwvm(u8"6143850319052752689/",
-        ::fast_io::mnp::dec(tuple[1u]), u8"/6/2/16/4096/1048576/65536/65536/32768")};
+        ::fast_io::mnp::dec(tuple[1u]), u8"/10/2/16/4096/1048576/65536/65536/32768")};
     require(same(canonical, expected) && tuple[2u] == cp::state_schema_revision && tuple[3u] == 2u, "default tuple has current schema and all ten declared fields");
-    auto old_schema{tuple}; old_schema[2u] = 5u;
+    auto old_schema{tuple}; old_schema[2u] = 9u;
     require(!same(cache::details::cache_key_hash(context(text(old_schema))), cache::details::cache_key_hash(context(canonical))),
         "previous state schema cannot reuse current checkpoint object-cache context");
     containers::u8string via_instance{};
@@ -73,11 +73,11 @@ int main()
     require(bool(observer) && observer->purpose() == cp::compilation_purpose::observe_values &&
         profile->purpose() == cp::compilation_purpose::resumable, "immutable distinct profile purposes");
     auto const observed_tuple{observer->cache_identity()};
-    require(observed_tuple[1u] == 64u, "compiler-selected ordinary-return ABI invalidates the previous generated code cache");
+    require(observed_tuple[1u] == 65u, "compiler-selected ordinary-return ABI invalidates the previous generated code cache");
     require(observed_tuple.size() == tuple.size() && observed_tuple[1u] != tuple[1u],
         "explicit observation/resumable policy versions differ with identical caps");
     auto const observed{context(text(observed_tuple))};
-    auto previous_observed_tuple{observed_tuple}; previous_observed_tuple[1u] = 63u;
+    auto previous_observed_tuple{observed_tuple}; previous_observed_tuple[1u] = 64u;
     auto const previous_observed{context(text(previous_observed_tuple))};
     require(!same(cache::make_context_metadata(observed), cache::make_context_metadata(previous_observed)) &&
         !same(cache::details::cache_key_hash(observed), cache::details::cache_key_hash(previous_observed)),

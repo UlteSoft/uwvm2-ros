@@ -233,7 +233,7 @@ int main()
             AUTH_CHECK(s->struct_new_default(type, result) == status::ok); ++created;
             if(rooted) { roots.push_back(result); }
         }};
-        auto new_array{[&](store_ptr const& s, unsigned type, value input, ::std::size_t length, ref& result)
+        auto repeated_struct{[&](store_ptr const& s, unsigned type, value input, ref& result)
         {
             ::std::vector<value> fields(type == 3u ? 4uz : 1uz, input);
             AUTH_CHECK(s->struct_new(type, fields.data(), fields.size(), result) == status::ok);
@@ -243,14 +243,14 @@ int main()
         new_struct(pins[0uz], 2u, alias); new_struct(pins[0uz], 7u, wrong);
         new_struct(pins[0uz], 0u, dead, false);
         new_struct(pins[1uz], 0u, b);
-        new_array(pins[0uz], 3u, value::reference(a), 4uz, refs);
-        new_array(pins[0uz], 4u, value::reference(a), 1uz, nonnull);
-        new_array(pins[0uz], 5u, value::reference(a), 1uz, immutable);
-        new_array(pins[0uz], 6u, value::i32(5u), 1uz, numbers);
-        new_array(pins[0uz], 8u, value::reference(a), 1uz, eqs);
-        new_array(pins[1uz], 3u, value::reference(b), 1uz, foreign_array);
+        repeated_struct(pins[0uz], 3u, value::reference(a), refs);
+        repeated_struct(pins[0uz], 4u, value::reference(a), nonnull);
+        repeated_struct(pins[0uz], 5u, value::reference(a), immutable);
+        repeated_struct(pins[0uz], 6u, value::i32(5u), numbers);
+        repeated_struct(pins[0uz], 8u, value::reference(a), eqs);
+        repeated_struct(pins[1uz], 3u, value::reference(b), foreign_array);
         new_struct(pins[0uz], 10u, compact);
-        new_array(pins[0uz], 11u, value::reference(compact), 1uz, compact_refs);
+        repeated_struct(pins[0uz], 11u, value::reference(compact), compact_refs);
         auto input{value::reference(child)};
         AUTH_CHECK(gc_struct_auth_fixture_native_set(pins[0uz].get(), &refs, 0uz, &input) == static_cast<::std::uint32_t>(status::ok));
         expect_slot(pins[0uz], refs, 0uz, child);

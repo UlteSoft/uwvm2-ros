@@ -23,7 +23,7 @@ static int wait_code(pid_t child)
     int status{};
     pid_t got;
     do { got = ::waitpid(child, &status, 0); } while(got < 0 && errno == EINTR);
-    return got == child && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    return got == child ? (WIFEXITED(status) ? WEXITSTATUS(status) : WIFSIGNALED(status) ? -WTERMSIG(status) : -1) : -1;
 }
 
 static bool simple(unsigned mode, unsigned category)
@@ -33,7 +33,7 @@ static bool simple(unsigned mode, unsigned category)
     if(child == 0)
     {
         ::alarm(5); ::close(2);
-        if(mode != 0 && !crash::process_policy.seal(mode == 2 ? crash::action::pause : crash::action::none)) ::_exit(90);
+        if(mode != 0 && !crash::process_policy.seal(mode == 2 ? crash::action::pause : mode == 5 ? crash::action::none : crash::action::exit)) ::_exit(90);
         if(mode != 1) crash::report(static_cast<crash::category>(category), "fixture classified fault");
         if(mode == 4) crash::report(crash::category::execution, "later classified fault");
         runtime_managed_fault_detail::finish_cli_fault_after_unwind();
@@ -41,8 +41,10 @@ static bool simple(unsigned mode, unsigned category)
     }
     auto expected = mode <= 2 ? 0 : static_cast<int>(category);
     auto actual = wait_code(child);
-    std::printf("mode=%u category=%u expected=%d actual=%d %s\n", mode, category, expected, actual, actual == expected ? "PASS" : "FAIL");
-    return actual == expected;
+    bool const must_crash=mode==5 || (mode>=3 && category==123);
+    bool const passed=must_crash ? (actual==-SIGILL || actual==-SIGTRAP || actual==-SIGABRT) : actual==expected;
+    std::printf("mode=%u category=%u expected=%d actual=%d %s\n", mode, category, expected, actual, passed ? "PASS" : "FAIL");
+    return passed;
 }
 
 static bool wait_owner(bool prior_exit)
@@ -54,7 +56,7 @@ static bool wait_owner(bool prior_exit)
     if(child == 0)
     {
         ::alarm(5); ::close(2); ::close(notice[0]); ::close(release[1]);
-        if(!crash::process_policy.seal(crash::action::none)) ::_exit(91);
+        if(!crash::process_policy.seal(crash::action::exit)) ::_exit(91);
         crash::report(crash::category::memtag, "fixture classified fault");
         std::atomic<bool> ready{};
         std::thread owner{[&]
@@ -119,6 +121,7 @@ int main()
     count(simple(1, 122)); // Sealed terminate with no fault is not a fault.
     count(simple(2, 122)); // Explicit pause retains the managed result.
     for(unsigned category = 120; category <= 123; ++category) count(simple(3, category));
+    for(unsigned category = 120; category <= 123; ++category) count(simple(5, category));
     count(simple(4, 122)); // The first recorded category remains authoritative.
     count(wait_owner(false));
     count(wait_owner(true));

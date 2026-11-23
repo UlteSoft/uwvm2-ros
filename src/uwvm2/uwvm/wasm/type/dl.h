@@ -49,7 +49,7 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
 {
 
-    // There is no need to add the UWVM_SUPPORT_PRELOAD_DL macro here, as it will be reused by the weak symbol module.
+    // Type declarations alone confer no native loading authority.
 
     extern "C"
     {
@@ -225,7 +225,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::fast_io::native_dll_file import_dll_file{};
         // DL handler
         wasm_dl_storage_t wasm_dl_storage{};
-        // One native setter can also be registered through weak-symbol aliases.
+        // One native setter may appear through multiple explicit library aliases.
         uwvm_set_wasip1_host_api_v1_t set_wasip1_host_api_v1{};
         // wasm_parameter_t
         ::uwvm2::uwvm::wasm::type::wasm_parameter_t wasm_parameter{};

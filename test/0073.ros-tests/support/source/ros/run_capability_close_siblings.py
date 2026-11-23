@@ -152,11 +152,11 @@ try:
   phase_write(phase,'finish');assert finish(node,nr,5)==0
   raw=pathlib.Path(gr['log']).read_text();audit=[v for v in raw.splitlines() if 'ros_audit ' in v]
   assert any('operation=capability.close' in v and 'error=0' in v for v in audit)
-  if mode=='old':assert any('operation=event.poll' in v and 'error=9' in v for v in audit)
+  if mode=='old':assert any('operation=message.poll' in v and 'error=9' in v for v in audit)
   else:
    assert sum('operation=capability.close' in v and 'error=0' in v for v in audit)==2
    guest=pathlib.Path(wr['log']).read_text();assert 'AFTER_CLOSE_DDS_RECEIVED' in guest and 'REOPENED_DDS_RECEIVED' in guest
-   assert not any('operation=event.poll' in v and 'error=9' in v for v in audit)
+   assert not any('operation=message.poll' in v and 'error=9' in v for v in audit)
   assert all('actual_main' in x for x in (wr,gr,nr))
   result={'name':mode,'status':'PASS' if code==0 else 'FAIL','expected_reproduction':mode=='old','worker_returncode':code,'resource':resource,'wat_sha256':sha(wat),'wasm_sha256':sha(wasm),'config_sha256':sha(config),'actual_worker_pid':wr['actual_main']['pid'],'actual_gateway_pid':gr['actual_main']['pid'],'actual_witness_pid':nr['actual_main']['pid'],'native_stages':stages,'gateway_audit':audit}
   doc['cases'].append(result);stop(gw,gr);print(json.dumps({k:result[k] for k in ('name','status','worker_returncode','native_stages')}),flush=True)

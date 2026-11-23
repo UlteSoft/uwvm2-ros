@@ -112,7 +112,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::imported::wasi::wasip1::storage
         ::uwvm2::utils::control::host_interfaces::policy interfaces{};
 
         // Host API export visibility override. This controls whether the stable
-        // local WASI Preview 1 host API is exported to preload-DL/weak-symbol
+        // local WASI Preview 1 host API is exported to explicit preload-DL
         // consumers for this target instead of using the global default.
         bool expose_host_api{};
         bool expose_host_api_is_set{};

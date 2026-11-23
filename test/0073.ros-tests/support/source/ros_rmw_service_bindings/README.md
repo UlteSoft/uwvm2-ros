@@ -17,7 +17,7 @@ codec, effective QoS, all source/observer/output limits and actual operation quo
 A field equality never creates rights or native facts.
 
 For a client, primary is `service.call` and auxiliary is **`event.observe`**.
-`event.poll` is a business action, not a capability operation. The observer keeps
+`message.poll` is a business action, not a capability operation. The observer keeps
 its own exact `builtin/event-v1` identity and original `event-source-alias`.
 It is not required to carry the service's Native type or QoS. The explicit kinds
 may contain only `service-response`, `resource-error`, `resource-closed` in the
@@ -84,7 +84,7 @@ The caller serializes access; this does not add locks, threads or concurrent RMW
 The18 groups use pure clearly synthetic capability VALUES, genuine current wire
 binding/event grammar and a standard library. They implement no Native/Host model
 provider or fake TypeSupport/hash. Groups cover response-only/full optional masks,
-wrong/duplicate/absent kinds, event.observe versus event.poll, independent observer
+wrong/duplicate/absent kinds, event.observe versus message.poll, independent observer
 identity and no invented native QoS, exact alias/resource, all8 server QoS fields,
 optional codec presence, full64 handle/owner/peer mismatches, persistent retirement,
 both sides' close, handle-free alias revoke, saved old sessions, multirow sweep,

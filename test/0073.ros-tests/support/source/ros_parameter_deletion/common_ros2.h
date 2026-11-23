@@ -102,7 +102,7 @@ namespace deletion_probe
  {
   auto until=std::chrono::steady_clock::now()+std::chrono::seconds(5);
   while(std::chrono::steady_clock::now()<until) {
-   auto r=client.call("event.poll",alias,{},1000);if(!r.error) { require(r.payload==expected,"whole deletion envelope equals independent SDK oracle");return; }
+   auto r=client.call("message.poll",alias,{},1000);if(!r.error) { require(r.payload==expected,"whole deletion envelope equals independent SDK oracle");return; }
    require(r.error==11&&r.payload.empty(),"waiting deletion has EAGAIN and empty payload");std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }require(false,"actual deletion event receipt deadline");
  }

@@ -20,9 +20,9 @@ export function main() {
     source = session.open('source');
     observer = session.open('observer');
     status(session.raw.topic_subscribe(source.handle));
-    status(observer.watchEvents(source));
+    status(observer.watchEventStream(source));
     const binding = new EventBinding(session.version, source.handle);
-    const initial = observer.pollEventV1();
+    const initial = observer.pollEventStream();
     check(initial.status === Status.AGAIN, 'No event before independent native publication');
     marker('JS_NATIVE_EVENTS_READY'); gate('P');
     let delivered = false;
@@ -31,7 +31,7 @@ export function main() {
       const readiness = observer.eventReadiness(); status(readiness);
       const counters = decodeEventReadiness(readiness.bytes);
       check(counters.nextEventBytes <= 4194304n, 'Bounded readiness snapshot');
-      const result = observer.pollEventV1();
+      const result = observer.pollEventStream();
       if (result.status === Status.AGAIN) { marker('JS_NATIVE_EVENTS_AGAIN'); continue; }
       status(result);
       const event = binding.decode(result.bytes);
@@ -43,7 +43,7 @@ export function main() {
     status(source.close());
     let closed = false;
     for (let attempt = 0; attempt < 200; ++attempt) {
-      gate('R'); const result = observer.pollEventV1();
+      gate('R'); const result = observer.pollEventStream();
       if (result.status === Status.AGAIN) { marker('JS_NATIVE_EVENTS_AGAIN'); continue; }
       status(result); const event = binding.decode(result.bytes);
       check(event.kind === EventKind.RESOURCE_CLOSED && event.body.length === 0 &&

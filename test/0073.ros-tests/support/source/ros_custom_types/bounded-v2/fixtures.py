@@ -22,7 +22,7 @@ def bounded_guest(version,mode):
     module='uwvm_ros'+str(version)+'_v1'
     imports=[('open','capability_open','i32 i64 i64 i64'),('close','capability_close','i64'),
         ('publish','topic_publish','i64 i32 i64 i64'),('subscribe','topic_subscribe','i64'),
-        ('poll','event_poll','i64 i32 i64 i64 i64'),('service','service_call','i64 i32 i64 i64 i64 i64 i64'),
+        ('poll','message_poll','i64 i32 i64 i64 i64'),('service','service_call','i64 i32 i64 i64 i64 i64 i64'),
         ('send','action_send_goal','i64 i32 i64 i64 i64 i64 i64')]
     lines=['(module',*[f'(import "{module}" "{name}" (func ${local} (param {params}) (result i32)))' for local,name,params in imports],
         '(import "wasi_snapshot_preview1" "fd_read" (func $read (param i32 i32 i32 i32) (result i32)))',

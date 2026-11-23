@@ -75,7 +75,7 @@ namespace action_limits_probe
         check(pump(executor,clock::now()+std::chrono::seconds(2),[&] { return acceptance.wait_for(std::chrono::milliseconds(0))==std::future_status::ready; }),"actual goal acceptance ACK");
         auto handle{acceptance.get()};check(handle!=nullptr,"actual native goal rejected");
         auto result{client->async_get_result(handle)};
-        auto ticket{poll(rpc,"event.poll","advertised",{})};
+        auto ticket{poll(rpc,"message.poll","advertised",{})};
         check(!ticket.error&&ticket.payload.size()==12&&ipc::get(ticket.payload.data()+8,4)==1,"exact incoming GoalID event ACK");
         auto id{ipc::get(ticket.payload.data(),8)};
         if(kind==4)

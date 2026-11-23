@@ -2883,7 +2883,7 @@ inline constexpr bool validate_all_wasm_code() noexcept
 
     for(auto const& [module_name, mod]: ::uwvm2::uwvm::wasm::storage::all_module)
     {
-        // Only Wasm modules contain code bodies for this validator.  Local imports, dynamic libraries, and weak symbols
+        // Only Wasm modules contain code bodies for this validator.  Local imports and explicitly preloaded dynamic libraries
         // provide host/runtime functions instead.
         switch(mod.type)
         {

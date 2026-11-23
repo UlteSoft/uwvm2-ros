@@ -20,7 +20,7 @@ uint32_t uwvm_ros1_capability_open(uint32_t m,uint64_t a,uint64_t l,uint64_t o) 
 uint32_t uwvm_ros1_capability_close(uint64_t h) {(void)h;++close_calls;return cleanup_error;}
 uint32_t uwvm_ros1_capability_revoke(uint64_t h) {(void)h;++revoke_calls;return cleanup_error;}
 /** @brief Error90 before the host writes any output length. */
-uint32_t uwvm_ros1_event_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)o;(void)c;(void)l;return 90;}
+uint32_t uwvm_ros1_message_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)o;(void)c;(void)l;return 90;}
 /** @brief Error90 before writing output length for a non-idempotent RPC. */
 uint32_t uwvm_ros1_service_call(uint64_t h,uint32_t m,uint64_t i,uint64_t n,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)i;(void)n;(void)o;(void)c;(void)l;return 90;}
 /** @brief Model a successful alias open for ROS2; create no native resource. */
@@ -29,7 +29,7 @@ uint32_t uwvm_ros2_capability_open(uint32_t m,uint64_t a,uint64_t l,uint64_t o) 
 uint32_t uwvm_ros2_capability_close(uint64_t h) {(void)h;++close_calls;return cleanup_error;}
 uint32_t uwvm_ros2_capability_revoke(uint64_t h) {(void)h;++revoke_calls;return cleanup_error;}
 /** @brief Error90 before the host writes any output length. */
-uint32_t uwvm_ros2_event_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)o;(void)c;(void)l;return 90;}
+uint32_t uwvm_ros2_message_poll(uint64_t h,uint32_t m,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)o;(void)c;(void)l;return 90;}
 /** @brief Error90 before writing output length for a non-idempotent RPC. */
 uint32_t uwvm_ros2_service_call(uint64_t h,uint32_t m,uint64_t i,uint64_t n,uint64_t o,uint64_t c,uint64_t l) {(void)h;(void)m;(void)i;(void)n;(void)o;(void)c;(void)l;return 90;}
 /** @brief Verify hosted/freestanding ownership helpers preserve caller length on both backends. */

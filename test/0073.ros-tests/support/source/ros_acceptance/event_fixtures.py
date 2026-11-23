@@ -16,8 +16,8 @@ ALIASES=("topic","topic-events","advertise","request-events","respond","call","r
 def seven_event_guest(version):
     if version not in (1,2):raise ValueError("explicit backend required")
     external=(('open','capability_open','i32 i64 i64 i64'),('close','capability_close','i64'),
-              ('watch','event_watch','i64 i64 i64'),('poll','event_poll_v1','i64 i32 i64 i64 i64'),
-              ('ready','event_ready','i64 i32 i64'),('submit','service_submit','i64 i64 i32 i64 i64 i64'),
+              ('watch','event_stream_watch','i64 i64 i64'),('poll','event_stream_poll','i64 i32 i64 i64 i64'),
+              ('ready','event_stream_ready','i64 i32 i64'),('submit','service_submit','i64 i64 i32 i64 i64 i64'),
               ('respond','service_respond','i64 i32 i64 i64 i64 i64 i64'),
               ('goal','action_send_goal','i64 i32 i64 i64 i64 i64 i64'))
     lines=[';; Finite real Wasm imports; no fabricated callbacks or native RPC client.', '(module']
@@ -34,7 +34,7 @@ def seven_event_guest(version):
              (2220,(6).to_bytes(4,'little')+b''.join(value.to_bytes(4,'little') for value in (0,1,1,2,3,5))))
     for offset,data in records:lines.append(f'(data (memory 1) (i32.const {offset}) "{escaped(data)}")')
     markers=('EVENTS_READY','EVENT_TOPIC_DONE','EVENT_REQUEST_DONE','EVENT_RESPONSE_DONE','EVENT_ERROR_DONE',
-             'EVENT_GOAL_WATCHED','EVENT_FEEDBACK_DONE','EVENT_RESULT_DONE','EVENT_CLOSED_DONE','PASS_WASM_SEVEN_EVENTS','EVENT_POLL_AGAIN')
+             'EVENT_GOAL_WATCHED','EVENT_FEEDBACK_DONE','EVENT_RESULT_DONE','EVENT_CLOSED_DONE','PASS_WASM_SEVEN_EVENTS','MESSAGE_POLL_AGAIN')
     for index,name in enumerate(markers):lines.append(f'(data (i32.const {512+64*index}) "{name}\\0a")')
     def emit(name):return f'(call $emit (i32.const {512+64*markers.index(name)}) (i32.const {len(name)+1}))'
     lines += ['''
@@ -79,7 +79,7 @@ def seven_event_guest(version):
           (call $assert (i64.eq (i64.load 1 (i32.const 9000)) (i64.const -1)))
           (call $untouched)
           (local.set $attempts (i32.add (local.get $attempts) (i32.const 1)))
-          (call $assert (i32.lt_u (local.get $attempts) (i32.const 200)))''',emit('EVENT_POLL_AGAIN'),'''(br $retry)))
+          (call $assert (i32.lt_u (local.get $attempts) (i32.const 200)))''',emit('MESSAGE_POLL_AGAIN'),'''(br $retry)))
         (call $check (call $poll (local.get $observer) (i32.const 1) (i64.const 8192) (i64.const 256) (i64.const 9000)))
         (call $protected)
         (call $assert (i64.eq (i64.load 1 (i32.const 9000)) (i64.add (i64.const 64) (local.get $body))))

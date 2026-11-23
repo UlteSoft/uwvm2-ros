@@ -37,7 +37,7 @@ class Model(LocalBackend):
     def invoke(self, name, handle=0, payload=b'', capacity=0, other=0, correlation=0):
         if self.replies.get(name):
             return super().invoke(name, handle, payload, capacity, other, correlation)
-        if name in ('event_poll', 'event_poll_v1'):
+        if name in ('message_poll', 'event_stream_poll'):
             self.calls.append((name, handle, payload, capacity, other, correlation))
             return Result(11)
         if name == 'service_submit':
@@ -96,7 +96,7 @@ class ServiceFutureContracts(unittest.TestCase):
         if body is None:
             body = AddTwoInts.Response._encode(AddTwoInts.Response(sum=42))
         kind = kwargs.pop('kind', 3)
-        self.model.replies['event_poll_v1'] = [Result(0, event(sequence,
+        self.model.replies['event_stream_poll'] = [Result(0, event(sequence,
             client._resource.owner.handle, kind=kind, correlation=request, body=body, **kwargs))]
 
     def test_full_signed64_fields_and_std_services(self):
@@ -153,17 +153,17 @@ class ServiceFutureContracts(unittest.TestCase):
             response.sum = request.a + request.b
             return response
         self.server(callback)
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', (1 << 63) + 7, 41, 1))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', (1 << 63) + 7, 41, 1))]
         rclpy.spin_once(self.node, timeout_sec=0)
         self.assertEqual(requests, [(41, 1, AddTwoInts.Response)])
         self.assertEqual(self.calls('service_respond')[-1][2], struct.pack('<Qq', (1 << 63) + 7, 42))
 
     def test_zero_id_bad_request_and_bad_response_never_send(self):
         server = self.server(lambda request, response: None)
-        self.model.replies['event_poll'] = [Result(0, b'\0' * 24)]
+        self.model.replies['message_poll'] = [Result(0, b'\0' * 24)]
         with self.assertRaises(ValueError):
             rclpy.spin_once(self.node, timeout_sec=0)
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 9, 1, 2))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 9, 1, 2))]
         with self.assertRaises(TypeError):
             rclpy.spin_once(self.node, timeout_sec=0)
         self.assertFalse(self.calls('service_respond'))
@@ -186,7 +186,7 @@ class ServiceFutureContracts(unittest.TestCase):
             response.sum = 42
             return response
         self.server(callback)
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 1, 41, 1))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 1, 41, 1))]
         rclpy.spin_once(self.node, timeout_sec=0)
         self.assertTrue(self.context.ok()); self.assertFalse(self.calls('capability_close'))
 
@@ -195,7 +195,7 @@ class ServiceFutureContracts(unittest.TestCase):
         def fail(request, response):
             raise primary
         self.server(fail)
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
         with self.assertRaises(BaseException) as error:
             rclpy.spin_once(self.node, timeout_sec=0)
         self.assertIs(error.exception, primary)
@@ -206,7 +206,7 @@ class ServiceFutureContracts(unittest.TestCase):
     def test_default_logger_remains_lazy_callback_refusal(self):
         self.server(lambda request, response: self.logged_response(response))
         before = len(self.calls('capability_open'))
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
         with self.assertRaises(RosError) as error:
             rclpy.spin_once(self.node, timeout_sec=0)
         self.assertEqual(error.exception.error, 17)
@@ -221,7 +221,7 @@ class ServiceFutureContracts(unittest.TestCase):
         self.context.prepare_callback_logging = True  # Model the selected pre-init profile.
         self.server(lambda request, response: self.logged_response(response))
         self.assertEqual([row[2] for row in self.calls('capability_open')], [b'logger', b'advertise', b'respond'])
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 1, 1, 2))]
         before = len(self.calls('capability_open'))
         rclpy.spin_once(self.node, timeout_sec=0)
         self.assertEqual(len(self.calls('capability_open')), before)
@@ -246,7 +246,7 @@ class ServiceFutureContracts(unittest.TestCase):
         call = self.calls('service_submit')[-1]
         self.assertEqual(call[2], struct.pack('<qq', 41, 1))
         self.assertEqual(call[4], client._observer.owner.handle)
-        self.assertEqual(len(self.calls('event_watch')), 1)
+        self.assertEqual(len(self.calls('event_stream_watch')), 1)
         self.assertFalse(self.calls('service_call'))
         self.queue(client); rclpy.spin_once(self.node, timeout_sec=0)
         self.assertTrue(future.done()); self.assertEqual(future.result().sum, 42)
@@ -443,7 +443,7 @@ class ServiceFutureContracts(unittest.TestCase):
         configured[('service_respond', '/add_two_ints', AddTwoInts._ROSWASM_TYPE)] = AliasBinding('respond', 10, 8)
         configured[('log_write', '/minimal_service', '')] = AliasBinding('logger')
         context = Context(); context.configure(configured, idle_wait=lambda: False, prepare_callback_logging=True)
-        self.model.replies['event_poll'] = [Result(0, struct.pack('<Qqq', 7, 41, 1))]
+        self.model.replies['message_poll'] = [Result(0, struct.pack('<Qqq', 7, 41, 1))]
         with patch('rclpy._default_context', context), patch('rclpy.context.Backend', return_value=self.model):
             module.main()
         self.assertFalse(context.ok())

@@ -65,17 +65,17 @@ int main(int argc,char** argv)
             for(unsigned n{};n!=100;++n)
             {
                 node->set_parameter(rclcpp::Parameter{"value","selected event"});std::this_thread::sleep_for(std::chrono::milliseconds(20));
-                auto event{client.call("event.poll","events",{},2500)};
+                auto event{client.call("message.poll","events",{},2500)};
                 if(!event.error) { ipc::parameter_event parsed; require(ipc::decode_parameter_event(event.payload,parsed)&&parsed.node=="/uwvm_resources/native"&&parsed.name=="value"&&parsed.value=="selected event"&&parsed.kind==2,"actual selected canonical ParameterEvent content");received=true;break; }
                 require(event.error==11,"empty ParameterEvent queue returns bounded EAGAIN");
             }
             require(received,"real ParameterEvent delivered after native mutation");
-            while(!client.call("event.poll","events",{},2500).error) {}
+            while(!client.call("message.poll","events",{},2500).error) {}
             node->set_parameter(rclcpp::Parameter{"other","hidden event"});std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            require(client.call("event.poll","events",{},2500).error==11,"neighbor parameter filtered before guest event queue");
+            require(client.call("message.poll","events",{},2500).error==11,"neighbor parameter filtered before guest event queue");
             require(!client.call("capability.revoke","events",{},1000).error,"ParameterEvent subscription revoked");
             node->set_parameter(rclcpp::Parameter{"value","revoked event"});std::this_thread::sleep_for(std::chrono::milliseconds(50));
-            require(client.call("event.poll","events",{},2500).error==125,"revoked event queue cannot deliver subsequent native events");
+            require(client.call("message.poll","events",{},2500).error==125,"revoked event queue cannot deliver subsequent native events");
             require(!client.call("param.declare","declare",string("local value"),2500).error,"explicit native gateway parameter declaration"); require(client.call("param.declare","declare",string("again"),2500).error==17,"duplicate declaration refused");
             require(!client.call("param.undeclare","undeclare",{},2500).error,"independently granted native gateway undeclare"); require(client.call("param.undeclare","undeclare",{},2500).error==2,"undeclared parameter no longer exists");
             {

@@ -71,29 +71,29 @@ def main():
     # Each tuple names an actual independent xmake invocation and expectation.
     cases = [('all-disabled', [], True, '')]
     for name in names:
-        cases.append((name + '-selected', ['--import-ros2=y', '--' + name + '=y',
+        cases.append((name + '-selected', ['--import-u2rosv1-ros2=y', '--' + name + '=y',
                       '--' + name + '-registry-header=' + str(first)], True, str(first)))
-        cases.append((name + '-missing-registry', ['--import-ros2=y', '--' + name + '=y'], False, None))
-        cases.append((name + '-disabled-injection', ['--import-ros2=y',
+        cases.append((name + '-missing-registry', ['--import-u2rosv1-ros2=y', '--' + name + '=y'], False, None))
+        cases.append((name + '-disabled-injection', ['--import-u2rosv1-ros2=y',
                       '--' + name + '-registry-header=' + str(first)], False, None))
     a, b = 'ros-vendor-unitree', 'ros-vendor-fanuc'
-    shared = ['--import-ros2=y', '--' + a + '=y', '--' + b + '=y',
+    shared = ['--import-u2rosv1-ros2=y', '--' + a + '=y', '--' + b + '=y',
               '--' + a + '-registry-header=' + str(first)]
     cases += [
         ('two-vendors-one-bundle', shared + ['--' + b + '-registry-header=' + str(first)], True, str(first)),
         ('two-independent-bundles-refused', shared + ['--' + b + '-registry-header=' + str(second)], False, None),
-        ('legacy-registry-conflict', ['--import-ros2=y', '--' + a + '=y',
+        ('legacy-registry-conflict', ['--import-u2rosv1-ros2=y', '--' + a + '=y',
             '--' + a + '-registry-header=' + str(first), '--ros-custom-registry-header=' + str(second)], False, None),
         ('no-implicit-backend', ['--' + a + '=y', '--' + a + '-registry-header=' + str(first)], False, None),
-        ('ros1-vendor-independent', ['--import-ros1=y', '--' + a + '=y',
+        ('ros1-vendor-independent', ['--import-u2rosv1-ros1=y', '--' + a + '=y',
             '--' + a + '-registry-header=' + str(first)], True, str(first)),
-        ('isaac-needs-ros2', ['--import-ros1=y', '--ros-platform-isaac-ros=y',
+        ('isaac-needs-ros2', ['--import-u2rosv1-ros1=y', '--ros-platform-isaac-ros=y',
             '--ros-platform-isaac-ros-registry-header=' + str(first)], False, None),
-        ('jetson-rejects-x86', ['--import-ros2=y', '--ros-platform-jetson=y'], False, None),
-        ('jetson-arm64-deployment', ['--import-ros2=y', '--ros-platform-jetson=y'], True, ''),
-        ('legacy-explicit-registry', ['--import-ros2=y',
+        ('jetson-rejects-x86', ['--import-u2rosv1-ros2=y', '--ros-platform-jetson=y'], False, None),
+        ('jetson-arm64-deployment', ['--import-u2rosv1-ros2=y', '--ros-platform-jetson=y'], True, ''),
+        ('legacy-explicit-registry', ['--import-u2rosv1-ros2=y',
             '--ros-custom-registry-header=' + str(first)], True, str(first)),
-        ('all-explicit-one-bundle', ['--import-ros2=y'] + [flag for name in names
+        ('all-explicit-one-bundle', ['--import-u2rosv1-ros2=y'] + [flag for name in names
             for flag in ('--' + name + '=y', '--' + name + '-registry-header=' + str(first))], True, str(first)),
     ]
     results = []
@@ -107,8 +107,8 @@ def main():
         # xmake project interpreter, rather than a Lua/Python mock parser.
         (case / 'xmake.lua').write_text('''set_xmakever("2.9.8")
 set_project("ros_vendor_configuration_contract")
-option("import-ros1", function() set_default(false) end)
-option("import-ros2", function() set_default(false) end)
+option("import-u2rosv1-ros1", function() set_default(false) end)
+option("import-u2rosv1-ros2", function() set_default(false) end)
 option("ros-custom-registry-header", function() set_default("none") end)
 includes("ros_vendors.lua")
 target("selection")

@@ -121,7 +121,7 @@ functions.capability_close = h => { calls.push(['capability_close', [h]]); retur
 functions.capability_revoke = h => { calls.push(['capability_revoke', [h]]); return revokeStatus; };
 functions.topic_subscribe = h => { calls.push(['topic_subscribe', [h]]); return 0; };
 functions.topic_publish = (...args) => { calls.push(['topic_publish', args]); return 0; };
-functions.event_poll = (h, m, o, c, s) => { calls.push(['event_poll', [h, m, o, c, s]]); if (!nextEvent) return 11; memoryRange(memory, o, BigInt(nextEvent.length)).set(nextEvent); writeLength(s, BigInt(nextEvent.length)); nextEvent = null; return 0; };
+functions.message_poll = (h, m, o, c, s) => { calls.push(['message_poll', [h, m, o, c, s]]); if (!nextEvent) return 11; memoryRange(memory, o, BigInt(nextEvent.length)).set(nextEvent); writeLength(s, BigInt(nextEvent.length)); nextEvent = null; return 0; };
 functions.service_call = (h, m, i, n, o, c, s) => { calls.push(['service_call', [h, m, i, n, o, c, s]]); if (mode === 'unknown90') return 90; if (mode === 'known90') { writeLength(s, 200n); return 90; } if (mode === 'grow') memory.grow(1); const b = C.ServiceResponse.encode({ success: true, message: 'ok' }); memoryRange(memory, o, BigInt(b.length)).set(b); writeLength(s, BigInt(b.length)); return 0; };
 const bridge = { memory, functions }, scratch = { offset: 1n, inputCapacity: 128, outputCapacity: 128 };
 const session = new Session(2, bridge, scratch), node = new Node(session);

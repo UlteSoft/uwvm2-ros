@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine setup once, then two read-only LLVM-full guest entries -> actual
 // before-park captures -> ONE cohort -> hostclose -> N -> publication -> owned
 // GC/exn/global/table/local/operand VIEW. No fake capture or restore authority.
@@ -45,7 +46,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{};
+    ::uwvm2::utils::container::std_u8string path{};
     image::owned_file_image::owner immutable{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -68,7 +69,7 @@ struct source_setup
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                    ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) { return false; }
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -142,6 +143,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2 && argc != 3) { return 64; }
     auto const option{argc == 3 ? ::fast_io::cstring_view{::fast_io::mnp::os_c_str(argv[2])} : ::fast_io::cstring_view{}};
@@ -166,7 +169,7 @@ int main(int argc, char** argv)
     features.disable_bulk_memory = false; features.explicit_enable_bulk_memory = true;
     if(atomic_workers) { features.disable_threads = false; features.explicit_enable_threads = true; }
     source_setup setup{};
-    setup.path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
+    setup.path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
     auto& arguments{::uwvm2::uwvm::cmdline::parsing_result};
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = nullptr; arguments.clear();
     arguments.emplace_back(::uwvm2::utils::cmdline::parameter_parsing_results{

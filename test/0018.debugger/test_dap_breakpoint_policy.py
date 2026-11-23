@@ -60,7 +60,9 @@ class Tests(unittest.TestCase):
             if condition == "\\x1b": condition = "\x1b"
             if condition == "x\\ncontinue": condition = "x\ncontinue"
             with self.subTest(condition=condition):
-                self.assertFalse(self.points(condition=condition)[0]["verified"])
+                result = self.send("setBreakpoints", source={"path": "source file.cpp"}, breakpoints=[{"line": 9, "condition": condition}])
+                self.assertFalse(result["success"])
+                self.assertTrue(result.get("message"))
                 self.assertEqual(self.broker.commands, [])
         self.broker.reject = True
         self.assertFalse(self.points(condition="run()")[0]["verified"])
@@ -75,7 +77,9 @@ class Tests(unittest.TestCase):
                        {"hitCondition": "4"}, {"hitCondition": "==4"}, {"hitCondition": "%4"},
                        {"hitCondition": ">18446744073709551616"}, {"hitCondition": ">3\ncontinue"}, {"hitCondition": 4}]:
             with self.subTest(policy=policy):
-                self.assertFalse(self.points(**policy)[0]["verified"])
+                result = self.send("setBreakpoints", source={"path": "source file.cpp"}, breakpoints=[{"line": 9, **policy}])
+                self.assertFalse(result["success"])
+                self.assertTrue(result.get("message"))
                 self.assertEqual(self.broker.commands, [])
         with self.assertRaises(ValueError):
             dap.breakpoint_ignore_count({"hitCondition": ">18446744073709551615"})
@@ -94,7 +98,8 @@ class Tests(unittest.TestCase):
         self.broker.reject = True
         self.assertFalse(self.points(hitCondition=">=4")[0]["verified"])
         self.assertEqual(self.broker.commands, ["breaksource 0 source file.cpp:9 ignore 3"])
-        self.assertEqual(self.adapter.breakpoints, {})
+        self.assertEqual(self.adapter.breakpoints, {"source file.cpp": []})
+        self.assertFalse(any(self.adapter.breakpoints.values()))
 
     def test_capabilities_are_explicit(self):
         body = self.send("initialize")["body"]

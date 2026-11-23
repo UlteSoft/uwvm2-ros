@@ -16,7 +16,10 @@ namespace eh = ::uwvm2::runtime::exception;
 namespace gc = ::uwvm2::uwvm::runtime::storage;
 namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
 namespace global = ::uwvm2::object::global;
-static ::std::size_t checks{}, actual_collections{}, actual_reclaimed{}, unwind_collections{};
+static ::std::size_t checks{};
+#if defined(UWVM_EXCEPTION_ROOT_SWEEP_PROBE)
+static ::std::size_t actual_collections{}, actual_reclaimed{}, unwind_collections{};
+#endif
 
 static void check(bool condition, char const* label) noexcept
 {
@@ -149,7 +152,7 @@ int main()
     gc::gc_reference array{};
     check(store->array_new(1u, gc::gc_object_value::i32(41u), 7uz, array) == gc::gc_object_status::ok, "real array allocation");
     auto const tag{::std::static_pointer_cast<void const>(::std::make_shared<unsigned char>())};
-    ::std::vector<eh::payload_field> fields{};
+    ::uwvm2::utils::container::std_vector<eh::payload_field> fields{};
     fields.push_back(wasm_field(structure));
     fields.push_back(wasm_field(array));
     fields.push_back(wasm_field(global::make_wasm_i31_reference(-19)));

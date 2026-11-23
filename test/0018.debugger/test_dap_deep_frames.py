@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata, code
 
 spec = importlib.util.spec_from_file_location("deep_frames_dap", Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py")
 dap = importlib.util.module_from_spec(spec)
@@ -31,6 +32,13 @@ class Broker:
 
     def request(self, command):
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop, epoch=7, functions=2)
+        if inventory is not None: return inventory
+        instructions = code(command, stop=self.stop, epoch=7, function=1)
+        if instructions is not None: return instructions
+        if command.startswith(("locals wasm 1 ", "controls 1 ", "saved 1 ", "handlers 1 ")):
+            first = int(command.split()[-2])
+            return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch=7 first={first} total=0\n"
         status = f"stopped: selected participant step\nstop-id {self.stop}\nthread 1 module=0 function=1 byte-offset=4 generation=7\n"
         if command == "status":
             return status

@@ -62,7 +62,8 @@ def main():
                    "--wasip1-single-enable", "main",
                    "--wasip1-single-interface", "main", "proc_exit", "allow",
                    "--wasip1-single-grant", "main", "proc-exit",
-                   "--wasip1-single-interface", "main", "thread-spawn", "deny",
+                   "--wasithread-single-create", "main", "--wasithread-single-enable", "main",
+                   "--wasithread-single-interface", "main", "thread-spawn", "deny",
                    "--wasm-preload-library", str(owner), "env"]
         if args.engine == "aot":
             command += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-llvm-jit-policy", "debug"]
@@ -80,7 +81,7 @@ def main():
                 code = "timeout"
         elapsed = time.monotonic() - begin
         output = stdout_path.read_text(errors="replace") + stderr_path.read_text(errors="replace")
-        refused = output.count("[host_denied_wasip1.thread-spawn]")
+        refused = output.count("[host_denied_wasithread.thread-spawn]")
         row = {"mode": mode, "workers": workers, "command": command, "exit": code,
                "seconds": elapsed, "timeout_seconds": args.timeout, "exact_denied_attempts": refused,
                "fault": human_fault(output), "stdout": str(stdout_path), "stderr": str(stderr_path),

@@ -290,14 +290,14 @@ function cases(version,spec) {
   rejected('nonreserved input address refuses',l=>command(version,spec,'capability_open',[0,l.input+1n,9n,l.slot],{input:new TextEncoder().encode('ungranted')}),2);
   rejected('transferred input length mismatch refuses',l=>command(version,spec,'capability_open',[0,l.input,8n,l.slot],{input:new TextEncoder().encode('ungranted')}),2);
   rejected('nonreserved output slot refuses',l=>command(version,spec,'capability_open',[0,l.input,9n,l.slot+1n],{input:new TextEncoder().encode('ungranted')}),2);
-  rejected('nonreserved poll output refuses',l=>command(version,spec,'event_poll',[HI,0,l.input,64n,l.slot]),2);
-  rejected('poll capacity exceeding reserved bytes refuses',l=>command(version,spec,'event_poll',[HI,0,l.output,4081n,l.slot]),2);
+  rejected('nonreserved poll output refuses',l=>command(version,spec,'message_poll',[HI,0,l.input,64n,l.slot]),2);
+  rejected('poll capacity exceeding reserved bytes refuses',l=>command(version,spec,'message_poll',[HI,0,l.output,4081n,l.slot]),2);
   rejected('snapshot exceeding reserved bytes refuses',l=>command(version,spec,'abi_version',[],{snapshot:4081}),2);
   rejected('scalar call refuses transferred payload',l=>command(version,spec,'abi_version',[],{input:Uint8Array.of(0)}),2);
   rejected('transferred input exceeding reserved capacity refuses',l=>command(version,spec,'abi_version',[],{input:new Uint8Array(4081)}),2);
   add('broken success length greater than capacity refuses',module=>{
-    const fault=({name,args,range})=>{if(name==='event_poll')view(range(Number(args[4]),8)).setBigUint64(0,65n,true);};fault.operation='event_poll';fault.status=0;
-    const r=execute(module,version,spec,{input:l=>command(version,spec,'event_poll',[HI,0,l.output,64n,l.slot]),fault});fatal(r,2);assert.equal(r.calls.length,2);return r;
+    const fault=({name,args,range})=>{if(name==='message_poll')view(range(Number(args[4]),8)).setBigUint64(0,65n,true);};fault.operation='message_poll';fault.status=0;
+    const r=execute(module,version,spec,{input:l=>command(version,spec,'message_poll',[HI,0,l.output,64n,l.slot]),fault});fatal(r,2);assert.equal(r.calls.length,2);return r;
   });
   add('input-front guard detects broken import write',module=>{
     const fault=({layout,range})=>{range(Number(layout.input-1n),1)[0]^=1;};

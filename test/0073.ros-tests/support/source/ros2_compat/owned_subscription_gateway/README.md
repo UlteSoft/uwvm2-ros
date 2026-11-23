@@ -57,7 +57,7 @@ owned source's `max-subscribers`, nor can an owned source activate over a legacy
 subscription. Every owned source handle still has its own registry entry and
 finite history/count admission. A failed creation does not silently switch to
 another route. Only final alias close erases route selection. Parameter events
-are deliberately excluded from this topic-only choice. Existing event.watch
+are deliberately excluded from this topic-only choice. Existing event.stream.watch
 payload subscriptions enter the same legacy subscribe method and obey the same
 route exclusion; metadata-only watches do not invent a native consumer.
 

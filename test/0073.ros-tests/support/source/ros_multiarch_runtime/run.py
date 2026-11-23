@@ -239,19 +239,19 @@ def advance(runner,child,row,marker,again,gateway):
 def event_exchange(frame,runner,worker,row,peer,peer_row,gateway,pid,version):
     runner.wait(worker,row,"EVENTS_READY")
     runner.send(peer,b"T");runner.wait(peer,peer_row,"TOPIC_NATIVE_SENT")
-    advance(runner,worker,row,"EVENT_TOPIC_DONE","EVENT_POLL_AGAIN",gateway)
+    advance(runner,worker,row,"EVENT_TOPIC_DONE","MESSAGE_POLL_AGAIN",gateway)
     runner.send(peer,b"S");runner.wait(peer,peer_row,"SERVICE_NATIVE_STARTED")
     for marker in ("EVENT_REQUEST_DONE","EVENT_RESPONSE_DONE","EVENT_ERROR_DONE"):
-        advance(runner,worker,row,marker,"EVENT_POLL_AGAIN",gateway)
+        advance(runner,worker,row,marker,"MESSAGE_POLL_AGAIN",gateway)
     runner.wait(worker,row,"EVENT_GOAL_WATCHED");runner.send(peer,b"F");runner.wait(peer,peer_row,"FEEDBACK_NATIVE_SENT")
-    advance(runner,worker,row,"EVENT_FEEDBACK_DONE","EVENT_POLL_AGAIN",gateway)
+    advance(runner,worker,row,"EVENT_FEEDBACK_DONE","MESSAGE_POLL_AGAIN",gateway)
     runner.send(peer,b"E");runner.wait(peer,peer_row,"ACTION_NATIVE_SENT")
     for marker in ("EVENT_RESULT_DONE","EVENT_CLOSED_DONE"):
-        advance(runner,worker,row,marker,"EVENT_POLL_AGAIN",gateway)
+        advance(runner,worker,row,marker,"MESSAGE_POLL_AGAIN",gateway)
     runner.wait(worker,row,"PASS_WASM_SEVEN_EVENTS");runner.finish(worker,row)
     expected=["EVENTS_READY","EVENT_TOPIC_DONE","EVENT_REQUEST_DONE","EVENT_RESPONSE_DONE","EVENT_ERROR_DONE",
               "EVENT_GOAL_WATCHED","EVENT_FEEDBACK_DONE","EVENT_RESULT_DONE","EVENT_CLOSED_DONE","PASS_WASM_SEVEN_EVENTS"]
-    require([x for x in runner.text(row).splitlines() if x!="EVENT_POLL_AGAIN"]==expected,"exact actual seven-event Guest transcript differs")
+    require([x for x in runner.text(row).splitlines() if x!="MESSAGE_POLL_AGAIN"]==expected,"exact actual seven-event Guest transcript differs")
     runner.send(peer,b"Q");runner.finish(peer,peer_row);native=runner.text(peer_row).splitlines()
     require(native[:5]==[f"{name} backend={version} pid={pid}" for name in ("READY_NATIVE_SEVEN_EVENTS","TOPIC_NATIVE_SENT",
             "SERVICE_NATIVE_STARTED","FEEDBACK_NATIVE_SENT","ACTION_NATIVE_SENT")] and len(native)==6,"exact native seven-event protocol differs")

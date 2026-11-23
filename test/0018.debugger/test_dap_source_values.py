@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("source_values_dap", ROOT / "tools/debug/dap_adapter.py")
@@ -48,6 +49,11 @@ class SourceBroker:
 
     def request(self, command):
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop_id, epoch=7, functions=2, memories=1)
+        if inventory is not None: return inventory
+        if command.startswith(("controls 1 0 ", "handlers 1 0 ", "saved 1 0 ")):
+            first = int(command.split()[-2])
+            return f"wasm-stop {self.stop_id}\nWasm state thread=1 module=0 epoch=7 first={first} total=0\n"
         if command == "status":
             return self.status()
         if command == "bt 1":
@@ -62,6 +68,8 @@ class SourceBroker:
             first, count = map(int, command.split()[-2:])
             rows = "local 0 i32 = 5\n" if first == 0 and count else ""
             return f"wasm-stop {self.stop_id}\nWasm state thread=1 module=0 epoch=7 first={first} total=1\n" + rows
+        if command.startswith("operands 1 0 "):
+            return f"wasm-stop {self.stop_id}\nWasm state thread=1 module=0 epoch=7 first=0 total=0\n"
         if command == "locals 1":
             return "local 0 i32=5\n"
         if command == "continue":
@@ -94,12 +102,9 @@ class SourceValuesTests(unittest.TestCase):
 
     def source_reference(self):
         scopes = self.scopes()
-        expected = ["Source variables", "Wasm locals", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"]
-        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
-        if hasattr(self.adapter, "ros_scope_stops"):
-            expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
-            self.assertTrue(all(row["expensive"] and row["variablesReference"] > 0 for row in scopes[6:]))
-            self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
+        expected = ["Source variables", "Wasm locals", "Wasm operand stack", "Wasm control stack",
+                    "Wasm saved parameters", "Wasm exception handlers", "Frame details"]
+        self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
         self.assertEqual([row["name"] for row in scopes], expected)
         return scopes[0]["variablesReference"]
 
@@ -117,7 +122,7 @@ class SourceValuesTests(unittest.TestCase):
     def test_wasm_scope_remains_independent(self):
         scopes = self.scopes()
         values = self.send("variables", variablesReference=next(row["variablesReference"] for row in scopes if row["name"] == "Wasm locals"))
-        self.assertEqual(values["body"]["variables"][0]["value"], "i32=5")
+        self.assertEqual(values["body"]["variables"][0]["value"], "5")
         self.assertEqual(self.broker.commands[-3:], ["status", "locals wasm 1 0 0 1", "status"])
 
     def test_same_pc_generation_new_pause_retires_source_references(self):
@@ -138,10 +143,11 @@ class SourceValuesTests(unittest.TestCase):
 
     def test_native_and_unidentified_stops_do_not_offer_source_scopes(self):
         self.broker.status_identified = False
-        self.assertEqual([row["name"] for row in self.scopes()], ["Wasm locals"])
+        self.assertFalse(self.send("stackTrace", threadId=1)["success"])
+        self.assertFalse(self.adapter.source_frames)
         self.broker.status_identified = True
         self.broker.native = True
-        self.assertEqual([scope["name"] for scope in self.scopes()], ["Registers"])
+        self.assertEqual([scope["name"] for scope in self.scopes()], ["Registers", "Frame details"])
 
     def test_resume_and_malformed_values_retire_all_source_labels(self):
         reference = self.source_reference()

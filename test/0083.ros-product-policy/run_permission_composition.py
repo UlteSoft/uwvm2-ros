@@ -81,13 +81,14 @@ def module(imports=(), body=b"", *, threaded=False, memory64=False, export="_sta
 
 
 def family(row):
-    if row["ns"] in ("wasi_snapshot_preview1", "wasi"): return "wasip1"
+    if row["ns"]=="wasi": return "wasithread"
+    if row["ns"]=="wasi_snapshot_preview1": return "wasip1"
     if row["ns"].startswith("uwvm_ros1_"): return "ros1"
     return "ros2"
 
 
 def key(row):
-    return row["name"] if family(row) == "wasip1" else row["ns"] + "." + row["name"]
+    return row["name"] if family(row) in ("wasip1","wasithread") else row["ns"] + "." + row["name"]
 
 
 def policy(rows, state, target="main"):
@@ -114,7 +115,7 @@ def main():
                         default=["exposure", "contracts", "sockets"])
     parser.add_argument("--socket-ros", nargs="+", choices=["none", "ros1", "ros2"], default=["none", "ros1", "ros2"])
     parser.add_argument("--socket-profiles", nargs="+", choices=["ordinary", "threaded"], default=["ordinary", "threaded"])
-    parser.add_argument("--families", nargs="+", choices=["wasip1", "ros1", "ros2"], default=["wasip1", "ros1", "ros2"],
+    parser.add_argument("--families", nargs="+", choices=["wasip1", "wasithread", "ros1", "ros2"], default=["wasip1", "wasithread", "ros1", "ros2"],
                         help="Select exposure/contract families explicitly; unsupported ROS backends are not silently passed")
     args = parser.parse_args()
     if not isinstance(args.runtime_prefix, list) or not all(isinstance(v, str) for v in args.runtime_prefix):
@@ -163,16 +164,15 @@ def main():
                 "--" + group + "-single-enable", "main"], wasm, succeeds=False,
                 contains=("interface exposure permission is hidden",))
             # Validation, including all exact signatures, succeeds at state 1.
-            if row["ns"] != "wasi":
-                run("interface-deny-validates-" + str(i), args.engines[0], ["--mode", "validation", *policy([row], "deny")], wasm)
+            run("interface-deny-validates-" + str(i), args.engines[0], ["--mode", "validation", *policy([row], "deny")], wasm)
     if "contracts" in args.suites:
-        returning = [r for r in rows if r["results"] and r["ns"] != "wasi"]
+        returning = [r for r in rows if r["results"]]
         body = store(0, 123456789)
         for i, row in enumerate(returning):
-            body += check(invoke(row, i), 76 if family(row) == "wasip1" else 13, row["results"][0])
+            body += check(invoke(row, i), -1 if family(row)=="wasithread" else 76 if family(row)=="wasip1" else 13, row["results"][0])
         body += check(const(0) + b"\x28\x02\0", 123456789)
         wasm = fixture("all-denied", module(returning, body))
-        representative = {"wasip1": "wasip1.random_get denied", "ros1": "ros1.uwvm_ros1_v1.abi_version denied",
+        representative = {"wasithread":"wasithread.thread-spawn denied", "wasip1": "wasip1.random_get denied", "ros1": "ros1.uwvm_ros1_v1.abi_version denied",
                           "ros2": "ros2.uwvm_ros2_v1.abi_version denied"}
         for engine in args.engines:
             denied = run("all-denied", engine, policy(returning, "deny"), wasm,

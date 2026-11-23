@@ -1,3 +1,4 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Actual setup then two read-only LLVM-full guests. New instance census under
 // one real pause/cohort/hostclose/N/publication, not a copied debugger VIEW.
 // The const graph is logical DATA; whole-instance restoration is not claimed.
@@ -45,7 +46,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{};
+    ::uwvm2::utils::container::std_u8string path{};
     image::owned_file_image::owner immutable{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -71,7 +72,7 @@ struct source_setup
             // These modules have no start functions. Complete ordinary segment
             // instantiation, including passive expression payloads, BEFORE any
             // setup guest entry or source seal; true would leave it deferred.
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(false);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(false)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -236,6 +237,8 @@ static auto paused_captures(::std::shared_ptr<observer> const& state)
 }
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2 && argc != 3) { return 64; }
     bool const exercise_indirect{argc==3};
@@ -260,7 +263,7 @@ int main(int argc, char** argv)
     features.disable_simd = false; features.explicit_enable_simd = true;
     features.disable_bulk_memory = false; features.explicit_enable_bulk_memory = true;
     source_setup setup{};
-    setup.path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
+    setup.path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
     auto& arguments{::uwvm2::uwvm::cmdline::parsing_result};
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = nullptr; arguments.clear();
     arguments.emplace_back(::uwvm2::utils::cmdline::parameter_parsing_results{

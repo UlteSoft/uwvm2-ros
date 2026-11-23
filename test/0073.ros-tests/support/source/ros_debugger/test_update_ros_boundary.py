@@ -17,7 +17,7 @@ NEW_STOP = STOP.replace('stop-id 11', 'stop-id 12').replace('generation=1', 'gen
 REPLACE = 'replace 0 0 1 /trusted/replacement.body'
 SCRIPT = 'wasm-script status; replace 0 0 1 /trusted/replacement.body'
 COMMON = frozenset('''abi_version capability_open capability_close capability_revoke
-topic_publish topic_subscribe event_poll event_watch event_poll_v1 event_ready
+topic_publish topic_subscribe message_poll event_stream_watch event_stream_poll event_stream_ready
 service_submit service_call service_advertise service_respond action_send_goal
 action_cancel_own_goal action_cancel_any_goal action_receive_feedback
 action_receive_result action_advertise action_respond tf_lookup tf_broadcast

@@ -2,6 +2,7 @@
 # define _LARGEFILE64_SOURCE 1
 #endif
 #include <fcntl.h>
+#include <utility>
 #include <fast_io.h>
 
 #if !defined(__linux__)
@@ -30,7 +31,7 @@ inline constexpr bool sdk_symbol_available = true;
 inline constexpr bool sdk_symbol_available = false;
 #endif
 inline constexpr bool sdk_wide{sdk_symbol_available && ::std::numeric_limits<sdk_offset>::is_signed &&
-    ::std::numeric_limits<sdk_offset>::digits >= ::std::numeric_limits<::fast_io::intfpos_t>::digits};
+    ::std::in_range<sdk_offset>((::std::numeric_limits<::fast_io::intfpos_t>::max)())};
 static_assert(public_advisory_available<::fast_io::posix_io_observer> == sdk_wide);
 
 int main()

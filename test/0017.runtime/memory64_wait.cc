@@ -39,6 +39,11 @@ unsigned invoke(d::native_memory_t& memory,std::uint64_t offset,std::uint64_t ad
 template<auto Option>void run(){test::cases<d::native_memory_t>([]<unsigned Operation>(auto& memory,auto offset,auto address,auto expected,auto timeout){return invoke<Operation,Option>(memory,offset,address,expected,timeout);});}
 int main()
 {
+ // Explicit test deployment budget for two sparse >4 GiB address spaces.
+ // The cgroup still bounds physical memory; only touched pages are committed.
+ namespace budget=::uwvm2::utils::allocator::resource;
+ budget::policies[static_cast<unsigned>(budget::pool::memory)]={budget::host_bytes(16ull<<30),budget::host_bytes(32ull<<30)};
+ budget::initializer_allocation_bytes=budget::host_bytes(16ull<<30);
  o::trap_unaligned_atomic_func=alignment_trap;o::trap_memory_out_of_bounds_func=bounds_trap;o::trap_atomic_wait_func=wait_trap;
  run<byref>();run<tail>();std::printf("PASS memory64 interpreter wait/notify: %u checks; byref/musttail, exact diagnostics; shared policies also cover high addresses, growth, cancellation\n",test::checks);
 }

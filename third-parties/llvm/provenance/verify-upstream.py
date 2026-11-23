@@ -69,6 +69,9 @@ CHANGED |= {
 CHANGED |= {'llvm/lib/Target/ARM/ARMISelLowering.cpp',
             'llvm/lib/Target/ARM/ARMFrameLowering.cpp',
             'llvm/lib/Target/AArch64/AArch64FrameLowering.cpp'}
+CHANGED |= {'llvm/include/llvm/PassAnalysisSupport.h',
+            'llvm/lib/IR/LegacyPassManager.cpp'}
+CHANGED |= {'llvm/include/llvm/CodeGen/LiveVariables.h'}
 BUILD_POLICY_CHANGED = {'llvm/lib/CodeGen/CMakeLists.txt', 'llvm/cmake/config-ix.cmake'}
 ADDED = {'llvm/test/CodeGen/SystemZ/load-trap-motion.ll',
          'llvm/test/CodeGen/RISCV/rtdyld-call-range.s',

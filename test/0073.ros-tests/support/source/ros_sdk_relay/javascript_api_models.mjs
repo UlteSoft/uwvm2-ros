@@ -82,7 +82,7 @@ function setupSync(version,allowed=[],handler=()=>({status:0,bytes:new Uint8Arra
     if(!handles.has(args[0]))return 9;
     const reply=handler(q);
     if(reply.status)return reply.status;
-    if(name==='event_poll'||entry.parameters.length===7) {const output=name==='event_poll'?args[2]:args[4],capacity=name==='event_poll'?args[3]:args[5],slot=name==='event_poll'?args[4]:args[6],bytes=reply.bytes??new Uint8Array();assert.ok(BigInt(bytes.length)<=capacity);memoryRange(memory,output,BigInt(bytes.length)).set(bytes);store(slot,BigInt(bytes.length));}
+    if(name==='message_poll'||entry.parameters.length===7) {const output=name==='message_poll'?args[2]:args[4],capacity=name==='message_poll'?args[3]:args[5],slot=name==='message_poll'?args[4]:args[6],bytes=reply.bytes??new Uint8Array();assert.ok(BigInt(bytes.length)<=capacity);memoryRange(memory,output,BigInt(bytes.length)).set(bytes);store(slot,BigInt(bytes.length));}
     return 0;
   }]));
   const session=new S.Session(version,{memory,functions},{offset:1n,inputCapacity:512,outputCapacity:512}),context=new S.Context(session),node=context.createNode();
@@ -103,7 +103,7 @@ test('typed service response copied once',async()=>{
 });
 test('service callback after borrow and exact request ID',async()=>{
   const request=new C.Writer().u64(HI).finish();let response;
-  const f=await setup(1,['adv','reply','pub'],q=>{if(q.name==='event_poll')return {status:0,bytes:request};if(q.name==='service_respond')response=q.input;return {status:0,bytes:new Uint8Array()};});
+  const f=await setup(1,['adv','reply','pub'],q=>{if(q.name==='message_poll')return {status:0,bytes:request};if(q.name==='service_respond')response=q.input;return {status:0,bytes:new Uint8Array()};});
   try {const pub=await f.node.createPublisher('pub'),server=await f.node.createService('adv','reply',async()=>{assert.equal(await pub.publish('inside handler'),0);return {success:true,message:'ok'};});assert.equal(await server.spinOnce(),0);assert.deepEqual(response,C.encodeServiceReply(HI,{success:true,message:'ok'}));}finally{await f.close();}
 });
 test('service activation failure rolls both handles back',async()=>{
@@ -130,7 +130,7 @@ test('Action feedback and terminal codecs remain distinct',async()=>{
   try {const client=await f.node.createActionClient({send:'send',feedback:'feedback',result:'result'});assert.equal((await client.feedback(HI)).value.kind,0);assert.equal((await client.result(HI)).value.kind,2);assert.throws(()=>C.ActionResult.decode(C.ActionResponse.encode({goalId:HI,kind:1,values:[]})),RangeError);}finally{await f.close();}
 });
 test('Action server preserves received ID',async()=>{
-  const f=await setup(2,['adv','reply'],q=>({status:0,bytes:q.name==='event_poll'?C.IncomingGoal.encode({goalId:HI,order:3}):new Uint8Array()}));
+  const f=await setup(2,['adv','reply'],q=>({status:0,bytes:q.name==='message_poll'?C.IncomingGoal.encode({goalId:HI,order:3}):new Uint8Array()}));
   try {const server=await f.node.createActionServer('adv','reply',goal=>({kind:2,values:[goal.order],goalId:1n}));assert.equal(await server.spinOnce(),0);assert.equal(C.ActionResponse.decode(f.calls.at(-1).input).goalId,HI);}finally{await f.close();}
 });
 test('exact typed int64 parameter roundtrip',async()=>{
@@ -143,7 +143,7 @@ test('ROS1 exists/search/delete remain separately granted',async()=>{
 });
 test('typed parameter event local callback after copy',async()=>{
   const event={seconds:1,nanoseconds:2,kind:2,tag:2,node:'/node',name:'counter',value:HI-0x8000000000000000n};
-  const f=await setup(2,['events','pub'],q=>({status:0,bytes:q.name==='event_poll'?C.TypedParameterEvent.encode(event):undefined}));
+  const f=await setup(2,['events','pub'],q=>({status:0,bytes:q.name==='message_poll'?C.TypedParameterEvent.encode(event):undefined}));
   try {const p=await f.node.createParameters({events:'events'}),pub=await f.node.createPublisher('pub');let count=0;const remove=p.onEvent(async v=>{assert.deepEqual(v,event);assert.equal(await pub.publish('callback'),0);count++;});assert.equal(await p.subscribeEvents(),0);await p.pollEvent();remove();assert.equal(count,1);}finally{await f.close();}
 });
 test('graph exact rows and mutation guard',async()=>{
@@ -248,7 +248,7 @@ test('async Action mismatched IDs refuse without replay or prior result mutation
  * import counts and real linear-memory snapshots must remain unchanged on17.
  */
 function syncGuardCase(kind) {
-  const f=setupSync(2,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?eventFor(kind):new Uint8Array()}));let resource,count=0,next=0;
+  const f=setupSync(2,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?eventFor(kind):new Uint8Array()}));let resource,count=0,next=0;
   try {
     resource=syncResource(f,kind,function(){
       assert.equal(this,resource);++count;const calls=f.calls.length,memory=new Uint8Array(f.memory.buffer).slice();assert.equal(resource.spinOnce(),17);
@@ -272,7 +272,7 @@ test('sync ActionServer direct and group retirement reentry is side-effect free'
  * refusal. Every pending owner/Node/Context remains retryably open after17.
  */
 async function asyncGuardCase(kind) {
-  const f=await setup(1,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?eventFor(kind):new Uint8Array()}));let resource,count=0,next=0,release,entered;
+  const f=await setup(1,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?eventFor(kind):new Uint8Array()}));let resource,count=0,next=0,release,entered;
   const hold=new Promise(resolve=>release=resolve),ready=new Promise(resolve=>entered=resolve);
   try {
     resource=await asyncResource(f,kind,async function(){assert.equal(this,resource);++count;entered();await hold;return responseFor(kind);});
@@ -292,14 +292,14 @@ test('async Subscription awaited callback blocks every owner cleanup bypass',()=
 test('async Service awaited handler blocks every owner cleanup bypass',()=>asyncGuardCase('service'));
 test('async ActionServer awaited handler blocks every owner cleanup bypass',()=>asyncGuardCase('action'));
 function syncThrowCase(kind) {
-  const f=setupSync(1,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?eventFor(kind):new Uint8Array()})),error=new Error('explicit local callback failure');
+  const f=setupSync(1,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?eventFor(kind):new Uint8Array()})),error=new Error('explicit local callback failure');
   try {const resource=syncResource(f,kind,()=>{throw error;});assert.throws(()=>resource.spinOnce(),e=>e===error);assert.equal(resource.spinning,false);assert.equal(f.calls.filter(q=>q.name==='service_respond'||q.name==='action_respond').length,0);let count=0;install(resource,kind,()=>{++count;return responseFor(kind);});assert.equal(resource.spinOnce(),0);assert.equal(count,1);assert.deepEqual(resource.revoke(),kind==='subscription'?0:[0,0]);assert.equal(f.handles.size,0);}finally {f.close();}
 }
 test('sync Subscription callback throw releases its intrinsic and shared leases',()=>syncThrowCase('subscription'));
 test('sync Service callback throw releases its intrinsic and shared leases',()=>syncThrowCase('service'));
 test('sync ActionServer callback throw releases its intrinsic and shared leases',()=>syncThrowCase('action'));
 async function asyncRejectCase(kind) {
-  const f=await setup(2,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?eventFor(kind):new Uint8Array()})),error=new Error('explicit local callback rejection');
+  const f=await setup(2,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?eventFor(kind):new Uint8Array()})),error=new Error('explicit local callback rejection');
   try {const resource=await asyncResource(f,kind,async()=>{await Promise.resolve();throw error;});await assert.rejects(()=>resource.spinOnce(),e=>e===error);assert.equal(resource.spinning,false);assert.equal(f.calls.filter(q=>q.name==='service_respond'||q.name==='action_respond').length,0);let count=0;install(resource,kind,async()=>{++count;return responseFor(kind);});assert.equal(await resource.spinOnce(),0);assert.equal(count,1);assert.deepEqual(kind==='subscription'?await resource.revoke():asyncStatuses(await resource.revoke()),kind==='subscription'?0:[0,0]);assert.equal(f.handles.size,0);}finally {await f.close();}
 }
 test('async Subscription rejection releases its intrinsic and shared leases',()=>asyncRejectCase('subscription'));
@@ -307,22 +307,22 @@ test('async Service rejection releases its intrinsic and shared leases',()=>asyn
 test('async ActionServer rejection releases its intrinsic and shared leases',()=>asyncRejectCase('action'));
 test('all six polling facades reset leases after malformed decoded input',async()=>{
   for(const kind of ['subscription','service','action'])for(const asynchronous of [false,true]) {
-    let bad=true;const make=asynchronous?setup:setupSync,f=await make(2,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?(bad?Uint8Array.of(0):eventFor(kind)):new Uint8Array()}));let count=0;
+    let bad=true;const make=asynchronous?setup:setupSync,f=await make(2,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?(bad?Uint8Array.of(0):eventFor(kind)):new Uint8Array()}));let count=0;
     try {const resource=await (asynchronous?asyncResource:syncResource)(f,kind,()=>{++count;return responseFor(kind);});if(asynchronous)await assert.rejects(()=>resource.spinOnce(),RangeError);else assert.throws(()=>resource.spinOnce(),RangeError);assert.equal(count,0);assert.equal(resource.spinning,false);bad=false;assert.equal(await resource.spinOnce(),0);assert.equal(count,1);await f.context.shutdown();assert.equal(f.handles.size,0);}finally {await f.close();}
   }
 });
 test('async polling retains the original callable before the first awaited poll',async()=>{
   for(const kind of ['subscription','service','action']) {
-    const f=await setup(2,allowedFor(kind),q=>({status:0,bytes:q.name==='event_poll'?eventFor(kind):new Uint8Array()}));let release,original=0,next=0;const hold=new Promise(resolve=>release=resolve);
+    const f=await setup(2,allowedFor(kind),q=>({status:0,bytes:q.name==='message_poll'?eventFor(kind):new Uint8Array()}));let release,original=0,next=0;const hold=new Promise(resolve=>release=resolve);
     try {const resource=await asyncResource(f,kind,async()=>{++original;return responseFor(kind,'original');}),poll=f.session.poll.bind(f.session);f.session.poll=async(...args)=>{await hold;return poll(...args);};const pending=resource.spinOnce();install(resource,kind,async()=>{++next;return responseFor(kind,'next');});release();assert.equal(await pending,0);assert.equal(original,1);assert.equal(next,0);f.session.poll=poll;assert.equal(await resource.spinOnce(),0);assert.equal(original,1);assert.equal(next,1);}finally {release();await f.close();}
   }
 });
 test('async group cleanup excludes a new poll until every attempted owner completes',async()=>{
-  const f=await setup(2,['adv','reply'],q=>({status:0,bytes:q.name==='event_poll'?eventFor('service'):new Uint8Array()}));let release,entered;const hold=new Promise(resolve=>release=resolve),ready=new Promise(resolve=>entered=resolve);
+  const f=await setup(2,['adv','reply'],q=>({status:0,bytes:q.name==='message_poll'?eventFor('service'):new Uint8Array()}));let release,entered;const hold=new Promise(resolve=>release=resolve),ready=new Promise(resolve=>entered=resolve);
   try {const resource=await f.node.createService('adv','reply',()=>({success:true,message:'never called'})),handle=f.session.handle.bind(f.session);let first=true;f.session.handle=async(...args)=>{if(first&&args[0]==='capability_close'){first=false;entered();await hold;}return handle(...args);};const pending=f.node.close();await ready;const before=f.calls.length;assert.equal(await resource.spinOnce(),17);assert.equal(await resource.respond.close(),17);assert.equal(resource.respond.closed,false);await assert.rejects(()=>resource.respond.request('service_respond',C.encodeServiceReply(HI,{success:true,message:''})),e=>e.code===17);await assert.rejects(()=>f.context.shutdown(),e=>e.code===17);assert.equal(f.context.closed,false);assert.equal(f.calls.length,before);release();assert.deepEqual(asyncStatuses(await pending),[0,0]);assert.equal(f.handles.size,0);assert.equal(resource.spinning,false);}finally {release();await f.close();}
 });
 test('busy Action handler may issue exact-ID feedback before its terminal response',async()=>{
-  const f=await setup(1,['adv','reply'],q=>({status:0,bytes:q.name==='event_poll'?eventFor('action'):new Uint8Array()}));let resource;
+  const f=await setup(1,['adv','reply'],q=>({status:0,bytes:q.name==='message_poll'?eventFor('action'):new Uint8Array()}));let resource;
   try {resource=await f.node.createActionServer('adv','reply',async goal=>{assert.equal((await resource.respond.request('action_respond',C.ActionResponse.encode({goalId:goal.goalId,kind:1,values:[0,1]}))).status,0);return {kind:2,values:[0,1]};});assert.equal(await resource.spinOnce(),0);const replies=f.calls.filter(q=>q.name==='action_respond').map(q=>C.ActionResponse.decode(q.input));assert.deepEqual(replies.map(v=>[v.goalId,v.kind]),[[HI,1],[HI,2]]);}finally {await f.close();}
 });
 

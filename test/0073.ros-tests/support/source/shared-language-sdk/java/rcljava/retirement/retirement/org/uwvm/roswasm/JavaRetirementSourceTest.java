@@ -39,7 +39,7 @@ public final class JavaRetirementSourceTest {
             if(op.equals("abi_version"))return Result.value(1);
             if(op.equals("capability_open")){++opens;return Result.value(next++);}
             if(op.equals("topic_subscribe"))return new Result(subscribeCode);
-            if(op.equals("event_poll"))return poll;
+            if(op.equals("message_poll"))return poll;
             return new Result(0);
         }
         public Result retire(String op,long handle,byte[] input,RetirementAttempt attempt){

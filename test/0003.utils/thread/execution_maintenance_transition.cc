@@ -7,6 +7,8 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+// Re-derive private capability macros after public headers restore their scope.
+#include <uwvm2/utils/macro/push_macros.h>
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
 using domain = ::uwvm2::utils::thread::execution_domain;
 static void require(bool value, char const* reason)
@@ -76,3 +78,5 @@ int main()
 #else
 int main() { return 77; }
 #endif
+
+#include <uwvm2/utils/macro/pop_macros.h>

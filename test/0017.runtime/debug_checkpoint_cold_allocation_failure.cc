@@ -4,15 +4,7 @@
 #include <cstdlib>
 #include <new>
 #include <source_location>
-static volatile bool reject_next_allocation{};
-void* operator new(std::size_t bytes)
-{
-    if(reject_next_allocation) { reject_next_allocation=false; throw std::bad_alloc{}; }
-    if(auto p=std::malloc(bytes ? bytes : 1u)) { return p; }
-    throw std::bad_alloc{};
-}
-void operator delete(void* pointer) noexcept { std::free(pointer); }
-void operator delete(void* pointer,std::size_t) noexcept { std::free(pointer); }
+#include "fast_io_allocation_probe.h"
 static void check(bool okay,std::source_location where=std::source_location::current())
 { if(!okay) { std::fprintf(stderr,"cold allocation failure check: %u\n",where.line());std::abort(); } }
 int main()
@@ -36,8 +28,8 @@ int main()
         std::memcpy(storage.data(),&identifier,sizeof(identifier));
         storage[cp::observer_site_bytes+1]=std::byte{1};
         storage[cp::observer_site_bytes+cp::observer_local_metadata_bytes]=std::byte{42};
-        reject_next_allocation=failing;
-        auto frames=ledger.frames_while_actually_stopped();reject_next_allocation=false;
+        fast_io_allocation_probe::once=true;fast_io_allocation_probe::armed=failing;
+        auto frames=ledger.frames_while_actually_stopped();fast_io_allocation_probe::armed=false;
         if(failing)
         {
             check(frames.empty() && ledger.failure()==cp::status::quota_exceeded);

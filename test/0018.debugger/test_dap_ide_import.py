@@ -151,7 +151,7 @@ class IDEImport(unittest.TestCase):
         self.assertIn("ClearAllForwardings=yes", argv)
         self.assertEqual(argv[-2], "operator@robot")
         self.assertEqual(shlex.split(argv[-1]),
-            ["exec", "env", "UWVM_DAP_SOURCE_SESSION=" + session, "/opt/py thon",
+            ["exec", "env", "UWVM_DAP_EDITOR_BREAKPOINTS=0", "UWVM_DAP_SOURCE_SESSION=" + session, "/opt/py thon",
              "/opt/robot's tools/debug/dap_adapter.py"])
         self.assertNotIn("-L", argv)
         self.assertNotIn("-R", argv)

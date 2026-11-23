@@ -36,7 +36,7 @@ static void explicit_optional_control_masks()
 static void no_other_or_implicit_event_kinds()
 {auto c=primary(),a=auxiliary();for(auto text:{"resource-error","resource-closed","topic-message,service-response","service-request,service-response"}){a.limits["event-kinds"]=text;CHECK(ros::service_endpoint_pair(c,a,role::client)==13);}a.limits["event-kinds"]="service-response,service-response";std::uint32_t unchanged=123;CHECK(ros::service_observer_kinds(a,unchanged)==22&&unchanged==123);a.limits.erase("event-kinds");CHECK(ros::service_endpoint_pair(c,a,role::client)==22);}
 static void observer_operation_and_own_type()
-{auto c=primary(),a=auxiliary();a.operation="event.poll";CHECK(ros::service_endpoint_pair(c,a,role::client)==13);a=auxiliary();a.type=c.type;CHECK(ros::service_endpoint_pair(c,a,role::client)==13);a=auxiliary();a.type_identity=c.type_identity;CHECK(ros::service_endpoint_pair(c,a,role::client)==13);}
+{auto c=primary(),a=auxiliary();a.operation="message.poll";CHECK(ros::service_endpoint_pair(c,a,role::client)==13);a=auxiliary();a.type=c.type;CHECK(ros::service_endpoint_pair(c,a,role::client)==13);a=auxiliary();a.type_identity=c.type_identity;CHECK(ros::service_endpoint_pair(c,a,role::client)==13);}
 static void no_observer_native_qos_fabrication()
 {auto c=primary(),a=auxiliary();CHECK(a.limits.size()==2&&a.type!=c.type&&ros::service_endpoint_pair(c,a,role::client)==0);c.type="another_fixture_msgs/srv/SyntheticValue";c.type_identity="another-synthetic-value-not-native";CHECK(ros::service_endpoint_pair(c,a,role::client)==0);}
 static void exact_source_alias_resource()

@@ -1,5 +1,6 @@
 // This is the ACTUAL asynchronous object-cache worker/service, not a fake
 // host-only replacement for the separate real native-Wasm shutdown fixture.
+#include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/runtime/llvm_jit_cache/store.h>
 #include <uwvm2/utils/thread/native_thread_join.h>
 #include <fast_io.h>
@@ -36,3 +37,5 @@ int main()
     ::fast_io::io::perrln("actual cache native provider unavailable; this target is unqualified");return 77;
 #endif
 }
+
+#include <uwvm2/utils/macro/pop_macros.h>

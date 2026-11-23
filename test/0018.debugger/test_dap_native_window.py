@@ -196,6 +196,38 @@ class Tests(unittest.TestCase):
         self.assertFalse(self.adapter.native_code_refs)
         self.assertFalse(self.adapter.native_frames)
 
+    def test_optional_native_landing_keeps_previously_published_frames(self):
+        self.adapter.step_level = "source"
+        frame = self.frame()
+        key = self.adapter.stop_key
+        original = self.broker.request
+        def unavailable(command):
+            if command.startswith("disassemble-range "):
+                self.broker.commands.append(command)
+                return "error: native disassembly range is unavailable\n"
+            return original(command)
+        self.broker.request = unavailable
+        self.adapter.disassembly_view_visible = True
+        again = self.frame()
+        self.assertEqual(self.adapter.stop_key, key)
+        self.assertEqual(frame["id"], again["id"])
+        self.assertEqual(self.adapter.current_frame(frame["id"]), (3, 0, 0, 2))
+        self.assertFalse(self.adapter.native_code_refs)
+
+    def test_late_disassembly_request_cannot_retire_current_frame(self):
+        old = self.frame()
+        self.adapter.invalidate_stop()
+        current = self.frame()
+        self.assertNotEqual(old["id"], current["id"])
+        before = len(self.broker.commands)
+        for reference in (old["instructionPointerReference"], "uwvm-native-stop:99999"):
+            reply = self.send("disassemble", memoryReference=reference, instructionCount=1)
+            self.assertFalse(reply["success"], reply)
+            self.assertEqual(self.broker.commands[before:], [])
+            self.assertIn(current["id"], self.adapter.frames)
+        reply = self.send("disassemble", memoryReference=current["instructionPointerReference"], instructionCount=1)
+        self.assertTrue(reply["success"], reply)
+
     def test_malformed_native_owner_still_refuses_entire_stack(self):
         original = self.broker.request
         def malformed(command):

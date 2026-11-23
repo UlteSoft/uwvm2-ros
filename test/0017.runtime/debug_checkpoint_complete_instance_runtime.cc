@@ -3,11 +3,13 @@
 // The const graph is logical DATA; whole-instance restoration is not claimed.
 #include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
+#include <uwvm2/uwvm/cmdline/callback/impl.h>
 #include <uwvm2/utils/control/owned_file_image.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/runtime/gc/entry_admission.h>
 #include <uwvm2/runtime/gc/frame_roots.h>
 #include <uwvm2/uwvm/debugger/checkpoint_state.h>
+#include <uwvm2/utils/control/debug_permissions.h>
 #include <fast_io.h>
 #include <fast_io_unit/string.h>
 #include <atomic>
@@ -46,7 +48,7 @@ static void require(bool valid, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct source_setup
 {
-    ::std::u8string path{};
+    ::uwvm2::utils::container::std_u8string path{};
     image::owned_file_image::owner immutable{};
     full::full_source_instance::mutable_owner source{};
     bool ready{};
@@ -72,7 +74,7 @@ struct source_setup
             // These modules have no start functions. Complete ordinary segment
             // instantiation, including passive expression payloads, BEFORE any
             // setup guest entry or source seal; true would leave it deferred.
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(false);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(false)) { return false; }
             if(!candidate->seal_actual_initializer()) { return false; }
             state.source = ::std::move(candidate); state.ready = true; return true;
         }
@@ -190,7 +192,7 @@ static void check_graph(cp::state const& graph, cp::limits const& cap, ::std::ar
     REQUIRE(instance.words == counts);
     auto const module{instance.links[0u]}; REQUIRE(object(graph,module,cp::object_kind::module).bytes.size() >= 8u);
     auto const& module_state{object(graph,module,cp::object_kind::module)};
-    REQUIRE(module_state.flags == 1u && module_state.words[0u] == 1u);
+    REQUIRE(module_state.flags == 1u && module_state.words[0u] == ::uwvm2::runtime::checkpoint::module_feature_policy::revision);
     // This real fixture enables modern GC/memory64/EH, but leaves threads and
     // relaxed SIMD disabled. Product capabilities cannot become requirements.
     REQUIRE((module_state.words[2u] & (std::uint64_t{1u} << 18u)) != 0u);
@@ -269,6 +271,8 @@ static void check_graph(cp::state const& graph, cp::limits const& cap, ::std::ar
 }
 int main(int argc, char** argv)
 {
+    REQUIRE(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full));
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 64; }
     auto const policy{::fast_io::concat_std(::fast_io::mnp::os_c_str("mandatory-native"))};
@@ -279,6 +283,7 @@ int main(int argc, char** argv)
     mode::global_runtime_compile_threads = 0u; mode::runtime_compile_threads_existed = true;
     mode::global_runtime_llvm_jit_cache_path_mode = mode::runtime_llvm_jit_cache_path_mode_t::disabled;
     auto& features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
+    features.disable_threads = true; features.disable_relaxed_simd = true;
     features.disable_gc = false; features.explicit_enable_gc = true;
     features.disable_function_references = false; features.explicit_enable_function_references = true;
     features.disable_reference_types = false; features.explicit_enable_reference_types = true;
@@ -291,7 +296,7 @@ int main(int argc, char** argv)
     features.disable_simd = false; features.explicit_enable_simd = true;
     features.disable_bulk_memory = false; features.explicit_enable_bulk_memory = true;
     source_setup setup{};
-    setup.path = ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
+    setup.path = ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(argv[1])));
     auto& arguments{::uwvm2::uwvm::cmdline::parsing_result};
     ::uwvm2::uwvm::cmdline::wasm_file_ppos = nullptr; arguments.clear();
     arguments.emplace_back(::uwvm2::utils::cmdline::parameter_parsing_results{
@@ -435,6 +440,33 @@ int main(int argc, char** argv)
                         !publication_refused.runtime_full_publication_records_prepared && publication_refused.resource_diagnostic==9u &&
                         lib::observe_compiler_runtime_generation_host_api()==source_epoch &&
                         ::uwvm2::runtime::gc::published_initializer_serial.load(::std::memory_order_acquire)==source_serial);
+                    // Exercise a detached saved graph, including the previous
+                    // real pause episode; current ticket/captures still supply
+                    // the only live admission authority.
+                    prepare.saved_graph = detached ? detached : actual.graph;
+                    auto invalid_saved = prepare;
+                    auto malformed = ::std::make_shared<cp::state>(*prepare.saved_graph);
+                    malformed->root_instances[0] = UINT64_MAX;
+                    invalid_saved.saved_graph = malformed;
+                    auto declined = lib::llvm_jit_checkpoint_prepare_instance_host_api(ticket,captured,invalid_saved);
+                    REQUIRE(declined.status == lib::llvm_jit_checkpoint_prepare_status::resource_preparation_declined &&
+                        declined.data_error != cp::error::none && declined.engines == 0u);
+                    auto mismatched_code = ::std::make_shared<cp::state>(*prepare.saved_graph);
+                    for(auto& object : mismatched_code->objects)
+                    {
+                        if(object.kind == cp::object_kind::module) { object.bytes.push_back(::std::byte{}); break; }
+                    }
+                    invalid_saved.saved_graph = mismatched_code;
+                    declined = lib::llvm_jit_checkpoint_prepare_instance_host_api(ticket,captured,invalid_saved);
+                    REQUIRE(declined.status == lib::llvm_jit_checkpoint_prepare_status::resource_preparation_declined &&
+                        declined.data_error == cp::error::stale_generation && declined.engines == 0u);
+                    invalid_saved = prepare; invalid_saved.environment_source = static_cast<lib::llvm_jit_checkpoint_environment_source>(255);
+                    REQUIRE(lib::llvm_jit_checkpoint_prepare_instance_host_api(ticket,captured,invalid_saved).status ==
+                        lib::llvm_jit_checkpoint_prepare_status::invalid_request);
+                    invalid_saved = prepare; invalid_saved.recording_label[0] ^= ::std::byte{1};
+                    REQUIRE(lib::llvm_jit_checkpoint_prepare_instance_host_api(ticket,captured,invalid_saved).status ==
+                        lib::llvm_jit_checkpoint_prepare_status::invalid_request);
+                    REQUIRE(lib::observe_compiler_runtime_generation_host_api() == source_epoch);
                     auto prepared=lib::llvm_jit_checkpoint_prepare_instance_host_api(ticket,captured,prepare);
                     ::fast_io::print(::fast_io::out(),"WORLD_PREPARATION status=",::fast_io::mnp::dec(static_cast<unsigned>(prepared.status)),
                         " resource=",::fast_io::mnp::dec(prepared.resource_diagnostic)," engine=",::fast_io::mnp::dec(prepared.engine_diagnostic),

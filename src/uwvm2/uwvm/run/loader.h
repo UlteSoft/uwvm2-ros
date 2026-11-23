@@ -84,7 +84,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             // Command-line parsing rejects ordinary overlap between
             // `--wasip1-single-create <module>` and
             // `--wasip1-group-add-module <group> <module>`. Recheck after module
-            // loading because names may also come from preload-DL or weak-symbol
+            // loading because names may also come from explicit native preload-DL
             // metadata; if the same loaded module resolves to two different
             // states, runtime cannot choose a policy safely.
             auto const anonymous_group_index{find_wasip1_anonymous_module_group_index(target_kind, module_name)};

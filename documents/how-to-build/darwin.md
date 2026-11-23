@@ -228,8 +228,8 @@ xmake i -o <install_path>
 
 The repository's native macOS Runtime can run ordinary Wasm applications, but
 the current ROS host imports require a **Linux Runtime target**. The check is
-explicit in [`xmake.lua`](../../xmake.lua): `--import-ros1=y` or
-`--import-ros2=y` on `macosx` fails with
+explicit in [`xmake.lua`](../../xmake.lua): `--import-u2rosv1-ros1=y` or
+`--import-u2rosv1-ros2=y` on `macosx` fails with
 `ROS runtime host imports require Linux SO_PEERCRED`. Installing a macOS ROS
 SDK does not change that transport and peer-authentication boundary.
 
@@ -249,7 +249,7 @@ Run from the repository root with a compatible bootstrap compiler:
 xmake f -y -c -m release -p macosx -a arm64 -o build/macos-runtime \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=n
+  --import-u2rosv1-ros1=n --import-u2rosv1-ros2=n
 xmake -j1 uwvm2-ros
 ```
 
@@ -284,7 +284,7 @@ cd "$HOME/Documents/uwvm2-ros"
 xmake f -y -c -m release -p linux -a x86_64 -o build/ros2 \
   --use-llvm-compiler=y --use-cxx-module=n --march=none \
   --execution-int=uwvm-int --execution-jit=none \
-  --import-ros1=n --import-ros2=y
+  --import-u2rosv1-ros1=n --import-u2rosv1-ros2=y
 xmake -j1 uwvm2-ros
 ```
 
@@ -297,9 +297,9 @@ In that Linux environment, choose the imports deliberately:
 
 | Intended Runtime | Root Xmake configuration |
 | --- | --- |
-| ROS1 only | `--import-ros1=y --import-ros2=n` |
-| ROS2 only | `--import-ros1=n --import-ros2=y` |
-| Both namespaces | `--import-ros1=y --import-ros2=y` |
+| ROS1 only | `--import-u2rosv1-ros1=y --import-u2rosv1-ros2=n` |
+| ROS2 only | `--import-u2rosv1-ros1=n --import-u2rosv1-ros2=y` |
+| Both namespaces | `--import-u2rosv1-ros1=y --import-u2rosv1-ros2=y` |
 | Reviewed vendor schemas | Add the vendor switch and matching absolute `-registry-header` path |
 | Larger merged registry | Select explicit in-range `--ros-registry-max-interfaces` and `--ros-registry-max-cells` |
 

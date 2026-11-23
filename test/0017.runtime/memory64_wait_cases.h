@@ -40,7 +40,7 @@ template<typename Memory,typename Invoke>void cases(Invoke invoke)
    if constexpr(requires{memory.sequentially_consistent_size;}){memory.sequentially_consistent_size=shared;}
    if(cancel)
    {
-    std::stop_source stop;stop.request_stop();waiting::execution_scope stopped{domain,stop.get_token()};
+    uwvm2::utils::thread::stop_source stop;stop.request_stop();waiting::execution_scope stopped{domain,stop.get_token()};
     (void)invoke.template operator()<Operation>(memory,offset,address,0,-1);
    }
    else{(void)invoke.template operator()<Operation>(memory,offset,address,0,0);}

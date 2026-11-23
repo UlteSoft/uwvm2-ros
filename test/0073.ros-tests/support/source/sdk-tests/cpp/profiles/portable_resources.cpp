@@ -35,7 +35,7 @@ static uint64_t event_source, event_sequence = 1;
 static uint32_t watch(uint64_t observer, uint64_t source, uint64_t correlation) {
     return observer && source == event_source && !correlation ? 0 : 13;
 }
-static uint32_t event_poll(uint64_t, uint32_t, uint64_t output, uint64_t capacity, uint64_t slot) {
+static uint32_t message_poll(uint64_t, uint32_t, uint64_t output, uint64_t capacity, uint64_t slot) {
     fixture_store64(slot, 68);
     if (capacity < 68)
         return 90;
@@ -183,11 +183,11 @@ int main() {
     assert(!change.change_state(accepted) && accepted);
     Capability source(node.context(), "event.source"), observer(node.context(), "event.observer");
     event_source = source.handle();
-    roswasmc_event_backend api = {2, watch, event_poll, readiness, submit};
+    roswasmc_event_backend api = {2, watch, message_poll, readiness, submit};
     EventStream events(observer, source, api);
     assert(!events.error());
     unsigned char event_bytes[68];
-    EventPoll first = events.poll(event_bytes, sizeof event_bytes);
+    EventStreamPoll first = events.poll(event_bytes, sizeof event_bytes);
     assert(!first.result.error && first.header.source == event_source &&
            first.header.sequence == 1);
     assert(events.poll(event_bytes, sizeof event_bytes).result.error == 22);

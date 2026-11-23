@@ -69,12 +69,12 @@ class Lifetime(unittest.TestCase):
         self.assertTrue(self.send("scopes", frameId=frame)["success"])
         result = self.send("variables", variablesReference=scope)
         self.assertTrue(result["success"], result)
-        self.assertEqual(result["body"]["variables"][0]["value"], "i32=5")
+        self.assertEqual(result["body"]["variables"][0]["value"], "5")
         self.assertTrue(self.send("source", sourceReference=source)["success"])
 
     def test_external_change_retires_all_three_public_routes_before_copy(self):
         for kind in ("new-stop-same-pc", "native", "other-participant", "running", "exited", "closed", "malformed"):
-            for command, index, key in (("scopes", 0, "frameId"), ("variables", 1, "variablesReference"), ("source", 2, "sourceReference")):
+            for command, index, key in (("scopes", 0, "frameId"), ("variables", 1, "variablesReference")):
                 with self.subTest(kind=kind, command=command):
                     self.setUp()
                     handles = self.handles()
@@ -100,7 +100,7 @@ class Lifetime(unittest.TestCase):
                 self.assertFalse(self.adapter.scopes)
 
     def test_fresh_frames_work_after_rejecting_stale_labels(self):
-        for command, index, key in (("scopes", 0, "frameId"), ("variables", 1, "variablesReference"), ("source", 2, "sourceReference")):
+        for command, index, key in (("scopes", 0, "frameId"), ("variables", 1, "variablesReference")):
             with self.subTest(command=command):
                 self.setUp()
                 handles = self.handles()
@@ -109,6 +109,16 @@ class Lifetime(unittest.TestCase):
                 fresh = self.handles()
                 self.assertGreater(fresh[0], handles[0])
                 self.assertTrue(self.send(command, **{key: fresh[index]})["success"])
+
+    def test_cached_code_remains_readable_without_a_live_state_borrow(self):
+        _, _, source = self.handles()
+        content = self.send("source", sourceReference=source)["body"]["content"]
+        self.change("running")
+        before = list(self.broker.commands)
+        result = self.send("source", sourceReference=source)
+        self.assertTrue(result["success"], result)
+        self.assertEqual(result["body"]["content"], content)
+        self.assertEqual(self.broker.commands, before)
 
     def test_native_frame_scope_requires_current_complete_stop(self):
         for kind in ("new-stop-same-pc", "running", "exited", "closed", "malformed"):

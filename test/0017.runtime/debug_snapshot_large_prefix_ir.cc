@@ -1,11 +1,14 @@
 // Actual production copier -> LLVM verifier -> native MCJIT / target llc.
 // The local declarations below are component DATA, never Wasm source leases,
 // activations, host-address authority or checkpoint restore admission.
+#include <llvm/Object/ELFObjectFile.h>
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/impl.h>
 #include <uwvm2/runtime/compiler/llvm_jit/mcjit_target_support.h>
+#include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/translate/section_memory_manager.h>
 #include <uwvm2/uwvm/runtime/macro/pop_macros.h>
+#include <uwvm2/utils/macro/pop_macros.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/Verifier.h>
@@ -65,7 +68,7 @@ static void run_order(bool raw_first)
         ::llvm::GlobalValue::ExternalLinkage,"main",*module)};
     emit::runtime_local_func_llvm_jit_emit_state_t state{};
     state.llvm_context_holder=context.get();state.llvm_module=module.get();state.llvm_function=function;
-    state.ir_builder=::uwvm2::utils::container::make_delete_owned<::llvm::IRBuilder<>>(::llvm::BasicBlock::Create(*context,"entry",function));
+    state.ir_builder=::uwvm2::utils::container::make_unique<::llvm::IRBuilder<>>(::llvm::BasicBlock::Create(*context,"entry",function));
     auto& ir{*state.ir_builder};
     auto const owner{ir.CreateCall(allocate,{::llvm::ConstantInt::get(integer,bytes)})};
     state.checkpoint_observer_workspace_allocation=owner;

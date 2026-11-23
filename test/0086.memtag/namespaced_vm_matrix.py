@@ -43,7 +43,7 @@ def cases():
                     options=["--wasm-feature-enable-multi-memory"] if encoding.endswith("memory") else []
                     yield name,vm.markers(wide,enabled),"ok",options,not enabled
                     if encoding.endswith("memory"):
-                        yield name+"-without-multi-memory",vm.markers(wide,enabled),"multi-memory",[],not enabled
+                        yield name+"-without-multi-memory",vm.markers(wide,enabled),"multi-memory",["--wasm-feature-disable-multi-memory"],not enabled
                 yield f"{encoding}-{64 if wide else 32}-feature-off",vm.module(vm.op(0x20)+b"\x1a",wide),"feature",["--wasm-feature-disable-memtag-extension"],False
     finally:
         vm.op=original

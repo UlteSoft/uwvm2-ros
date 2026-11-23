@@ -6,8 +6,8 @@ import test_dap_wasm_state as state
 
 dap = state.dap
 TITLES = {
-    "locals": "Typed Wasm locals", "operands": "Wasm operand stack (last safepoint; may differ from native state)",
-    "saved": "Wasm saved if parameters", "controls": "Wasm control stack", "handlers": "Wasm handler clauses",
+    "locals": "Wasm locals", "operands": "Wasm operand stack",
+    "saved": "Wasm saved parameters", "controls": "Wasm control stack", "handlers": "Wasm exception handlers",
     "globals": "Wasm globals", "table": "Wasm table 0",
 }
 
@@ -60,7 +60,14 @@ class ScopePages(unittest.TestCase):
     def scope(self, selected):
         frame = self.send("stackTrace", threadId=1)["body"]["stackFrames"][0]
         scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
-        return next(s["variablesReference"] for s in scopes if s["name"] == TITLES[selected])
+        if selected == "table":
+            group = next(s["variablesReference"] for s in scopes if s["name"] == "Wasm tables")
+            tables = self.send("variables", variablesReference=group, start=0, count=1)["body"]["variables"]
+            reference = tables[0]["variablesReference"]
+        else:
+            reference = next(s["variablesReference"] for s in scopes if s["name"] == TITLES[selected])
+        self.broker.pages = 0  # Inject at the new copy's probe, not scope discovery.
+        return reference
     def page(self, selected, arguments, indices):
         ref = self.scope(selected); reply = self.send("variables", variablesReference=ref, **arguments)
         self.assertTrue(reply["success"], reply)
@@ -71,9 +78,13 @@ class ScopePages(unittest.TestCase):
         self.assertEqual([r["name"] for r in rows], names)
         if selected in ("locals", "operands", "saved", "globals"):
             self.assertEqual([r["value"] for r in rows], [str(1000+i) for i in indices])
-        self.assertTrue(all(r["variablesReference"] == 0 and "memoryReference" not in r and
-                            r.get("presentationHint", {}).get("attributes", []) ==
-                            ([] if selected in ("locals", "operands", "globals") else ["readOnly"]) for r in rows))
+        self.assertTrue(all("memoryReference" not in r for r in rows))
+        if selected in ("controls", "handlers"):
+            self.assertTrue(all(r["variablesReference"] > 0 and r["presentationHint"]["attributes"] == ["readOnly"] for r in rows))
+        else:
+            self.assertTrue(all(r["variablesReference"] == 0 for r in rows))
+            self.assertTrue(all(r.get("presentationHint", {}).get("attributes", []) ==
+                ([] if selected in ("locals", "operands", "globals") else ["readOnly"]) for r in rows))
         self.assertTrue(all(int(c.split()[-1]) <= 64 for c in self.broker.commands if c != "status" and c.split()[0] in TITLES))
         return reply
     def test_all_seven_scopes_cross_boundary_tail_and_empty(self):

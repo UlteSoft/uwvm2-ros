@@ -143,7 +143,7 @@ socket_stats actual_client()
 
 int main()
 {
-    differential("event.poll","sub",{},true);
+    differential("message.poll","sub",{},true);
     differential("O_1.-","A_2.-",{0x00,0x7f,0x80,0xff},true);
     differential(std::string(255,'o'),std::string(255,'a'),std::vector<std::uint8_t>(ipc::max_payload_bytes-518,0x5a),true);
     differential("op","alias",std::vector<std::uint8_t>(ipc::max_payload_bytes-517,0x5a),false);

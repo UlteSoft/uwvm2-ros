@@ -27,7 +27,7 @@ int main()
         check(plan->packet_shape(0).reference_slots.size()==static_cast<std::size_t>(mixed),"only exact reference indices");
         cp::shadow_ledger ledger{plan->get().profile};cp::activation_identity identity{1,0,1,1};check(ledger.enter(identity,plan)==cp::status::ok,"activation entry");
         std::array<std::byte,80> payload{};std::array<std::uint8_t,4> flags{1,1,1,1};
-        std::vector<cp::native_value> oracle{};
+        uwvm2::utils::container::std_vector<cp::native_value> oracle{};
         for(unsigned iteration{};iteration!=4000;++iteration)
         {
             auto const site=iteration%2u+1u;

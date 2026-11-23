@@ -63,11 +63,12 @@ int main()
         &parameters::disable_function_references,&parameters::disable_gc,
         &parameters::disable_exceptions,&parameters::disable_threads,&parameters::disable_memtag_extension};
     parameters parameter{};
+    parameter.cli_mode=features::wasm_feature_cli_mode::unspecified;
     for(auto member:members) { parameter.*member=false; }
     auto const baseline{cp::module_feature_policy::from_actual_parameter(parameter)};
-    require(baseline.valid() && baseline.cache_identity()==cp::module_feature_policy::identity{2u,0u,0u,0u},"actual default fields copied without padding/CLI bookkeeping");
-    require(baseline.compatibility_mask()==((::std::uint64_t{1u}<<18u)-1u),"all explicitly enabled capabilities map to known file bits");
-    containers::u8string const zero{u8"2/0/0/0"}; require(same(text(baseline),zero),"canonical fast_io decimal policy serializer");
+    require(baseline.valid() && baseline.cache_identity()==cp::module_feature_policy::identity{3u,0u,0u,0u},"actual default fields copied without padding/CLI bookkeeping");
+    require(baseline.compatibility_mask()==((::std::uint64_t{1u}<<19u)-1u),"all explicitly enabled capabilities map to known file bits");
+    containers::u8string const zero{u8"3/0/0/0"}; require(same(text(baseline),zero),"canonical fast_io decimal policy serializer");
     auto const original{context(baseline)};
     auto const original_metadata{cache::make_context_metadata(original)};
     auto const original_digest{cache::details::cache_key_hash(original)};
@@ -85,7 +86,7 @@ int main()
         require(policy.disabled==(::std::uint64_t{1u}<<index) && policy.cli_mode==0u && policy.controlled==0u,"twenty independent disable bits in declared order");
         distinct(policy);
     }
-    for(::std::uint64_t mode{1u};mode!=5u;++mode)
+    for(::std::uint64_t mode{1u};mode!=6u;++mode)
     {
         auto changed{parameter}; changed.cli_mode=static_cast<features::wasm_feature_cli_mode>(mode);
         auto const policy{cp::module_feature_policy::from_actual_parameter(changed)};
@@ -102,7 +103,7 @@ int main()
     require((safe_subset.compatibility_mask()&((::std::uint64_t{1u}<<12u)|(::std::uint64_t{1u}<<16u)))==0u,"disabled GC/threads are not inferred from product capabilities");
     auto bookkeeping{parameter}; bookkeeping.explicit_enable_gc=true; bookkeeping.explicit_enable_threads=true;
     require(cp::module_feature_policy::from_actual_parameter(bookkeeping)==baseline,"CLI conflict ownership is not executable policy");
-    cp::module_feature_policy invalid{5u,0u,0u}; require(!invalid.valid(),"reserved CLI mode fails");
+    cp::module_feature_policy invalid{6u,0u,0u}; require(!invalid.valid(),"reserved CLI mode fails");
     invalid={0u,::std::uint64_t{1u}<<20u,0u}; require(!invalid.valid(),"reserved disable flag fails");
     invalid={0u,0u,4u}; require(!invalid.valid(),"reserved controllable flag fails");
     ::fast_io::io::println("module feature policy 23 fields DATA PASS; runtime/restore=false");

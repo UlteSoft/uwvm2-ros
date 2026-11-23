@@ -1,9 +1,11 @@
+#include <uwvm2/utils/control/debug_permissions.h>
 // Genuine original Wasm parse+initializer+single fused compiler+actual pause
 // capture+retirement+actual engine-resolved logical continuation execution.
 // This qualifies the execution slice, not complete instance/file/GC rollback.
 #include "mandatory_native_fixture.h"
 #include <uwvm2/uwvm/run/owned_source.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
+#include <uwvm2/runtime/checkpoint/shadow_ledger.h>
 #include <uwvm2/utils/container/string_concat.h>
 #include <fast_io.h>
 #include <atomic>
@@ -62,6 +64,8 @@ struct observer
 };
 int main(int argc, char** argv)
 {
+    if(!::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
+        ::uwvm2::utils::control::debug_permissions::permission_level::full)) { return 91; }
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 3) { return 2; }
     auto const expected{::fast_io::concat_std(::fast_io::mnp::os_c_str(argv[2]))};

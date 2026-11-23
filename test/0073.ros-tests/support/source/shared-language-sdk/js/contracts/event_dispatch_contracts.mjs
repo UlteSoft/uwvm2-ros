@@ -13,8 +13,8 @@ function record(state){const bytes=new Uint8Array(64),v=new DataView(bytes.buffe
 function state(){return {source:2n,sequence:1n,session:19n,malformed:false,idle:false,polls:0,closes:0,next:1n};}
 function fakeSync(){const s=state(),memory=new WebAssembly.Memory({initial:1}),functions=Object.fromEntries(specification(2).functions.map(f=>[f.name,()=>95]));
   functions.abi_version=()=>1;functions.capability_open=(m,a,n,slot)=>{new DataView(memory.buffer).setBigUint64(Number(slot),s.next++,true);return 0;};
-  functions.capability_close=()=>{s.closes++;return 0;};functions.event_watch=(o,src,c)=>o===1n&&src===2n&&!c?0:13;
-  functions.event_poll_v1=(o,m,out,cap,slot)=>{s.polls++;if(s.idle)return 11;new DataView(memory.buffer).setBigUint64(Number(slot),64n,true);if(cap<64n)return 90;memoryRange(memory,out,64n).set(record(s));return 0;};
+  functions.capability_close=()=>{s.closes++;return 0;};functions.event_stream_watch=(o,src,c)=>o===1n&&src===2n&&!c?0:13;
+  functions.event_stream_poll=(o,m,out,cap,slot)=>{s.polls++;if(s.idle)return 11;new DataView(memory.buffer).setBigUint64(Number(slot),64n,true);if(cap<64n)return 90;memoryRange(memory,out,64n).set(record(s));return 0;};
   return {s,session:new Session(2,{memory,functions},{offset:1n,inputCapacity:128,outputCapacity:128})};}
 const {s,session}=fakeSync(),observer=session.open('observer'),source=session.open('source'),executor=new Executor();let calls=0;
 const entity=new EventSubscription(observer,source,function(event){calls++;equal(event.sequence,1n);const before=s.polls;
@@ -31,8 +31,8 @@ equal(entity.spinning,false);equal(observer.closed,false);executor.close();equal
 const a=state(),layout={backend:2,abiVersion:1,functionCount:specification(2).functions.length,input:1n,inputCapacity:128,slot:129n,output:137n,outputCapacity:128};
 const transport=new CopiedTransport(2,{describe(){return layout;},invoke(index,args,input,seed,snapshot){
   const name=specification(2).functions[index].name;let status=0,slot=seed,bytes=new Uint8Array(snapshot);
-  if(name==='capability_open')slot=a.next++;else if(name==='event_watch'){if(args[0]!==1n||args[1]!==2n||args[2]!==0n)status=13;}
-  else if(name==='event_poll_v1'){a.polls++;if(a.idle)status=11;else{slot=64n;if(snapshot<64)status=90;else bytes.set(record(a));}}
+  if(name==='capability_open')slot=a.next++;else if(name==='event_stream_watch'){if(args[0]!==1n||args[1]!==2n||args[2]!==0n)status=13;}
+  else if(name==='event_stream_poll'){a.polls++;if(a.idle)status=11;else{slot=64n;if(snapshot<64)status=90;else bytes.set(record(a));}}
   else if(name==='capability_close')a.closes++;else status=95;return {status,slot,snapshot:bytes};
 }});
 const asyncSession=AsyncSession.fromCopiedTransport(transport),ao=await asyncSession.open('observer'),as=await asyncSession.open('source'),ax=new AsyncExecutor();let asyncCalls=0;

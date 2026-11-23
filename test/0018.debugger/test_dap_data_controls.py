@@ -55,7 +55,7 @@ class DataControls(unittest.TestCase):
     def scope(self):
         frame = self.send("stackTrace", threadId=1)["body"]["stackFrames"][0]
         scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
-        return next(row["variablesReference"] for row in scopes if row["name"] == "Typed Wasm locals")
+        return next(row["variablesReference"] for row in scopes if row["name"] == "Wasm locals")
 
     def selector(self):
         return self.send("dataBreakpointInfo", variablesReference=self.scope(), name="local 0")["body"]["dataId"]

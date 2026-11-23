@@ -47,7 +47,6 @@ class Broker:
 class StatusPublicationTests(unittest.TestCase):
     # Each route publishes a complete runtime snapshot, not a scalar/watch reply.
     def routes(self):
-        yield "native", "pause", {}, "pause"
         yield "native", "continue", {"threadId": 3}, "continue"
         for level in ("native", "source", "wasm"):
             for command, policy in (("stepIn", "into"), ("next", "over"), ("stepOut", "out")):
@@ -66,6 +65,10 @@ class StatusPublicationTests(unittest.TestCase):
         self.adapter = dap.Adapter(self.output)
         self.broker = Broker()
         self.adapter.broker = self.broker
+        # Names are covered by the module-inventory tests. This fixture models
+        # status publication, with no original module or metadata endpoint.
+        self.adapter.wasm_function_name = lambda module, function: f'func {function}'
+        self.adapter.configuration_complete = True
         self.adapter.step_level = level
         self.sequence = 0
         frame = self.send("stackTrace", {"threadId": 3})[0]["body"]["stackFrames"][0]["id"]
@@ -122,6 +125,27 @@ class StatusPublicationTests(unittest.TestCase):
                     else:
                         self.assertEqual(events[-1]["event"], "stopped")
                         self.assertEqual(self.adapter.threads[0]["stop_id"], 18)
+
+    def test_level_switch_reselects_current_frame_without_deleting_threads(self):
+        self.prepare("native")
+        key = self.adapter.stop_key
+        rows = self.send("uwvm/stepLevel", {"level": "wasm"})
+        self.assertTrue(rows[0]["success"], rows)
+        stops = [row for row in rows if row.get("event") == "stopped"]
+        self.assertEqual(len(stops), 1, rows)
+        self.assertEqual(stops[0]["body"]["threadId"], 3)
+        self.assertTrue(stops[0]["body"]["uwvmPresentationChange"])
+        self.assertFalse(any(row.get("event") == "invalidated" for row in rows))
+        self.assertEqual(self.adapter.stop_key, key)
+
+    def test_level_switch_rejects_invalid_status_before_success(self):
+        self.prepare("native")
+        self.broker.target = "status"
+        self.broker.reply = STATUS.replace("stop-id 17", "stop-id broken")
+        rows = self.send("uwvm/stepLevel", {"level": "wasm"})
+        self.assertEqual(len(rows), 1, rows)
+        self.assertFalse(rows[0]["success"])
+        self.assertEqual(self.adapter.step_level, "native")
 
 
 if __name__ == "__main__":

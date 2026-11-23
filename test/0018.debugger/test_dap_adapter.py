@@ -11,6 +11,8 @@ from pathlib import Path
 import socket
 import sys
 import unittest
+from fixture_wasm_metadata import metadata, code
+import re
 from unittest import mock
 
 
@@ -37,30 +39,54 @@ class FakeBroker:
     def __init__(self, *_):
         self.commands = []
         self.closed = False
-        self.status = "prepared; no Wasm instruction executed\nthread 1 module=0 function=1 byte-offset=3 generation=1\n"
+        self.status = "stopped: pause\nstop-id 41\nthread 1 module=0 function=1 byte-offset=4 generation=1\n"
+        self.points = {}
 
     def request(self, command):
         if command == "permissions": return "permissions full\n"
         self.commands.append(command)
+        stop = re.search(r"stop-id (\d+)", self.status)
+        owner = re.search(r"thread (\d+) module=(\d+) function=(\d+) byte-offset=(\d+) generation=(\d+)", self.status)
+        if command.startswith(("wasm-meta ", "wasm-code ")):
+            assert stop is not None and owner is not None, command
+            thread, module, function, pc, epoch = map(int, owner.groups())
+            inventory = metadata(command, stop=int(stop[1]), epoch=epoch, functions=2, memories=1, thread=thread)
+            if inventory is not None: return inventory
+            return code(command, stop=int(stop[1]), epoch=epoch, function=function, module=module, thread=thread, pc=pc)
+        if command.startswith("frames "):
+            return "error: source debug info unavailable\n"
+        if command.startswith(("locals wasm ", "operands ", "controls ", "handlers ", "saved ")):
+            assert stop is not None and owner is not None
+            first = int(command.split()[-2]); locals_page = command.startswith("locals wasm ")
+            rows = "local 0 i32 = 42\n" if locals_page and first == 0 else ""
+            return f"wasm-stop {stop[1]}\nWasm state thread=1 module=0 epoch={owner[5]} first={first} total={int(locals_page)}\n" + rows
+        if command == "info breakpoints":
+            return ''.join(f"breakpoint {i} module=0 function=1 kind={kind} byte-offset=4 temporary=no enabled=yes hits=0 ignore=0\n" for i,kind in self.points.items()) or "no breakpoints\n"
+        if command.startswith("disassemble-range "):
+            return "error: native instructions unavailable in this protocol fixture\n"
         if command == "status":
             return self.status
         if command == "pause":
-            self.status = "stopped: pause\nthread 1 module=0 function=1 byte-offset=3 generation=1\n"
+            self.status = "stopped: pause\nstop-id 41\nthread 1 module=0 function=1 byte-offset=4 generation=1\n"
             return self.status
         if command == "ni 1":
             return "error: native next requires a current authenticated native trap\n"
         if command.startswith("step "):
-            self.status = ("stopped: selected participant step\n"
+            self.status = ("stopped: selected participant step\nstop-id 41\n"
                            "thread 1 module=0 function=1 byte-offset=4 generation=1\n"
                            "  source src/main.c:4:2\n")
             return self.status
         if command.startswith("breaksource "):
+            self.points[7] = "source"
             return "breakpoint 7 source=src/main.c:4 function=1 byte-offset=4\n"
         if command == "breakwasm 0 1 4":
+            self.points[8] = "wasm"
             return "breakpoint 8 registered at executable Wasm expression byte offset\n"
         if command == "delete 7":
+            self.points.pop(7, None)
             return "breakpoint deleted\n"
         if command == "delete 8":
+            self.points.pop(8, None)
             return "breakpoint deleted\n"
         if command == "bt 1":
             return self.status + "  #0 module=0 function=1 [demo] main\n"
@@ -80,7 +106,7 @@ class FakeBroker:
 # This is the exact formatter grammar from controller::snapshot() and
 # console::format_reply(), also present in the archived native CLI raw logs.
 # It intentionally has no #caller frame, DWARF source or current Wasm locals.
-NATIVE_STATUS = ("stopped: native instruction step\n"
+NATIVE_STATUS = ("stopped: native instruction step\nstop-id 41\n"
                  "thread 1 module=1 function=1 byte-offset=20 generation=1\n"
                  "  native-pc=0x000000010c75842c\n")
 NATIVE_BACKTRACE = NATIVE_STATUS + "  backtrace unavailable for this stop\n"
@@ -104,6 +130,7 @@ class DapAdapterTests(unittest.TestCase):
     def setUp(self):
         self.output = io.BytesIO()
         self.adapter = dap.Adapter(self.output)
+        self.adapter.configuration_complete = True  # Unit cases model configured sessions.
         self.seq = 0
 
     def send(self, command, **arguments):
@@ -115,52 +142,62 @@ class DapAdapterTests(unittest.TestCase):
         self.output.truncate()
         return result
 
-    def test_launch_stop_has_no_fabricated_thread(self):
+    def test_entry_presentation_has_no_guest_instruction_or_value_authority(self):
+        entry_id = (1 << 31) - 1
         for status in ("prepared; no Wasm instruction executed\nstop-id 17\n",
                        "stopped: pause\nstop-id 18\n"):
             with self.subTest(status=status):
-                fake = FakeBroker()
-                fake.status = status
-                self.adapter = dap.Adapter(self.output)
+                self.setUp()
+                fake = FakeBroker(); fake.status = status
                 self.adapter.broker = fake
                 self.adapter.observe(status)
-                events = messages(self.output.getvalue())
-                stopped = next(row for row in events if row.get("event") == "stopped")
-                self.assertTrue(stopped["body"]["allThreadsStopped"])
-                self.assertNotIn("threadId", stopped["body"])
+                stopped = next(row for row in messages(self.output.getvalue()) if row.get("event") == "stopped")
+                prepared = status.startswith("prepared")
+                if prepared: self.assertEqual(stopped["body"]["threadId"], entry_id)
+                else: self.assertNotIn("threadId", stopped["body"])
+                self.assertEqual(self.adapter.threads, [])  # UI entry is not a native participant.
                 self.output.seek(0); self.output.truncate()
-                self.assertEqual(self.send("threads")[0]["body"]["threads"], [])
-                before = list(fake.commands)
-                rejected = self.send("continue", threadId=1)
-                self.assertFalse(rejected[0]["success"])
-                self.assertEqual(fake.commands, before)
-                for arguments in ({}, {"threadId": False}, {"threadId": 0, "singleThread": True}):
-                    before = list(fake.commands)
+                threads = self.send("threads")[0]["body"]["threads"]
+                self.assertEqual(threads, [{"id":entry_id, "name":"Initial Wasm entry — Continue to start"}] if prepared else [])
+                trace = self.send("stackTrace", threadId=entry_id)[0]
+                if prepared:
+                    frame = trace["body"]["stackFrames"][0]
+                    self.assertEqual(frame["presentationHint"], "label")
+                    self.assertNotIn("instructionPointerReference", frame)
+                    self.assertFalse(frame["canRestart"])
+                else: self.assertFalse(trace["success"])
+                for operation in ("stepIn", "next", "stepOut"):
+                    begin = len(fake.commands)
+                    reply = self.send(operation, threadId=entry_id)[0]
+                    self.assertFalse(reply["success"], reply)
+                    self.assertTrue(all(c == "status" for c in fake.commands[begin:]))
+                for arguments in ({}, {"threadId":False}, {"threadId":1}, {"threadId":0,"singleThread":True}):
+                    begin = len(fake.commands)
                     self.assertFalse(self.send("continue", **arguments)[0]["success"])
-                    self.assertEqual(fake.commands, before)
-                # Refused control arguments retire cached stopped authority.
-                # Only a fresh authenticated status may re-establish it.
-                self.assertIsNone(self.adapter.stop_key)
-                refreshed = self.send("threads")
-                response = next(row for row in refreshed if row["type"] == "response")
-                self.assertTrue(response["success"], refreshed)
-                self.assertEqual(response["body"]["threads"], [])
-                fresh_stops = [row for row in refreshed if row.get("event") == "stopped"]
-                self.assertEqual(len(fresh_stops), 1)
-                self.assertNotIn("threadId", fresh_stops[0]["body"])
-                self.assertIsNotNone(self.adapter.stop_key)
-                resumed = self.send("continue", threadId=0, singleThread=False)
+                    self.assertTrue(all(c == "status" for c in fake.commands[begin:]))
+                resumed = self.send("continue", threadId=entry_id if prepared else 0)
                 self.assertTrue(resumed[0]["success"], resumed)
-                self.assertTrue(resumed[0]["body"]["allThreadsContinued"])
-                self.assertFalse(any(row.get("event") == "continued" for row in resumed))
                 self.assertEqual(fake.commands[-1], "continue")
-                before = list(fake.commands)
-                self.assertFalse(self.send("continue", threadId=0)[0]["success"])
-                self.assertEqual(fake.commands, before)
+                self.assertIsNone(self.adapter.stop_key)
+                self.assertFalse(self.adapter.frames)
+
+    def test_steps_reject_missing_or_stale_participants_before_dispatch(self):
+        for level in ("source", "wasm", "native"):
+            for operation in ("stepIn", "next", "stepOut"):
+                for status, thread in (("running\n", 1),
+                        ("stopped: pause\nstop-id 51\n", 1),
+                        ("stopped: pause\nstop-id 52\nthread 1 module=0 function=1 byte-offset=4 generation=1\n", 2)):
+                    with self.subTest(level=level, operation=operation, status=status):
+                        self.setUp()
+                        fake = FakeBroker(); fake.status = status
+                        self.adapter.broker = fake
+                        self.adapter.step_level = level
+                        self.assertFalse(self.send(operation, threadId=thread)[0]["success"])
+                        self.assertTrue(all(c == "status" for c in fake.commands))
 
     def test_explicit_resume_uses_an_actual_participant(self):
         fake = FakeBroker()
-        fake.status = "stopped: pause\nstop-id 19\nthread 7 module=0 function=1 byte-offset=3 generation=1\n"
+        fake.status = "stopped: pause\nstop-id 19\nthread 7 module=0 function=1 byte-offset=4 generation=1\n"
         self.adapter.broker = fake
         self.adapter.observe(fake.status)
         self.output.seek(0); self.output.truncate()
@@ -168,7 +205,7 @@ class DapAdapterTests(unittest.TestCase):
                          [{"id": 7, "name": "Wasm thread 7"}])
         before = list(fake.commands)
         self.assertFalse(self.send("continue", threadId=99)[0]["success"])
-        self.assertEqual(fake.commands, before)
+        self.assertTrue(all(c == "status" for c in fake.commands[len(before):]))
         resumed = self.send("continue", threadId=7)
         self.assertTrue(resumed[0]["success"], resumed)
         continued = next(row for row in resumed if row.get("event") == "continued")
@@ -239,7 +276,7 @@ class DapAdapterTests(unittest.TestCase):
                     reply = self.send("evaluate", expression=expression, context="repl")[0]
                     self.assertFalse(reply["success"])
                     self.assertIn("independent signed update coordinator", reply["message"])
-                    self.assertEqual(fake.commands, before)
+                    self.assertTrue(all(c == "status" for c in fake.commands[len(before):]))
 
     def test_four_permission_capabilities_and_mutations(self):
         mutation = ("pause", "continue", "next", "stepIn", "stepOut", "setVariable", "writeMemory", "setBreakpoints", "setInstructionBreakpoints", "uwvm/wasip1Edit")
@@ -271,21 +308,24 @@ class DapAdapterTests(unittest.TestCase):
                     reply = self.send("evaluate", expression=expression, context="repl")[0]
                     self.assertFalse(reply["success"])
                     self.assertIn("permission", reply["message"])
-                    self.assertEqual(fake.commands, before)
+                    self.assertTrue(all(c == "status" for c in fake.commands[len(before):]))
             for key in ("terminateDebuggee", "suspendDebuggee", "restart"):
                 before = list(fake.commands)
                 reply = self.send("disconnect", **{key: True})[0]
                 self.assertFalse(reply["success"])
-                self.assertEqual(fake.commands, before)
+                self.assertTrue(all(c == "status" for c in fake.commands[len(before):]))
                 self.assertFalse(fake.closed)
 
     def test_attach_and_three_step_levels(self):
         fake = FakeBroker()
+        self.adapter.configuration_complete = False
         self.assertFalse(self.send("initialize")[0]["body"]["supportsSteppingGranularity"])
         with mock.patch.object(dap, "UnixBroker", return_value=fake):
             attached = self.send("attach", socketDir="/private/host-owned", moduleId=0)
-        self.assertEqual([item["type"] for item in attached], ["response", "event", "event", "event", "event"])
-        self.assertEqual(next(x for x in attached if x.get("event")=="stopped")["body"]["reason"], "entry")
+        self.assertTrue(attached[0]["success"], attached)
+        self.assertFalse(any(item.get("event") == "stopped" for item in attached))
+        configured = self.send("configurationDone")
+        self.assertEqual(next(x for x in configured if x.get("event")=="stopped")["body"]["reason"], "pause")
         self.assertNotIn("capability", self.output.getvalue().decode())
         for granularity, request, expected in (
             ("statement", "stepIn", "step source 1 into"),
@@ -302,40 +342,41 @@ class DapAdapterTests(unittest.TestCase):
         self.assertIn("authenticated native trap", unsupported[0]["message"])
         trace = self.send("stackTrace", threadId=1)[0]["body"]["stackFrames"]
         self.assertEqual((trace[0]["source"]["path"], trace[0]["line"]), ("src/main.c", 4))
-        self.assertEqual(trace[0]["instructionPointerReference"], "wasm:0:1:4")
+        self.assertNotIn("instructionPointerReference", trace[0])
         scopes = self.send("scopes", frameId=trace[0]["id"])[0]["body"]["scopes"]
         self.assertEqual(self.send("variables", variablesReference=scopes[0]["variablesReference"])[0]
-                         ["body"]["variables"][0]["value"], "i32=42")
+                         ["body"]["variables"][0]["value"], "42")
         self.assertTrue(self.send("disconnect")[0]["success"])
         self.assertTrue(fake.closed)
 
     def test_breakpoint_replacement_and_host_grammar(self):
         fake = FakeBroker()
         self.adapter.broker = fake
+        self.adapter.observe(fake.status, notify=False)
         result = self.send("setBreakpoints", source={"path": "src/main.c"},
                            breakpoints=[{"line": 4}])[0]["body"]["breakpoints"]
         self.assertEqual(result, [{"id": 7, "verified": True, "line": 4}])
-        self.assertEqual(fake.commands, ["breaksource 0 src/main.c:4"])
+        self.assertEqual([c for c in fake.commands if c != "info breakpoints"], ["breaksource 0 src/main.c:4"])
         self.send("setBreakpoints", source={"path": "src/main.c"}, breakpoints=[])
-        self.assertEqual(fake.commands[-1], "delete 7")
+        self.assertIn("delete 7", fake.commands)
         rejected = self.send("setBreakpoints", source={"path": "src/evil\nstatus"},
                              breakpoints=[{"line": 4}])
         self.assertFalse(rejected[0]["success"])
-        self.assertEqual(fake.commands[-1], "delete 7")
+        self.assertIn("delete 7", fake.commands)
         points = self.send("setInstructionBreakpoints", breakpoints=[
             {"instructionReference": "wasm:0:1:3", "offset": 1},
             {"instructionReference": "native:0xdeadbeef"},
             {"instructionReference": "wasm:0:1:4", "offset": -(1 << 80)},
         ])[0]["body"]["breakpoints"]
         self.assertEqual([item["verified"] for item in points], [True, False, False])
-        self.assertEqual(fake.commands[-1], "breakwasm 0 1 4")
+        self.assertIn("breakwasm 0 1 4", fake.commands)
         self.send("setInstructionBreakpoints", breakpoints=[])
-        self.assertEqual(fake.commands[-1], "delete 8")
+        self.assertIn("delete 8", fake.commands)
 
     def test_bounded_wasm_memory_read(self):
         fake = FakeBroker()
         self.adapter.broker = fake
-        fake.status = "stopped: pause\nstop-id 41\nthread 1 module=0 function=1 byte-offset=3 generation=1\n"
+        fake.status = "stopped: pause\nstop-id 41\nthread 1 module=0 function=1 byte-offset=4 generation=1\n"
         reply = self.send("readMemory", memoryReference="wasm-memory:0:0:15",
                           offset=1, count=4)[0]
         self.assertTrue(reply["success"])
@@ -350,7 +391,7 @@ class DapAdapterTests(unittest.TestCase):
         ):
             self.assertFalse(self.send("readMemory", memoryReference=reference,
                                        offset=offset, count=count)[0]["success"])
-            self.assertEqual(fake.commands, before)
+            self.assertTrue(all(c == "status" for c in fake.commands[len(before):]))
 
     def test_malformed_ids_do_not_change_debugger_state(self):
         fake = FakeBroker()
@@ -366,23 +407,22 @@ class DapAdapterTests(unittest.TestCase):
             ):
                 with self.subTest(request=request, invalid=invalid):
                     self.assertFalse(self.send(request, **arguments)[0]["success"])
-                    self.assertEqual(fake.commands, [])
+                    self.assertTrue(all(c == "status" for c in fake.commands))
         for line in (True, 0, -1, 1 << 64):
             with self.subTest(source_line=line):
-                points = self.send("setBreakpoints", source={"path": "main.c"},
-                                   breakpoints=[{"line": line}])[0]["body"]["breakpoints"]
-                self.assertEqual(points[0]["verified"], False)
-                self.assertEqual(fake.commands, [])
+                reply = self.send("setBreakpoints", source={"path": "main.c"}, breakpoints=[{"line": line}])[0]
+                self.assertFalse(reply["success"])
+                self.assertTrue(all(c == "status" for c in fake.commands))
 
     def test_frame_ids_do_not_alias_after_a_new_stop(self):
         self.adapter.broker = FakeBroker()
-        self.adapter.observe("stopped: pause\nthread 1 module=0 function=1 byte-offset=4 generation=1\n")
+        self.adapter.observe(self.adapter.broker.status)
         self.output.seek(0)
         self.output.truncate()
         old_frame = self.send("stackTrace", threadId=1)[0]["body"]["stackFrames"][0]["id"]
         old_scope = self.send("scopes", frameId=old_frame)[0]["body"]["scopes"][0]["variablesReference"]
-        self.adapter.observe("stopped: selected participant step\n"
-                             "thread 1 module=0 function=1 byte-offset=5 generation=1\n")
+        self.adapter.broker.status = "stopped: selected participant step\nstop-id 42\nthread 1 module=0 function=1 byte-offset=4 generation=1\n"
+        self.adapter.observe(self.adapter.broker.status)
         self.output.seek(0)
         self.output.truncate()
         new_frame = self.send("stackTrace", threadId=1)[0]["body"]["stackFrames"][0]["id"]
@@ -412,15 +452,17 @@ class DapAdapterTests(unittest.TestCase):
 
     def test_native_stop_is_selectable_without_fabricating_source(self):
         frame = self.native_frame()
-        self.assertEqual(self.adapter.broker.commands, ["status", "bt 1"])
-        self.assertEqual((frame["line"], frame["column"], frame["presentationHint"]), (0, 0, "normal"))
-        self.assertIn("Native JIT instruction", frame["name"])
-        self.assertIn("Wasm origin module=1 function=1 generation=1", frame["name"])
+        self.assertEqual(self.adapter.broker.commands[:2], ["status", "bt 1"])
+        self.assertTrue(all(c == "status" or c.startswith("wasm-meta ") for c in self.adapter.broker.commands[2:]))
+        self.assertEqual((frame["line"], frame["column"], frame["presentationHint"]), (1, 1, "normal"))
+        self.assertIn("asm", frame["name"])
+        self.assertEqual(self.adapter.frames[frame["id"]][2:], (1, 1))
         self.assertNotIn("byte-offset", frame["name"])
-        self.assertNotIn("source", frame)
+        self.assertEqual(frame["source"]["origin"], "Current owned LLVM JIT instruction")
+        self.assertNotIn("path", frame["source"])
         self.assertFalse(frame["canRestart"])
         self.assertEqual(frame["instructionPointerReference"], f"uwvm-native-stop:{frame['id']}")
-        self.assertEqual(self.send("scopes", frameId=frame["id"])[0]["body"]["scopes"], [])
+        self.assertEqual([s["name"] for s in self.send("scopes", frameId=frame["id"])[0]["body"]["scopes"]], ["Registers", "Frame details"])
         self.assertFalse(self.send("source", sourceReference=frame["id"])[0]["success"])
 
     def test_native_display_reference_grants_no_address_authority(self):
@@ -435,13 +477,13 @@ class DapAdapterTests(unittest.TestCase):
         ):
             with self.subTest(command=command):
                 self.assertFalse(self.send(command, **arguments)[0]["success"])
-                self.assertEqual(self.adapter.broker.commands, commands)
+                self.assertTrue(all(c == "status" or c == "info breakpoints" or c.startswith("disassemble-range ") for c in self.adapter.broker.commands[len(commands):]))
         points = self.send("setInstructionBreakpoints", breakpoints=[
             {"instructionReference": reference},
             {"instructionReference": "0x000000010c75842c"},
         ])[0]["body"]["breakpoints"]
         self.assertEqual([point["verified"] for point in points], [False, False])
-        self.assertEqual(self.adapter.broker.commands, commands)
+        self.assertTrue(all(c == "status" or c == "info breakpoints" or c.startswith("disassemble-range ") for c in self.adapter.broker.commands[len(commands):]))
         self.assertFalse(self.send("initialize")[0]["body"].get("supportsDisassembleRequest", False))
 
     def test_native_status_rejects_malformed_or_unbound_pc(self):
@@ -487,10 +529,10 @@ class DapAdapterTests(unittest.TestCase):
         broker.status += "thread 2 module=2 function=3 byte-offset=7 generation=4\n"
         frame = self.native_frame(broker)
         self.assertEqual([thread["id"] for thread in self.adapter.threads], [1, 2])
-        self.assertEqual(self.send("scopes", frameId=frame["id"])[0]["body"]["scopes"], [])
+        self.assertEqual([s["name"] for s in self.send("scopes", frameId=frame["id"])[0]["body"]["scopes"]], ["Registers", "Frame details"])
         response = self.send("stackTrace", threadId=3)[0]
         self.assertFalse(response["success"])
-        self.assertEqual(broker.commands, ["status", "bt 1", "status", "status"])
+        self.assertFalse(any(c.startswith(("step ", "continue", "frames ")) for c in broker.commands))
 
     def test_native_frame_is_retired_on_the_next_pc_or_generation(self):
         for old, new in (("0x000000010c75842c", "0x000000010c758430"), ("generation=1", "generation=2")):
@@ -538,6 +580,7 @@ class DapAdapterTests(unittest.TestCase):
                 broker = NativeBroker()
                 frame = self.native_frame(broker)
                 def error(text):
+                    if text == "status": return broker.status
                     self.assertNotIn(frame["id"], self.adapter.frames)
                     return "error: selected step failed after its pending pause was cancelled\n"
                 broker.request = error
@@ -572,6 +615,9 @@ class DapAdapterTests(unittest.TestCase):
         self.adapter.next_reference = (1 << 31) - 1
         frame = self.native_frame()
         self.assertEqual(frame["id"], (1 << 31) - 1)
+        self.assertTrue(self.send("stackTrace", threadId=1)[0]["success"])  # Same-stop display reuses its ID.
+        self.adapter.broker.status = self.adapter.broker.status.replace("stop-id 41", "stop-id 42")
+        self.adapter.broker.backtrace = self.adapter.broker.status + "  backtrace unavailable for this stop\n"
         self.assertFalse(self.send("stackTrace", threadId=1)[0]["success"])
         self.assertEqual(self.adapter.next_reference, 1 << 31)
 

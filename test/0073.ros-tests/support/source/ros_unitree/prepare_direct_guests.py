@@ -235,7 +235,7 @@ def boundary(frame,api,utilities,schema,path,positive,*,modular=False):
         else:
             require(row['module'] == 'wasi_snapshot_preview1' and wasi.get(row['name']) == signature,
                     'only basic stdio/exit WASI is admitted; no env/preload/optional right')
-    require('capability_open' in ros and (not positive or {'event_poll','topic_publish'} <= ros), 'real selected ROS imports required')
+    require('capability_open' in ros and (not positive or {'message_poll','topic_publish'} <= ros), 'real selected ROS imports required')
     require({('wasi_snapshot_preview1','fd_write'),('wasi_snapshot_preview1','proc_exit')} <= seen and
             (not positive or ('wasi_snapshot_preview1','fd_read') in seen), 'actual basic command I/O required')
     require(table['start_function'] is None and len(table['memories']) == 1 and

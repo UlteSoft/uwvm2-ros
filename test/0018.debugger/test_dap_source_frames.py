@@ -12,6 +12,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata, code
 
 
 PATH = Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py"
@@ -60,6 +61,13 @@ class Broker:
 
     def request(self, command):
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop, epoch=self.epoch, functions=3, memories=1)
+        if inventory is not None: return inventory
+        if command.startswith("wasm-code "):
+            return code(command, stop=self.stop, epoch=self.epoch, function=1, thread=1, generation=1)
+        if command.startswith(("operands 1 ", "controls 1 ", "saved 1 ", "handlers 1 ")):
+            first = int(command.split()[-2])
+            return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch={self.epoch} first={first} total=0\n"
         if command == "status":
             return self.status()
         if command == "bt 1":
@@ -101,6 +109,8 @@ class Broker:
             first, count = map(int, command.split()[-2:])
             rows = "local 0 i32 = 5\n" if first == 0 and count else ""
             return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch=7 first={first} total=1\n" + rows
+        if command.startswith(("locals wasm 1 1 ", "controls 1 1 ", "handlers 1 1 ", "saved 1 1 ", "operands 1 1 ")):
+            return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch={self.epoch} first=0 total=0\n"
         if command == "locals 1":
             return "local 0 i32=5\n"
         if command in ("continue", "c"):
@@ -169,7 +179,7 @@ class SourceFrameTests(unittest.TestCase):
         self.assertEqual(len({row["id"] for row in frames}), 4)
         self.assertEqual(len(self.adapter.source_frame_ordinals), 4)
         self.assertTrue(all("instructionPointerReference" not in row for row in frames[:2] + frames[3:]))
-        self.assertEqual(frames[2]["instructionPointerReference"], "wasm:0:1:4")
+        self.assertNotIn("instructionPointerReference", frames[2])
         self.assertTrue(all(not row["canRestart"] for row in frames))
 
     def test_source_page_retired_during_copy_cannot_publish_frame_ids(self):
@@ -378,6 +388,52 @@ class SourceFrameTests(unittest.TestCase):
                 self.assertEqual(self.broker.commands[before:], ["status", f"print-frame 1 41 0 {expression}"])
                 self.assert_retired()
 
+    def test_locally_invalid_watch_preserves_source_variables(self):
+        frame = self.frames()[0]
+        reference = self.source_scope(frame)
+        for expression in ("next: unsigned int", "value()", "value;continue"):
+            before = len(self.broker.commands)
+            reply = self.send("evaluate", frameId=frame["id"], context="watch", expression=expression)
+            self.assertFalse(reply["success"], reply)
+            self.assertEqual(self.broker.commands[before:], [])
+            values = self.send("variables", variablesReference=reference)
+            self.assertTrue(values["success"], values)
+            self.assertEqual(values["body"]["variables"][0]["value"], "10")
+
+    def test_expected_unavailable_watch_preserves_same_stop_only(self):
+        for change in (None, "stop", "epoch", "state"):
+            with self.subTest(change=change):
+                self.setUp()
+                frame = self.frames()[0]
+                reference = self.source_scope(frame)
+                self.broker.print_packet = "error: source value unavailable: current captured location, layout or single unshared local-memory read is unavailable\n"
+                if change is not None:
+                    self.broker.after_copy = lambda: setattr(self.broker, change, "running" if change == "state" else getattr(self.broker, change) + 1)
+                reply = self.send("evaluate", frameId=frame["id"], context="watch", expression="next")
+                self.assertFalse(reply["success"], reply)
+                self.assertNotIn("body", reply)
+                if change is not None:
+                    self.assert_retired()
+                else:
+                    values = self.send("variables", variablesReference=reference)
+                    self.assertTrue(values["success"], values)
+                    self.assertEqual(values["body"]["variables"][0]["value"], "10")
+
+    def test_grouped_and_prefixed_watch_keep_other_scopes_on_read_refusal(self):
+        frame = self.frames()[0]
+        reference = self.source_scope(frame)
+        self.broker.print_packet = "error: source value unavailable: current captured location, layout or single unshared local-memory read is unavailable\n"
+        for command, args in (
+                ("uwvm/watch", {"level": "source", "expression": "next"}),
+                ("evaluate", {"frameId": frame["id"], "context": "watch", "expression": "src:next"}),
+                ("uwvm/watch", {"level": "source", "expression": "value;continue"}),
+                ("uwvm/watch", {"level": "native", "expression": "value()"})):
+            reply = self.send(command, **args)
+            self.assertFalse(reply["success"], reply)
+            values = self.send("variables", variablesReference=reference)
+            self.assertTrue(values["success"], values)
+            self.assertEqual(values["body"]["variables"][0]["value"], "10")
+
     def test_scalar_watch_changed_or_wrong_stop_discards_copied_reply(self):
         for changed in ("stop", "epoch", "reply_stop"):
             with self.subTest(changed=changed):
@@ -441,17 +497,15 @@ class SourceFrameTests(unittest.TestCase):
         frames = self.frames()
         for ordinal, frame in enumerate(frames):
             scopes = self.send("scopes", frameId=frame["id"])["body"]["scopes"]
-            expected = ["Source variables", "Wasm locals", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"] if ordinal == 2 else ["Caller variables unavailable"] if ordinal == 3 else ["Source variables"]
-            if ordinal == 2:
-                expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
-            if ordinal == 2 and hasattr(self.adapter, "ros_scope_stops"):
-                expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
-                self.assertTrue(all(row["expensive"] and row["variablesReference"] > 0 for row in scopes[6:]))
-                self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
+            expected = (["Source variables", "Wasm locals", "Wasm operand stack", "Wasm control stack",
+                         "Wasm saved parameters", "Wasm exception handlers", "Frame details"] if ordinal == 2
+                        else ["Caller variables unavailable", "Frame details"] if ordinal == 3
+                        else ["Source variables", "Frame details"])
+            self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
             self.assertEqual([row["name"] for row in scopes], expected)
             if ordinal == 2:
                 reply = self.send("variables", variablesReference=scopes[1]["variablesReference"])
-                self.assertEqual(reply["body"]["variables"][0]["value"], "i32=5")
+                self.assertEqual(reply["body"]["variables"][0]["value"], "5")
                 self.assertEqual(self.broker.commands[-3:], ["status", "locals wasm 1 0 0 1", "status"])
 
     def test_caller_scope_is_unavailable_and_never_prints_or_copies_values(self):
@@ -469,10 +523,11 @@ class SourceFrameTests(unittest.TestCase):
     def test_authenticated_saved_caller_routes_values_to_its_actual_ordinal(self):
         self.broker.saved_caller = True
         caller = self.frames()[3]
-        self.assertIn("saved caller values", caller["name"])
+        self.assertIn("caller", caller["name"])
+        self.assertTrue(self.adapter.source_frame_ordinals[caller["id"]][1]["current"])
         self.assertNotIn("instructionPointerReference", caller)
         scopes = self.send("scopes", frameId=caller["id"])["body"]["scopes"]
-        self.assertEqual([row["name"] for row in scopes], ["Source variables"])
+        self.assertEqual([row["name"] for row in scopes], ["Source variables", "Frame details"])
         values = self.send("variables", variablesReference=scopes[0]["variablesReference"])
         self.assertTrue(values["success"], values)
         self.assertEqual(values["body"]["variables"][0]["value"], "13")
@@ -623,7 +678,7 @@ class SourceFrameTests(unittest.TestCase):
         native_frames = self.frames()
         self.assertEqual(len(native_frames), 1)
         self.assertFalse(self.adapter.source_frame_ordinals)
-        self.assertEqual([scope["name"] for scope in self.send("scopes", frameId=native_frames[0]["id"])["body"]["scopes"]], ["Registers"])
+        self.assertEqual([scope["name"] for scope in self.send("scopes", frameId=native_frames[0]["id"])["body"]["scopes"]], ["Registers", "Frame details"])
 
     def test_success_or_rejected_replace_retires_before_send_without_poll(self):
         for rejected in (False, True):
@@ -648,10 +703,11 @@ class SourceFrameTests(unittest.TestCase):
     def test_unavailable_metadata_uses_labels_without_ordinal_watch_permission(self):
         self.broker.frame_error = True
         frames = self.frames()
-        self.assertEqual(self.broker.commands, ["status", "bt 1", "frames 1 41", "status"])
+        self.assertEqual(self.broker.commands[:4], ["status", "bt 1", "frames 1 41", "status"])
+        self.assertTrue(all(c == "status" or c.startswith("wasm-meta ") for c in self.broker.commands[4:]))
         self.assertTrue(frames[0]["name"].startswith("Inlined "))
         self.assertFalse(self.adapter.source_frame_ordinals)
-        self.assertEqual(self.send("scopes", frameId=frames[0]["id"])["body"]["scopes"], [])
+        self.assertEqual([s["name"] for s in self.send("scopes", frameId=frames[0]["id"])["body"]["scopes"]], ["Frame details"])
         before = len(self.broker.commands)
         self.assertFalse(self.send("evaluate", frameId=frames[1]["id"], context="watch", expression="value")["success"])
         self.assertEqual(self.broker.commands[before:], [])

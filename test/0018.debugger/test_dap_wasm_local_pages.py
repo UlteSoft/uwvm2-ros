@@ -38,7 +38,10 @@ class Broker(life.Broker):
 
 class Pages(unittest.TestCase):
     send = life.Lifetime.send
-    handles = life.Lifetime.handles
+    def handles(self):
+        result = life.Lifetime.handles(self)
+        self.broker.pages = 0  # Fault injection begins at the paged-copy probe.
+        return result
 
     def setUp(self):
         life.Lifetime.setUp(self)
@@ -50,7 +53,7 @@ class Pages(unittest.TestCase):
         self.assertTrue(result["success"], result)
         rows = result["body"]["variables"]
         self.assertEqual([v["name"] for v in rows], [f"local {i}" for i in expected])
-        self.assertEqual([v["value"] for v in rows], [f"i32={i}" for i in expected])
+        self.assertEqual([v["value"] for v in rows], [str(i) for i in expected])
         self.assertTrue(all(v["variablesReference"] == 0 and "memoryReference" not in v for v in rows))
 
     def test_window_across_old_capture_limit_and_end(self):

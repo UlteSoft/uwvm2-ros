@@ -23,6 +23,11 @@
 ## Introduction
 UlteSoft WebAssembly Virtual Machine 2 for ROS
 
+The legacy ROS VM ABI family (`uwvm_ros1*_v1`, `uwvm_ros2*_v1` and
+`uwvm_portable_robot_v1`) is **deprecated**. New robot integrations target
+`uwvm_ros_v2`; see [scope, implemented coverage and migration](documents/runtime/ros-host-interfaces.md#names-and-compatibility).
+Existing legacy ABI and authority behavior remain unchanged.
+
 ## Features
 ### WASM Feature Extensions
 Most wasm standards are supported. See [feature.md](documents/features.md). For detailed changes in each WebAssembly release, see [wasm-release.md](documents/wasm-release.md).
@@ -50,10 +55,12 @@ High-performance, spec-compliant WebAssembly binary parser built on concept-orie
 WASI Preview 1 implementations for memory32 and memory64 are compiled into the ROS product. Each module starts with no exposed WASI imports and no host authority. Explicit Single or Group policies separately enable the namespace, select each interface's hidden/deny/allow state, and grant operations and resources. Socket implementations are present but convey no default rights. See [WASI commands](documents/command-line/wasi.md) and [host permissions](documents/command-line/host-permissions.md).
 
 ### Plugin-facing host APIs
-Preload modules (dynamic libraries / weak-symbol plugins) can consume a stable host-side API for linear-memory access, and can optionally consume the UWVM2 WASI Preview 1 host API as well. The WASI table is disabled by default and must be explicitly enabled from the command line. When enabled for a single target or named group, plugin-facing WASI calls are resolved against that target's WASI environment rather than one process-wide table. Native dynamic libraries still execute as host code and must be treated as trusted host extensions.
+Legacy native preloading is compiled out by default. An explicit `--enable-preload-dl=y` rebuild restores it on supported targets, including its security warning and optional signature verification. It executes native code inside the VM and is incompatible with ROSv2 scene deployment. ROSv2 requires every native driver, including official and open-source binaries, to run in an isolated external process. See the [native driver boundary](documents/runtime/ros-native-driver-isolation.md). Wasm library preloading remains available.
 
 ### ROS 1 and ROS 2 runtime extensions
-ROS 1 and ROS 2 host interfaces are mandatory build components, with no default guest exposure or authority. They use separately configured native Gateways. Each Wasm instance receives its explicit policy for Topic, Service, Parameter, Graph, Action, TF, Time, Logging and ROS 2 Lifecycle access; enabling a namespace alone grants none of these operations. The core build requires no ROS libraries. See the [ROS 1 CLI](documents/command-line/ros1.md), [ROS 2 CLI](documents/command-line/ros2.md) and [numbered ROS test suites](test/0073.ros-tests).
+ROSv2 is compiled by default with `--import-u2rosv2=y`; its interfaces and resource authority start empty. It provides the independent `uwvm_ros_v2` capability boundary for robot workflows. Platform extensions narrow common permissions and do not embed vendor drivers. The core build requires no ROS libraries. See the [ROSv2 CLI](documents/command-line/ros-scene.md) and [implemented provider coverage](documents/runtime/ros-scene-provider-contracts.md).
+
+The deprecated ROSv1 host families are compiled out by default. Explicit `--import-u2rosv1-ros1=y` and `--import-u2rosv1-ros2=y` rebuilds restore their retained implementations and CLI options. Runtime enablement still requires separate grants and emits the deprecation warning. These old build switches do not enable ROSv2 or authorize native drivers.
 
 The [uwvm2-ros SDK](https://github.com/UlteSoft/uwvm2-ros-sdk) is maintained
 in a separate MIT-licensed repository. It provides language bindings, platform

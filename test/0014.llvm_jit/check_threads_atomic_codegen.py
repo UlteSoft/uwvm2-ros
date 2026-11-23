@@ -53,7 +53,7 @@ def main():
         ir = opt.read_text()
         body = re.search(r'(?ms)^define [^\n]*@uwvm_\w+_func_0\([^\n]*\).*?^}', ir).group()
         if args.operation == 'store':
-            stores = re.findall(r'store atomic i(\d+) .*?seq_cst, align (\d+)', body)
+            stores = re.findall(r'store atomic volatile i(\d+) .*?seq_cst, align (\d+)', body)
             assert len(stores) == 2 and all(int(bits) == 8 * int(align) for bits, align in stores), source
         else:
             updates = re.findall(r'(?m)^.*(?:atomicrmw|cmpxchg) .*$', body)

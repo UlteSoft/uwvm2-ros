@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+from fixture_wasm_metadata import metadata, code
 import unittest
 from unittest import mock
 
@@ -39,6 +40,10 @@ class Broker:
     def request(self, command):
         if command == "permissions": return "permissions full\n"
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop, epoch=7, functions=3)
+        if inventory is not None: return inventory
+        instructions = code(command, stop=self.stop, epoch=7, function=1)
+        if instructions is not None: return instructions
         if command == "status":
             return self.status()
         if command == "bt 1":
@@ -71,6 +76,8 @@ class Broker:
             first, count = map(int, command.split()[-2:])
             rows = "local 0 i32 = 5\n" if first == 0 and count else ""
             return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch=7 first={first} total=1\n" + rows
+        if command.startswith(("controls 1 0 ", "handlers 1 0 ", "saved 1 0 ", "operands 1 0 ")):
+            return f"wasm-stop {self.stop}\nWasm state thread=1 module=0 epoch=7 first=0 total=0\n"
         if command == "locals 1":
             return "local 0 i32=5\n"
         raise AssertionError(command)
@@ -127,7 +134,7 @@ class StepInlineTests(unittest.TestCase):
         for granularity in ("line", "unknown"):
             before = self.broker.commands[:]
             self.assertFalse(self.send("stepIn", threadId=1, granularity=granularity)["success"])
-            self.assertEqual(self.broker.commands, before)
+            self.assertTrue(all(c == "status" for c in self.broker.commands[len(before):]))
         self.assertFalse(any(command.startswith(("step asm ", "step source ")) for command in self.broker.commands))
 
     def test_explicit_native_level_keeps_exact_single_instruction(self):
@@ -154,12 +161,12 @@ class StepInlineTests(unittest.TestCase):
         self.assertTrue(self.attach(stepLevel="native")["success"])
         before = len(self.broker.commands)
         self.assertFalse(self.send("stepOut", threadId=1)["success"])
-        self.assertEqual(self.broker.commands[before:], ["finish asm 1"])
+        self.assertEqual([c for c in self.broker.commands[before:] if c != "status"], ["finish asm 1"])
         self.assertTrue(self.send("stepIn", threadId=1)["success"])
         self.broker.native_finish_error = True
         before = len(self.broker.commands)
         self.assertFalse(self.send("stepOut", threadId=1, granularity="instruction")["success"])
-        self.assertEqual(self.broker.commands[before:], ["finish asm 1"])
+        self.assertEqual([c for c in self.broker.commands[before:] if c != "status"], ["finish asm 1"])
 
     def test_source_instruction_stepout_uses_native_parent(self):
         self.assertTrue(self.attach(stepLevel="source")["success"])
@@ -176,12 +183,12 @@ class StepInlineTests(unittest.TestCase):
             reply = self.send("next", threadId=1)
             self.assertFalse(reply["success"])
             self.assertIn("authenticated native trap", reply["message"])
-            self.assertEqual(self.broker.commands[before:], ["ni 1"])
+            self.assertEqual([c for c in self.broker.commands[before:] if c != "status"], ["ni 1"])
             self.assertEqual(self.adapter.frames, {})
         for value in (0, -1, True, "1"):
             before = self.broker.commands[:]
             self.assertFalse(self.send("next", threadId=value)["success"])
-            self.assertEqual(self.broker.commands, before)
+            self.assertTrue(all(c == "status" for c in self.broker.commands[len(before):]))
 
     def test_source_instruction_next_uses_native_policy(self):
         self.assertTrue(self.attach()["success"])
@@ -209,27 +216,20 @@ class StepInlineTests(unittest.TestCase):
         self.assertTrue(self.attach()["success"])
         frames = self.send("stackTrace", threadId=1)["body"]["stackFrames"]
         self.assertEqual([row["name"] for row in frames[:2]], ["Inlined same call-site src/nested.cpp:10:2", "Inlined same call-site src/nested.cpp:20:4"])
-        self.assertTrue(frames[2]["name"].startswith("#0 "))
-        self.assertTrue(frames[3]["name"].startswith("#1 "))
+        self.assertEqual(frames[2]["name"], "func 1")
+        self.assertEqual(frames[3]["name"], "func 2")
         self.assertEqual(len({row["id"] for row in frames}), 4)
         for row in frames[:2]:
             self.assertEqual((row["line"], row["column"], row["presentationHint"]), (0, 0, "label"))
             self.assertFalse(row["canRestart"])
             self.assertNotIn("source", row); self.assertNotIn("instructionPointerReference", row)
-            self.assertEqual(self.send("scopes", frameId=row["id"])["body"]["scopes"], [])
+            self.assertEqual([s["name"] for s in self.send("scopes", frameId=row["id"])["body"]["scopes"]], ["Frame details"])
         scopes = self.send("scopes", frameId=frames[2]["id"])["body"]["scopes"]
-        expected = ["Wasm locals", "Source variables", "WASIp1 arguments", "WASIp1 environment", "WASIp1 descriptors", "WASIp1 preopens", "WASIp1 policy groups and accounting"]
-        expected += ["WASIp1 calls (recorded)", "ROS1 calls (recorded)", "ROS2 calls (recorded)"]
-        if hasattr(self.adapter, "ros_scope_stops"):
-            expected += ["ROS configured policy groups", "ROS capabilities (process-owned)", "ROS instances (backend sessions)", "ROS event queues (metadata only)"]
-            selections = ("capabilities", "instances", "events")
-            for row, selection in zip(scopes[-3:], selections):
-                self.assertTrue(row["expensive"] and row["variablesReference"] > 0)
-                self.assertEqual(self.adapter.ros_scope_stops[row["variablesReference"]],
-                                 (self.adapter.stop_key, selection))
-            self.assertFalse(any(command.startswith(("info ros", "trace ros")) for command in self.broker.commands))
+        expected = ["Wasm locals", "Wasm operand stack", "Wasm control stack", "Wasm saved parameters", "Wasm exception handlers", "Frame details"]
+        self.assertFalse(self.adapter.source_scope_stops)
+        self.assertFalse(self.adapter.ros_scope_stops)
         self.assertEqual([row["name"] for row in scopes], expected)
-        self.assertEqual(self.send("variables", variablesReference=scopes[0]["variablesReference"])["body"]["variables"][0]["value"], "i32=5")
+        self.assertEqual(self.send("variables", variablesReference=scopes[0]["variablesReference"])["body"]["variables"][0]["value"], "5")
 
     def test_inline_labels_cannot_read_source_values_memory_or_restart(self):
         self.assertTrue(self.attach()["success"])
@@ -261,14 +261,14 @@ class StepInlineTests(unittest.TestCase):
     def test_unidentified_or_native_stop_never_exposes_inline_frames(self):
         self.assertTrue(self.attach()["success"])
         self.broker.identified = False
-        frames = self.send("stackTrace", threadId=1)["body"]["stackFrames"]
-        self.assertEqual(len(frames), 2); self.assertEqual(self.adapter.inline_frames, set())
+        self.assertFalse(self.send("stackTrace", threadId=1)["success"])
+        self.assertEqual(self.adapter.inline_frames, set())
         self.broker.identified = True; self.broker.native = True
         self.assertFalse(self.send("stackTrace", threadId=1)["success"])
         self.assertEqual(self.adapter.inline_frames, set())
         self.broker.labels = "  inline metadata unavailable: native trap has no current Wasm source position\n"
         frames = self.send("stackTrace", threadId=1)["body"]["stackFrames"]
-        self.assertEqual(len(frames), 1); self.assertIn("Native JIT instruction", frames[0]["name"])
+        self.assertEqual(len(frames), 1); self.assertEqual(frames[0]["name"], "func 1 · asm")
 
     def test_literal_escaped_labels_and_absent_callsite_are_only_display(self):
         self.assertTrue(self.attach()["success"])

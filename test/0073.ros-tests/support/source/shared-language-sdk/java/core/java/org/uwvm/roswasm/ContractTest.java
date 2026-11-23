@@ -22,7 +22,7 @@ public final class ContractTest {
             case "capability_open":return openCode==0?Result.value(next++):new Result(openCode);
             case "capability_close":closed.add(handle);return new Result(closeCode);
             case "topic_subscribe":return new Result(subscribeCode);
-            case "event_poll":return poll;
+            case "message_poll":return poll;
             default:return new Result(0);
             }
         }

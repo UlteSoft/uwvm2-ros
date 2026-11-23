@@ -4,6 +4,11 @@
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/DynamicLibrary.h>
+#if defined(__arm__) && defined(__ARM_EABI__)
+#include <unwind.h>
+extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr0(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
+#endif
 #include <memory>
 #include <cstdio>
 #include <cstdlib>
@@ -11,6 +16,13 @@ namespace cp=uwvm2::runtime::checkpoint;
 namespace emit=uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
 static unsigned entered{},left{};
 static void require(bool value) { if(!value) { std::fputs("GC scalar leaf IR assertion failed\n",stderr);std::abort(); } }
+// No typed Wasm function or ROS call exists in this isolated native probe.
+// Resolve the emitter's unused publication symbol without linking duplicate
+// real VM bridge definitions, and fail if it is unexpectedly executed.
+namespace uwvm2::runtime::lib
+{
+    void llvm_jit_publish_ros_provenance(std::uintptr_t) noexcept { std::abort(); }
+}
 namespace uwvm2::runtime::lib::details
 {
 extern "C++" std::uint64_t llvm_jit_debug_host_enter_abi_bridge() noexcept { ++entered; return 1u; }
@@ -43,6 +55,9 @@ static void probe(cp::function_plan* plan,bool debug,unsigned expected)
 int main()
 {
     require(!llvm::InitializeNativeTarget()&&!llvm::InitializeNativeTargetAsmPrinter());
+#if defined(__arm__) && defined(__ARM_EABI__)
+    llvm::sys::DynamicLibrary::AddSymbol("__aeabi_unwind_cpp_pr0",reinterpret_cast<void*>(&__aeabi_unwind_cpp_pr0));
+#endif
     cp::function_plan observer;observer.profile=cp::compilation_profile::create_for_trusted_observer();
     cp::function_plan resumable;resumable.profile=cp::compilation_profile::create_for_trusted_manager();
     cp::function_plan missing;

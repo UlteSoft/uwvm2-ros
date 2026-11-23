@@ -1,4 +1,9 @@
-# Optional secondary verification of native drivers
+# Optional secondary verification of legacy native preload
+
+This legacy feature is compiled out by default. Rebuild explicitly with
+`--enable-preload-dl=y` to restore it. It is not a ROSv2 driver launcher and
+cannot be combined with ROSv2 scene deployment. ROSv2 requires every native
+driver to run outside the VM; see [native driver isolation](../runtime/ros-native-driver-isolation.md).
 
 `--wasm-register-dl PATH [NAME]` is an explicit host registration. Secondary
 signature verification is **off by default**, independently of WSEA's selected
@@ -53,9 +58,9 @@ When loading via the sealed `/proc/self/fd` inode, `$ORIGIN` does not refer to
 the original input directory. Deployment must supply an approved resolvable
 dependency closure.
 
-ROS permanently disables weak-symbol provider discovery. Explicit trusted
-native drivers remain supported; implicit weak registration is not an
-alternative admission route.
+ROS permanently disables weak-symbol provider discovery. The explicit legacy
+native preload path is retained behind its build gate; implicit weak
+registration is not an alternative admission route.
 
 ## Offline ELF verification
 

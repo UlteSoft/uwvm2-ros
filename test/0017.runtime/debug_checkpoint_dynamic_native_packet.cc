@@ -71,7 +71,7 @@ int main()
     cp::shadow_ledger reusable{source->get().profile};
     require(reusable.enter(identity,source)==cp::status::ok &&
         reusable.materialize_compiler_native_data(identity,source,2u,payload,flags)==cp::status::ok,"direct compiler packet materialization");
-    auto const storage{reusable.frames_while_actually_stopped().back().values.data()};
+    auto const original_frame{reusable.frames_while_actually_stopped().back()};
     for(unsigned iteration{};iteration<10000u;++iteration)
     {
         auto const changed_bits{nan64 ^ static_cast<::std::uint64_t>(iteration)};
@@ -80,8 +80,9 @@ int main()
         auto const length{source->get().sites[site-1u].slots.size()};
         require(reusable.materialize_compiler_native_data(identity,source,site,::std::span<::std::byte const>{payload}.first(length*cp::native_slot_bytes),flags)==cp::status::ok,
             "alternating exact pre-op operand extents remain valid");
-        auto const& frame{reusable.frames_while_actually_stopped().back()};
-        require(frame.values.data()==storage && frame.site==site && frame.values.size()==length,"steady-state capture reuses activation storage");
+        auto const snapshot{reusable.frames_while_actually_stopped()};
+        auto const& frame{snapshot.back()};
+        require(frame.site==site && frame.values.size()==length,"current snapshot preserves exact dynamic shape");
         for(::std::size_t i{};i<length;++i)
         {
             auto expected_bits{prior->values()[i].bits};
@@ -90,6 +91,7 @@ int main()
                 "direct capture preserves complete original-index values and bits");
         }
     }
+    require(::std::ranges::equal(original_frame.values, prior->values(), [](auto const& a, auto const& b) { return a.declaration == b.declaration && a.bits == b.bits; }), "detached snapshot remains unchanged by later materialization");
     auto const previous_values{reusable.frames_while_actually_stopped().back().values};
     auto const borrowed{reusable.compiler_top_plan(identity)};
     require(borrowed != nullptr && borrowed->get() == source.get(), "producer borrows exact entry-retained plan");
@@ -104,8 +106,9 @@ int main()
     }
     auto invalid_flags{flags};invalid_flags.back()=2u;
     require(reusable.materialize_compiler_native_data(identity,source,2u,payload,invalid_flags)==cp::status::invalid_layout,"late invalid flag rejects before direct packet writes");
-    auto const& retained{reusable.frames_while_actually_stopped().back()};
-    require(retained.site==1u && retained.values.size()==previous_values.size() && retained.values.data()==storage,"failed packet leaves old frame intact");
+    auto const retained_snapshot{reusable.frames_while_actually_stopped()};
+    auto const& retained{retained_snapshot.back()};
+    require(retained.site==1u && retained.values.size()==previous_values.size(),"failed packet leaves old frame intact");
     for(::std::size_t i{};i<previous_values.size();++i)
     { require(retained.values[i].bits==previous_values[i].bits,"failed packet preserves old bytes"); }
     require(reusable.materialize_compiler_native_data(identity,source,2u,payload,flags)==cp::status::invalid_layout,"capture failure stays sticky");

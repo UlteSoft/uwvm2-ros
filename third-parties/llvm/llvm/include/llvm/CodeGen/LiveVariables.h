@@ -85,13 +85,15 @@ public:
     /// Kills - List of MachineInstruction's which are the last use of this
     /// virtual register (kill it) in their basic block.
     ///
-    std::vector<MachineInstr*> Kills;
+    // Most virtual registers are defined and killed in the same block. Keep
+    // that single kill inline; additional kills still grow without a limit.
+    SmallVector<MachineInstr *, 1> Kills;
 
     /// removeKill - Delete a kill corresponding to the specified
     /// machine instruction. Returns true if there was a kill
     /// corresponding to this instruction, false otherwise.
     bool removeKill(MachineInstr &MI) {
-      std::vector<MachineInstr *>::iterator I = find(Kills, &MI);
+      auto I = find(Kills, &MI);
       if (I == Kills.end())
         return false;
       Kills.erase(I);

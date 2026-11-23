@@ -84,6 +84,27 @@ int main(int argc,char** argv)
         require(delivery::defer_if_requested(result,0,0).error==mt::access_error::out_of_bounds);
     }
     require(!delivery::active_stream && delivery::entry_depth==0);
+    {
+        unsigned delivered{};
+        delivery::execution_fault_receiver receiver{&delivered,[](void* context,delivery::fault const& value) noexcept
+        {
+            ++*static_cast<unsigned*>(context);
+            require(value.memory_index==2 && value.module_id==3 && value.wasm_offset==19);
+            // Delivery is outside the queue/stream mutex and all native memory
+            // leases. A second drain is safe and does not redispatch the fault.
+            delivery::fault copy{};require(delivery::pool::drain(delivery::active_stream,copy));
+        }};
+        {
+            delivery::execution_fault_scope selected{&receiver};
+            delivery::entry_scope entry;require(entry.enter());delivery::set_origin(3,7,19);
+            auto value=evidence(2);
+            require(static_cast<bool>(delivery::defer_if_requested(value.access,value.raw_pointer,2)));
+            require(!delivery::poll(true)&&receiver.stopped&&delivered==1);
+            require(!delivery::poll(true)&&delivered==1);
+            entry.finish();require(delivered==1 && !delivery::active_stream);
+        }
+        require(!delivery::controlled_fault_delivery()&&delivery::poll());
+    }
     // Feature decoding is a pure UAPI capability decision, never CPU branding.
     require(!mt::hardware_mte::decode_capabilities(0,3).checked_mappings);
     require(mt::hardware_mte::decode_capabilities(1ul<<18,0).minimum_architectural_version==2);

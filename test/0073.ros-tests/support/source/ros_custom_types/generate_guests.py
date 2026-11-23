@@ -25,7 +25,7 @@ def source(version, payload):
   (import "uwvm_ros{version}_v1" "capability_close" (func $close (param i64) (result i32)))
   (import "uwvm_ros{version}_v1" "topic_publish" (func $publish (param i64 i32 i64 i64) (result i32)))
   (import "uwvm_ros{version}_v1" "topic_subscribe" (func $subscribe (param i64) (result i32)))
-  (import "uwvm_ros{version}_v1" "event_poll" (func $poll (param i64 i32 i64 i64 i64) (result i32)))
+  (import "uwvm_ros{version}_v1" "message_poll" (func $poll (param i64 i32 i64 i64 i64) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
   (import "wasi_snapshot_preview1" "clock_time_get" (func $clock (param i32 i64 i32) (result i32)))
   (import "wasi_snapshot_preview1" "fd_read" (func $read (param i32 i32 i32 i32) (result i32)))

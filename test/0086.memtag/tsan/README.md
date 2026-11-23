@@ -34,10 +34,12 @@ Coverage is deliberately limited:
   undefined behavior. TSan sees those atomics. It can therefore miss a Guest-level
   ordinary data race even while correctly observing the actual host operations.
 - A race-free sequence of atomics does not imply correct allocation lifetime.
-  `logical_retag_window.cc` deliberately reproduces the known check/retag/access
-  protection failure: the check accepts tag 6, another thread changes it to 7, and
-  the already checked write changes byte 42 to 99. The next check rejects. Exit zero
-  from this control means the failure was reproduced, not that protection passed.
+  The original `logical_retag_window.cc` reproduced an owner-view tag-store
+  bypass of the access lease. Historical exit-zero receipts from that version
+  mean the defect reproduced. The current regression requires both direct
+  owner-view stores and actual MTE instruction stores to wait for the complete
+  checked access; it then verifies stale-tag rejection. A standalone tag check
+  without an owner lease still supplies no protection for a later byte access.
 - Native x86_64 is the executed profile. Availability of AArch64 runtime archives
   does not establish working QEMU TSan; the local QEMU probe failed in sanitizer
   virtual-address/shadow initialization. 32-bit targets are not covered. QEMU is
@@ -133,8 +135,9 @@ The `none` case can retire before Guest code begins, so it does not imply any
 child executed. The adaptation explicitly selects the real trusted Host `dev`
 launch policy before opting into debug metadata/control; the production zero
 default and debug admission gates remain in force.
-These controls use standard shared atomic accesses and add no claim that the
-separate logical check/retag/access failure has been repaired.
+These historical controls use standard shared atomic accesses. They do not
+qualify the later owner-view tag-store repair; run the current dedicated
+`logical_retag_window.cc` against the exact source being qualified.
 
 ## Native components and positive controls
 
@@ -147,7 +150,11 @@ the installed paired compiler/provider arguments and instruments a component. Ru
   for concurrent owner destruction.
 - `../storage_lifecycle.cc` and `../runtime_copy_wait.cc`: production lifecycle,
   growth, wait/notify and alias-range components.
-- `logical_retag_window.cc`: the separately classified known logical failure.
+- `logical_retag_window.cc`: a deterministic positive owner-lease regression,
+  covering direct owner-view and actual instruction retags, wasm32/64, rejected
+  stale accesses, invalid ranges without partial retagging, and tag-and-zero
+  operations without recursive-lock deadlock. It observes the real queued-writer
+  state; elapsed time alone is not evidence that a writer was blocked.
 - `personality_representation.cc`: an actual LLVM-generated cleanup personality
   positive control, plus `call`, `data`, and `prefix` negative modes. Set
   `UWVM_TSAN_IR_DIRECTORY` to an existing artifact directory when running it.
@@ -182,8 +189,9 @@ The original B1 directory and the current production source6 receive no implied
 qualification from these private frozen tests. `qualification.json` and the B1
 `report.json`/`summary.json` retain source, binary, object and report identities.
 The reset episodes exercise `threaded_debug_all_stop::reset`; complete
-Runtime/source reset is not covered by this B1 follow-up. The separately
-reproduced logical protection failure remains unresolved.
+Runtime/source reset is not covered by this B1 follow-up. The historical
+logical-failure receipt predates the owner-view write gate and must remain
+separate from the current positive regression results.
 
 ## Result discipline
 

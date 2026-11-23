@@ -34,7 +34,7 @@ static void require(bool okay, unsigned line)
 static auto deadline() { return ::std::chrono::steady_clock::now() + ::std::chrono::seconds{20}; }
 struct setup
 {
-    ::std::u8string path{},provider_path{};
+    ::uwvm2::utils::container::std_u8string path{},provider_path{};
     images::owned_file_image::owner immutable{},provider_image{};
     full::full_source_instance::mutable_owner source{};
     static bool prepare(void* context) noexcept
@@ -44,7 +44,7 @@ struct setup
         auto& state{*static_cast<setup*>(context)};
         try
         {
-            ::std::vector<full::full_preload_input> inputs{};full::full_preload_input preload{};
+            ::uwvm2::utils::container::std_vector<full::full_preload_input> inputs{};full::full_preload_input preload{};
             preload.file_name=state.provider_path;preload.module_name=u8"builtin-identity-provider";
             preload.parameters=::uwvm2::uwvm::wasm::storage::wasm_parameter;
             preload.image=::std::move(state.provider_image);inputs.push_back(::std::move(preload));
@@ -62,7 +62,7 @@ struct setup
                     ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok ||
                 ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                     ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok) { return false; }
-            ::uwvm2::uwvm::runtime::initializer::initialize_runtime(true);
+            if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true)) { return false; }
             if(!owner->seal_actual_initializer()) { return false; }
             state.source = ::std::move(owner); return true;
         }

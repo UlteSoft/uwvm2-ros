@@ -13,6 +13,11 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/DynamicLibrary.h>
+#if defined(__arm__) && defined(__ARM_EABI__)
+#include <unwind.h>
+extern "C" _Unwind_Reason_Code __aeabi_unwind_cpp_pr0(_Unwind_State, _Unwind_Control_Block*, _Unwind_Context*);
+#endif
 #include <uwvm2/utils/macro/push_macros.h>
 // This test is built with the real LLVM backend/C++ exception prerequisites.
 // Do not manufacture derived runtime macros for a disabled backend build.
@@ -22,27 +27,13 @@
 #if !defined(UWVM_RUNTIME_LLVM_JIT) || !defined(UWVM_CPP_EXCEPTIONS)
 #error "Real LLVM backend and C++ exceptions are required for listener recovery"
 #endif
+#include "../0017.runtime/fast_io_allocation_probe.h"
 namespace
 {
-    thread_local bool fail_allocation{};
-    thread_local ::std::size_t successful_allocations{}, remaining_allocations{};
+    auto& fail_allocation{fast_io_allocation_probe::armed};
+    auto& successful_allocations{fast_io_allocation_probe::successful};
+    auto& remaining_allocations{fast_io_allocation_probe::remaining};
 }
-// Test-only replaceable allocation failure. Ordinary storage uses the bundled
-// FastIO native allocator; the armed window is only the real pending callback.
-void* operator new(::std::size_t size)
-{
-    if(fail_allocation)
-    {
-        if(remaining_allocations == 0u) { throw ::std::bad_alloc{}; }
-        --remaining_allocations; ++successful_allocations;
-    }
-    return ::fast_io::native_global_allocator::allocate(size == 0u ? 1u : size);
-}
-void* operator new[](::std::size_t size) { return ::operator new(size); }
-void operator delete(void* value) noexcept { ::fast_io::native_global_allocator::deallocate(value); }
-void operator delete[](void* value) noexcept { ::operator delete(value); }
-void operator delete(void* value, ::std::size_t) noexcept { ::operator delete(value); }
-void operator delete[](void* value, ::std::size_t) noexcept { ::operator delete(value); }
 
 namespace
 {
@@ -130,6 +121,11 @@ namespace
 }
 int main()
 {
+#if defined(__arm__) && defined(__ARM_EABI__)
+    // Match the product resolver: ARM objects retain their real EHABI provider
+    // dependency even when this numeric fixture does not execute an unwind.
+    ::llvm::sys::DynamicLibrary::AddSymbol("__aeabi_unwind_cpp_pr0", reinterpret_cast<void*>(&__aeabi_unwind_cpp_pr0));
+#endif
     if(::llvm::InitializeNativeTarget() || ::llvm::InitializeNativeTargetAsmPrinter()) { return 7; }
     if(auto const status{run(false,0u)}; status != 0) { return status; }
     if(auto const status{run(true,0u)}; status != 0) { return 10 + status; }

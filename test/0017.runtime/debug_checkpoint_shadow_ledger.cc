@@ -30,12 +30,14 @@ int main()
     auto changed{profile->limits()}; ++changed.slots_per_frame;
     auto const other{cp::compilation_profile::create_for_trusted_manager(changed)};
     require(profile->cache_identity() != other->cache_identity(), "per-engine resource/layout policy changes cache identity");
-    require(profile->cache_identity()[2u] == 6u && profile->cache_identity()[3u] == 2u, "schema6 and actual native ABI2 are cache identity inputs");
+    require(profile->cache_identity()[2u] == 10u && profile->cache_identity()[3u] == 2u, "schema10 and actual native ABI2 are cache identity inputs");
     auto const observer{cp::compilation_profile::create_for_trusted_observer()};
     require(observer && observer->limits().frames == 0u, "default observation has no physical frame quota");
     require(observer->cache_identity() != cp::compilation_profile::create_for_trusted_observer(cp::budgets{})->cache_identity(), "unlimited observation policy has distinct cache identity");
     auto zero{cp::budgets{}}; zero.frames=0u;
-    require(!cp::compilation_profile::create_for_trusted_manager(zero), "resumable frames remain finite");
+    auto unlimited_resume{cp::compilation_profile::create_for_trusted_manager(zero)};
+    require(unlimited_resume && unlimited_resume->limits().frames==0u,
+        "restoration preserves unlimited observation frame policy");
     auto const observation_plan{cp::sealed_function_plan::seal_compiler_metadata(source_plan(observer))};
     cp::shadow_ledger deep{observer};
     ::std::array<::std::byte, 3u * cp::native_slot_bytes> deep_slots{};
@@ -44,6 +46,12 @@ int main()
     for(::std::uint64_t i=1;i<=10000u;++i)
     { require(deep.enter({i,i-1u,i,9u},observation_plan)==cp::status::ok && deep.materialize({i,i-1u,i,9u},2u,deep_slots)==cp::status::ok,"deep default observation entry"); }
     require(deep.size()==10000u,"observation survives4096 boundary");
+    auto const unlimited_plan{cp::sealed_function_plan::seal_compiler_metadata(source_plan(unlimited_resume))};
+    cp::shadow_ledger restored_deep{unlimited_resume};
+    for(::std::uint64_t i=1;i<=10000u;++i)
+    { require(restored_deep.enter({i,i-1u,i,9u},unlimited_plan)==cp::status::ok &&
+        restored_deep.materialize({i,i-1u,i,9u},2u,deep_slots)==cp::status::ok,"deep restored frame entry"); }
+    require(restored_deep.size()==10000u,"restoration preserves unlimited physical depth");
     auto compiler_plan{source_plan(profile)};
     require(cp::validate_plan(compiler_plan) == cp::status::ok, "exact Core3 typed before-op/await-return layouts");
     auto const plan{cp::sealed_function_plan::seal_compiler_metadata(compiler_plan)};
@@ -82,6 +90,15 @@ int main()
     cp::activation_identity tail{3u, 1u, 2u, 9u};
     require(ledger.enter(tail, plan) == cp::status::ok && ledger.materialize(tail, 1u, slots) == cp::status::ok, "musttail successor retains logical continuation identity");
     require(ledger.leave(tail, false) == cp::status::ok && ledger.materialize(root, 3u, slots) == cp::status::ok, "return updates caller's resumed typed stack");
+    ledger.note_unrecorded_builtin_effect();
+    require(ledger.failure()==cp::status::ok && ledger.replay_failure()==cp::status::non_replayable_import &&
+        ledger.materialize(root,1u,slots)==cp::status::ok && ledger.has_complete_materialized_frames(),
+        "builtin history gap preserves the actual fresh typed frame producer without claiming replay");
+    require(!ledger.discard_failed_recording() && ledger.replay_failure()==cp::status::non_replayable_import,
+        "history gap alone cannot discard live frames or become replayable");
+    references=0;
+    require(ledger.visit_recorded_native_references([&](cp::native_reference){++references;return true;})==cp::status::ok && references==1u,
+        "fresh builtin-return frame still contributes its actual GC roots");
     require(ledger.host_import_admission(false) == cp::status::non_replayable_import && !ledger.has_complete_materialized_frames(), "unknown host effect makes recording unavailable explicitly");
     require(ledger.visit_recorded_native_references([](cp::native_reference) { return true; }) == cp::status::non_replayable_import,
         "poisoned recording cannot pretend a complete native root census");

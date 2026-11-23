@@ -507,3 +507,46 @@ alone is not qualification. ARM object/checkpoint keys include the repair
 capability. A portable patch and the minimal cross-platform Wasm regression
 are retained in documents/toolchain/patches/llvm-arm-callee-pop.patch and
 test/0013.uwvm_int/wasm3/fixtures/exception_control_joins/call_i64_spill.wat.
+
+
+## Legacy analysis bookkeeping during repeated function compilation
+
+`llvm/include/llvm/PassAnalysisSupport.h` and
+`llvm/lib/IR/LegacyPassManager.cpp` let the owning pass manager initialize the
+unique required-analysis sequence without a duplicate search on initial fill.
+For repeated initialization, only an exact matching prefix can skip the original
+linear lookup. A missing analysis remains missing; a mismatched, reordered or
+rebound entry falls back to the original first-binding semantics. No analysis
+result is reused without resolving the currently available implementation.
+
+Last-use collection uses the known `SmallPtrSet` size and a single traversal,
+and skips an empty set even when its bucket storage was previously grown.
+Pass ordering, analysis invalidation, target lowering and optimization levels
+are unchanged. There is no public class-layout or native-object format change.
+The source inventory and the existing archive-closure identity change, so normal
+xmake builds cannot reuse an earlier provider receipt or object-cache identity.
+
+The focused regression is
+[`legacy_analysis_bindings.cc`](../../test/0072.core3_codegen_cross/legacy_analysis_bindings.cc).
+It compares initial, repeated, missing, reordered and replaced bindings with the
+original algorithm, and checks last-use membership after moving an entire set.
+This bookkeeping optimization is target independent; native-only performance
+measurements do not qualify execution on other architectures.
+
+## Single-kill storage in native register liveness
+
+`LiveVariables::VarInfo` retains the common single killing instruction inline
+in `SmallVector<MachineInstr *, 1>`. More kills still grow dynamically; iteration,
+copy/move, erase and live-range semantics are unchanged. This removes a heap
+allocation for block-local virtual registers during native object generation.
+The pass order and generated-code optimization level are unchanged.
+
+The in-memory LLVM analysis representation changes, so all consumers of this
+header must be rebuilt together. The source inventory and archive-closure
+identity enforce that pairing in the bundled build; previous qualification
+receipts must not be relabelled. No Wasm instruction or object-cache wire format
+is changed. The focused storage regression is
+[`live_variables_storage.cc`](../../test/0072.core3_codegen_cross/live_variables_storage.cc).
+Native object comparisons cover checked memory/root reloads, atomic/vector
+operations, branching and loop PHIs. Native x86_64 measurements do not qualify
+other architectures.

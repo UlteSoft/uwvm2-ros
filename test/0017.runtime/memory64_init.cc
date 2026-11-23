@@ -30,6 +30,11 @@ void invoke(d::native_memory_t& memory,test::storage::local_defined_data_storage
 }
 int main()
 {
+ // Explicit test deployment budget for two sparse >4 GiB address spaces.
+ // The cgroup still bounds physical memory; only touched pages are committed.
+ namespace budget=::uwvm2::utils::allocator::resource;
+ budget::policies[static_cast<unsigned>(budget::pool::memory)]={budget::host_bytes(16ull<<30),budget::host_bytes(32ull<<30)};
+ budget::initializer_allocation_bytes=budget::host_bytes(16ull<<30);
  o::trap_memory_out_of_bounds_func=bounds_trap;
  test::cases<d::native_memory_t>(invoke<byref>);test::cases<d::native_memory_t>(invoke<tail>);
  std::printf("PASS memory64 interpreter init: %u checks; i64 destination/i32 source+length, dropped/active/empty data, high sparse address, exact diagnostics, no partial writes, byref/musttail\n",test::checks);

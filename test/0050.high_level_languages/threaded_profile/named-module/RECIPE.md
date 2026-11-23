@@ -7,7 +7,7 @@ initializers. Preserve all old failed runs and do not reuse old BMI/object cache
 Use only the coordinated serial Linux window and admitted memory/storage limits.
 
 1. Configure a fresh build directory for Linux with `--use-cxx-module=y`,
-   `--execution-int=uwvm-int`, `--execution-jit=none`, `--import-ros2=y` and the
+   `--execution-int=uwvm-int`, `--execution-jit=none`, `--import-u2rosv1-ros2=y` and the
    actual product's fixed compiler/dependency options, native threads, TLS and C++
    exceptions. The explicit contract refuses other source profiles in preprocessing. Build the real `uwvm2-ros`
    target and the non-default `named_module_threaded_contract` target. Do not

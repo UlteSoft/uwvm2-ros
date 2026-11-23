@@ -79,7 +79,7 @@ def main():
     configure = ["xmake", "f", "-y", "-c", "-m", "release", "--use-llvm-compiler=y",
                  "--sdk=" + str(args.llvm_prefix.resolve(strict=True)), "--stdlib=libc++", "--march=none",
                  "--static=none", "--execution-int=none", "--execution-jit=llvm",
-                 "--import-ros1=y", "--import-ros2=y", "--linux-native-debug=y", "--use-cxx-module=n",
+                 "--import-u2rosv1-ros1=y", "--import-u2rosv1-ros2=y", "--linux-native-debug=y", "--use-cxx-module=n",
                  "--llvm-runtimes-provider=bundled", "--llvm-build-jobs=1", "--openssl-provider=bundled",
                  "--openssl-build-jobs=1", "--enable-lto=n", "--strip=none", "--ccache=n", "--build-source-id=" + identity]
     status = run("configure", ("build",), configure, 1800)

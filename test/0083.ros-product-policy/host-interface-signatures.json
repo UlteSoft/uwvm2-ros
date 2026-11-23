@@ -1677,7 +1677,7 @@
   },
   {
     "ns": "uwvm_ros1_v1",
-    "name": "event_poll",
+    "name": "message_poll",
     "params": [
       "i64",
       "i32",
@@ -1698,7 +1698,7 @@
   },
   {
     "ns": "uwvm_ros1_v1",
-    "name": "event_watch",
+    "name": "event_stream_watch",
     "params": [
       "i64",
       "i64",
@@ -1715,7 +1715,7 @@
   },
   {
     "ns": "uwvm_ros1_v1",
-    "name": "event_poll_v1",
+    "name": "event_stream_poll",
     "params": [
       "i64",
       "i32",
@@ -1736,7 +1736,7 @@
   },
   {
     "ns": "uwvm_ros1_v1",
-    "name": "event_ready",
+    "name": "event_stream_ready",
     "params": [
       "i64",
       "i32",
@@ -2568,7 +2568,7 @@
   },
   {
     "ns": "uwvm_ros2_v1",
-    "name": "event_poll",
+    "name": "message_poll",
     "params": [
       "i64",
       "i32",
@@ -2589,7 +2589,7 @@
   },
   {
     "ns": "uwvm_ros2_v1",
-    "name": "event_watch",
+    "name": "event_stream_watch",
     "params": [
       "i64",
       "i64",
@@ -2606,7 +2606,7 @@
   },
   {
     "ns": "uwvm_ros2_v1",
-    "name": "event_poll_v1",
+    "name": "event_stream_poll",
     "params": [
       "i64",
       "i32",
@@ -2627,7 +2627,7 @@
   },
   {
     "ns": "uwvm_ros2_v1",
-    "name": "event_ready",
+    "name": "event_stream_ready",
     "params": [
       "i64",
       "i32",

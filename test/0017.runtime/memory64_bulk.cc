@@ -49,6 +49,11 @@ template<auto Option>void all()
 }
 int main()
 {
+ // Explicit test deployment budget for two sparse >4 GiB address spaces.
+ // The cgroup still bounds physical memory; only touched pages are committed.
+ namespace budget=::uwvm2::utils::allocator::resource;
+ budget::policies[static_cast<unsigned>(budget::pool::memory)]={budget::host_bytes(16ull<<30),budget::host_bytes(32ull<<30)};
+ budget::initializer_allocation_bytes=budget::host_bytes(16ull<<30);
  all<byref>();all<tail>();
  test::concurrent_grow<d::native_memory_t>(invoke<true,true,true,tail>);
  std::printf("PASS memory64 bulk interpreter: %u checks, mixed address widths, zero endpoints, high sparse addresses, overlap, no partial mutation\n",test::checks);

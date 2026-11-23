@@ -18,6 +18,9 @@ class Broker(state.Broker):
     def status(self):
         return f'{TRAP}\nstop-id {self.stop}\nthread 1 module=0 function=1 byte-offset=4 generation=7\n'
     def request(self, command):
+        if command.startswith(("locals wasm 2 ", "controls 2 ", "handlers 2 ", "saved 2 ", "operands 2 ", "globals 2 ")):
+            self.commands.append(command)
+            return f"wasm-stop {self.stop}\nWasm state thread=2 module=0 epoch=7 first=0 total=0\n"
         result = super().request(command)
         if command.startswith('operands 1 0 '):
             result = result.replace('\nWasm state thread=', '\n' + NOTE + '\nWasm state thread=', 1)
@@ -31,6 +34,7 @@ class UncaughtPackets(unittest.TestCase):
         self.adapter.observe(self.broker.status(), notify=False); self.sequence = 0
     def test_exception_event_has_no_native_authority(self):
         output = io.BytesIO(); adapter = dap.Adapter(output)
+        adapter.configuration_complete = True
         adapter.observe(self.broker.status())
         event = state.messages(output.getvalue())[0]
         self.assertEqual(event['event'], 'stopped')
@@ -48,11 +52,13 @@ class UncaughtPackets(unittest.TestCase):
         frame = self.send('stackTrace', threadId=1)['body']['stackFrames'][0]
         reply = self.send('scopes', frameId=frame['id']); self.assertTrue(reply['success'], reply)
         scopes = reply['body']['scopes']
-        scope = next(s for s in scopes if s['name'] == 'Wasm uncaught snapshot (before unwind)')
+        scope = next(s for s in scopes if s['name'] == 'Wasm operand stack')
         self.assertFalse(any(s['name'] == 'Registers' for s in scopes))
         reply = self.send('variables', variablesReference=scope['variablesReference'])
         self.assertTrue(reply['success'], reply)
-        rows = reply['body']['variables']; self.assertEqual(len(rows), 1)
+        rows = reply['body']['variables']
+        self.assertIn('stack has not unwound', rows[0]['value'])
+        rows = rows[1:]; self.assertEqual(len(rows), 1)
         self.assertEqual((rows[0]['type'], rows[0]['value']), ('i64', '1234'))
         self.assertEqual(rows[0]['presentationHint']['attributes'], ['readOnly'])
         self.assertNotIn('memoryReference', rows[0])
@@ -98,7 +104,7 @@ class UncaughtPackets(unittest.TestCase):
         reply = self.send("scopes", frameId=frame_id)
         self.assertTrue(reply["success"], reply)
         names = [s["name"] for s in reply["body"]["scopes"]]
-        self.assertIn("Wasm operand stack (last safepoint; may differ from native state)", names)
+        self.assertIn("Wasm operand stack", names)
         self.assertNotIn("Wasm uncaught snapshot (before unwind)", names)
         self.assertNotIn("Wasm pre-trap inputs (no instruction result)", names)
 

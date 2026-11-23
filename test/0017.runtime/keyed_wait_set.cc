@@ -127,13 +127,13 @@ int main()
     fourth.join();
     CHECK(surviving==result::notified);
     owner_two.request_stop();owner_two.drain();
-    std::stop_source already_stopped{};
+    uwvm2::utils::thread::stop_source already_stopped{};
     (void)already_stopped.request_stop();
     CHECK(shared_waits.wait(key,-1,[]{std::abort();return true;},already_stopped.get_token())==result::cancelled);
     // Stop vs compare/enqueue: notification cannot disappear before parking.
     for(unsigned i{};i!=20;++i)
     {
-        std::latch comparing{1};std::stop_source stop{};
+        std::latch comparing{1};uwvm2::utils::thread::stop_source stop{};
         result r{};
         std::thread worker{[&]{r=shared_waits.wait(key,-1,[&]{comparing.count_down();return true;},stop.get_token());}};
         comparing.wait();(void)stop.request_stop();worker.join();

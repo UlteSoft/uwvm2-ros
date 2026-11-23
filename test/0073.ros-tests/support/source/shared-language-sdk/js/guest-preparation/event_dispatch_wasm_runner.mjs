@@ -13,7 +13,7 @@ try{const before=fs.fstatSync(fd,{bigint:true});assert.ok(before.isFile()&&befor
   raw=fs.readFileSync(fd);const after=fs.fstatSync(fd,{bigint:true});
   for(const key of ['dev','ino','size','mtimeNs','ctimeNs','mode','nlink'])assert.equal(after[key],before[key]);assert.equal(BigInt(raw.length),before.size);
 }finally{fs.closeSync(fd);}
-const module=new WebAssembly.Module(raw),names=new Set(['abi_version','capability_open','capability_close','event_watch','event_poll_v1']);
+const module=new WebAssembly.Module(raw),names=new Set(['abi_version','capability_open','capability_close','event_stream_watch','event_stream_poll']);
 for(const entry of WebAssembly.Module.imports(module))assert.ok(entry.module==='uwvm_ros2_v1'&&entry.kind==='function'&&names.has(entry.name));
 let instance,opens=0,closes=0,watches=0,polls=0;const live=new Set();
 function range(offset,length){assert.equal(typeof offset,'bigint');assert.equal(typeof length,'bigint');const memory=instance.exports.memory;
@@ -24,8 +24,8 @@ instance=new WebAssembly.Instance(module,{uwvm_ros2_v1:{
   capability_open(memory,alias,length,slot){assert.equal(memory,0);const name=new TextDecoder('utf-8',{fatal:true}).decode(range(alias,length));
     assert.equal(name,opens===0?'observer':'source');const id=BigInt(++opens);live.add(id);put(slot,id);return 0;},
   capability_close(id){assert.ok(live.delete(id));closes++;return 0;},
-  event_watch(observer,source,correlation){assert.deepEqual([observer,source,correlation],[1n,2n,0n]);watches++;return 0;},
-  event_poll_v1(observer,memory,out,capacity,slot){assert.equal(observer,1n);assert.equal(memory,0);assert.ok(capacity>=64n);polls++;put(slot,64n);
+  event_stream_watch(observer,source,correlation){assert.deepEqual([observer,source,correlation],[1n,2n,0n]);watches++;return 0;},
+  event_stream_poll(observer,memory,out,capacity,slot){assert.equal(observer,1n);assert.equal(memory,0);assert.ok(capacity>=64n);polls++;put(slot,64n);
     const bytes=range(out,64n);bytes.fill(0);const view=new DataView(bytes.buffer,bytes.byteOffset,64);view.setUint32(0,0x45525755,true);view.setUint16(4,1,true);view.setUint16(6,1,true);bytes[8]=2;
     for(const [at,n] of [[16,2n],[32,1n],[40,17n],[48,19n]])view.setBigUint64(at,n,true);return 0;}
 }});

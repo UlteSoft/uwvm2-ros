@@ -35,7 +35,7 @@ public final class AvailabilityPolicyTest {
    if(op.equals("abi_version"))return Result.value(1);
    if(op.equals("capability_open")){String alias=Codecs.text(b);opens.add(alias);if(inOpen!=null)inOpen.run();return alias.equals(denied)?new Result(13):Result.value(next++);}
    if(op.equals("capability_close")){closes.add(h);return new Result(closeError);}
-   if(op.equals("event_watch")){++watches;return new Result(0);}
+   if(op.equals("event_stream_watch")){++watches;return new Result(0);}
    if(op.equals("time_read_steady"))return clockError!=0?new Result(clockError):new Result(0,Codecs.INT64.encode(now),null,null);
    if(op.equals("service_submit")){++submits;return Result.value(1);}
    if(op.startsWith("graph_")||op.equals("service_call"))throw new AssertionError("fake readiness/sync fallback");

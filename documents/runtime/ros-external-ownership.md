@@ -31,10 +31,11 @@ The child cannot create the parent grant. A disabled child also denies access
 through the common driver entry points. An enabled but unbound child fails static
 validation. Unknown names and policy revisions are rejected, without fallback.
 
-The current attachment protocol accepts deployment-provisioned, authenticated
-local channels. ROS network interoperability is supplied by external ROS/DDS
-providers. These are distinct transport boundaries: a local attachment is not
-DDS, and the current implementation must not be described as DDS-only. ROS 1
+The selected transport boundary uses DDS for the ROS network and
+deployment-provisioned, authenticated local IPC for isolated services. External
+ROS/DDS providers supply network interoperability. Local driver and model
+attachments are deliberately not DDS, and the implementation must not be
+described as DDS-only. ROS 1
 also requires a bridge with independently authorized ingress and egress; ROS 2
 language libraries alone do not guarantee middleware or schema compatibility.
 See the [communication attachment contract](ros-communication-attachment.md).

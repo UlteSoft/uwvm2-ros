@@ -22,7 +22,7 @@ int main()
     auto const profile{cp::compilation_profile::create_for_trusted_manager()};
     require(bool(profile) && profile->limits().slots_per_frame > 1000u, "heap metadata budget is not native-frame permission");
     auto const key{profile->cache_identity()};
-    require(key.size() == 10u && key[1u] == 17u && key[9u] == cp::native_workspace_limit,
+    require(key.size() == 10u && key[1u] == 18u && key[9u] == cp::native_workspace_limit,
         "cache identity retains exact new compilation policy and native workspace quota");
     cp::function_plan declined{}; declined.profile = profile; declined.function_generation = 1u; declined.expression_bytes = 3u;
     declined.producer_availability = cp::status::quota_exceeded;

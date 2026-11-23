@@ -2056,8 +2056,8 @@
       "platform": "ros1",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros1/native_probe.cc",
-      "source_bytes": 19876,
-      "source_sha256": "2073830ddd4bc5aa8b3d2e8c4679fdbab0ba3503c316b3a28dea517638b7ca52"
+      "source_bytes": 19890,
+      "source_sha256": "9c3b1d9a70c1741356d228f4c2f641da0450795559f93ed9f4c83ea5736d532e"
     },
     {
       "default_authority": [],
@@ -2126,8 +2126,8 @@
       "platform": "ros2",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros2/native_probe.cc",
-      "source_bytes": 22734,
-      "source_sha256": "72f6bfa90be25ad180157cc8373a140810a94752aae7c62b5118778b51a69782"
+      "source_bytes": 22750,
+      "source_sha256": "ec0522edc3044974264cb76e296d9e1a32000ea927ffa30fa8f3724bb36f757a"
     },
     {
       "default_authority": [],
@@ -2378,8 +2378,8 @@
       "platform": "ros2",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros2_compat/legacy_protocol_gateway/native_session.cc",
-      "source_bytes": 20277,
-      "source_sha256": "dc029e9649c649a84d84f05370bb1c3772d901c412b8abdc9f03a431f7d9cafd"
+      "source_bytes": 20283,
+      "source_sha256": "1b956318a0b25c969442167d6ec8dc0b71adefe1f6152fb3cbd7ef6020c4fe93"
     },
     {
       "default_authority": [],
@@ -2574,8 +2574,8 @@
       "platform": "ros2",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros2_compat/owned_service_gateway/value_contract.cc",
-      "source_bytes": 5237,
-      "source_sha256": "0c6dbaab4c6a50e22439fefa832fe2bdcb1abdf1bd51dac12d02357962be0d4e"
+      "source_bytes": 5239,
+      "source_sha256": "75896fbb5a79388fa131a3fee4198fc2e755792c29845d80ca14d9246df504b6"
     },
     {
       "default_authority": [],
@@ -2742,8 +2742,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/ros_aarch64/g09_guest_models.py",
-      "source_bytes": 68076,
-      "source_sha256": "1fd6b47a34c3b0e390492b6cb4148232117be48c16c015e7958f75b8a3a6399b"
+      "source_bytes": 68080,
+      "source_sha256": "ed04329274f9add8a45e2c4ec3f9046772ecb7a4e0042d15951e9e9b1b45bb85"
     },
     {
       "default_authority": [],
@@ -3344,8 +3344,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/ros_acceptance/run_events.py",
-      "source_bytes": 13156,
-      "source_sha256": "2f2e2bb4df7c2ae588e0b4b44ee0484ca7637089d63232f544ec4923426280ed"
+      "source_bytes": 13162,
+      "source_sha256": "83312c3cb3d0a65ca39dc45360aed5fc57011774386984ae42247b420ae691fd"
     },
     {
       "default_authority": [],
@@ -3400,8 +3400,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_acceptance/sdk_clients/tinygo/main.go",
-      "source_bytes": 6122,
-      "source_sha256": "ca83c2dd48635c592d84219ecaca1c862b7726fd06dd72019abd7df7707776f5"
+      "source_bytes": 6124,
+      "source_sha256": "28c5903b81a1dc124e0b6f0b5f22d00f03719d4b40a8a9a946638810888f2702"
     },
     {
       "default_authority": [],
@@ -3456,8 +3456,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_action/native_ros1.cc",
-      "source_bytes": 14241,
-      "source_sha256": "43b656615291686df84a8e96fd39c4517efd125e679e7db9f7ef2302e2c60884"
+      "source_bytes": 14245,
+      "source_sha256": "84480d81ab468549e9607ece836943c231e78ae27d9dcd68e8a4f49cb51ca2dc"
     },
     {
       "default_authority": [],
@@ -3470,8 +3470,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_action/native_ros2.cc",
-      "source_bytes": 13510,
-      "source_sha256": "a72eee235fbcb146d12292b04797fc5326ffaadef638e2c2667a97c4e046e520"
+      "source_bytes": 13512,
+      "source_sha256": "dc7645fd7122d9bb25cfc24f7d2d0fab8b9ad69696a24b4ebd6a72f745274449"
     },
     {
       "default_authority": [],
@@ -3554,8 +3554,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_action_limits/native_ros2.cc",
-      "source_bytes": 10170,
-      "source_sha256": "4b34349dd8ae5dc28c38b13549c5b828e03658a77612bd32b3b78211213469d8"
+      "source_bytes": 10172,
+      "source_sha256": "096815a0df5e3b5ec4c5f2801466c82c07c8f530924b1313905a6cb9337ffac7"
     },
     {
       "default_authority": [],
@@ -4282,8 +4282,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_debugger/core_contract.cc",
-      "source_bytes": 10090,
-      "source_sha256": "8d938ea216579af6631afd8e8d2da529bfc214cd728a9495ccba2f1ea57a3d11"
+      "source_bytes": 10136,
+      "source_sha256": "cc756afab1f77968dfd40bd53b91013ed90fcea6c40213574b658cd2d3e48db1"
     },
     {
       "default_authority": [],
@@ -4772,8 +4772,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_ipc/request_encode_view_test.cc",
-      "source_bytes": 9200,
-      "source_sha256": "9bf9ef91a81b9937d17ee0abe6844d1e386cded139e6ed6d436449dfe0852787"
+      "source_bytes": 9202,
+      "source_sha256": "8302e4c7f8b6e1a744b263f2996d779a406c25e04577cdcfebbbd7b63f5679bc"
     },
     {
       "default_authority": [],
@@ -4884,8 +4884,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_javascript_guest/native_event.mjs",
-      "source_bytes": 3162,
-      "source_sha256": "87b1e4a66f87efd32c2cfc9d9c5efd021c4badc0c40c8ad5a6c9a0868056f220"
+      "source_bytes": 3179,
+      "source_sha256": "d1b3731c2321899b28501c7e39cf0dac885fbe7d05c36fb1c54cda8e7710ed56"
     },
     {
       "default_authority": [],
@@ -5346,8 +5346,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_local_parameter_events/native_ros2.cc",
-      "source_bytes": 13816,
-      "source_sha256": "0b2ae56378127fbc3058505733b2e6394e9f594eb01f735e5701222fc41b21d3"
+      "source_bytes": 13828,
+      "source_sha256": "73c41de7bb5d93357c825fd0f4450ce4cda77be5f354916038535cfde58b5443"
     },
     {
       "default_authority": [],
@@ -5360,8 +5360,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/ros_multiarch_runtime/run.py",
-      "source_bytes": 19493,
-      "source_sha256": "62849084643e468748602c36c2e210d3a5c3a528cafb6e9a0e3d9608d2b024de"
+      "source_bytes": 19503,
+      "source_sha256": "2f144e040bc87ab46e4e0b73ef39e26948eda93b664ccb218aea8041f9fda812"
     },
     {
       "default_authority": [],
@@ -5682,8 +5682,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_parameter_deletion/native_ros2.cc",
-      "source_bytes": 3914,
-      "source_sha256": "56bac16d6a88625a4611cc437bcb5ea0968d6184817619a40eb956901b1e6235"
+      "source_bytes": 3916,
+      "source_sha256": "7759efdff7284f08b859b60f87b9a648a67e79d31652ada6802ba1466204d0e1"
     },
     {
       "default_authority": [],
@@ -5766,8 +5766,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_parameter_events/native_ros2.cc",
-      "source_bytes": 12766,
-      "source_sha256": "29a5d0e3c25f5a4f500ce4a85049340768b871f59ec739b8f08c79fd53b1304c"
+      "source_bytes": 12774,
+      "source_sha256": "cb4d84f25e752080590cb6786696a06e14d6b5f97972187439c53a280a72e2a8"
     },
     {
       "default_authority": [],
@@ -5822,8 +5822,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_parameter_exception/native_ros2.cc",
-      "source_bytes": 9942,
-      "source_sha256": "950119973990e3a30ae52d4a2ea0aa1a1c70a98c037e21093eda8597856db11b"
+      "source_bytes": 9944,
+      "source_sha256": "d6360f0e77e39516eb4342b6298751d628a42137481282983adb2d49c8000b68"
     },
     {
       "default_authority": [],
@@ -7488,8 +7488,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_resources/native_ros2.cc",
-      "source_bytes": 10726,
-      "source_sha256": "ca066239da506d81099763e98ff9df139b4246837d6a659a2fac28a223e35407"
+      "source_bytes": 10734,
+      "source_sha256": "9f498aab97db97c6c8b50ece802e4d82f1292a4a08c3350aa9a2a17179a70c03"
     },
     {
       "default_authority": [],
@@ -7642,8 +7642,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_rmw_service_bindings/value_contract.cc",
-      "source_bytes": 11634,
-      "source_sha256": "531680da564d94bfd34abd6fef35672aea0e7c1dfa4ba22e392eae30c704fb1b"
+      "source_bytes": 11694,
+      "source_sha256": "5bb8e1e8fc827356fda2b10f05cdd646a473655fbaafc5e378f79582aa10e0d2"
     },
     {
       "default_authority": [],
@@ -7754,8 +7754,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_sdk_relay/javascript_api_models.mjs",
-      "source_bytes": 38068,
-      "source_sha256": "261bfb7306eaeb40dbed4bcef5c2b694466f25de5cbcb79cf9a2a397dffa31d8"
+      "source_bytes": 38098,
+      "source_sha256": "33c065c9002b20ebf067b72b3b4c6eef20ab9d0574a97433978e580f16f97312"
     },
     {
       "default_authority": [],
@@ -7866,8 +7866,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_security/native_secure_ros2.cc",
-      "source_bytes": 3534,
-      "source_sha256": "6abeba320b500c4a61f1ec754a9a0e12ebb25c097bff1a6ab5034fba38d1ae33"
+      "source_bytes": 3536,
+      "source_sha256": "85d7daca67ccadad97f7da414c534a680007317e56a39a857eb39c9c4d7a6f9e"
     },
     {
       "default_authority": [],
@@ -8328,8 +8328,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/ros_unified_events/server_contract.cc",
-      "source_bytes": 14809,
-      "source_sha256": "c1a84a76eba1c19cc41de4f69592d1421c91421d34104d296b6f9fe49661c2d8"
+      "source_bytes": 14886,
+      "source_sha256": "d9cb1388ce8153352850767fb3c13dd39f5c8c08abf4e6a98c3eb2473c5e429e"
     },
     {
       "default_authority": [],
@@ -9140,8 +9140,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-delivery/test/platform/ros/c/0003.events_contract/events_contract.c",
-      "source_bytes": 4203,
-      "source_sha256": "d25f7516b5a6ed7fc483fd4f76999dfb9f497efffb52a4caad19ee1a554280b1"
+      "source_bytes": 4252,
+      "source_sha256": "1fe7e6bc87cace17cef9d918c92eff036b544b91698c7b69e574848ce09537b1"
     },
     {
       "default_authority": [],
@@ -9168,8 +9168,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-delivery/test/platform/ros/c/0005.legacy_length_contract/legacy_length_contract.c",
-      "source_bytes": 1089,
-      "source_sha256": "319071ee21810ee37d5e18eb33819a2a7502725f8b318788a95340f4c984a79d"
+      "source_bytes": 1093,
+      "source_sha256": "973ad8b7ab9aea7b529eb9052909b8fb3c200e528e3a7bfd4de307982e74bba7"
     },
     {
       "default_authority": [],
@@ -9294,8 +9294,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-delivery/test/platform/ros/cpp/0006.legacy_length_contract/legacy_length_contract.cpp",
-      "source_bytes": 3307,
-      "source_sha256": "5fb8b8c9b1f9d0b4bb8fe38688909e05b8ea9b18e90f926fbad74f4c1cac46b4"
+      "source_bytes": 3311,
+      "source_sha256": "b09186d9f2af7abe3ec343b844bc048f39e296e2f6614e9b2a628fbc8760a195"
     },
     {
       "default_authority": [],
@@ -9378,8 +9378,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-delivery/test/platform/ros2/c/0002.contract/contract.c",
-      "source_bytes": 24859,
-      "source_sha256": "cf2db94db45bdcadbd061bf405d3e278de877e8621f42cc6e46e2e441547c317"
+      "source_bytes": 24863,
+      "source_sha256": "a95343cdff19e7f86aae68d2e4f281e53e2731a7d8aa43c4194cd0ab3997eab4"
     },
     {
       "default_authority": [],
@@ -9798,8 +9798,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-native/compat/rclc/services/tests/contract.c",
-      "source_bytes": 24831,
-      "source_sha256": "0a7be279a11f8f1cce4ad59cc4acc72342c6581cb5401b8f4d3c4f705ef7c975"
+      "source_bytes": 24835,
+      "source_sha256": "319591fcae3da8435e8470d8020c726fdc097edeebf8a13895993c4831e7c273"
     },
     {
       "default_authority": [],
@@ -9854,8 +9854,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-native/custom-types/tests/facade_javascript_models.mjs",
-      "source_bytes": 11481,
-      "source_sha256": "56905410b71d7d742318fd15a38a0327c1338235a76bd65bf6a23d62522d40ef"
+      "source_bytes": 11487,
+      "source_sha256": "6d1e4f0fe0f88b0f986dee5e25cc9f555a7a2dd73fb1fe32db8d9649d7471e0d"
     },
     {
       "default_authority": [],
@@ -9868,8 +9868,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-native/custom-types/tests/rpc_cleanup_real_session_fixtures.mjs",
-      "source_bytes": 26507,
-      "source_sha256": "91d765edf4081312fb6f575698dc915bb8052c03b0f34ea92b61544bf96e7c13"
+      "source_bytes": 26515,
+      "source_sha256": "20dec428f3437d46cbc3719fac672fa3ac39984e399dbd59040b1f326538e3f2"
     },
     {
       "default_authority": [],
@@ -10960,8 +10960,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-tests/c/events_contract.c",
-      "source_bytes": 4188,
-      "source_sha256": "13143358912d249fe8d43aa048fb436d024e12034da1b133ad3996f05f71f120"
+      "source_bytes": 4252,
+      "source_sha256": "1fe7e6bc87cace17cef9d918c92eff036b544b91698c7b69e574848ce09537b1"
     },
     {
       "default_authority": [],
@@ -11002,8 +11002,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-tests/c/legacy_length_contract.c",
-      "source_bytes": 1043,
-      "source_sha256": "a518eed1a334e10a12e56ad4ab3fbba3721df9e47baaab51dd315fc496cfb48e"
+      "source_bytes": 1079,
+      "source_sha256": "08c5e0f3ca3fd35152f0b6a2a67715b9670d413e02f2f154a0c01483cb4ac2c3"
     },
     {
       "default_authority": [],
@@ -11199,7 +11199,7 @@
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-tests/cpp/legacy_length_contract.cpp",
       "source_bytes": 4195,
-      "source_sha256": "ec60be3c8fcb2d0fd9b8b74abd8836a57b12c4472c46405898c7f96d93d88e53"
+      "source_sha256": "f0f0f893155e04e24ed2acc265c7260757fd7064375f55aaa44ab4fd2d2b3f39"
     },
     {
       "default_authority": [],
@@ -11268,8 +11268,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/sdk-tests/cpp/profiles/portable_resources.cpp",
-      "source_bytes": 9113,
-      "source_sha256": "5cde6e53a8bfedbbfff7ca08c994c5984e5e08f50ac4e922ba18ed99488b5456"
+      "source_bytes": 9123,
+      "source_sha256": "9fa95bcbeaa54e1f2e3648962801eabede50e15577fed417ed70d8dc275e27d1"
     },
     {
       "default_authority": [],
@@ -11632,8 +11632,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/csharp/policy-model/PolicyContract.cs",
-      "source_bytes": 6126,
-      "source_sha256": "84b83fe217e492039d406145fdffa3c8303f1df2edfa687341086a11996aa695"
+      "source_bytes": 6132,
+      "source_sha256": "681a3ef3fe41a818a19715843e42dd7428b9b624b8bba67603d90d1fc31f635f"
     },
     {
       "default_authority": [],
@@ -11646,8 +11646,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/java/core/java/org/uwvm/roswasm/ContractTest.java",
-      "source_bytes": 7037,
-      "source_sha256": "10e20ee1eb495710005bccb6c6ef1ccd36b8e2b17eacad409e57fa979e2dca20"
+      "source_bytes": 7039,
+      "source_sha256": "9f9652795d592236592a36d33e0ca0e4e396fdb5fb746a4fbae05e9b9b455491"
     },
     {
       "default_authority": [],
@@ -11744,8 +11744,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/java/rcljava/availability/AvailabilityPolicyTest.java",
-      "source_bytes": 14258,
-      "source_sha256": "cbb2166bee87ac7c63bc9110756dd51f0b3667037fbcaa9a79ea6f0fd3edf431"
+      "source_bytes": 14265,
+      "source_sha256": "357ed4bd7e4d392b5cead02e966db89d3c3fc5f5fd54903343f92044e179d9ad"
     },
     {
       "default_authority": [],
@@ -11758,8 +11758,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/java/rcljava/core/java/org/uwvm/rcljava/LocalPolicyTest.java",
-      "source_bytes": 12442,
-      "source_sha256": "fe616d088af038a9081f6eca150087bb07ad98e3f548784f88eaac98f849f039"
+      "source_bytes": 12448,
+      "source_sha256": "91464afbd8481afa1554e726db66fd2ecd51715a5c42a3391b0b76e41e63cd06"
     },
     {
       "default_authority": [],
@@ -11814,8 +11814,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/java/rcljava/retirement/retirement/org/uwvm/roswasm/JavaRetirementSourceTest.java",
-      "source_bytes": 17962,
-      "source_sha256": "e753133dc8e5082f5f5943418379f38e903c7fbde4ba6b6c4262469476e3742f"
+      "source_bytes": 17964,
+      "source_sha256": "be9e0e6c76f7fc385a4bb149936858cd8d8cf660ca15a4726b8472951530416b"
     },
     {
       "default_authority": [],
@@ -11842,8 +11842,8 @@
       "platform": "ros",
       "role": "compiled-source-test-or-probe",
       "source": "support/source/shared-language-sdk/java/rcljava/services/ServicePolicyTest.java",
-      "source_bytes": 21546,
-      "source_sha256": "28bce3152527838e4a9dc8073d1c87992fa8d0309eb0a74b09e455e15ff712dd"
+      "source_bytes": 21575,
+      "source_sha256": "4521e9bc2f3d3855728a076c1154608dc5dc8da380b3f5655450f5dad545f9b4"
     },
     {
       "default_authority": [],
@@ -12094,8 +12094,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/shared-language-sdk/py/contracts/test_contracts.py",
-      "source_bytes": 16947,
-      "source_sha256": "09fe61f09febb8a6ffab6f136bfdb17665ad57017b639a0a673844951209c451"
+      "source_bytes": 16967,
+      "source_sha256": "c249af61626107f2cddeb08804dccb85555acc0d12a2b9500e01a83c7aa5ddeb"
     },
     {
       "default_authority": [],
@@ -12122,8 +12122,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/shared-language-sdk/py/contracts/test_rclpy_migration.py",
-      "source_bytes": 14780,
-      "source_sha256": "7a1b1047743b16843831c2b00433422c5259307c25dfdbad7c21b32d80b8d5ea"
+      "source_bytes": 14788,
+      "source_sha256": "04b97301ba107a0850cb8198b351876a967434d5e156d2ccf24ab9df4dec2d3a"
     },
     {
       "default_authority": [],
@@ -12136,8 +12136,8 @@
       "platform": "ros",
       "role": "python-test-driver",
       "source": "support/source/shared-language-sdk/py/contracts/test_rclpy_services.py",
-      "source_bytes": 23333,
-      "source_sha256": "29624b171c29dfff01ea61e996ddcb4cc75af81ea548ed7abd3d8c5650a525ef"
+      "source_bytes": 23366,
+      "source_sha256": "e3ffa88fe91bd79deda61970a2e02b78acd34650dc43724d07487114deeba919"
     },
     {
       "default_authority": [],
@@ -14356,8 +14356,8 @@
     {
       "role": "shared-build-acquisition-or-process-tool",
       "source": "support/source/ros/generate_typed_parameter_event_fixtures.py",
-      "source_bytes": 8835,
-      "source_sha256": "a04055a16898caed5561a0f0d229dd5befdf67b3a20a389ffbd48f154c989bf0"
+      "source_bytes": 8837,
+      "source_sha256": "c18bda597e1f38d9b4e31142d54bae0e6759d00298ed3bfc7c18d89c74c0a3ba"
     },
     {
       "role": "shared-build-acquisition-or-process-tool",
@@ -14554,8 +14554,8 @@
     {
       "role": "shared-build-acquisition-or-process-tool",
       "source": "support/source/ros_custom_types/bounded-v2/build_guests.py",
-      "source_bytes": 33356,
-      "source_sha256": "b34388d6a0a5325cbfec9d9130f00efed2b02db122d197a256c352bb6611f6f4"
+      "source_bytes": 33358,
+      "source_sha256": "3d7f36204704e01b9d046e8c96bddba485fc9af69b70405cd3af2df95b21f4c2"
     },
     {
       "role": "shared-build-acquisition-or-process-tool",
@@ -14566,8 +14566,8 @@
     {
       "role": "shared-build-acquisition-or-process-tool",
       "source": "support/source/ros_custom_types/generate_guests.py",
-      "source_bytes": 5936,
-      "source_sha256": "2f56cef29f0f14d66b723122920df75bea31117e9e271092f3405f2ede0db094"
+      "source_bytes": 5938,
+      "source_sha256": "cf7263c62349bc4f040b5bd693f5f9691d9e2e66a6eee9fe608f4219b38a9cf0"
     },
     {
       "role": "shared-build-acquisition-or-process-tool",
@@ -15610,8 +15610,8 @@
     {
       "role": "shared-build-acquisition-or-process-tool",
       "source": "support/source/ros_unitree/prepare_direct_guests.py",
-      "source_bytes": 50227,
-      "source_sha256": "ceaeb4f3b49d4666a8ef7f21d882199ef8e4f475700e27abc6466a838fed191a"
+      "source_bytes": 50229,
+      "source_sha256": "3d369df2342566b24cfa12c951049e8c5c61e21695333fbd648793142dc5163c"
     },
     {
       "role": "shared-build-acquisition-or-process-tool",

@@ -67,11 +67,11 @@ namespace local_event_probe
     }
     inline std::vector<std::uint8_t> receive(ipc::client& client,std::string const& alias,std::string const& name,ipc::parameter_value const& value,unsigned kind,bool deletion_only=false)
     {
-        auto result{client.call("event.poll",alias,{},2000)};require(!result.error,"committed local event immediately available");
+        auto result{client.call("message.poll",alias,{},2000)};require(!result.error,"committed local event immediately available");
         uwvm_ros::typed_parameter_event decoded;require(uwvm_ros::decode(result.payload,decoded),"SDK decodes whole local event");
         require(result.payload==expected(name,value,kind,decoded.seconds,decoded.nanoseconds,deletion_only),"entire local event equals independent SDK oracle");
-        auto duplicate{client.call("event.poll",alias,{},1000)};require(duplicate.error==11&&duplicate.payload.empty(),"one mutation produces precisely one local event");return result.payload;
+        auto duplicate{client.call("message.poll",alias,{},1000)};require(duplicate.error==11&&duplicate.payload.empty(),"one mutation produces precisely one local event");return result.payload;
     }
     inline void empty(ipc::client& client,std::string const& alias)
-    { auto result{client.call("event.poll",alias,{},1000)};require(result.error==11&&result.payload.empty(),"unselected or rejected listener has no disclosure"); }
+    { auto result{client.call("message.poll",alias,{},1000)};require(result.error==11&&result.payload.empty(),"unselected or rejected listener has no disclosure"); }
 }

@@ -978,12 +978,13 @@ an old proof. `communication.open.take` privately prepares and publishes only
 that exact node under the complete original authority. A request identity and a
 published node handle remain distinct.
 
-Cancelling started startup signals the retained provider failure domain. For
-the paired worker provider, that domain includes both peers. A deployment
-supervisor retires and reaps the factory outside authority locks, then calls
-`reconcile_cleanup`. A timeout, process signal, logical node close or successful
-launcher exit does not prove namespace cleanup. Unknown effects remain unknown
-even after positive cleanup and cannot be released or retried as new work.
+Cancelling started attachment fences the retained local sessions. For the
+paired provider, that domain includes both peers. The VM supervisor drains local
+RPC and relay users outside authority locks; it never signals or reaps a peer.
+The external deployment owns process cleanup. The current attachment provider
+retains remote cleanup debt after disclosure, including after a timeout, process
+exit or logical node close. Unknown effects cannot be released or retried as
+new work merely because the local session has ended.
 Published nodes require their independently admitted `resource.close` operation.
 
 The source-pinned `communication-node-open-cancel-outcome` receipt contains nine
@@ -1035,18 +1036,18 @@ receipts each contain nine commands. They additionally qualify repeated release
 of the same verified draft after its registry slot has been removed. A mismatched
 request remains rejected; an already released key cannot create another resource.
 
-### Owned activation, image preparation and registry reentry
+### Owned activation, attachment preparation and registry reentry
 
-`communication_worker_manifest.h` provides inert named settings for the exact
-launcher, runtime images, startup profile, finite process limits and CPU/NUMA
-placement. Missing fields and duplicate settings are rejected. `prepare` pins
-regular files using `O_PATH | O_NOFOLLOW`, checks their exact sizes, and reopens
-the same inodes for reading. It neither loads a library nor launches a worker.
-The factory's subsequent sealing step verifies SHA-256 and executable image
-requirements. Thus successful path preparation alone is not image authentication.
-The `communication-image-configuration-elf` receipt contains six commands for
-inert freeze, symlink/FIFO/size refusal, path replacement, immutable inode
-selection, mandatory digest verification and closed placement syntax.
+Current production configuration registers an authenticated control endpoint,
+seven directional pipes and an exact startup-definition digest. Preparation
+duplicates and validates those existing endpoints; it does not accept native
+images, executable paths or process placement. Static freeze rejects kernel
+endpoint aliases across all driver, model and communication environments.
+
+The historical `communication_worker_manifest.h` image/placement helper now
+resides under `test/0084.ros-runtime/support/legacy_process`. The historical
+`communication-image-configuration-elf` receipt covers that external fixture,
+not current VM process-creation authority.
 
 `activation_admission` retains weak references to the actual dispatchers. Before
 enabling the private transport, it verifies that both dispatchers share the same
@@ -1090,7 +1091,8 @@ The root broker routes communication `request.describe`, `request.release` and
 `resource.close` to this owner before generic accounting. Failed zero-result
 delivery is checked before close begins. A successful capability close notifies
 pending startup, while published resources retain their independent cleanup path.
-Worker lifetimes are separately retained for stop/reap outside authority locks.
+Attachment lifetimes are separately retained for local fencing and draining
+outside authority locks. Process lifetime belongs to the external deployment.
 
 Service revocation calls the facade's nonblocking `retire` fence. The supervisor
 and final destructor use `drain` after authority and registry locks have been
@@ -1102,13 +1104,12 @@ changes still require deployment, CLI, debugger and actual VM qualification.
 ### Explicit deployment and worker-local registries
 
 `communication_deployment_configuration` joins authenticated startup definitions,
-image manifests, capability aliases and process pairs. Every aggregate capacity
+provisioned channels, capability aliases and peer pairs. Every aggregate capacity
 must be supplied before loading a worker definition. Loading checks the exact
-file size and full-file SHA-256, decodes an owned definition, and records that
-same file as the immutable `/worker/profile` image. The exact `profile-bytes`
-limit is derived from the authenticated file; later settings cannot replace it.
-Static freeze performs no path reads or process startup. Production preparation
-pins and seals the complete executable closure again before publishing a broker.
+file size and full-file SHA-256 and decodes an owned definition. Its digest is
+also bound into the attachment handshake. Static freeze performs no path reads
+or process startup. Production preparation validates the already provisioned
+endpoints and local reservations before publishing a broker.
 
 Each worker has a private communication registry within the same authority
 environment. Different workers may use identical ROS schema and profile names;
@@ -1117,22 +1118,23 @@ distinct. Each alias names one definition on one worker. The builder verifies
 that its context, node and schema dependencies are also explicitly bound there.
 Unused definitions in an approved image do not confer endpoint authority.
 
-The deployment currently binds the implemented context, node, type, topic,
-service and action provider families. Graph and event dispatchers require their
-remaining deployment composition; accepting a generic binary or an unsupported
-family is not a fallback. Linux isolation is the currently implemented native
-backend. This is not a cross-platform qualification claim.
+The deployment binds context, node, type, topic, service, action, graph and event
+dispatchers with independent reservations. Local parameter state is distinct
+from remote ROS parameter-service replication. Unsupported provider semantics
+are refused; accepting an arbitrary executable is not a fallback. The current
+attachment implementation uses Linux credential, pidfd and pipe semantics.
+This is not a cross-platform qualification claim.
 
-`communication_deployment_provider` routes exact host-minted owners to a sealed
-pair. Preparation allocates and authenticates images and reserves queues, without
-starting a ROS node. Only a separately admitted `node.open` starts that worker;
+`communication_deployment_provider` routes exact host-minted owners to an
+authenticated pair. Preparation reserves queues without starting any process.
+Only a separately admitted `node.open` activates its provisioned peer session;
 both original context/node authority groups must still be valid before private
 transport activates. Creation take publishes a distinct typed host resource.
 
 Each pair receives its own joinable supervisor and an explicit guarded stack and
 poll period. The stack uses the recoverable fast_io allocation path. Supervisors
-inherit the preparing thread's CPU/NUMA placement; worker processes apply their
-separate approved placement. These settings do not provide exclusive cores,
+inherit the preparing thread's CPU/NUMA placement; external deployment chooses
+the peer processes' placement. These settings do not provide exclusive cores,
 CPU bandwidth reservations, real-time scheduling or a worst-case response bound.
 The poll interval contributes to latency and must be included in native/VM
 measurements. Work and cleanup on one pair do not run on another pair's
@@ -1140,13 +1142,14 @@ supervisor. Within a pair, one serialized RPC channel preserves framing and
 causal ordering; throughput and tail latency must account for that serialization.
 
 Retirement first fences every affected pair, then joins/drains outside authority
-and registry locks. Actual namespace/process cleanup evidence is required before
-node cleanup debt is reconciled. Unknown operation outcomes remain unknown.
+and registry locks. Closing an authenticated attachment cannot prove remote
+cleanup, so its node cleanup debt remains retained. Unknown operation outcomes
+remain unknown.
 The enclosing broker retains supervisors until joining completes, so closing a
 guest capability cannot destroy a borrowed callback or recycle its worker.
-Supervisor exit now fences each owned node creation ledger before reaping.
+Supervisor exit fences each owned node creation ledger before local draining.
 Unsent work becomes a releasable cancellation; work with unknown effects keeps
-its uncertainty even after positive namespace cleanup. This also covers a peer
+its uncertainty even after an external process exits. This also covers a peer
 failure that prevents the other node from receiving another pump. The
 `node-supervisor-retirement` receipt exercises queued, started, ready and
 reentrant-stop states under ASan/UBSan, GCC and TSan. It does not explain every

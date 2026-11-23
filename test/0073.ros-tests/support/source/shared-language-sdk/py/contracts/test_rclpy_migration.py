@@ -37,7 +37,7 @@ class RclpyMigration(unittest.TestCase):
         values = []
         node = Node('minimal_subscriber', context=self.context)
         node.create_subscription(String, 'topic', lambda message: values.append(message.data), 10)
-        self.backend.replies['event_poll'] = [Result(0, String._encode(String(data='robot')))]
+        self.backend.replies['message_poll'] = [Result(0, String._encode(String(data='robot')))]
         rclpy.spin_once(node, timeout_sec=0)
         self.assertEqual(values, ['robot'])
 
@@ -106,7 +106,7 @@ class RclpyMigration(unittest.TestCase):
                 errors.append(error.error)
         node.create_subscription(String, 'topic', callback, 10)
         opens = len([c for c in self.backend.calls if c[0] == 'capability_open'])
-        self.backend.replies['event_poll'] = [Result(0, String._encode(String(data='one')))]
+        self.backend.replies['message_poll'] = [Result(0, String._encode(String(data='one')))]
         rclpy.spin_once(node, timeout_sec=0)
         self.assertEqual(errors, [17])
         self.assertEqual(len([c for c in self.backend.calls if c[0] == 'capability_open']), opens)
@@ -118,7 +118,7 @@ class RclpyMigration(unittest.TestCase):
         node.get_logger().info('warm')
         node.create_subscription(String, 'topic', lambda _: node.get_logger().info('callback'), 10)
         opens = len([c for c in self.backend.calls if c[0] == 'capability_open'])
-        self.backend.replies['event_poll'] = [Result(0, String._encode(String(data='one')))]
+        self.backend.replies['message_poll'] = [Result(0, String._encode(String(data='one')))]
         rclpy.spin_once(node, timeout_sec=0)
         self.assertEqual(len([c for c in self.backend.calls if c[0] == 'log_write']), 2)
         self.assertEqual(len([c for c in self.backend.calls if c[0] == 'capability_open']), opens)
@@ -287,7 +287,7 @@ class RclpyMigration(unittest.TestCase):
             except RosError as error:
                 statuses.append(error.error)
         node.create_subscription(String, 'topic', on_message, 10)
-        self.backend.replies['event_poll'] = [Result(0, String._encode(String(data='one')))]
+        self.backend.replies['message_poll'] = [Result(0, String._encode(String(data='one')))]
         rclpy.spin_once(node, timeout_sec=0)
         self.assertEqual(statuses, [17])
         self.assertEqual(callbacks, [])

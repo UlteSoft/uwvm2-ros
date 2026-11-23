@@ -17,6 +17,12 @@ int main()
  using memory_type=uwvm2::object::memory::linear::native_memory_t;
  memory_type memory;memory.init_by_page_count(1);
  wasi::environment::wasip1_environment<memory_type> env{.wasip1_memory=&memory,.fd_storage={.fd_limit=64}};
+ env.interface_enabled=true;
+ namespace interfaces=uwvm2::utils::control::host_interfaces;
+ CHECK(env.interfaces.set(interfaces::find(interfaces::family::wasip1,fast_io::u8string_view{u8"path_open"}),interfaces::access::allow));
+ CHECK(env.interfaces.set(interfaces::find(interfaces::family::wasip1,fast_io::u8string_view{u8"fd_close"}),interfaces::access::allow));
+ CHECK(env.interfaces.set(interfaces::find(interfaces::family::wasip1,fast_io::u8string_view{u8"path_open_wasm64"}),interfaces::access::allow));
+ CHECK(env.interfaces.set(interfaces::find(interfaces::family::wasip1,fast_io::u8string_view{u8"fd_close_wasm64"}),interfaces::access::allow));
  env.fd_storage.opens.resize(4);
  auto& entry=*env.fd_storage.opens[3].fd_p;entry.rights_base=static_cast<abi::rights_t>(-1);entry.rights_inherit=static_cast<abi::rights_t>(-1);
  entry.wasi_fd.ptr->wasi_fd_storage.reset_type(wasi::fd_manager::wasi_fd_type_e::dir);
@@ -37,7 +43,7 @@ int main()
    if(status==0)
    {
     auto fd=wasi::memory::get_basic_wasm_type_from_memory_wasm32<abi::wasi_posix_fd_t>(memory,4096);
-    CHECK(wasi::func::fd_close(env,fd)==abi::errno_t::esuccess);
+    CHECK((wasm64 ? static_cast<unsigned>(wasi::func::fd_close_wasm64(env,fd)) : static_cast<unsigned>(wasi::func::fd_close(env,fd)))==0u);
    }
    return status;
   };

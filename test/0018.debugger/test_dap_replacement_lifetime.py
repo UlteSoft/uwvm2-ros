@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from fixture_wasm_metadata import metadata
 
 PATH = Path(__file__).resolve().parents[2] / "tools/debug/dap_adapter.py"
 SPEC = importlib.util.spec_from_file_location("uwvm_dap_replacement_lifetime", PATH)
@@ -40,6 +41,11 @@ class Broker:
 
     def request(self, command):
         self.commands.append(command)
+        inventory = metadata(command, stop=self.stop, epoch=self.epoch, functions=3, thread=3)
+        if inventory is not None: return inventory
+        if command.startswith(("locals wasm 3 ", "operands 3 ", "controls 3 ", "saved 3 ", "handlers 3 ")):
+            first = int(command.split()[-2])
+            return f"wasm-stop {self.stop}\nWasm state thread=3 module=0 epoch={self.epoch} first={first} total=0\n"
         if command == "status":
             return self.status_error or self.status()
         if command == "bt 3":
@@ -111,6 +117,7 @@ class ReplacementLifetimeTests(unittest.TestCase):
     def setUp(self):
         self.output = io.BytesIO()
         self.adapter = dap.Adapter(self.output)
+        self.adapter.configuration_complete = True
         self.broker = Broker()
         self.adapter.broker = self.broker
         self.sequence = 0
@@ -154,15 +161,9 @@ class ReplacementLifetimeTests(unittest.TestCase):
         if not native:
             self.assertTrue(self.adapter.inline_frames)
             self.assertTrue(self.adapter.source_frames)
-            self.assertTrue(self.adapter.source_scope_stops)
-            expected_ros = {"ROS configured policy groups": "policy", "ROS capabilities (process-owned)": "capabilities",
-                            "ROS instances (backend sessions)": "instances",
-                            "ROS event queues (metadata only)": "events"} if hasattr(self.adapter, "ros_scope_stops") else {}
-            self.assertEqual({row["name"] for row in ros_scopes}, set(expected_ros))
-            self.assertEqual(len(scopes), 10 + len(expected_ros))
-            for row in ros_scopes:
-                self.assertEqual(self.adapter.ros_scope_stops[row["variablesReference"]],
-                                 (self.adapter.stop_key, expected_ros[row["name"]]))
+            self.assertFalse(self.adapter.source_scope_stops)  # Display-only labels do not issue source-value authority.
+            self.assertEqual(ros_scopes, [])  # Separate GUI queries own ROS views.
+            self.assertEqual(len(scopes), 13)
         return frames, scopes, source_references, references
 
     def reject_old(self, old):
