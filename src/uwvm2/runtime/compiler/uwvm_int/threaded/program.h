@@ -13,6 +13,8 @@
 #include <uwvm2/extension/memtag/encoding.h>
 #include <uwvm2/uwvm/runtime/storage/impl.h>
 #include <uwvm2/validation/error/impl.h>
+#include <uwvm2/validation/standard/wasm3/declaration_policy.h>
+#include <uwvm2/validation/standard/wasm3/memory_immediate.h>
 #include <uwvm2/validation/standard/wasm3/reference_policy.h>
 #include <uwvm2/validation/standard/wasm3/exception_immediate.h>
 #include <uwvm2/validation/standard/wasm3/gc_immediate.h>
@@ -156,7 +158,8 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         // Checked lowering still rejects every unsupported source shape.
         [[nodiscard]] inline status lower(storage::wasm_module_storage_t const& module,
             storage::local_defined_function_storage_t const& source, function_program& out,
-            limits const& budget, ::std::size_t& charged_bytes, ::std::uintptr_t source_begin)
+            limits const& budget, ::std::size_t& charged_bytes, ::std::uintptr_t source_begin,
+            ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm_binfmt1p1_feature_parameter const& policy = {})
         {
             out.type=source.function_type_ptr;
             if(!executable_signature(out.type) || !source.wasm_code_ptr) { return status::unsupported_profile; }
@@ -172,6 +175,22 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 reinterpret_cast<::std::uintptr_t>(body.expr_begin)-source_begin);
             source_cursor input{reinterpret_cast<::std::byte const*>(body.expr_begin),
                 reinterpret_cast<::std::byte const*>(body.expr_begin),reinterpret_cast<::std::byte const*>(body.code_end)};
+            namespace wasm3 = ::uwvm2::validation::standard::wasm3;
+            auto const memory_count{module.imported_memory_vec_storage.size() + module.local_defined_memory_vec_storage.size()};
+            bool const wide_encoding{wasm3::uses_core3_validation_policy(policy)};
+            auto const read_memory_argument{[&](instruction& ins, unsigned maximum_alignment) noexcept
+            {
+                // Core 3 encodes every memarg offset as u64. Only its value is
+                // constrained by the selected memory, including in mixed-width modules.
+                auto const arg{wasm3::scan_memory_argument64(input.current, input.end, !policy.disable_multi_memory, wide_encoding)};
+                if(arg.error != wasm3::memory_immediate_error::ok || arg.alignment > maximum_alignment ||
+                   arg.memory_index >= memory_count ||
+                   (arg.offset > UINT32_MAX && !storage::runtime_memory_is_address64(module, arg.memory_index)))
+                { return false; }
+                ins.target = arg.memory_index;
+                ins.immediate = arg.offset;
+                return true;
+            }};
             auto const bytes{static_cast<::std::size_t>(input.end-input.begin)};
             // Conservative exact-capacity reserve. No vector growth can exceed
             // the charged instruction bytes while lowering this function.
@@ -358,11 +377,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                             }
                             else if constexpr(Kind==kind::memory_load || Kind==kind::memory_store)
                             {
-                                auto const flags{input.leb(32u)};
-                                if((flags&~127u)!=0u || (flags&63u)>Align) { input.valid=false;return true; }
-                                ins.target=(flags&64u)?input.leb(32u):0u;
-                                if(ins.target>=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size())return false;
-                                ins.immediate=input.leb(storage::runtime_memory_is_address64(module,ins.target)?64u:32u);
+                                if(!read_memory_argument(ins, Align)) { input.valid=false;return true; }
                                 if constexpr(Lanes!=0u) { ins.alternate=input.byte();if(ins.alternate>=Lanes) { input.valid=false; } }
                             }
                             else if constexpr(Kind==kind::extract_lane || Kind==kind::replace_lane)
@@ -380,14 +395,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                         ins.opcode=0x100u+static_cast<unsigned>(sub);
                         if(sub==3u) { if(input.byte()!=0u) { return status::validation_failed; } }
                     }
-                    if(ins.opcode!=0x103u)
-                    {
-                        auto const alignment{input.leb(32u)};
-                        if(alignment&~127u)return status::validation_failed;
-                        ins.target=(alignment&64u)?input.leb(32u):0u;
-                        if(ins.target>=module.imported_memory_vec_storage.size()+module.local_defined_memory_vec_storage.size())return status::validation_failed;
-                        ins.immediate=input.leb(storage::runtime_memory_is_address64(module,ins.target)?64u:32u);
-                    }
+                    if(ins.opcode!=0x103u && !read_memory_argument(ins, 63u)) { return status::validation_failed; }
                 }
                 else if(!supported_plain(op)) { return status::unsupported_profile; }
                 // Exact checked decoding retains the original source feature

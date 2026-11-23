@@ -55,6 +55,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         decltype(::std::declval<child_world const&>().validated_code()) validated_code_;
         limits limits_;
         bool const execute_memtag_{true};
+        bool has_tag_storage_{};
         ::uwvm2::utils::container::std_unique_ptr<threads::code_debug_image> debug_;
         ::uwvm2::utils::container::std_vector<bound_module> modules_{};
         // These fixed-size arrays are allocated before a native child is minted.
@@ -344,7 +345,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         {
             // The snapshot and tag proof cover the complete range before callback
             // entry. Do not trap or retain a native pointer inside the callback.
-            if(memory.memtag_shadow.enabled())
+            if(has_tag_storage_ && memory.memtag_shadow.enabled())
             {
                 auto const proof=memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
                 {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
@@ -431,7 +432,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(sub && !pop(timeout)) { return false; }if(!pop(expected)||!pop(address)) { return false; }
                 auto const offset{ins.immediate};
                 threads::wait_result result{};
-                if(memory.memtag_shadow.enabled())
+                if(has_tag_storage_ && memory.memtag_shadow.enabled())
                 {
                     ::uwvm2::runtime::memtag::wait_execution_result checked{};
                     auto const pointer=memory_address(memory,address);
@@ -567,7 +568,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::std::size_t function, ::std::span<::std::byte> results, ::std::span<::std::byte const> params,
             ::std::size_t selected_module=SIZE_MAX) noexcept
         {
-            if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return {status::invalid_world}; }
+            if(execute_memtag_ && !::uwvm2::runtime::memtag::prepare_hardware_thread()) { return {status::invalid_world}; }
             auto const module{selected_module==SIZE_MAX?world_->entry_module_index():selected_module};
             if(::std::addressof(lease.world())!=world_.get() || !lease.owns_current_native_thread() ||
                 ::std::addressof(lease.admission())!=::std::addressof(world_->admission()) ||
@@ -579,7 +580,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             for(auto const& bound:modules_)
             {
                 for(auto const& owned:bound.memories)
-                    if(owned.memory->memtag_shadow.enabled()&&!memory_geometry(*owned.memory,[&]<typename Address,bool Shared>() noexcept
+                    if(has_tag_storage_ && owned.memory->memtag_shadow.enabled()&&!memory_geometry(*owned.memory,[&]<typename Address,bool Shared>() noexcept
                         {return ::uwvm2::runtime::memtag::details::configured<Address,Shared>(*owned.memory);}))
                         return {status::invalid_world};
             }
@@ -590,7 +591,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             if(entered_.test_and_set(::std::memory_order_acq_rel)) { return {status::already_entered}; }
             entry_scope retire{*this};
             ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
-            if(!memtag_delivery.enter()) { return {status::resource_limit}; }
+            if(execute_memtag_ && !memtag_delivery.enter()) { return {status::resource_limit}; }
             clear_activation();result_={};last_grow_={};
             if(lease.cancellation().stop_requested()) { result_.code=status::cancelled;return result_; }
             ::std::size_t offset{};
@@ -614,7 +615,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                     result_.module=frame.module;result_.function=frame.function;
                     if(frame.pc>=code.size()) { static_cast<void>(fail(status::invariant_failure));break; }
                     auto const& ins{code[frame.pc++]};result_.wasm_offset=ins.offset;
-                    if((::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()))
+                    if(execute_memtag_ && (::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()))
                     { ::uwvm2::runtime::memtag::deferred::boundary(frame.module,frame.function,source_function.expression_offset(ins.offset),
                         ::uwvm2::runtime::memtag::deferred::draining_opcode(ins.primary_opcode())?1u:0u); }
                     if(lease.cancellation().stop_requested()) { static_cast<void>(fail(status::cancelled));break; }

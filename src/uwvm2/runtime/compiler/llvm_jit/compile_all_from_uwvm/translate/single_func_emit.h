@@ -889,19 +889,36 @@ inline constexpr CallSite* apply_llvm_jit_calling_conv(CallSite* call_inst, ::ll
     return builder.CreateOr(own, crossed);
 }
 
-inline void publish_llvm_jit_ros_host_call(::llvm::CallBase* call) noexcept
+struct llvm_jit_ros_publication
 {
-    if(call == nullptr) { return; }
-    ::llvm::IRBuilder<> builder(call);
+    ::llvm::FunctionCallee publisher{};
+    ::llvm::Value* token{};
+
+    void emit(::llvm::IRBuilder<>& builder) const noexcept
+    {
+        if(token == nullptr) { return; }
+        auto const publication{builder.CreateCall(publisher, {token})};
+        publication->setCallingConv(get_llvm_jit_host_calling_conv());
+        publication->setDoesNotThrow();
+    }
+};
+
+[[nodiscard]] inline llvm_jit_ros_publication prepare_llvm_jit_ros_publication(::llvm::IRBuilder<>& builder) noexcept
+{
     auto const provenance{llvm_jit_ros_provenance(builder)};
-    if(provenance == nullptr) { return; } // A raw host-entry thunk has not entered a typed Wasm function.
+    if(provenance == nullptr) { return {}; } // A raw host-entry thunk has not entered a typed Wasm function.
     auto const type{::llvm::FunctionType::get(builder.getVoidTy(), {provenance->getType()}, false)};
     auto const bridge{get_llvm_runtime_bridge_function_symbol_value_unwrapped<
         ::uwvm2::runtime::lib::llvm_jit_publish_ros_provenance>(builder, type)};
     if(bridge == nullptr) { ::fast_io::fast_terminate(); }
-    auto const publication{builder.CreateCall(type, bridge, {provenance})};
-    publication->setCallingConv(get_llvm_jit_host_calling_conv());
-    publication->setDoesNotThrow();
+    return {{type, bridge}, provenance};
+}
+
+inline void publish_llvm_jit_ros_host_call(::llvm::CallBase* call) noexcept
+{
+    if(call == nullptr) { return; }
+    ::llvm::IRBuilder<> builder(call);
+    prepare_llvm_jit_ros_publication(builder).emit(builder);
 }
 
 [[nodiscard]] inline bool append_llvm_jit_ros_provenance(

@@ -41,6 +41,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 auto const native_pages=(::std::min)(pages,static_cast<::std::uint64_t>(SIZE_MAX>>16u));
                 auto const cap=world_->memory_growth_limit(owner->memory,static_cast<::std::size_t>(native_pages<<16u));
                 bound.memories.push_back({&owner->memory,cap});
+                has_tag_storage_ |= owner->memory.memtag_shadow.enabled();
             }
             auto const* retained_file{world_->file(m)};
             auto const source_begin{reinterpret_cast<::std::uintptr_t>(retained_file->source_cbegin())};
@@ -131,10 +132,11 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 auto const n{static_cast<::std::size_t>(tag->function_type_ptr->parameter.end-tag->function_type_ptr->parameter.begin)};
                 if(n>limits_.exception_values) { return status::resource_limit; }bound.tags.push_back(tag);
             }
+            auto const& policy{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(*world_->feature_parameter(m))};
             for(::std::size_t f{};f<bound.program.functions.size();++f)
             {
                 auto const result{detail::lower(*module,module->local_defined_function_vec_storage.index_unchecked(f),
-                    bound.program.functions[f],limits_,code_bytes,source_begin)};
+                    bound.program.functions[f],limits_,code_bytes,source_begin,policy)};
                 if(result!=status::ok) { return result; }
                 for(auto& ins: bound.program.functions[f].instructions)
                 {

@@ -77,7 +77,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             auto const memory_bytes{static_cast<::std::size_t>(memory.get_page_size()) << memory.custom_page_size_log2};
             details::memory_oob_terminate(memory,offset,{.offset=failure.address,.offset_65_bit=false},memory_bytes,bytes);
         }
-        template<bool Enabled, ::std::unsigned_integral Address, bool Shared>
+        template<bool Enabled, ::std::unsigned_integral Address, bool Shared, bool UntaggedOwner=false>
         inline void instruction(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t immediate) noexcept
         {
             namespace mt = ::uwvm2::extension::memtag;
@@ -88,8 +88,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             ::std::array<Address,4u> values{};
             for(auto count{descriptor->operand_count};count!=0u;--count)
             { values[count-1u]=pop<Address>(stack); }
-            auto const result{::uwvm2::runtime::memtag::execute<Enabled,Address,Shared>(
-                memory,operation,{values.data(),descriptor->operand_count})};
+            auto const result{[&]() noexcept
+            {
+                if constexpr(UntaggedOwner)
+                {
+                    static_assert(!Enabled);
+                    return ::uwvm2::runtime::memtag::execute_untagged<Address,Shared>(
+                        memory,*descriptor,{values.data(),descriptor->operand_count});
+                }
+                else { return ::uwvm2::runtime::memtag::execute<Enabled,Address,Shared>(
+                    memory,operation,{values.data(),descriptor->operand_count}); }
+            }()};
             if(!result)
             {
                 if(result.operation.error==mt::operation_error::memory_access)

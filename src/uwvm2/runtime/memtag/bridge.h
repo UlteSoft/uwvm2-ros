@@ -377,6 +377,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         return with_copy_policy<true>(destination_memory,source_memory,destination,source,bytes,::std::forward<Function>(function));
     }
 
+    // The compiler has proved that this owner has no tag storage. Only a zeroing
+    // instruction needs a pinned data snapshot. Shared data still uses atomic stores.
+    template<::std::unsigned_integral Address, bool Shared, typename Memory>
+    [[nodiscard]] inline execution_result<Address> execute_untagged(Memory const& memory,
+        ::uwvm2::extension::memtag::instruction_descriptor const& descriptor, ::std::span<Address const> arguments) noexcept
+    {
+        namespace mt = ::uwvm2::extension::memtag;
+        auto apply = [&](::std::span<::std::byte> data) noexcept
+        {
+            return mt::execute_operation<false,Address,Shared>(descriptor.operation,arguments,data,
+                mt::shadow_view<Address,Shared>{nullptr,0u,0u},[]() noexcept { return 0u; });
+        };
+        return {.operation = descriptor.zeroes_memory ? details::with_snapshot(memory,apply) : apply({})};
+    }
+
     template<bool Enabled, ::std::unsigned_integral Address, bool Shared, typename Memory,
         typename Random=decltype(&next_random_tag)>
     [[nodiscard]] inline execution_result<Address> execute(
@@ -404,12 +419,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         {
             // Disabled identity/query operations do not inspect the owner or its
             // shadow. The z instructions still have required zero-fill effects.
-            if(!descriptor->zeroes_memory)
-            {
-                result.operation=mt::execute_operation<false,Address,Shared>(
-                    operation,arguments,{},view_type{nullptr,0u,0u},generator);
-                return result;
-            }
+            if(!Shared || !descriptor->zeroes_memory) { return execute_untagged<Address,Shared>(memory,*descriptor,arguments); }
         }
         if constexpr(Enabled)
         {

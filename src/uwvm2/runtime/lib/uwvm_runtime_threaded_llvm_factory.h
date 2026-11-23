@@ -81,31 +81,47 @@
             // real section bytes, max alignment per section, relocation stub/GOT
             // allowance and three native page groups. No null allocator is used
             // to pretend RuntimeDyld's fatal allocation path is recoverable.
-            if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)return false;
             charge=3u*65536u;::std::size_t sections{},relocations{},symbols{};
+            auto reject=[&](char const* reason)
+            {
+                ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
+                    " (",::fast_io::mnp::os_c_str(reason),") sections=",sections," relocations=",relocations,
+                    " symbols=",symbols," charged-bytes=",charge," code-limit=",code_limit_);
+                return false;
+            };
+            if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)
+                return reject("native ELF target");
             auto add=[&](::std::size_t value){if(charge>code_limit_||value>code_limit_-charge)return false;charge+=value;return true;};
             for(auto const& section:object.sections())
             {
-                if(++sections>4096u||section.getAlignment().value()>65536u)return false;
-                auto name=section.getName();if(!name){::llvm::consumeError(name.takeError());return false;}
-                auto const size=section.getSize();if(size>code_limit_||!add(static_cast<::std::size_t>(size))||!add(2u*65536u))return false;
+                if(++sections>4096u)return reject("section count exceeds 4096");
+                if(section.getAlignment().value()>65536u)return reject("section alignment exceeds 65536");
+                auto name=section.getName();if(!name){::llvm::consumeError(name.takeError());return reject("section name");}
+                auto const size=section.getSize();
+                if(size>code_limit_||!add(static_cast<::std::size_t>(size)))return reject("section byte charge");
+                if(!add(2u*65536u))return reject("section alignment charge");
                 for(auto const& relocation:section.relocations())
-                {static_cast<void>(relocation);if(++relocations>65536u||!add(512u))return false;}
+                {
+                    static_cast<void>(relocation);
+                    if(++relocations>65536u)return reject("relocation count exceeds 65536");
+                    if(!add(512u))return reject("relocation byte charge");
+                }
             }
             for(auto const& symbol:object.symbols())
             {
-                if(++symbols>262144u)return false;
+                if(++symbols>262144u)return reject("symbol count exceeds 262144");
                 auto flags=symbol.getFlags();auto name=symbol.getName();
-                if(!flags){::llvm::consumeError(flags.takeError());return false;}
-                if(!name){::llvm::consumeError(name.takeError());return false;}
-                if((*flags&::llvm::object::SymbolRef::SF_Common)||::llvm::object::ELFSymbolRef{symbol}.getELFType()==::llvm::ELF::STT_TLS)return false;
+                if(!flags){::llvm::consumeError(flags.takeError());return reject("symbol flags");}
+                if(!name){::llvm::consumeError(name.takeError());return reject("symbol name");}
+                if((*flags&::llvm::object::SymbolRef::SF_Common)||::llvm::object::ELFSymbolRef{symbol}.getELFType()==::llvm::ELF::STT_TLS)
+                    return reject("common or TLS symbol");
                 if(*flags&::llvm::object::SymbolRef::SF_Undefined)
                 {
                     if(name->empty())continue;
                     bool mapped{};for(auto const& binding:externals_)if(binding.name==*name)mapped=true;
-                    // Object-lowered native libcalls are narrow, audited finite
-                    // memory operations, never dlsym of a Guest import. Huge
-                    // intrinsic work must still fit admitted linear memory.
+                    // Resolve only the native memory, arithmetic and unwind
+                    // helpers emitted by the backend, through this object's
+                    // finite registry. Guest imports use the world dispatcher.
                     if(!mapped)
                     {
                         ::std::uintptr_t pointer{};
@@ -113,8 +129,7 @@
                         else if(*name=="memmove")pointer=address(static_cast<void*(*)(void*,void const*,::std::size_t)>(&::std::memmove));
                         else if(*name=="memset")pointer=address(static_cast<void*(*)(void*,int,::std::size_t)>(&::std::memset));
 #if defined(__linux__) && (defined(__i386__) || defined(__arm__))
-                        // Only the existing finite compiler-runtime arithmetic
-                        // allowlist. No dynamic lookup or Guest import binding.
+                        // Includes scalar rounding and square root on ARM EABI.
                         else pointer=::uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins::find(::uwvm2::utils::container::copy_string(*name));
 #endif
 #if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
@@ -125,18 +140,25 @@
                         else if(*name=="__aeabi_unwind_cpp_pr1")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr1);
                         else if(*name=="__aeabi_unwind_cpp_pr2")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2);
 #endif
-                        if(pointer==0u||externals_.size()>=256u)return false;
+                        if(pointer==0u)
+                        {
+                            auto const spelling=name->take_front(128u);
+                            ::fast_io::perrln("uwvm: [error] WASI Threads LLVM unbound native symbol ",
+                                ::fast_io::mnp::strvw(spelling.begin(),spelling.end()));
+                            return reject("unbound native symbol");
+                        }
+                        if(externals_.size()>=256u)return reject("external binding count exceeds 256");
                         externals_.push_back({::uwvm2::utils::container::copy_string(*name),pointer});
                     }
                 }
                 else if(!name->empty())
                 {
                     definitions.push_back(::uwvm2::utils::container::copy_string(*name));
-                    auto type=symbol.getType();if(!type){::llvm::consumeError(type.takeError());return false;}
+                    auto type=symbol.getType();if(!type){::llvm::consumeError(type.takeError());return reject("symbol type");}
                 }
             }
-            if(!check_static_stack_object(object))return false;
-            return charge<=code_limit_;
+            if(!check_static_stack_object(object))return reject("native stack witness");
+            return charge<=code_limit_||reject("initial arena charge");
         }
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
@@ -302,7 +324,7 @@
                 auto validation=emit::build_runtime_validation_module(module);
                 compile::compile_option options{};options.curr_wasm_id=module_index;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;
-                options.execute_memtag=!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
+                options.execute_memtag=data->execute_memtag_;
                 options.validator_feature_parameter=data->world_->feature_parameter(module_index);options.verify_llvm_jit_ir=true;
                 options.emit_call_stack_frames=false;options.emit_unwind_call_stack_frames=false;
                 options.emit_precise_gc_root_frames=false;options.emit_debug_safe_points=false;
@@ -313,11 +335,21 @@
                 auto& llvm_module=*ir.llvm_module;
                 // Pre- and post-pass finite IR quotas. These are NOT a claim of
                 // a hard bound on all LLVM optimizer heap allocations.
-                auto ir_fits=[&]
+                auto ir_fits=[&](char const* stage)
                 {
                     ::std::size_t instructions{},blocks{};
                     for(auto const& f:llvm_module)for(auto const& b:f)
-                    {if(++blocks>262144u||b.size()>1048576u-instructions)return false;instructions+=b.size();}
+                    {
+                        auto const count=b.size();
+                        if(++blocks>262144u||count>1048576u-instructions)
+                        {
+                            ::fast_io::perrln("uwvm: [error] WASI Threads LLVM IR limit in module ",module_index,
+                                " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/262144 instructions=",
+                                static_cast<::std::uint64_t>(instructions)+count,"/1048576");
+                            return false;
+                        }
+                        instructions+=count;
+                    }
                     return true;
                 };
                 {
@@ -353,8 +385,18 @@
                     // Control host calls also publish ROS provenance. Keep the
                     // actual owner scope alive until those late bridges have
                     // been captured, including otherwise host-call-free bodies.
-                    if(!ir_fits()||!data->add_control(llvm_module)||!ir_fits()||
-                       !data->check_static_stack_ir(llvm_module))return {{},status::budget};
+                    if(!ir_fits("before control"))return {{},status::budget};
+                    if(!data->add_control(llvm_module))
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM control insertion rejected in module ",module_index);
+                        return {{},status::budget};
+                    }
+                    if(!ir_fits("after control"))return {{},status::budget};
+                    if(!data->check_static_stack_ir(llvm_module))
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM static stack IR rejected in module ",module_index);
+                        return {{},status::budget};
+                    }
                     if(!owner.valid())return {{},status::unsupported_bridge};
                 }
                 ::std::size_t gc_inputs{};
@@ -385,7 +427,9 @@
                 set_llvm_module_target_triple_from_machine(llvm_module,*target);llvm_module.setDataLayout(target->createDataLayout());
                 apply_runtime_llvm_jit_native_target_function_attrs(llvm_module,cpu,cpu,*target);
                 if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false)||
-                   !ir_fits()||!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))return {{},status::native_failure};
+                   !ir_fits("after optimization"))return {{},status::native_failure};
+                data->reuse_control_targets(llvm_module);
+                if(!ir_fits("after control target loads")||!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))return {{},status::native_failure};
                 if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                    !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
                 if(!data->record_native_call_graph(llvm_module))return {{},status::native_failure};
@@ -413,7 +457,12 @@
                     if(!native.valid())return {{},status::native_failure};
                 }
                 if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
-                if(!output.valid())return {{},status::budget};
+                if(!output.valid())
+                {
+                    ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object stream rejected in module ",module_index,
+                        " emitted-bytes=",output.tell()," code-limit=",data->code_limit_);
+                    return {{},status::budget};
+                }
                 auto buffer=::llvm::MemoryBuffer::getMemBufferCopy(output.bytes(),"uwvm.threaded.child.object");
                 if(!buffer)return {{},status::native_failure};
                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());

@@ -62,6 +62,49 @@ increase Guest memory, interface permissions, executable storage, or the
 interpreter operand allowance. Code and relocation reservations remain
 separately charged against the explicitly supplied per-child code quota.
 
+## Threaded AOT control and compilation limits
+
+Each generated native function has one shared exit for cancellation and traps.
+The entry check, block polls and post-call checks branch to that exit on stop.
+A trap records its kind at the original call site before branching. The exit
+calls `uwvm.threaded.leave.v1` once and returns the zero or void carrier for
+the function's ABI. Successful returns and `musttail` transfers keep their own
+frame exits. This shares the cold instructions while preserving each runtime
+check, its ordering with Guest effects, and ROS caller provenance on host calls.
+
+Threaded compilation checks each module against 1,048,576 LLVM instructions
+and 262,144 basic blocks before control insertion, after insertion and after
+optimization. Native objects have a ceiling of 65,536 relocations. Each
+relocation also reserves 512 bytes of the per-child executable storage
+allowance, together with the section sizes and alignment reserves.
+
+### Pending SDK regression checks
+
+The saved x86_64 `fast-compile` runs for the threaded wasm32 profile with
+exceptions and MemTag disabled give the baseline. libc++ `find.pass.cpp` and
+fast_float `example_test.cpp` first crossed the instruction ceiling after
+control insertion. The ELF objects for libc++ `swap_ranges.pass.cpp`,
+TinyXML-2 and pugixml contained 69,060, 102,100 and 156,131 relocations,
+respectively. Relocations to `leave` alone accounted for 22,367, 35,278 and
+47,500 of those entries. These figures describe the original objects.
+
+1. Re-freeze the VM source in the SDK, rebuild and identify each VM binary
+   and replay the same Guest, owner module, compile policy and resource
+   grants on Linux x86_64, i686, AArch64, ARMv7 EABI and ARMv7 hard-float.
+   Record instructions and blocks at the three checks, total ELF relocations,
+   relocations to `leave`, and the executable storage charge for each object
+   that reaches that stage. For admitted cases compare output and exit status
+   with the threaded interpreter. Record the first rejecting stage for others.
+2. Inspect instrumented IR before optimization. Entry and post-call stop
+   edges and trap exits must reach one shared exit per function, with exactly
+   one frame decrement on each path. Exercise normal returned values, void
+   returns, `musttail`, a trap in a nested callee, and cancellation in a loop
+   with function-boundary and instruction-level debugging. Check trap
+   attribution, absence of Guest effects after stop and balanced call depth.
+3. Check the inclusive IR and relocation count boundaries and their immediate
+   excesses. With an executable storage allowance smaller than the computed
+   charge, preparation must still reject the object before loading it.
+
 ## Multiple Wasm modules
 
 A threaded child owns private mutable globals, tables and GC state for every

@@ -106,9 +106,11 @@ namespace uwvm2::uwvm::runtime::initializer
 
             // Shared memory providers are authenticated immutable preload
             // modules. Multiple memories/aliases do not grant code or effects.
-            auto const* primary=parent_world->memory(0u,0u);
-            if(!primary||!primary->memory_type_ptr||!details::wasm_memory_is_shared(*primary->memory_type_ptr)||
-               details::wasm_memory_is_address64(*primary->memory_type_ptr))return threaded_main_active_status::unsupported_shape;
+            auto const* primary{parent_world->memory(0u, 0u)};
+            if(primary == nullptr || primary->memory_type_ptr == nullptr ||
+               !details::wasm_memory_is_shared(*primary->memory_type_ptr) ||
+               details::wasm_memory_is_address64(*primary->memory_type_ptr) != runtime_memory_is_address64(main, 0u))
+            { return threaded_main_active_status::unsupported_shape; }
             bool primary_provider{};
             for(auto& [name,module]:registry)
             {

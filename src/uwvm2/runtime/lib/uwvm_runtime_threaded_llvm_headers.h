@@ -19,9 +19,11 @@
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/CFG.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/Transforms/Utils/PromoteMemToReg.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Object/ObjectFile.h>

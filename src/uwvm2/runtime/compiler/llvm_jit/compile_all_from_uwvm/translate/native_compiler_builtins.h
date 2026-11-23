@@ -7,6 +7,9 @@
 #include <uwvm2/utils/container/standard.h>
 #include <cstdint>
 #include <string_view>
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(__linux__) && defined(__arm__)
+# include <uwvm2/runtime/compiler/shared/strict_float.h>
+#endif
 
 // These names are introduced by native LLVM lowering, not by Wasm imports.
 // Static compiler runtimes do not put all of their helpers in the process
@@ -39,6 +42,18 @@ namespace uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins
     extern "C" void address_fixsfdi() asm("__fixsfdi");
     extern "C" void address_fixunssfdi() asm("__fixunssfdi");
 # if defined(__arm__)
+    // ARM targets without a native integral-rounding instruction emit scalar
+    // libm calls using the target C floating-point ABI (base AAPCS or VFP).
+    // Match that ABI at the boundary and round the binary representation.
+    // This also supplies roundeven on systems whose libm predates C23.
+    namespace fp = ::uwvm2::runtime::compiler::shared::strict_float;
+    template <typename Float, fp::integral_rounding Mode>
+    [[nodiscard]] inline Float round_scalar(Float input) noexcept
+    {
+        auto const bits = ::std::bit_cast<fp::bits_t<Float>>(input);
+        return ::std::bit_cast<Float>(fp::round_integral_bits<Mode>(bits));
+    }
+
     extern "C" void address_aeabi_l2d() asm("__aeabi_l2d");
     extern "C" void address_aeabi_ul2d() asm("__aeabi_ul2d");
     extern "C" void address_aeabi_l2f() asm("__aeabi_l2f");
@@ -111,6 +126,17 @@ namespace uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins
         if(name == "__fixsfdi") { return reinterpret_cast<::std::uintptr_t>(&address_fixsfdi); }
         if(name == "__fixunssfdi") { return reinterpret_cast<::std::uintptr_t>(&address_fixunssfdi); }
 # if defined(__arm__)
+        using rounding = fp::integral_rounding;
+        if(name == "ceilf") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<float, rounding::ceil>); }
+        if(name == "ceil") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<double, rounding::ceil>); }
+        if(name == "floorf") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<float, rounding::floor>); }
+        if(name == "floor") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<double, rounding::floor>); }
+        if(name == "truncf") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<float, rounding::trunc>); }
+        if(name == "trunc") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<double, rounding::trunc>); }
+        if(name == "roundevenf") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<float, rounding::nearest>); }
+        if(name == "roundeven") { return reinterpret_cast<::std::uintptr_t>(&round_scalar<double, rounding::nearest>); }
+        if(name == "sqrtf") { return reinterpret_cast<::std::uintptr_t>(static_cast<float(*)(float)>(&::std::sqrt)); }
+        if(name == "sqrt") { return reinterpret_cast<::std::uintptr_t>(static_cast<double(*)(double)>(&::std::sqrt)); }
         if(name == "__aeabi_l2d") { return reinterpret_cast<::std::uintptr_t>(&address_aeabi_l2d); }
         if(name == "__aeabi_ul2d") { return reinterpret_cast<::std::uintptr_t>(&address_aeabi_ul2d); }
         if(name == "__aeabi_l2f") { return reinterpret_cast<::std::uintptr_t>(&address_aeabi_l2f); }

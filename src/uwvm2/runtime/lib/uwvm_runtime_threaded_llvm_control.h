@@ -357,12 +357,30 @@
                 // ahead of the genuine entry/depth/cancellation check.
                 auto& entry=f.getEntryBlock();
                 ::llvm::SmallVector<::llvm::AllocaInst*,16> frame_allocas;
+                ::llvm::SmallVector<::llvm::AllocaInst*,16> private_locals;
                 for(auto& instruction:entry)
                     if(auto* allocation=::llvm::dyn_cast<::llvm::AllocaInst>(&instruction))
                     {
                         if(!allocation->isStaticAlloca()||allocation->getAlign().value()>16u)return false;
-                        frame_allocas.push_back(allocation);
+                        // Promote only frame slots used by ordinary loads and
+                        // stores. In particular, a lifetime intrinsic or a
+                        // host-visible address retains its original probe site.
+                        auto const simple_access=[](::llvm::User const* user) noexcept
+                        {
+                            if(auto const* load=::llvm::dyn_cast<::llvm::LoadInst>(user))return load->isSimple();
+                            if(auto const* store=::llvm::dyn_cast<::llvm::StoreInst>(user))return store->isSimple();
+                            return false;
+                        };
+                        if(::llvm::isAllocaPromotable(allocation)&&
+                           ::std::all_of(allocation->user_begin(),allocation->user_end(),simple_access))
+                            private_locals.push_back(allocation);
+                        else frame_allocas.push_back(allocation);
                     }
+                if(!private_locals.empty())
+                {
+                    ::llvm::DominatorTree dominators{f};
+                    ::llvm::PromoteMemToReg(private_locals,dominators);
+                }
                 for(auto current=frame_allocas.rbegin();current!=frame_allocas.rend();++current)
                 {
                     auto point=entry.getFirstInsertionPt();
@@ -401,9 +419,14 @@
                         if(is_trap)traps.push_back(call);else calls.push_back(call);
                     }
                 }
-                // Replace the original fatal-only unreachable suffix. We retain
-                // its exact trap kind and call arguments; it now records group
-                // outcome and returns through actual native frames.
+                // Every failed check in this function returns the same carrier.
+                // Create its exit after collecting the original blocks so it
+                // gets one leave below and cannot acquire a poll of its own.
+                auto* const stop_exit=::llvm::BasicBlock::Create(c,"threaded.stop",::std::addressof(f));
+                ::llvm::IRBuilder<> stop_builder(stop_exit);
+                return_carrier(stop_builder,f);
+
+                // Record the exact trap at its original site before leaving.
                 for(auto* call:traps)
                 {
                     if(!call->getType()->isVoidTy())return false;
@@ -415,20 +438,39 @@
                         dead.eraseFromParent();
                     }
                     call->removeFnAttr(::llvm::Attribute::NoReturn);
-                    ::llvm::IRBuilder<> b(block);return_carrier(b,f);
+                    ::llvm::IRBuilder<> b(block);b.CreateBr(stop_exit);
                 }
+                auto entry_begin=entry.getFirstInsertionPt();
+                while(entry_begin!=entry.end()&&::llvm::isa<::llvm::AllocaInst>(*entry_begin))++entry_begin;
+                if(entry_begin==entry.end())return false;
+                auto* const body_begin=::std::addressof(*entry_begin);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                // This value depends only on the incoming function argument
+                // and the compiler-owned module identity. Keep its pure
+                // computation ahead of entry splitting; publish it at every
+                // control call against the active thread's actual lease.
+                ::llvm::IRBuilder<> provenance_builder(body_begin);
+                auto const publication=emit::prepare_llvm_jit_ros_publication(provenance_builder);
+#endif
+                auto control_call=[&](::llvm::IRBuilder<>& builder,::llvm::Function* target,::llvm::ArrayRef<::llvm::Value*> arguments)
+                {
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                    publication.emit(builder);
+#endif
+                    return emit::apply_llvm_jit_calling_conv(builder.CreateCall(target->getFunctionType(),target,arguments),
+                        emit::get_llvm_jit_host_calling_conv());
+                };
                 auto probe=[&](::llvm::Instruction* before,::llvm::Function* probe_fn)
                 {
                     auto* block=before->getParent();
                     auto* continued=block->splitBasicBlock(before->getIterator(),"threaded.cont");
                     block->getTerminator()->eraseFromParent();
-                    auto* cancelled=::llvm::BasicBlock::Create(c,"threaded.stop",::std::addressof(f),continued);
                     ::llvm::IRBuilder<> b(block);
-                    auto* observed=emit::apply_llvm_jit_host_calling_conv(b.CreateCall(poll_type,probe_fn,
-                        {::llvm::ConstantInt::get(word,function)}));
+                    auto* observed=control_call(b,probe_fn,{::llvm::ConstantInt::get(word,function)});
                     observed->setTailCallKind(::llvm::CallInst::TCK_NoTail);
-                    b.CreateCondBr(b.CreateICmpNE(observed,::llvm::ConstantInt::get(word,0u)),cancelled,continued);
-                    b.SetInsertPoint(cancelled);return_carrier(b,f);
+                    // Branch on the original native-word result. Zero is the
+                    // sole continuing case; every other value takes stop_exit.
+                    b.CreateSwitch(observed,stop_exit,1u)->addCase(::llvm::ConstantInt::get(word,0u),continued);
                 };
                 for(auto* block:blocks)
                 {
@@ -445,9 +487,8 @@
                             if(::llvm::isa<::llvm::CallBase,::llvm::AllocaInst>(instruction))return false;
                         continue;
                     }
-                    auto first=block->getFirstInsertionPt();
                     bool const entry_block=block==::std::addressof(f.getEntryBlock());
-                    if(entry_block)while(first!=block->end()&&::llvm::isa<::llvm::AllocaInst>(*first))++first;
+                    auto first=entry_block?body_begin->getIterator():block->getFirstInsertionPt();
                     if(first==block->end())return false;
                     probe(::std::addressof(*first),entry_block?enter_fn:poll_fn);
                 }
@@ -464,10 +505,79 @@
                     auto* before=static_cast<::llvm::Instruction*>(ret);
                     auto* previous=ret->getPrevNode();auto* tail=::llvm::dyn_cast_or_null<::llvm::CallInst>(previous);
                     if(tail!=nullptr&&tail->isMustTailCall())before=tail;
-                    ::llvm::IRBuilder<> b(before);emit::apply_llvm_jit_host_calling_conv(b.CreateCall(leave_type,leave_fn,{}));
+                    ::llvm::IRBuilder<> b(before);control_call(b,leave_fn,{});
                 }
             }
             return !::llvm::verifyModule(module);
+        }
+        static constexpr char control_target_section[]{".rodata.uwvm.threaded.targets"};
+
+        // One ELF relocation binds the private cell to the same audited external
+        // declaration. A function with repeated probes loads its target once.
+        // Every call, its arguments, its return check and its position survive.
+        static void reuse_control_target(::llvm::Function& target)
+        {
+            auto& module=*target.getParent();
+            ::llvm::GlobalVariable* cell{};
+            for(auto& function:module)
+            {
+                ::llvm::SmallVector<::llvm::CallInst*,8> calls;
+                for(auto& block:function)for(auto& instruction:block)
+                    if(auto* call=::llvm::dyn_cast<::llvm::CallInst>(&instruction);
+                       call!=nullptr&&call->getCalledFunction()==&target&&call->getCallingConv()==target.getCallingConv())
+                        calls.push_back(call);
+                // Small call sites cost less as direct branches. AArch64 may
+                // need two relocations to materialize the local cell address.
+                if(calls.size()<4u)continue;
+                if(cell==nullptr)
+                {
+                    cell=new ::llvm::GlobalVariable(module,target.getType(),true,
+                        ::llvm::GlobalValue::PrivateLinkage,&target,"uwvm.threaded.control.target");
+                    cell->setSection(control_target_section);
+                    cell->setAlignment(::llvm::Align{alignof(void*)});
+                }
+                auto& entry=function.getEntryBlock();
+                ::llvm::IRBuilder<> builder(&entry,entry.getFirstInsertionPt());
+                auto* loaded=builder.CreateLoad(target.getType(),cell,"threaded.control.target");
+                loaded->setAlignment(::llvm::Align{alignof(void*)});
+                loaded->setVolatile(true);
+                for(auto* call:calls)
+                {
+                    // These function attributes also apply at an indirect site.
+                    for(auto kind:{::llvm::Attribute::NoUnwind,::llvm::Attribute::NoInline,
+                                   ::llvm::Attribute::Convergent,::llvm::Attribute::NoDuplicate})
+                        if(target.hasFnAttribute(kind))call->addFnAttr(kind);
+                    call->setCalledOperand(loaded);
+                }
+            }
+        }
+        void reuse_control_targets(::llvm::Module& module) const
+        {
+            for(auto const& binding:externals_)
+            {
+                if(binding.address!=address(&poll)&&binding.address!=address(&instruction_control_poll)
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                   &&binding.address!=address(&publish_ros_provenance)
+#endif
+                )continue;
+                auto* target=module.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(binding.name));
+                if(target!=nullptr&&target->isDeclaration())reuse_control_target(*target);
+            }
+        }
+        // Both the cycle proof and the native stack graph inspect the final IR.
+        // Only the exact function in an immutable private control cell can
+        // qualify as a known target. Guest table dispatch stays indirect.
+        [[nodiscard]] static ::llvm::Function const* fixed_call_target(::llvm::CallBase const& call) noexcept
+        {
+            if(auto const* direct=call.getCalledFunction())return direct;
+            auto const* load=::llvm::dyn_cast<::llvm::LoadInst>(call.getCalledOperand());
+            if(load==nullptr||!load->isVolatile())return nullptr;
+            auto const* cell=::llvm::dyn_cast<::llvm::GlobalVariable>(load->getPointerOperand());
+            if(cell==nullptr||cell->getParent()!=call.getModule()||!cell->hasPrivateLinkage()||
+               !cell->isConstant()||!cell->hasInitializer()||cell->getSection()!=control_target_section)return nullptr;
+            auto const* target=::llvm::dyn_cast<::llvm::Function>(cell->getInitializer());
+            return target!=nullptr&&target->isDeclaration()&&target->getFunctionType()==call.getFunctionType()&&
+                target->getCallingConv()==call.getCallingConv()?target:nullptr;
         }
         [[nodiscard]] static bool prove_stop_cycles(::llvm::Module const& module)
         {
@@ -482,7 +592,7 @@
                 {
                     bool has_probe{};
                     for(auto const& i:block)if(auto const* call=::llvm::dyn_cast<::llvm::CallInst>(&i))
-                        if(auto const* target=call->getCalledFunction())
+                        if(auto const* target=fixed_call_target(*call))
                             has_probe|=target->getName()=="uwvm.threaded.poll.v1"||target->getName()=="uwvm.threaded.enter.v1";
                     if(!has_probe)nodes.push_back(&block);
                 }

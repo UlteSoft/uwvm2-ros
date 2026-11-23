@@ -51,6 +51,7 @@ extern "C++"
         ::uwvm2::utils::container::std_unique_ptr<details::pending_llvm_jit_code_ranges> ranges_{};
         ::std::atomic_flag running_=ATOMIC_FLAG_INIT;
         bool bound_tables_{},ever_entered_{},reference_dispatch_{};
+        bool const execute_memtag_{!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag};
         struct execution final
         {
             ThreadedLlvmChild* child{};lease_type* lease{};
@@ -148,7 +149,7 @@ extern "C++"
             // Drain after the previous opcode and before choosing the next
             // journal turn. Hardware ASYNC latches are collected without
             // unwinding across a memory/tag lease or inventing a faulting PC.
-            if(::uwvm2::runtime::memtag::deferred::controlled_fault_delivery() &&
+            if(e->child->execute_memtag_ && ::uwvm2::runtime::memtag::deferred::controlled_fault_delivery() &&
                ::uwvm2::extension::memtag::asynchronous_requested() &&
                !::uwvm2::runtime::memtag::deferred::poll(true))return;
             auto* child=e->child;
@@ -295,15 +296,18 @@ extern "C++"
         // Geometry comes from an authenticated native owner, never a journal or
         // guest integer. Both full-width arithmetic and the complete span are
         // checked while its allocation is pinned, before the callback can write.
-        template<typename Function>
+        template<bool CheckTags=true,typename Function>
         [[nodiscard]] static auto memory_access(memory_type const& memory,::std::uint64_t pointer,
             ::std::uint64_t offset,::std::uint64_t bytes,Function&& function) noexcept
         {
             using result=::uwvm2::extension::memtag::access_result;
             if(!memory64(memory)&&pointer>UINT32_MAX)
                 return result{.error=::uwvm2::extension::memtag::access_error::out_of_bounds};
-            if(memory.memtag_shadow.enabled())return memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
-            {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,function);});
+            if constexpr(CheckTags)
+            {
+                if(memory.memtag_shadow.enabled())return memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
+                {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,function);});
+            }
             return ::uwvm2::runtime::memtag::details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
             {
                 if(offset>data.size()||pointer>data.size()-offset||bytes>data.size()-offset-pointer)
@@ -390,7 +394,12 @@ extern "C++"
                     if(!next.child)return next;
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM module ",m," requires ",peer.native_bytes_,
+                            " code bytes and ",peer.storage_bytes_," storage bytes, remaining ",limits.max_child_code_bytes-code,
+                            " code bytes and ",backend_storage_budget-storage," storage bytes");
                         return {{},preparation_status::budget};
+                    }
                     storage+=peer.storage_bytes_;code+=peer.native_bytes_;peer.graph_=&root;
                     root.maximum_fixed_frame_=(::std::max)(root.maximum_fixed_frame_,peer.maximum_fixed_frame_);
                     root.peers_.push_back(::std::move(next.child));
@@ -402,7 +411,13 @@ extern "C++"
                     auto const frame=root.maximum_fixed_frame_+native_call_push;
                     if(frame>SIZE_MAX/(root.call_limit_+1u))return {{},preparation_status::budget};
                     root.guest_fixed_stack_charge_=frame*(root.call_limit_+1u);
-                    if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)return {{},preparation_status::budget};
+                    if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)
+                    {
+                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM module graph requires ",root.guest_fixed_stack_charge_,
+                            " native stack bytes, usable ",root.guest_native_stack_usable_bytes_," (largest frame ",frame,
+                            ", call depth including entry ",root.call_limit_+1u,")");
+                        return {{},preparation_status::budget};
+                    }
                     auto const registry=root.peers_.capacity()*sizeof(::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>);
                     if(registry>backend_storage_budget-storage)return {{},preparation_status::budget};
                     storage+=registry;
@@ -489,9 +504,9 @@ extern "C++"
                 return run_status::rejected;
             struct reset_flag{::std::atomic_flag& value;~reset_flag(){value.clear();}} reset{running_};
             if(!bound_tables_)return run_status::rejected;
-            if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
+            if(execute_memtag_ && !::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
             ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
-            if(!memtag_delivery.enter()) { return run_status::rejected; }
+            if(execute_memtag_ && !memtag_delivery.enter()) { return run_status::rejected; }
             ever_entered_=true;
             if(lease.cancellation().stop_requested())return run_status::group_stopped;
             execution e{this,::std::addressof(lease)};active_=::std::addressof(e);

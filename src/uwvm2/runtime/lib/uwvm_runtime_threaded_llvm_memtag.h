@@ -98,12 +98,15 @@
             });
         }
 
+        // The emitter selects distinct ordinary and tagged fill bridges from
+        // the immutable owner. Disabled WasmMTE zeroing uses the ordinary ABI.
+        template<bool CheckTags=false>
         static void memtag_fill(::std::uintptr_t owner,::std::uint64_t destination,
             ::std::uint64_t value,::std::uint64_t bytes) noexcept
         {
             auto* memory=actual_memory(owner);
             if(memory==nullptr||stopped())return;
-            auto const checked=memory_access(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
+            auto const checked=memory_access<CheckTags>(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
                     while(at<data.size()&&!stopped())
@@ -369,7 +372,7 @@
             simd.template operator()<code::v128_load32_zero>();
             simd.template operator()<code::v128_load64_zero>();
             if(original==address(&llvm_jit_memtag_trap))replacement=address(&memtag_trap);
-            else if(original==address(&emit::llvm_jit_memtag_fill_bridge<Address,Shared,false>))replacement=address(&memtag_fill);
+            else if(original==address(&emit::llvm_jit_memtag_fill_bridge<Address,Shared,false>))replacement=address(&memtag_fill<true>);
             else if(original==address(&emit::llvm_jit_memtag_copy_bridge<::std::uint32_t,::std::uint32_t,false>))replacement=address(&memtag_copy);
             else if(original==address(&emit::llvm_jit_memtag_init_bridge<Address,Shared,false>))replacement=address(&memtag_init);
             else if(original==address(&emit::llvm_jit_memtag_wait_notify_bridge<0u,Address,Shared,false>))replacement=address(&memtag_wait_notify<0u>);

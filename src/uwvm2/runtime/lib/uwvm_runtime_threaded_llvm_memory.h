@@ -93,7 +93,11 @@
             ::std::uint8_t* allocateCodeSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef name) override
             {return allocate(size,alignment,true,true,name);}
             ::std::uint8_t* allocateDataSection(::std::uintptr_t size,unsigned alignment,unsigned,::llvm::StringRef name,bool ro) override
-            {return allocate(size,alignment,false,ro,name);}
+            {
+                // Some ELF targets mark constants needing a dynamic relocation
+                // writable. Seal our control targets after RuntimeDyld binds them.
+                return allocate(size,alignment,false,ro||name==control_target_section,name);
+            }
             bool finalizeMemory(::std::string* =nullptr) override
             {
                 if(failed_||!valid())return true;

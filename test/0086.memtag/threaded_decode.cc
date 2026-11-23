@@ -59,6 +59,21 @@ byte_vec make() {
   append_u8(f.code,0xb);builder.add_func({{},{}},std::move(f));++count;
  }
  }
+ // Core 3 permits a ten-byte u64 memarg even for a memory32 load.
+ func_body padded_memargs{};
+ for(unsigned opcode : {0x28u, 0xfeu, 0xfdu}) {
+  append_u8(padded_memargs.code, 0x41); append_u8(padded_memargs.code, 0);
+  append_u8(padded_memargs.code, opcode);
+  if(opcode == 0xfeu) append_u8(padded_memargs.code, 0x10); // i32.atomic.load
+  if(opcode == 0xfdu) append_u8(padded_memargs.code, 0);    // v128.load
+  append_u8(padded_memargs.code, 2);
+  append_u8(padded_memargs.code, 0x84);
+  for(unsigned i = 1; i < 9; ++i) append_u8(padded_memargs.code, 0x80);
+  append_u8(padded_memargs.code, 0);
+  append_u8(padded_memargs.code, 0x1a);
+ }
+ append_u8(padded_memargs.code, 0x0b);
+ builder.add_func({{},{}}, std::move(padded_memargs)); ++count;
  // The padded constant makes instruction indices differ from byte offsets.
  // This last function also sits well after the start of the actual module.
  func_body offsets{};
@@ -102,7 +117,7 @@ int main() {
  UWVM2TEST_REQUIRE(check_synthetic_prefixes()==0);
  auto features=make_wasm1p1_feature_parameter();
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
- p.disable_memtag_extension=false;p.disable_relaxed_simd=false;
+ p.disable_memtag_extension=false;p.disable_relaxed_simd=false;p.disable_threads=false;
  auto wasm=make();auto prepared=prepare_runtime_from_wasm(wasm,u8"threaded-decode",{},features);
  UWVM2TEST_REQUIRE(prepared.mod->imported_function_vec_storage.size()==0u);
  std::size_t charge{};ti::limits budget{};budget.instruction_bytes=128u<<20;
@@ -110,7 +125,7 @@ int main() {
  std::size_t functions{},mte_instructions{},simd_instructions{},located_instructions{};
  for(auto const& function:prepared.mod->local_defined_function_vec_storage){
   ti::function_program out{};
-  auto const status=ti::detail::lower(*prepared.mod,function,out,budget,charge,file_base);
+  auto const status=ti::detail::lower(*prepared.mod,function,out,budget,charge,file_base,p);
   UWVM2TEST_REQUIRE(status==ti::status::ok);
   UWVM2TEST_REQUIRE(!out.instructions.empty());
   auto const& body{function.wasm_code_ptr->body};
@@ -141,7 +156,15 @@ int main() {
    }
    ++located_instructions;
   }
-  if(++functions==count){
+  ++functions;
+  if(functions + 1u == count) {
+   UWVM2TEST_REQUIRE(out.instructions.size() == 10u);
+   for(auto i : {1u, 4u, 7u}) {
+    UWVM2TEST_REQUIRE(out.instructions[i].target == 0u);
+    UWVM2TEST_REQUIRE(out.instructions[i].immediate == 4u);
+   }
+  }
+  if(functions==count){
    constexpr std::array<std::uint64_t,6u> expected{0u,1u,7u,8u,10u,11u};
    UWVM2TEST_REQUIRE(out.instructions.size()==expected.size());
    for(std::size_t i{};i!=expected.size();++i)

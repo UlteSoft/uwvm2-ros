@@ -15,16 +15,20 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::std::array<Address,4> converted{};
             for(::std::size_t i{};i<descriptor->operand_count;++i)converted[i]=static_cast<Address>(arguments[i]);
             ::std::span<Address const> values{converted.data(),descriptor->operand_count};
-            auto const result=execute_memtag_?rt::execute<true,Address,Shared>(memory,descriptor->operation,values):
-                rt::execute<false,Address,Shared>(memory,descriptor->operation,values);
-        if(!result)
-        {
-            if(result.operation.error==mt::operation_error::memory_access)
-            { return access_failure(result.operation.access,arguments[0]); }
-            if(mt::is_allocation_rejection(result.operation.error)) { return fail(status::trap_allocation); }
-            return fail(result.error==rt::bridge_error::entropy_unavailable?status::host_failure:status::invariant_failure);
-        }
-        return descriptor->result_count==0u || push(result.operation.value);
+            auto const result=[&]() noexcept
+            {
+                if(execute_memtag_) { return rt::execute<true,Address,Shared>(memory,descriptor->operation,values); }
+                if(has_tag_storage_) { return rt::execute<false,Address,Shared>(memory,descriptor->operation,values); }
+                return rt::execute_untagged<Address,Shared>(memory,*descriptor,values);
+            }();
+            if(!result)
+            {
+                if(result.operation.error==mt::operation_error::memory_access)
+                { return access_failure(result.operation.access,arguments[0]); }
+                if(mt::is_allocation_rejection(result.operation.error)) { return fail(status::trap_allocation); }
+                return fail(result.error==rt::bridge_error::entropy_unavailable?status::host_failure:status::invariant_failure);
+            }
+            return descriptor->result_count==0u || push(result.operation.value);
         });
     }
 }

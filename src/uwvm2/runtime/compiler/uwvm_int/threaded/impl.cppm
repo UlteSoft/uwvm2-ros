@@ -55,6 +55,8 @@ import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.encoding;
 import uwvm2.runtime.compiler.shared.wasm1p1_simd;
 import uwvm2.validation.error;
+import uwvm2.validation.standard.wasm3.declaration_policy;
+import uwvm2.validation.standard.wasm3.memory_immediate;
 import uwvm2.validation.standard.wasm3.reference_policy;
 import uwvm2.validation.standard.wasm3.exception_immediate;
 import uwvm2.object.memory.linear;

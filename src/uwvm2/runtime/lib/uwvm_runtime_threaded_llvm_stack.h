@@ -118,7 +118,7 @@
                     if(auto const* call=::llvm::dyn_cast<::llvm::CallBase>(&instruction))
                     {
                         if(call->isInlineAsm())continue; // Already restricted to the empty memory-clobber barrier.
-                        auto const* callee=::llvm::dyn_cast<::llvm::Function>(call->getCalledOperand()->stripPointerCasts());
+                        auto const* callee=fixed_call_target(*call);
                         if(callee==nullptr){native_call_graph_known_=false;continue;}
                         if(callee->isDeclaration())continue; // Audited native host bridges have a separate stack boundary.
                         auto const found=indices.find(callee);
@@ -182,6 +182,17 @@
             explicit observed_native_pass_manager(ThreadedLlvmChild& owner):owner_{owner}{}
             void add(::llvm::Pass* pass) override
             {
+                // Keep outgoing stack arguments in the fixed frame measured by
+                // the observer and .stack_sizes. The x86 size optimization can
+                // turn those argument stores into pushes around individual calls.
+                if constexpr(native_object_arch==::llvm::Triple::x86 || native_object_arch==::llvm::Triple::x86_64)
+                {
+                    if(pass->getPassName()=="X86 Optimize Call Frame")
+                    {
+                        delete pass; // The manager takes ownership in add().
+                        return;
+                    }
+                }
                 // Exact source-bound LLVM target pipeline stage, not a Guest name
                 // or external callback authority. An unknown/renamed pipeline
                 // fails coverage; no metadata-only success is manufactured.

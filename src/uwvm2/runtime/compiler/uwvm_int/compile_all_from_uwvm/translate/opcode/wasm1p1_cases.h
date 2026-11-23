@@ -2897,10 +2897,13 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
         auto select{[&]<typename Address,bool Enabled>() constexpr
         {
             bool shared{};
-            [&]<typename Memory>(Memory const& memory) constexpr
-            { if constexpr(requires{memory.sequentially_consistent_size;})shared=memory.sequentially_consistent_size; }(*resolved_memory.memory_p);
             if constexpr(Enabled) { shared=resolved_memory.memory_p->memtag_shadow.shared(); }
-            else { shared=::uwvm2::runtime::wasm_threads::is_shared(*resolved_memory.memory_p); }
+            else
+            {
+                shared=::uwvm2::runtime::wasm_threads::is_shared(*resolved_memory.memory_p);
+                if(shared && !resolved_memory.memory_p->memtag_shadow.enabled())
+                { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<false,Address,true,true>); }
+            }
             if(shared) { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<Enabled,Address,true>); }
             return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<Enabled,Address,false>);
         }};
