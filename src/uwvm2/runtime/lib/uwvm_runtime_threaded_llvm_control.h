@@ -325,6 +325,63 @@
             if(f.getReturnType()->isVoidTy())b.CreateRetVoid();
             else b.CreateRet(::llvm::Constant::getNullValue(f.getReturnType()));
         }
+        // Simplification only returns an existing SSA value or a constant. A
+        // single pass over scalar integer operations keeps every original
+        // block, call, memory access and trap in place for instrumentation.
+        static void simplify_control_inputs(::llvm::Function& function)
+        {
+            ::llvm::SimplifyQuery const query{function.getDataLayout()};
+            for(auto& block:function)for(auto it=block.begin();it!=block.end();)
+            {
+                auto& operation=*it++;
+                if(!operation.getType()->isIntegerTy()||
+                   !::llvm::isa<::llvm::BinaryOperator,::llvm::ICmpInst,::llvm::CastInst,::llvm::SelectInst>(operation)||
+                   !::std::all_of(operation.op_begin(),operation.op_end(),
+                       [](::llvm::Use const& operand){return operand->getType()->isIntegerTy();}))continue;
+                if(!operation.use_empty())
+                {
+                    auto* const simpler=::llvm::simplifyInstruction(&operation,query.getWithInstruction(&operation));
+                    if(simpler==nullptr)continue;
+                    operation.replaceAllUsesWith(simpler);
+                }
+                operation.eraseFromParent();
+            }
+        }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+        // The caller inserts the owner comparison and select ahead of every
+        // original instruction except static allocas. Reuse those two pure
+        // definitions for original host/Wasm calls as well as control calls.
+        // Each expression contains exactly one use of the function-local input.
+        static void reuse_ros_token_operation(::llvm::Value& input,::llvm::Instruction& operation)
+        {
+            for(auto it=input.use_begin();it!=input.use_end();)
+            {
+                auto* const candidate=::llvm::dyn_cast<::llvm::Instruction>((it++)->getUser());
+                if(candidate==nullptr||candidate==&operation||!operation.isIdenticalTo(candidate))continue;
+                candidate->replaceAllUsesWith(&operation);
+                candidate->eraseFromParent();
+            }
+        }
+        [[nodiscard]] static ::llvm::Value* prepare_control_ros_token(::llvm::Instruction*& body_begin)
+        {
+            namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
+            ::llvm::IRBuilder<> builder(body_begin);
+            auto* const token=emit::llvm_jit_ros_provenance(builder);
+            if(auto* select=::llvm::dyn_cast_or_null<::llvm::SelectInst>(token))
+            {
+                auto* const comparison=::llvm::cast<::llvm::ICmpInst>(select->getCondition());
+                reuse_ros_token_operation(*comparison->getOperand(0u),*comparison);
+                reuse_ros_token_operation(*comparison,*select);
+                // The original first instruction may itself have been a copy.
+                body_begin=select->getNextNode();
+            }
+            return token;
+        }
+#endif
+        static constexpr char poll_name[]{"uwvm.threaded.poll.v1"},enter_name[]{"uwvm.threaded.enter.v1"};
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+        static constexpr char ros_poll_name[]{"uwvm.threaded.poll.ros.v1"},ros_enter_name[]{"uwvm.threaded.enter.ros.v1"};
+#endif
         [[nodiscard]] bool add_control(::llvm::Module& module)
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -341,10 +398,21 @@
                 emit::apply_llvm_jit_host_calling_conv(*f);
                 return add_external(*f,target)?f:nullptr;
             };
-            auto* poll_fn=declare("uwvm.threaded.poll.v1",poll_type,world_->admission().instruction_control()?address(&instruction_control_poll):address(&poll));
-            auto* enter_fn=declare("uwvm.threaded.enter.v1",poll_type,world_->admission().instruction_control()?address(&instruction_control_enter):address(&enter));
+            auto const instruction_control=world_->admission().instruction_control();
+            auto* poll_fn=declare(poll_name,poll_type,instruction_control?address(&instruction_control_poll):address(&poll));
+            auto* enter_fn=declare(enter_name,poll_type,instruction_control?address(&instruction_control_enter):address(&enter));
             auto* leave_fn=declare("uwvm.threaded.leave.v1",leave_type,address(&leave));
             if(poll_fn==nullptr||enter_fn==nullptr||leave_fn==nullptr)return false;
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+            auto* ros_poll_type=::llvm::FunctionType::get(word,{word,word},false);
+            auto* ros_leave_type=::llvm::FunctionType::get(::llvm::Type::getVoidTy(c),{word},false);
+            auto* ros_poll_fn=declare(ros_poll_name,ros_poll_type,instruction_control?
+                address(&ros_control_probe<&instruction_control_poll>):address(&ros_control_probe<&poll>));
+            auto* ros_enter_fn=declare(ros_enter_name,ros_poll_type,instruction_control?
+                address(&ros_control_probe<&instruction_control_enter>):address(&ros_control_probe<&enter>));
+            auto* ros_leave_fn=declare("uwvm.threaded.leave.ros.v1",ros_leave_type,address(&ros_control_leave));
+            if(ros_poll_fn==nullptr||ros_enter_fn==nullptr||ros_leave_fn==nullptr)return false;
+#endif
             for(auto& f:module)
             {
                 if(f.isDeclaration())continue;
@@ -381,6 +449,7 @@
                     ::llvm::DominatorTree dominators{f};
                     ::llvm::PromoteMemToReg(private_locals,dominators);
                 }
+                simplify_control_inputs(f);
                 for(auto current=frame_allocas.rbegin();current!=frame_allocas.rend();++current)
                 {
                     auto point=entry.getFirstInsertionPt();
@@ -443,20 +512,27 @@
                 auto entry_begin=entry.getFirstInsertionPt();
                 while(entry_begin!=entry.end()&&::llvm::isa<::llvm::AllocaInst>(*entry_begin))++entry_begin;
                 if(entry_begin==entry.end())return false;
-                auto* const body_begin=::std::addressof(*entry_begin);
+                auto* body_begin=::std::addressof(*entry_begin);
+                auto* entry_control=enter_fn;
+                auto* poll_control=poll_fn;
+                auto* leave_control=leave_fn;
+                ::llvm::SmallVector<::llvm::Value*,2> probe_arguments{::llvm::ConstantInt::get(word,function)};
+                ::llvm::SmallVector<::llvm::Value*,1> leave_arguments;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
-                // This value depends only on the incoming function argument
-                // and the compiler-owned module identity. Keep its pure
-                // computation ahead of entry splitting; publish it at every
-                // control call against the active thread's actual lease.
-                ::llvm::IRBuilder<> provenance_builder(body_begin);
-                auto const publication=emit::prepare_llvm_jit_ros_publication(provenance_builder);
-#endif
-                auto control_call=[&](::llvm::IRBuilder<>& builder,::llvm::Function* target,::llvm::ArrayRef<::llvm::Value*> arguments)
+                if(auto* token=prepare_control_ros_token(body_begin))
                 {
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
-                    publication.emit(builder);
+                    // A raw thunk has no token. Every token-bearing entry,
+                    // including a tail adapter, uses the publishing ABI even
+                    // when the token is zero and must fail authentication.
+                    entry_control=ros_enter_fn;
+                    poll_control=ros_poll_fn;
+                    leave_control=ros_leave_fn;
+                    probe_arguments.push_back(token);
+                    leave_arguments.push_back(token);
+                }
 #endif
+                auto control_call=[](::llvm::IRBuilder<>& builder,::llvm::Function* target,::llvm::ArrayRef<::llvm::Value*> arguments)
+                {
                     return emit::apply_llvm_jit_calling_conv(builder.CreateCall(target->getFunctionType(),target,arguments),
                         emit::get_llvm_jit_host_calling_conv());
                 };
@@ -466,7 +542,7 @@
                     auto* continued=block->splitBasicBlock(before->getIterator(),"threaded.cont");
                     block->getTerminator()->eraseFromParent();
                     ::llvm::IRBuilder<> b(block);
-                    auto* observed=control_call(b,probe_fn,{::llvm::ConstantInt::get(word,function)});
+                    auto* observed=control_call(b,probe_fn,probe_arguments);
                     observed->setTailCallKind(::llvm::CallInst::TCK_NoTail);
                     // Branch on the original native-word result. Zero is the
                     // sole continuing case; every other value takes stop_exit.
@@ -490,7 +566,7 @@
                     bool const entry_block=block==::std::addressof(f.getEntryBlock());
                     auto first=entry_block?body_begin->getIterator():block->getFirstInsertionPt();
                     if(first==block->end())return false;
-                    probe(::std::addressof(*first),entry_block?enter_fn:poll_fn);
+                    probe(::std::addressof(*first),entry_block?entry_control:poll_control);
                 }
                 for(auto* call:calls)
                 {
@@ -498,14 +574,14 @@
                     auto* next=call->getNextNode();if(next==nullptr)return false;
                     // Tail hint becomes ordinary call because the stop check must
                     // precede SSA use / memory effects. musttail stays untouched.
-                    call->setTailCallKind(::llvm::CallInst::TCK_NoTail);probe(next,poll_fn);
+                    call->setTailCallKind(::llvm::CallInst::TCK_NoTail);probe(next,poll_control);
                 }
                 for(auto& block:f)if(auto* ret=::llvm::dyn_cast<::llvm::ReturnInst>(block.getTerminator()))
                 {
                     auto* before=static_cast<::llvm::Instruction*>(ret);
                     auto* previous=ret->getPrevNode();auto* tail=::llvm::dyn_cast_or_null<::llvm::CallInst>(previous);
                     if(tail!=nullptr&&tail->isMustTailCall())before=tail;
-                    ::llvm::IRBuilder<> b(before);control_call(b,leave_fn,{});
+                    ::llvm::IRBuilder<> b(before);control_call(b,leave_control,leave_arguments);
                 }
             }
             return !::llvm::verifyModule(module);
@@ -558,6 +634,8 @@
                 if(binding.address!=address(&poll)&&binding.address!=address(&instruction_control_poll)
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                    &&binding.address!=address(&publish_ros_provenance)
+                   &&binding.address!=address(&ros_control_probe<&poll>)
+                   &&binding.address!=address(&ros_control_probe<&instruction_control_poll>)
 #endif
                 )continue;
                 auto* target=module.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(binding.name));
@@ -593,7 +671,13 @@
                     bool has_probe{};
                     for(auto const& i:block)if(auto const* call=::llvm::dyn_cast<::llvm::CallInst>(&i))
                         if(auto const* target=fixed_call_target(*call))
-                            has_probe|=target->getName()=="uwvm.threaded.poll.v1"||target->getName()=="uwvm.threaded.enter.v1";
+                        {
+                            auto const name=target->getName();
+                            has_probe|=name==poll_name||name==enter_name;
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                            has_probe|=name==ros_poll_name||name==ros_enter_name;
+#endif
+                        }
                     if(!has_probe)nodes.push_back(&block);
                 }
                 ::llvm::DenseMap<::llvm::BasicBlock const*,::std::size_t> degree;

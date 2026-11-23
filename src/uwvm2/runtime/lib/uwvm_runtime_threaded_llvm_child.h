@@ -220,10 +220,8 @@ extern "C++"
             ::std::uint64_t,::std::size_t,::std::uintptr_t,::std::uintptr_t) noexcept
         {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));}
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
-        // The private compiler has exactly one Wasm module, indexed zero. Its
-        // generated provenance token is therefore 2, independently of the
-        // source module's global registry index. Host authority is still derived
-        // by observed_caller from the real ChildLease/admission, never this token.
+        // Each private compilation uses its module index in the admitted graph.
+        // Authenticate that owner and the active lease on the native thread.
         [[nodiscard]] static bool accepts_ros_provenance(::std::uintptr_t token) noexcept
         {
             auto* const e=active_;
@@ -239,6 +237,17 @@ extern "C++"
         {return accepts_ros_provenance(own_module)?((active_->child->module_index_+1u)*2u | static_cast<::std::uintptr_t>(active_->cross_module)):0u;}
         static void publish_ros_provenance(::std::uintptr_t token) noexcept
         {(void)accepts_ros_provenance(token);}
+        template<auto Control>
+        [[nodiscard]] static ::std::uintptr_t ros_control_probe(::std::size_t function,::std::uintptr_t token) noexcept
+        {
+            publish_ros_provenance(token);
+            return Control(function);
+        }
+        static void ros_control_leave(::std::uintptr_t token) noexcept
+        {
+            publish_ros_provenance(token);
+            leave();
+        }
 #endif
         [[nodiscard]] static memory_type* actual_memory(::std::uintptr_t address) noexcept
         {

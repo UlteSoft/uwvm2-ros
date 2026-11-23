@@ -382,9 +382,8 @@
                     if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
                     if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                        !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
-                    // Control host calls also publish ROS provenance. Keep the
-                    // actual owner scope alive until those late bridges have
-                    // been captured, including otherwise host-call-free bodies.
+                    // Bound the original translation before promoting private
+                    // locals and instrumenting its block and call boundaries.
                     if(!ir_fits("before control"))return {{},status::budget};
                     if(!data->add_control(llvm_module))
                     {
