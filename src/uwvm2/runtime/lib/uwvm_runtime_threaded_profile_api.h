@@ -175,14 +175,20 @@ namespace uwvm2::runtime::lib
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&) noexcept;
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&) noexcept;
-    // Publish both quotas in one quiescent configuration. The functions above
-    // install the default IR quota on each successful configuration.
+    // Instruction-only configuration installs the default block limit.
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_cli_with_ir_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits) noexcept;
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_with_ir_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits) noexcept;
+    // Publish byte, instruction and basic-block quotas in one quiescent configuration.
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_cli_with_llvm_module_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits) noexcept;
+    extern "C++" [[nodiscard]] bool runtime_threaded_profile_configure_with_llvm_module_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const&,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits) noexcept;
     // Cold loader namespace selection only, never execution permission.
     extern "C++" [[nodiscard]] bool runtime_threaded_profile_builtin_requested_host_api() noexcept;
     extern "C++" [[nodiscard]] threaded_policy_status runtime_threaded_profile_policy_host_api(

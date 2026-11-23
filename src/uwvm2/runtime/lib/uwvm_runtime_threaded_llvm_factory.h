@@ -175,7 +175,7 @@
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             [[maybe_unused]] ::std::size_t backend_storage_budget, ::std::size_t module_index,
-            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
+            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -358,11 +358,11 @@
                     for(auto const& f:llvm_module)for(auto const& b:f)
                     {
                         auto const count=b.size();
-                        if(++blocks>ir_limits.maximum_blocks || count>ir_limits.instructions-instructions)
+                        if(++blocks>ir_limits.blocks || count>ir_limits.instructions-instructions)
                         {
                             auto const observed=count>SIZE_MAX-instructions ? SIZE_MAX : instructions+count;
                             ::fast_io::perrln("uwvm: [error] WASI Threads LLVM IR limit in module ",module_index,
-                                " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/",ir_limits.maximum_blocks,
+                                " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/",ir_limits.blocks,
                                 " instructions=",observed,"/",ir_limits.instructions);
                             return false;
                         }

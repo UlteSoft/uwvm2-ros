@@ -386,7 +386,7 @@ extern "C++"
         // No synchronous Guest-stack fallback and no externally set ready bit.
         [[nodiscard]] static preparation_result prepare(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
+            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
         {
             if(!ir_limits.valid())return {{},preparation_status::invalid_world};
             auto result=build(world,compiler,backend_storage_budget,0u,ir_limits);

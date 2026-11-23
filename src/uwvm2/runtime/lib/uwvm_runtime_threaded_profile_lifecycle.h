@@ -3,7 +3,7 @@
 #include "uwvm_runtime_threaded_signal_host.h"
     private:
         enum class backend : unsigned { integer, llvm };
-        using llvm_ir_limits = ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits;
+        using llvm_ir_limits = ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits;
         struct main_result
         {
             ::uwvm2::utils::container::std_vector<::std::byte> bytes;

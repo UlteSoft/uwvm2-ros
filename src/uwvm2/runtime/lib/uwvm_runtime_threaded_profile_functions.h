@@ -105,21 +105,29 @@
     extern "C++" bool runtime_threaded_profile_complete_cli_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
     { return runtime_threaded_profile_bridge::complete_cli_storage_limits(limits); }
+    extern "C++" bool runtime_threaded_profile_configure_cli_with_llvm_module_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
+    { auto completed{limits};return runtime_threaded_profile_bridge::complete_cli_storage_limits(completed) &&
+        runtime_threaded_profile_bridge::configure(completed,true,ir_limits); }
+    extern "C++" bool runtime_threaded_profile_configure_with_llvm_module_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
+    { return runtime_threaded_profile_bridge::configure(limits,false,ir_limits); }
     extern "C++" bool runtime_threaded_profile_configure_cli_with_ir_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
-    { auto completed{limits};return runtime_threaded_profile_bridge::complete_cli_storage_limits(completed) &&
-        runtime_threaded_profile_bridge::configure(completed,true,ir_limits); }
+    { return runtime_threaded_profile_configure_cli_with_llvm_module_limits_host_api(limits,{.instructions=ir_limits.instructions}); }
     extern "C++" bool runtime_threaded_profile_configure_with_ir_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept
-    { return runtime_threaded_profile_bridge::configure(limits,false,ir_limits); }
+    { return runtime_threaded_profile_configure_with_llvm_module_limits_host_api(limits,{.instructions=ir_limits.instructions}); }
     extern "C++" bool runtime_threaded_profile_configure_cli_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits) noexcept
-    { return runtime_threaded_profile_configure_cli_with_ir_limits_host_api(limits,{}); }
+    { return runtime_threaded_profile_configure_cli_with_llvm_module_limits_host_api(limits,{}); }
     extern "C++" bool runtime_threaded_profile_configure_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits) noexcept
-    { return runtime_threaded_profile_configure_with_ir_limits_host_api(limits,{}); }
+    { return runtime_threaded_profile_configure_with_llvm_module_limits_host_api(limits,{}); }
     extern "C++" bool runtime_threaded_profile_builtin_requested_host_api() noexcept
     { return runtime_threaded_profile_bridge::builtin_requested(); }
     extern "C++" threaded_policy_status runtime_threaded_profile_policy_host_api(

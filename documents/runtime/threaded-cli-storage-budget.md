@@ -72,23 +72,26 @@ the function's ABI. Successful returns and `musttail` transfers keep their own
 frame exits. This shares the cold instructions while preserving each runtime
 check, its ordering with Guest effects, and ROS caller provenance on host calls.
 
-Threaded compilation checks each module before control insertion, after
-insertion, after optimization and after rewriting control target loads. The
-default is 1,048,576 LLVM instructions per module. To select an instruction
-limit from 1 through 4,194,304 inclusive, append `:COUNT` to the existing
-per-child code byte argument. For example, `536870912:4194304` grants 512 MiB
-of code storage per child and 4,194,304 instructions per module. A plain
-decimal byte argument uses the default at every code capacity. Each stage
-also enforces 262,144 basic blocks. These limits count IR at the stage
-boundaries. LLVM can use additional temporary heap space while optimizing.
+Threaded compilation counts LLVM instructions and basic blocks separately for
+each module before control insertion, after insertion, after optimization and
+after rewriting control target loads. A plain code byte argument uses
+1,048,576 instructions and 262,144 blocks. `CODE:INSTRUCTIONS` selects an
+instruction limit from 1 through 4,194,304 and keeps the 262,144-block limit.
+`CODE:INSTRUCTIONS:BLOCKS` also selects a block limit from 1 through 1,048,576.
+For example, `536870912:4194304:1048576` grants 512 MiB of code storage per
+child, 4,194,304 instructions per module and 1,048,576 blocks per module.
+On refusal the diagnostic reports the counts through the first block that
+exceeded either limit. LLVM can use additional temporary heap space while
+optimizing.
 
-Native embedders can publish both the existing byte policy and a
-`threaded_llvm_ir_limits` value in one call to
-`runtime_threaded_profile_configure_with_ir_limits_host_api`. The existing
-`runtime_threaded_profile_configure_host_api` installs the default instruction
-limit on every successful call. Each new profile takes its own copy of the
-host grant. A main-thread preparation budget refusal reports a diagnostic
-and returns status 126 before the Guest starts.
+Native embedders can publish the byte policy and a `threaded_llvm_module_limits`
+value together with `runtime_threaded_profile_configure_with_llvm_module_limits_host_api`.
+The `runtime_threaded_profile_configure_with_ir_limits_host_api` entry keeps its
+single-field `threaded_llvm_ir_limits` argument and installs the default block
+limit. `runtime_threaded_profile_configure_host_api` installs both defaults.
+Each new profile takes its own copy of the host grant. A main-thread
+preparation budget refusal reports a diagnostic and returns status 126 before
+the Guest starts.
 
 Native objects have a ceiling of 65,536 relocations. Each
 relocation also reserves 512 bytes of the per-child executable storage
@@ -107,7 +110,7 @@ respectively. Relocations to `leave` alone accounted for 22,367, 35,278 and
 1. Re-freeze the VM source in the SDK, rebuild and identify each VM binary
    and replay the same Guest, owner module, compile policy and resource
    grants on Linux x86_64, i686, AArch64, ARMv7 EABI and ARMv7 hard-float.
-   Record instructions and blocks at the three checks, total ELF relocations,
+   Record instructions and blocks at the four IR checks, total ELF relocations,
    relocations to `leave`, and the executable storage charge for each object
    that reaches that stage. For admitted cases compare output and exit status
    with the threaded interpreter. Record the first rejecting stage for others.

@@ -61,8 +61,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .cate{::uwvm2::utils::cmdline::categorization::debug}};
     inline constexpr ::uwvm2::utils::cmdline::parameter wasi_threads{
         .name{u8"--wasi-threads"},
-        .describe{u8"Select WASI Threads. Both counts accept unlimited. Stack bytes include guards. The optional code-budget suffix sets the per-module LLVM instruction limit (default 1048576, maximum 4194304)."},
-        .usage{u8"<max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code[:llvm-ir-instructions]> <shared-memory-bytes>"},
+        .describe{u8"Select WASI Threads. Both counts accept unlimited. Stack bytes include guards. Optional code-budget suffixes set per-module LLVM instruction and basic-block limits (defaults 1048576 and 262144, maxima 4194304 and 1048576)."},
+        .usage{u8"<max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code[:llvm-ir-instructions[:llvm-basic-blocks]]> <shared-memory-bytes>"},
         .handle{::std::addressof(details::wasi_threads_callback)},
         .pretreatment{::std::addressof(details::wasi_threads_pretreatment)},
         .is_exist{::std::addressof(details::wasi_threads_existed)},
