@@ -41,6 +41,21 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] constexpr bool valid() const noexcept
         { return threaded_llvm_ir_limits{instructions}.valid() && blocks != 0u && blocks <= maximum_blocks; }
     };
+    struct threaded_llvm_limits
+    {
+        static constexpr ::std::size_t default_relocations{65536u};
+        static constexpr ::std::size_t bytes_per_relocation{512u};
+        threaded_llvm_module_limits ir{};
+        ::std::size_t relocations{default_relocations};
+
+        [[nodiscard]] constexpr bool valid(::std::size_t code_bytes) const noexcept
+        {
+            // Small legacy byte grants still use the default count ceiling. A
+            // host raising it must be able to fund that many relocation charges.
+            return ir.valid() && relocations != 0u &&
+                (relocations <= default_relocations || relocations <= code_bytes / bytes_per_relocation);
+        }
+    };
     // Host policy DATA. Zero does not grant any threaded execution. The bridge
     // validates every finite bound and overflow BEFORE retaining a generation,
     // building a child world/code object or creating an OS thread.

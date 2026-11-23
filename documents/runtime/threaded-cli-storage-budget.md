@@ -56,8 +56,9 @@ native-function correspondence retain the conservative maximum-frame/depth
 envelope. Both proofs remain subject to the usable bytes in the actual native
 stack mapping. No frame-pointer heuristic or instruction-based unwind is used.
 
-A native stack quota rejection reports the proven frame-byte requirement and
-the usable native allowance. Increasing the native-stack argument does not
+A native stack quota rejection reports the proven frame-byte requirement, usable
+allowance, guard bytes and smallest representable 64-KiB-aligned CLI mapping
+that covers those frames and guards. Increasing the native-stack argument does not
 increase Guest memory, interface permissions, executable storage, or the
 interpreter operand allowance. Code and relocation reservations remain
 separately charged against the explicitly supplied per-child code quota.
@@ -93,9 +94,48 @@ Each new profile takes its own copy of the host grant. A main-thread
 preparation budget refusal reports a diagnostic and returns status 126 before
 the Guest starts.
 
-Native objects have a ceiling of 65,536 relocations. Each
-relocation also reserves 512 bytes of the per-child executable storage
-allowance, together with the section sizes and alignment reserves.
+Each of these CLI forms and embedding APIs selects a default of 65,536
+relocations per native ELF object. The CLI accepts the independent suffix
+`,relocations=N` on a plain byte count or either extended form. An embedder
+can pass a `threaded_llvm_limits` with the same `ir` and `relocations` fields
+to `runtime_threaded_profile_configure_with_llvm_limits_host_api`. The byte
+policy and compiler grants take effect together. A count above 65,536 requires
+at least 512 code bytes per granted relocation. The effective object size must
+also fit the remaining per-child executable storage.
+
+For the supported native ELF targets the charge is the sum of three 64-KiB
+pages, all section sizes, two 64-KiB pages per section and 512 bytes per
+relocation. The arena reservation rounds this sum up to 64 KiB. Admission
+reads validated ELF table extents to report the complete section, relocation
+and symbol counts before loader creation. Sections include the null section.
+Symbols use LLVM's static symbol range, which skips the null symbol. A quota
+rejection with `totals-complete=1` gives the full charge and rounded
+reservation. `code-limit` is the byte budget available for that module.
+An invalid table or an exceeded section ceiling can stop this census early.
+The existing ceilings are 4,096 sections, 262,144 symbols and 64-KiB section
+alignment. Stack admission uses the verified machine-frame and ELF witnesses
+after relocation and executable byte admission.
+
+### Measured threaded MemTag find objects
+
+The Linux x86_64 VM at `348f5716c0089fc6508ae6cc681b7ced4e8b0bf9`
+(binary SHA-256 `c0ff89d785c890ddf9d62463ec41a6b2af858a3b15df2969ac6ad6617278ee02`)
+ran libc++ `alg.find/find.pass.cpp` with `fast-compile` and
+`536870912:4194304:1048576`. All four interpreter replays exited 0. Each AOT
+run stopped at relocation 65,537 in the fifth section with status 126. The
+complete native objects captured at `ThreadedLlvmChild::build` each had
+14 sections. Counting their static symbol and relocation tables gives the
+following values.
+
+- wasm32 without exceptions had 104,113 relocations and 1,520 symbols. The rounded arena was 67,698,688 bytes.
+- wasm32 with exceptions had 117,849 relocations and 1,653 symbols. The rounded arena was 77,135,872 bytes.
+- wasm64 without exceptions had 106,628 relocations and 1,526 symbols. The rounded arena was 69,533,696 bytes.
+- wasm64 with exceptions had 120,802 relocations and 1,663 symbols. The rounded arena was 79,495,168 bytes.
+
+The rounded sizes above follow the admission formula applied to the captured
+objects. Native stack admission was still pending at the observed rejection.
+The SDK `cfamily-sysroot-matrix.json` records the per-profile Guest, memory
+owner and native object digests with the qualification source revision.
 
 ### Pending SDK regression checks
 

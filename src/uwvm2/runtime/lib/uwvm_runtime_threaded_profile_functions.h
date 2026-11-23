@@ -105,15 +105,23 @@
     extern "C++" bool runtime_threaded_profile_complete_cli_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits& limits) noexcept
     { return runtime_threaded_profile_bridge::complete_cli_storage_limits(limits); }
+    extern "C++" bool runtime_threaded_profile_configure_cli_with_llvm_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+    { auto completed{limits};return runtime_threaded_profile_bridge::complete_cli_storage_limits(completed) &&
+        runtime_threaded_profile_bridge::configure(completed,true,llvm_limits); }
+    extern "C++" bool runtime_threaded_profile_configure_with_llvm_limits_host_api(
+        ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
+        ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+    { return runtime_threaded_profile_bridge::configure(limits,false,llvm_limits); }
     extern "C++" bool runtime_threaded_profile_configure_cli_with_llvm_module_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
-    { auto completed{limits};return runtime_threaded_profile_bridge::complete_cli_storage_limits(completed) &&
-        runtime_threaded_profile_bridge::configure(completed,true,ir_limits); }
+    { return runtime_threaded_profile_configure_cli_with_llvm_limits_host_api(limits,{.ir=ir_limits}); }
     extern "C++" bool runtime_threaded_profile_configure_with_llvm_module_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
-    { return runtime_threaded_profile_bridge::configure(limits,false,ir_limits); }
+    { return runtime_threaded_profile_configure_with_llvm_limits_host_api(limits,{.ir=ir_limits}); }
     extern "C++" bool runtime_threaded_profile_configure_cli_with_ir_limits_host_api(
         ::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
         ::uwvm2::runtime::wasm_threads::threaded_llvm_ir_limits ir_limits) noexcept

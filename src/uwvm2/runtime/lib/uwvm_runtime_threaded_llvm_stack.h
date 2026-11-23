@@ -132,6 +132,24 @@
         ::uwvm2::utils::container::std_vector<native_frame_record> native_frames_{};
         ::std::size_t maximum_fixed_frame_{},guest_fixed_stack_charge_{};
         ::std::size_t guest_native_stack_usable_bytes_{},compiler_native_stack_usable_bytes_{};
+        void report_native_stack_budget(char const* scope) const noexcept
+        {
+            auto const mapping=world_->admission().limits().native_stack_bytes;
+            auto const guards=mapping-guest_native_stack_usable_bytes_;
+            ::fast_io::perrln("uwvm: [error] WASI Threads JIT requires ",guest_fixed_stack_charge_,
+                " bytes of proven Guest native frames; --wasi-threads native-stack-bytes provides ",
+                guest_native_stack_usable_bytes_," usable bytes. module=",module_index_," scope=",::fast_io::mnp::os_c_str(scope),
+                " guard-bytes=",guards," largest-frame-with-call-bytes=",maximum_fixed_frame_+native_call_push,
+                " call-depth-with-entry=",call_limit_+1u);
+            if(guest_fixed_stack_charge_<=SIZE_MAX-guards)
+            {
+                auto const minimum=guest_fixed_stack_charge_+guards;
+                // The CLI accepts stack mappings in multiples of 64 KiB.
+                constexpr ::std::size_t mask{65535u};
+                if(minimum<=SIZE_MAX-mask)
+                    ::fast_io::perrln("uwvm: [error] WASI Threads minimum CLI native-stack-bytes=", (minimum+mask)&~mask);
+            }
+        }
         bool machine_stack_valid_{true};
         // This pass is inserted immediately BEFORE the trusted native printer in
         // THIS private native pipeline. It observes final, post-PEI machine

@@ -33,6 +33,7 @@ namespace detail=::uwvm2::uwvm::cmdline::params::details;
 namespace threads=::uwvm2::runtime::wasm_threads;
 namespace ros=::uwvm2::uwvm::imported::ros;
 static_assert(sizeof(threads::threaded_llvm_ir_limits)==sizeof(::std::size_t));
+static_assert(sizeof(threads::threaded_llvm_module_limits)==2u*sizeof(::std::size_t));
 static_assert(threads::threaded_llvm_ir_limits::maximum_blocks==262144u);
 static_assert(!::std::is_default_constructible_v<::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld>);
 static_assert(!::std::is_default_constructible_v<::uwvm2::runtime::compiler::uwvm_int::threaded::engine>);
@@ -78,6 +79,27 @@ int main()
     threads::threaded_llvm_ir_limits instruction_only{};
     assert(!detail::wasi_threads_parse_code_budget(u8"128:1:2",code,instruction_only));
     assert(code==4096u && instruction_only.instructions==1048576u);
+    threads::threaded_llvm_limits full{};
+    constexpr ::uwvm2::utils::container::u8string_view legacy_budgets[]{
+        u8"536870912",u8"536870912:4194304",u8"536870912:4194304:1048576"};
+    for(auto legacy : legacy_budgets)
+    {
+        assert(detail::wasi_threads_parse_code_budget(legacy,code,full));
+        assert(code==536870912u && full.relocations==65536u);
+    }
+    assert(detail::wasi_threads_parse_code_budget(u8"128,relocations=1",code,full));
+    assert(code==128u && full.ir.instructions==1048576u && full.ir.blocks==262144u && full.relocations==1u);
+    assert(detail::wasi_threads_parse_code_budget(u8"33554944:7:3,relocations=65537",code,full));
+    assert(code==33554944u && full.ir.instructions==7u && full.ir.blocks==3u && full.relocations==65537u);
+    constexpr ::uwvm2::utils::container::u8string_view invalid_relocations[]{
+        u8"33554943,relocations=65537",u8"128,relocations=0",u8"128,relocations=",u8"128,relocations=+1",
+        u8"128,relocations=-1",u8"128,relocations=18446744073709551616",u8"128,relocations=unlimited",
+        u8"128,relocations=1,relocations=2",u8"128,",u8"128,unknown=1",u8"128::1,relocations=1"};
+    for(auto argument : invalid_relocations)
+    {
+        assert(!detail::wasi_threads_parse_code_budget(argument,code,full));
+        assert(code==33554944u && full.ir.instructions==7u && full.ir.blocks==3u && full.relocations==65537u);
+    }
     threads::threaded_profile_limits byte_limits{};
     assert(detail::wasi_threads_derive_limits({1u,2u,1048576u,16777216u,67108864u,65536u},byte_limits));
     assert(!runtime::runtime_threaded_profile_configure_with_ir_limits_host_api(byte_limits,{0u}));
@@ -86,6 +108,9 @@ int main()
     assert(!runtime::runtime_threaded_profile_configure_with_llvm_module_limits_host_api(byte_limits,{4194305u,1u}));
     assert(!runtime::runtime_threaded_profile_configure_with_llvm_module_limits_host_api(byte_limits,{4194304u,0u}));
     assert(!runtime::runtime_threaded_profile_configure_with_llvm_module_limits_host_api(byte_limits,{4194304u,1048577u}));
+    assert(!runtime::runtime_threaded_profile_configure_with_llvm_limits_host_api(byte_limits,{.relocations=0u}));
+    assert(!runtime::runtime_threaded_profile_configure_with_llvm_limits_host_api(byte_limits,{.relocations=131073u}));
+    assert(!runtime::runtime_threaded_profile_configure_cli_with_llvm_limits_host_api(byte_limits,{.ir={1u,0u}}));
     detail::wasi_thread_signal_policy result{};
     assert(detail::wasi_thread_signals_derive({3u,UINT64_MAX,1u,4096u,100u,100u},result));
     assert(result.channel.cookie==UINT64_MAX && result.channel.read_fd==3u);

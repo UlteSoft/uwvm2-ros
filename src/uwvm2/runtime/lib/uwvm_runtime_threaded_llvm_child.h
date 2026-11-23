@@ -21,6 +21,9 @@ extern "C++"
         using native_bridge=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::threaded_native_bridge;
         struct entries { ::uwvm2::utils::container::std_string typed_name,raw_name;::std::uintptr_t typed{},raw{}; };
         struct external { ::uwvm2::utils::container::std_string name;::std::uintptr_t address{}; };
+        static constexpr ::std::size_t native_arena_granule{65536u};
+        static constexpr ::std::size_t maximum_object_sections{4096u};
+        static constexpr ::std::size_t maximum_object_symbols{262144u};
         // Strong world/source precedes every borrowed object and executable.
         world_type::owner world_;
         ::uwvm2::utils::container::std_unique_ptr<::uwvm2::runtime::wasm_threads::code_debug_image> debug_;
@@ -386,13 +389,14 @@ extern "C++"
         // No synchronous Guest-stack fallback and no externally set ready bit.
         [[nodiscard]] static preparation_result prepare(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
+            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
         {
-            if(!ir_limits.valid())return {{},preparation_status::invalid_world};
-            auto result=build(world,compiler,backend_storage_budget,0u,ir_limits);
+            if(!world)return {{},preparation_status::invalid_world};
+            auto const& limits=world->admission().limits();
+            if(!llvm_limits.valid(limits.max_child_code_bytes))return {{},preparation_status::invalid_world};
+            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits);
             if(!result.child)return result;
             auto& root=*result.child;
-            auto const& limits=world->admission().limits();
             try
             {
                 root.peers_.reserve(world->module_count()-1u);
@@ -400,7 +404,7 @@ extern "C++"
                 for(::std::size_t m{1u};m<world->module_count();++m)
                 {
                     if(storage>=backend_storage_budget)return {{},preparation_status::budget};
-                    auto next=build(world,compiler,backend_storage_budget-storage,m,ir_limits);
+                    auto next=build(world,compiler,backend_storage_budget-storage,limits.max_child_code_bytes-code,m,llvm_limits);
                     if(!next.child)return next;
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
@@ -423,9 +427,7 @@ extern "C++"
                     root.guest_fixed_stack_charge_=frame*(root.call_limit_+1u);
                     if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM module graph requires ",root.guest_fixed_stack_charge_,
-                            " native stack bytes, usable ",root.guest_native_stack_usable_bytes_," (largest frame ",frame,
-                            ", call depth including entry ",root.call_limit_+1u,")");
+                        root.report_native_stack_budget("module graph");
                         return {{},preparation_status::budget};
                     }
                     auto const registry=root.peers_.capacity()*sizeof(::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>);

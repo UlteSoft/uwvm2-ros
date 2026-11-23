@@ -11,7 +11,7 @@
             };
             ::llvm::sys::MemoryBlock arena_{};
             ::uwvm2::utils::container::std_vector<section> sections_{};
-            ::std::array<::llvm::RTDyldMemoryManager::EHFrame,4096u> frames_{};
+            ::std::array<::llvm::RTDyldMemoryManager::EHFrame,maximum_object_sections> frames_{};
             ::std::size_t frame_count_{},used_{};
             ::uwvm2::utils::container::std_vector<external> const* externals_{};
             bool failed_{},finalized_{};
@@ -21,11 +21,11 @@
                 // <=4096 sections, no commons/TLS, alignment<=64KiB, plus bounded
                 // native reloc/stub/GOT allowance. Unexpected request is a trusted
                 // LLVM/contract failure, never an allocation-at-limit fallback.
-                if(failed_||finalized_||!valid()||alignment>65536u||
+                if(failed_||finalized_||!valid()||alignment>native_arena_granule||
                    (alignment!=0u&&!::std::has_single_bit(alignment))||sections_.size()==sections_.capacity())
                 {failed_=true;return nullptr;}
                 auto const base=reinterpret_cast<::std::uintptr_t>(arena_.base());
-                constexpr ::std::size_t granule=65536u;
+                constexpr auto granule=native_arena_granule;
                 if(base>UINTPTR_MAX-used_||base+used_>UINTPTR_MAX-(granule-1u)) {failed_=true;return nullptr;}
                 auto const aligned=(base+used_+granule-1u)&~static_cast<::std::uintptr_t>(granule-1u);
                 auto const offset=aligned-base;auto const bytes=(::std::max)(size,::std::uintptr_t{1u});
@@ -61,8 +61,8 @@
             {
                 // Acquire the ENTIRE finite code budget fallibly BEFORE LLVM
                 // can load/relocate any object. No live guest calls this method.
-                if(cap==0u||cap%65536u!=0u||::llvm::sys::Process::getPageSizeEstimate()>65536u)return;
-                sections_.reserve(8192u);
+                if(cap==0u||cap%native_arena_granule!=0u||::llvm::sys::Process::getPageSizeEstimate()>native_arena_granule)return;
+                sections_.reserve(2u*maximum_object_sections);
 #if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
                 arm_function_limit_=native_functions;
 #endif

@@ -1,6 +1,14 @@
 // Preserve the native ELF macro while using LLVM enumerators in this member fragment.
 #pragma push_macro("STT_TLS")
+#pragma push_macro("SHT_SYMTAB")
+#pragma push_macro("SHT_REL")
+#pragma push_macro("SHT_RELA")
+#pragma push_macro("SHT_CREL")
 #undef STT_TLS
+#undef SHT_SYMTAB
+#undef SHT_REL
+#undef SHT_RELA
+#undef SHT_CREL
 // ThreadedLlvmChild private cold factory member fragment.
 #include "uwvm_runtime_threaded_llvm_object_stream.h"
         [[nodiscard]] bool build_local_type_ids()
@@ -78,43 +86,106 @@
         }
         [[nodiscard]] bool refresh_table_targets_noalloc() noexcept
         {bound_tables_=validate_table_targets_noalloc();return bound_tables_;}
-        [[nodiscard]] preparation_status check_object(::llvm::object::ObjectFile const& object,::std::size_t& charge,
+        using native_elf_layout=::std::conditional_t<sizeof(void*)==8u,::llvm::object::ELF64LE,::llvm::object::ELF32LE>;
+        [[nodiscard]] static ::llvm::Expected<::std::uint64_t> native_relocation_count(
+            ::llvm::object::ELFFile<native_elf_layout> const& file,native_elf_layout::Shdr const& section)
+        {
+            auto const type=section.sh_type;
+            if(type!=::llvm::ELF::SHT_REL && type!=::llvm::ELF::SHT_RELA && type!=::llvm::ELF::SHT_CREL)return 0u;
+            auto linked=file.getSection(section.sh_link);
+            if(!linked)return linked.takeError();
+            if(type==::llvm::ELF::SHT_REL)
+            {
+                auto entries=file.rels(section);
+                if(!entries)return entries.takeError();
+                return entries->size();
+            }
+            if(type==::llvm::ELF::SHT_RELA)
+            {
+                auto entries=file.relas(section);
+                if(!entries)return entries.takeError();
+                return entries->size();
+            }
+            auto contents=file.getSectionContents(section);
+            if(!contents)return contents.takeError();
+            auto header=file.getCrelHeader(*contents);
+            if(!header)return header.takeError();
+            // The CREL header encodes the count above its three flag/shift bits.
+            return *header >> 3u;
+        }
+        [[nodiscard]] preparation_status check_object(::llvm::object::ObjectFile const& object,::std::size_t relocation_limit,
+            ::std::size_t& reservation,
             ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions)
         {
             // A finite, deliberately conservative native ELF loader charge:
             // real section bytes, max alignment per section, relocation stub/GOT
             // allowance and three native page groups. No null allocator is used
             // to pretend RuntimeDyld's fatal allocation path is recoverable.
-            charge=3u*65536u;::std::size_t sections{},relocations{},symbols{};
             using status=preparation_status;
+            ::std::uint64_t sections{},relocations{},symbols{},charge{3u*native_arena_granule},arena_bytes{};
+            bool totals_complete{};
             auto reject=[&](char const* reason,status why=status::native_failure)
             {
                 ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
-                    " (",::fast_io::mnp::os_c_str(reason),") sections=",sections," relocations=",relocations,
-                    " symbols=",symbols," charged-bytes=",charge," code-limit=",code_limit_);
+                    " (",::fast_io::mnp::os_c_str(reason),") totals-complete=",static_cast<unsigned>(totals_complete),
+                    " sections=",sections," relocations=",relocations," symbols=",symbols," relocation-limit=",relocation_limit,
+                    " charged-bytes=",charge," arena-bytes=",arena_bytes," code-limit=",code_limit_);
                 return why;
             };
             if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)
                 return reject("native ELF target");
-            auto add=[&](::std::size_t value){if(charge>code_limit_||value>code_limit_-charge)return false;charge+=value;return true;};
-            for(auto const& section:object.sections())
+            auto const& elf=::llvm::cast<::llvm::object::ELFObjectFile<native_elf_layout>>(object).getELFFile();
+            auto headers=elf.sections();
+            if(!headers){::llvm::consumeError(headers.takeError());return reject("section headers");}
+            sections=headers->size();
+            if(sections>maximum_object_sections)return reject("section count exceeds 4096",status::budget);
+            charge+=sections*2u*native_arena_granule;
+            bool saw_symtab{},saw_crel{};
+            for(auto const& section:*headers)
             {
-                if(++sections>4096u)return reject("section count exceeds 4096",status::budget);
-                if(section.getAlignment().value()>65536u)return reject("section alignment exceeds 65536",status::budget);
-                auto name=section.getName();if(!name){::llvm::consumeError(name.takeError());return reject("section name");}
-                auto const size=section.getSize();
-                if(size>code_limit_||!add(static_cast<::std::size_t>(size)))return reject("section byte charge",status::budget);
-                if(!add(2u*65536u))return reject("section alignment charge",status::budget);
-                for(auto const& relocation:section.relocations())
+                if(section.sh_addralign>native_arena_granule)return reject("section alignment exceeds 65536",status::budget);
+                auto name=elf.getSectionName(section);
+                if(!name){::llvm::consumeError(name.takeError());return reject("section name");}
+                if(section.sh_size>UINT64_MAX-charge)return reject("section byte charge overflow",status::budget);
+                charge+=section.sh_size;
+                auto count=native_relocation_count(elf,section);
+                if(!count){::llvm::consumeError(count.takeError());return reject("relocation table");}
+                if(*count>UINT32_MAX)return reject("relocation table index range",status::budget);
+                if(*count>UINT64_MAX-relocations)return reject("relocation count overflow",status::budget);
+                relocations+=*count;
+                saw_crel|=section.sh_type==::llvm::ELF::SHT_CREL;
+                if(section.sh_type==::llvm::ELF::SHT_SYMTAB && !saw_symtab)
                 {
-                    static_cast<void>(relocation);
-                    if(++relocations>65536u)return reject("relocation count exceeds 65536",status::budget);
-                    if(!add(512u))return reject("relocation byte charge",status::budget);
+                    auto entries=elf.symbols(&section);
+                    if(!entries){::llvm::consumeError(entries.takeError());return reject("symbol table");}
+                    // LLVM ObjectFile::symbols() skips ELF's reserved null symbol.
+                    symbols=entries->empty()?0u:entries->size()-1u;
+                    saw_symtab=true;
                 }
+            }
+            constexpr auto bytes_per_relocation=::uwvm2::runtime::wasm_threads::threaded_llvm_limits::bytes_per_relocation;
+            if(relocations>(UINT64_MAX-charge)/bytes_per_relocation)return reject("relocation byte charge overflow",status::budget);
+            charge+=relocations*bytes_per_relocation;
+            if(charge>UINT64_MAX-(native_arena_granule-1u))return reject("arena rounding overflow",status::budget);
+            arena_bytes=(charge+native_arena_granule-1u)&~::std::uint64_t{native_arena_granule-1u};
+            totals_complete=true;
+            if(relocations>relocation_limit)return reject("relocation count exceeds host limit",status::budget);
+            if(symbols>maximum_object_symbols)return reject("symbol count exceeds 262144",status::budget);
+            if(arena_bytes>code_limit_)return reject("native arena byte charge",status::budget);
+            if(saw_crel)
+            {
+                auto const& native=::llvm::cast<::llvm::object::ELFObjectFileBase>(object);
+                for(auto const& section:object.sections())
+                    if(::llvm::object::ELFSectionRef{section}.getType()==::llvm::ELF::SHT_CREL)
+                    {
+                        // LLVM materializes CREL entries on first use. Decode only after
+                        // the declared count and its full byte charge have been admitted.
+                        static_cast<void>(section.relocation_begin());
+                        if(!native.getCrelDecodeProblem(section).empty())return reject("compressed relocation table");
+                    }
             }
             for(auto const& symbol:object.symbols())
             {
-                if(++symbols>262144u)return reject("symbol count exceeds 262144",status::budget);
                 auto flags=symbol.getFlags();auto name=symbol.getName();
                 if(!flags){::llvm::consumeError(flags.takeError());return reject("symbol flags");}
                 if(!name){::llvm::consumeError(name.takeError());return reject("symbol name");}
@@ -165,17 +236,16 @@
             if(!check_static_stack_object(object))return reject("native stack witness");
             if(guest_fixed_stack_charge_>guest_native_stack_usable_bytes_)
             {
-                ::fast_io::perrln("uwvm: [error] WASI Threads JIT requires ",guest_fixed_stack_charge_,
-                    " bytes of proven Guest native frames; --wasi-threads native-stack-bytes provides ",
-                    guest_native_stack_usable_bytes_," usable bytes. Increase that native stack quota, including guard pages.");
-                return status::budget;
+                report_native_stack_budget("object");
+                return reject("native stack budget",status::budget);
             }
-            return charge<=code_limit_ ? status::ok : reject("initial arena charge",status::budget);
+            reservation=static_cast<::std::size_t>(arena_bytes);
+            return status::ok;
         }
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            [[maybe_unused]] ::std::size_t backend_storage_budget, ::std::size_t module_index,
-            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits ir_limits) noexcept
+            [[maybe_unused]] ::std::size_t backend_storage_budget, [[maybe_unused]] ::std::size_t code_budget, ::std::size_t module_index,
+            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -195,16 +265,17 @@
                 auto data=::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>{::uwvm2::utils::allocator::fast_io_strict::object<ThreadedLlvmChild>([&](ThreadedLlvmChild* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ThreadedLlvmChild{::std::move(world)}; })};
                 data->module_index_=module_index;data->module_=data->world_->module(module_index);auto const& module=*data->module_;
                 auto const& limits=data->world_->admission().limits();
-                data->call_limit_=limits.max_call_frames;data->code_limit_=limits.max_child_code_bytes;
+                data->call_limit_=limits.max_call_frames;data->code_limit_=code_budget;
                 data->guest_native_stack_usable_bytes_=compiler.guest_native_stack_usable_bytes();
                 data->compiler_native_stack_usable_bytes_=compiler.native_stack_usable_bytes();
                 if(data->guest_native_stack_usable_bytes_==0u||data->compiler_native_stack_usable_bytes_==0u)
                     return {{},status::invalid_world};
-                if(data->call_limit_==0u||data->code_limit_==0u||limits.max_child_storage_bytes==0u)
+                if(data->call_limit_==0u||limits.max_child_code_bytes==0u||limits.max_child_storage_bytes==0u)
                     return {{},status::invalid_world};
                 if(data->call_limit_>65536u)return {{},status::budget};
                 data->imports_=module.imported_function_vec_storage.size();
                 auto const count=module.local_defined_function_vec_storage.size();
+                if(count!=0u && code_budget==0u)return {{},status::budget};
                 data->start_=module_index==0u?data->world_->thread_start_function_index():data->imports_;
                 // An import-only side module has no Wasm entry to execute. It
                 // still contributes authenticated aliases and owns its private
@@ -288,8 +359,8 @@
                 auto const instruction_capacity=instruction_control?bodies:0u;
                 if(instruction_capacity>remaining/sizeof(::uwvm2::runtime::wasm_threads::debug_logical_pc_row))return {{},status::budget};
                 auto const instruction_charge=instruction_capacity*sizeof(::uwvm2::runtime::wasm_threads::debug_logical_pc_row);
-                auto const fixed_debug=(observing?sizeof(::uwvm2::runtime::wasm_threads::code_debug_image)+4096u*sizeof(::uwvm2::runtime::wasm_threads::debug_cfi_row):0u)+instruction_charge;
-                ::std::size_t const fixed_charge=sizeof(ThreadedLlvmChild)+sizeof(native_arena)+8192u*64u+
+                auto const fixed_debug=(observing?sizeof(::uwvm2::runtime::wasm_threads::code_debug_image)+maximum_object_sections*sizeof(::uwvm2::runtime::wasm_threads::debug_cfi_row):0u)+instruction_charge;
+                ::std::size_t const fixed_charge=sizeof(ThreadedLlvmChild)+sizeof(native_arena)+2u*maximum_object_sections*64u+
                     256u*(sizeof(external)+512u+sizeof(native_frame_record)+256u)+
                     fixed_debug+native_arena::unwind_storage_precharge(count);
                 if(fixed_charge>remaining||count>(remaining-fixed_charge)/(sizeof(local_type)+sizeof(entries)+sizeof(::std::uint_least32_t)+2u*sizeof(native_frame_record)+768u+per_debug_function))
@@ -350,6 +421,7 @@
                 if(requires_shared_memtag_lease&&!emit::set_memtag_shared_lease_module_abi(*ir.llvm_module))
                     return {{},status::unsupported_bridge};
                 auto& llvm_module=*ir.llvm_module;
+                auto const& ir_limits=llvm_limits.ir;
                 // Pre- and post-pass finite IR quotas. These are NOT a claim of
                 // a hard bound on all LLVM optimizer heap allocations.
                 auto ir_fits=[&](char const* stage)
@@ -489,7 +561,8 @@
                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());
                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
                 ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> definitions;
-                auto const checked=data->check_object(**parsed,data->native_bytes_,definitions);
+                ::std::size_t reservation{};
+                auto const checked=data->check_object(**parsed,llvm_limits.relocations,reservation,definitions);
                 if(checked!=status::ok)return {{},checked};
                 for(auto const& entry:data->entries_)
                 {
@@ -511,13 +584,11 @@
                 // check_object charged every section, alignment and relocation
                 // allowance. Reserve that conservative object bound, rather
                 // than the whole graph budget once per compiled module.
-                if(data->native_bytes_>SIZE_MAX-65535u)return {{},status::budget};
-                auto const reservation=(data->native_bytes_+65535u)&~::std::size_t{65535u};
-                if(reservation>data->code_limit_)return {{},status::budget};
                 data->native_arena_=::uwvm2::utils::container::make_unique<native_arena>(reservation,data->externals_,data->native_frames_.size());
                 if(!data->native_arena_||!data->native_arena_->valid())return {{},status::native_failure};
                 auto* memory_observer=data->native_arena_.get();
                 data->native_bytes_=memory_observer->owned_bytes();
+                if(data->native_bytes_>data->code_limit_)return {{},status::budget};
                 auto memory=::uwvm2::utils::container::make_unique<loader_memory_adapter>(*memory_observer);
                 if(!memory)return {{},status::native_failure};
                 auto* engine=::llvm::EngineBuilder(llvm_module_owner_t{empty.release()}).setEngineKind(::llvm::EngineKind::JIT)
@@ -592,3 +663,7 @@
 #endif
         }
 #pragma pop_macro("STT_TLS")
+#pragma pop_macro("SHT_CREL")
+#pragma pop_macro("SHT_RELA")
+#pragma pop_macro("SHT_REL")
+#pragma pop_macro("SHT_SYMTAB")

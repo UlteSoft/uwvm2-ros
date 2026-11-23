@@ -3,7 +3,7 @@
 #include "uwvm_runtime_threaded_signal_host.h"
     private:
         enum class backend : unsigned { integer, llvm };
-        using llvm_ir_limits = ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits;
+        using llvm_limits_type = ::uwvm2::runtime::wasm_threads::threaded_llvm_limits;
         struct main_result
         {
             ::uwvm2::utils::container::std_vector<::std::byte> bytes;
@@ -25,7 +25,7 @@
             int signal_retirement_error{};
             ::uwvm2::uwvm::runtime::full::full_source_destruction_completion::owner old_source_completion;
             backend selected{};
-            llvm_ir_limits ir_limits{};
+            llvm_limits_type llvm_limits{};
             ::std::uint_least64_t generation{};
             bool joined{}, ordinary_reopened{}, requires_reset{};
             ::uwvm2::runtime::wasm_threads::group_outcome outcome{};
@@ -73,7 +73,7 @@
             ::std::atomic_bool builtin_requested{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_observation observation{::uwvm2::runtime::wasm_threads::threaded_debug_observation::none};
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits configured{};
-            llvm_ir_limits ir_limits{};
+            llvm_limits_type llvm_limits{};
             bool cli_storage_derived{};
             ::uwvm2::runtime::wasm_threads::threaded_debug_control_limits debug_control{};
             ::std::shared_ptr<::uwvm2::runtime::wasm_threads::threaded_execution_journal> journal{};
@@ -231,7 +231,7 @@
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                 else
                 {
-                    auto built{ThreadedLlvmChild::prepare(world_,compiler,limits.max_child_storage_bytes-before,state.ir_limits)};
+                    auto built{ThreadedLlvmChild::prepare(world_,compiler,limits.max_child_storage_bytes-before,state.llvm_limits)};
                     if(!built.child && built.status==ThreadedLlvmChild::preparation_status::budget)return reject_budget("LLVM");
                     if(!built.child || built.status!=ThreadedLlvmChild::preparation_status::ok)
                     {
@@ -1085,16 +1085,16 @@
             return true;
         }
         [[nodiscard]] static bool configure(::uwvm2::runtime::wasm_threads::threaded_profile_limits const& limits,
-            bool cli_storage_derived, llvm_ir_limits ir_limits) noexcept
+            bool cli_storage_derived, llvm_limits_type const& llvm_limits) noexcept
         {
-            if(!group::limits_admitted(limits) || !ir_limits.valid()) { return false; }
+            if(!group::limits_admitted(limits) || !llvm_limits.valid(limits.max_child_code_bytes)) { return false; }
             ::std::unique_lock registry{control_owner().registry, ::std::try_to_lock};
             if(!registry.owns_lock()) { return false; }
             if(control_owner().profile || control_owner().blocked_generation == current_runtime_generation()) { return false; }
             bool const accepted{g_runtime.execution_domain.with_quiescent_configuration([&]() noexcept
             {
                 control_owner().configured=limits;
-                control_owner().ir_limits=ir_limits;
+                control_owner().llvm_limits=llvm_limits;
                 control_owner().cli_storage_derived=cli_storage_derived;
             })};
             if(accepted) { control_owner().builtin_requested.store(true, ::std::memory_order_release); }
@@ -1202,7 +1202,7 @@
                     state->result = ::uwvm2::utils::container::make_shared<main_result>(); state->result->bytes.resize(result_bytes);
                     if(state->result->bytes.capacity()>control_owner().configured.max_value_stack_bytes) { throw ::std::bad_alloc{}; }
                     state->selected = backend::integer;
-                    state->ir_limits = control_owner().ir_limits;
+                    state->llvm_limits = control_owner().llvm_limits;
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     if(runtime_compiler_requests_llvm_jit_translation()) { state->selected = backend::llvm; }
 #endif
