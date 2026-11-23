@@ -10,6 +10,7 @@
  * detect overruns after capture; this dispatcher is not a preemptive native worker.
  */
 #pragma once
+#include <utility>
 #include "communication_dispatch.h"
 #include "communication_workspace.h"
 #include "communication_graph_contract.h"
@@ -163,7 +164,8 @@ namespace uwvm2::imported::ros::scene
             auto const& p=value.policy;
             if(!identifier(alias)||!communication::valid(p.selected)||!communication::valid(value.context_profile)||!communication::valid(value.node_profile)||
                 p.nodes.empty()||!p.fields||(p.fields&~std::uint64_t{63})||!(p.fields&31)||!p.max_rows||!p.max_bytes||!p.max_page_items||
-                p.max_page_items>p.max_rows||p.max_rows>INT64_MAX||p.max_bytes>INT64_MAX||!p.cursor_lifetime_ns||p.cursor_lifetime_ns>INT64_MAX||!p.capture_deadline_ns||p.capture_deadline_ns>INT64_MAX)return error::invalid;
+                p.max_page_items>p.max_rows||!std::in_range<std::int64_t>(p.max_rows)||!std::in_range<std::int64_t>(p.max_bytes)||
+                !p.cursor_lifetime_ns||p.cursor_lifetime_ns>INT64_MAX||!p.capture_deadline_ns||p.capture_deadline_ns>INT64_MAX)return error::invalid;
             for(std::size_t i{};i<p.nodes.size();++i)
             {if(!communication::absolute_name(p.nodes[i]))return error::invalid;for(std::size_t j{};j<i;++j)if(p.nodes[i]==p.nodes[j])return error::invalid;}
             if(named(alias))return error::conflict;

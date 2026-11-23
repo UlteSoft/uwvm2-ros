@@ -193,7 +193,9 @@ namespace uwvm2::imported::ros::scene
                     return inspected==error::success||inspected==error::again?status:inspected;
                 }
                 if(status!=error::success){unknown(row,"reservation.unresolved");return status;}
-                robot_contract::response_decoder in{{row.received.data(),row.received_bytes},{row.received.size(),std::max<std::uint64_t>(row.policy.message_bytes,256),255,0}};
+                // bind() checked that both complete buffers fit in the host address space.
+                auto const blob_limit=std::max<std::size_t>(static_cast<std::size_t>(row.policy.message_bytes),256);
+                robot_contract::response_decoder in{{row.received.data(),row.received_bytes},{row.received.size(),blob_limit,255,0}};
                 robot_contract::metadata metadata;std::uint64_t deadline{},correlation{};std::string_view kind;robot_contract::message message;
                 bool valid=in.identity(row.retained.endpoint)&&in.identity(row.retained.provider_generation)&&in.identity(row.retained.sequence)&&
                     in.identity(row.retained.nonce)&&in.deadline(deadline)&&deadline==row.until&&in.origin(metadata)&&in.number(correlation)&&!correlation&&

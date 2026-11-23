@@ -39,8 +39,9 @@ namespace uwvm2::imported::ros::scene::parameters
     /** @brief Conservative owned definition payload, including fixed key metadata. */
     inline bool definition_storage(plan const& value,std::uint64_t& output) noexcept
     {
-        if(value.keys.capacity()>UINT64_MAX/sizeof(key_policy))return false;
-        std::uint64_t result=value.keys.capacity()*sizeof(key_policy);
+        std::uint64_t const key_capacity=value.keys.capacity();
+        if(key_capacity>UINT64_MAX/sizeof(key_policy))return false;
+        std::uint64_t result=key_capacity*sizeof(key_policy);
         for(auto const& key:value.keys)if(!add(result,key.override_value.capacity(),result))return false;
         output=result;return true;
     }

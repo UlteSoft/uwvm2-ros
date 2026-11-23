@@ -11,6 +11,7 @@
  * candidate retains separate native admission evidence and recovery state.
  */
 #pragma once
+#include <utility>
 #include "communication_dispatch.h"
 #include "communication_workspace.h"
 #include "communication_action_contract.h"
@@ -234,7 +235,8 @@ namespace uwvm2::imported::ros::scene
             std::lock_guard lock{mutex_};if(ready_||retired_||!permissions_||!environment_||!generation_)return error::denied;
             auto const& p=value.policy;
             if(!identifier(alias)||!communication::valid(p.selected)||!communication::valid(value.node_profile)||!communication::absolute_name(p.resolved_name)||p.action_type.empty()||
-                !p.max_goals||p.max_goals>INT64_MAX||!p.max_goal_bytes||!p.max_result_bytes||!p.reserved_bytes||p.reserved_bytes>INT64_MAX||
+                !p.max_goals||!std::in_range<std::int64_t>(p.max_goals)||!p.max_goal_bytes||!p.max_result_bytes||
+                !p.reserved_bytes||!std::in_range<std::int64_t>(p.reserved_bytes)||
                 !p.max_deadline_ns||p.max_deadline_ns>INT64_MAX||!p.retention_ns||p.retention_ns>INT64_MAX||(p.transition_mask&~std::uint64_t{510})||
                 (p.direction!=communication::actions::role::client&&p.direction!=communication::actions::role::server)||!communication::valid(p.goal_quality)||
                 !communication::valid(p.result_quality)||!communication::valid(p.cancel_quality)||!communication::valid(p.feedback_quality)||!communication::valid(p.status_quality))return error::invalid;

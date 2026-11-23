@@ -11,6 +11,7 @@
  * sequence positions; revocation cannot be bypassed by replaying a staged batch.
  */
 #pragma once
+#include <utility>
 #include "communication_dispatch.h"
 #include "communication_workspace.h"
 #include "event_contract.h"
@@ -205,8 +206,8 @@ namespace uwvm2::imported::ros::scene
             if(!same_process())return error::denied;
             std::lock_guard lock{mutex_};if(ready_||retired_||!permissions_||!environment_||!generation_)return error::denied;
             auto const& p=value.policy;
-            if(!identifier(alias)||!communication::valid(p.selected)||!value.max_streams||value.max_streams>INT64_MAX||!p.max_sources||p.max_sources>64||
-                !p.max_events||p.max_events>INT64_MAX||p.max_sources>p.max_events||!p.fields||(p.fields&~std::uint64_t{3})||!p.max_deadline_ns||p.max_deadline_ns>INT64_MAX||
+            if(!identifier(alias)||!communication::valid(p.selected)||!value.max_streams||!std::in_range<std::int64_t>(value.max_streams)||!p.max_sources||p.max_sources>64||
+                !p.max_events||!std::in_range<std::int64_t>(p.max_events)||p.max_sources>p.max_events||!p.fields||(p.fields&~std::uint64_t{3})||!p.max_deadline_ns||p.max_deadline_ns>INT64_MAX||
                 !value.max_bytes||value.max_bytes>limits_.output_bytes||!value.max_workspace||value.max_workspace>limits_.workspace_bytes)return error::invalid;
             if(named(alias))return error::conflict;
             if(bindings_.size()>=limits_.bindings)return error::too_large;
