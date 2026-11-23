@@ -1,5 +1,4 @@
 import("common")
-import("lib.detect.find_tool")
 
 
 local function _endswith(str, suffix)
@@ -658,8 +657,8 @@ function get_sysroot_option()
         else
             -- Bootstrap compiler discovery must not reintroduce system LLVM
             -- dependency discovery through an unrelated llvm-config on PATH.
-            local clang = find_tool("clang")
-            prefix = clang and path.directory(path.directory(clang.program)) or nil
+            local clang = common.find_compiler_file("clang")
+            prefix = clang and path.directory(path.directory(clang)) or nil
         end
         if prefix then
             -- Try the following directories: 1. prefix/sysroot 2. prefix/... /sysroot Prefer a more localized directory

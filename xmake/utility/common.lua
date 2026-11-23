@@ -1,5 +1,25 @@
 import("core.cache.detectcache")
+import("lib.detect.find_program")
 ---@alias map_t table<string, string>
+
+-- Hashing and prefix discovery need the actual driver pathname. Keep the
+-- symlink name because clang and clang++ select their mode from argv[0].
+function find_compiler_file(program)
+    if program ~= path.filename(program) then
+        program = path.absolute(program)
+    end
+    -- Toolchain detection can cache a bare command. Search the current PATH
+    -- explicitly, including on systems without the external which utility.
+    local file = find_program(program, {paths = {"$(env PATH)"}, cachekey = "uwvm.compiler-file",
+        force = true, norunfile = is_host("windows")})
+    if file then
+        -- Xmake can return the selected Windows executable without its suffix.
+        if is_host("windows") and not os.isfile(file) and os.isfile(file .. ".exe") then
+            file = file .. ".exe"
+        end
+        if os.isfile(file) then return path.absolute(file) end
+    end
+end
 
 ---Determine if a toolchain is clang
 ---@return boolean --Is the clang toolchain

@@ -9,6 +9,7 @@ import("core.tool.toolchain")
 import("core.cache.memcache")
 import("core.base.json")
 import("lib.detect.find_tool")
+import("common")
 
 local get_config = config.get
 
@@ -50,18 +51,17 @@ local function compiler(kind)
     assert(program, "Cannot resolve the ROS bootstrap " .. kind .. " compiler")
     -- xmake permits toolname@/path syntax; CMake expects just the executable.
     program = program:gsub("^[%w_+%-]+@", "")
-    if kind == "cxx" and path.filename(program) == "clang" then
+    local file = assert(common.find_compiler_file(program), "Cannot locate the ROS bootstrap compiler: " .. program)
+    local driver = path.filename(file):lower()
+    if kind == "cxx" and (driver == "clang" or driver == "clang.exe") then
         -- xmake's generic Clang toolchain may report the C driver for both
         -- languages during configuration, before the saved cxx override is
         -- visible. clang compiles .cpp files but does not link libc++ for
         -- LLVM's host TableGen tools; use the sibling C++ driver instead.
-        local cxx_driver = find_tool("c++", {program = program .. "++"})
-        assert(cxx_driver, "Cannot locate the C++ driver beside ROS bootstrap clang: " .. program)
-        program = cxx_driver.program
+        file = path.join(path.directory(file), "clang++" .. path.extension(file))
+        assert(os.isfile(file), "Cannot locate the C++ driver beside ROS bootstrap clang: " .. file)
     end
-    local tool = assert(find_tool(kind == "cc" and "cc" or "c++", {program = program}),
-        "Cannot locate the ROS bootstrap compiler: " .. program)
-    return tool.program
+    return file
 end
 
 local function flags(name)
