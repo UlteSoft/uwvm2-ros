@@ -35,6 +35,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         [[nodiscard]] constexpr explicit operator bool() const noexcept { return error == operation_error::none; }
     };
 
+    namespace operation_details
+    {
+        template<bool Shared>
+        inline void zero_memory(::std::byte* destination, ::std::size_t size) noexcept
+        {
+            if constexpr(Shared)
+            {
+                for(::std::size_t index{}; index != size; ++index)
+                { ::std::atomic_ref<::std::byte>(destination[index]).store(::std::byte{}, ::std::memory_order_relaxed); }
+            }
+            else { ::std::memset(destination,0,size); }
+        }
+    }
+
     // Shared int/JIT semantic kernel. The backend pins the memory owner before
     // entry and releases all guards before converting a returned error to a
     // guest trap. No guest exception may unwind through an owner mutex here.
@@ -167,12 +181,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             auto const size{static_cast<::std::size_t>(bytes)};
             auto* destination{memory.data() + start};
             if constexpr(Enabled) { destination = shadow.native_pointer(memory.data(),result.access); }
-            if constexpr(Shared)
-            {
-                for(::std::size_t index{}; index != size; ++index)
-                { ::std::atomic_ref<::std::byte>(destination[index]).store(::std::byte{}, ::std::memory_order_relaxed); }
-            }
-            else { ::std::memset(destination, 0, size); }
+            operation_details::zero_memory<Shared>(destination,size);
         }
         return result;
     }

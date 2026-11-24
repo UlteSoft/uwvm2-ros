@@ -34,19 +34,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // indexed extent is contained in one page. Both endpoints and all flags
         // stay in its ordinary extent record, including outstanding reservations.
         static constexpr unsigned page_granules{64}, page_slots{32};
+        union record_slot
+        {
+            extent value;
+            // The starts bitmap publishes a slot only after constructing its record.
+            // Fresh or recycled pages need no writes to the other 63 slots.
+            record_slot() noexcept {}
+        };
+        struct index;
         struct page
         {
             ::std::uint64_t number{}, starts{};
             page* next{};
-            extent records[page_granules]{};
+            index* table{};
+            record_slot records[page_granules];
         };
         struct index
         {
             page* slots[page_slots]{};
-            page* first{}; // occupied pages, in address order for checkpoints
+            page* first{}; // occupied pages in address order for checkpoints
             page* spare{}; // at most one empty page while another page is live
         };
-        index* pages_{};
+        page* recent_page_{}; // the sole page until a second page needs an index
 
         template<typename T>
         static T* allocate() noexcept
@@ -66,49 +75,72 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         { return static_cast<unsigned>(number % page_slots); }
         [[nodiscard]] page* lookup_page(::std::uint64_t number) const noexcept
         {
-            if(!pages_) { return nullptr; }
-            auto* entry{pages_->slots[slot(number)]};
+            auto* entry{recent_page_};
+            if(!entry || entry->number == number) { return entry; }
+            if(!entry->table) { return nullptr; }
+            entry=entry->table->slots[slot(number)];
             return entry && entry->number == number ? entry : nullptr;
         }
+        // The caller looked up this page under the same lease. The first page
+        // needs only the owner pointer. Allocate a hash index on the second.
         [[nodiscard]] page* open_page(::std::uint64_t number) noexcept
         {
-            if(!pages_ && !(pages_ = allocate<index>())) { return nullptr; }
-            auto& entry{pages_->slots[slot(number)]};
-            if(entry) { return entry->number == number ? entry : nullptr; }
-            auto* fresh{pages_->spare ? ::std::exchange(pages_->spare,nullptr) : allocate<page>()};
-            if(!fresh)
+            if(!recent_page_)
             {
-                if(!pages_->first) { destroy(pages_); pages_=nullptr; }
-                return nullptr;
+                auto* first{allocate<page>()};
+                if(first) { first->number=number; }
+                return first;
+            }
+            auto* table{recent_page_->table};
+            page* fresh{};
+            if(!table)
+            {
+                auto const occupied{slot(recent_page_->number)};
+                if(occupied == slot(number)) { return nullptr; }
+                table=allocate<index>();
+                if(!table) { return nullptr; }
+                fresh=allocate<page>();
+                if(!fresh) { destroy(table); return nullptr; }
+                table->slots[occupied]=table->first=recent_page_;
+                recent_page_->table=table;
+            }
+            else
+            {
+                if(table->slots[slot(number)]) { return nullptr; }
+                fresh=table->spare ? ::std::exchange(table->spare,nullptr) : allocate<page>();
+                if(!fresh) { return nullptr; }
             }
             fresh->number=number;
-            auto** link{&pages_->first};
+            fresh->table=table;
+            auto** link{&table->first};
             while(*link && (*link)->number < number) { link=&(*link)->next; }
             fresh->next=*link;
-            *link=entry=fresh;
+            *link=table->slots[slot(number)]=fresh;
             return fresh;
         }
         void close_page(page* entry) noexcept
         {
-            pages_->slots[slot(entry->number)]=nullptr;
-            auto** link{&pages_->first};
+            auto* table{entry->table};
+            if(!table) { recent_page_=nullptr; destroy(entry); return; }
+            table->slots[slot(entry->number)]=nullptr;
+            auto** link{&table->first};
             while(*link != entry) { link=&(*link)->next; }
             *link=entry->next;
-            if(pages_->spare) { destroy(pages_->spare); }
-            if(pages_->first) { pages_->spare=entry; }
-            else
-            {
-                destroy(entry);
-                destroy(pages_);
-                pages_=nullptr;
-            }
+            if(entry == recent_page_) { recent_page_=table->first; }
+            if(table->spare) { destroy(table->spare); }
+            if(table->first) { table->spare=entry; }
+            else { destroy(entry); destroy(table); }
         }
         void clear_pages() noexcept
         {
-            while(auto* entry=pages_->first) { pages_->first=entry->next; destroy(entry); }
-            if(pages_->spare) { destroy(pages_->spare); }
-            destroy(pages_);
-            pages_=nullptr;
+            if(auto* table=recent_page_->table)
+            {
+                while(auto* entry=table->first) { table->first=entry->next; destroy(entry); }
+                if(table->spare) { destroy(table->spare); }
+                destroy(table);
+            }
+            else { destroy(recent_page_); }
+            recent_page_=nullptr;
         }
         // Pick every intersecting extent, including one that starts before
         // the window. Disjointness makes the predecessor the only such start.
@@ -123,7 +155,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(auto prior=entry.starts & before)
             {
                 auto const bit{static_cast<unsigned>(::std::bit_width(prior)-1u)};
-                if(entry.records[bit].last >= first) { starts |= ::std::uint64_t{1} << bit; }
+                if(entry.records[bit].value.last >= first) { starts |= ::std::uint64_t{1} << bit; }
             }
             return starts;
         }
@@ -211,7 +243,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         constexpr void reset() noexcept
         {
             if(root_) { clear(root_); root_=nullptr; }
-            if(pages_) { clear_pages(); }
+            if(recent_page_) { clear_pages(); }
             tree_first_=UINT64_MAX;
             tree_last_=0;
         }
@@ -219,24 +251,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {
             reset();
             root_=::std::exchange(other.root_,nullptr);
-            pages_=::std::exchange(other.pages_,nullptr);
+            recent_page_=::std::exchange(other.recent_page_,nullptr);
             tree_first_=::std::exchange(other.tree_first_,UINT64_MAX);
             tree_last_=::std::exchange(other.tree_last_,0);
         }
-        [[nodiscard]] bool empty() const noexcept { return !root_ && !pages_; }
+        [[nodiscard]] bool empty() const noexcept { return !root_ && !recent_page_; }
 
         // Visit in linear-address order, including ranges spanning both stores.
         template<typename Visitor>
         void visit(::std::uint64_t first,::std::uint64_t last,Visitor&& visitor) const noexcept
         {
             if(first > last) { return; }
-            for(auto* entry{pages_ ? pages_->first : nullptr}; entry; entry=entry->next)
+            auto* first_page{recent_page_ && recent_page_->table ? recent_page_->table->first : recent_page_};
+            for(auto* entry{first_page}; entry; entry=entry->next)
             {
                 if(entry->number < first/page_granules) { continue; }
                 if(entry->number > last/page_granules) { break; }
                 for(auto mask{starts_in(*entry,first,last)};mask;mask &= mask-1u)
                 {
-                    auto const& current{entry->records[::std::countr_zero(mask)]};
+                    auto const& current{entry->records[::std::countr_zero(mask)].value};
                     if(first < current.first) { visit_tree(first,current.first-1u,visitor); }
                     visitor(current);
                     if(current.last >= last) { return; }
@@ -246,25 +279,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             visit_tree(first,last,visitor);
         }
 
-        // Conflict and color queries are insensitive to enumeration order.
-        // Resolve local windows by direct page index; bound work on large ranges.
+    private:
         template<typename Visitor>
-        void visit_near(::std::uint64_t first,::std::uint64_t last,Visitor&& visitor) const noexcept
+        static void visit_page(page const* entry, ::std::uint64_t first, ::std::uint64_t last, Visitor& visitor) noexcept
         {
-            auto const lo{first/page_granules}, hi{last/page_granules};
-            if(pages_ && hi-lo <= 1u)
+            if(entry)
             {
-                for(auto number{lo}; number <= hi; ++number)
-                {
-                    if(auto* entry=lookup_page(number))
-                    {
-                        for(auto mask{starts_in(*entry,first,last)};mask;mask &= mask-1u)
-                        { visitor(entry->records[::std::countr_zero(mask)]); }
-                    }
-                }
+                for(auto mask{starts_in(*entry,first,last)};mask;mask &= mask-1u)
+                { visitor(entry->records[::std::countr_zero(mask)].value); }
             }
-            else if(pages_) { visit(first,last,visitor); return; }
+        }
+    public:
+        // Borrowed from this directory for an insertion in the visited window,
+        // under the same lease and before the next directory mutation.
+        class insertion_page
+        {
+            friend class managed_allocations;
+            page* entry_;
+            explicit insertion_page(page* entry) noexcept : entry_{entry} {}
+        };
+        template<typename Visitor>
+        insertion_page visit_near(::std::uint64_t first,::std::uint64_t last,Visitor&& visitor) const noexcept
+        {
+            if(!recent_page_) { visit_tree(first,last,visitor); return insertion_page{nullptr}; }
+            auto const lo{first/page_granules}, hi{last/page_granules};
+            if(hi-lo > 1u) { visit(first,last,visitor); return insertion_page{nullptr}; }
+            auto* entry{lookup_page(lo)};
+            visit_page(entry,first,last,visitor);
+            if(lo != hi) { visit_page(lookup_page(hi),first,last,visitor); }
             visit_tree(first,last,visitor);
+            return insertion_page{lo == hi ? entry : nullptr};
         }
 
         // Borrowed until the next directory mutation, under this owner's lease.
@@ -285,7 +329,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 auto const bit{static_cast<unsigned>(first % page_granules)};
                 if(entry->starts & (::std::uint64_t{1} << bit))
-                { return {entry->records[bit].last == last ? &entry->records[bit] : nullptr,entry}; }
+                {
+                    auto& record{entry->records[bit].value};
+                    return {record.last == last ? &record : nullptr,entry};
+                }
             }
             if(first < tree_first_ || last > tree_last_) { return {nullptr,nullptr}; }
             node* n{root_};
@@ -298,9 +345,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         [[nodiscard]] bool add(extent value) noexcept
         {
             auto* item{allocate<node>()};
-            if(!item && pages_ && pages_->spare)
+            if(!item && recent_page_ && recent_page_->table && recent_page_->table->spare)
             {
-                destroy(::std::exchange(pages_->spare,nullptr));
+                destroy(::std::exchange(recent_page_->table->spare,nullptr));
                 item=allocate<node>();
             }
             if(!item) { return false; }
@@ -310,18 +357,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(tree_last_ < value.last) { tree_last_=value.last; }
             return true;
         }
-        [[nodiscard,gnu::always_inline]] bool add_private(extent value) noexcept
+        [[nodiscard,gnu::always_inline]] bool add_private(extent value, insertion_page hint=insertion_page{nullptr}) noexcept
         {
             auto const number{value.first/page_granules};
             if(number == value.last/page_granules)
             {
-                auto* entry{lookup_page(number)};
+                auto* entry{hint.entry_ && hint.entry_->number == number ? hint.entry_ : lookup_page(number)};
                 if(!entry) { entry=open_page(number); }
                 if(entry)
                 {
                     auto const bit{static_cast<unsigned>(value.first % page_granules)};
-                    entry->records[bit]=value;
+                    ::new(static_cast<void*>(&entry->records[bit].value)) extent(value);
                     entry->starts |= ::std::uint64_t{1} << bit;
+                    recent_page_=entry;
                     return true;
                 }
             }
@@ -344,7 +392,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             remove(found);
             return true;
         }
-        void remove(location found) noexcept
+        [[gnu::always_inline]] void remove(location found) noexcept
         {
             if(!found.get()) { return; }
             auto const first{found.item_->first};
@@ -354,7 +402,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 if(!entry->starts) { close_page(entry); }
                 return;
             }
-            auto const last{found.item_->last};
+            remove_tree(first,found.item_->last);
+        }
+        void remove(extent const& owned) noexcept { remove(locate(owned.first,owned.last)); }
+
+    private:
+        void remove_tree(::std::uint64_t first, ::std::uint64_t last) noexcept
+        {
             root_=erase(root_,first);
             if(first == tree_first_)
             {
@@ -369,6 +423,5 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 tree_last_=n ? n->value.last : 0;
             }
         }
-        void remove(extent const& owned) noexcept { remove(locate(owned.first,owned.last)); }
     };
 }

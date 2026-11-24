@@ -21,10 +21,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // representable linear memory ends well before UINT64_MAX granules.
         inline constexpr ::std::uint64_t reach{1u + allocation_gap_bytes / granule_size};
         template<typename Visitor>
-        inline void visit_directory(managed_allocations const& directory, ::std::uint64_t first,
-                                   ::std::uint64_t last, Visitor&& visitor) noexcept
+        inline auto visit_directory(managed_allocations const& directory, ::std::uint64_t first,
+                                    ::std::uint64_t last, Visitor&& visitor) noexcept
         {
-            directory.visit_near(first >= reach ? first - reach : 0, last + reach, visitor);
+            return directory.visit_near(first >= reach ? first - reach : 0, last + reach, visitor);
         }
 
         template<::std::unsigned_integral Address, bool Shared>
@@ -47,13 +47,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                         // Fixed-size spans let the optimizer unroll the tag reads.
                         if(left == reach && right == reach)
                         {
-                            colors.forbid_tags(tags.template first<reach>());
-                            colors.forbid_tags(tags.template last<reach>());
+                            colors.forbid_tags(tags.template first<reach>(),tags.template last<reach>());
                         }
                         else
                         {
-                            colors.forbid_tags(tags.first(left));
-                            colors.forbid_tags(tags.last(right));
+                            colors.forbid_tags(tags.first(left),tags.last(right));
                         }
                         // Match the scalar visitation order's final load even
                         // when returning an unactivated reservation or a retry.
@@ -133,7 +131,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 Address const tagged{shadow::insert(input,tag)};
                 operation_result<Address> stored{.value=tagged};
-                if(address > data.size() || length > data.size()-address)
+                // A successful shadow proof puts the exclusive end within the
+                // address capacity. The data span can still be shorter.
+                if(address + length > data.size())
                 { stored.access={.error=access_error::out_of_bounds,.address=address}; }
                 else if constexpr(Shared) { stored.access=view.store(tagged,length); }
                 else { stored.access=range.store(tag); }
@@ -164,11 +164,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(!result.access) { return fail(operation_error::memory_access); }
             allocation_neighborhood colors{sizeof(Address) == 4 ? address_width::i32 : address_width::i64, hardware};
             bool overlaps{};
-            allocation_details::visit_directory(directory, first, last, [&](managed_allocations::extent const& item) noexcept
+            auto const page{allocation_details::visit_directory(directory, first, last, [&](managed_allocations::extent const& item) noexcept
             {
                 if(item.first <= last && first <= item.last) { overlaps = true; }
                 colors.forbid(item.tag);
-            });
+            })};
             if(overlaps) { return fail(operation_error::allocation_conflict); }
             auto const count{data.size() / granule_size + (data.size() % granule_size != 0)};
             if(!allocation_details::forbid_backing_neighbors(colors,view,first,last,count,result.access))
@@ -179,18 +179,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(selection == tag_selection::no_color) { return fail(operation_error::allocation_no_color); }
             bool const activate{operation != opcode::reserve};
             managed_allocations::extent const item{first,last,tag,input_tag,activate,false};
-            bool const added{Shared ? directory.add(item) : directory.add_private(item)};
+            bool const added{Shared ? directory.add(item) : directory.add_private(item,page)};
             if(!added)
             { return fail(operation_error::allocation_resource_limit); }
             result.value = shadow::insert(input, tag);
             if(activate)
             {
-                if(operation == opcode::claimz)
+                result=commit(tag);
+                if(result && operation == opcode::claimz)
                 {
-                    Address const args[]{result.value,length};
-                    result=execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
+                    operation_details::zero_memory<Shared>(view.native_pointer(data.data(),result.access),static_cast<::std::size_t>(length));
                 }
-                else { result=commit(tag); }
                 if(!result) { directory.remove(directory.locate(first,last)); }
             }
             return result;

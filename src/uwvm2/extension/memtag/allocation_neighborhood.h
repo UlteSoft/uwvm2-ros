@@ -175,17 +175,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             }
         }
 
-        template<::std::size_t Extent>
-        constexpr void forbid_tags(::std::span<::std::uint8_t const,Extent> tags) noexcept
+        template<::std::size_t Left, ::std::size_t Right=0>
+        constexpr void forbid_tags(::std::span<::std::uint8_t const,Left> left,
+                                   ::std::span<::std::uint8_t const,Right> right={}) noexcept
         {
             if(wide_)
             {
-                for(auto tag : tags) { forbid(tag); }
+                for(auto tag : left) { forbid(tag); }
+                for(auto tag : right) { forbid(tag); }
             }
             else
             {
                 unsigned mask{};
-                for(auto tag : tags) { mask |= 1u << (tag & 15u); }
+                for(auto tag : left) { mask |= 1u << (tag & 15u); }
+                for(auto tag : right) { mask |= 1u << (tag & 15u); }
                 available_[0] &= ~static_cast<word>(mask);
             }
         }

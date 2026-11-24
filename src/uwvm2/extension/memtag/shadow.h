@@ -148,9 +148,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             }
         }
 
-        // Two overlapping words cover [sizeof(Word), 2*sizeof(Word)) tags.
+        // First and last words cover between one and two word widths of tags.
         template<typename Word>
-        [[nodiscard]] static ::std::size_t matching_pair(::std::uint8_t const* tags, ::std::size_t count,
+        [[nodiscard,gnu::always_inline]] static ::std::size_t matching_pair(::std::uint8_t const* tags, ::std::size_t count,
                                                          ::std::uint8_t expected) noexcept
         {
             Word first{},last{};
@@ -195,6 +195,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             auto const* tags{tags_+first};
             auto const expected{result.pointer_tag};
             ::std::size_t matched{};
+            if(count <= 4u)
+            {
+                matched = count == 1u ? static_cast<::std::size_t>(*tags == expected)
+                                      : matching_pair<::std::uint16_t>(tags,count,expected);
+                if(matched != count) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
+                return result;
+            }
             if(count >= 16u)
             {
                 auto const initial{tags[0]};
@@ -325,6 +332,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return result;
         }
 
+        template<bool Allocation = false>
         void write_tags(access_result const& result,::std::uint64_t bytes) const noexcept
         {
             auto const first{static_cast<::std::size_t>(result.address >> 4u)};
@@ -342,7 +350,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 for(auto index{first}; index != end; ++index)
                 { tags_[index].store(result.pointer_tag, ::std::memory_order_relaxed); }
             }
-            else { ::std::memset(tags_ + first, result.pointer_tag, end - first); }
+            else
+            {
+                auto const count{end-first};
+                if constexpr(Allocation)
+                {
+                    if(count <= 4u)
+                    {
+                        if(count == 1u) { tags_[first]=result.pointer_tag; }
+                        else
+                        {
+                            auto const pair{static_cast<::std::uint16_t>(0x101u*result.pointer_tag)};
+                            ::std::memcpy(tags_+first,&pair,sizeof pair);
+                            ::std::memcpy(tags_+end-sizeof pair,&pair,sizeof pair);
+                        }
+                        return;
+                    }
+                }
+                ::std::memset(tags_+first,result.pointer_tag,count);
+            }
         }
 
     public:
@@ -379,7 +405,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 auto result{proof_};
                 if(!result || !bytes_) { return result; }
                 result.pointer_tag=tag;
-                view_.write_tags(result,bytes_);
+                view_.template write_tags<true>(result,bytes_);
                 return result;
             }
         };
