@@ -21,6 +21,13 @@
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
 #endif
+UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mtt
+{
+    /// x86-64 hardware admission. A future implementation needs a qualified
+    /// CPU/OS backend for checked mappings, allocation tags and fault delivery.
+    [[nodiscard]] inline constexpr bool supported() noexcept { return false; }
+}
+
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
 {
     enum class setup_error : unsigned
@@ -74,6 +81,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     {
 #if defined(__linux__) && defined(__aarch64__)
         return query_capabilities().checked_mappings;
+#elif defined(__x86_64__)
+        return hardware_mtt::supported();
 #else
         return false;
 #endif

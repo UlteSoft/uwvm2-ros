@@ -267,19 +267,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             visit_tree(first,last,visitor);
         }
 
-        [[nodiscard]] extent* exact(::std::uint64_t first,::std::uint64_t last) noexcept
+        // Borrowed until the next directory mutation, under this owner's lease.
+        // A release can erase the indexed record it just validated directly.
+        class location
+        {
+            friend class managed_allocations;
+            extent* item_;
+            page* page_;
+            location(extent* item,page* entry) noexcept : item_{item},page_{entry} {}
+        public:
+            [[nodiscard]] extent* get() const noexcept { return item_; }
+        };
+
+        [[nodiscard]] location locate(::std::uint64_t first,::std::uint64_t last) noexcept
         {
             if(auto* entry=lookup_page(first/page_granules))
             {
                 auto const bit{static_cast<unsigned>(first % page_granules)};
                 if(entry->starts & (::std::uint64_t{1} << bit))
-                { return entry->records[bit].last == last ? &entry->records[bit] : nullptr; }
+                { return {entry->records[bit].last == last ? &entry->records[bit] : nullptr,entry}; }
             }
-            if(first < tree_first_ || last > tree_last_) { return nullptr; }
+            if(first < tree_first_ || last > tree_last_) { return {nullptr,nullptr}; }
             node* n{root_};
             while(n && first != n->value.first) { n=n->child[first > n->value.first]; }
-            return n && n->value.last==last ? &n->value : nullptr;
+            return {n && n->value.last==last ? &n->value : nullptr,nullptr};
         }
+        [[nodiscard]] extent* exact(::std::uint64_t first,::std::uint64_t last) noexcept
+        { return locate(first,last).get(); }
         // The caller proves disjointness while holding the owner lease, before insertion.
         [[nodiscard]] bool add(extent value) noexcept
         {
@@ -296,7 +310,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(tree_last_ < value.last) { tree_last_=value.last; }
             return true;
         }
-        [[nodiscard]] bool add_private(extent value) noexcept
+        [[nodiscard,gnu::always_inline]] bool add_private(extent value) noexcept
         {
             auto const number{value.first/page_granules};
             if(number == value.last/page_granules)
@@ -324,24 +338,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
         [[nodiscard]] bool remove_permanent(::std::uint64_t first, ::std::uint64_t last, ::std::uint8_t tag) noexcept
         {
-            auto* current{exact(first, last)};
+            auto const found{locate(first,last)};
+            auto* current{found.get()};
             if(!current || !current->permanent || current->tag != tag) { return false; }
-            remove(*current);
+            remove(found);
             return true;
         }
-        void remove(extent const& owned) noexcept
+        void remove(location found) noexcept
         {
-            auto const first{owned.first}, last{owned.last};
-            if(auto* entry=lookup_page(first/page_granules))
+            if(!found.get()) { return; }
+            auto const first{found.item_->first};
+            if(auto* entry=found.page_)
             {
-                auto const bit{::std::uint64_t{1} << (first % page_granules)};
-                if(entry->starts & bit)
-                {
-                    entry->starts &= ~bit;
-                    if(!entry->starts) { close_page(entry); }
-                    return;
-                }
+                entry->starts &= ~(::std::uint64_t{1} << (first % page_granules));
+                if(!entry->starts) { close_page(entry); }
+                return;
             }
+            auto const last{found.item_->last};
             root_=erase(root_,first);
             if(first == tree_first_)
             {
@@ -356,5 +369,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 tree_last_=n ? n->value.last : 0;
             }
         }
+        void remove(extent const& owned) noexcept { remove(locate(owned.first,owned.last)); }
     };
 }

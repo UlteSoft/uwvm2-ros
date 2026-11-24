@@ -7,6 +7,7 @@
 # include <cstdint>
 # include <span>
 # include "instruction.h"
+# include "software_x86.h"
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -124,12 +125,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return tag_selection::selected;
         }
 
-#if defined(__x86_64__) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
         [[nodiscard,gnu::target("bmi2,popcnt")]] static unsigned select_deposited_bit(word bits, unsigned rank) noexcept
         {
             // Depositing a single set bit places it at the requested available position.
+# if defined(__x86_64__)
             auto const selected{static_cast<word>(__builtin_ia32_pdep_di(word{1} << rank, bits))};
             return static_cast<unsigned>(::std::countr_zero(selected));
+# else
+            // The 32-bit host has PDEP r32. Select the ranked half of the word first.
+            auto const low{static_cast<::std::uint32_t>(bits)};
+            auto const low_count{static_cast<unsigned>(::std::popcount(low))};
+            bool const upper{rank >= low_count};
+            unsigned const offset{upper ? 32u : 0u};
+            auto const half{static_cast<::std::uint32_t>(bits >> offset)};
+            if(upper) { rank -= low_count; }
+            auto const selected{__builtin_ia32_pdep_si(1u << rank, half)};
+            return offset + static_cast<unsigned>(::std::countr_zero(selected));
+# endif
         }
 
         [[nodiscard,gnu::target("bmi2,popcnt")]] tag_selection select_wide_bmi2(::std::uint16_t entropy, ::std::uint8_t& out) const noexcept
@@ -228,8 +241,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {
             if(wide_)
             {
-#if defined(__x86_64__) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
-                if(!__builtin_is_constant_evaluated() && __builtin_cpu_supports("popcnt") && __builtin_cpu_supports("bmi2"))
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
+                if(!__builtin_is_constant_evaluated() && software_x86::host_features.bmi2_popcnt)
                 { return select_wide_bmi2(entropy, out); }
 #endif
                 return select_wide<select_bit>(entropy, out);

@@ -123,23 +123,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         // A callback may neither retain a span/pointer nor invoke guest code or
         // trap. Errors are returned by value after the relocation pin releases.
         template<typename Memory, typename Function>
-        inline auto with_snapshot(Memory const& memory, Function&& function) noexcept
+        [[gnu::always_inline]] inline auto with_snapshot(Memory const& memory, Function&& function) noexcept
         {
             static_assert(noexcept(function(::std::span<::std::byte>{})));
-            auto checked{[&](::std::byte* begin, ::std::size_t bytes) noexcept
-            { return function(::std::span<::std::byte>{begin,begin == nullptr ? 0u : bytes}); }};
+            auto span{[](::std::byte* begin, ::std::size_t bytes) noexcept
+            { return ::std::span<::std::byte>{begin,begin == nullptr ? 0u : bytes}; }};
             if constexpr(Memory::can_mmap)
             {
-                if(memory.memory_length_p == nullptr) { return checked(nullptr,0u); }
-                return checked(memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire));
+                auto const data{memory.memory_length_p == nullptr ? ::std::span<::std::byte>{} :
+                    span(memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire))};
+                return function(data);
             }
             else if constexpr(Memory::support_multi_thread)
             {
                 ::uwvm2::object::memory::linear::memory_operation_guard_t pin{
                     memory.growing_flag_p,memory.active_ops_p};
-                return checked(memory.memory_begin,memory.memory_length);
+                return function(span(memory.memory_begin,memory.memory_length));
             }
-            else { return checked(memory.memory_begin,memory.memory_length); }
+            else { return function(span(memory.memory_begin,memory.memory_length)); }
         }
         template<::std::unsigned_integral Address, bool Shared, typename Memory>
         [[nodiscard]] inline bool configured(Memory const& memory) noexcept
@@ -416,7 +417,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         for(;;)
         {
             bool needs_refill{}, retry{};
-            auto const result{details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
+            // Keep the view and its exact range in the typed native bridge.
+            // In particular, a successful release needs only the returned address.
+            auto const result{details::with_snapshot(memory,[&] [[gnu::always_inline]] (::std::span<::std::byte> data) noexcept
             {
                 auto const view{memory.memtag_shadow.template view_under_tag_lease<Address,false>(data.size())};
                 auto entropy=[&](::std::uint16_t& out) noexcept

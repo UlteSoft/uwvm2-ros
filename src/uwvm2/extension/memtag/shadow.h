@@ -15,6 +15,7 @@
 # include <type_traits>
 # include <uwvm2/utils/macro/push_macros.h>
 # include "hardware_mte.h"
+# include "software_x86.h"
 # include <uwvm2/utils/mutex/rw_spin_lock.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -133,6 +134,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 // below. This threshold changes no checked range or result.
                 if(comparison_mask==0xffu && bytes >= sizeof(::std::uint64_t) * 16u)
                 {
+                    if constexpr(software_x86::has_vector_kernels)
+                    {
+                        if(end-index >= 32u)
+                        { index += software_x86::matching_vector_prefix(tags_+index, end-index, result.pointer_tag); }
+                    }
                     // Eight granules per comparison; memcpy avoids alignment
                     // and strict-aliasing UB on all five hosts. Resolve a failed
                     // block below to its exact first mismatching granule.
@@ -230,14 +236,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
             allocation_range(shadow_view const& view, Address input, ::std::uint64_t bytes) noexcept
                 : view_{view},bytes_{bytes},proof_{view.bounds(input,0u,bytes)} {}
+
+            // For sizeof(Word) <= count < 2*sizeof(Word), these two bounded
+            // reads cover every granule. memcpy also permits unaligned pages.
+            template<typename Word>
+            [[nodiscard]] static bool matches_pair(::std::uint8_t const* tags,::std::size_t count,
+                                                   ::std::uint8_t expected) noexcept
+            {
+                Word first{},last{};
+                ::std::memcpy(&first,tags,sizeof(Word));
+                ::std::memcpy(&last,tags+(count-sizeof(Word)),sizeof(Word));
+                auto const repeated{static_cast<Word>((::std::numeric_limits<Word>::max()/255u)*expected)};
+                return ((first^repeated) | (last^repeated)) == 0u;
+            }
         public:
             [[nodiscard]] access_result const& bounds() const noexcept { return proof_; }
 
-            [[nodiscard]] access_result check(::std::uint8_t expected) const noexcept
+            [[nodiscard,gnu::always_inline]] access_result check(::std::uint8_t expected) const noexcept
             {
                 auto result{proof_};
                 if(!result || !bytes_) { return result; }
                 result.pointer_tag=expected;
+                if constexpr(!Shared)
+                {
+                    auto const first{static_cast<::std::size_t>(result.address >> 4u)};
+                    auto const last{static_cast<::std::size_t>((result.address+bytes_-1u) >> 4u)};
+                    auto const count{last-first+1u};
+                    auto const* tags{view_.tags_+first};
+                    if constexpr(software_x86::has_vector_kernels)
+                    {
+                        if(count >= 32u) { return view_.check_tags(result,bytes_,0xffu); }
+                    }
+                    bool matches{};
+                    if(count == 1u) { matches=tags[0] == expected; }
+                    else if(count < 4u) { matches=matches_pair<::std::uint16_t>(tags,count,expected); }
+                    else if(count < 8u) { matches=matches_pair<::std::uint32_t>(tags,count,expected); }
+                    else if(count < 16u) { matches=matches_pair<::std::uint64_t>(tags,count,expected); }
+                    // A longer span is uniform iff its first tag has the expected
+                    // value and every adjacent pair agrees. Both reads end in range.
+                    else { matches=tags[0] == expected && ::std::memcmp(tags,tags+1u,count-1u) == 0; }
+                    if(matches) { return result; }
+                }
+                // Preserve the first differing granule and its actual tag.
                 return view_.check_tags(result,bytes_,0xffu);
             }
             [[nodiscard]] access_result store(::std::uint8_t tag) const noexcept requires (!Shared)

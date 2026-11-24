@@ -29,7 +29,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         template<::std::unsigned_integral Address, bool Shared>
         [[nodiscard]] inline bool forbid_backing_neighbors(allocation_neighborhood& colors,
-            shadow_view<Address,Shared> view, ::std::uint64_t first, ::std::uint64_t last,
+            shadow_view<Address,Shared> const& view, ::std::uint64_t first, ::std::uint64_t last,
             ::std::uint64_t count, access_result& access) noexcept
         {
             if constexpr(!Shared)
@@ -111,11 +111,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // here. The ordinary interpreter passes its decoded opcode to the same kernel.
         // A false entropy callback requests a refill outside the current owner snapshot.
         template<typename Operation, ::std::unsigned_integral Address, bool Shared, typename Entropy>
-        [[nodiscard]] inline operation_result<Address> transition(managed_allocations& directory,
+        [[nodiscard,gnu::always_inline]] inline operation_result<Address> transition(managed_allocations& directory,
             bool hardware, Operation operation, Address input, Address length, ::std::span<::std::byte> data,
-            shadow_view<Address,Shared> view, Entropy&& get_entropy, bool& retry) noexcept
+            shadow_view<Address,Shared> const& view, Entropy&& get_entropy, bool& retry) noexcept
         {
-            using shadow = decltype(view);
+            using shadow = shadow_view<Address,Shared>;
             operation_result<Address> result{.value = input};
             auto const fail{[&](operation_error error) noexcept { result.error = error; return result; }};
             auto const range{view.allocation(input,length)};
@@ -129,14 +129,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             { return result; }
             auto const first{address / granule_size}, last{(address + length - 1) / granule_size};
             auto const input_tag{shadow::extract(input)};
-            auto commit{[&](::std::uint8_t tag, bool zero) noexcept
+            auto commit{[&] [[gnu::always_inline]] (::std::uint8_t tag) noexcept
             {
                 Address const tagged{shadow::insert(input,tag)};
-                if(zero)
-                {
-                    Address const args[]{tagged,length};
-                    return execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
-                }
                 operation_result<Address> stored{.value=tagged};
                 if(address > data.size() || length > data.size()-address)
                 { stored.access={.error=access_error::out_of_bounds,.address=address}; }
@@ -147,20 +142,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             }};
             if(operation == opcode::activate || operation == opcode::release)
             {
-                auto* item{directory.exact(first, last)};
+                auto const found{directory.locate(first,last)};
+                auto* item{found.get()};
                 if(!item || item->permanent || item->tag != input_tag || (operation == opcode::activate && item->active))
                 { return fail(operation_error::invalid_allocation); }
                 result.access = range.check(item->active ? item->tag : item->parent);
                 if(!result.access) { return fail(operation_error::memory_access); }
                 if(operation == opcode::activate)
                 {
-                    result = commit(item->tag, false);
+                    result = commit(item->tag);
                     if(result) { item->active = true; }
                     return result;
                 }
                 result.value = shadow::insert(input, item->parent);
-                if(item->active) { result = commit(item->parent, false); }
-                if(result) { directory.remove(*item); }
+                if(item->active) { result = commit(item->parent); }
+                if(result) { directory.remove(found); }
                 return result;
             }
             if(input_tag) { return fail(operation_error::invalid_allocation); }
@@ -189,8 +185,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             result.value = shadow::insert(input, tag);
             if(activate)
             {
-                result = commit(tag, operation == opcode::claimz);
-                if(!result) { directory.remove(*directory.exact(first, last)); }
+                if(operation == opcode::claimz)
+                {
+                    Address const args[]{result.value,length};
+                    result=execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
+                }
+                else { result=commit(tag); }
+                if(!result) { directory.remove(directory.locate(first,last)); }
             }
             return result;
         }
