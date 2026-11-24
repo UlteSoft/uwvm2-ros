@@ -5,6 +5,7 @@ module;
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <span>
 #include <type_traits>
 #include <uwvm2/utils/macro/push_macros.h>
 export module uwvm2.extension.memtag.shadow;

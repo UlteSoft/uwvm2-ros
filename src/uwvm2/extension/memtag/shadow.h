@@ -11,6 +11,7 @@
 # include <cstdint>
 # include <cstring>
 # include <limits>
+# include <span>
 # include <type_traits>
 # include <uwvm2/utils/macro/push_macros.h>
 # include "hardware_mte.h"
@@ -193,6 +194,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
     public:
+        // Borrowed for the owner's pinned private operation. Both endpoints
+        // must map to actual data and shadow granules before forming the span.
+        [[nodiscard]] ::std::span<::std::uint8_t const> private_tag_window(
+            ::std::uint64_t first, ::std::uint64_t last) const noexcept requires (!Shared)
+        {
+            if(first > last || !tags_ || last >= count_ || !memory_bytes_ ||
+               memory_bytes_ > address_capacity || last > (memory_bytes_-1u)/16u) { return {}; }
+            return {tags_+static_cast<::std::size_t>(first),static_cast<::std::size_t>(last-first+1u)};
+        }
+
         [[nodiscard]] access_result load(Address pointer) const noexcept
         {
             auto result{bounds(pointer, 0u, 1u)};

@@ -24,7 +24,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         inline void visit_directory(managed_allocations const& directory, ::std::uint64_t first,
                                    ::std::uint64_t last, Visitor&& visitor) noexcept
         {
-            directory.visit(first >= reach ? first - reach : 0, last + reach, visitor);
+            directory.visit_near(first >= reach ? first - reach : 0, last + reach, visitor);
+        }
+
+        template<::std::unsigned_integral Address, bool Shared>
+        [[nodiscard]] inline bool forbid_backing_neighbors(allocation_neighborhood& colors,
+            shadow_view<Address,Shared> view, ::std::uint64_t first, ::std::uint64_t last,
+            ::std::uint64_t count, access_result& access) noexcept
+        {
+            if constexpr(!Shared)
+            {
+                if(last < count)
+                {
+                    auto const lo{first < reach ? 0u : first-reach};
+                    auto const hi{count-1u-last < reach ? count-1u : last+reach};
+                    auto const tags{view.private_tag_window(lo,hi)};
+                    if(!tags.empty())
+                    {
+                        auto const left{static_cast<::std::size_t>(first-lo)};
+                        auto const right{static_cast<::std::size_t>(hi-last)};
+                        colors.forbid_tags(tags.first(left));
+                        colors.forbid_tags(tags.last(right));
+                        // Match the scalar visitation order's final load even
+                        // when returning an unactivated reservation or a retry.
+                        if(left > right) { access={.address=lo*granule_size,.allocation_tag=tags.front()}; }
+                        else if(right) { access={.address=hi*granule_size,.allocation_tag=tags.back()}; }
+                        return true;
+                    }
+                }
+            }
+            // Shared tags retain individual relaxed atomic loads. A short
+            // snapshot reports the first failed load in original probe order.
+            return visit_allocation_neighbors(first,last,count,[&](::std::uint64_t index) noexcept
+            {
+                access=view.load(static_cast<Address>(index*granule_size));
+                if(!access) { return false; }
+                colors.forbid(access.allocation_tag);
+                return true;
+            });
         }
     }
 
@@ -80,9 +117,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         auto const input_tag{shadow::extract(input)};
         auto commit{[&](::std::uint8_t tag, bool zero) noexcept
         {
-            Address const args[]{shadow::insert(input, tag), length};
-            return execute_operation<true,Address,Shared>(zero ? opcode::storez : opcode::store, args,
-                data, view, []() noexcept { return 0u; });
+            Address const tagged{shadow::insert(input,tag)};
+            if(zero)
+            {
+                Address const args[]{tagged,length};
+                return execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
+            }
+            operation_result<Address> stored{.value=tagged};
+            if(address > data.size() || length > data.size()-address)
+            { stored.access={.error=access_error::out_of_bounds,.address=address}; }
+            else { stored.access=view.store(tagged,length); }
+            if(!stored.access) { stored.error=operation_error::memory_access; }
+            return stored;
         }};
         if(operation == opcode::activate || operation == opcode::release)
         {
@@ -114,19 +160,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         });
         if(overlaps) { return fail(operation_error::allocation_conflict); }
         auto const count{data.size() / granule_size + (data.size() % granule_size != 0)};
-        if(!visit_allocation_neighbors(first, last, count, [&](::std::uint64_t index) noexcept
-        {
-            result.access = view.load(static_cast<Address>(index * granule_size));
-            if(!result.access) { return false; }
-            colors.forbid(result.access.allocation_tag);
-            return true;
-        })) { return fail(operation_error::memory_access); }
+        if(!allocation_details::forbid_backing_neighbors(colors,view,first,last,count,result.access))
+        { return fail(operation_error::memory_access); }
         ::std::uint8_t tag{};
         auto const selection{colors.select(entropy, tag)};
         if(selection == tag_selection::retry_entropy) { retry = true; return result; }
         if(selection == tag_selection::no_color) { return fail(operation_error::allocation_no_color); }
         bool const activate{operation != opcode::reserve};
-        if(!directory.add({first, last, tag, input_tag, activate, false}))
+        managed_allocations::extent const item{first,last,tag,input_tag,activate,false};
+        bool const added{Shared ? directory.add(item) : directory.add_private(item)};
+        if(!added)
         { return fail(operation_error::allocation_resource_limit); }
         result.value = shadow::insert(input, tag);
         if(activate)

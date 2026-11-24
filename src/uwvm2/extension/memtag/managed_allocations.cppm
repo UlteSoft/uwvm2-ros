@@ -1,4 +1,5 @@
 module;
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <new>

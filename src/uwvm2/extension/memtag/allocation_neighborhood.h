@@ -56,19 +56,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         bool wide_{};
         bool physical_{};
 
-        [[nodiscard]] static constexpr unsigned select_bit(word bits, unsigned rank) noexcept
+        // Packed positions of the set bits of each byte, three bits per rank.
+        static constexpr auto byte_positions_ = []() constexpr noexcept
         {
-            // Binary select on a nonempty 64-bit word. Each step keeps the
-            // half containing the requested set bit. The shifts are < 64.
+            ::std::array<::std::uint32_t,256> positions{};
+            for(unsigned byte{}; byte < positions.size(); ++byte)
+            {
+                unsigned shift{};
+                for(unsigned bit{}; bit != 8u; ++bit)
+                {
+                    if(byte & (1u << bit)) { positions[byte] |= bit << shift; shift += 3u; }
+                }
+            }
+            return positions;
+        }();
+
+        [[nodiscard]] static constexpr unsigned select_bit(word bits, unsigned rank, bool wide) noexcept
+        {
+            // Narrow colors occupy the low 16 bits. Retain the ranked half
+            // until a single byte remains, then resolve its rank by lookup.
             unsigned offset{};
-            for (unsigned half{32u}; half; half >>= 1u)
+            for(unsigned half{wide ? 32u : 8u}; half >= 8u; half >>= 1u)
             {
                 word const lower{bits & ((word{1} << half) - 1u)};
                 unsigned const count{static_cast<unsigned>(::std::popcount(lower))};
-                if (rank < count) { bits = lower; }
-                else { rank -= count; bits >>= half; offset += half; }
+                if(rank < count) { bits=lower; }
+                else { rank-=count; bits >>= half; offset+=half; }
             }
-            return offset;
+            return offset + ((byte_positions_[static_cast<::std::uint8_t>(bits)] >> (3u*rank)) & 7u);
         }
 
     public:
@@ -94,6 +109,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 unsigned const value{wide_ ? unsigned(tag) : unsigned(tag & 15u)};
                 available_[value >> 6u] &= ~(word{1} << (value & 63u));
+            }
+        }
+
+        constexpr void forbid_tags(::std::span<::std::uint8_t const> tags) noexcept
+        {
+            if(wide_)
+            {
+                for(auto tag : tags) { forbid(tag); }
+            }
+            else
+            {
+                unsigned mask{};
+                for(auto tag : tags) { mask |= 1u << (tag & 15u); }
+                available_[0] &= ~static_cast<word>(mask);
             }
         }
 
@@ -163,7 +192,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 if (rank < counts[i])
                 {
-                    out = static_cast<::std::uint8_t>(64u * i + select_bit(available_[i], rank));
+                    out = static_cast<::std::uint8_t>(64u * i + select_bit(available_[i], rank, wide_));
                     return tag_selection::selected;
                 }
                 rank -= counts[i];
