@@ -3,6 +3,10 @@
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/impl.h>
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
+#if defined(__linux__) && defined(__arm__)
+// The ARM EHABI section manager needs LLVM's ELF declarations with libc's ELF macros hidden.
+# include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/translate/elf_headers.h>
+#endif
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/translate/section_memory_manager.h>
 #include <uwvm2/uwvm/runtime/macro/pop_macros.h>
 #include <uwvm2/utils/macro/pop_macros.h>
