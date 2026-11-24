@@ -14,7 +14,9 @@
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             namespace crash=::uwvm2::runtime::diagnostic::crash;
             crash::memory_detail const evidence{memory_index,pointer,granule,pointer_tag,allocation_tag};
-            crash::report(crash::category::memtag,"memory tag mismatch",2u,UINT64_MAX,UINT64_MAX,UINT64_MAX,&evidence);
+            // The entry and post-call probes retain the faulting Wasm function.
+            crash::report(crash::category::memtag,"memory tag mismatch",2u,
+                active_->child->module_index_,active_->function,UINT64_MAX,&evidence);
 #endif
             fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memtag_violation));
         }
