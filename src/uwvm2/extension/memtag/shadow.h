@@ -189,8 +189,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         static constexpr ::std::size_t allocation_vector_tags{768u}, access_vector_tags{1536u};
 
         // The caller proved a nonempty range of private, full-byte tags.
-        template<::std::size_t VectorTags>
-        [[nodiscard,gnu::always_inline]] access_result check_private_tags(access_result result, ::std::size_t first,
+        [[nodiscard,gnu::always_inline]] access_result check_allocation_tags(access_result result, ::std::size_t first,
             ::std::size_t count) const noexcept requires (!Shared)
         {
             auto const* tags{tags_+first};
@@ -202,7 +201,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 if(initial != expected) [[unlikely]] { return mismatch(result,first,initial); }
                 if constexpr(software_x86::has_vector_kernels)
                 {
-                    if(count >= VectorTags && software_x86::host_features.avx2)
+                    if(count >= allocation_vector_tags && software_x86::host_features.avx2)
                     {
                         matched = software_x86::matching_vector_prefix(tags,count,expected);
                         if(matched == count) { return result; }
@@ -236,8 +235,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return result;
         }
 
-        [[nodiscard]] access_result check_tags(access_result result,::std::uint64_t bytes,
-                                               ::std::uint8_t comparison_mask) const noexcept
+        // Out-of-line vector dispatch returns only a tag index. Keep the
+        // ordinary access bounds proof and error reporting in the caller.
+        [[nodiscard,gnu::noinline]] static ::std::size_t matching_long_access(
+            ::std::uint8_t const* tags, ::std::size_t count, ::std::uint8_t expected) noexcept
+        {
+            auto matched{software_x86::matching_vector_prefix(tags,count,expected)};
+            while(matched != count && tags[matched] == expected) { ++matched; }
+            return matched;
+        }
+
+        [[nodiscard,gnu::always_inline]] access_result check_tags(access_result result,::std::uint64_t bytes,
+                                                                  ::std::uint8_t comparison_mask) const noexcept
         {
             auto index{static_cast<::std::size_t>(result.address >> 4u)};
             auto const end{static_cast<::std::size_t>(((result.address + bytes - 1u) >> 4u) + 1u)};
@@ -245,7 +254,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 // Keep block-loop setup out of constant-width scalar accesses.
                 if(comparison_mask == 0xffu && bytes >= sizeof(::std::uint64_t) * 16u)
-                { return check_private_tags<access_vector_tags>(result,index,end-index); }
+                {
+                    auto const expected{result.pointer_tag};
+                    if(tags_[index] != expected) [[unlikely]] { return mismatch(result,index,tags_[index]); }
+                    if constexpr(software_x86::has_vector_kernels)
+                    {
+                        if(end-index >= access_vector_tags && software_x86::host_features.avx2)
+                        {
+                            index += matching_long_access(tags_+index,end-index,expected);
+                            if(index != end) { return mismatch(result,index,tags_[index]); }
+                            return result;
+                        }
+                    }
+                    // Compare complete blocks in the same access that proved
+                    // their bounds. Only the failing block needs finer resolution.
+                    auto const repeated{UINT64_C(0x0101010101010101) * expected};
+                    while(end-index >= 32u)
+                    {
+                        ::std::uint64_t words[4];
+                        ::std::memcpy(words,tags_+index,sizeof words);
+                        if(((words[0]^repeated) | (words[1]^repeated) |
+                            (words[2]^repeated) | (words[3]^repeated)) != 0u) { break; }
+                        index += 32u;
+                    }
+                    while(end-index >= sizeof(::std::uint64_t))
+                    {
+                        ::std::uint64_t word;
+                        ::std::memcpy(&word,tags_+index,sizeof word);
+                        if(auto difference=word^repeated)
+                        {
+                            index += first_different_byte(difference);
+                            return mismatch(result,index,tags_[index]);
+                        }
+                        index += sizeof word;
+                    }
+                }
             }
             for(; index != end; ++index)
             {
@@ -327,7 +370,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 {
                     auto const first{static_cast<::std::size_t>(result.address >> 4u)};
                     auto const last{static_cast<::std::size_t>((result.address+bytes_-1u) >> 4u)};
-                    return view_.template check_private_tags<allocation_vector_tags>(result,first,last-first+1u);
+                    return view_.check_allocation_tags(result,first,last-first+1u);
                 }
                 else { return view_.check_tags(result,bytes_,0xffu); }
             }
