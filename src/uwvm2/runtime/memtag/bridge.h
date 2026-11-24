@@ -406,7 +406,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         using result_type=mt::operation_result<Address>;
         // An owner mismatch has the same runtime-invariant classification as
         // invalid_owner in the general bridge, including for direct ABI users.
-        if(!details::configured<Address,false>(memory)) [[unlikely]]
+        auto const make_view{memory.memtag_shadow.template private_view_factory<Address>()};
+        if(!make_view) [[unlikely]]
         { return {.error=mt::operation_error::managed_state_required}; }
 
         constexpr auto descriptor{mt::find_instruction(static_cast<unsigned>(Operation))};
@@ -421,7 +422,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             // In particular, a successful release needs only the returned address.
             auto const result{details::with_snapshot(memory,[&] [[gnu::always_inline]] (::std::span<::std::byte> data) noexcept
             {
-                auto const view{memory.memtag_shadow.template view_under_tag_lease<Address,false>(data.size())};
+                auto const view{(*make_view)(data.size())};
                 auto entropy=[&](::std::uint16_t& out) noexcept
                 {
                     if(!have_word && !try_buffered_allocation_entropy(word))

@@ -11,6 +11,7 @@ module;
 #include <limits>
 #include <memory>
 #include <new>
+#include <optional>
 #include <utility>
 #if defined(UWVM_SUPPORT_MMAP) && !(defined(_WIN32) || defined(__CYGWIN__))
 # include <sys/mman.h>

@@ -16,6 +16,7 @@
 # include <limits>
 # include <memory>
 # include <new>
+# include <optional>
 # include <utility>
 # include <fast_io.h>
 # include <uwvm2/object/memory/platform_page/impl.h>
@@ -337,6 +338,38 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         { return prepared_memory_bytes_.load(::std::memory_order_acquire); }
         [[nodiscard]] ::std::size_t tag_count() const noexcept { return tags_for(prepared_memory_bytes()); }
 
+    private:
+        template<::std::unsigned_integral Address, bool Shared>
+        [[nodiscard]] constexpr bool configured_for_view() const noexcept
+        {
+            constexpr auto expected{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
+            return enabled() && width_ == expected && shared_ == Shared;
+        }
+
+        template<::std::unsigned_integral Address, bool Shared>
+        [[nodiscard]] shadow_view<Address,Shared> prepared_view(::std::uint64_t memory_bytes,
+            ::uwvm2::utils::mutex::rwlock_t* write_gate) const noexcept
+        {
+            using view_type = shadow_view<Address,Shared>;
+            if(memory_bytes > prepared_memory_bytes()) { return {nullptr,0u,view_type::address_capacity+1u}; }
+            return {static_cast<typename view_type::tag_type*>(data_),tags_for(static_cast<::std::size_t>(memory_bytes)),
+                    memory_bytes,hardware_base(),write_gate};
+        }
+
+    public:
+        // Configuration is immutable for the executing owner's lifetime. The
+        // factory retains only the owner. Each call under a fresh relocation
+        // pin acquires the current prepared length and borrows the current tags.
+        template<::std::unsigned_integral Address>
+        [[nodiscard]] auto private_view_factory() const & noexcept
+        {
+            auto borrow{[this](::std::uint64_t bytes) noexcept { return prepared_view<Address,false>(bytes,nullptr); }};
+            using factory = ::std::optional<decltype(borrow)>;
+            return configured_for_view<Address,false>() ? factory{borrow} : factory{};
+        }
+        template<::std::unsigned_integral Address>
+        auto private_view_factory() const && = delete;
+
         // Returns a bounded borrowed snapshot. For growable storage the caller
         // must hold the native owner's memory-operation guard for its lifetime.
         // The memory length must come from that owner, never an imported alias's
@@ -344,12 +377,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         template<::std::unsigned_integral Address, bool Shared = false>
         [[nodiscard]] shadow_view<Address, Shared> view(::std::uint64_t memory_bytes) const noexcept
         {
-            using result_type = shadow_view<Address, Shared>;
-            constexpr auto expected{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
-            if(!enabled() || width_ != expected || shared_ != Shared || memory_bytes > prepared_memory_bytes())
-            { return {nullptr, 0u, result_type::address_capacity + 1u}; }
-            return {static_cast<typename result_type::tag_type*>(data_),
-                    tags_for(static_cast<::std::size_t>(memory_bytes)), memory_bytes, hardware_base(), shared_tag_gate_};
+            if(!configured_for_view<Address,Shared>()) { return {nullptr,0u,shadow_view<Address,Shared>::address_capacity+1u}; }
+            return prepared_view<Address,Shared>(memory_bytes,shared_tag_gate_);
         }
 
         // Internal complete-operation path: the caller holds this exact
@@ -359,12 +388,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         template<::std::unsigned_integral Address, bool Shared = false>
         [[nodiscard]] shadow_view<Address, Shared> view_under_tag_lease(::std::uint64_t memory_bytes) const noexcept
         {
-            using result_type = shadow_view<Address, Shared>;
-            constexpr auto expected{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
-            if(!enabled() || width_ != expected || shared_ != Shared || memory_bytes > prepared_memory_bytes())
-            { return {nullptr, 0u, result_type::address_capacity + 1u}; }
-            return {static_cast<typename result_type::tag_type*>(data_),
-                    tags_for(static_cast<::std::size_t>(memory_bytes)), memory_bytes, hardware_base()};
+            if(!configured_for_view<Address,Shared>()) { return {nullptr,0u,shadow_view<Address,Shared>::address_capacity+1u}; }
+            return prepared_view<Address,Shared>(memory_bytes,nullptr);
         }
 
         // Call after native memory initialization and before guest publication.
