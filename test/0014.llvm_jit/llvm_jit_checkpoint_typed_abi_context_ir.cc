@@ -87,7 +87,7 @@ int main()
     emit::runtime_local_func_llvm_jit_emit_state_t state{};
     state.llvm_context_holder = &context; state.llvm_module = module.get(); state.llvm_function = function;
     auto const entry{::llvm::BasicBlock::Create(context, "entry", function)};
-    state.ir_builder = ::uwvm2::utils::container::make_delete_owned<::llvm::IRBuilder<>>(entry);
+    state.ir_builder = ::uwvm2::utils::container::make_unique<::llvm::IRBuilder<>>(entry);
     auto& builder{*state.ir_builder};
     auto const absent{emit::emit_runtime_local_func_llvm_jit_checkpoint_context(state, nullptr)};
     require(absent.valid && !absent.selected && absent.context_owner == nullptr && entry->empty() && function->getFunctionType() == typed_signature,
@@ -163,7 +163,7 @@ int main()
     emit::runtime_local_func_llvm_jit_emit_state_t ordinary_state{};
     ordinary_state.llvm_context_holder = &context; ordinary_state.llvm_module = module.get(); ordinary_state.llvm_function = ordinary;
     auto const ordinary_entry{::llvm::BasicBlock::Create(context, "entry", ordinary)};
-    ordinary_state.ir_builder = ::uwvm2::utils::container::make_delete_owned<::llvm::IRBuilder<>>(ordinary_entry);
+    ordinary_state.ir_builder = ::uwvm2::utils::container::make_unique<::llvm::IRBuilder<>>(ordinary_entry);
     auto const ordinary_context{emit::emit_runtime_local_func_llvm_jit_checkpoint_context(ordinary_state, bridge)};
     require(ordinary_context.valid && !ordinary_context.selected && ordinary_entry->empty(), "actual ordinary function adds no supplier call");
     auto& ordinary_builder{*ordinary_state.ir_builder};
