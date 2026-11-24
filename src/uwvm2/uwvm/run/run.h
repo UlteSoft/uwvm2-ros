@@ -2744,13 +2744,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #endif
 
 
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT)
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
         if(debug_channel)
         {
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits limits{};
             if(::uwvm2::runtime::lib::runtime_threaded_profile_policy_host_api(limits)==::uwvm2::runtime::lib::threaded_policy_status::configured)
             {
-                threaded_debug_cli control{thread_history_cli};
+                threaded_debug_cli control{thread_history_cli, *debug_channel};
                 if(!control.launch()){control.detach();return static_cast<int>(retval::parameter_error);}
                 debug_channel->serve_private_threads(control);
                 auto const outcome=control.result();

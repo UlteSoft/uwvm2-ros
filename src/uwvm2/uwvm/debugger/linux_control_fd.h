@@ -194,6 +194,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         [[nodiscard]] bool bind_signal_diagnostics_host_api() const noexcept
         {return ::uwvm2::runtime::diagnostic::crash::install_signal_endpoint_host_api(
             descriptor_.native_handle(),peer_pidfd_.native_handle());}
+        // Leave the first command queued while the private compiler runs. A
+        // closed socket or the exit of its authenticated parent ends the wait.
+        [[nodiscard]] bool poll_private_thread_startup_peer() const noexcept
+        {
+            ::pollfd watched[2]{{descriptor_.native_handle(), 0, 0}, {peer_pidfd_.native_handle(), POLLIN, 0}};
+            int const ready{posix_abi::poll_noexcept(watched, 2u, 50)};
+            return ready == 0 || (ready < 0 && errno == EINTR);
+        }
         // Genuine private-thread driver, sharing exactly the same inherited
         // endpoint and per-packet peer checks as the ordinary controller.
         // Handler and all-stop owner stay on this native management thread.

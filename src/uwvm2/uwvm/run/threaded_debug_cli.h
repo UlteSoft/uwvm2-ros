@@ -1,6 +1,6 @@
 // Included in run's namespace, after its actual source/entry helpers.
 // The transport supplies authenticated HOST commands, never Guest imports.
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT)
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API && defined(UWVM_RUNTIME_LLVM_JIT) && defined(SYS_pidfd_open) && defined(SCM_CREDENTIALS)
     class threaded_debug_cli final
     {
         using text=::uwvm2::utils::container::std_string;
@@ -18,6 +18,7 @@
         unsigned result_kind_{};
         bool terminal_observed_{},output_failed_{},output_finished_{};
         threaded_history_cli& selected_output_;
+        ::uwvm2::uwvm::debugger::linux_control_fd const& channel_;
         static constexpr auto wait_slice=::std::chrono::milliseconds{50};
         static bool number(::std::string_view& input,::std::uint64_t& value) noexcept
         {
@@ -146,8 +147,23 @@
             configure_runtime_entry_buffers(config,entry);auto const& abi=config.entry_abi_buffers;
             if(!api::full_compile_prepare_host_api())return false;
             joined_=false;terminal_observed_=false;result_code_=0;result_kind_=0;
-            return api::runtime_threaded_profile_start_main_host_api(name,config.entry_function_index,
-                {abi.param_buffer,abi.param_bytes},abi.result_bytes)==api::threaded_main_status::running;
+            if(api::runtime_threaded_profile_start_main_host_api(name,config.entry_function_index,
+                {abi.param_buffer,abi.param_bytes},abi.result_bytes)!=api::threaded_main_status::running)return false;
+
+            // Submission returns before LLVM prepares and launches the main.
+            // Start the cooperative stop/replay deadline only after a real
+            // native worker registers. The parent controls its startup deadline.
+            do
+            {
+                ::std::size_t registered{};
+                auto session{api::runtime_threaded_profile_debug_session_host_api()};
+                if(session.workers({}, registered) == ::uwvm2::runtime::wasm_threads::debug_read_status::insufficient_capacity && registered)
+                    return true;
+                ::std::uint32_t code{};
+                unsigned kind{};
+                if(api::runtime_threaded_profile_terminal_host_api(code, kind))return true;
+            } while(channel_.poll_private_thread_startup_peer());
+            return false;
         }
         static void hex(text& out,::std::span<::std::byte const> value)
         {constexpr char digits[]{"0123456789abcdef"};for(auto b:value){auto n=::std::to_integer<unsigned>(b);out+=digits[n>>4u];out+=digits[n&15u];}}
@@ -189,7 +205,8 @@
             return "error: unavailable environment range\n";
         }
     public:
-        explicit threaded_debug_cli(threaded_history_cli& output) noexcept:selected_output_{output}{}
+        threaded_debug_cli(threaded_history_cli& output, ::uwvm2::uwvm::debugger::linux_control_fd const& channel) noexcept
+            :selected_output_{output},channel_{channel}{}
         [[nodiscard]] bool launch()
         {
             if(!start())return false;
