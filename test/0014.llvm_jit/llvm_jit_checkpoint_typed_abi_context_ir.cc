@@ -1,6 +1,11 @@
 // Real LLVM typed-ABI context/continuation component. No actual VM management,
 // pause, canonical resume mailbox, host/root census or whole-instance restore.
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/impl.h>
+#include <uwvm2/utils/macro/push_macros.h>
+#include <uwvm2/uwvm/runtime/macro/push_macros.h>
+#include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/translate/section_memory_manager.h>
+#include <uwvm2/uwvm/runtime/macro/pop_macros.h>
+#include <uwvm2/utils/macro/pop_macros.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/Support/TargetSelect.h>
@@ -46,7 +51,9 @@ int main()
     require(!::llvm::InitializeNativeTarget() && !::llvm::InitializeNativeTargetAsmPrinter(), "actual native target");
     ::llvm::LLVMContext context{}; auto module{::std::make_unique<::llvm::Module>("checkpoint-typed-ABI-context", context)};
     ::std::unique_ptr<::llvm::TargetMachine> target{::llvm::EngineBuilder{}.selectTarget()};
-    require(bool(target), "actual native target DataLayout before IR"); module->setDataLayout(target->createDataLayout());
+    require(bool(target), "actual native target DataLayout before IR");
+    module->setTargetTriple(target->getTargetTriple());
+    module->setDataLayout(target->createDataLayout());
     ::llvm::IRBuilder<> types{context};
     auto const integer{types.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
     auto const typed_signature{::llvm::FunctionType::get(types.getInt64Ty(), {types.getDoubleTy(), types.getInt64Ty()}, false)};
@@ -169,9 +176,19 @@ int main()
     auto& ordinary_builder{*ordinary_state.ir_builder};
     ordinary_builder.CreateRet(ordinary_builder.CreateAdd(ordinary_builder.CreateAdd(
         ordinary_builder.CreateFPToUI(ordinary->getArg(0u), types.getInt64Ty()), ordinary->getArg(1u)), types.getInt64(9u)));
-    require(!::llvm::verifyModule(*module), "whole component actual typed ABI/SSA/musttail verifier");
-    ::std::unique_ptr<::llvm::ExecutionEngine> engine{::llvm::EngineBuilder{::std::move(module)}.setEngineKind(::llvm::EngineKind::JIT).create()};
-    require(bool(engine), "real MCJIT"); engine->finalizeObject();
+    require(!::llvm::verifyModule(*module, &::llvm::errs()), "whole component actual typed ABI/SSA/musttail verifier");
+    // ARM lowers fptoui double to i64 through a statically linked compiler-runtime helper.
+    using section_manager_type = ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager;
+    auto sections{::uwvm2::utils::container::make_unique<section_manager_type>()};
+    auto const section_manager{sections.get()};
+    ::llvm::EngineBuilder engine_builder{::std::move(module)};
+    engine_builder.setEngineKind(::llvm::EngineKind::JIT);
+    engine_builder.setMCJITMemoryManager(::std::unique_ptr<::llvm::RTDyldMemoryManager>{sections.release()});
+    ::std::unique_ptr<::llvm::ExecutionEngine> engine{engine_builder.create(target.release())};
+    require(bool(engine), "real MCJIT");
+    engine->finalizeObject();
+    require(!engine->hasError(), engine->getErrorMessage().c_str());
+    require(!section_manager->has_finalization_failure(), "native sections finalized");
     require(engine->getDataLayout().getPointerSize() == sizeof(void*) && sizeof(::std::uintptr_t) == sizeof(void*),
         "actual engine pointer ABI matches the native component target");
     auto const address{engine->getFunctionAddress("cp_typed_entry")}; auto const tail_address{engine->getFunctionAddress("cp_typed_tail")};
