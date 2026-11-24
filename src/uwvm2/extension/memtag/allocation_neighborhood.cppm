@@ -1,6 +1,7 @@
 module;
 #include <array>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 export module uwvm2.extension.memtag.allocation_neighborhood;

@@ -3,6 +3,7 @@
 #ifndef UWVM_MODULE
 # include <array>
 # include <bit>
+# include <cstddef>
 # include <cstdint>
 # include <span>
 # include "instruction.h"
@@ -112,7 +113,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             }
         }
 
-        constexpr void forbid_tags(::std::span<::std::uint8_t const> tags) noexcept
+        template<::std::size_t Extent>
+        constexpr void forbid_tags(::std::span<::std::uint8_t const,Extent> tags) noexcept
         {
             if(wide_)
             {

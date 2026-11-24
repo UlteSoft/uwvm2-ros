@@ -43,8 +43,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                     {
                         auto const left{static_cast<::std::size_t>(first-lo)};
                         auto const right{static_cast<::std::size_t>(hi-last)};
-                        colors.forbid_tags(tags.first(left));
-                        colors.forbid_tags(tags.last(right));
+                        // Most allocations have all five neighbors on both sides.
+                        // Fixed-size spans let the optimizer unroll the tag reads.
+                        if(left == reach && right == reach)
+                        {
+                            colors.forbid_tags(tags.template first<reach>());
+                            colors.forbid_tags(tags.template last<reach>());
+                        }
+                        else
+                        {
+                            colors.forbid_tags(tags.first(left));
+                            colors.forbid_tags(tags.last(right));
+                        }
                         // Match the scalar visitation order's final load even
                         // when returning an unactivated reservation or a retry.
                         if(left > right) { access={.address=lo*granule_size,.allocation_tag=tags.front()}; }
@@ -95,88 +105,104 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         return allowed;
     }
 
-    /// @brief Check the parent span, select a legal color and publish under one owner lease.
-    /// New allocations cover whole, currently untagged granules only. A reservation
-    /// leaves backing bytes accessible through their original pointer until activation.
-    /// Tagged pointers identify allocation records; they are not module credentials.
+    namespace allocation_details
+    {
+        // An instruction selected during native lowering can pass an integral_constant
+        // here. The ordinary interpreter passes its decoded opcode to the same kernel.
+        // A false entropy callback requests a refill outside the current owner snapshot.
+        template<typename Operation, ::std::unsigned_integral Address, bool Shared, typename Entropy>
+        [[nodiscard]] inline operation_result<Address> transition(managed_allocations& directory,
+            bool hardware, Operation operation, Address input, Address length, ::std::span<::std::byte> data,
+            shadow_view<Address,Shared> view, Entropy&& get_entropy, bool& retry) noexcept
+        {
+            using shadow = decltype(view);
+            operation_result<Address> result{.value = input};
+            auto const fail{[&](operation_error error) noexcept { result.error = error; return result; }};
+            auto const range{view.allocation(input,length)};
+            result.access = range.bounds();
+            if(!result.access) { return fail(operation_error::memory_access); }
+            auto const address{result.access.address};
+            if(!length || (address % granule_size) || (length % granule_size))
+            { return fail(operation_error::invalid_allocation); }
+            ::std::uint16_t entropy{};
+            if(operation != opcode::activate && operation != opcode::release && !get_entropy(entropy))
+            { return result; }
+            auto const first{address / granule_size}, last{(address + length - 1) / granule_size};
+            auto const input_tag{shadow::extract(input)};
+            auto commit{[&](::std::uint8_t tag, bool zero) noexcept
+            {
+                Address const tagged{shadow::insert(input,tag)};
+                if(zero)
+                {
+                    Address const args[]{tagged,length};
+                    return execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
+                }
+                operation_result<Address> stored{.value=tagged};
+                if(address > data.size() || length > data.size()-address)
+                { stored.access={.error=access_error::out_of_bounds,.address=address}; }
+                else if constexpr(Shared) { stored.access=view.store(tagged,length); }
+                else { stored.access=range.store(tag); }
+                if(!stored.access) { stored.error=operation_error::memory_access; }
+                return stored;
+            }};
+            if(operation == opcode::activate || operation == opcode::release)
+            {
+                auto* item{directory.exact(first, last)};
+                if(!item || item->permanent || item->tag != input_tag || (operation == opcode::activate && item->active))
+                { return fail(operation_error::invalid_allocation); }
+                result.access = range.check(item->active ? item->tag : item->parent);
+                if(!result.access) { return fail(operation_error::memory_access); }
+                if(operation == opcode::activate)
+                {
+                    result = commit(item->tag, false);
+                    if(result) { item->active = true; }
+                    return result;
+                }
+                result.value = shadow::insert(input, item->parent);
+                if(item->active) { result = commit(item->parent, false); }
+                if(result) { directory.remove(*item); }
+                return result;
+            }
+            if(input_tag) { return fail(operation_error::invalid_allocation); }
+            result.access = range.check(input_tag);
+            if(!result.access) { return fail(operation_error::memory_access); }
+            allocation_neighborhood colors{sizeof(Address) == 4 ? address_width::i32 : address_width::i64, hardware};
+            bool overlaps{};
+            allocation_details::visit_directory(directory, first, last, [&](managed_allocations::extent const& item) noexcept
+            {
+                if(item.first <= last && first <= item.last) { overlaps = true; }
+                colors.forbid(item.tag);
+            });
+            if(overlaps) { return fail(operation_error::allocation_conflict); }
+            auto const count{data.size() / granule_size + (data.size() % granule_size != 0)};
+            if(!allocation_details::forbid_backing_neighbors(colors,view,first,last,count,result.access))
+            { return fail(operation_error::memory_access); }
+            ::std::uint8_t tag{};
+            auto const selection{colors.select(entropy, tag)};
+            if(selection == tag_selection::retry_entropy) { retry = true; return result; }
+            if(selection == tag_selection::no_color) { return fail(operation_error::allocation_no_color); }
+            bool const activate{operation != opcode::reserve};
+            managed_allocations::extent const item{first,last,tag,input_tag,activate,false};
+            bool const added{Shared ? directory.add(item) : directory.add_private(item)};
+            if(!added)
+            { return fail(operation_error::allocation_resource_limit); }
+            result.value = shadow::insert(input, tag);
+            if(activate)
+            {
+                result = commit(tag, operation == opcode::claimz);
+                if(!result) { directory.remove(*directory.exact(first, last)); }
+            }
+            return result;
+        }
+    }
+
+    /// @brief Apply a decoded lifecycle operation with entropy already drawn by the caller.
     template<::std::unsigned_integral Address, bool Shared>
     [[nodiscard]] inline operation_result<Address> transition_allocation(managed_allocations& directory,
         bool hardware, opcode operation, ::std::span<Address const> arguments, ::std::span<::std::byte> data,
         shadow_view<Address,Shared> view, ::std::uint16_t entropy, bool& retry) noexcept
     {
-        using shadow = decltype(view);
-        Address const input{arguments[0]}, length{arguments[1]};
-        operation_result<Address> result{.value = input};
-        auto const fail{[&](operation_error error) noexcept { result.error = error; return result; }};
-        result.access = view.bounds(input, 0u, length);
-        if(!result.access) { return fail(operation_error::memory_access); }
-        auto const address{result.access.address};
-        if(!length || (address % granule_size) || (length % granule_size))
-        { return fail(operation_error::invalid_allocation); }
-        auto const first{address / granule_size}, last{(address + length - 1) / granule_size};
-        auto const input_tag{shadow::extract(input)};
-        auto commit{[&](::std::uint8_t tag, bool zero) noexcept
-        {
-            Address const tagged{shadow::insert(input,tag)};
-            if(zero)
-            {
-                Address const args[]{tagged,length};
-                return execute_operation<true,Address,Shared>(opcode::storez,args,data,view,[]() noexcept { return 0u; });
-            }
-            operation_result<Address> stored{.value=tagged};
-            if(address > data.size() || length > data.size()-address)
-            { stored.access={.error=access_error::out_of_bounds,.address=address}; }
-            else { stored.access=view.store(tagged,length); }
-            if(!stored.access) { stored.error=operation_error::memory_access; }
-            return stored;
-        }};
-        if(operation == opcode::activate || operation == opcode::release)
-        {
-            auto* item{directory.exact(first, last)};
-            if(!item || item->permanent || item->tag != input_tag || (operation == opcode::activate && item->active))
-            { return fail(operation_error::invalid_allocation); }
-            result.access = view.check(shadow::insert(input, item->active ? item->tag : item->parent), 0u, length);
-            if(!result.access) { return fail(operation_error::memory_access); }
-            if(operation == opcode::activate)
-            {
-                result = commit(item->tag, false);
-                if(result) { item->active = true; }
-                return result;
-            }
-            result.value = shadow::insert(input, item->parent);
-            if(item->active) { result = commit(item->parent, false); }
-            if(result) { directory.remove(*item); }
-            return result;
-        }
-        if(input_tag) { return fail(operation_error::invalid_allocation); }
-        result.access = view.check(input, 0u, length);
-        if(!result.access) { return fail(operation_error::memory_access); }
-        allocation_neighborhood colors{sizeof(Address) == 4 ? address_width::i32 : address_width::i64, hardware};
-        bool overlaps{};
-        allocation_details::visit_directory(directory, first, last, [&](managed_allocations::extent const& item) noexcept
-        {
-            if(item.first <= last && first <= item.last) { overlaps = true; }
-            colors.forbid(item.tag);
-        });
-        if(overlaps) { return fail(operation_error::allocation_conflict); }
-        auto const count{data.size() / granule_size + (data.size() % granule_size != 0)};
-        if(!allocation_details::forbid_backing_neighbors(colors,view,first,last,count,result.access))
-        { return fail(operation_error::memory_access); }
-        ::std::uint8_t tag{};
-        auto const selection{colors.select(entropy, tag)};
-        if(selection == tag_selection::retry_entropy) { retry = true; return result; }
-        if(selection == tag_selection::no_color) { return fail(operation_error::allocation_no_color); }
-        bool const activate{operation != opcode::reserve};
-        managed_allocations::extent const item{first,last,tag,input_tag,activate,false};
-        bool const added{Shared ? directory.add(item) : directory.add_private(item)};
-        if(!added)
-        { return fail(operation_error::allocation_resource_limit); }
-        result.value = shadow::insert(input, tag);
-        if(activate)
-        {
-            result = commit(tag, operation == opcode::claimz);
-            if(!result) { directory.remove(*directory.exact(first, last)); }
-        }
-        return result;
+        return allocation_details::transition(directory,hardware,operation,arguments[0],arguments[1],data,view,
+            [entropy](::std::uint16_t& word) noexcept { word=entropy; return true; },retry);
     }
 }

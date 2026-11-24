@@ -111,6 +111,7 @@ import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_en
 import uwvm2.runtime.memtag.bridge;
 import uwvm2.runtime.memtag.wait;
 import uwvm2.extension.memtag.instruction;
+import uwvm2.extension.memtag.storage;
 import uwvm2.extension.memtag.encoding;
 import uwvm2.runtime.compiler.llvm_jit.compile_all_from_uwvm.translate.memtag_check_ir;
 

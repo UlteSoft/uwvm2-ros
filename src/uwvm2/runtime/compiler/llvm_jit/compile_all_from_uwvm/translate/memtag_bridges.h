@@ -40,6 +40,36 @@ template<bool ManagedTraps>
     ::fast_io::fast_terminate();
 }
 
+template<bool ManagedTraps,typename Address>
+[[noreturn,gnu::cold,gnu::noinline]] inline void llvm_jit_memtag_operation_failure(runtime_native_memory_t const& memory,
+    ::std::uint64_t first,::std::uint64_t bytes,::uwvm2::extension::memtag::operation_result<Address> const& failure) noexcept(!ManagedTraps)
+{
+    namespace mt=::uwvm2::extension::memtag;
+    if(failure.error==mt::operation_error::memory_access)
+    { llvm_jit_memtag_access_failure<ManagedTraps>(memory,first,0u,bytes,failure.access); }
+    using trap = ::uwvm2::runtime::lib::llvm_jit_trap_kind;
+    auto const kind{mt::is_allocation_rejection(failure.error) ? trap::memtag_allocation_rejected : trap::runtime_invariant_failure};
+    if constexpr(ManagedTraps)
+    { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(
+        kind,0u,0u); }
+    else
+    { ::uwvm2::runtime::lib::llvm_jit_runtime_trap(
+        kind,0u,0u); }
+    ::fast_io::fast_terminate();
+}
+
+// The private single-owner allocator has no unused register/stack arguments.
+// Preserve native-width Wasm operands even when the native pointer is 32 bits.
+template<::uwvm2::extension::memtag::opcode Operation,typename Address>
+[[nodiscard]] inline Address llvm_jit_private_allocation_bridge(::std::uintptr_t owner,Address input,Address length) noexcept
+{
+    auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
+    if(memory==nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
+    auto const result{::uwvm2::runtime::memtag::execute_private_allocation<Operation>(*memory,input,length)};
+    if(!result) [[unlikely]] { llvm_jit_memtag_operation_failure<false>(*memory,input,length,result); }
+    return result.value;
+}
+
 template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shared,bool ManagedTraps=false,bool Journal=false>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_memtag_operation_bridge(::std::uintptr_t owner,
     ::std::uint64_t first,::std::uint64_t second,::std::uint64_t third,::std::uint64_t fourth) noexcept(!ManagedTraps)
@@ -63,20 +93,8 @@ template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shar
     };
     auto const result{::uwvm2::runtime::memtag::execute<true,Address,Shared>(*memory,Operation,
         ::std::span<Address const>{arguments.data(),descriptor->operand_count},entropy)};
-    if(!result)
-    {
-        if(result.operation.error==mt::operation_error::memory_access)
-        { llvm_jit_memtag_access_failure<ManagedTraps>(*memory,first,0u,descriptor->operand_count>1u ? second : 1u,result.operation.access); }
-        using trap = ::uwvm2::runtime::lib::llvm_jit_trap_kind;
-        auto const kind{mt::is_allocation_rejection(result.operation.error) ? trap::memtag_allocation_rejected : trap::runtime_invariant_failure};
-        if constexpr(ManagedTraps)
-        { ::uwvm2::runtime::lib::llvm_jit_managed_runtime_trap(
-            kind,0u,0u); }
-        else
-        { ::uwvm2::runtime::lib::llvm_jit_runtime_trap(
-            kind,0u,0u); }
-        ::fast_io::fast_terminate();
-    }
+    if(!result) [[unlikely]]
+    { llvm_jit_memtag_operation_failure<ManagedTraps>(*memory,first,descriptor->operand_count>1u ? second : 1u,result.operation); }
     return result.operation.value;
 }
 

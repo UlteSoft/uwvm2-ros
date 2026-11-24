@@ -14971,6 +14971,12 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                     ::std::span<::llvm::Value* const>{arguments.data(),descriptor->operand_count},
                     [&](mt::opcode operation,::std::span<::llvm::Value* const> operands) noexcept -> enabled_memtag_ir_result
                     {
+                        bool const private_ordinary{!shadow.shared() && !shadow.hardware_selected() && !state.debug_activation_enabled &&
+                            !state.emit_debug_safe_points && !threaded_host_emission_scope::selected()};
+                        if(operation==mt::opcode::load && private_ordinary)
+                        {
+                            if(auto* tagged=emit_llvm_jit_private_memtag_load(state,operands[0])) { return {true,tagged}; }
+                        }
                         auto const owner{emit_native_memory_object_address()};
                         if(owner==nullptr) { return {}; }
                         auto const wide{ir_builder.getInt64Ty()};
@@ -14985,6 +14991,21 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                         auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
                         auto emit{[&]<mt::opcode Operation>() noexcept -> ::llvm::Value*
                         {
+                            if constexpr(mt::is_allocation_operation(Operation))
+                            {
+                                if(private_ordinary)
+                                {
+                                    auto const type{::llvm::FunctionType::get(address_type,{native,address_type,address_type},false)};
+                                    auto const name{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-private-allocation-v1-",
+                                        static_cast<unsigned>(Operation),u8"-",address_type->getBitWidth())};
+                                    auto const tag{::uwvm2::utils::container::u8string_view{name.data(),name.size()}};
+                                    auto* const target{address_type->getBitWidth()==64u ?
+                                        get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint64_t>>(ir_builder,type,tag) :
+                                        get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint32_t>>(ir_builder,type,tag)};
+                                    if(!target) { return nullptr; }
+                                    return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,{owner,operands[0],operands[1]}));
+                                }
+                            }
                             auto choose{[&]<typename Address,bool Shared>() noexcept
                             {
                                 if(state.debug_activation_enabled)

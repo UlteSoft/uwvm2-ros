@@ -356,6 +356,55 @@ template <typename LoadLength>
     return load;
 }
 
+// Native owner symbols are rebound for each instance when an AOT object is loaded.
+[[nodiscard]] inline ::llvm::Value* get_llvm_jit_memtag_shadow_pointer(runtime_local_func_llvm_jit_emit_state_t& state,
+    runtime_module_storage_t const& module,::uwvm2::extension::memtag::shadow_storage const& shadow,
+    ::std::uint64_t extent) noexcept
+{
+    auto& b{*state.ir_builder};
+    auto tag_name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(module),
+        u8"_memory",state.current_memory_index,u8"_memtag")};
+    return get_llvm_external_host_byte_span_pointer(b,reinterpret_cast<::std::uintptr_t>(shadow.tag_data()),
+        static_cast<::std::size_t>(extent),::uwvm2::utils::container::u8string_view{tag_name.data(),tag_name.size()});
+}
+
+// memtag.load reads the allocation tag even when the input pointer's tag
+// differs. The owner publishes committed shadow before its acquired data length.
+// The separate data-bounds trap survives even if LLVM discards an unused result.
+[[nodiscard]] inline ::llvm::Value* emit_llvm_jit_private_memtag_load(
+    runtime_local_func_llvm_jit_emit_state_t& state, ::llvm::Value* input) noexcept
+{
+    auto const& info{state.selected_memory_access_info};
+    auto const& shadow{info.memory_p->memtag_shadow};
+    auto const maximum{shadow.maximum_memory_bytes()};
+    auto const extent{maximum/16u + (maximum%16u != 0u)};
+    if(!runtime_native_memory_t::can_mmap || !shadow.stable_address() || !shadow.tag_data() ||
+       !info.stable_memory_begin || !info.stable_memory_length_p || !extent || extent>SIZE_MAX) { return nullptr; }
+    auto const& module{*state.local_func_storage_ptr->runtime_module_ptr};
+    auto* const tags{get_llvm_jit_memtag_shadow_pointer(state,module,shadow,extent)};
+    if(!tags) { return nullptr; }
+
+    auto& b{*state.ir_builder};
+    auto const geometry{input->getType()->isIntegerTy(64u) ? ::uwvm2::extension::memtag::memory64_software_geometry :
+        ::uwvm2::extension::memtag::memory32_geometry};
+    auto const address{b.CreateAnd(input,::llvm::ConstantInt::get(input->getType(),geometry.address_mask),"memtag.load.offset")};
+    auto const wide_address{b.CreateZExtOrTrunc(address,b.getInt64Ty())};
+    auto& ir_module{*b.GetInsertBlock()->getModule()};
+    if(!llvm_jit_address_span_within_minimum(address,0u,1u,info.declared_minimum_byte_length,ir_module.getDataLayout()))
+    {
+        auto const length{emit_llvm_jit_memory_length(state,true)};
+        if(!length) { return nullptr; }
+        auto const outside{b.CreateICmpUGE(wide_address,b.CreateZExtOrTrunc(length,b.getInt64Ty()))};
+        emit_llvm_conditional_memory_out_of_bounds_trap(ir_module,b,outside,info.memory_p->diagnostic_owner_memory_index,
+            0u,wide_address,nullptr,length,1u);
+    }
+    auto const granule{b.CreateLShr(address,4u)};
+    auto const index{b.CreateZExtOrTrunc(granule,b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT))};
+    auto const stored{b.CreateLoad(b.getInt8Ty(),b.CreateGEP(b.getInt8Ty(),tags,index),"memtag.load.tag")};
+    stored->setAlignment(::llvm::Align{1u});
+    return b.CreateOr(address,b.CreateShl(b.CreateZExt(stored,input->getType()),geometry.start_bit),"memtag.load.pointer");
+}
+
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_direct_memory_pointer(runtime_local_func_llvm_jit_emit_state_t& state,
     ::std::uint64_t static_offset, ::std::size_t access_size, ::llvm::Value* address, bool is_store = false) noexcept
 {
@@ -435,10 +484,7 @@ template <typename LoadLength>
         auto const& shadow{info.memory_p->memtag_shadow};
         auto const tag_extent{shadow.maximum_memory_bytes() / 16u + (shadow.maximum_memory_bytes() % 16u != 0u)};
         if(tag_extent > SIZE_MAX || !shadow.stable_address() || shadow.tag_data() == nullptr) { return nullptr; }
-        auto tag_name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module),
-            u8"_memory", state.current_memory_index, u8"_memtag")};
-        auto const tags{get_llvm_external_host_byte_span_pointer(b,reinterpret_cast<::std::uintptr_t>(shadow.tag_data()),
-            static_cast<::std::size_t>(tag_extent),::uwvm2::utils::container::u8string_view{tag_name.data(),tag_name.size()})};
+        auto const tags{get_llvm_jit_memtag_shadow_pointer(state,*module,shadow,tag_extent)};
         auto const effective{b.CreateAdd(b.CreateZExtOrTrunc(address,b.getInt64Ty()),b.getInt64(static_offset))};
         bool const deferred_fault{::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()};
         ::std::uint8_t comparison_mask{0xffu};

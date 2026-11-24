@@ -117,6 +117,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {
             auto result{bounds(pointer, offset, bytes)};
             if(!result || bytes == 0u || comparison_mask==0u) { return result; }
+            return check_tags(result,bytes,comparison_mask);
+        }
+
+    private:
+        [[nodiscard]] access_result check_tags(access_result result,::std::uint64_t bytes,
+                                               ::std::uint8_t comparison_mask) const noexcept
+        {
             auto index{static_cast<::std::size_t>(result.address >> 4u)};
             auto const end{static_cast<::std::size_t>(((result.address + bytes - 1u) >> 4u) + 1u)};
             if constexpr(!Shared)
@@ -130,6 +137,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                     // and strict-aliasing UB on all five hosts. Resolve a failed
                     // block below to its exact first mismatching granule.
                     auto const repeated{::std::uint64_t{0x0101010101010101u} * result.pointer_tag};
+                    // Long libc allocation lifetimes often scan kilobytes of
+                    // uniform shadow. Compare 32 granules per loop iteration.
+                    // On a difference the smaller comparisons below locate the
+                    // exact first mismatching granule on either byte order.
+                    while(end-index >= 4u*sizeof(::std::uint64_t))
+                    {
+                        ::std::uint64_t words[4];
+                        ::std::memcpy(words,tags_+index,sizeof words);
+                        if(((words[0]^repeated) | (words[1]^repeated) |
+                            (words[2]^repeated) | (words[3]^repeated)) != 0u) { break; }
+                        index+=4u*sizeof(::std::uint64_t);
+                    }
                     while(end - index >= sizeof(::std::uint64_t))
                     {
                         ::std::uint64_t word{};
@@ -153,6 +172,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             return result;
         }
 
+    public:
         // Tag stores intentionally change the allocation tag; they require the
         // complete memory/shadow bounds proof, not a match with the old tag.
         // No partial update is permitted when any part of the range is invalid.
@@ -174,6 +194,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         {
             auto result{bounds(pointer, 0u, bytes)};
             if(!result || bytes == 0u) { return result; }
+            write_tags(result,bytes);
+            return result;
+        }
+
+        void write_tags(access_result const& result,::std::uint64_t bytes) const noexcept
+        {
             auto const first{static_cast<::std::size_t>(result.address >> 4u)};
             auto const end{static_cast<::std::size_t>(((result.address + bytes - 1u) >> 4u) + 1u)};
 #if defined(__linux__) && defined(__aarch64__)
@@ -190,10 +216,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 { tags_[index].store(result.pointer_tag, ::std::memory_order_relaxed); }
             }
             else { ::std::memset(tags_ + first, result.pointer_tag, end - first); }
-            return result;
         }
 
     public:
+        // Bind a lifecycle instruction's bounds proof to its actual view and
+        // length. Recoloring the pointer preserves both interval endpoints.
+        class allocation_range
+        {
+            friend class shadow_view;
+            shadow_view const& view_;
+            ::std::uint64_t bytes_;
+            access_result proof_;
+
+            allocation_range(shadow_view const& view, Address input, ::std::uint64_t bytes) noexcept
+                : view_{view},bytes_{bytes},proof_{view.bounds(input,0u,bytes)} {}
+        public:
+            [[nodiscard]] access_result const& bounds() const noexcept { return proof_; }
+
+            [[nodiscard]] access_result check(::std::uint8_t expected) const noexcept
+            {
+                auto result{proof_};
+                if(!result || !bytes_) { return result; }
+                result.pointer_tag=expected;
+                return view_.check_tags(result,bytes_,0xffu);
+            }
+            [[nodiscard]] access_result store(::std::uint8_t tag) const noexcept requires (!Shared)
+            {
+                auto result{proof_};
+                if(!result || !bytes_) { return result; }
+                result.pointer_tag=tag;
+                view_.write_tags(result,bytes_);
+                return result;
+            }
+        };
+
+        [[nodiscard]] allocation_range allocation(Address input,::std::uint64_t bytes) const & noexcept
+        { return {*this,input,bytes}; }
+        allocation_range allocation(Address,::std::uint64_t) const && = delete;
+
         // Borrowed for the owner's pinned private operation. Both endpoints
         // must map to actual data and shadow granules before forming the span.
         [[nodiscard]] ::std::span<::std::uint8_t const> private_tag_window(

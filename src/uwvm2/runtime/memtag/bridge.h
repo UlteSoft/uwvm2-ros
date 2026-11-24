@@ -392,6 +392,60 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         return {.operation = descriptor.zeroes_memory ? details::with_snapshot(memory,apply) : apply({})};
     }
 
+    // Compiled private lifecycle instructions carry a fixed opcode and two
+    // Wasm operands. A cached native draw can share the validation/commit
+    // snapshot. Journal callbacks and OS refills must run after the pin ends.
+    template<::uwvm2::extension::memtag::opcode Operation, ::std::unsigned_integral Address, typename Memory>
+    [[nodiscard,gnu::always_inline]] inline auto execute_private_allocation(
+        Memory const& memory,Address input,Address length) noexcept
+        -> ::uwvm2::extension::memtag::operation_result<Address>
+    {
+        namespace mt=::uwvm2::extension::memtag;
+        static_assert(mt::is_allocation_operation(Operation));
+        using result_type=mt::operation_result<Address>;
+        // An owner mismatch has the same runtime-invariant classification as
+        // invalid_owner in the general bridge, including for direct ABI users.
+        if(!details::configured<Address,false>(memory)) [[unlikely]]
+        { return {.error=mt::operation_error::managed_state_required}; }
+
+        constexpr auto descriptor{mt::find_instruction(static_cast<unsigned>(Operation))};
+        constexpr bool randomizes{descriptor->randomizes_tag};
+        bool have_word{};
+        ::std::uint16_t word{};
+        unsigned attempts{};
+        for(;;)
+        {
+            bool needs_refill{}, retry{};
+            auto const result{details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
+            {
+                auto const view{memory.memtag_shadow.template view_under_tag_lease<Address,false>(data.size())};
+                auto entropy=[&](::std::uint16_t& out) noexcept
+                {
+                    if(!have_word && !try_buffered_allocation_entropy(word))
+                    { needs_refill=true; return false; }
+                    out=word;
+                    return true;
+                };
+                return mt::allocation_details::transition(memory.memtag_shadow.allocation_directory(),
+                    memory.memtag_shadow.hardware_selected(),::std::integral_constant<mt::opcode,Operation>{},
+                    input,length,data,view,entropy,retry);
+            })};
+            if constexpr(!randomizes) { return result; }
+            if(needs_refill) [[unlikely]]
+            {
+                ::std::uint8_t low{},high{};
+                if(!next_random_tag(low) || !next_random_tag(high))
+                { return result_type{.error=mt::operation_error::allocation_entropy}; }
+                word=static_cast<::std::uint16_t>(low | (unsigned(high) << 8u));
+                have_word=true;
+                continue;
+            }
+            if(!retry) [[likely]] { return result; }
+            have_word=false;
+            if(++attempts==16u) { return result_type{.error=mt::operation_error::allocation_entropy}; }
+        }
+    }
+
     template<bool Enabled, ::std::unsigned_integral Address, bool Shared, typename Memory,
         typename Random=decltype(&next_random_tag)>
     [[nodiscard]] inline execution_result<Address> execute(

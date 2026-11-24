@@ -90,6 +90,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         auto* actual=current_tag_entropy_observer;
         return actual?actual->next(actual->context,tag,next_native_random_tag):next_native_random_tag(tag);
     }
+    // The private allocation bridge can consume a complete native draw inside a
+    // pinned snapshot only when it needs neither a callback nor a buffer refill.
+    // position is exhausted until the atfork discard hook and OS refill succeed.
+    [[nodiscard]] inline bool try_buffered_allocation_entropy(::std::uint16_t& word) noexcept
+    {
+#if defined(__linux__)
+        auto& buffer{details::entropy_buffer};
+        if(current_tag_entropy_observer || buffer.position > buffer.bytes.size()-2u) { return false; }
+        auto const pos{buffer.position};
+        word=static_cast<::std::uint16_t>(buffer.bytes[pos] | (unsigned(buffer.bytes[pos+1u]) << 8u));
+        buffer.position=pos+2u;
+        return true;
+#else
+        static_cast<void>(word);
+        return false;
+#endif
+    }
     /// @brief Draw a uniform nonzero allocation tag for a newly instantiated linear global.
     /// @details Each draw passes through the same entropy source as a random-tag instruction.
     /// Worker recording and replay therefore observe every rejected byte in order. Independent
