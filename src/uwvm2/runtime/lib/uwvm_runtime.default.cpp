@@ -10217,6 +10217,13 @@ namespace uwvm2::runtime::lib
                     return false;
                 }
             }
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+            // A checkpoint publication uses its native entries, Wasm source and
+            // sealed plans after finalization. Keep a borrow until all symbol
+            // lookups and native ownership checks have finished.
+            auto* const checkpoint_ir{!use_parallel_objects && rec.llvm_jit_full_publication->checkpoint_profile ?
+                merged_module.get() : nullptr};
+#endif
             ::llvm::ExecutionEngine* raw_engine{};
             if(use_parallel_objects)
             {
@@ -10659,6 +10666,16 @@ namespace uwvm2::runtime::lib
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
             if(rec.llvm_jit_full_publication->checkpoint_profile &&
                !checkpoint_root_generation_publication_bridge::seal_actual_full(rec)) { return false; }
+#endif
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+            if(checkpoint_ir != nullptr && rec.llvm_jit_full_publication->engine->removeModule(checkpoint_ir))
+            {
+                // MCJIT retains the loaded object, relocations, code and unwind
+                // registration independently. Drop the compiler IR before a
+                // restored world has to fit next to this live debug session.
+                llvm_jit_module_storage.native_exception_imports = {};
+                ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_deleter{}(checkpoint_ir);
+            }
 #endif
             rec.llvm_jit_ready = true;
             if(materialized_module_id != ::std::numeric_limits<::std::size_t>::max() && materialized_module_id < g_runtime.defined_func_cache.size())

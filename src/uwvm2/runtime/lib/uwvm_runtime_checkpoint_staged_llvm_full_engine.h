@@ -346,6 +346,9 @@ extern "C++"
                     ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
                 if(memory == nullptr) { return {{}, preparation_status::exhausted}; }
                 auto* const memory_observer{memory.get()};
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+                auto* const checkpoint_ir{module.get()};
+#endif
                 auto* const engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
                     .setEngineKind(::llvm::EngineKind::JIT).setOptLevel(policy.codegen_opt_level)
                     .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs)
@@ -424,6 +427,16 @@ extern "C++"
                 if(!data->owner_.matches_unpublished_file()) { return {}; }
                 for(::std::size_t index{}; index != count; ++index)
                 { data->typed_targets_[index] = data->entries_[index].typed; }
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+                // A later module or a repeated restore can reuse the compiler
+                // storage. The loaded object, CFI, symbols and context stay
+                // with this engine through handoff and native retirement.
+                if(data->engine_->removeModule(checkpoint_ir))
+                {
+                    ir.native_exception_imports = {};
+                    ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_deleter{}(checkpoint_ir);
+                }
+#endif
                 // DATA stays exclusively in the returned private nonmoving
                 // owner. No listener commit/provenance epoch/source validation
                 // seal/global slot/publication/readiness call is made here.

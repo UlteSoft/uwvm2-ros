@@ -14,6 +14,16 @@ struct llvm_jit_checkpoint_resume_dispatch_emit_state
     ::llvm::Value* flag_count{};
     ::llvm::AllocaInst* executed_flags{};
     ::llvm::BasicBlock* reject{};
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+    struct numeric_local_landing
+    {
+        ::llvm::BasicBlock* extent{};
+        ::llvm::SwitchInst* sites{};
+    };
+    // Local declarations and allocas belong to this one function. Each
+    // packet size needs its own extent check before reading its local prefix.
+    ::uwvm2::utils::container::std_map<::std::size_t, numeric_local_landing> numeric_landings{};
+#endif
     ::uwvm2::utils::container::std_vector<::std::uint64_t> installed_sites{};
     // Compiler-owned zero SSA inputs remain zero in the public normal body.
     // Only the exact-original-ABI private clone substitutes authenticated

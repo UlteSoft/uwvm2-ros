@@ -29,7 +29,8 @@ static cp::function_plan make_plan()
     entry.slots = {{{cp::types::value_kind::f64}, true}, {{cp::types::value_kind::i64}, true}};
     cp::control_layout function{}; function.end_offset = 7u; entry.controls.push_back(function); plan.sites.push_back(entry);
     auto after{entry}; after.identifier = 2u; after.opcode_offset = 2u; after.operand_count = 1u;
-    after.slots.push_back({{cp::types::value_kind::i64}, true}); plan.sites.push_back(::std::move(after)); return plan;
+    after.slots.push_back({{cp::types::value_kind::i64}, true}); plan.sites.push_back(after);
+    after.identifier = 3u; after.opcode_offset = 3u; plan.sites.push_back(::std::move(after)); return plan;
 }
 template<typename T> static void set_slot(::std::array<::std::byte, 48u>& packet, ::std::size_t index, T value)
 {
@@ -140,9 +141,17 @@ int main()
     ::std::array<cp::types::core_value_type, 1u> exact{plan.sites[1u].slots[2u].type};
     auto const second{emit::emit_runtime_local_func_llvm_jit_checkpoint_resume_landing(state, resume, plan.sites[1u], operand, exact)};
     require(second.valid && second.selected && second.actual_nonlocals.size() == 1u, "typed operand landing");
+    auto const before_increment{builder.CreateLoad(types.getInt64Ty(), state.local_pointers[1u])};
+    builder.CreateStore(builder.CreateAdd(before_increment, types.getInt64(1u)), state.local_pointers[1u]);
+    auto const third{emit::emit_runtime_local_func_llvm_jit_checkpoint_resume_landing(state, resume, plan.sites[2u], second.actual_nonlocals, exact)};
+    require(third.valid && third.selected && third.actual_nonlocals.size() == 1u, "second typed landing with the same packet extent");
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+    require(resume.dispatch->findCaseValue(types.getInt64(2u))->getCaseSuccessor() ==
+            resume.dispatch->findCaseValue(types.getInt64(3u))->getCaseSuccessor(), "equal extents share the checked numeric local prefix");
+#endif
     auto const floating{builder.CreateLoad(types.getDoubleTy(), state.local_pointers[0u])};
     auto const integral{builder.CreateLoad(types.getInt64Ty(), state.local_pointers[1u])};
-    builder.CreateRet(builder.CreateAdd(builder.CreateAdd(builder.CreateFPToUI(floating, types.getInt64Ty()), integral), second.actual_nonlocals[0u]));
+    builder.CreateRet(builder.CreateAdd(builder.CreateAdd(builder.CreateFPToUI(floating, types.getInt64Ty()), integral), third.actual_nonlocals[0u]));
     auto const tail{::llvm::Function::Create(typed_signature, ::llvm::GlobalValue::ExternalLinkage, "cp_typed_tail", *module)};
     ::llvm::IRBuilder<> tail_builder{::llvm::BasicBlock::Create(context, "entry", tail)};
     auto const call{tail_builder.CreateCall(function, {tail->getArg(0u), tail->getArg(1u)})};
@@ -190,7 +199,7 @@ int main()
         // [safe fixed eight bytes] owning engine lifetime BEFORE complete copy.
         ::std::memcpy(::std::addressof(result), reinterpret_cast<void const*>(static_cast<::std::uintptr_t>(target)), sizeof(result)); return result;
     }};
-    require(invoke(2.5, 5u) == 16u && invoke_tail(3.5, 7u) == 19u && calls() == 2u,
+    require(invoke(2.5, 5u) == 17u && invoke_tail(3.5, 7u) == 20u && calls() == 2u,
         "normal floating/integer ABI and real musttail with no restore input");
     ::std::array<::std::byte, 48u> input{}; ::std::array<::std::uint8_t, 2u> markers{1u, 1u};
     set_slot(input, 0u, 4.5); set_slot(input, 1u, ::std::uint64_t{70u}); set_slot(input, 2u, ::std::uint64_t{80u});
@@ -198,9 +207,11 @@ int main()
     set_global("cp_payload", payload); set_global("cp_flags", original_flags);
     set_global("cp_flag_count", ::std::uintptr_t{markers.size()});
     set_global("cp_selector", ::std::uint64_t{1u}); set_global("cp_payload_bytes", ::std::uintptr_t{32u});
-    require(invoke(999.5, 999u) == 83u, "logical entry restores locals while retaining actual typed ABI");
+    require(invoke(999.5, 999u) == 84u, "logical entry restores locals while retaining actual typed ABI");
     set_global("cp_selector", ::std::uint64_t{2u}); set_global("cp_payload_bytes", ::std::uintptr_t{input.size()});
-    require(invoke_tail(999.5, 999u) == 154u, "logical operand restore reached through same-ABI musttail");
+    require(invoke_tail(999.5, 999u) == 155u, "first operand landing runs the increment");
+    set_global("cp_selector", ::std::uint64_t{3u});
+    require(invoke_tail(999.5, 999u) == 154u, "second equal-extent landing skips the increment");
     auto const sentinel{input};
     set_global("cp_selector", ::std::uint64_t{99u}); require(invoke(0.5, 0u) == UINT64_MAX && input == sentinel, "unknown logical selector rejects without input mutation");
     set_global("cp_selector", ::std::uint64_t{2u}); set_global("cp_payload_bytes", ::std::uintptr_t{47u});
@@ -210,8 +221,8 @@ int main()
     markers[1u] = 0u; require(invoke(0.5, 0u) == UINT64_MAX && input == sentinel, "unavailable proven parameter rejects");
     markers[1u] = 1u; set_global("cp_payload", static_cast<void*>(nullptr));
     require(invoke(0.5, 0u) == UINT64_MAX && input == sentinel, "null payload rejects before payload read");
-    require(invoke_ordinary(6.5, 9u) == 24u && calls() == 9u,
+    require(invoke_ordinary(6.5, 9u) == 24u && calls() == 10u,
         "actual ordinary typed code neither reads invalid context nor calls its supplier");
-    require(calls() == 9u, "one private context DATA call per selected typed entry");
+    require(calls() == 10u, "one private context DATA call per selected typed entry");
     ::fast_io::io::println("checkpoint typed ABI context IR: passed unchanged f64/i64 ABI, musttail, logical landing and negative bounds");
 }

@@ -149,6 +149,9 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
     // scan when recording a large straight-line function.
     if(!resume.installed_sites.empty() && resume.installed_sites.back() >= site.identifier) { return {}; }
     auto& builder{*state.ir_builder};
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+    bool share_numeric_locals{site.local_count >= 2u};
+#endif
     for(::std::size_t i{}; i != site.slots.size(); ++i)
     {
         auto const carrier{checkpoint_packet_physical_carrier(site.slots[i].type)};
@@ -161,6 +164,10 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
             if(local == nullptr || local->getFunction() != state.llvm_function || local->getAllocatedType() != native ||
                get_llvm_type_from_wasm_value_type(builder.getContext(), state.local_types.index_unchecked(i)) != native ||
                plan->sites.front().slots[i].type != site.slots[i].type) { return {}; }
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+            if(!site.slots[i].initialized || site.slots[i].type.kind == checkpoint::types::value_kind::reference)
+            { share_numeric_locals = false; }
+#endif
         }
         else
         {
@@ -170,11 +177,76 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
         }
     }
     auto const normal{builder.GetInsertBlock()};
+    auto const make_merge = [&]
+    {
+        return awaiting_child_only ? nullptr :
+            ::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.merge", state.llvm_function);
+    };
+    auto const finish_site = [&](::llvm::IRBuilder<>& restore, ::llvm::BasicBlock* landing, ::llvm::BasicBlock* merged)
+        -> llvm_jit_checkpoint_resume_landing_emit_result
+    {
+        ::uwvm2::utils::container::std_vector<::llvm::Value*> restored{}; restored.reserve(actual_nonlocals.size());
+        for(::std::size_t i{}; i != actual_nonlocals.size(); ++i)
+        {
+            auto const index{site.local_count + i};
+            auto const native{get_llvm_type_from_wasm_value_type(restore.getContext(), checkpoint_packet_physical_carrier(site.slots[index].type))};
+            // [actual immutable complete typed packet ... index*16 ... N*16] end
+            // [safe                                                      ] exact
+            // nonlocal count and width<=16 BEFORE advancing the packet byte offset.
+            auto const slot{restore.CreateInBoundsGEP(restore.getInt8Ty(), resume.payload, restore.getInt64(index * checkpoint::native_slot_bytes))};
+            auto const value{restore.CreateLoad(native, slot)}; value->setAlignment(::llvm::Align{1u}); restored.push_back(value);
+        }
+        // Reconstruct the actual if continuation storage before ANY resumed root
+        // publication or future else/implicit-identity edge uses these values.
+        // The original lexical EH targets remain attached to this LLVM function;
+        // future invokes/throw_ref enter those real PHIs, never a fake handler stack.
+        if(!restore_runtime_local_func_llvm_jit_checkpoint_saved_if(state,restore,site,restored)) { return {}; }
+        auto const restored_predecessor{restore.GetInsertBlock()};
+        if(awaiting_child_only)
+        {
+            // The normal call operands were computed before this selector edge and
+            // do not dominate its restored path. Keep the real normal builder at
+            // its original insertion point; ONLY the restored path may enter the
+            // private nested child bridge using its independently owned child frame.
+            resume.dispatch->addCase(builder.getInt64(site.identifier), landing);
+            resume.installed_sites.push_back(site.identifier);
+            return {.valid = true, .selected = true, .actual_nonlocals = ::std::move(restored),
+                    .restored_predecessor = restored_predecessor};
+        }
+        restore.CreateBr(merged);
+        builder.CreateBr(merged); builder.SetInsertPoint(merged);
+        llvm_jit_checkpoint_resume_landing_emit_result out{.valid = true, .selected = true}; out.actual_nonlocals.reserve(actual_nonlocals.size());
+        for(::std::size_t i{}; i != actual_nonlocals.size(); ++i)
+        {
+            auto const phi{builder.CreatePHI(actual_nonlocals[i]->getType(), 2u, "checkpoint.resume.logical.value")};
+            phi->addIncoming(actual_nonlocals[i], normal); phi->addIncoming(restored[i], restored_predecessor);
+            out.actual_nonlocals.push_back(phi);
+        }
+        resume.dispatch->addCase(builder.getInt64(site.identifier), landing);
+        resume.installed_sites.push_back(site.identifier);
+        return out;
+    };
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+    // All numeric locals have the same declared types, entry allocas and
+    // required initialization markers at every eligible site in this function.
+    // Sites with the same packet extent can share that entire restoration.
+    auto* const shared{share_numeric_locals ? ::std::addressof(resume.numeric_landings[site.slots.size()]) : nullptr};
+    auto const add_operand_landing = [&](::llvm::SwitchInst& sites)
+    {
+        auto const block{::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.operands", state.llvm_function)};
+        sites.addCase(builder.getInt64(site.identifier), block);
+        return block;
+    };
+    if(shared != nullptr && shared->sites != nullptr)
+    {
+        ::llvm::IRBuilder<> restore{add_operand_landing(*shared->sites)};
+        return finish_site(restore, shared->extent, make_merge());
+    }
+#endif
     auto const landing{::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.extent", state.llvm_function)};
     auto const flags_checked{::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.flags", state.llvm_function)};
     auto const values{::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.values", state.llvm_function)};
-    auto const merged{awaiting_child_only ? nullptr :
-        ::llvm::BasicBlock::Create(builder.getContext(), "checkpoint.resume.merge", state.llvm_function)};
+    auto const merged{make_merge()};
     ::llvm::IRBuilder<> restore{landing};
     auto const integer{restore.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
     auto extent{restore.CreateAnd(restore.CreateICmpEQ(resume.payload_bytes,
@@ -234,44 +306,13 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
         restore.CreateStore(value, state.local_pointers.index_unchecked(i));
         if(next != nullptr) { restore.CreateBr(next); restore.SetInsertPoint(next); }
     }
-    ::uwvm2::utils::container::std_vector<::llvm::Value*> restored{}; restored.reserve(actual_nonlocals.size());
-    for(::std::size_t i{}; i != actual_nonlocals.size(); ++i)
+#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+    if(shared != nullptr)
     {
-        auto const index{site.local_count + i};
-        auto const native{get_llvm_type_from_wasm_value_type(restore.getContext(), checkpoint_packet_physical_carrier(site.slots[index].type))};
-        // [actual immutable complete typed packet ... index*16 ... N*16] end
-        // [safe                                                      ] exact
-        // nonlocal count and width<=16 BEFORE advancing the packet byte offset.
-        auto const slot{restore.CreateInBoundsGEP(restore.getInt8Ty(), resume.payload, restore.getInt64(index * checkpoint::native_slot_bytes))};
-        auto const value{restore.CreateLoad(native, slot)}; value->setAlignment(::llvm::Align{1u}); restored.push_back(value);
+        shared->extent = landing;
+        shared->sites = restore.CreateSwitch(resume.dispatch->getCondition(), resume.reject);
+        restore.SetInsertPoint(add_operand_landing(*shared->sites));
     }
-    // Reconstruct the actual if continuation storage before ANY resumed root
-    // publication or future else/implicit-identity edge uses these values.
-    // The original lexical EH targets remain attached to this LLVM function;
-    // future invokes/throw_ref enter those real PHIs, never a fake handler stack.
-    if(!restore_runtime_local_func_llvm_jit_checkpoint_saved_if(state,restore,site,restored)) { return {}; }
-    auto const restored_predecessor{restore.GetInsertBlock()};
-    if(awaiting_child_only)
-    {
-        // The normal call operands were computed before this selector edge and
-        // do not dominate its restored path. Keep the real normal builder at
-        // its original insertion point; ONLY the restored path may enter the
-        // private nested child bridge using its independently owned child frame.
-        resume.dispatch->addCase(builder.getInt64(site.identifier), landing);
-        resume.installed_sites.push_back(site.identifier);
-        return {.valid = true, .selected = true, .actual_nonlocals = ::std::move(restored),
-                .restored_predecessor = restored_predecessor};
-    }
-    restore.CreateBr(merged);
-    builder.CreateBr(merged); builder.SetInsertPoint(merged);
-    llvm_jit_checkpoint_resume_landing_emit_result out{.valid = true, .selected = true}; out.actual_nonlocals.reserve(actual_nonlocals.size());
-    for(::std::size_t i{}; i != actual_nonlocals.size(); ++i)
-    {
-        auto const phi{builder.CreatePHI(actual_nonlocals[i]->getType(), 2u, "checkpoint.resume.logical.value")};
-        phi->addIncoming(actual_nonlocals[i], normal); phi->addIncoming(restored[i], restored_predecessor);
-        out.actual_nonlocals.push_back(phi);
-    }
-    resume.dispatch->addCase(builder.getInt64(site.identifier), landing);
-    resume.installed_sites.push_back(site.identifier);
-    return out;
+#endif
+    return finish_site(restore, landing, merged);
 }
