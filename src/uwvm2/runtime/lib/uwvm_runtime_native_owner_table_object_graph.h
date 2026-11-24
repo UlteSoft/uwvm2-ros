@@ -39,6 +39,8 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
         // Metadata allocations remain bounded independently of the complete emitted
         // object. Large text/data sections do not enlarge the owner record ledger.
         inline constexpr ::std::size_t max_object_bytes{64u*1024u*1024u}, max_sections{4096u}, max_rows{262144u};
+        [[nodiscard]] inline bool owner_table_section(::llvm::StringRef name) noexcept
+        { return name==".uwvm.native.owners" || name==".uwvm$NO" || name=="__uwvm_nowners"; }
         struct point { ::std::uint64_t section{}, offset{}, size{}; bool known{}; };
         [[nodiscard]] inline bool text_point(::llvm::object::ObjectFile const& object,
             ::llvm::object::SectionRef const& section, ::std::uint64_t offset, point& out) noexcept
@@ -213,8 +215,7 @@ namespace uwvm2::runtime::lib::details::native_owner_object_graph
             if(++section_count>detail::max_sections) { return false; }
             auto name{section.getName()};
             if(!name) { ::llvm::consumeError(name.takeError());return false; }
-            bool const table{*name==".uwvm.native.owners" || *name==".uwvm$NO" || *name=="__uwvm_nowners"};
-            if(!table) { continue; }
+            if(!detail::owner_table_section(*name)) { continue; }
             if(++table_count!=1u || section.isText()) { return false; }
             auto bytes{section.getContents()};
             if(!bytes) { ::llvm::consumeError(bytes.takeError());return false; }

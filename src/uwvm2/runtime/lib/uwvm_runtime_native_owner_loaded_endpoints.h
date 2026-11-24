@@ -115,30 +115,50 @@ namespace uwvm2::runtime::lib::details
         {
             valid_=false;sealed_=false;staged_frozen_=false;bodies_.clear();objects_.clear();claims_.clear();seen_.clear();total_symbols_=0u;total_object_bytes_=0u;
         }
+        struct loaded_section { ::std::uint64_t index{},size{},load{};bool text{}; };
+        [[nodiscard]] bool charge_staged_object(::llvm::object::ObjectFile const& object)
+        {
+            auto const object_bytes{object.getData().size()};
+            if(!staged_budget_owner_ || !staged_charge_ || object_bytes>max_total_object_bytes ||
+               !staged_charge_(staged_budget_owner_,object_bytes,1u)) { return false; }
+            // LLVM owns one complete object. The owner rows and ELFv1 descriptors
+            // expand into graph workspace. Text, line programs and other payloads
+            // stay in the loader's object and incur only the object charge.
+            ::std::size_t sections{};
+            for(auto const& section:object.sections())
+            {
+                if(++sections>native_owner_object_graph::detail::max_sections ||
+                   !staged_charge_(staged_budget_owner_,1u,2u*sizeof(loaded_section))) { return false; }
+                auto name{section.getName()};
+                if(!name) { ::llvm::consumeError(name.takeError());return false; }
+                if(native_owner_object_graph::detail::owner_table_section(*name) || *name==".opd")
+                {
+                    auto const bytes{section.getSize()};
+                    if(bytes>native_owner_object_graph::detail::max_object_bytes || bytes>object_bytes ||
+                       !staged_charge_(staged_budget_owner_,static_cast<::std::size_t>(bytes),16u)) { return false; }
+                }
+            }
+            // Repeated symbol names can share object string-table bytes. Charge
+            // each copied claim and name before decoding the complete ledger.
+            ::std::size_t symbols{};
+            for(auto const& symbol:object.symbols())
+            {
+                if(++symbols>native_owner_function_claims::detail::max_symbols) { return false; }
+                auto name{symbol.getName()};
+                if(!name) { ::llvm::consumeError(name.takeError());return false; }
+                if(name->size()>native_owner_table_format::max_name_bytes ||
+                   !staged_charge_(staged_budget_owner_,1u,2u*sizeof(native_owner_function_claims::claim)) ||
+                   !staged_charge_(staged_budget_owner_,name->size(),4u)) { return false; }
+            }
+            return true;
+        }
         [[nodiscard]] bool collect_loaded(ObjectKey key,::llvm::object::ObjectFile const& object,
             ::llvm::RuntimeDyld::LoadedObjectInfo const& loaded)
         {
             if(!valid_ || sealed_ || staged_frozen_ || !attached_ || engine_==nullptr || key==0u ||
                objects_.size()==max_objects || object.getBytesInAddress()!=sizeof(::std::uintptr_t)) { return false; }
             for(auto const previous:objects_) { if(previous==key) { return false; } }
-            if(staged_only_)
-            {
-                // Reserve bounded object/graph workspace before decoding or
-                // copying the complete claim ledger. Charge repeated symbol
-                // names individually rather than trusting string-table size.
-                if(!staged_budget_owner_ || !staged_charge_ || object.getData().size()>max_total_object_bytes ||
-                   !staged_charge_(staged_budget_owner_,object.getData().size(),16u)) { return false; }
-                ::std::size_t symbols{};
-                for(auto const& symbol:object.symbols())
-                {
-                    if(symbols==native_owner_function_claims::detail::max_symbols) { return false; }
-                    ++symbols;auto name=symbol.getName();
-                    if(!name) { ::llvm::consumeError(name.takeError());return false; }
-                    if(name->size()>native_owner_table_format::max_name_bytes ||
-                       !staged_charge_(staged_budget_owner_,1u,2u*sizeof(native_owner_function_claims::claim)) ||
-                       !staged_charge_(staged_budget_owner_,name->size(),4u)) { return false; }
-                }
-            }
+            if(staged_only_ && !charge_staged_object(object)) { return false; }
             native_owner_function_claims::image claims{};
             if(!native_owner_function_claims::collect(object,claims) || !claims.endpoints_unambiguous() ||
                bodies_.size()>native_owner_object_graph::detail::max_rows ||
@@ -147,7 +167,6 @@ namespace uwvm2::runtime::lib::details
                claims.claims.size()>native_owner_function_claims::detail::max_symbols-total_symbols_ ||
                total_object_bytes_>max_total_object_bytes || object.getData().size()>max_total_object_bytes-total_object_bytes_)
             { return false; }
-            struct loaded_section { ::std::uint64_t index{},size{},load{};bool text{}; };
             ::uwvm2::utils::container::std_vector<loaded_section> sections{};
             for(auto const& section:object.sections())
             {
