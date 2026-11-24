@@ -79,7 +79,10 @@ static void restored_complete(void* context,domain_type const* domain,
     namespace snapshot=::uwvm2::runtime::diagnostic::snapshot_state;
     using state=lib::llvm_jit_checkpoint_native_retirement_status;
     initial.status=control_error::invalid_state;
-    auto deadline=clock_type::now()+(::std::max)(timeout,::std::chrono::milliseconds{30000});
+    // Decoding the archive and compiling the private LLVM world are synchronous.
+    // Start each bounded native wait when its own phase is submitted.
+    auto const wait_budget=(::std::max)(timeout,::std::chrono::milliseconds{30000});
+    auto const wait_deadline=[wait_budget]() noexcept { return clock_type::now()+wait_budget; };
     try
     {
         if(command.operation!=operation::status || command.payload_size || command.wait_for_event ||
@@ -159,7 +162,7 @@ static void restored_complete(void* context,domain_type const* domain,
             }
             // Never retain mutex_ over worker retirement: native completion and
             // the new before-park callback must acquire this same controller.
-            auto result=lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,requested,deadline);
+            auto result=lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,requested,wait_deadline());
             {::std::lock_guard lock{mutex_};snapshot_result_=result;snapshot_operation_=result.operation;}
         }
         else
@@ -172,7 +175,7 @@ static void restored_complete(void* context,domain_type const* domain,
             }
             if(!published && pending)
             {
-                auto result=lib::llvm_jit_checkpoint_continue_native_retirement_host_api(pending,deadline);
+                auto result=lib::llvm_jit_checkpoint_continue_native_retirement_host_api(pending,wait_deadline());
                 ::std::lock_guard lock{mutex_};snapshot_result_=result;
             }
         }
@@ -180,7 +183,7 @@ static void restored_complete(void* context,domain_type const* domain,
         {::std::lock_guard lock{mutex_};result=snapshot_result_;published=snapshot_published_;}
         if(!published && result.status==state::prepared_world_ready_closed)
         {
-            result=lib::llvm_jit_checkpoint_publish_prepared_instance_host_api(result.operation,deadline);
+            result=lib::llvm_jit_checkpoint_publish_prepared_instance_host_api(result.operation,wait_deadline());
             ::std::lock_guard lock{mutex_};snapshot_result_=result;published=snapshot_published_;
         }
         initial.restore_detail=static_cast<unsigned>(result.status);
@@ -194,6 +197,11 @@ static void restored_complete(void* context,domain_type const* domain,
             ::std::lock_guard lock{mutex_};
             if(!result.operation && !published)
             {
+                // A deadline can also expire before the native call starts.
+                // The deadline guard leaves an existing retirement operation
+                // untouched. Keep its owner for dump restore continue.
+                if(result.status==state::invalid_deadline && snapshot_operation_)
+                {initial.restore_phase=7u;initial.restore_pending=true;return initial;}
                 restoration_in_progress_=false;snapshot_operation_.reset();
                 // This explicit native outcome is issued before retirement.
                 // A missing operation token alone is not proof that an unknown
@@ -202,7 +210,7 @@ static void restored_complete(void* context,domain_type const* domain,
             }
             return initial;
         }
-        if(!wait_for_stop(deadline,interrupt))
+        if(!wait_for_stop(wait_deadline(),interrupt))
         {initial.restore_phase=8u;initial.restore_applied=true;initial.restore_pending=true;return initial;}
         auto stopped=inspect();
         {
