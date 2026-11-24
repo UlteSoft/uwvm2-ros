@@ -145,9 +145,10 @@ int main()
     builder.CreateStore(builder.CreateAdd(before_increment, types.getInt64(1u)), state.local_pointers[1u]);
     auto const third{emit::emit_runtime_local_func_llvm_jit_checkpoint_resume_landing(state, resume, plan.sites[2u], second.actual_nonlocals, exact)};
     require(third.valid && third.selected && third.actual_nonlocals.size() == 1u, "second typed landing with the same packet extent");
-#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+#if defined(__linux__) && defined(__arm__)
     require(resume.dispatch->findCaseValue(types.getInt64(2u))->getCaseSuccessor() ==
-            resume.dispatch->findCaseValue(types.getInt64(3u))->getCaseSuccessor(), "equal extents share the checked numeric local prefix");
+            resume.dispatch->findCaseValue(types.getInt64(3u))->getCaseSuccessor(),
+            "equal extents share the checked numeric local prefix on 32-bit Linux ARM");
 #endif
     auto const floating{builder.CreateLoad(types.getDoubleTy(), state.local_pointers[0u])};
     auto const integral{builder.CreateLoad(types.getInt64Ty(), state.local_pointers[1u])};

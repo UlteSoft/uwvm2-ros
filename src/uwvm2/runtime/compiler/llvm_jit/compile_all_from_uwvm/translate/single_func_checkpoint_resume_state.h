@@ -14,12 +14,13 @@ struct llvm_jit_checkpoint_resume_dispatch_emit_state
     ::llvm::Value* flag_count{};
     ::llvm::AllocaInst* executed_flags{};
     ::llvm::BasicBlock* reject{};
-#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+#if defined(__linux__) && defined(__arm__)
     struct numeric_local_landing
     {
         ::llvm::BasicBlock* extent{};
         ::llvm::SwitchInst* sites{};
     };
+    // On both Linux ARM float ABIs, the live and staged engines share a 32-bit address space.
     // Local declarations and allocas belong to this one function. Each
     // packet size needs its own extent check before reading its local prefix.
     ::uwvm2::utils::container::std_map<::std::size_t, numeric_local_landing> numeric_landings{};

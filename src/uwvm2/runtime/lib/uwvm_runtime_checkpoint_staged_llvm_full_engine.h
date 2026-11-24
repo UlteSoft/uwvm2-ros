@@ -346,7 +346,7 @@ extern "C++"
                     ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
                 if(memory == nullptr) { return {{}, preparation_status::exhausted}; }
                 auto* const memory_observer{memory.get()};
-#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+#if defined(__linux__) && defined(__arm__)
                 auto* const checkpoint_ir{module.get()};
 #endif
                 auto* const engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
@@ -427,7 +427,7 @@ extern "C++"
                 if(!data->owner_.matches_unpublished_file()) { return {}; }
                 for(::std::size_t index{}; index != count; ++index)
                 { data->typed_targets_[index] = data->entries_[index].typed; }
-#if defined(__linux__) && defined(__arm__) && defined(__ARM_PCS_VFP)
+#if defined(__linux__) && defined(__arm__)
                 // A later module or a repeated restore can reuse the compiler
                 // storage. The loaded object, CFI, symbols and context stay
                 // with this engine through handoff and native retirement.
