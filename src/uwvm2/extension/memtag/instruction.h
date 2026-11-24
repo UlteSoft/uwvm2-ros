@@ -57,6 +57,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     };
 
     enum class address_width : ::std::uint_least8_t { i32 = 32u, i64 = 64u };
+    struct allocation_extent
+    {
+        ::std::uint64_t first{}, last{}; // inclusive linear granule indices
+        ::std::uint8_t tag{}, parent{};
+        bool active{}, permanent{};
+    };
     enum class operand_role : ::std::uint_least8_t
     {
         none, address, byte_length, tag, tag_source, address_offset, tag_offset

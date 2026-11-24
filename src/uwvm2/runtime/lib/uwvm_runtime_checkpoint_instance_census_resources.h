@@ -448,10 +448,6 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
                 if(transaction->section_bytes.size() > UINTPTR_MAX - base || first < base || last <= first ||
                     last - base > transaction->section_bytes.size()) { return state.fail(census_error::invalid_shape); }
                 auto const offset{static_cast<::std::size_t>(first - base)}, length{static_cast<::std::size_t>(last - first)};
-                if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
-                   ::uwvm2::extension::memtag::may_require_allocation_directory(
-                       {reinterpret_cast<::std::byte const*>(first),length}))
-                { return state.fail(census_error::unavailable_capability); }
                 if(!state.charge_payload(length)) { return false; }
                 auto& bytes{state.object(wire)->bytes}; bytes.resize(length);
                 // [actual committed section owner ... offset][exact local-decls+body] end
@@ -521,16 +517,26 @@ struct census_allocator_quiescence
     auto const& tags{actual.memory.memtag_shadow};
     if(tags.enabled())
     {
-        // The collector has already parked all VM workers and closed host access.
-        // This state format stores raw shadow bytes, not managed extents or reservations.
-        if(!tags.allocation_directory().empty()) { return state.fail(census_error::unavailable_capability); }
-        auto const count{length/16u};
-        if(!state.charge_payload(count)) { return false; }
-        memory->words[4u]=tags.width()==::uwvm2::extension::memtag::address_width::i32?4u:8u;
-        memory->bytes.resize(count);
-        auto const result{::uwvm2::extension::memtag::copy_debug_tags(tags,length,0u,length,
-            {reinterpret_cast<::std::uint8_t*>(memory->bytes.data()),count})};
-        if(result.status!=::uwvm2::extension::memtag::debug_tag_status::available || result.count!=count)
+        namespace mt=::uwvm2::extension::memtag;
+        auto const width{declaration.address64 ? mt::address_width::i64 : mt::address_width::i32};
+        if(tags.width()!=width || tags.shared()!=declaration.shared) { return state.fail(census_error::invalid_shape); }
+        // The same closed host gate and parked cohort protect the shadow and
+        // both visits to its directory. AVL order is independent of node addresses.
+        auto const& directory{tags.allocation_directory()};
+        auto const extents{mt::checkpoint_extent_count(directory)};
+        auto const granules{length/static_cast<::std::size_t>(mt::granule_size)};
+        if(granules>memory->bytes.max_size() || extents>(memory->bytes.max_size()-granules)/mt::checkpoint_extent_bytes)
+        { return state.fail(census_error::limit_exceeded); }
+        auto const payload{granules+extents*mt::checkpoint_extent_bytes};
+        if(!state.charge_payload(payload)) { return false; }
+        memory->words[4u]=declaration.address64 ? 8u : 4u;
+        memory->words[5u]=mt::checkpoint_directory_revision;
+        memory->words[6u]=extents;
+        memory->bytes.resize(payload);
+        auto const result{mt::copy_debug_tags(tags,length,0u,length,
+            {reinterpret_cast<::std::uint8_t*>(memory->bytes.data()),granules})};
+        if(result.status!=mt::debug_tag_status::available || result.count!=granules ||
+           !mt::copy_checkpoint_extents(directory,::std::span{memory->bytes}.subspan(granules)))
         { return state.fail(census_error::invalid_shape); }
     }
     // Scan every committed page through the same allocation-tag-aware copy
@@ -811,7 +817,7 @@ template<typename Memory>
         auto const* file{pin.source->actual_validated_file(static_cast<::std::size_t>(pin.id), epoch_, pin.module)};
         if(file == nullptr || file->binfmt_ver != 1u || !file->has_owned_source_image() || file->source_size() < 8u ||
             (!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
-             !::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(*file)) ||
+             !::uwvm2::uwvm::runtime::validator::admits_memtag_checkpoint(*file,true)) ||
             !census_declaration_preflight(state, owner, *file, file->wasm_module_storage.wasm_binfmt_ver1_storage))
         { return state.fail(census_error::unavailable_capability); }
         auto const& module{*pin.module};

@@ -62,6 +62,7 @@ extern "C++"
         // frame owners across drain. New source outlives context and staging
         // rollback, so every private shell is destroyed while all owners live.
         state_type saved_{};
+        bool includes_memtag_directories_{};
         // Actual process-local compilation DATA, never a persisted build/provider
         // manifest or file restore proof. Each original source is bound below.
         ::uwvm2::runtime::checkpoint::compilation_profile::cache_identity_type observed_profile_{};
@@ -151,6 +152,28 @@ extern "C++"
             }
             return true;
         }
+        [[nodiscard]] bool check_source_memory_owners(::std::size_t owner, module_type const& source) const noexcept
+        {
+            namespace mt=::uwvm2::extension::memtag;
+            ::std::size_t first{}, imports{}, locals{};
+            if(!wire_space<2u>(owner,first,imports,locals) || imports!=source.imported_memory_vec_storage.size() ||
+               locals!=source.local_defined_memory_vec_storage.size()) { return false; }
+            auto const* instance{lookup(modules_[owner].instance)};
+            for(::std::size_t local{}; local!=locals; ++local)
+            {
+                auto const* memory{lookup(instance->links[first+imports+local])};
+                auto const& shadow{source.local_defined_memory_vec_storage.index_unchecked(local).memory.memtag_shadow};
+                if(!memory || memory->kind!=checkpoint_world_data::cp::object_kind::memory ||
+                   (memory->words[4]!=0u)!=shadow.enabled()) { return false; }
+                if(!shadow.enabled()) { continue; }
+                if(memory->words[4]!=(shadow.width()==mt::address_width::i32 ? 4u : 8u) ||
+                   (memory->flags!=0u)!=shadow.shared()) { return false; }
+                mt::checkpoint_tag_image image{};
+                if(!mt::split_checkpoint_tag_image(static_cast<unsigned>(memory->words[4]),memory->words[5],memory->words[6],memory->bytes,image) ||
+                   !mt::matches_checkpoint_permanent_extents(shadow,image)) { return false; }
+            }
+            return true;
+        }
         [[nodiscard]] bool bind_actual_modules(source_owner const& original, ::std::uint_least64_t observed_epoch)
         {
             namespace cp = checkpoint_world_data::cp;
@@ -230,6 +253,7 @@ extern "C++"
                 }
                 if(instance == 0u) { return fail(preparation_status::source_mismatch); }
                 modules_.push_back({member.id, SIZE_MAX, ::std::addressof(found->second), member.new_file, module_ids[n], instance});
+                if(!check_source_memory_owners(n,*member.module)) { return fail(preparation_status::source_mismatch); }
             }
             // Preserve the source-bound dense module IDs. The temporary
             // initializer registry may iterate in another order (notably with
@@ -430,7 +454,8 @@ extern "C++"
                            function.function_type_ptr!=types.type_section_begin+static_cast<::std::size_t>(object->words[2u]) ||
                            (object->words[1u]==1u && !object->bytes.empty()) || (object->words[1u]>1u && object->bytes.empty()))
                         { return fail(preparation_status::source_mismatch); }
-                        if(object->words[1u]>1u && !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
+                        if(object->words[1u]>1u && !includes_memtag_directories_ &&
+                           !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
                            ::uwvm2::extension::memtag::may_require_allocation_directory(
                                {object->bytes.data(),object->bytes.size()}))
                         { return fail(preparation_status::source_mismatch); }
@@ -902,6 +927,7 @@ extern "C++"
         [[nodiscard]] bool fill_memory_object(object_id id)
         {
             namespace cp=checkpoint_world_data::cp;
+            namespace mt=::uwvm2::extension::memtag;
             auto const* saved{lookup(id)};auto const* target{native(id)};
             if(saved==nullptr || saved->kind!=cp::object_kind::memory || target==nullptr || target->owner>=modules_.size() ||
                target->local>=records<2u,false>(*modules_[target->owner].actual).size()) { return fail(preparation_status::source_mismatch); }
@@ -922,12 +948,16 @@ extern "C++"
                 chunks.push_back({object.words[0u],{object.bytes.data(),object.bytes.size()}});
             }
             auto const remaining{maximum_native_bytes_-native_bytes_};
-            if(!charge_native(saved->words[1u],65536u) || !charge_native(saved->bytes.size(),1u) || remaining>SIZE_MAX ||
-               !context_->stage_saved_memory_image(actual,static_cast<unsigned>(saved->words[0u]),saved->flags!=0u,
-                   saved->words[1u],saved->words[2u],saved->words[3u],{chunks.data(),chunks.size()},
-                   static_cast<unsigned>(saved->words[4u]),{saved->bytes.data(),saved->bytes.size()},static_cast<::std::size_t>(remaining)))
-            { return fail(preparation_status::allocation_failed); }
-            return true;
+            mt::checkpoint_tag_image image{};
+            auto const tag_bits{static_cast<unsigned>(saved->words[4])};
+            if(!mt::split_checkpoint_tag_image(tag_bits,saved->words[5],saved->words[6],saved->bytes,image))
+            { return fail(preparation_status::malformed); }
+            if(remaining>SIZE_MAX || !charge_native(saved->words[1u],65536u) || !charge_native(image.tags.size(),1u) ||
+               !charge_native(saved->words[6],mt::managed_allocations::bytes_per_extent))
+            { return fail(preparation_status::quota_exceeded); }
+            return context_->stage_saved_memory_image(actual,static_cast<unsigned>(saved->words[0u]),saved->flags!=0u,
+                saved->words[1u],saved->words[2u],saved->words[3u],{chunks.data(),chunks.size()},
+                tag_bits,image,static_cast<::std::size_t>(remaining)) || fail(preparation_status::allocation_failed);
         }
         [[nodiscard]] bool fill_table_object(object_id id)
         {
@@ -1131,6 +1161,15 @@ extern "C++"
                 result->staged_gc_.native_budget_charge_=&charge_staged_native_backing;
                 if(!result->charge_exclusive_graph_copy(saved)) { return {}; }
                 result->saved_=saved;result->observed_profile_=current_profile->cache_identity();
+                // Earlier State10 writers captured only shadows. Managed sources
+                // require an explicit directory, including an empty one, on
+                // every tagged owner. Actual enabled owners are bound below.
+                for(auto const& object:saved.objects)
+                {
+                    if(object.kind!=cp::object_kind::memory || object.words[4]==0u) { continue; }
+                    result->includes_memtag_directories_=object.words[5]==::uwvm2::extension::memtag::checkpoint_directory_revision;
+                    if(!result->includes_memtag_directories_) { break; }
+                }
                 auto const remaining{maximum_native_bytes-result->native_bytes_};
                 auto const source_cap{static_cast<::std::size_t>((::std::min)(remaining,static_cast<::std::uint64_t>(maximum_original_source_bytes)))};
                 auto copied{context_type::prepare_owned_original_source(original,actual_epoch,source_cap)};
@@ -1140,7 +1179,7 @@ extern "C++"
                 for(auto const& file:result->prepared_source_->preload_files_)
                 { if(!result->charge_native(file.source_size(),1u)) { return {}; } }
                 result->context_.reset(::uwvm2::utils::allocator::fast_io_strict::object<context_type>([&](context_type* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) context_type{result->prepared_source_,result->staged_gc_}; }));
-                if(result->context_->build_resource_skeleton()!=context_type::skeleton_result::built ||
+                if(result->context_->build_resource_skeleton(result->includes_memtag_directories_)!=context_type::skeleton_result::built ||
                    !result->bind_actual_modules(original,actual_epoch) || !result->bind_all_native_resources(original,actual_epoch) ||
                    !result->reserve_all_gc_shells() || !result->build_pending_bridges() || !result->build_all_exceptions() ||
                    !result->fill_all_gc_shells() || !result->fill_all_instance_resources()) { return {}; }

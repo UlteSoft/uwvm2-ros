@@ -4,6 +4,7 @@ module;
 #include <cstdint>
 export module uwvm2.extension.memtag.checkpoint;
 import uwvm2.extension.memtag.storage;
+import uwvm2.extension.memtag.managed_allocations;
 import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.tag_image;

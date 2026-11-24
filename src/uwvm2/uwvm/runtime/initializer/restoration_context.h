@@ -460,7 +460,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t* candidate,
                 unsigned address_bits, bool shared, ::std::uint64_t pages, ::std::uint64_t minimum,
                 ::std::uint64_t maximum, ::std::span<saved_memory_chunk const> chunks,
-                unsigned tag_bits, ::std::span<::std::byte const> allocation_tags,
+                unsigned tag_bits, ::uwvm2::extension::memtag::checkpoint_tag_image image,
                 ::std::size_t maximum_native_bytes) noexcept
             {
                 ::std::size_t local{};
@@ -485,8 +485,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     pages < minimum || pages > maximum || pages > maximum_native_bytes/65536u ||
                     pages > static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/65536u) { return false; }
                 auto const bytes{static_cast<::std::size_t>(pages)*65536u}; // both native/ptrdiff quotients checked BEFORE multiplication.
-                if(!::uwvm2::extension::memtag::valid_tag_image(address_bits,tag_bits,bytes,allocation_tags) ||
-                    allocation_tags.size()>maximum_native_bytes-bytes ||
+                namespace mt=::uwvm2::extension::memtag;
+                if(!image.valid(address_bits,tag_bits,bytes) || image.tags.size()>maximum_native_bytes-bytes ||
+                    image.records.size()/mt::checkpoint_extent_bytes >
+                        (maximum_native_bytes-bytes-image.tags.size())/mt::managed_allocations::bytes_per_extent ||
                     (tag_bits!=0u && ::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)) { return false; }
                 ::std::uint64_t last_end{}; bool seen{};
                 for(auto const& chunk : chunks)
@@ -531,7 +533,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         namespace mt=::uwvm2::extension::memtag;
                         auto const width{address_bits==32u?mt::address_width::i32:mt::address_width::i64};
                         if(memory.enable_memtag(width,shared)!=mt::storage_error::none ||
-                            !mt::restore_tag_image(memory.memtag_shadow,bytes,allocation_tags)) { return false; }
+                            !mt::restore_checkpoint_tag_image(memory.memtag_shadow,bytes,image)) { return false; }
                         auto const hardware{::uwvm2::runtime::memtag::activate_owner_hardware(memory)};
                         if(!hardware && (hardware.error!=mt::hardware_mte::setup_error::unsupported || memory.memtag_shadow.hardware_selected())) { return false; }
                     }
@@ -916,7 +918,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     { copied.local_defined_memory_limits.try_emplace(index, limit); }
                 }
             }
-            [[nodiscard]] skeleton_result build_resource_skeleton()
+            [[nodiscard]] skeleton_result build_resource_skeleton(bool includes_memtag_directory = false)
             {
                 if(state_ != skeleton_result::empty) { return state_; }
                 auto const& main{source_->file_};
@@ -924,8 +926,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 { return state_ = skeleton_result::invalid_source; }
                 if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)
                 {
-                    auto const compatible{[](auto const& file) noexcept
-                        { return ::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(file); }};
+                    auto const compatible{[&](auto const& file) noexcept
+                        { return ::uwvm2::uwvm::runtime::validator::admits_memtag_checkpoint(file,includes_memtag_directory); }};
                     if(!compatible(main)) { return state_ = skeleton_result::invalid_source; }
                     for(auto const& file : source_->preload_files_)
                     { if(!compatible(file)) { return state_ = skeleton_result::invalid_source; } }

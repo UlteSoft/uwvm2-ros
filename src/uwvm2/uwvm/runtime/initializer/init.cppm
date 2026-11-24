@@ -78,6 +78,7 @@ import uwvm2.uwvm.runtime.runtime_mode;
 import uwvm2.uwvm.runtime.validator;
 import uwvm2.extension.memtag.globals;
 import uwvm2.extension.memtag.checkpoint;
+import uwvm2.extension.memtag.managed_allocations;
 import uwvm2.extension.memtag.debug_view;
 import uwvm2.extension.memtag.hardware_mte;
 import uwvm2.runtime.memtag.native_pointer;

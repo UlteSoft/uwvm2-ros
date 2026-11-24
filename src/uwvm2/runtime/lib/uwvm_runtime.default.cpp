@@ -51,6 +51,7 @@
 // - Host entry points validate raw ABI buffers, pick LLVM-full or interpreter execution, then clean up current-thread runtime state.
 // std
 # include <uwvm2/extension/memtag/debug_view.h>
+# include <uwvm2/extension/memtag/checkpoint.h>
 # include <uwvm2/extension/memtag/globals.h>
 # include <uwvm2/runtime/memtag/hardware_thread.h>
 # include <uwvm2/runtime/memtag/deferred.h>

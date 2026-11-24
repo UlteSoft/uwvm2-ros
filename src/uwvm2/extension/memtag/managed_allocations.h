@@ -7,6 +7,7 @@
 # include <cstdint>
 # include <new>
 # include <utility>
+# include "instruction.h"
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -16,12 +17,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     class managed_allocations
     {
     public:
-        struct extent
-        {
-            ::std::uint64_t first{}, last{}; // inclusive linear granule indices
-            ::std::uint8_t tag{}, parent{};
-            bool active{}, permanent{};
-        };
+        using extent = allocation_extent;
     private:
         struct node
         {
@@ -106,6 +102,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(v.last < last) { visit(item->child[1],first,last,visitor); }
         }
     public:
+        // try_bytes retains its accounting header for the lifetime of each node.
+        static constexpr ::std::size_t bytes_per_extent{sizeof(node) + sizeof(::uwvm2::utils::allocator::resource::byte_header)};
         constexpr managed_allocations() noexcept = default;
         managed_allocations(managed_allocations const&) = delete;
         managed_allocations& operator=(managed_allocations const&) = delete;

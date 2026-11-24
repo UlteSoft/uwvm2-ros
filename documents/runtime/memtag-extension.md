@@ -326,17 +326,18 @@ a proposed tag conflicting with a registered neighbor. Ordinary byte stores
 still use the configured MTE access policy.
 
 Disabling MTE makes all five operations return the input pointer. `claimz`
-still performs a bounds-checked zero fill. The existing checkpoint tag image
-carries shadow bytes only. During collection and fresh restore, enabled MTE
-requires each validated main and preloaded module to be compatible with that
-format. A managed instruction in any function, including unreachable code,
-or a nonempty linear global descriptor disqualifies the source. A replacement
-body is also refused if its bytes can encode a complete managed instruction.
-For replacement bodies this conservative check can match an immediate.
-Existing live registrations independently prevent capturing or overwriting the
-owner. Thread-history recording and replay apply the same source restriction
-before dispatching a guest instruction. Ordinary cold start independently
-constructs new owners and installs their manifest registrations.
+still performs a bounds-checked zero fill. A full Wasm checkpoint records each
+tagged owner's shadow together with its active allocations, reservations and
+permanent global ranges. Restore reconstructs these registrations on the
+unpublished owner and preserves their recorded colors. The immutable source
+and resolved memory aliases determine which permanent ranges must be present.
+
+Older full checkpoints and the separate thread-history origin format carry
+only shadow bytes. Enabled MTE admits those formats for sources whose typed
+instructions and global descriptors require no managed allocations.
+Restoring a tag-only full checkpoint also checks replacement bodies for a
+possible managed instruction. Ordinary cold start installs the manifest
+registrations on the canonical memory owners.
 
 
 Normalization happens during validation and translation. Interpreter handlers,
