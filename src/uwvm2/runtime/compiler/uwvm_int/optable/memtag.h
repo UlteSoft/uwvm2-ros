@@ -174,6 +174,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if constexpr(!Store) { push(stack,value); }
         }
 
+        // The i686 translator binds this materialized-stack action to a private
+        // integer access under the immutable software synchronous/crash policy.
+        template<::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        inline void scalar_enforcing(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t offset) noexcept
+        {
+            static_assert(::std::same_as<Value,details::wasm_i32> || ::std::same_as<Value,details::wasm_i64>);
+            static_assert(Bytes>=1u && Bytes<=sizeof(Value));
+            Value value{};
+            if constexpr(Store) { value=pop<Value>(stack); }
+            auto const pointer{pop<Address>(stack)};
+            auto const result{::uwvm2::runtime::memtag::with_access_policy<Address,false,false,true>(
+                memory,pointer,offset,Bytes,[&](::std::span<::std::byte> data) noexcept
+                {
+                    if constexpr(Store) { details::memory64::store_integer<Bytes>(data.data(),value); }
+                    else { value=details::memory64::load_integer<Value,Bytes,Signed>(data.data()); }
+                })};
+            if(!result) { access_failed(memory,pointer,offset,Bytes,result); }
+            if constexpr(!Store) { push(stack,value); }
+        }
+
         // Private integer accesses can retain the normal register-ring ABI.
         // The owner snapshot, complete bounds/tag proof, and callback lifetime
         // are still supplied by the original checked-access bridge.

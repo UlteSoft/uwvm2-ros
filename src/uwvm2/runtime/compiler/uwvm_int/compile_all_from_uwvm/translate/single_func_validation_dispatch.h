@@ -4927,6 +4927,16 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
             if(resolved_memory.memory_p->memtag_shadow.shared())
             { return static_cast<mtopt::memtag_details::action_t>(
                 mtopt::memtag_details::scalar<Address,true,Value,Bytes,Signed,Store>); }
+#if defined(__i386__) || defined(_M_IX86)
+            if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
+                         ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
+            {
+                namespace mt=::uwvm2::extension::memtag;
+                if(!mt::asynchronous_requested() && !mt::hardware_requested() && !mt::logging_requested())
+                { return static_cast<mtopt::memtag_details::action_t>(
+                    mtopt::memtag_details::scalar_enforcing<Address,Value,Bytes,Signed,Store>); }
+            }
+#endif
             return static_cast<mtopt::memtag_details::action_t>(
                 mtopt::memtag_details::scalar<Address,false,Value,Bytes,Signed,Store>);
         }};
