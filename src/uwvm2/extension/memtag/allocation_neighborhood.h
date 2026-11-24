@@ -57,8 +57,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         bool wide_{};
         bool physical_{};
 
-        // Packed positions of the set bits of each byte, three bits per rank.
-        static constexpr auto byte_positions_ = []() constexpr noexcept
+        // Each entry holds eight three-bit positions and a population in its top byte.
+        static constexpr auto byte_entries_ = []() constexpr noexcept
         {
             ::std::array<::std::uint32_t,256> positions{};
             for(unsigned byte{}; byte < positions.size(); ++byte)
@@ -68,24 +68,73 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 {
                     if(byte & (1u << bit)) { positions[byte] |= bit << shift; shift += 3u; }
                 }
+                positions[byte] |= static_cast<::std::uint32_t>(::std::popcount(byte)) << 24u;
             }
             return positions;
         }();
 
-        [[nodiscard]] static constexpr unsigned select_bit(word bits, unsigned rank, bool wide) noexcept
+        [[nodiscard]] static constexpr unsigned byte_position(::std::uint32_t entry, unsigned rank) noexcept
+        { return (entry >> (3u * rank)) & 7u; }
+
+        [[nodiscard]] static constexpr unsigned select_bit(word bits, unsigned rank) noexcept
         {
-            // Narrow colors occupy the low 16 bits. Retain the ranked half
-            // until a single byte remains, then resolve its rank by lookup.
-            unsigned offset{};
-            for(unsigned half{wide ? 32u : 8u}; half >= 8u; half >>= 1u)
-            {
-                word const lower{bits & ((word{1} << half) - 1u)};
-                unsigned const count{static_cast<unsigned>(::std::popcount(lower))};
-                if(rank < count) { bits=lower; }
-                else { rank-=count; bits >>= half; offset+=half; }
-            }
-            return offset + ((byte_positions_[static_cast<::std::uint8_t>(bits)] >> (3u*rank)) & 7u);
+            if(bits == ~word{}) { return rank; }
+            // Count the set bits in each byte, then sum from the least significant byte.
+            constexpr word ones{UINT64_C(0x0101010101010101)};
+            constexpr word high_bits{ones * 0x80u};
+            word counts{bits - ((bits >> 1u) & (ones * 0x55u))};
+            counts = (counts & (ones * 0x33u)) + ((counts >> 2u) & (ones * 0x33u));
+            word const prefixes{((counts + (counts >> 4u)) & (ones * 0x0fu)) * ones};
+            // Each prefix is at most 64. Setting the high bits before subtracting
+            // prevents borrows between bytes and marks every prefix greater than rank.
+            word const reached{((prefixes | high_bits) - (rank + 1u) * ones) & high_bits};
+            unsigned const shift{static_cast<unsigned>(::std::countr_zero(reached)) & ~7u};
+            rank -= static_cast<::std::uint8_t>((prefixes << 8u) >> shift);
+            return shift + byte_position(byte_entries_[static_cast<::std::uint8_t>(bits >> shift)], rank);
         }
+
+        [[nodiscard]] static constexpr tag_selection choose_rank(::std::uint16_t entropy, unsigned total, unsigned& rank) noexcept
+        {
+            if (!total) { return tag_selection::no_color; }
+            ::std::uint32_t const product{static_cast<::std::uint32_t>(entropy) * total};
+            unsigned const low{product & 0xffffu};
+            if (low < total && low < 65536u % total) { return tag_selection::retry_entropy; }
+            rank = product >> 16u;
+            return tag_selection::selected;
+        }
+
+        template<auto BitPosition>
+        [[nodiscard,gnu::always_inline]] constexpr tag_selection select_wide(::std::uint16_t entropy, ::std::uint8_t& out) const noexcept
+        {
+            unsigned const first{static_cast<unsigned>(::std::popcount(available_[0]))};
+            unsigned const middle{first + static_cast<unsigned>(::std::popcount(available_[1]))};
+            unsigned const third{middle + static_cast<unsigned>(::std::popcount(available_[2]))};
+            unsigned const total{third + static_cast<unsigned>(::std::popcount(available_[3]))};
+            unsigned rank{};
+            auto const status{choose_rank(entropy, total, rank)};
+            if(status != tag_selection::selected) { return status; }
+
+            // Locate the ranked word by its exclusive end in ascending tag order.
+            bool const upper{rank >= middle};
+            unsigned const split{upper ? third : first};
+            bool const second{rank >= split};
+            unsigned const index{2u * static_cast<unsigned>(upper) + static_cast<unsigned>(second)};
+            rank -= second ? split : (upper ? middle : 0u);
+            out = static_cast<::std::uint8_t>(64u * index + BitPosition(available_[index], rank));
+            return tag_selection::selected;
+        }
+
+#if defined(__x86_64__) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
+        [[nodiscard,gnu::target("bmi2,popcnt")]] static unsigned select_deposited_bit(word bits, unsigned rank) noexcept
+        {
+            // Depositing a single set bit places it at the requested available position.
+            auto const selected{static_cast<word>(__builtin_ia32_pdep_di(word{1} << rank, bits))};
+            return static_cast<unsigned>(::std::countr_zero(selected));
+        }
+
+        [[nodiscard,gnu::target("bmi2,popcnt")]] tag_selection select_wide_bmi2(::std::uint16_t entropy, ::std::uint8_t& out) const noexcept
+        { return select_wide<select_deposited_bit>(entropy, out); }
+#endif
 
     public:
         constexpr explicit allocation_neighborhood(address_width width, bool physical_four_bits = false) noexcept
@@ -177,29 +226,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         /// bucket to give every legal tag exactly the same number of preimages.
         [[nodiscard]] constexpr tag_selection select(::std::uint16_t entropy, ::std::uint8_t& out) const noexcept
         {
-            unsigned const words{wide_ ? 4u : 1u};
-            ::std::array<unsigned, 4> counts{};
-            unsigned total{};
-            for (unsigned i{}; i != words; ++i)
+            if(wide_)
             {
-                counts[i] = static_cast<unsigned>(::std::popcount(available_[i]));
-                total += counts[i];
+#if defined(__x86_64__) && defined(__linux__) && defined(__GNUC__) && __STDC_HOSTED__
+                if(!__builtin_is_constant_evaluated() && __builtin_cpu_supports("popcnt") && __builtin_cpu_supports("bmi2"))
+                { return select_wide_bmi2(entropy, out); }
+#endif
+                return select_wide<select_bit>(entropy, out);
             }
-            if (!total) { return tag_selection::no_color; }
-            ::std::uint32_t const product{static_cast<::std::uint32_t>(entropy) * total};
-            unsigned const low{product & 0xffffu};
-            if (low < total && low < 65536u % total) { return tag_selection::retry_entropy; }
-            unsigned rank{product >> 16u};
-            for (unsigned i{}; i != words; ++i)
-            {
-                if (rank < counts[i])
-                {
-                    out = static_cast<::std::uint8_t>(64u * i + select_bit(available_[i], rank, wide_));
-                    return tag_selection::selected;
-                }
-                rank -= counts[i];
-            }
-            return tag_selection::no_color;
+            auto const low{byte_entries_[static_cast<::std::uint8_t>(available_[0])]};
+            auto const high{byte_entries_[static_cast<::std::uint8_t>(available_[0] >> 8u)]};
+            unsigned const lower_count{low >> 24u};
+            unsigned rank{};
+            auto const status{choose_rank(entropy, lower_count + (high >> 24u), rank)};
+            if(status != tag_selection::selected) { return status; }
+            bool const upper{rank >= lower_count};
+            if(upper) { rank -= lower_count; }
+            out = static_cast<::std::uint8_t>((upper ? 8u : 0u) + byte_position(upper ? high : low, rank));
+            return tag_selection::selected;
         }
     };
 }
