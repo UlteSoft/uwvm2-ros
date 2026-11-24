@@ -6,6 +6,7 @@
 #pragma once
 #ifndef UWVM_MODULE
 # include <atomic>
+# include <bit>
 # include <concepts>
 # include <cstddef>
 # include <cstdint>
@@ -122,6 +123,119 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
     private:
+        [[nodiscard]] static access_result mismatch(access_result result, ::std::size_t index,
+                                                     ::std::uint8_t actual) noexcept
+        {
+            result.error = access_error::tag_mismatch;
+            result.mismatch_granule = static_cast<::std::uint64_t>(index) << 4u;
+            result.allocation_tag = actual;
+            return result;
+        }
+
+        // The XOR word is nonzero. Find the earliest differing byte in memory order.
+        template<typename Word>
+        [[nodiscard]] static unsigned first_different_byte(Word difference) noexcept
+        {
+            if constexpr(::std::endian::native == ::std::endian::little) { return ::std::countr_zero(difference) / 8u; }
+            else if constexpr(::std::endian::native == ::std::endian::big) { return ::std::countl_zero(difference) / 8u; }
+            else
+            {
+                unsigned char bytes[sizeof(Word)];
+                ::std::memcpy(bytes,&difference,sizeof bytes);
+                unsigned index{};
+                while(!bytes[index]) { ++index; }
+                return index;
+            }
+        }
+
+        // Two overlapping words cover [sizeof(Word), 2*sizeof(Word)) tags.
+        template<typename Word>
+        [[nodiscard]] static ::std::size_t matching_pair(::std::uint8_t const* tags, ::std::size_t count,
+                                                         ::std::uint8_t expected) noexcept
+        {
+            Word first{},last{};
+            ::std::memcpy(&first,tags,sizeof(Word));
+            ::std::memcpy(&last,tags+count-sizeof(Word),sizeof(Word));
+            auto const repeated{static_cast<Word>((::std::numeric_limits<Word>::max()/255u)*expected)};
+            first ^= repeated;
+            last ^= repeated;
+            if((first | last) == 0u) { return count; }
+            return first ? first_different_byte(first) : count-sizeof(Word)+first_different_byte(last);
+        }
+
+        // A 32-tag block uses four consecutive words. For 16..31 tags the
+        // same bounded loads cover both ends. Earlier words win in the overlap.
+        [[nodiscard,gnu::always_inline]] static ::std::size_t matching_four_words(
+            ::std::uint8_t const* tags, ::std::size_t count, ::std::uint64_t repeated) noexcept
+        {
+            ::std::uint64_t words[4];
+            ::std::memcpy(words,tags,16u);
+            ::std::memcpy(words+2u,tags+count-16u,16u);
+            if(((words[0]^repeated) | (words[1]^repeated) | (words[2]^repeated) | (words[3]^repeated)) != 0u) [[unlikely]]
+            {
+                for(unsigned i{}; i != 4u; ++i)
+                {
+                    if(auto difference=words[i]^repeated)
+                    {
+                        auto const offset{i < 2u ? i*8u : count-(4u-i)*8u};
+                        return offset + first_different_byte(difference);
+                    }
+                }
+            }
+            return count;
+        }
+
+        // In shadow tags (16 guest bytes each), from native allocation and access sweeps.
+        static constexpr ::std::size_t allocation_vector_tags{768u}, access_vector_tags{1536u};
+
+        // The caller proved a nonempty range of private, full-byte tags.
+        template<::std::size_t VectorTags>
+        [[nodiscard,gnu::always_inline]] access_result check_private_tags(access_result result, ::std::size_t first,
+            ::std::size_t count) const noexcept requires (!Shared)
+        {
+            auto const* tags{tags_+first};
+            auto const expected{result.pointer_tag};
+            ::std::size_t matched{};
+            if(count >= 16u)
+            {
+                auto const initial{tags[0]};
+                if(initial != expected) [[unlikely]] { return mismatch(result,first,initial); }
+                if constexpr(software_x86::has_vector_kernels)
+                {
+                    if(count >= VectorTags && software_x86::host_features.avx2)
+                    {
+                        matched = software_x86::matching_vector_prefix(tags,count,expected);
+                        if(matched == count) { return result; }
+                        // The prefix ends at a known bad lane or the first
+                        // unchecked tail byte. Inspect just that byte to decide.
+                        auto const actual{tags[matched]};
+                        if(actual != expected) [[unlikely]] { return mismatch(result,first+matched,actual); }
+                        ++matched;
+                    }
+                }
+                auto const repeated{UINT64_C(0x0101010101010101) * expected};
+                while(count-matched >= 32u)
+                {
+                    auto const step{matching_four_words(tags+matched,32u,repeated)};
+                    matched += step;
+                    if(step != 32u) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
+                }
+                if(count-matched >= 16u)
+                {
+                    matched += matching_four_words(tags+matched,count-matched,repeated);
+                    if(matched != count) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
+                    return result;
+                }
+            }
+            auto const tail{count-matched};
+            if(tail == 1u) { matched += tags[matched] == expected; }
+            else if(tail >= 8u) { matched += matching_pair<::std::uint64_t>(tags+matched,tail,expected); }
+            else if(tail >= 4u) { matched += matching_pair<::std::uint32_t>(tags+matched,tail,expected); }
+            else if(tail >= 2u) { matched += matching_pair<::std::uint16_t>(tags+matched,tail,expected); }
+            if(matched != count) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
+            return result;
+        }
+
         [[nodiscard]] access_result check_tags(access_result result,::std::uint64_t bytes,
                                                ::std::uint8_t comparison_mask) const noexcept
         {
@@ -130,50 +244,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if constexpr(!Shared)
             {
                 // Keep block-loop setup out of constant-width scalar accesses.
-                // Small/unaligned ranges still take the complete byte-tag loop
-                // below. This threshold changes no checked range or result.
-                if(comparison_mask==0xffu && bytes >= sizeof(::std::uint64_t) * 16u)
-                {
-                    if constexpr(software_x86::has_vector_kernels)
-                    {
-                        if(end-index >= 32u)
-                        { index += software_x86::matching_vector_prefix(tags_+index, end-index, result.pointer_tag); }
-                    }
-                    // Eight granules per comparison; memcpy avoids alignment
-                    // and strict-aliasing UB on all five hosts. Resolve a failed
-                    // block below to its exact first mismatching granule.
-                    auto const repeated{::std::uint64_t{0x0101010101010101u} * result.pointer_tag};
-                    // Long libc allocation lifetimes often scan kilobytes of
-                    // uniform shadow. Compare 32 granules per loop iteration.
-                    // On a difference the smaller comparisons below locate the
-                    // exact first mismatching granule on either byte order.
-                    while(end-index >= 4u*sizeof(::std::uint64_t))
-                    {
-                        ::std::uint64_t words[4];
-                        ::std::memcpy(words,tags_+index,sizeof words);
-                        if(((words[0]^repeated) | (words[1]^repeated) |
-                            (words[2]^repeated) | (words[3]^repeated)) != 0u) { break; }
-                        index+=4u*sizeof(::std::uint64_t);
-                    }
-                    while(end - index >= sizeof(::std::uint64_t))
-                    {
-                        ::std::uint64_t word{};
-                        ::std::memcpy(&word, tags_ + index, sizeof word);
-                        if(word != repeated) { break; }
-                        index += sizeof word;
-                    }
-                }
+                if(comparison_mask == 0xffu && bytes >= sizeof(::std::uint64_t) * 16u)
+                { return check_private_tags<access_vector_tags>(result,index,end-index); }
             }
             for(; index != end; ++index)
             {
                 auto const actual{read(index)};
                 if((actual&comparison_mask)!=(result.pointer_tag&comparison_mask))
-                {
-                    result.error = access_error::tag_mismatch;
-                    result.mismatch_granule = static_cast<::std::uint64_t>(index) << 4u;
-                    result.allocation_tag = actual;
-                    return result;
-                }
+                { return mismatch(result,index,actual); }
             }
             return result;
         }
@@ -237,18 +315,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             allocation_range(shadow_view const& view, Address input, ::std::uint64_t bytes) noexcept
                 : view_{view},bytes_{bytes},proof_{view.bounds(input,0u,bytes)} {}
 
-            // For sizeof(Word) <= count < 2*sizeof(Word), these two bounded
-            // reads cover every granule. memcpy also permits unaligned pages.
-            template<typename Word>
-            [[nodiscard]] static bool matches_pair(::std::uint8_t const* tags,::std::size_t count,
-                                                   ::std::uint8_t expected) noexcept
-            {
-                Word first{},last{};
-                ::std::memcpy(&first,tags,sizeof(Word));
-                ::std::memcpy(&last,tags+(count-sizeof(Word)),sizeof(Word));
-                auto const repeated{static_cast<Word>((::std::numeric_limits<Word>::max()/255u)*expected)};
-                return ((first^repeated) | (last^repeated)) == 0u;
-            }
         public:
             [[nodiscard]] access_result const& bounds() const noexcept { return proof_; }
 
@@ -261,24 +327,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 {
                     auto const first{static_cast<::std::size_t>(result.address >> 4u)};
                     auto const last{static_cast<::std::size_t>((result.address+bytes_-1u) >> 4u)};
-                    auto const count{last-first+1u};
-                    auto const* tags{view_.tags_+first};
-                    if constexpr(software_x86::has_vector_kernels)
-                    {
-                        if(count >= 32u) { return view_.check_tags(result,bytes_,0xffu); }
-                    }
-                    bool matches{};
-                    if(count == 1u) { matches=tags[0] == expected; }
-                    else if(count < 4u) { matches=matches_pair<::std::uint16_t>(tags,count,expected); }
-                    else if(count < 8u) { matches=matches_pair<::std::uint32_t>(tags,count,expected); }
-                    else if(count < 16u) { matches=matches_pair<::std::uint64_t>(tags,count,expected); }
-                    // A longer span is uniform iff its first tag has the expected
-                    // value and every adjacent pair agrees. Both reads end in range.
-                    else { matches=tags[0] == expected && ::std::memcmp(tags,tags+1u,count-1u) == 0; }
-                    if(matches) { return result; }
+                    return view_.template check_private_tags<allocation_vector_tags>(result,first,last-first+1u);
                 }
-                // Preserve the first differing granule and its actual tag.
-                return view_.check_tags(result,bytes_,0xffu);
+                else { return view_.check_tags(result,bytes_,0xffu); }
             }
             [[nodiscard]] access_result store(::std::uint8_t tag) const noexcept requires (!Shared)
             {
