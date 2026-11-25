@@ -5428,6 +5428,13 @@ namespace uwvm2::runtime::lib
 # include "source_exception_guest_bridge.h"
 #endif
 
+        [[nodiscard]] inline bool check_tags_for_import_caller(::std::size_t module_id) noexcept
+        {
+            if(module_id >= g_runtime.modules.size()) { return true; }
+            auto const* caller{g_runtime.modules.index_unchecked(module_id).runtime_module};
+            return caller == nullptr || caller->memory_policy.check_tags;
+        }
+
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1)
         inline constexpr ::uwvm2::object::memory::linear::native_memory_t const* resolve_memory0_ptr(runtime_module_storage_t const& rt) noexcept
         {
@@ -5441,13 +5448,6 @@ namespace uwvm2::runtime::lib
                 if(rt.local_defined_memory_vec_storage.empty()) { return nullptr; }
                 return ::std::addressof(rt.local_defined_memory_vec_storage.index_unchecked(0uz).memory);
             }
-        [[nodiscard]] inline bool check_tags_for_import_caller(::std::size_t module_id) noexcept
-        {
-            if(module_id >= g_runtime.modules.size()) { return true; }
-            auto const* caller{g_runtime.modules.index_unchecked(module_id).runtime_module};
-            return caller == nullptr || caller->memory_policy.check_tags;
-        }
-
 
             constexpr ::std::size_t kMaxChain{4096uz};
             auto curr{::std::addressof(rt.imported_memory_vec_storage.index_unchecked(0uz))};
@@ -5684,6 +5684,7 @@ namespace uwvm2::runtime::lib
                                                                   ::std::byte* param_buffer,
                                                                   ::std::size_t caller_module_id) UWVM_THROWS
         {
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
             if(::uwvm2::utils::thread::process_exit::exit_claimed.load(::std::memory_order_acquire))
             { ::uwvm2::utils::thread::process_exit::request_process_exit(0u); }
@@ -5697,7 +5698,6 @@ namespace uwvm2::runtime::lib
             preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
                                                   ros_call, ::std::addressof(module), function_index};
 #endif
-            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS)
             if(module.get_module_name() == u8"wasi_snapshot_preview1")
             {
@@ -5816,6 +5816,7 @@ namespace uwvm2::runtime::lib
                                                         ::std::byte* param_buffer,
                                                         ::std::size_t caller_module_id) noexcept
         {
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
             // Preloaded C APIs may need both caller memory metadata and a WASI target identity. The guard scopes both pieces of
             // ambient state to this call.
             preload_call_context_guard preload_guard{preload_module_memory_attribute, ::std::addressof(function), caller_module_id};
@@ -5829,7 +5830,6 @@ namespace uwvm2::runtime::lib
                 finish_host_memtag_fault<false>();
                 return;
             }
-            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 
             auto& wasip1_env{resolve_wasip1_env_for_preload_capi_function(::std::addressof(function))};
             ::uwvm2::uwvm::imported::wasi::wasip1::storage::scoped_current_wasip1_memory_t memory_guard{
@@ -5873,6 +5873,7 @@ namespace uwvm2::runtime::lib
                                                                   ::std::byte* param_buffer,
                                                                   [[maybe_unused]] ::std::size_t caller_module_id) UWVM_THROWS
         {
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             preload_module_memory_attribute_t ros_memory_attribute{};
             auto const name{module.get_module_name()};
@@ -5886,7 +5887,6 @@ namespace uwvm2::runtime::lib
                 [&]() noexcept { module.call_func_index(function_index, result_buffer, param_buffer); });
             finish_host_memtag_fault<true>();
         }
-            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 
         inline constexpr void call_capi_with_wasip1_env(capi_function_t const& function,
                                                         preload_module_memory_attribute_t const* preload_module_memory_attribute,
@@ -5894,6 +5894,7 @@ namespace uwvm2::runtime::lib
                                                         ::std::byte* param_buffer,
                                                         ::std::size_t caller_module_id) noexcept
         {
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
             preload_call_context_guard preload_guard{preload_module_memory_attribute, ::std::addressof(function), caller_module_id};
             invoke_host_preserving_llvm_wasm_fp_environment([&]() noexcept { function.func_ptr(result_buffer, param_buffer); });
                 finish_host_memtag_fault<false>();
@@ -5907,7 +5908,6 @@ namespace uwvm2::runtime::lib
 #endif
             // Preload host APIs are context-sensitive: they operate on the wasm module that is currently calling the C API.
             auto const& ctx{get_preload_call_context()};
-            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
             if(ctx.module_id == preload_call_context_t::invalid_module_id) [[unlikely]] { return nullptr; }
             if(ctx.module_id >= g_runtime.modules.size()) [[unlikely]] { return nullptr; }
             return g_runtime.modules.index_unchecked(ctx.module_id).runtime_module;

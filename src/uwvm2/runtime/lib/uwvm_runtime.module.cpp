@@ -210,8 +210,8 @@ module;
 
 module uwvm2.runtime;
 import uwvm2.extension.memtag.debug_types;
-import uwvm2.extension.memtag.debug_view;
 import uwvm2.extension.memtag.shadow;
+import uwvm2.extension.memtag.debug_view;
 import uwvm2.extension.memtag.checkpoint;
 import uwvm2.extension.memtag.tag_image;
 import uwvm2.extension.memtag.managed_allocations;
