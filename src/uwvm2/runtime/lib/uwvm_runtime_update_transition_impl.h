@@ -232,7 +232,7 @@
 {
     auto const* configured{active_policy_binding()}; if(!configured) { return false; }
     ::uwvm2::utils::container::std_vector<unsigned char> material;
-    append_execution_safety_policy(material);
+    if(!append_execution_safety_policy(material)) { return false; }
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     update::append_u64(material, file.module_name.size()); for(auto c : file.module_name) { material.push_back(static_cast<unsigned char>(c)); }
     update::append_u64(material, reinterpret_cast<::std::uintptr_t>(configured)); update::append_u64(material, plan.interface_enabled());

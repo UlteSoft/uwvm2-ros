@@ -10,7 +10,7 @@ namespace production_update_detail
     namespace update = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace immutable_globals = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
-    inline void append_execution_safety_policy(::uwvm2::utils::container::std_vector<unsigned char>& material)
+    [[nodiscard]] inline bool append_execution_safety_policy(::uwvm2::utils::container::std_vector<unsigned char>& material)
     {
     // The issuer authorizes this execution-safety contract, separately
     // from debugger permissions. Diagnostic continuation must never
@@ -28,22 +28,26 @@ namespace production_update_detail
     for(auto const& count : policy::parser_counts) { update::append_u64(material, count.get(parser_snapshot)); }
     for(auto const& count : policy::initializer_settings)
     { update::append_u64(material, parameters.initializer_limits.*count.member); }
-    if(!g_runtime.modules.empty() && g_runtime.modules.front_unchecked().runtime_module)
-    {
-        auto const& memories{g_runtime.modules.front_unchecked().runtime_module->local_defined_memory_vec_storage};
-        update::append_u64(material,memories.size());
-        for(auto const& memory : memories)
-        { update::append_u64(material,::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow)); }
-    }
+    // The initializer owns the actual memory layouts before LLVM builds its module records.
+    // Measure them on both sides of compilation, including the count for a memoryless module.
+    auto const source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
+    auto const* module{source ? source->initialized_main_module() : nullptr};
+    if(!module || ::std::addressof(source->file()) != ::std::addressof(file) ||
+       (!g_runtime.modules.empty() && g_runtime.modules.front_unchecked().runtime_module != module)) { return false; }
+    auto const& memories{module->local_defined_memory_vec_storage};
+    update::append_u64(material, memories.size());
+    for(auto const& memory : memories)
+    { update::append_u64(material, ::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow)); }
     update::append_u64(material,static_cast<unsigned>(mt::selected_fault_delivery.load(::std::memory_order_relaxed)));
     update::append_u64(material,static_cast<unsigned>(mt::selected_report_action.load(::std::memory_order_relaxed)));
+    return true;
     }
     [[nodiscard]] inline bool effective_policy_fingerprint(update::digest& fingerprint) noexcept
     {
         try
         {
             ::uwvm2::utils::container::std_vector<unsigned char> material;
-            append_execution_safety_policy(material);
+            if(!append_execution_safety_policy(material)) { return false; }
             auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
             update::append_u64(material, file.module_name.size());
             for(auto c : file.module_name) { material.push_back(static_cast<unsigned char>(c)); }
