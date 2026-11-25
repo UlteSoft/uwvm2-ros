@@ -294,8 +294,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             if(this->memory_length_p == nullptr ||
                (width == mt::address_width::i32) != (this->status == mmap_memory_status_t::wasm32))
             { return mt::storage_error::invalid_configuration; }
-            if(width == mt::address_width::i64 && this->mapped_reservation_bytes > mmap_reservation::tagged_wasm64_span_limit)
-            { return mt::storage_error::capacity_exceeded; }
+            if constexpr(mmap_reservation::host_bits > 48u)
+            {
+                if(width == mt::address_width::i64 && static_cast<mmap_reservation::bytes_type>(this->mapped_reservation_bytes) >
+                    mmap_reservation::tagged_wasm64_span_limit) { return mt::storage_error::capacity_exceeded; }
+            }
             return this->memtag_shadow.enable(width, shared, mt::storage_backend::reserved,
                 this->memory_length_p->load(::std::memory_order_acquire), this->reservation_limit_bytes);
         }
