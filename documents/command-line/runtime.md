@@ -200,10 +200,11 @@ uwvm \
 
 ## MTE execution and independent violation reports
 
-WasmMTE exposes five controls: parser disable, runtime disable, backend, timing
-and violation action. Backend and timing remain independent:
-`--runtime-memtag-backend software|hardware` and
-`--runtime-memtag-mode sync|async`. Defaults are **software + sync + crash**.
+Use `--runtime-memtag-backend software|auto|arm-mte|x86-mtt` to select the
+default tag backend for defined memories. `hardware` is also accepted for the
+host architecture's required hardware backend. Delivery is selected through
+`--runtime-memtag-mode sync|async`. The defaults are **software + sync + crash**.
+[Module and individual owner overrides](wasm-module-policy.md)
 
 The action grammar is:
 
@@ -228,12 +229,11 @@ write failure is a controlled runtime error (exit123), never silent record loss.
 The report descriptor is not inserted into a guest FD table or granted as a
 WASI/ROS capability. Crash mode opens no report stream.
 
-Use `--wasm-feature-disable-memtag-extension` to reject the extension at parse
-validation, or `--runtime-disable-memtag` to disable execution while retaining
-required zeroing. Unsupported explicit hardware selection is a launch error.
-Hardware + silent-log requires a supported host but uses precise software
-checking to enumerate all violations and safely continue, rather than claiming
-physical fault replay or hardware diagnostic acceleration.
+Use `--wasm-feature-disable-memtag-extension` to reject WasmMTE during validation.
+`--runtime-disable-memtag` sets the global default for ordinary access comparisons
+to off. The owner still supports tag operations, address masking, bounds checks
+and required zeroing. Explicit hardware selection requires a real checked
+mapping. Select software or auto for precise, continuing silent-log reports.
 
 Old `silent`/`log` values, misspellings, mixed backend/timing values, worker
 controls and dedicated report-output switches are rejected. There are no

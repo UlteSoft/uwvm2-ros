@@ -1,8 +1,7 @@
 # Complete advertised CLI catalog
 
-Generated from an actual Linux integration binary's `--help all`.
-This catalog contains every advertised primary command, its aliases in
-the usage line, and the binary's own description. Availability and
+The base catalog was generated from a Linux integration binary's `--help all`. The Wasm module policy, ADM, custom page size and reservation entries below follow the current option definitions.
+Each entry lists the primary command, aliases where applicable, and its description. Availability and
 supported transports still follow the ROS product policy. A registered
 platform-specific option is not proof that its backend is available.
 
@@ -15,7 +14,7 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-Advertised primary commands: **294**.
+This catalog lists **303 primary commands**.
 
 ## `--debug-dump-force`
 
@@ -911,7 +910,7 @@ Start the LLVM JIT debugger; default to full debug permissions unless --debug-pe
 [--runtime-disable-memtag]
 ```
 
-Disable WasmMTE tag execution and checks while retaining memory-zeroing semantics; extension validation remains enabled.
+Default WasmMTE access comparisons to off. Address masking, tag operations and sandbox bounds stay active.
 
 ## `--runtime-int`
 
@@ -961,6 +960,14 @@ Select the full-module LLVM AOT strategy policy.
 
 Select the high-level full-module LLVM AOT strategy policy.
 
+## `--runtime-memory-reservation`
+
+```text
+[--runtime-memory-reservation] pool <bytes> | participants <count> | memory <module> <local-index> <data-bytes>
+```
+
+Set the process-wide reservation pool, its participant count or the data quota of one owning memory definition.
+
 ## `--runtime-memtag-action`
 
 ```text
@@ -972,10 +979,10 @@ MTE action: crash (default), or silent-log with an explicit independent out, err
 ## `--runtime-memtag-backend`
 
 ```text
-[--runtime-memtag-backend] <software|hardware>
+[--runtime-memtag-backend] <software|auto|arm-mte|x86-mtt|hardware>
 ```
 
-MTE backend: software (default), or hardware. Unsupported hardware/OS combinations are launch errors. Silent-log diagnostics use precise software detection to preserve every violation.
+Default owner tag backend. Required hardware needs OS-enabled checked mappings. The hardware alias requests this host architecture.
 
 ## `--runtime-memtag-mode`
 
@@ -1945,6 +1952,14 @@ Floor a finite f32 ratio in [0,1] of the observable system thread ceiling. No au
 
 Set the dependency-check recursion limit (0 = unlimited).
 
+## `--wasm-feature-disable-adm-extension`
+
+```text
+[--wasm-feature-disable-adm-extension]
+```
+
+Reject ADM memory declarations during validation.
+
 ## `--wasm-feature-disable-bulk-memory`
 
 ```text
@@ -1952,6 +1967,14 @@ Set the dependency-check recursion limit (0 = unlimited).
 ```
 
 Disable the WebAssembly bulk-memory feature.
+
+## `--wasm-feature-disable-custom-page-sizes`
+
+```text
+[--wasm-feature-disable-custom-page-sizes|-WFD-custom-page-sizes]
+```
+
+Disable custom WebAssembly page sizes.
 
 ## `--wasm-feature-disable-exceptions`
 
@@ -2112,6 +2135,14 @@ Disable the WebAssembly threads feature.
 ```
 
 Enable the WebAssembly bulk-memory feature.
+
+## `--wasm-feature-enable-custom-page-sizes`
+
+```text
+[--wasm-feature-enable-custom-page-sizes|-WFE-custom-page-sizes]
+```
+
+Enable custom WebAssembly page sizes.
 
 ## `--wasm-feature-enable-exceptions`
 
@@ -2296,6 +2327,46 @@ Select the MVP baseline; explicit feature enable/disable switches override it.
 ```
 
 Report recoverable host allocation/commit failures from `memory.grow` as -1; Wasm limit failures return -1 in either mode.
+
+## `--wasm-policy-global`
+
+```text
+[--wasm-policy-global] <key> <value>
+```
+
+Set a default Wasm parser feature, initializer limit, runtime check, or memory tag backend.
+
+## `--wasm-policy-group`
+
+```text
+[--wasm-policy-group] <group> <key> <value>
+```
+
+Override a Wasm policy setting for members of a named group.
+
+## `--wasm-policy-group-add-module`
+
+```text
+[--wasm-policy-group-add-module] <group> <module>
+```
+
+Bind a Wasm module name to one policy group. Membership is independent of WASI.
+
+## `--wasm-policy-memory-backend`
+
+```text
+[--wasm-policy-memory-backend] <module> <local-definition-index> <software|auto|arm-mte|x86-mtt>
+```
+
+Select the tag backend for one local memory definition of its owner module.
+
+## `--wasm-policy-single`
+
+```text
+[--wasm-policy-single] <module> <key> <value>
+```
+
+Override one Wasm policy setting for a named module after its group settings.
 
 ## `--wasm-preload-library`
 

@@ -36,31 +36,34 @@ The extension is not part of WebAssembly Core 3.0. The pinned references are:
 
 ## Acceptance and execution policy
 
-The parser policy accepts the experimental instruction family by default.
-`--wasm-feature-disable-memtag-extension` rejects it during validation.
-`--runtime-disable-memtag` is the separate startup execution-policy switch:
-its lowering removes tag operations and checks while retaining
-ordinary address computation and required zeroing. Parser rejection also
-implies no tag execution. A guest cannot change either startup policy.
+A WasmMTE memory declares WasmADM and at least four ignored address bits.
+The parser accepts both extensions by default. The host can disable each one
+through its parser feature switch or a Wasm module policy.
 
-The existence of these switches does not establish the outstanding coverage
-listed above. Official Core-version presets must not silently change the
-independent extension policy.
-Cache keys, hot-update admission, imported-memory ownership and backend selection
-must preserve the effective policy.
+In a memory import or definition, the ADM flag `0x10` adds one raw byte
+immediately after the flags. It gives the number of ignored high bits, before
+the encoded page limits. The MTE flag `0x20` requests tag storage. Custom page
+sizes use flag `0x08` and append a u32 LEB page-size exponent after the limits.
+[Address masking and linear memory reservations](adm-memory-reservation.md)
+
+`--runtime-disable-memtag` changes the default for ordinary access comparisons.
+The accessing module can override it with `runtime.memtag-checks on|off`.
+Both settings retain address masking, bounds, explicit tag operations, zeroing
+and global tag initialization. The defining module selects the backend when
+its memory is initialized. Imports refer to that same owner and tag directory.
+[Module policy keys and precedence](../command-line/wasm-module-policy.md)
 
 ## Fault timing and reporting
 
 With the default `--runtime-memtag-action crash`, `--runtime-memtag-mode sync` rejects a mismatched access before
-performing the load or store. Only when `--runtime-memtag-backend hardware` is explicitly selected,
-activation requests exactly SYNC and verifies the accepted thread policy.
+performing the load or store. A selected physical Arm owner requests synchronous
+faults and verifies the effective thread policy.
 This is the mode required when the deployment contract forbids a rejected
 store from changing its destination.
 
-With crash reporting, `--runtime-memtag-mode async` with either backend have a different
-contract: the offending access may execute, including a write, before the
-runtime enters terminal fault handling. They do not classify a mismatch as
-harmless, undo a write, or authorize resuming the faulted activation. Ordinary
+With crash reporting, `--runtime-memtag-mode async` can deliver a fault after
+the offending access, including a write, has executed. Execution then enters
+terminal fault handling. Ordinary
 linear-memory bounds checks and checked host-buffer transfers remain immediate
 in all modes. Pending tag faults are drained at the instrumented execution and
 host-effect boundaries; entering terminal handling still follows the immutable
@@ -318,19 +321,17 @@ well. Beyond that radius, tags may coincide. A later allocation can reuse a
 released tag. This policy detects some stale-pointer accesses and gives no
 cryptographic authority within shared Wasm memory.
 
-A reserved pointer cannot access bytes until activation. Existing access through
-the original base continues while the extent is reserved. Activation and release
-preserve data. Only successful `claimz` initializes the bytes to zero. Legacy
-tag-writing operations reject writes overlapping a registered extent, and reject
-a proposed tag conflicting with a registered neighbor. Ordinary byte stores
-still use the configured MTE access policy.
+A checked access through a reserved pointer fails its tag comparison until
+activation. The original base remains usable in that interval. Activation and
+release preserve the bytes. A successful `claimz` initializes them to zero.
+Tag-writing operations reject overlaps with a registered extent and conflicting
+colors on a registered neighbor.
 
-Disabling MTE makes all five operations return the input pointer. `claimz`
-still performs a bounds-checked zero fill. A full Wasm checkpoint records each
-tagged owner's shadow together with its active allocations, reservations and
-permanent global ranges. Restore reconstructs these registrations on the
-unpublished owner and preserves their recorded colors. The immutable source
-and resolved memory aliases determine which permanent ranges must be present.
+Turning ordinary access comparisons off preserves the five managed operations,
+their overlap and ownership rules, and their initialization effects. A full
+checkpoint records each tagged owner's shadow, active allocations, reservations
+and permanent global ranges. Restore binds this state to the same memory layout
+and aliases before publishing the owner.
 
 Older full checkpoints and the separate thread-history origin format carry
 only shadow bytes. Enabled MTE admits those formats for sources whose typed
@@ -360,13 +361,23 @@ The low-level shadow checker deliberately checks **every intersecting granule**;
 this access-safety primitive does not resolve historical opcode-store semantics
 by itself.
 
-The reference software geometry uses 16-byte granules, four tag bits at bit 28
-for memory32, and eight tag bits at bit 56 for memory64. The memory32 encoding
-therefore has a 256 MiB untagged address domain. This is a representation limit
-of that experimental ABI, not an added quota on ordinary untagged Wasm memory.
-Finite tags can collide, and same-granule overflows can retain a matching tag;
-memory tagging must not be described as deterministic detection of every memory
-bug or as equivalent to full AddressSanitizer coverage.
+The guest address has width W (32 or 64 bits). The memory's declaration supplies
+the number k of ignored high bits. An access clears those bits before computing
+the effective range. An MTE owner uses exactly four of the ignored bits as its
+tag, with one allocation tag per 16-byte granule.
+
+| Owner | Wasm pointer tag bits | Required geometry |
+| --- | --- | --- |
+| Software memory32 | [31:28] | k ≥ 4 |
+| Software memory64 | [63:60] | k ≥ 4 |
+| Arm MTE memory32 | [31:28] | k ≥ 4. The host pointer carries the tag at [59:56]. |
+| Arm MTE memory64 | [59:56] | k ≥ 8 |
+| Intel MTT memory64 | [60:57] | k ≥ 7. The VM currently rejects this backend. |
+
+For example, memory32 with k = 4 has a 256 MiB address domain. Additional ignored
+bits reduce the domain to 2^(W−k) bytes. `memtag.tagbits` and `memtag.startbit`
+report the active layout. Finite tags can collide, and two objects can share an
+addressable granule.
 
 ## Whole-range software checks
 
@@ -382,11 +393,10 @@ accesses and owner leases on migrated complete-operation paths. Atomic tag
 reads alone do not make a concurrent free/access race safe, and the current
 finite tag representation does not establish allocation-generation identity.
 
-Tag state must belong to the backing memory owner. Imported aliases share that
-state; separate memories and VM processes do not. All WASI and ROS descriptors,
-nested pointers and buffers need a tag-aware range proof before normalization
-or a host effect. Removing tags at host API ingress without checking them is
-not acceptable.
+Tag state belongs to the backing memory owner. All aliases use it. Host buffer
+transfers apply bounds checks and the calling module's tag-check policy before
+normalizing pointer values or performing a host effect. This applies to nested
+pointers as well as the outer descriptor.
 
 ## Qualified component boundaries
 
@@ -400,9 +410,7 @@ permissions; failure does not publish a partially tagged allocation.
 The scalar LLVM proof has executed 47,776 cases on each target: widths 1–16,
 every alignment, first/last granule failures and unchanged data after rejection.
 Non-x86 target execution uses QEMU. This is qualification of generated checking
-code, not a claim that all VM entry paths have been connected. Separate disabled
-IR tests cover all 20 encodings at both address widths; the undefined placeholder
-is rejected, and required zeroing remains.
+code, not a claim that all VM entry paths have been connected. Those historical suites predate the per-owner ADM geometry and module check controls.
 
 ## Global initialization
 
@@ -410,7 +418,7 @@ The sole accepted custom-section name is `uwvm.memtag.linear.globals`. Its
 payload is ULEB64 version `2`, ULEB64 entry count, then that many triples:
 ULEB32 module-local memory index, ULEB64 address, ULEB64 byte length. Memory64
 does not widen the memory index. The old `memtag.globals` name is explicitly
-rejected with a regeneration diagnostic, even with tag execution disabled.
+rejected with a regeneration diagnostic, even with ordinary access comparisons disabled.
 There is no v1 parser/visitor or fallback to memory zero. Duplicate new sections
 also fail admission.
 
@@ -471,12 +479,10 @@ segments. These operations can be valid in modules without any linear memory.
 Table64 indices can be i64 while GC array indices and lengths remain i32.
 Exception tags describe exception identities, not allocation tags.
 
-Integer fields and arrays may store a tagged linear pointer. Their field access
-preserves the full i32/i64 value; an eventual linear memory operation then checks
-the selected owner's address range and allocation tags. Masking an opaque
-reference or dropping the high bits of a stored numeric pointer would break
-this separation. In particular, memory64 software's eight tag bits cannot be
-silently reduced to the four bits of Arm MTE.
+Integer fields and arrays preserve the complete tagged pointer as an i32 or i64.
+A later linear access applies the selected owner's geometry, the caller's tag-check
+policy and the current memory bounds. The four-bit tag can occupy different
+positions on different memory64 owners.
 
 No guest `gc.tagstore` instruction is introduced. Giving guest code authority to
 recolor VM-managed objects cannot repair missing roots, unregistered native
@@ -484,7 +490,7 @@ escapes or a collector lifetime bug. Host allocator MTE/HWASan hardening is a
 separate implementation defense. No GC instruction family is defined; unknown domains, including domain 2,
 are rejected. This does not claim complete Core 3 combination coverage.
 
-## Stack lifetime and disabled execution
+## Stack lifetime and access comparisons
 
 The downstream compiler patch emits explicit stack-tag restoration using the
 original alloca pointer after every relevant replacement of its uses. This
@@ -498,11 +504,9 @@ integration. Instrumenting stack allocations and globals alone therefore does
 not establish heap use-after-free coverage. Each SDK allocator and language
 runtime needs a real allocation, reallocation and deallocation tagging path.
 
-All four zeroing forms must preserve their data-memory zeroing when tag
-execution is disabled. The pinned WAVM implementation is inconsistent for
-`randomstorez` and `untagstorez`; copying that inconsistency would change program
-behavior. Disabled JIT qualification must compare generated IR and machine
-code, not merely elapsed time.
+Zeroing instructions retain both their tag effects and byte initialization when
+ordinary comparisons are disabled. Explicit operations continue to use the
+owner's layout across stack allocation and release.
 
 ## Hardware qualification
 
@@ -546,7 +550,7 @@ Acceptance remains contingent on complete scalar, SIMD, atomic, bulk and
 host-interface coverage; memory growth and shared/imported memory lifecycle;
 interpreter/JIT trap parity; debugger tag displays and diagnostics; hot-update
 policy preservation; five-platform execution; actual Arm hardware performance;
-disabled-mode code equivalence; and measured SDK-level overhead.
+generated code with comparisons disabled; and measured SDK-level overhead.
 
 All language runtimes and allocators need an auditable instrumentation path.
 Mandatory SDK MTE builds must follow those results, rather than replace them.
@@ -600,7 +604,7 @@ All unimplemented encoding domains, including domain 2, fail validation.
 
 ## Violation reporting and delivery
 
-`--runtime-memtag-backend software|hardware` and
+`--runtime-memtag-backend software|auto|arm-mte|x86-mtt` and
 `--runtime-memtag-mode sync|async` select backend and timing independently.
 Software and sync are the defaults. The action defaults to `crash`:
 
@@ -629,12 +633,10 @@ that closed slot. A deliberately shared output endpoint or a separate guest
 filesystem grant remains an explicit operator choice. Opening failure exits126;
 output failure exits123.
 
-Hardware crash mode uses OS-checked physical MTE. Hardware + silent-log still
-requires supported CPU/OS capability but uses precise software checks and
-software-owned memory to enumerate every violation and continue. Physical async
-faults can coalesce, and replaying a synchronous fault is not a safe continuation
-mechanism. This diagnostic combination is not physical hardware acceleration.
-Ordinary bounds remain immediate in every mode.
+Arm MTE crash mode uses OS-checked physical mappings. Continuing silent-log
+diagnostics need precise software comparisons for every affected granule.
+With that action, automatic selection uses software and a required physical
+backend is rejected.
 
 Orderly execution and host-call boundaries drain async records. Forced process
 termination or an immediate whole-process exit can interrupt outstanding async
@@ -644,37 +646,28 @@ sequence numbers identify order within the current process.
 
 ## Independent backend, timing and action axes
 
-All eight combinations are accepted as independent host launch choices:
+The selected timing and action apply across enabled callers.
 
-| Backend | Timing | Action | Access / delivery contract |
+| Owner | Timing | Action | Access and delivery contract |
 | --- | --- | --- | --- |
-| software (default) | sync (default) | crash (default) | Complete tag proof before the data access; mismatch terminates. |
-| software | sync | silent-log | Report each mismatching granule before continuing the access. |
-| software | async | crash | Software detects at the access; copied evidence terminates at a subsequent boundary. |
-| software | async | silent-log | Software detects precisely; value-only reports are drained at execution / host boundaries. |
-| hardware | sync | crash | OS-verified synchronous physical MTE low nibble; memory64 high nibble checked in software. |
-| hardware | sync | silent-log | Requires hardware support; precise software diagnostic execution preserves every violation and continues. |
-| hardware | async | crash | OS-verified asynchronous physical MTE low nibble; memory64 high nibble checked in software with deferred delivery. |
-| hardware | async | silent-log | Requires hardware support; precise software diagnostic execution and asynchronous report delivery. |
+| Software | Sync | Crash | Compare each touched granule before access and terminate on mismatch. |
+| Software | Sync | Silent-log | Report each mismatching granule before continuing. |
+| Software | Async | Crash | Detect at the access and terminate at a later delivery boundary. |
+| Software | Async | Silent-log | Copy precise evidence and drain at an execution or host boundary. |
+| Arm MTE | Sync | Crash | The OS verifies synchronous physical four-bit tag checking. |
+| Arm MTE | Async | Crash | The OS verifies asynchronous physical tag checking. A fault can arrive after the data access. |
 
-Example: `--runtime-memtag-backend hardware --runtime-memtag-mode sync
---runtime-memtag-action crash`. Omission selects **software + sync + crash**,
-including on an MTE-capable Arm system. Option order does not change the result.
-The historical mixed values `software-async` and `hardware-async` of
-`--runtime-memtag-mode` are rejected; there is no compatibility parser.
-Both hardware timing choices reject unsupported hosts instead of silently
-choosing software. Runtime-disabled MTE conflicts with explicit hardware or
-asynchronous execution. Offline validation does not execute or activate MTE.
+The default is **software, sync, crash**. `auto` selects a usable physical
+backend for compatible owners and software otherwise. Explicit `arm-mte`
+and `x86-mtt` require their corresponding checked mapping implementation.
+The legacy global spelling `hardware` requests the host architecture's hardware
+backend. A module configured to skip comparisons can share a software owner
+with modules that check its tags. An explicit physical owner reachable by an
+unchecked caller is a launch error.
 
-For direct LLVM guest accesses in hardware crash mode, a memory32 owner needs
-no software tag-array load: the complete four-bit tag is checked by the physical
-access. A memory64 owner retains one byte per 16-byte granule and compares only
-`tag & 0xf0` in software; the physical pointer carries `tag & 0x0f`. This preserves
-all eight bits instead of weakening the memory64 contract to four. The full
-bounds proof, both granules of a crossing access, owner identity, shared tag
-lease and checked host-transfer rules remain necessary. Marker queries still
-need the complete software shadow. No claims of eliminating all VM overhead or
-accelerating diagnostic continuation are implied by eliminating four tag bits.
+Direct LLVM accesses still prove the full linear-memory range. Physical Arm
+memory accesses use all four tag bits. Marker queries, directory operations,
+shared leases and host transfers also consult owner state.
 
 Linux capability admission uses OS HWCAPs and the actual per-thread `prctl`
 result. Instruction-only FEAT_MTE is insufficient; checked mappings require the
@@ -698,15 +691,16 @@ OS delivery latency or Apple EMTE. A published 40%/10% overhead comparison
 cannot substitute for native measurements of this implementation.
 
 
-## Command-line surface: five controls
+## Command-line controls
 
 | Control | Accepted values / effect | Default |
 | --- | --- | --- |
-| `--wasm-feature-disable-memtag-extension` | Reject the nonstandard extension and disable its execution. | Extension accepted |
-| `--runtime-disable-memtag` | Omit runtime tag checks/operations while preserving required zeroing. | Execution enabled |
+| `--wasm-feature-disable-adm-extension` | Reject ADM memory declarations. | Extension accepted |
+| `--wasm-feature-disable-memtag-extension` | Reject WasmMTE declarations, instructions and global metadata. | Extension accepted |
+| `--runtime-disable-memtag` | Default ordinary access comparisons to off. | Comparisons enabled |
 | `--runtime-memtag-mode` | `sync`, `async` | `sync` |
 | `--runtime-memtag-action` | `crash`, or `silent-log` with mandatory `out`, `err`, or `path <PATH>` | `crash` |
-| `--runtime-memtag-backend` | `software`, `hardware` | `software` |
+| `--runtime-memtag-backend` | `software`, `auto`, `arm-mte`, `x86-mtt`, `hardware` | `software` |
 
 Violation records carry `"action":"silent-log"`. The report stream is configured
 inside the action, independently of the ordinary `--log-output` stream. No
@@ -732,8 +726,8 @@ LLVM mismatch-edge weights are scheduling hints. They do not permit a compiler
 to assume a tag match or remove the ordinary bounds proof. The Arm physical
 pointer emitter uses the native allocator's complete canonical reservation as
 its witness; a guest address or alignment hint cannot supply that witness.
-Memory64 still checks the upper tag nibble in software. Memory32 physical crash
-mode still relies on an admitted OS-checked MTE mapping for all four tag bits.
+Physical Arm checks use the complete four-bit tag. The owner records its selected
+position for marker instructions and host access.
 
 Performance qualification records process CPU time and elapsed time separately,
 pins each before/current workload to the same CPU, and coordinates physical-core

@@ -14,12 +14,12 @@ Source focus:
 
 ## Feature baseline and overrides
 
-The default is **WebAssembly Core 3.0 plus the threads and WasmMTE extensions**.
+The default enables **WebAssembly Core 3.0, threads, WasmADM and WasmMTE**. Custom page sizes require explicit enablement.
 Selecting `--wasm-feature-wasm3` explicitly has the same effective policy as
 omitting a baseline. Core 3.0 additions include GC, typed function references,
 tail calls, exceptions, extended constant expressions, table initializers,
-multiple memories, memory64/table64 and relaxed SIMD. Threads and WasmMTE are
-separate extensions, not claims that they belong to Core 3.0; see the
+multiple memories, memory64/table64 and relaxed SIMD. Threads, WasmADM and
+WasmMTE are separate extensions. See the
 [official Core change history](https://webassembly.github.io/spec/core/appendix/changes.html).
 
 | Baseline | Short forms | Defaults before explicit overrides |
@@ -39,7 +39,7 @@ validated; enabling one feature does not silently grant unrelated features or
 any WASI/ROS host interfaces.
 
 ```bash
-uwvm2-ros --run app.wasm                       # Core 3.0 + threads + WasmMTE
+uwvm2-ros --run app.wasm                       # Core 3.0 + threads + WasmADM + WasmMTE
 uwvm2-ros -WF3 --run app.wasm                  # Same effective policy
 uwvm2-ros -WF2 -WFE-gc --run gc.wasm           # Core 2.0 with GC enabled
 uwvm2-ros -WFE-gc -WF2 --run gc.wasm           # Same policy, reversed order
@@ -48,11 +48,17 @@ uwvm2-ros -WF3 -WFD-gc --run app.wasm          # Same policy, explicit baseline
 uwvm2-ros -WFD-threads --run app.wasm          # Disable the threads extension
 ```
 
-WasmMTE parsing remains enabled for every baseline unless
-`--wasm-feature-disable-memtag-extension` is supplied. This option controls
-admission. `--runtime-disable-memtag` controls execution and leaves parsing enabled. Neither setting grants host permissions. Turning on the
+WasmMTE and WasmADM parsing are enabled for every baseline.
+`--wasm-feature-disable-memtag-extension` and `--wasm-feature-disable-adm-extension`
+can reject their respective declarations. Use `--wasm-feature-enable-custom-page-sizes`
+to admit custom page sizes. `--runtime-disable-memtag` defaults ordinary access
+comparisons to off while retaining explicit tag operations. Turning on the
 threads instruction extension does not grant `wasi.thread-spawn` or its
 separate runtime resources.
+
+## Module policies
+
+Use `--wasm-policy-global`, `--wasm-policy-group` and `--wasm-policy-single` to set parser features, initializer limits and runtime tag policy by module. `--wasm-policy-memory-backend` selects the backend of an individual local memory definition. [Keys, precedence and example / 中文说明](wasm-module-policy.md)
 
 ## Command Table
 
