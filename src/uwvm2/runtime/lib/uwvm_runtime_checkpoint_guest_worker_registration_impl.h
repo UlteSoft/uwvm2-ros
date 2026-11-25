@@ -68,7 +68,7 @@ extern "C++"
             same_owner(actual.control_, g_runtime.debug_pause_control) &&
             same_owner(actual.profile_, g_runtime.checkpoint_profile) &&
             same_owner(actual.host_, g_runtime.checkpoint_host_state) &&
-            same_owner(actual.source_, ::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin());
+            ::uwvm2::uwvm::runtime::full::selected_full_source_matches_owner(actual.source_identity_.lock());
     }
     llvm_jit_debug_guest_worker_launch_result runtime_checkpoint_guest_worker_bridge::launch(
         ::std::shared_ptr<domain> const& supplied_control, ::std::shared_ptr<void> state,
@@ -228,8 +228,8 @@ extern "C++"
         auto const& rec{g_runtime.modules.index_unchecked(module_id)};
         ::uwvm2::uwvm::runtime::full::builtin_wasip1_function_data binding{};
         if(rec.runtime_module == nullptr || rec.llvm_jit_full_publication == nullptr ||
-           !same_owner(rec.llvm_jit_full_publication->source,actual->source_) ||
-           !actual->source_->actual_builtin_wasip1_function(module_id,actual->epoch_,rec.runtime_module,import_index,binding) ||
+           !same_owner(rec.llvm_jit_full_publication->source,actual->source_until_join_) ||
+           !actual->source_until_join_->actual_builtin_wasip1_function(module_id,actual->epoch_,rec.runtime_module,import_index,binding) ||
            !binding.exits_guest || binding.function_index != target.u.local_imported.index ||
            binding.parameter_count != 1u || binding.parameters[0u] != 0x7fu || binding.result_count != 0u) { return; }
         // [actual validated raw ABI buffer0..4] end
@@ -356,11 +356,13 @@ extern "C++"
         if(!actual->published_.load(::std::memory_order_acquire) || !actual->native_)
         { return {{::fast_io::thread_join_status::pending, 0u}, false}; }
         auto const result{::uwvm2::utils::thread::join_native_thread_until(*actual->native_, deadline)};
+        source_type::owner retired_source{};
         ::std::shared_ptr<void> retired_launch{};
         if(result.actual.status == ::fast_io::thread_join_status::joined)
         {
             actual->physically_joined_ = true;
             ::std::lock_guard registry_lock{registry_mutex_};
+            retired_source = ::std::move(actual->source_until_join_);
             retired_launch = ::std::move(actual->launch_state_);
             for(auto& slot : registry_) { if(same_owner(slot.live, actual)) { slot.live.reset(); break; } }
         }
@@ -369,6 +371,11 @@ extern "C++"
         // owns that world. Break that cycle ONLY after OS/TLS physical join, and
         // destroy launch/controller/world owners outside every join/registry lock.
         retired_launch.reset();
+        // A CLI can keep the completed handle for its final idempotent join.
+        // Post-join tuple checks use the immutable identity and the retirement
+        // transaction's own strong source. Code and debugger bindings each
+        // retain their actual source until their own readers are done.
+        retired_source.reset();
         // failed/unsupported/not_joinable/pending keep the same native wrapper
         // AND canonical registry owner. Native-handle/detach cannot escape.
         return result;
@@ -510,7 +517,7 @@ extern "C++"
         {
             auto const& actual{slot.live};
             if(!actual || actual->epoch_ != request->epoch) { continue; }
-            if(!actual_tuple_current(*actual) || !same_owner(actual->source_, source) ||
+            if(!actual_tuple_current(*actual) || !same_owner(actual->source_until_join_, source) ||
                !actual->published_.load(::std::memory_order_acquire) || !actual->native_ || count == tentative.size())
             { return false; }
             if(actual->body_returned_)

@@ -110,7 +110,9 @@ uwvm2-ros --runtime-aot --debug-permissions limited \
   --run component.wasm
 ```
 
-The optional business export authorizes one local export and its exact scalar ABI.
+The optional business export authorizes one local export and its exact scalar ABI
+in the signed launch's module instance. A debugger snapshot that replaces this
+instance ends the grant for subsequent calls.
 Without it the channel cannot invoke guest functions. It never exposes arbitrary
 private calls, memory, registers or evaluation. Guest WASI/ROS grants remain
 separate. Management options are not guest arguments or environment.

@@ -61,9 +61,12 @@ With a full-permission LLVM debugger and automatic participant sizing, the
 initial graph can use up to half the free pool. The paused graph keeps its
 mappings while `dump restore` prepares its replacement. On i686 with the
 default 2 GiB pool and one debugger session, each graph has a 1 GiB budget
-across all its owners and guards, including on subsequent restores. Other
-live mappings reduce the budget available to the pair. Initialization fails
-if the required data quotas and minimum guard windows exceed a graph's budget.
+across all its owners and guards, including on subsequent restores. The VM
+keeps the old graph alive through worker and thread-local cleanup. After
+publication, the pool recovers its reservation when the last source or code
+owner releases it. The CLI keeps a receipt for the completed join. Other live
+mappings reduce the budget available to the pair. Initialization fails if
+the required data quotas and minimum guard windows exceed a graph's budget.
 An explicit `participants` count selects the participant-based plan. The private
 WASI Threads driver and sessions with preloaded native drivers use the ordinary
 plan.

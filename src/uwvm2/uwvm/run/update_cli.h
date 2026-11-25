@@ -10,10 +10,14 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <span>
 #include <thread>
 #include <vector>
 #include <uwvm2/runtime/lib/uwvm_runtime_update.h>
 #include <uwvm2/utils/thread/cooperative_pause_domain.h>
+#if !defined(UWVM_MODULE) && defined(__linux__) && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
+#include <uwvm2/uwvm/runtime/storage/full.h>
+#endif
 #if defined(__linux__)
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -32,6 +36,24 @@ namespace uwvm2::uwvm::run::production_update_cli
         bool enabled{};
         ::std::uint32_t function_index{}, input_bytes{}, output_bytes{};
         ::std::shared_ptr<::uwvm2::utils::thread::cooperative_pause_domain> debug_control{};
+        ::std::weak_ptr<::uwvm2::uwvm::runtime::full::full_source_instance const> source{};
+
+        [[nodiscard]] update::status invoke(::std::span<unsigned char> output, ::std::span<unsigned char const> input) const noexcept
+        {
+            namespace full = ::uwvm2::uwvm::runtime::full;
+            namespace runtime = ::uwvm2::runtime::lib;
+            // With a debugger the registered worker holds its actual launch
+            // lease here. Without one the signed coordinator is the sole
+            // manager. An export authorized before a restore belongs to that
+            // source alone, even if the replacement uses the same function ID.
+            auto const owner{source.lock()};
+            if(!full::selected_full_source_matches_owner(owner)) { return update::status::invalid_state; }
+            auto const* module{owner->initialized_main_module()};
+            if(!module) { return update::status::invalid_state; }
+            runtime::guest_exit::clear();
+            runtime::llvm_jit_call_raw_host_api(module, function_index, output.data(), output.size(), input.data(), input.size());
+            return runtime::guest_exit::last.requested ? update::status::validation_failed : update::status::ok;
+        }
     };
     class channel
     {
@@ -193,7 +215,7 @@ namespace uwvm2::uwvm::run::production_update_cli
             }
             runtime_update_disconnected_host_api(); return 75;
         }
-        int serve(::std::atomic<bool>& entry_finished, void const* runtime_module, business_export const& allowed_call)
+        int serve(::std::atomic<bool>& entry_finished, business_export const& allowed_call)
         {
             using namespace ::uwvm2::runtime::lib;
             for(;;)
@@ -262,7 +284,6 @@ namespace uwvm2::uwvm::run::production_update_cli
                     else if(input == allowed_call.input_bytes && output == allowed_call.output_bytes && payload.size() == 12u+input)
                     {
                         result.resize(output);
-                        bool exited{}, call_failed{};
                         if(allowed_call.debug_control)
                         {
                             // The coordinator keeps its original native thread.
@@ -270,20 +291,20 @@ namespace uwvm2::uwvm::run::production_update_cli
                             // IDE pause leaves both authenticated channels alive.
                             struct call_state
                             {
-                                void const* module{}; ::std::uint32_t index{};
-                                ::uwvm2::utils::container::std_vector<unsigned char> input{}, output{}; bool exited{};
+                                business_export target{};
+                                ::uwvm2::utils::container::std_vector<unsigned char> input{}, output{};
+                                update::status status{update::status::busy};
                             };
                             auto state{::uwvm2::utils::container::make_shared<call_state>()};
-                            state->module = runtime_module; state->index = index;
+                            state->target = allowed_call;
                             state->input.assign(payload.begin()+12, payload.end()); state->output.resize(output);
                             auto launched{runtime_launch_llvm_jit_debug_guest_worker_host_api(allowed_call.debug_control, state,
                                 +[](void* raw) noexcept
                                 {
-                                    auto& call{*static_cast<call_state*>(raw)}; guest_exit::clear();
-                                    llvm_jit_call_raw_host_api(call.module, call.index, call.output.data(), call.output.size(),
-                                        call.input.data(), call.input.size()); call.exited = guest_exit::last.requested;
+                                    auto& call{*static_cast<call_state*>(raw)};
+                                    call.status = call.target.invoke(call.output, call.input);
                                 })};
-                            if(!launched.worker) { call_failed = true; result.clear(); }
+                            if(!launched.worker) { status = update::status::busy; }
                             else
                             {
                                 for(;;)
@@ -293,18 +314,16 @@ namespace uwvm2::uwvm::run::production_update_cli
                                     if(joined.actual.status == ::fast_io::thread_join_status::joined) { break; }
                                     if(joined.actual.status != ::fast_io::thread_join_status::pending) { ::std::_Exit(75); }
                                 }
-                                result = ::std::move(state->output); exited = state->exited;
+                                result = ::std::move(state->output); status = state->status;
                             }
                         }
                         else
                         {
-                            guest_exit::clear();
-                            llvm_jit_call_raw_host_api(runtime_module, index, result.data(), result.size(), payload.data()+12, input);
-                            exited = guest_exit::last.requested;
+                            status = allowed_call.invoke(result, ::std::span{payload}.subspan(12u, input));
                         }
                         update::facts after{}; (void)runtime_update_observe_host_api(after);
-                        status = call_failed ? update::status::busy :
-                            result.size() != output || exited || !after.active ? update::status::validation_failed : update::status::ok;
+                        if(status == update::status::ok && (result.size() != output || !after.active))
+                        { status = update::status::validation_failed; }
                         if(status != update::status::ok) { result.clear(); }
                     }
                 }

@@ -26,7 +26,11 @@ extern "C++"
         using source_type = ::uwvm2::uwvm::runtime::full::full_source_instance;
         using gate = ::uwvm2::utils::thread::checkpoint_host_admission;
         ::std::shared_ptr<domain> const control_;
-        source_type::owner const source_;
+        // A retained join receipt still identifies its original source. The
+        // worker holds a strong pin through OS/TLS join. Its own trampoline
+        // and the locked live registry may read that pin until join removes it.
+        ::std::weak_ptr<source_type const> const source_identity_;
+        source_type::owner source_until_join_;
         ::uwvm2::runtime::checkpoint::compilation_profile::owner const profile_;
         runtime_checkpoint_host_bridge::owner const host_;
         ::std::uint_least64_t const epoch_;
@@ -62,7 +66,7 @@ extern "C++"
             runtime_checkpoint_host_bridge::owner host, ::std::uint_least64_t epoch,
             ::std::shared_ptr<void> state, llvm_jit_debug_guest_worker_body body,
             origin selected_origin = origin::initial_current) noexcept
-            : control_{::std::move(control)}, source_{::std::move(source)}, profile_{::std::move(profile)},
+            : control_{::std::move(control)}, source_identity_{source}, source_until_join_{::std::move(source)}, profile_{::std::move(profile)},
               host_{::std::move(host)}, epoch_{epoch}, launch_state_{::std::move(state)}, body_{body}, origin_{selected_origin} {}
     public:
         // Canonical registry owns every live native owner. Pending never reaches

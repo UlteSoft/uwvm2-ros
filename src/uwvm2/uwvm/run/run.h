@@ -2622,6 +2622,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             if(update_debugger) { allowed_call.debug_control = update_debugger->domain(); }
             if(options::update_call_export_exists)
             {
+                auto const source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
+                if(!source || source->initialized_main_module() != ::std::addressof(found->second))
+                { return static_cast<int>(retval::parameter_error); }
+                allowed_call.source = source;
                 using external_types = ::uwvm2::parser::wasm::standard::wasm1::type::external_types;
                 auto const exports{::uwvm2::uwvm::wasm::storage::all_module_export.find(file.module_name)};
                 bool valid{};
@@ -2698,7 +2702,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             // actually acquired its root lease. An OS thread existing is not an ACK.
             while(!admitted.load(::std::memory_order_acquire) && !finished.load(::std::memory_order_acquire))
             { ::std::this_thread::yield(); }
-            auto const outcome{update_channel->serve(finished, ::std::addressof(found->second), allowed_call)};
+            auto const outcome{update_channel->serve(finished, allowed_call)};
             if(outcome == 75)
             {
                 // Process containment, not ABORT: retain the fence until exit.
