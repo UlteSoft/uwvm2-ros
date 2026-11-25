@@ -15,7 +15,7 @@ import resource
 import shlex
 import subprocess
 
-from vm_matrix import assertion, c, mem, op as packed_op, s, sec, u
+from vm_matrix import assertion, c, mem, op as packed_op, s, sec, u, memory_limits
 from vm_diagnostics import fault_matches, human_fault
 
 
@@ -66,7 +66,7 @@ def make_module(code, types=(), locals_=(), memory=None, table=None,
         wide, count, element_type = table
         result += sec(4, b"\x01" + element_type + u(4 if wide else 0) + u(count))
     if memory is not None:
-        result += sec(5, b"\x01" + u(5 if memory == 64 else 1) + u(1) + u(1))
+        result += sec(5, b"\x01" + memory_limits(memory == 64,maximum=1))
     if unused_tag:
         result += sec(13, b"\x01\0\0")
     exports = [b"\x06_start\0\0"]
@@ -162,7 +162,7 @@ def table64_array(index64=False):
 
 def tagged_through_gc(bits, mismatch=False):
     value_type = I64 if bits == 64 else I32
-    tag = 0xA3 if bits == 64 else 3
+    tag = 3
     tagged = lambda address, color=tag: c(address, bits) + c(color, bits) + op(0x22)
     code = tagged(0) + c(64, bits) + op(0x2B)
     code += tagged(16) + c(0x12345678) + mem(0x36)
@@ -276,8 +276,8 @@ def main():
             command = shlex.split(args.runner) + [str(args.vm.resolve()), f"--runtime-{engine}"]
             if engine == "aot":
                 command += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-compile-threads", "0"]
-            command += ["-WFE-gc", "-WFE-function-references", "-WFE-reference-types", "-WFE-memory64", "-WFE-table64",
-                       "-WFE-exceptions", "-Rclog", "err", "--wasm-set-start-func", "0", "--", case["file"]]
+            command += ["--wasm-policy-global", "parser.gc", "on", "--wasm-policy-global", "parser.function-references", "on", "--wasm-policy-global", "parser.reference-types", "on", "--wasm-policy-global", "parser.memory64", "on", "--wasm-policy-global", "parser.table64", "on",
+                       "--wasm-policy-global", "parser.exceptions", "on", "-Rclog", "err", "--wasm-set-start-func", "0", "--", case["file"]]
             result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
             text = result.stdout.decode("utf-8", "replace")
             (args.out / (case["encoding"] + "-" + case["name"] + "-" + engine + ".log")).write_text(text)

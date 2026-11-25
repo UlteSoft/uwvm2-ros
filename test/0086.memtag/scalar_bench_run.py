@@ -56,12 +56,12 @@ def command(binary, fixture, engine, mte, candidate_mode=None):
     result = [str(binary), "--runtime-int" if engine == "int" else "-Raot"]
     if engine == "aot":
         result += ["--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable"]
-    result += ["--wasm-feature-enable-memory64", "--wasm-feature-enable-table64",
-        "--wasm-feature-enable-threads", "--wasm-set-main-module-name", "main",
+    result += ["--wasm-policy-global", "parser.memory64", "on", "--wasm-policy-global", "parser.table64", "on",
+        "--wasm-policy-global", "parser.threads", "on", "--wasm-set-main-module-name", "main",
         "--wasip1-single-create", "main", "--wasip1-single-enable", "main",
         "--wasm-set-start-func", str(start_export(data))]
     if mte == "off":
-        result += ["--runtime-disable-memtag"]
+        result += ["--wasm-policy-global", "runtime.memtag-checks", "off"]
     elif candidate_mode is not None:
         result += ["--runtime-memtag-mode", candidate_mode]
     return result + ["--", str(fixture)]

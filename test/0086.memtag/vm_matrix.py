@@ -27,10 +27,14 @@ def simd(n,offset=0,lane=None):
  return b'\xfd'+u(n)+u(0)+u(offset)+(u(lane) if lane is not None else b'')
 def assertion(expression,expected,bits=32):
  return expression+c(expected,bits)+bytes([0x47 if bits==32 else 0x52,0x04,0x40,0x00,0x0b])
+def memory_limits(wide=False,shared=False,*,tagged=True,minimum=1,maximum=2):
+ flags=1 | (4 if wide else 0) | (2 if shared else 0) | (0x30 if tagged else 0)
+ geometry=bytes([16 if wide else 4]) if tagged else b''
+ return u(flags)+geometry+u(minimum)+u(maximum)
 def module(code,wide=False,passive=None,shared=False,memories=1):
  body=b'\x01\x01'+bytes([0x7e if wide else 0x7f])+code+b'\x0b'
  result=b'\0asm\x01\0\0\0'+sec(1,b'\x01\x60\0\0')+sec(3,b'\x01\0')
- result+=sec(5,u(memories)+b''.join(u(1+(4 if wide else 0)+(2 if shared else 0))+u(1)+u(2) for _ in range(memories)))
+ result+=sec(5,u(memories)+b''.join(memory_limits(wide,shared) for _ in range(memories)))
  result+=sec(7,b'\x01\x06_start\0\0')
  if passive is not None:result+=sec(12,b'\x01')
  result+=sec(10,b'\x01'+u(len(body))+body)
@@ -47,17 +51,17 @@ class Program:
   for i,v in enumerate(values):self.add(self.tagged(position+i)+c(v)+mem(0x3a))
  def check_bytes(self,position,values):
   for i,v in enumerate(values):self.eq(self.tagged(position+i)+mem(0x2d),v)
-def markers(wide,enabled):
+def markers(wide):
  p=Program(wide);n=p.n;t=p.tagged;bits=p.bits
- p.eq(op(0x20),2 if enabled else 0,bits)
- p.eq(op(0x23),(8 if wide else 4) if enabled else 0,bits)
- p.eq(op(0x24),(56 if wide else 28) if enabled else bits,bits)
- p.eq(t(17)+op(0x21),3 if enabled else 0,bits)
+ p.eq(op(0x20),2,bits)
+ p.eq(op(0x23),4,bits)
+ p.eq(op(0x24),bits-4,bits)
+ p.eq(t(17)+op(0x21),3,bits)
  p.eq(t(17)+op(0x28),17,bits)
  p.eq(t(17)+t(5,7)+op(0x26),12,bits)
- p.eq(n(17)+t(0,7)+op(0x25)+op(0x21),7 if enabled else 0,bits)
- p.eq(n(17)+t(0,7)+n(2)+op(0x36)+op(0x21),9 if enabled else 0,bits)
- p.add(p.tags());p.eq(n(17)+op(0x27)+op(0x21),3 if enabled else 0,bits)
+ p.eq(n(17)+t(0,7)+op(0x25)+op(0x21),7,bits)
+ p.eq(n(17)+t(0,7)+n(2)+op(0x36)+op(0x21),9,bits)
+ p.add(p.tags());p.eq(n(17)+op(0x27)+op(0x21),3,bits)
  p.add(t(0)+c(77)+mem(0x36));p.add(t(0)+n(32)+op(0x2c));p.eq(t(0)+mem(0x28),0)
  for opcode in [0x29,0x2a]:
   p.add(p.tags());p.add(t(0)+c(77)+mem(0x36))
@@ -74,7 +78,7 @@ def markers(wide,enabled):
   p.add(p.tags());p.add(t(0)+c(77)+mem(0x36))
   p.add(n(0)+n(32)+t(0,7)+n(2)+op(opcode)+b'\x21\0')
   p.eq(b'\x20\0'+mem(0x28),0 if opcode==0x38 else 77)
-  p.eq(b'\x20\0'+op(0x21),9 if enabled else 0,bits)
+  p.eq(b'\x20\0'+op(0x21),9,bits)
  return module(p.code,wide)
 def scalars(wide):
  p=Program(wide);p.add(p.tags());data=bytes([0xff,0xee,0xdd,0xcc,0xbb,0xaa,0x99,0x88])
@@ -159,7 +163,7 @@ def main():
  args.out.mkdir(parents=True,exist_ok=True);cases=[]
  for wide in [False,True]:
   for enabled in [False,True]:
-   for name,make in [('markers',lambda w:markers(w,enabled)),('scalars',scalars),('simd',simds),('bulk',bulks),('atomic',atomics)]:
+   for name,make in [('markers',markers),('scalars',scalars),('simd',simds),('bulk',bulks),('atomic',atomics)]:
     cases.append((f'{name}-{64 if wide else 32}-{int(enabled)}',make(wide),enabled,'success'))
    for kind in ['scalar','simd','fill','copy','atomic','bounds']:
     expected='bounds' if kind=='bounds' else 'memtag' if enabled else 'success'
@@ -174,9 +178,9 @@ def main():
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),f'--runtime-{engine}','--wasm-feature-enable-memory64','--wasm-feature-enable-table64','--wasm-feature-enable-threads','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
+   command=[str(args.vm),f'--runtime-{engine}','--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on','--wasm-policy-global', 'parser.threads', 'on','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
    if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--runtime-compile-threads','0']
-   if not case['enabled']:command+=['--runtime-disable-memtag']
+   if not case['enabled']:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
    command+=['--',case['file']]
    completed=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90)
    output=completed.stdout.decode('utf8','replace');(args.out/(case['name']+'-'+engine+'.log')).write_text(output)
@@ -192,9 +196,9 @@ if __name__=='__main__':main()
 def mode_flags(mode):
     """Test profile labels; the product accepts only independent CLI axes."""
     profiles = {"sync": ("software", "sync"), "software-async": ("software", "async"),
-                "hardware-sync": ("hardware", "sync"), "hardware-async": ("hardware", "async")}
+                "hardware-sync": ("arm-mte", "sync"), "hardware-async": ("arm-mte", "async")}
     backend, delivery = profiles[mode]
-    return ["--runtime-memtag-backend", backend, "--runtime-memtag-mode", delivery]
+    return ["--wasm-policy-global", "runtime.memtag-backend", backend, "--runtime-memtag-mode", delivery]
 
 
 def report_flags(destination):

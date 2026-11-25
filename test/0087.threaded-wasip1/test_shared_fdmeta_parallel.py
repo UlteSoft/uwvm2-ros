@@ -10,8 +10,8 @@ rows=[]
 for engine in ['int','aot']:
  for disabled in [False,True]:
   name=engine+('-disabled' if disabled else '-enabled')
-  cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-grant','main','thread-spawn']
-  for interface in ['thread-spawn','fd_fdstat_get','fd_fdstat_set_rights']:cmd+=['--wasip1-single-interface','main',interface,'allow']
+  cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasithread-single-create','main','--wasithread-single-enable','main','--wasithread-single-interface','main','thread-spawn','allow']
+  for interface in ['fd_fdstat_get','fd_fdstat_set_rights']:cmd+=['--wasip1-single-interface','main',interface,'allow']
   cmd+=['--wasip1-single-mount-dir','main','/sandbox',str(mount),'--wasip1-single-mount-dir-rights','main','/sandbox','9216','66','--wasm-preload-library',str(owner.with_suffix('.wasm')),'env']
   if disabled:cmd+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
   cmd+=['--run',str(wasm)];start=time.monotonic()

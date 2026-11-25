@@ -53,7 +53,7 @@ int main(int argc,char** argv) {
  mode::global_runtime_compiler=mode::runtime_compiler_t::llvm_jit_only;
  mode::global_runtime_compile_threads=0u;mode::runtime_compile_threads_existed=true;
  mode::global_runtime_llvm_jit_cache_path_mode=mode::runtime_llvm_jit_cache_path_mode_t::disabled;
- mode::runtime_disable_memtag=disabled;
+ uwvm2::uwvm::wasm::storage::wasm_parameter.memory_policy.check_tags=!disabled;
  auto const path=uwvm2::utils::container::u8concat_uwvm(fast_io::mnp::code_cvt(fast_io::mnp::os_c_str(argv[1])));
  auto& arguments=uwvm2::uwvm::cmdline::parsing_result;
  uwvm2::uwvm::cmdline::wasm_file_ppos=nullptr;arguments.clear();

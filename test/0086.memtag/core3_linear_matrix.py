@@ -15,7 +15,7 @@ import re
 import shlex
 import subprocess
 
-from vm_matrix import SIMD, assertion, c, sec, u
+from vm_matrix import SIMD, assertion, c, sec, u, memory_limits
 from vm_diagnostics import fault_matches, human_fault
 
 HEADER = b"\0asm\x01\0\0\0"
@@ -58,15 +58,18 @@ def globals_v2(entries, version=2):
     return u(version) + u(len(entries)) + b"".join(u(index) + u(address) + u(length) for index, address, length in entries)
 
 
-def module(code=b"", widths=(32,), *, imports=(), sections=(), data=(), start=False, export_memory=False):
+def module(code=b"", widths=(32,), *, imports=(), ordinary=(), sections=(), data=(), start=False, export_memory=False):
     """imports contains (module, field, address_bits); data uses None for passive."""
     result = HEADER + sec(1, b"\x01\x60\0\0")
-    limits = lambda bits: u(5 if bits == 64 else 1) + u(1) + u(2)
+    def limits(index, bits):
+        return memory_limits(bits == 64, tagged=index not in ordinary)
     if imports:
-        result += sec(2, u(len(imports)) + b"".join(text(owner) + text(field) + b"\x02" + limits(bits) for owner, field, bits in imports))
+        types = (text(owner) + text(field) + b"\x02" + limits(i, bits)
+                 for i, (owner, field, bits) in enumerate(imports))
+        result += sec(2, u(len(imports)) + b"".join(types))
     result += sec(3, b"\x01\0")
     if widths:
-        result += sec(5, u(len(widths)) + b"".join(limits(bits) for bits in widths))
+        result += sec(5, u(len(widths)) + b"".join(limits(i, bits) for i, bits in enumerate(widths, len(imports))))
     exports = text("_start") + b"\0\0"
     if export_memory:
         exports += text("memory") + b"\x02\0"
@@ -183,7 +186,7 @@ def bulk_cases():
                     expected = 121 if mode == "empty-oob" else 122 if mode.startswith("bad") else 0
                     diagnostic = "out of bounds" if expected == 121 else "memory tag mismatch" if expected == 122 else ""
                     yield Case(f"copy-{destination_bits}-{source_bits}-tags{dst_tag or 0}{src_tag or 0}-{mode}",
-                               module(code, (destination_bits, source_bits), data=((1, 32, b"Q"*128),)), expected, diagnostic)
+                               module(code, (destination_bits, source_bits), ordinary=tuple(i for i, tag in enumerate((dst_tag, src_tag)) if tag is None), data=((1, 32, b"Q"*128),)), expected, diagnostic)
     for bits in (32, 64):
         for index in (0, 1):
             for operation in ("fill", "init"):
@@ -224,18 +227,18 @@ def metadata_cases():
     admission = "wasmmte admission failed"
     for bits in (32, 64):
         section = (LINEAR_GLOBALS, globals_v2(((1, 32, 32),)))
-        # No MTE instruction occurs in this body: the metadata alone must mark
+        # No MTE instruction occurs in this body: the metadata initializes tags on
         # memory 1, making the raw zero-tag load fail after active-data copy.
         code = c(32, bits) + memory(0x28, 1) + b"\x1a"
         raw = module(code, (bits, bits), sections=(section,), data=((1, 32, b"Q"*32),))
-        yield Case(f"globals-only-activates-{bits}", raw, 122, "memory tag mismatch")
+        yield Case(f"globals-on-tagged-owner-{bits}", raw, 122, "memory tag mismatch")
         yield Case(f"globals-only-disabled-{bits}", raw, disabled=True)
-        yield Case(f"globals-feature-disabled-{bits}", raw, 127, admission, extension_disabled=True)
+        yield Case(f"globals-feature-disabled-{bits}", raw, 127, "parser.memtag on", extension_disabled=True)
         # A raw address with high bits on the neighbouring ordinary owner must
         # still be a bounds failure; silently activating it would yield MTE.
-        shift = 28 if bits == 32 else 56
+        shift = bits - 4
         neighbour = c((3 << shift), bits) + memory(0x28, 0) + b"\x1a"
-        yield Case(f"globals-neighbour-ordinary-{bits}", module(neighbour, (bits, bits), sections=(section,)), 121, "out of bounds")
+        yield Case(f"globals-neighbour-ordinary-{bits}", module(neighbour, (bits, bits), ordinary=(0,), sections=(section,)), 121, "out of bounds")
         code = assertion(c(32, bits) + mte(0x27, 1) + memory(0x2d, 1), 81)
         code += assertion(c(32, bits) + memory(0x2d, 0), 0)
         yield Case(f"globals-selected-owner-{bits}", module(code, (bits, bits), sections=(section,), data=((1, 32, b"Q"*32),)))
@@ -336,16 +339,16 @@ def main():
         for engine in args.engines.split(","):
             command = shlex.split(args.runner) + [str(args.vm), "-R"+engine, "--runtime-compile-threads", "0",
                        "--debug-fault-action", "exit",
-                       "--wasm-feature-enable-memory64",
-                       "--wasm-feature-enable-multi-memory"]
+                       "--wasm-policy-global", "parser.memory64", "on",
+                       "--wasm-policy-global", "parser.multi-memory", "on"]
             if engine == "aot":
                 command += ["--runtime-llvm-jit-cache-path", "disable"]
             for preload in entry["preloads"]:
                 command += ["--wasm-preload-library", preload["file"], preload["name"]]
             if case.disabled:
-                command += ["--runtime-disable-memtag"]
+                command += ["--wasm-policy-global", "runtime.memtag-checks", "off"]
             if case.extension_disabled:
-                command += ["--wasm-feature-disable-memtag-extension"]
+                command += ["--wasm-policy-global", "parser.memtag", "off"]
             command += ["--run", entry["file"]]
             done = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
             output = done.stdout.decode("utf8", "replace")

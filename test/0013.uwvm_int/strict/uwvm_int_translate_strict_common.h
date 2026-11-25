@@ -670,7 +670,7 @@ namespace uwvm2test::uwvm_int_strict
         bool table_address64{};
         ::std::vector<local_table_entry> extra_tables{};
 
-        struct local_memory_entry { ::std::uint64_t min{}, max{}; bool has_max{}, shared{}, address64{}; };
+        struct local_memory_entry { ::std::uint64_t min{}, max{}; bool has_max{}, shared{}, address64{}, tagged{}; };
         ::std::vector<local_memory_entry> extra_memories{};
         bool has_memory{};
         ::std::uint64_t memory_min{};
@@ -678,6 +678,7 @@ namespace uwvm2test::uwvm_int_strict
         bool memory_has_max{};
         bool memory_shared{};
         bool memory_address64{};
+        bool memory_tagged{};
         bool export_memory{};
 
         ::std::vector<global_entry> globals{};
@@ -913,14 +914,15 @@ namespace uwvm2test::uwvm_int_strict
             {
                 byte_vec sec{};
                 append_u32_leb(sec, static_cast<::std::uint32_t>((has_memory ? 1u : 0u) + extra_memories.size()));
-                auto emit_memory = [&](::std::uint64_t min, ::std::uint64_t max, bool has_max, bool shared, bool address64)
+                auto emit_memory = [&](::std::uint64_t min, ::std::uint64_t max, bool has_max, bool shared, bool address64, bool tagged)
                 {
-                    append_u8(sec, (has_max ? 0x01u : 0x00u) | (shared ? 2u : 0u) | (address64 ? 4u : 0u));
+                    append_u8(sec, (has_max ? 1u : 0u) | (shared ? 2u : 0u) | (address64 ? 4u : 0u) | (tagged ? 0x30u : 0u));
+                    if(tagged) { append_u8(sec, address64 ? 16u : 4u); }
                     append_u64_leb(sec, min);
                     if(has_max) { append_u64_leb(sec, max); }
                 };
-                if(has_memory) { emit_memory(memory_min, memory_max, memory_has_max, memory_shared, memory_address64); }
-                for(auto const& memory: extra_memories) { emit_memory(memory.min, memory.max, memory.has_max, memory.shared, memory.address64); }
+                if(has_memory) { emit_memory(memory_min, memory_max, memory_has_max, memory_shared, memory_address64, memory_tagged); }
+                for(auto const& memory: extra_memories) { emit_memory(memory.min, memory.max, memory.has_max, memory.shared, memory.address64, memory.tagged); }
                 emit_section(5u, sec);
             }
 
@@ -1136,7 +1138,8 @@ namespace uwvm2test::uwvm_int_strict
         ::uwvm2::utils::container::u8string_view module_name,
         ::std::initializer_list<preloaded_wasm_module> preloaded = {},
         wasm_feature_parameter_t wasm_feature_parameter = {},
-        ::std::initializer_list<::uwvm2::uwvm::wasm::type::local_imported_t> local_imported = {})
+        ::std::initializer_list<::uwvm2::uwvm::wasm::type::local_imported_t> local_imported = {},
+        bool check_tags = true)
     {
         ::uwvm2::uwvm::io::show_verbose = ::std::getenv("UWVM2TEST_VERBOSE") != nullptr;
         ::uwvm2::uwvm::io::show_depend_warning = false;
@@ -1212,6 +1215,7 @@ namespace uwvm2test::uwvm_int_strict
         ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = module_name;
         ::uwvm2::uwvm::wasm::storage::execute_wasm.binfmt_ver = 1u;
         ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_parameter.binfmt1_para = wasm_feature_parameter;
+        ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_parameter.memory_policy.check_tags = check_tags;
         ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_module_storage.wasm_binfmt_ver1_storage = ::std::move(module_storage);
 
         if(::uwvm2::uwvm::wasm::loader::construct_all_module_and_check_duplicate_module() != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)

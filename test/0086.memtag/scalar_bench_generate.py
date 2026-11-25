@@ -51,7 +51,7 @@ def generate(vm, bits, kind, iterations, rounds, oracle):
     plus = b"\x7c" if wide else b"\x6a"
     widen = b"\xad" if wide else b""
     ptr_load, ptr_store = (0x29, 0x37) if wide else (0x28, 0x36)
-    maximum = 255 if wide else 15
+    maximum = 15
     # i, acc, value, index, rng, round are i32; ptr and auxiliary ptr are addresses.
     locals_ = b"\x01\x08\x7f" if not wide else b"\x02\x06\x7f\x02\x7e"
 
@@ -151,7 +151,7 @@ def generate(vm, bits, kind, iterations, rounds, oracle):
     p.add(get(5) + c(1) + b"\x6a" + tee(5) + c(rounds) + b"\x49\x0d\x00\x0b")
     body = locals_ + p.code + b"\x0b"
     binary = b"\0asm\x01\0\0\0" + vm.sec(1,b"\x01\x60\0\0") + vm.sec(3,b"\x01\0")
-    binary += vm.sec(5,b"\x01" + u(5 if wide else 1) + u(1) + u(2))
+    binary += vm.sec(5,b"\x01" + vm.memory_limits(wide))
     binary += vm.sec(7,b"\x01\x06_start\0\0") + vm.sec(10,b"\x01" + u(len(body)) + body)
     expected_bytes = b"".join(struct.pack("<I", value) for value in oracle["words"])
     binary += vm.sec(11,b"\x01\x00" + p.n(EXPECTED_BASE) + b"\x0b" + u(len(expected_bytes)) + expected_bytes)

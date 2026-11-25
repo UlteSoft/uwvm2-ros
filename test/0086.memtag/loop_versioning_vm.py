@@ -134,11 +134,10 @@ def fixture(bits, case, iterations):
                   local(0) + p.n(AUX) + m.mem(0x28) + b"\x6a")
         bodies.append(b"\0" + helper + b"\x0b")
         functions.append(2)
-    flags = 1 + (4 if wide else 0) + (2 if case == "shared" else 0)
     imports = b"\x01\x16wasi_snapshot_preview1\x09proc_exit\0\x01"
     binary = (b"\0asm\x01\0\0\0" + m.sec(1, signatures) + m.sec(2, imports) +
               m.sec(3, m.u(len(functions)) + b"".join(m.u(x) for x in functions)) +
-              m.sec(5, b"\x01" + m.u(flags) + b"\x01\x02") +
+              m.sec(5, b"\x01" + m.memory_limits(wide,shared=case == "shared")) +
               m.sec(7, b"\x01\x06_start\0\x01") +
               m.sec(10, m.u(len(bodies)) + b"".join(m.u(len(body)) + body for body in bodies)))
     if case == "preflight-order":
@@ -146,7 +145,7 @@ def fixture(bits, case, iterations):
     status = (120 if case == "preflight-order" else 121 if case == "bounds-late" else
               122 if case in ("interior-tag", "tag-before-bounds", "retag") else COMPLETED)
     return binary, dict(bits=bits, case=case, expected_exit=status,
-                        expected_pointer=(TAG << (56 if wide else 28)) | bad,
+                        expected_pointer=(TAG << (60 if wide else 28)) | bad,
                         expected_granule=bad, expected_tag=TAG, expected_allocation_tag=4,
                         expected_checksum=checksum, successful_footprint_bytes=(300 if case == "call" else 288) if base == BASE else 0,
                         ir_versioned_when_enabled=case in VERSIONED_CASES,
@@ -324,8 +323,8 @@ def main():
                 ir_dir.mkdir()
                 env[OBSERVER] = str(ir_dir)
             command = [str(candidate), "--runtime-aot", "--runtime-compile-threads", "0",
-                       "--runtime-llvm-jit-cache-path", "disable", "--wasm-feature-enable-memory64",
-                       "--wasm-feature-enable-threads", *m.mode_flags(case["delivery"]),
+                       "--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "parser.memory64", "on",
+                       "--wasm-policy-global", "parser.threads", "on", *m.mode_flags(case["delivery"]),
                        "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main",
                        "--wasip1-single-enable", "main", "--wasip1-single-interface", "main", "proc_exit", "allow",
                        "--wasip1-single-grant", "main", "proc-exit", "--wasm-set-start-func", "0", "--", case["file"]]

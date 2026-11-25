@@ -28,7 +28,7 @@ def main():
         base += ["--runtime-llvm-jit-cache-path", "disable"]
     cases = [
         ("default-software-sync-crash", [], 0),
-        ("explicit-software-sync-crash", ["--runtime-memtag-backend","software","--runtime-memtag-mode","sync","--runtime-memtag-action","crash"],0),
+        ("explicit-software-sync-crash", ["--wasm-policy-global", "runtime.memtag-backend","software","--runtime-memtag-mode","sync","--runtime-memtag-action","crash"],0),
         ("software-sync-silent", ["--runtime-memtag-action","silent-log","err"],0),
         ("software-async-crash", ["--runtime-memtag-mode","async"],0),
         ("software-async-silent", ["--runtime-memtag-mode","async","--runtime-memtag-action","silent-log","err"],0),
@@ -44,8 +44,11 @@ def main():
         ("silent-log-invalid-path",["--runtime-memtag-action","silent-log","path",str(args.out/"absent"/"report.jsonl")],126),
         ("invalid-action",["--runtime-memtag-action","log"],126),
         ("missing-action",["--runtime-memtag-action"],126),
-        ("invalid-backend",["--runtime-memtag-backend","unknown"],126),
-        ("missing-backend",["--runtime-memtag-backend"],126),
+        ("obsolete-disable-checks", ["--runtime-disable-memtag"], 126),
+        ("obsolete-global-backend", ["--runtime-memtag-backend", "software"], 126),
+        ("obsolete-feature", ["--wasm-feature-disable-memtag-extension"], 126),
+        ("invalid-backend",["--wasm-policy-global", "runtime.memtag-backend","unknown"],126),
+        ("missing-backend",["--wasm-policy-global", "runtime.memtag-backend"],126),
         ("invalid-mode",["--runtime-memtag-mode","unknown"],126),
         ("missing-mode",["--runtime-memtag-mode"],126),
         ("removed-software-async",["--runtime-memtag-mode","software-async"],126),
@@ -54,17 +57,17 @@ def main():
         ("removed-workers",["--runtime-memtag-workers","4"],126),
         ("removed-report",["--runtime-memtag-report","log"],126),
         ("removed-report-output",["--runtime-memtag-report-output","err"],126),
-        ("disabled-async",["--runtime-memtag-mode","async","--runtime-disable-memtag"],126),
-        ("disabled-async-reordered",["--runtime-disable-memtag","--runtime-memtag-mode","async"],126),
-        ("disabled-hardware",["--runtime-disable-memtag","--runtime-memtag-backend","hardware"],126),
-        ("offline-hardware-validation",["--mode","validation","--runtime-memtag-backend","hardware"],0),
+        ("disabled-async",["--runtime-memtag-mode","async","--wasm-policy-global", "runtime.memtag-checks", "off"],0),
+        ("disabled-async-reordered",["--wasm-policy-global", "runtime.memtag-checks", "off","--runtime-memtag-mode","async"],0),
+        ("disabled-hardware",["--wasm-policy-global", "runtime.memtag-checks", "off","--wasm-policy-global", "runtime.memtag-backend","arm-mte"],127),
+        ("offline-hardware-validation",["--mode","validation","--wasm-policy-global", "runtime.memtag-backend","arm-mte"],0),
         ("invalid-log-path",["--log-output","file",str(args.out/"absent"/"report.jsonl")],126),
     ]
     for mode in ("sync","async"):
         for action in ("crash","silent-log"):
-            expected=0 if args.hardware_supported else 126
-            cases.append(("hardware-"+mode+"-"+action,["--runtime-memtag-backend","hardware","--runtime-memtag-mode",mode,"--runtime-memtag-action",action]+(["err"] if action=="silent-log" else []),expected))
-            cases.append(("hardware-order-"+mode+"-"+action,["--runtime-memtag-action",action]+(["err"] if action=="silent-log" else [])+["--runtime-memtag-mode",mode,"--runtime-memtag-backend","hardware"],expected))
+            expected=0 if args.hardware_supported and action=="crash" else 127
+            cases.append(("hardware-"+mode+"-"+action,["--wasm-policy-global", "runtime.memtag-backend","arm-mte","--runtime-memtag-mode",mode,"--runtime-memtag-action",action]+(["err"] if action=="silent-log" else []),expected))
+            cases.append(("hardware-order-"+mode+"-"+action,["--runtime-memtag-action",action]+(["err"] if action=="silent-log" else [])+["--runtime-memtag-mode",mode,"--wasm-policy-global", "runtime.memtag-backend","arm-mte"],expected))
     rows = []
     for name, flags, expected in cases:
         command = base + flags + ["--", str(fixture.resolve())]
@@ -77,8 +80,10 @@ def main():
     help_result=subprocess.run(shlex.split(args.runner)+[str(args.vm.resolve()),"--help","all"],capture_output=True,timeout=30)
     help_text=(help_result.stdout+help_result.stderr).decode(errors="replace")
     controls=set(re.findall(r"--(?:runtime-[a-z-]*memtag[a-z-]*|wasm-feature-disable-memtag-extension)",help_text))
-    wanted={"--wasm-feature-disable-memtag-extension","--runtime-disable-memtag","--runtime-memtag-mode","--runtime-memtag-action","--runtime-memtag-backend"}
-    rows.append(dict(name="exactly-five-help-controls",passed=help_result.returncode==0 and controls==wanted,controls=sorted(controls)))
+    wanted={"--runtime-memtag-mode","--runtime-memtag-action"}
+    scopes=("--wasm-policy-global", "--wasm-policy-group", "--wasm-policy-single", "--wasm-policy-memory-backend")
+    rows.append(dict(name="memtag-help-controls",passed=help_result.returncode==0 and controls==wanted
+                     and all(scope in help_text for scope in scopes),controls=sorted(controls)))
     report = dict(binary_sha256=hashlib.sha256(args.vm.read_bytes()).hexdigest(),
                   fixture_sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
                   passed=sum(row["passed"] for row in rows), total=len(rows), rows=rows)

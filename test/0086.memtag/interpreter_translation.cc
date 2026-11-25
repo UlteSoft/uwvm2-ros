@@ -3,7 +3,7 @@ namespace {
 using namespace uwvm2test::uwvm_int_strict;
 namespace mt=uwvm2::extension::memtag;
 byte_vec make(bool wide,bool placeholder=false,bool padded=false) {
- module_builder b{};b.has_memory=b.memory_has_max=true;b.memory_min=1;b.memory_max=2;b.memory_address64=wide;
+ module_builder b{};b.memory_tagged=b.has_memory=b.memory_has_max=true;b.memory_min=1;b.memory_max=2;b.memory_address64=wide;
  auto address_type=wide?k_val_i64:k_val_i32;
  func_body body{};
  auto number=[&](std::int64_t n){append_u8(body.code,wide?0x42:0x41);if(wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
@@ -37,10 +37,9 @@ int check(bool wide,bool enabled,bool placeholder=false,bool padded=false) {
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
  p.disable_memtag_extension=false;p.disable_memory64=false;
  p.cli_mode=uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::scoped;
- uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag=!enabled;
- auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter",{},features);
+ auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter",{},features,{},enabled);
  auto& memory=const_cast<uwvm2::object::memory::linear::native_memory_t&>(prepared.mod->local_defined_memory_vec_storage.index_unchecked(0).memory);
- if(enabled && !memory.memtag_shadow.enabled())UWVM2TEST_REQUIRE(memory.enable_memtag(wide?mt::address_width::i64:mt::address_width::i32,false)==mt::storage_error::none);
+ UWVM2TEST_REQUIRE(memory.memtag_shadow.enabled());
  if constexpr(uwvm2::object::memory::linear::native_memory_t::can_mmap) {
   if(mt::hardware_mte::supported())UWVM2TEST_REQUIRE(!memory.memtag_shadow.hardware_active());
  }
@@ -56,7 +55,7 @@ int check(bool wide,bool enabled,bool placeholder=false,bool padded=false) {
   auto status=interpreter_runner<Option>::run(compiled.local_funcs.index_unchecked(1),
     prepared.mod->local_defined_function_vec_storage.index_unchecked(1),args,nullptr,nullptr);
   std::uint64_t result{};std::memcpy(&result,status.results.data(),status.results.size());
-  UWVM2TEST_REQUIRE(result==(enabled?static_cast<unsigned>(mt::runtime_status::software_full):0u));
+  UWVM2TEST_REQUIRE(result==static_cast<unsigned>(mt::runtime_status::software_full));
  } catch(fast_io::error const&) {
   rejected=true;
   if(!placeholder)std::fprintf(stderr,"MTE translation error %u\n",unsigned(error.err_code));

@@ -79,8 +79,8 @@ def main():
         subprocess.run([args.wat2wasm, "--enable-memory64", "--enable-multi-memory",
                         "--enable-threads", str(source), "-o", str(wasm)], check=True)
         commands = [(engine, [str(args.vm), "--runtime-" + engine,
-                    "--runtime-llvm-jit-cache-path", "disable", "--wasm-feature-enable-memory64",
-                    "--wasm-feature-enable-multi-memory", "--wasm-feature-enable-threads",
+                    "--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "parser.memory64", "on",
+                    "--wasm-policy-global", "parser.multi-memory", "on", "--wasm-policy-global", "parser.threads", "on",
                     "--run", str(wasm)]) for engine in ("int", "aot")]
         if args.wasmtime:
             commands.append(("wasmtime", [str(args.wasmtime), "run", "-C", "cache=n",

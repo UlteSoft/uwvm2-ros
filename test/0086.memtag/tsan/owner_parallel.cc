@@ -11,13 +11,10 @@ namespace rt=uwvm2::runtime::memtag;
 namespace linear=uwvm2::object::memory::linear;
 #define CHECK(...) do{if(!(__VA_ARGS__)){std::fprintf(stderr,"FAIL line=%u\n",__LINE__);std::abort();}}while(false)
 template<class Owner,class A> void exercise(unsigned cycle) {
-    auto create=[] {
-        if constexpr(Owner::can_mmap) return Owner{65536,sizeof(A)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64};
-        else return Owner{};
-    };
-    Owner owner=create(),independent=create();
-    if constexpr(Owner::can_mmap){owner.init_by_page_count(1,32);independent.init_by_page_count(1,2);}
-    else {owner.init_by_page_count(1);independent.init_by_page_count(1);}
+    constexpr auto status = sizeof(A) == 4 ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64;
+    Owner owner{65536,status}, independent{65536,status};
+    owner.init_by_page_count(1,32);
+    independent.init_by_page_count(1,2);
     constexpr auto width=sizeof(A)==4?mt::address_width::i32:mt::address_width::i64;
     CHECK(owner.enable_memtag(width,true)==mt::storage_error::none);
     CHECK(independent.enable_memtag(width,true)==mt::storage_error::none);
@@ -76,19 +73,17 @@ template<class Owner,class A> void exercise(unsigned cycle) {
                __atomic_load_n(reinterpret_cast<unsigned char*>(src.data()+i),__ATOMIC_RELAXED),__ATOMIC_RELAXED);
         });
     CHECK(copy);
-    std::printf("PASS backend=%s width=%zu cycle=%u accepted=%u mismatch=%u grew=15 joined=4\n",
-        Owner::can_mmap?"mmap":"moving",sizeof(A)*8,cycle,passes.load(),denials.load());
+    std::printf("PASS backend=mmap width=%zu cycle=%u accepted=%u mismatch=%u grew=15 joined=4\n",
+        sizeof(A)*8,cycle,passes.load(),denials.load());
     // Production owner retirement requires enclosing execution/worker leases to
     // have drained. Do not invent concurrent reset support: all workers joined.
     owner.clear();CHECK(!owner.memtag_shadow.enabled());
 }
 int main(){
     for(unsigned i=0;i<2;++i){
-        exercise<linear::allocator_memory_t,std::uint32_t>(i);
-        exercise<linear::allocator_memory_t,std::uint64_t>(i);
         exercise<linear::mmap_memory_t,std::uint32_t>(i);
         exercise<linear::mmap_memory_t,std::uint64_t>(i);
     }
-    std::puts("PASS 32 actual workers: shared tags/alias/isolation/grow/pinned copy/join-before-retirement");
+    std::puts("PASS 16 actual workers: shared tags/alias/isolation/grow/pinned copy/join-before-retirement");
 }
 #include <uwvm2/utils/macro/pop_macros.h>

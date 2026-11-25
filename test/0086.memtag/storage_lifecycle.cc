@@ -19,29 +19,10 @@ static void require(bool okay, unsigned line) {
     if(!okay) { std::fprintf(stderr,"FAILED storage lifecycle line %u\n",line); std::abort(); }
 }
 #define CHECK(...) require(static_cast<bool>((__VA_ARGS__)), __LINE__)
-static_assert(fast_io::freestanding::is_trivially_copyable_or_relocatable<linear::allocator_memory_t>::value);
-static_assert(fast_io::freestanding::is_trivially_copyable_or_relocatable<linear::single_thread_allocator_memory_t>::value);
 #if defined(UWVM_SUPPORT_MMAP)
 static_assert(fast_io::freestanding::is_trivially_copyable_or_relocatable<linear::mmap_memory_t>::value);
 #endif
-struct old_allocator_layout {
-    std::byte* memory_begin; std::size_t memory_length; unsigned custom_page_size_log2;
-#if SIZE_MAX > UINT32_MAX
-    bool sequentially_consistent_size;
-#endif
-    std::atomic_flag* growing_flag_p; std::atomic_size_t* active_ops_p;
-    std::size_t diagnostic_owner_memory_index;
-#if SIZE_MAX <= UINT32_MAX
-    bool sequentially_consistent_size;
-#endif
-    std::atomic_size_t ordered_memory_length;
-};
 #define SAME_OFFSET(Type, Legacy, Field) static_assert(offsetof(Type,Field)==offsetof(Legacy,Field))
-SAME_OFFSET(linear::allocator_memory_t,old_allocator_layout,memory_begin);
-SAME_OFFSET(linear::allocator_memory_t,old_allocator_layout,memory_length);
-SAME_OFFSET(linear::allocator_memory_t,old_allocator_layout,growing_flag_p);
-SAME_OFFSET(linear::allocator_memory_t,old_allocator_layout,active_ops_p);
-SAME_OFFSET(linear::allocator_memory_t,old_allocator_layout,ordered_memory_length);
 #if defined(UWVM_SUPPORT_MMAP)
 struct alignas(64) old_mmap_layout {
     std::byte* reserved_begin; std::byte* memory_begin; std::atomic_size_t* memory_length_p;
@@ -102,46 +83,6 @@ void storage_case(mt::storage_backend backend) {
     CHECK(owner.tag_data()==saved);
     owner.reset();
     CHECK(!owner.enabled() && owner.tag_data()==nullptr);
-}
-template<class Owner>
-void allocator_owner_case() {
-    Owner owner(1);
-    CHECK(!owner.memtag_shadow.enabled() && owner.memtag_shadow.tag_data()==nullptr);
-    owner.init_by_page_count(32);
-    CHECK(owner.enable_memtag(mt::address_width::i32,false)==mt::storage_error::none);
-    auto* alias=&owner;
-    auto view=owner.memtag_shadow.template view<std::uint32_t>(owner.memory_length);
-    CHECK(view.store(view.insert(0,3),32));
-    Owner other(1); other.init_by_page_count(32);
-    CHECK(other.enable_memtag(mt::address_width::i32,false)==mt::storage_error::none);
-    CHECK(other.memtag_shadow.tag_data()!=owner.memtag_shadow.tag_data());
-    CHECK(!other.memtag_shadow.template view<std::uint32_t>(32).check(view.insert(0,3),0,32));
-    auto* native=owner.memory_begin;
-    auto* shadow=owner.memtag_shadow.tag_data();
-    inject(mt::storage_operation::allocate);
-    CHECK(!owner.grow_strictly(32));
-    clear_injection();
-    CHECK(owner.memory_length==32 && owner.memory_begin==native && owner.memtag_shadow.tag_data()==shadow);
-    CHECK(alias->memtag_shadow.template view<std::uint32_t>(32).check(view.insert(0,3),0,32));
-    CHECK(owner.grow_strictly(32));
-    CHECK(alias->memtag_shadow.template view<std::uint32_t>(64).check(view.insert(0,3),0,32));
-    CHECK(alias->memtag_shadow.template view<std::uint32_t>(64).check(32,0,32));
-    CHECK(!owner.grow_strictly((std::size_t{1}<<28)-63)); // new length 256 MiB+1
-    CHECK(owner.memory_length==64);
-    Owner moved(std::move(owner));
-    CHECK(!owner.memtag_shadow.enabled() && moved.memtag_shadow.enabled());
-    owner=std::move(moved);
-    CHECK(!moved.memtag_shadow.enabled() && owner.memtag_shadow.enabled());
-    uwvm2::utils::container::vector<Owner> owners;
-    owners.push_back(std::move(owner));
-    auto* tags=owners.front().memtag_shadow.tag_data();
-    owners.reserve(40);
-    CHECK(owners.front().memtag_shadow.tag_data()==tags);
-    CHECK(owners.front().memtag_shadow.template view<std::uint32_t>(64).check(view.insert(0,3),0,32));
-    owners.front().clear();
-    CHECK(!owners.front().memtag_shadow.enabled());
-    owners.front().init_by_page_count(1);
-    CHECK(owners.front().memory_length==1 && !owners.front().memtag_shadow.enabled());
 }
 
 #if defined(UWVM_SUPPORT_MMAP)
@@ -219,24 +160,16 @@ void empty_initial_memory() {
 template<class Owner>
 void concurrent_growth() {
     Owner owner;
-    if constexpr(Owner::can_mmap)owner.init_by_page_count(1,16);
-    else owner.init_by_page_count(1);
+    owner.init_by_page_count(1,16);
     CHECK(owner.enable_memtag(mt::address_width::i32,true)==mt::storage_error::none);
     std::atomic_bool stop{},started{};
     std::atomic_uint reads{};
     std::thread reader([&]{
         started.store(true,std::memory_order_release);
         do {
-            if constexpr(Owner::can_mmap) {
-                auto bytes=owner.memory_length_p->load(std::memory_order_acquire);
-                auto v=owner.memtag_shadow.template view<std::uint32_t,true>(bytes);
-                CHECK(v.check(static_cast<std::uint32_t>(bytes-64),0,64));
-            } else {
-                linear::memory_operation_guard_t pin(owner.growing_flag_p,owner.active_ops_p);
-                auto bytes=owner.memory_length;
-                auto v=owner.memtag_shadow.template view<std::uint32_t,true>(bytes);
-                CHECK(v.check(static_cast<std::uint32_t>(bytes-64),0,64));
-            }
+            auto bytes=owner.memory_length_p->load(std::memory_order_acquire);
+            auto v=owner.memtag_shadow.template view<std::uint32_t,true>(bytes);
+            CHECK(v.check(static_cast<std::uint32_t>(bytes-64),0,64));
             reads.fetch_add(1,std::memory_order_relaxed);
         } while(!stop.load(std::memory_order_acquire));
     });
@@ -269,11 +202,6 @@ int main() {
 #endif
     CHECK(failure.enable(mt::address_width::i32,false,mt::storage_backend::growable,(1ull<<28)+1,1ull<<32)==mt::storage_error::address_not_representable);
     CHECK(!failure.enabled());
-    allocator_owner_case<linear::single_thread_allocator_memory_t>();
-    allocator_owner_case<linear::allocator_memory_t>();
-    concurrent_growth<linear::allocator_memory_t>();
-    empty_initial_memory<linear::single_thread_allocator_memory_t>();
-    empty_initial_memory<linear::allocator_memory_t>();
 #if defined(UWVM_SUPPORT_MMAP)
     mmap_owner_case<std::uint32_t,false>();mmap_owner_case<std::uint32_t,true>();
     mmap_owner_case<std::uint64_t,false>();mmap_owner_case<std::uint64_t,true>();
@@ -290,10 +218,6 @@ int main() {
         CHECK(untagged.get_page_size()==4097 && !untagged.memtag_shadow.enabled());
     }
 #endif
-    #if defined(UWVM_SUPPORT_MMAP)
-    CHECK(failures>=8);
-#else
-    CHECK(failures>=3);
-#endif
+    CHECK(failures==6); // shadow allocation, reservation, and one commit per mmap width/sharing case.
     std::puts("PASS storage lifecycle: widths/shared/isolation/moves/relocation/failures/atomic grow/hot offsets");
 }

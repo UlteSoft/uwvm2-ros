@@ -28,7 +28,7 @@ def encode(operation, memory=0, *, domain=1, version=1, padded=False, padded_mem
 def two_functions(entry, unused):
     first, second = b"\0" + entry + b"\x0b", b"\0" + unused + b"\x0b"
     return (b"\0asm\x01\0\0\0" + vm.sec(1,b"\x01\x60\0\0") + vm.sec(3,b"\x02\0\0")
-            + vm.sec(5,b"\x01\x01\x01\x01") + vm.sec(7,b"\x01\x06_start\0\0")
+            + vm.sec(5,b"\x01"+vm.memory_limits(maximum=1)) + vm.sec(7,b"\x01\x06_start\0\0")
             + vm.sec(10,b"\x02" + vm.u(len(first)) + first + vm.u(len(second)) + second))
 
 
@@ -40,11 +40,11 @@ def cases():
             for wide in (False,True):
                 for enabled in (False,True):
                     name=f"{encoding}-{64 if wide else 32}-{'enabled' if enabled else 'disabled'}"
-                    options=["--wasm-feature-enable-multi-memory"] if encoding.endswith("memory") else []
-                    yield name,vm.markers(wide,enabled),"ok",options,not enabled
+                    options=["--wasm-policy-global", "parser.multi-memory", "on"] if encoding.endswith("memory") else []
+                    yield name,vm.markers(wide),"ok",options,not enabled
                     if encoding.endswith("memory"):
-                        yield name+"-without-multi-memory",vm.markers(wide,enabled),"multi-memory",["--wasm-feature-disable-multi-memory"],not enabled
-                yield f"{encoding}-{64 if wide else 32}-feature-off",vm.module(vm.op(0x20)+b"\x1a",wide),"feature",["--wasm-feature-disable-memtag-extension"],False
+                        yield name+"-without-multi-memory",vm.markers(wide),"multi-memory",["--wasm-policy-global", "parser.multi-memory", "off"],not enabled
+                yield f"{encoding}-{64 if wide else 32}-feature-off",vm.module(vm.op(0x20)+b"\x1a",wide),"feature",["--wasm-policy-global", "parser.memtag", "off"],False
     finally:
         vm.op=original
     for label,wire in (
@@ -72,7 +72,7 @@ def cases():
             yield f"{label}-{operation:02x}",vm.module(wire+b"\x1a"),expected,[],False
             yield f"dead-{label}-{operation:02x}",vm.module(b"\0"+wire+b"\x1a"),expected,[],False
             yield f"unused-{label}-{operation:02x}",two_functions(b"",wire+b"\x1a"),expected,[],False
-    yield "unused-packed-op-enables-owner",two_functions(vm.c(0x30000000)+vm.mem(0x28)+b"\x1a",encode(0x20)+b"\x1a"),"memtag",[],False
+    yield "unused-op-on-declared-owner",two_functions(vm.c(0x30000000)+vm.mem(0x28)+b"\x1a",encode(0x20)+b"\x1a"),"memtag",[],False
     for wide in (False,True):
         yield f"standard-fc-bulk-{64 if wide else 32}",vm.bulks(wide),"ok",[],False
 
@@ -98,9 +98,9 @@ def main():
     rows=[]
     for case in manifest:
         for engine in args.engines.split(","):
-            command=shlex.split(args.runner)+[str(args.vm.resolve()),f"--runtime-{engine}","-WFE-memory64","--wasm-set-start-func","0"]
+            command=shlex.split(args.runner)+[str(args.vm.resolve()),f"--runtime-{engine}","--wasm-policy-global", "parser.memory64", "on","--wasm-set-start-func","0"]
             if engine=="aot":command += ["--runtime-llvm-jit-cache-path","disable","--runtime-compile-threads","0"]
-            if case["disabled"]:command += ["--runtime-disable-memtag"]
+            if case["disabled"]:command += ["--wasm-policy-global", "runtime.memtag-checks", "off"]
             command += case["options"]+["--",case["file"]]
             result=subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90)
             text=result.stdout.decode("utf-8","replace")
@@ -109,9 +109,9 @@ def main():
             if case["expected"]=="ok":passed=result.returncode==0
             elif case["expected"]=="namespace":passed=rejection and "uwvm.memtag namespace" in text
             elif case["expected"]=="obsolete-fc":passed=rejection and "obsolete FC memtag encoding" in text and "regenerate" in text
-            elif case["expected"]=="multi-memory":passed=rejection and "wasm-feature-enable-multi-memory" in text
+            elif case["expected"]=="multi-memory":passed=rejection and "parser.multi-memory on" in text
             elif case["expected"]=="memtag":passed=fault_matches(result.returncode,text,122,"memory tag mismatch")
-            else:passed=rejection and "memtag" in text.lower() and "feature" in text.lower()
+            else:passed=result.returncode==127 and "parser.memtag on" in text
             rows.append(dict(name=case["name"],engine=engine,exit=result.returncode,expected=case["expected"],passed=passed,command=command))
             (args.out/"report.json").write_text(json.dumps(rows,indent=2)+"\n")
             print(case["name"],engine,result.returncode,"PASS" if passed else "FAIL",flush=True)

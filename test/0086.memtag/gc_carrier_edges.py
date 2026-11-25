@@ -21,7 +21,7 @@ def main():
   name=f'{kind}-{bits}-{tag}';file=a.out/(name+'.wasm');file.write_bytes(fixture(kind,bits,tag))
   for engine in ['int','aot']:
    for action in ['crash','silent-log']:
-    cmd=shlex.split(a.runner)+[a.vm,'-R'+engine,'-Rct','0','-WFE-gc','-WFE-function-references','-WFE-reference-types','-WFE-memory64',*(['--runtime-memtag-action','crash'] if action=='crash' else m.report_flags('err'))]
+    cmd=shlex.split(a.runner)+[a.vm,'-R'+engine,'-Rct','0','--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.reference-types', 'on','--wasm-policy-global', 'parser.memory64', 'on',*(['--runtime-memtag-action','crash'] if action=='crash' else m.report_flags('err'))]
     if engine=='aot':cmd+=['--runtime-llvm-jit-cache-path','disable']
     cmd+=['--run',str(file)];r=subprocess.run(cmd,capture_output=True,text=True,timeout=90)
     expected=122 if loss and action=='crash' else 0;reports=[json.loads(l) for l in r.stderr.splitlines() if l.startswith('{"schema":"uwvm.memtag.violation.v1"')]

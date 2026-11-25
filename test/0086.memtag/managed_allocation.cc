@@ -24,8 +24,9 @@ template<class A, bool Shared>
 void cases()
 {
     using view = mt::shadow_view<A,Shared>;
-    linear::allocator_memory_t owner;
-    owner.init_by_page_count(1);
+    constexpr auto status = sizeof(A) == 4 ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64;
+    linear::mmap_memory_t owner{65536,status};
+    owner.init_by_page_count(1,2);
     CHECK(owner.enable_memtag(sizeof(A)==4 ? mt::address_width::i32 : mt::address_width::i64, Shared) == mt::storage_error::none);
     unsigned consumed{};
     std::uint8_t byte{0x80};
@@ -117,7 +118,7 @@ static void competing_allocators()
 {
     using A=std::uint32_t;
     using view=mt::shadow_view<A,true>;
-    linear::allocator_memory_t owner; owner.init_by_page_count(1);
+    linear::mmap_memory_t owner; owner.init_by_page_count(1,2);
     CHECK(owner.enable_memtag(mt::address_width::i32,true)==mt::storage_error::none);
     std::barrier rendezvous{2};
     std::array<A,2> tokens{};

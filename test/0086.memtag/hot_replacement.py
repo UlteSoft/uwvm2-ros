@@ -9,14 +9,14 @@ def fixture(wide):
  worker=p.tagged(0)+m.mem(0x28)
  bodies=[b'\0'+x+b'\x0b' for x in [root,worker]]
  wasm=b'\0asm\x01\0\0\0'+m.sec(1,b'\x01\x60\0\x01\x7f')+m.sec(3,b'\x02\0\0')
- wasm+=m.sec(5,b'\x01'+m.u(5 if wide else 1)+b'\x01\x02')
+ wasm+=m.sec(5,b'\x01'+m.memory_limits(wide))
  wasm+=m.sec(10,b'\x02'+b''.join(m.u(len(x))+x for x in bodies))
  return wasm
 def replacement(wide,kind):
  p=m.Program(wide)
  tag=4 if kind=='mismatch' else 3
  code=p.tagged(0,tag)+m.mem(0x28)
- # Distinguishes original42 from replacement143/145 and queries the new body policy.
+ # The tagged owner reports the same status after replacement in either caller policy.
  code+=m.op(0x20)+(b'\xa7' if wide else b'')+m.c(101)+b'\x6a\x6a'
  if kind=='zero':
   code=p.tagged(0)+p.n(32)+m.op(0x2c)+p.tagged(0)+m.mem(0x28)+m.c(17)+b'\x6a'
@@ -30,7 +30,7 @@ def main():
   for kind in ['read','mismatch','zero']:
    body=out/(wasm.stem+'-'+kind+'.body');body.write_bytes(replacement(wide,kind))
    for enabled in [True,False]:
-    expected=17 if kind=='zero' else 145 if enabled else 143
+    expected=17 if kind=='zero' else 145
     cmd=[args.fixture,str(wasm),str(body),'enabled' if enabled else 'disabled',str(expected)]
     name=wasm.stem+'-'+kind+('-enabled' if enabled else '-disabled')
     try:

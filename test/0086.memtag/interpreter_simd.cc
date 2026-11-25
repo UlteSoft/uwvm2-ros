@@ -36,7 +36,7 @@ std::array<std::uint8_t,16> expected(simd_case c) {
  return r;
 }
 byte_vec make(bool wide) {
- module_builder b{};b.has_memory=b.memory_has_max=true;b.memory_min=1;b.memory_max=2;b.memory_address64=wide;
+ module_builder b{};b.memory_tagged=b.has_memory=b.memory_has_max=true;b.memory_min=1;b.memory_max=2;b.memory_address64=wide;
  for(auto const c:cases) {
   func_body body{};
   auto number=[&](std::int64_t n){append_u8(body.code,wide?0x42:0x41);if(wide)append_i64_leb(body.code,n);else append_i32_leb(body.code,static_cast<std::int32_t>(n));};
@@ -61,10 +61,9 @@ int check(bool wide,bool enabled) {
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
  p.disable_memtag_extension=false;p.disable_memory64=false;
  p.cli_mode=uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::scoped;
- uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag=!enabled;
- auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter-simd",{},features);
+ auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter-simd",{},features,{},enabled);
  auto& memory=const_cast<uwvm2::object::memory::linear::native_memory_t&>(prepared.mod->local_defined_memory_vec_storage.index_unchecked(0).memory);
- if(enabled && !memory.memtag_shadow.enabled())UWVM2TEST_REQUIRE(memory.enable_memtag(wide?mt::address_width::i64:mt::address_width::i32,false)==mt::storage_error::none);
+ UWVM2TEST_REQUIRE(memory.memtag_shadow.enabled());
  uwvm2::validation::error::code_validation_error_impl error{};optable::compile_option options{};options.execute_memtag=enabled;
  auto compiled=compiler::compile_all_from_uwvm_single_func<Option>(*prepared.mod,options,error,&features);
  byte_vec args{};

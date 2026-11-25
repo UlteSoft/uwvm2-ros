@@ -4,9 +4,9 @@ namespace {
 using namespace uwvm2test::uwvm_int_strict;
 namespace mt=uwvm2::extension::memtag;
 byte_vec make(bool destination64,bool source64,bool shared,bool mixed) {
- module_builder b{};b.has_memory=b.memory_has_max=true;b.memory_shared=shared;
+ module_builder b{};b.memory_tagged=b.has_memory=b.memory_has_max=true;b.memory_shared=shared;
  b.memory_min=1;b.memory_max=2;b.memory_address64=destination64;
- b.extra_memories.push_back({1,2,true,shared,source64});
+ b.extra_memories.push_back({1,2,true,shared,source64,!mixed});
  passive_data_segment segment;for(unsigned i{};i!=64;++i)append_u8(segment.bytes,0x80+i);
  b.passive_datas.push_back(std::move(segment));
  func_body body{};
@@ -28,13 +28,11 @@ int check(bool destination64,bool source64,bool enabled,bool shared,bool mixed) 
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
  p.disable_memtag_extension=false;p.disable_memory64=false;p.disable_threads=false;p.disable_multi_memory=false;
  p.cli_mode=uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::scoped;
- uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag=!enabled;
- auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter-bulk",{},features);
+ auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter-bulk",{},features,{},enabled);
  auto owner=[&](unsigned m)->uwvm2::object::memory::linear::native_memory_t& {
   return const_cast<uwvm2::object::memory::linear::native_memory_t&>(prepared.mod->local_defined_memory_vec_storage.index_unchecked(m).memory);
  };
- if(enabled)for(unsigned m{};m!=2;++m)if((!mixed||!m) && !owner(m).memtag_shadow.enabled())
-  UWVM2TEST_REQUIRE(owner(m).enable_memtag((m?source64:destination64)?mt::address_width::i64:mt::address_width::i32,shared)==mt::storage_error::none);
+ UWVM2TEST_REQUIRE(owner(0).memtag_shadow.enabled() && owner(1).memtag_shadow.enabled()==!mixed);
  uwvm2::validation::error::code_validation_error_impl error{};optable::compile_option options{};options.execute_memtag=enabled;
  auto compiled=compiler::compile_all_from_uwvm_single_func<Option>(*prepared.mod,options,error,&features);
  byte_vec args{};

@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 from vm_diagnostics import fault_matches
-from vm_matrix import Program, assertion, c, mem, module, op, sec, u
+from vm_matrix import Program, assertion, c, mem, module, op, sec, u, memory_limits
 
 
 def fixtures(wide):
@@ -54,11 +54,11 @@ def fixtures(wide):
         yield fixture('legacy-overwrite',code,122)
         code = perform(reserve,num(16)) + save + num(96) + local + op(0x25) + num(16) + op(0x2b)
         yield fixture('legacy-same-neighbor',code,122)
-        code = num(0)+c(123)+mem(0x36)
-        for instruction in (claim,reserve,activate,release,claimz):
-            code += assertion(perform(instruction,num(0)),0,bits)
+        code = num(0)+c(123)+mem(0x36)+perform(claimz,num(0))+save
+        code += local + op(0x21) + num(0) + eq + true
         code += assertion(num(0)+mem(0x28),0)
-        yield fixture('identity-zero',code,disabled=True)
+        code += assertion(perform(release,local),0,bits)
+        yield fixture('unchecked-claimz-release',code,disabled=True)
 
         # Two manifest globals and one managed extent share a canonical owner.
         custom_name = b'uwvm.memtag.linear.globals'
@@ -83,7 +83,7 @@ def threaded_fixture(reject):
     # seq-cst atomic, and exits. Completion is finite, including a failed spawn.
     guest = b'\0asm\x01\0\0\0'
     guest += sec(1,bytes.fromhex('04 60 00 00 60 02 7f 7f 00 60 01 7f 00 60 01 7f 01 7f'))
-    guest += sec(2,u(3)+b'\x03env\x06memory\x02\x03\x01\x02'
+    guest += sec(2,u(3)+b'\x03env\x06memory\x02'+memory_limits(shared=True)
                  + b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02'
                  + b'\x04wasi\x0cthread-spawn\x00\x03')
     guest += sec(3,b'\x02\x00\x01')
@@ -128,14 +128,14 @@ def main():
             path = out / (name+'.wasm')
             path.write_bytes(wasm)
             for engine in ('int','aot'):
-                command = [str(vm),'--debug-fault-action','exit','--runtime-'+engine,'--wasm-feature-enable-memory64',
-                           '--wasm-feature-enable-threads','--wasm-set-start-func','0']
+                command = [str(vm),'--debug-fault-action','exit','--runtime-'+engine,'--wasm-policy-global', 'parser.memory64', 'on',
+                           '--wasm-policy-global', 'parser.threads', 'on','--wasm-set-start-func','0']
                 if engine=='aot':
                     command += ['--runtime-llvm-jit-cache-path','disable','--runtime-compile-threads','0']
                 if disabled:
-                    command += ['--runtime-disable-memtag']
+                    command += ['--wasm-policy-global', 'runtime.memtag-checks', 'off']
                 else:
-                    command += ['--runtime-memtag-backend','software','--runtime-memtag-mode','sync',
+                    command += ['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync',
                                 '--runtime-memtag-action','crash']
                 command += ['--',str(path)]
                 result = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90)
@@ -148,7 +148,7 @@ def main():
                 (out/'results.json').write_text(json.dumps(report,indent=2)+'\n')
                 print(name,engine,result.returncode,ok,flush=True)
     owner = out/'thread-owner.wasm'
-    owner.write_bytes(b'\0asm\x01\0\0\0'+sec(5,b'\x01\x03\x01\x02')+sec(7,b'\x01\x06memory\x02\x00'))
+    owner.write_bytes(b'\0asm\x01\0\0\0'+sec(5,u(1)+memory_limits(shared=True))+sec(7,b'\x01\x06memory\x02\x00'))
     for reject in (False,True):
         name = 'threaded-child-' + ('reject-release' if reject else 'shared-owner')
         guest = threaded_fixture(reject)
@@ -156,13 +156,13 @@ def main():
         path.write_bytes(guest)
         for engine in ('int','aot'):
             command = [str(vm),'--debug-fault-action','exit','--runtime-'+engine,'--runtime-compile-threads','0',
-                       '--wasm-feature-enable-threads','--wasi-threads','3','3','1048576','16777216','67108864','131072',
+                       '--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','131072',
                        '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main',
                        '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
                        '--wasm-preload-library',str(owner),'env','--wasithread-single-create','main','--wasithread-single-enable','main',
                        '--wasithread-single-interface','main','thread-spawn','allow']
             if engine=='aot':
-                command += ['--runtime-llvm-jit-cache-path','disable','--runtime-llvm-jit-policy','debug']
+                command += ['--runtime-llvm-jit-cache-path','disable','--wasm-policy-global', 'runtime.llvm.policy','debug']
             command += ['--run',str(path)]
             result = subprocess.run(command,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=40)
             output = result.stdout.decode(errors='replace')

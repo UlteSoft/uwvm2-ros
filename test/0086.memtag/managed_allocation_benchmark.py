@@ -10,7 +10,7 @@ import subprocess
 import time
 
 from initialization_matrix import HEADER, exports
-from vm_matrix import c, op, sec, u
+from vm_matrix import c, op, sec, u, memory_limits
 
 
 def guest(count):
@@ -24,7 +24,7 @@ def guest(count):
             b"\x20\x03" + c(1) + b"\x6b\x22\x03\x0d\x00\x0b" +
             release(0) + release(1) + b"\x0b")
     return (HEADER + sec(1,b"\x01\x60\x00\x00") + sec(3,b"\x01\x00") +
-            sec(5,b"\x01\x01\x01\x01") + exports([("_start",0,0)]) + sec(10,u(1)+u(len(body))+body))
+            sec(5,b"\x01"+memory_limits(maximum=1)) + exports([("_start",0,0)]) + sec(10,u(1)+u(len(body))+body))
 
 
 def digest(path):
@@ -59,7 +59,7 @@ def main():
                 path=args.output/f"{count}.wasm"
                 path.write_bytes(guest(count))
                 flags=["--runtime-llvm-jit-cache-path","disable","--runtime-compile-threads","0"] if kind=="aot" else []
-                commands.append([str(vm),"--runtime-"+kind,*flags,"--runtime-memtag-backend","software","--runtime-memtag-mode","sync","--wasm-set-start-func","0","--run",str(path)])
+                commands.append([str(vm),"--runtime-"+kind,*flags,"--wasm-policy-global", "runtime.memtag-backend","software","--runtime-memtag-mode","sync","--wasm-set-start-func","0","--run",str(path)])
         def timed(argv):
             start=time.perf_counter_ns()
             result=subprocess.run(argv,capture_output=True,timeout=90)

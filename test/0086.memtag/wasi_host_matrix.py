@@ -36,8 +36,8 @@ for spec in compiled:
   name=spec['name']+'-'+backend
   args=[str(vm),'-R'+backend,'-Rct','1','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main']
   if backend=='aot':args+=['-Rllvm-cache-path','disable']
-  if shared:args+=['--wasm-feature-enable-threads']
-  if bits==64:args+=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64']
+  if shared:args+=['--wasm-policy-global', 'parser.threads', 'on']
+  if bits==64:args+=['--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on']
   function='random_get' if case>=5 else 'fd_write'
   # These imports keep the native-width C ABI (64-bit only in wasm64 builds).
   # The compiler source uses import_name explicitly; wasm64 mirrors its name.

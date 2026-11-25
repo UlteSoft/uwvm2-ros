@@ -48,16 +48,15 @@ template<class Address,bool Shared,class Owner> void run(Owner& m)
     auto oob=rt::check_host_access(m,UINT64_MAX,1);rt::record_host_fault(3,UINT64_MAX,oob);
     CHECK(!rt::consume_host_fault().pending);
     bool called{};CHECK(!rt::with_host_access(m,raw,48,[&](std::span<std::byte>) noexcept {called=true;}));CHECK(!called);
-    if constexpr(Owner::support_multi_thread && !Owner::can_mmap)CHECK(m.active_ops_p->load()==0);
     CHECK(m.grow_strictly(1));
 }
 int main()
 {
-    {linear::single_thread_allocator_memory_t m;m.init_by_page_count(1);run<std::uint32_t,false>(m);}
-    {linear::allocator_memory_t m;m.init_by_page_count(1);run<std::uint64_t,true>(m);}
+    {linear::mmap_memory_t m;m.init_by_page_count(1,2);run<std::uint32_t,false>(m);}
+    {linear::mmap_memory_t m{65536,linear::mmap_memory_status_t::wasm64};m.init_by_page_count(1,2);run<std::uint64_t,true>(m);}
 #if defined(UWVM_SUPPORT_MMAP)
-    {linear::mmap_memory_t m;m.init_by_page_count(1);run<std::uint32_t,true>(m);}
-    {linear::mmap_memory_t m(65536,linear::mmap_memory_status_t::wasm64);m.init_by_page_count(1);run<std::uint64_t,false>(m);}
+    {linear::mmap_memory_t m;m.init_by_page_count(1,2);run<std::uint32_t,true>(m);}
+    {linear::mmap_memory_t m(65536,linear::mmap_memory_status_t::wasm64);m.init_by_page_count(1,2);run<std::uint64_t,false>(m);}
 #endif
     // Independent TLS fault records cannot cross guest host-call threads.
     rt::pending_host_fault={true,9,11,16,1,2};

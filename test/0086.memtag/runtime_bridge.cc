@@ -22,10 +22,8 @@ static unsigned entropy_calls;
 static unsigned existing_fork_calls;
 static void existing_fork_handler() { ++existing_fork_calls; }
 static unsigned entropy_mode;
-static std::atomic_size_t* pinned;
 static ssize_t entropy(void* output,std::size_t bytes,unsigned flags) {
  CHECK(flags==0);
- if(pinned)CHECK(pinned->load()==0); // OS entropy is outside relocation guards.
  ++entropy_calls;
  if(entropy_mode==1){errno=EIO;return -1;}
  if(entropy_mode==2 && entropy_calls==1){errno=EINTR;return -1;}
@@ -55,7 +53,6 @@ void exercise(Owner& owner) {
  bool called{};
  CHECK(rt::with_checked_access<Address,Shared>(owner,tag,31,1,[&](std::span<std::byte> data) noexcept {
    CHECK(data.size()==1 && data.data()==owner.memory_begin+31);
-   if constexpr(Owner::support_multi_thread && !Owner::can_mmap)CHECK(owner.active_ops_p->load()!=0);
    called=true;
  }));
  CHECK(called);
@@ -79,7 +76,6 @@ void exercise(Owner& owner) {
  load[0]=static_cast<Address>(65536);
  CHECK(!rt::execute<true,Address,Shared>(owner,mt::opcode::load,load));
 #if defined(__linux__)
- if constexpr(Owner::support_multi_thread && !Owner::can_mmap)pinned=owner.active_ops_p;
  reset_entropy();
  CHECK(!rt::execute<true,Address,Shared>(owner,mt::opcode::random,args));
  CHECK(entropy_calls==0);
@@ -102,10 +98,9 @@ void exercise(Owner& owner) {
  auto empty=rt::execute<true,Address,Shared>(owner,mt::opcode::randomstore,args);
  CHECK(empty && entropy_calls==1); // Reference zero-length store still selects a random tag.
  rt::details::entropy_read_test_hook=nullptr;
- rt::details::entropy_buffer.position=256;pinned=nullptr;
+ rt::details::entropy_buffer.position=256;
 #endif
- if constexpr(Owner::support_multi_thread && !Owner::can_mmap)CHECK(owner.active_ops_p->load()==0);
- CHECK(owner.grow_strictly(1)); // Every success/error return released its pin.
+ CHECK(owner.grow_strictly(1));
 }
 template<class Owner>
 void disabled(Owner& owner) {
@@ -127,7 +122,7 @@ void disabled(Owner& owner) {
 }
 template<class Owner>
 void concurrent() {
- Owner owner;owner.init_by_page_count(1);
+ Owner owner;owner.init_by_page_count(1,16);
  CHECK(owner.enable_memtag(mt::address_width::i32,true)==mt::storage_error::none);
  std::atomic_bool start{},stop{};
  std::thread reader([&]{
@@ -145,21 +140,20 @@ int main() {
  CHECK(pthread_atfork(nullptr,existing_fork_handler,existing_fork_handler)==0);
 #endif
  {
- linear::single_thread_allocator_memory_t m;m.init_by_page_count(1);disabled(m);
+ linear::mmap_memory_t m;m.init_by_page_count(1,16);disabled(m);
  exercise<std::uint32_t,false>(m);
  }
  {
- linear::allocator_memory_t m;m.init_by_page_count(1);
+ linear::mmap_memory_t m{65536,linear::mmap_memory_status_t::wasm64};m.init_by_page_count(1,16);
  exercise<std::uint64_t,true>(m);
  }
- concurrent<linear::allocator_memory_t>();
 #if defined(UWVM_SUPPORT_MMAP)
  {
- linear::mmap_memory_t m;m.init_by_page_count(1);disabled(m);
+ linear::mmap_memory_t m;m.init_by_page_count(1,16);disabled(m);
  exercise<std::uint32_t,true>(m);
  }
  {
- linear::mmap_memory_t m(65536,linear::mmap_memory_status_t::wasm64);m.init_by_page_count(1);
+ linear::mmap_memory_t m(65536,linear::mmap_memory_status_t::wasm64);m.init_by_page_count(1,16);
  exercise<std::uint64_t,false>(m);
  }
  concurrent<linear::mmap_memory_t>();

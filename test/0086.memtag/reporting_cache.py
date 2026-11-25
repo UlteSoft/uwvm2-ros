@@ -10,7 +10,7 @@ def main():
  p=argparse.ArgumentParser();p.add_argument('--vm',required=True);p.add_argument('--out',required=True,type=Path);a=p.parse_args();a.out.mkdir(mode=0o700,parents=True,exist_ok=False)
  wasm=(a.out/'fault.wasm').resolve();program=m.Program();program.add(program.tags());program.add(program.tags(16,16,4));program.add(b'\x20\0\x04\x40'+program.tagged(0)+m.c(17,64)+m.mem(0x37,15)+b'\x0b')
  body=b'\0'+program.code+b'\x0b'
- wasm.write_bytes(b'\0asm\x01\0\0\0'+m.sec(1,b'\x01\x60\x01\x7f\0')+m.sec(3,b'\x01\0')+m.sec(5,b'\x01\x01\x01\x02')+m.sec(7,b'\x01\x06_start\0\0')+m.sec(10,b'\x01'+m.u(len(body))+body));cache=(a.out/'cache').resolve();cache.mkdir(mode=0o700);rows=[]
+ wasm.write_bytes(b'\0asm\x01\0\0\0'+m.sec(1,b'\x01\x60\x01\x7f\0')+m.sec(3,b'\x01\0')+m.sec(5,b'\x01'+m.memory_limits())+m.sec(7,b'\x01\x06_start\0\0')+m.sec(10,b'\x01'+m.u(len(body))+body));cache=(a.out/'cache').resolve();cache.mkdir(mode=0o700);rows=[]
  for index,(action,trigger) in enumerate([('crash',0),('silent-log',0),('crash',1),('silent-log',1),('crash',1),('silent-log',1)]):
   report_path=a.out/(str(index)+'-violations.jsonl')
   cmd=[a.vm,'-Raot','-Rct','0','--runtime-llvm-jit-cache-seal-process','-Rllvm-cache-path','path',str(cache),'--log-verbose','--runtime-compiler-log','err',*(['--runtime-memtag-action','crash'] if action=='crash' else m.report_flags(report_path)),'--wasm-set-start-func','0',str(trigger),'--run',str(wasm)]

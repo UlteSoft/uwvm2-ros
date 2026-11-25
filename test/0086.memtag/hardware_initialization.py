@@ -7,7 +7,7 @@ import vm_matrix as m
 def build(code,wide,*,owner=False,alias=False,globals_tag=False):
  body=b"\0"+code+b"\x0b"
  result=b"\0asm\x01\0\0\0"+m.sec(1,b"\x01\x60\0\0")
- limits=m.u(5 if wide else 1)+m.u(1)+m.u(2)
+ limits=m.memory_limits(wide)
  if alias:result+=m.sec(2,b"\x01\x05owner\x06memory\x02"+limits)
  result+=m.sec(3,b"\x01\0")
  if not alias:result+=m.sec(5,b"\x01"+limits)
@@ -41,9 +41,9 @@ def main():
     name=('alias' if alias else 'independent')+'-'+str(code.bits)+'-'+str(int(enabled));file=args.out/(name+'.wasm');file.write_bytes(raw)
     for engine in args.engines.split(','):
      command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0',
-      *(['--wasm-feature-enable-memory64'] if wide else []),'--wasm-preload-library',str(owner),'owner']
+      *(['--wasm-policy-global', 'parser.memory64', 'on'] if wide else []),'--wasm-preload-library',str(owner),'owner']
      if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable']
-     if not enabled:command+=['--runtime-disable-memtag']
+     if not enabled:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
      command+=['--run',str(file)]
      done=subprocess.run(command,capture_output=True,timeout=90);log=(done.stdout+done.stderr).decode('utf8','replace')
      (args.out/(name+'-'+engine+'.log')).write_text(log)

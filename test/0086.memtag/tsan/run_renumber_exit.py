@@ -34,8 +34,8 @@ for engine in ('int','aot'):
    (drop (call $write (i32.const 3)(i32.const 0)(i32.const 1)(i32.const 16)))
    (br $again))))''')
    wasm=source.with_suffix('.wasm');subprocess.run([str(parser),'parse',str(source),'-o',str(wasm)],check=True)
-   args=[str(vm),'-R'+engine,'--runtime-compile-threads','0','--runtime-llvm-jit-policy','debug','--runtime-llvm-jit-cache-path','disable',
-    '-WFE-threads','--wasi-threads','1','1','1048576','16777216','67108864','65536','--wasm-set-main-module-name','main',
+   args=[str(vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'runtime.llvm.policy','debug','--runtime-llvm-jit-cache-path','disable',
+    '--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','1','1','1048576','16777216','67108864','65536','--wasm-set-main-module-name','main',
     '--wasip1-single-create','main','--wasip1-single-enable','main',
     '--wasip1-single-mount-dir','main','/target',str(directory),'--wasip1-single-mount-dir-rights','main','/target','0','0']
    for n in ('proc-exit','stdout.write','stderr.write','thread-spawn'):args+=['--wasip1-single-grant','main',n]

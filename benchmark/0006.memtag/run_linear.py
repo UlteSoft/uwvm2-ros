@@ -23,8 +23,8 @@ def main():
   source=next(x for x in manifest if x["bits"]==bits and x["iterations"]==iterations and x["tagged"]==tagged)["file"]
   if engine.startswith("uwvm"):
    cmd=[str(a.vm),"-Raot","--runtime-compile-threads","0","--runtime-llvm-jit-cache-path","disable"]
-   if bits==64:cmd+=["--wasm-feature-enable-memory64","--wasm-feature-enable-table64"]
-   if engine=="uwvm-ignored":cmd+=["--runtime-disable-memtag"]
+   if bits==64:cmd+=["--wasm-policy-global", "parser.memory64", "on","--wasm-policy-global", "parser.table64", "on"]
+   if engine=="uwvm-ignored":cmd+=["--wasm-policy-global", "runtime.memtag-checks", "off"]
    cmd+=["--run",source]
   elif engine.startswith("wavm"):
    cmd=[str(a.wavm),"run","--abi=bare","--function=_start","--nocache"]

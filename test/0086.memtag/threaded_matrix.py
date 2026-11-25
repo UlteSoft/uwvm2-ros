@@ -23,7 +23,7 @@ def shared_module(original):
   if kind==1:
    count,pos=leb(payload,0);assert count==1
    result+=m.sec(1,m.u(3)+payload[pos:]+bytes.fromhex('60 02 7f 7f 00 60 01 7f 00'))
-   result+=m.sec(2,m.u(2)+b'\x03env\x06memory\x02\x03\x01\x02'+b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02')
+   result+=m.sec(2,m.u(2)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True)+b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02')
   elif kind==3:
    assert payload==b'\x01\x00';result+=m.sec(3,b'\x02\x00\x01')
   elif kind==5:pass
@@ -78,7 +78,7 @@ def spawned(kind):
  child.add(m.c(4096)+m.c(1)+b'\xfe\x00\x02\0\x1a')
  result=b'\0asm\x01\0\0\0'
  result+=m.sec(1,bytes.fromhex('04 60 00 00 60 02 7f 7f 00 60 01 7f 00 60 01 7f 01 7f'))
- result+=m.sec(2,m.u(3)+b'\x03env\x06memory\x02\x03\x01\x02'+
+ result+=m.sec(2,m.u(3)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True)+
   b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02'+b'\x04wasi\x0cthread-spawn\x00\x03')
  result+=m.sec(3,b'\x02\x00\x01')
  result+=m.sec(7,b'\x03\x06_start\x00\x02\x11wasi_thread_start\x00\x03\x06memory\x02\0')
@@ -93,10 +93,10 @@ def main():
  if args.code_budget<0:parser.error('--code-budget must not be negative')
  args.out.mkdir(parents=True,exist_ok=True)
  # The preloaded module is the actual shared memory owner for every child.
- owner=args.out/'owner.wasm';owner.write_bytes(b'\0asm\x01\0\0\0'+m.sec(5,b'\x01\x03\x01\x02')+m.sec(7,b'\x01\x06memory\x02\0'))
+ owner=args.out/'owner.wasm';owner.write_bytes(b'\0asm\x01\0\0\0'+m.sec(5,m.u(1)+m.memory_limits(shared=True))+m.sec(7,b'\x01\x06memory\x02\0'))
  manifest=[]
  for enabled in [False,True]:
-  cases=[('markers',m.markers(False,enabled),'success'),('scalars',m.scalars(False),'success'),
+  cases=[('markers',m.markers(False),'success'),('scalars',m.scalars(False),'success'),
    ('simd',m.simds(False),'success'),('bulk',m.bulks(False),'success'),('atomic',m.atomics(False),'success'),
    ('wait-notify',waits(),'success'),('growth',growth(),'success')]
   for kind in ['scalar','simd','fill','copy','atomic','bounds']:
@@ -115,14 +115,14 @@ def main():
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','-WFE-threads','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),'131072',
+   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),'131072',
     '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main',
     '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
     '--wasm-preload-library',str(owner),'env']
-   if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--runtime-llvm-jit-policy','debug']
+   if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--wasm-policy-global', 'runtime.llvm.policy','debug']
    if case['name'].startswith('spawn-'):
-    command+=['--wasip1-single-interface','main','thread-spawn','allow','--wasip1-single-grant','main','thread-spawn']
-   if not case['enabled']:command+=['--runtime-disable-memtag']
+    command+=['--wasithread-single-create','main','--wasithread-single-enable','main','--wasithread-single-interface','main','thread-spawn','allow']
+   if not case['enabled']:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
    command+=['--run',case['file']]
    completed=subprocess.run(command,capture_output=True,timeout=90)
    output=(completed.stdout+completed.stderr).decode('utf8','replace')

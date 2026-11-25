@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 from threaded_matrix import shared_module
-from vm_matrix import c, module, op, sec, u
+from vm_matrix import c, module, op, sec, u, memory_limits
 
 
 def static_section(length):
@@ -29,20 +29,20 @@ def main():
 
     # The preloaded env is the physical owner. The main module imports this
     # memory and has the only _start. Both source files form the journal origin.
-    owner_bytes = b"\0asm\x01\0\0\0" + sec(5, b"\x01\x03\x01\x02") + sec(7, b"\x01\x06memory\x02\x00")
+    owner_bytes = b"\0asm\x01\0\0\0" + sec(5, u(1)+memory_limits(shared=True)) + sec(7, b"\x01\x06memory\x02\x00")
     cases = [
         ("ordinary", b"", b"", False, True),
         ("raw-tag", op(0x20) + b"\x1a", b"", False, True),
         ("instruction-word-in-constant", b"\x42" + op(0x40)[:-1] + b"\x1a", b"", False, True),
         ("empty-owner-descriptor", b"", static_section(0), False, True),
         ("permanent-preload", b"", static_section(16), False, False),
-        ("permanent-disabled", b"", static_section(16), True, True),
+        ("permanent-unchecked", b"", static_section(16), True, False),
     ]
     for code, name in enumerate(("claim", "claimz", "reserve", "activate", "release"), 0x40):
         # Refusal must happen even before a function can establish an entry, or
         # when this instruction is unreachable. No execution-state heuristic.
         cases.append((name, b"\x0f" + c(0) + c(16) + op(code) + b"\x1a", b"", False, False))
-    cases.append(("managed-disabled", b"\x0f" + c(0) + c(16) + op(0x40) + b"\x1a", b"", True, True))
+    cases.append(("managed-unchecked", b"\x0f" + c(0) + c(16) + op(0x40) + b"\x1a", b"", True, False))
 
     with vm.open("rb") as source:
         report = {"vm_sha256": hashlib.file_digest(source, "sha256").hexdigest(), "cases": []}
@@ -58,15 +58,15 @@ def main():
         for engine in ("int", "aot"):
             archive = out / (name + "-" + engine + ".uwsnap")
             common = [str(vm), "--debug-permissions", "full", "--debug-fault-action", "exit", "--runtime-" + engine,
-                      "--runtime-compile-threads", "0", "--wasm-feature-enable-threads", "--wasi-threads",
+                      "--runtime-compile-threads", "0", "--wasm-policy-global", "parser.threads", "on", "--wasi-threads",
                       "3", "3", "1048576", "16777216", "67108864", "131072", "--wasm-set-main-module-name", "main",
                       "--wasip1-single-create", "main", "--wasip1-single-enable", "main", "--wasip1-single-interface",
                       "main", "proc_exit", "allow", "--wasip1-single-grant", "main", "proc-exit",
                       "--wasm-preload-library", str(owner), "env"]
             if engine == "aot":
-                common += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-llvm-jit-policy", "debug"]
+                common += ["--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "runtime.llvm.policy", "debug"]
             if disabled:
-                common += ["--runtime-disable-memtag"]
+                common += ["--wasm-policy-global", "runtime.memtag-checks", "off"]
             for mode in ("record", "replay") if accepts else ("record",):
                 command = common + ["--debug-thread-history", mode, str(archive), "4194304", "--run", str(guest)]
                 completed = subprocess.run(command, capture_output=True, timeout=40)

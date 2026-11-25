@@ -9,11 +9,11 @@ for case in manifest:
   for engine in ['int','aot']:
    name=case['name']+'-'+str(int(enabled))+'-'+engine
    cmd=[str(vm),'-R'+engine,'--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',
-    '--runtime-llvm-jit-policy','debug','-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','131072',
+    '--wasm-policy-global', 'runtime.llvm.policy','debug','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','131072',
     '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main']
    for interface in ['thread-spawn','fd_write','proc_exit']:cmd+=['--wasip1-single-interface','main',interface,'allow']
    for grant in ['thread-spawn','stdout.write','proc-exit']:cmd+=['--wasip1-single-grant','main',grant]
-   if case['extension'] and not enabled:cmd+=['--runtime-disable-memtag']
+   if case['extension'] and not enabled:cmd+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
    cmd+=['--wasm-preload-library',case['owner'],'env','--run',case['file']]
    start=time.monotonic();r=subprocess.run(cmd,capture_output=True,timeout=180)
    (out/(name+'.stderr')).write_bytes(r.stderr);(out/(name+'.stdout')).write_bytes(r.stdout)

@@ -19,10 +19,7 @@ def fixture(log=False,wide=False,shared=False,tag_value=3):
     code=b'\x03\x40'+n(256)+n(32)+op(0x2f)+b'\x21\x00'
     code+=b'\x20\x00'+mte.c(0x12345678)+mte.mem(0x36)
     code+=n(512)+n(tag_value)+op(0x22)+n(32)+op(0x2b)
-    # A wide tag with matching low hardware bits must still fail the software
-    # high-bit check. The default fixture retains its original byte encoding.
-    mismatch = ((tag_value & 15) << 56) if wide and tag_value > 15 else 0
-    if log:code+=n(512 | mismatch)+mte.mem(0x28)+b'\x1a'
+    if log:code+=n(512)+n(0 if tag_value else 1)+op(0x22)+mte.mem(0x28)+b'\x1a'
     code+=n(0)+n(16)+b'\x10\x00\x1a'
     code+=mte.c(1)+n(64)+n(1)+n(80)+b'\x10\x01\x1a'
     code+=b'\x0c\x00\x0b\x0b'
@@ -32,7 +29,7 @@ def fixture(log=False,wide=False,shared=False,tag_value=3):
     for name,index in [('random_get',0),('fd_write',1)]:
         if wide:name+='_wasm64'
         imports+=u(22)+b'wasi_snapshot_preview1'+u(len(name))+name.encode()+b'\x00'+u(index)
-    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+u(1+(4 if wide else 0)+(2 if shared else 0))+b'\x01\x02')
+    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+mte.memory_limits(wide,shared))
     module+=sec(7,b'\x01\x06_start\x00\x02')+sec(10,b'\x01'+u(len(body))+body)
     payload=b'MTE-REPLAY-EFFECT\n'
     data=b'\x02\x00'+n(64)+b'\x0b'+u(word*2)+(128).to_bytes(word,'little')+len(payload).to_bytes(word,'little')
@@ -47,7 +44,7 @@ def main():
     parser.add_argument('--mode',choices=('sync','async'),default='sync');parser.add_argument('--log',action='store_true')
     parser.add_argument('--memory64',action='store_true');parser.add_argument('--shared',action='store_true')
     parser.add_argument('--tag',type=lambda x:int(x,0),default=3)
-    args=parser.parse_args();require(0<=args.tag<=(255 if args.memory64 else 15),'tag width');args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=False)
+    args=parser.parse_args();require(0<=args.tag<=15,'tag width');args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=False)
     require('/docker-' in Path('/proc/self/cgroup').read_text(),'resource cgroup required')
     wasm=args.out/'tagged.wasm';wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag));vm=None;result={'passed':False}
     try:

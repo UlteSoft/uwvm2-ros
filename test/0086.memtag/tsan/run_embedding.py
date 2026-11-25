@@ -58,10 +58,10 @@ for mode in a.case or ["none","control","race"]:
   for repeat in range(a.race_repeats if mode=="race" else 1):
    name=f"{mode}-{engine}-{repeat:02d}"
    args=[str(binary),mode,engine,"--","-R"+("aot" if engine=="llvm" else "int"),
-    "--debug-permissions","full","--runtime-compile-threads","0","--runtime-llvm-jit-cache-path","disable","--runtime-llvm-jit-policy","debug",
-    "-WFE-threads","--wasi-threads","3","3","1048576","16777216","67108864","131072",
+    "--debug-permissions","full","--runtime-compile-threads","0","--runtime-llvm-jit-cache-path","disable","--wasm-policy-global", "runtime.llvm.policy","debug",
+    "--wasm-policy-global", "parser.threads", "on","--wasi-threads","3","3","1048576","16777216","67108864","131072",
     "--wasm-set-main-module-name","main","--wasip1-single-create","main","--wasip1-single-enable","main",
-    "--wasip1-single-interface","main","thread-spawn","allow","--wasip1-single-grant","main","thread-spawn",
+    "--wasithread-single-create","main","--wasithread-single-enable","main","--wasithread-single-interface","main","thread-spawn","allow",
     "--wasm-preload-library",str(O/"memory_provider.wasm"),"env","--run",str(O/"b1_wait_and_loop.wasm")]
    started=time.monotonic();timed_out=False;rss_exceeded=False;maximum_rss_kib=0
    with (O/(name+".stdout")).open("wb") as stdout,(O/(name+".stderr")).open("wb") as stderr:

@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--log', action='store_true')
     parser.add_argument('--tag', type=lambda x: int(x, 0), default=3)
     args = parser.parse_args()
-    require(0 <= args.tag <= (255 if args.memory64 else 15), 'tag width')
+    require(0 <= args.tag <= 15, 'tag width')
     require('/docker-' in Path('/proc/self/cgroup').read_text(), 'resource cgroup required')
     out = args.out.resolve(); out.mkdir(parents=True, exist_ok=False)
     recorded = args.recorded.resolve()

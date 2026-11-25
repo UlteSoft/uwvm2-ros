@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 from initialization_matrix import HEADER, exports, text
-from vm_matrix import c, op, sec, u
+from vm_matrix import c, op, sec, u, memory_limits
 
 SLOTS = 257
 BASE = 64
@@ -19,11 +19,11 @@ def manifest(indices, step):
     return sec(0, text("uwvm.memtag.linear.globals") + u(2) + u(len(indices)) + descriptors)
 
 
-def programs(wide, disabled, distant=False):
+def programs(wide, distant=False):
     bits = 64 if wide else 32
-    slots = (255 if wide else 15) if distant else SLOTS
+    slots = 15 if distant else SLOTS
     step = 96 if distant else 16
-    limits = u(5 if wide else 1) + u(1) + u(1)
+    limits = memory_limits(wide,maximum=1)
     memory = sec(5, u(1) + limits)
     owner = HEADER + memory + exports([("mem", 2, 0)]) + manifest(range(0, slots, 2), step)
     imported = sec(2, u(1) + text("owner") + text("mem") + bytes([2]) + limits)
@@ -44,10 +44,7 @@ def programs(wide, disabled, distant=False):
     for gap in range(1, slots if distant else 6):
         a = get + load_color
         b = get + c(gap * step, bits) + add + load_color
-        if disabled:
-            checks = a + eqz + b"\x45" + trap_if + b + eqz + b"\x45" + trap_if
-        else:
-            checks = a + eqz + trap_if + b + eqz + trap_if + a + b + equal + trap_if
+        checks = a + eqz + trap_if + b + eqz + trap_if + a + b + equal + trap_if
         code += (c(BASE, bits) + set_local + b"\x03\x40" + checks +
                  get + c(step, bits) + add + set_local +
                  get + c(BASE + (slots-gap)*step, bits) + less + b"\x0d\x00\x0b")
@@ -70,14 +67,14 @@ def main():
             density = "-distant" if distant else ""
             cohort = args.out / f'{64 if wide else 32}-{"off" if disabled else "on"}{density}'
             cohort.mkdir(exist_ok=True)
-            for name, data in zip(("owner","alias","main"), programs(wide, disabled, distant), strict=True):
+            for name, data in zip(("owner","alias","main"), programs(wide, distant), strict=True):
                 (cohort / f"{name}.wasm").write_bytes(data)
             for engine in ("int","aot"):
                 command = [str(args.vm.resolve()), f"-R{engine}", "--runtime-compile-threads","0",
-                           "--wasm-feature-enable-memory64","--wasm-preload-library",str(cohort/"owner.wasm"),"owner",
+                           "--wasm-policy-global", "parser.memory64", "on","--wasm-preload-library",str(cohort/"owner.wasm"),"owner",
                            "--wasm-preload-library",str(cohort/"alias.wasm"),"alias"]
                 if disabled:
-                    command.append("--runtime-disable-memtag")
+                    command.extend(['--wasm-policy-global', 'runtime.memtag-checks', 'off'])
                 command += ["--run", str(cohort/"main.wasm")]
                 result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
                 (cohort / f"{engine}.log").write_bytes(result.stdout)

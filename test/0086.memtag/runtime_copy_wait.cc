@@ -13,9 +13,10 @@ namespace linear=uwvm2::object::memory::linear;
 static void require(bool pass,unsigned line){if(!pass){std::fprintf(stderr,"copy/wait failed line %u\n",line);std::abort();}}
 #define CHECK(...) require(static_cast<bool>((__VA_ARGS__)),__LINE__)
 template<typename A>void exercise(){
- linear::allocator_memory_t destination,source,ordinary;
+ constexpr auto status = sizeof(A) == 4 ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64;
+ linear::mmap_memory_t destination{65536,status}, source{65536,status}, ordinary{65536,status};
  destination.sequentially_consistent_size=source.sequentially_consistent_size=true;
- destination.init_by_page_count(1);source.init_by_page_count(1);ordinary.init_by_page_count(1);
+ destination.init_by_page_count(1,16);source.init_by_page_count(1,16);ordinary.init_by_page_count(1,16);
  constexpr auto width=sizeof(A)==4?mt::address_width::i32:mt::address_width::i64;
  CHECK(destination.enable_memtag(width,true)==mt::storage_error::none);
  CHECK(source.enable_memtag(width,true)==mt::storage_error::none);
@@ -25,8 +26,7 @@ template<typename A>void exercise(){
  CHECK(source.memtag_shadow.template view<A,true>(65536).store(src,256));
  bool called{};
  auto copy=[&](std::span<std::byte> d,std::span<std::byte> s)noexcept{
-  CHECK(destination.active_ops_p->load()!=0);
-  CHECK(source.active_ops_p->load()!=0);
+  CHECK(d.data()==destination.memory_begin && s.data()==source.memory_begin);
   called=true;if(!d.empty())std::memmove(d.data(),s.data(),d.size());
  };
  for(unsigned i{};i!=256;++i){source.memory_begin[i]=std::byte{0x55};destination.memory_begin[i]=std::byte{0x77};}
@@ -36,9 +36,8 @@ template<typename A>void exercise(){
  for(unsigned i{};i!=256;++i)CHECK(destination.memory_begin[i]==std::byte{0x77});
  CHECK(source.memtag_shadow.template view<A,true>(65536).store(src,256));
  CHECK(rt::with_checked_copy(destination,source,dst,src,256,copy) && called);
- CHECK(destination.active_ops_p->load()==0 && source.active_ops_p->load()==0);
  CHECK(rt::with_checked_copy(destination,destination,View::insert(1,3),dst,127,[&](std::span<std::byte> d,std::span<std::byte> s)noexcept{
-  CHECK(destination.active_ops_p->load()==1);std::memmove(d.data(),s.data(),d.size());
+  CHECK(d.data()==destination.memory_begin+1 && s.data()==destination.memory_begin);std::memmove(d.data(),s.data(),d.size());
  }));
  CHECK(rt::with_checked_copy(ordinary,destination,A{},dst,128,[](std::span<std::byte> d,std::span<std::byte> s)noexcept{std::memcpy(d.data(),s.data(),d.size());}));
  CHECK(!rt::with_checked_copy(ordinary,destination,View::insert(0,3),dst,128,[](std::span<std::byte>,std::span<std::byte>)noexcept{std::abort();}));
@@ -50,7 +49,6 @@ template<typename A>void exercise(){
  CHECK(unequal.access && unequal.wait.status==wt::wait_status::not_equal);
  auto timed=rt::wait_notify<2,A,true>(destination,dst,0,9,0);
  CHECK(timed.access && timed.wait.status==wt::wait_status::timed_out);
- CHECK(destination.active_ops_p->load()==0);
  std::atomic_bool started{},finished{};
  std::thread waiter([&]{
   wt::execution_scope thread_scope{domain,{}};

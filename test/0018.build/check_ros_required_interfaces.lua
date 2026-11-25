@@ -29,6 +29,9 @@ function main(output)
     end
     for _, arch in ipairs({"x86_64", "i686", "aarch64", "arm", "armhf"}) do
         run(arch, {}, true, "default-wasi-and-rosv2")
+        for _, model in ipairs({"mmap", "default", "single-thread-alloc", "multi-thread-alloc"}) do
+            run(arch, {["wasm-memory-model"]=model}, model == "mmap" or model == "default", "wasm-memory-model-" .. model)
+        end
         for _, option in ipairs({"import-u2rosv2", "enable-local-imported-wasip1-wasm64"}) do
             for _, value in ipairs({false, "n", "no", "false", "FALSE"}) do
                 run(arch, {[option]=value}, false, option .. "-removed-" .. tostring(value))

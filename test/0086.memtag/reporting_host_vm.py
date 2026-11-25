@@ -12,7 +12,7 @@ def image(denied=False,bounds=False):
  body=b'\0'+p.code+b'\x0b'
  name=lambda text:m.u(len(text))+text.encode()
  return (b'\0asm\x01\0\0\0'+m.sec(1,b'\x02\x60\x04'+b'\x7f'*4+b'\x01\x7f\x60\0\0')+
-  m.sec(2,b'\x01'+name('wasi_snapshot_preview1')+name('fd_write')+b'\0\0')+m.sec(3,b'\x01\x01')+m.sec(5,b'\x01\x01\x01\x02')+
+  m.sec(2,b'\x01'+name('wasi_snapshot_preview1')+name('fd_write')+b'\0\0')+m.sec(3,b'\x01\x01')+m.sec(5,b'\x01'+m.memory_limits())+
   m.sec(7,b'\x01\x06_start\0\x01')+m.sec(10,b'\x01'+m.u(len(body))+body)+m.sec(11,b'\x01\0'+m.c(256)+b'\x0b\x03OK\n'))
 
 def main():

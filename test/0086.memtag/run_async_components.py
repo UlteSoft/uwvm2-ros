@@ -49,7 +49,7 @@ def main():
     run(profile+'-queue-terminal',[*runner,binary,'fault'],122,'Exit status: 122')
     run(profile+'-first-fault-status',[*runner,binary,'prior-fault'],120,'Exit status: 120')
    else:
-    for mode,owner,bits,shared in itertools.product(('sync','async','valid','bounds','host'),('mmap','moving'),('32','64'),('private','shared')):
+    for mode,owner,bits,shared in itertools.product(('sync','async','valid','bounds','host'),('mmap',),('32','64'),('private','shared')):
      run('-'.join((profile,mode,owner,bits,shared)),[*runner,binary,mode,owner,bits,shared],122 if mode=='async' else 0,'PASS:')
  detector=out/'tsan-detector'
  run('detector-compile',[compiler.with_name('clang'),'-std=c11','-D_GNU_SOURCE','-O1','-g','-pthread','-fsanitize=thread',HERE/'tsan/detector.c','-o',detector])

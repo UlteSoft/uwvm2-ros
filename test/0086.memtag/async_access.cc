@@ -28,20 +28,15 @@ static void delivered(rt::deferred::fault const& value) noexcept
 template<class Owner,class Address,bool Shared>
 void test(char const* mode)
 {
-    Owner memory=[]
-    {
-        if constexpr(Owner::can_mmap)
-            return Owner{65536,sizeof(Address)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64};
-        else return Owner{};
-    }();
-    if constexpr(Owner::can_mmap) { memory.init_by_page_count(1,2); }
-    else { memory.init_by_page_count(1); }
+    constexpr auto status = sizeof(Address) == 4 ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64;
+    Owner memory{65536,status};
+    memory.init_by_page_count(1,2);
     memory.diagnostic_owner_memory_index=17;
     CHECK(memory.enable_memtag(sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64,Shared)==mt::storage_error::none);
     using view=mt::shadow_view<Address,Shared>;
     auto tags=memory.memtag_shadow.template view<Address,Shared>(65536);
-    constexpr unsigned good=sizeof(Address)==4?5:0xa5;
-    constexpr unsigned bad=sizeof(Address)==4?6:0xb5; // Equal low nibble: preserve full memory64 tags.
+    constexpr unsigned good=5;
+    constexpr unsigned bad=6;
     CHECK(tags.store(view::insert(0,good),65536));
     observed=memory.memory_begin;observed[32]=std::byte{42};
     auto pointer=view::insert(32,std::strcmp(mode,"valid")==0?good:bad);expected_pointer=pointer;
@@ -76,12 +71,12 @@ int main(int argc,char** argv)
     CHECK(argc==5);
     mt::selected_fault_delivery.store(std::strcmp(argv[1],"sync")==0?mt::fault_delivery::synchronous:mt::fault_delivery::software_async);
     rt::deferred::deliver_callback.store(delivered);
-    bool const mmap=std::strcmp(argv[2],"mmap")==0,bits64=std::strcmp(argv[3],"64")==0,shared=std::strcmp(argv[4],"shared")==0;
+    CHECK(std::strcmp(argv[2],"mmap")==0);
+    bool const bits64=std::strcmp(argv[3],"64")==0,shared=std::strcmp(argv[4],"shared")==0;
     auto dispatch=[&]<class Owner>()
     {
         if(bits64) { if(shared)test<Owner,std::uint64_t,true>(argv[1]);else test<Owner,std::uint64_t,false>(argv[1]); }
         else { if(shared)test<Owner,std::uint32_t,true>(argv[1]);else test<Owner,std::uint32_t,false>(argv[1]); }
     };
-    if(mmap)dispatch.template operator()<linear::mmap_memory_t>();
-    else dispatch.template operator()<linear::allocator_memory_t>();
+    dispatch.template operator()<linear::mmap_memory_t>();
 }

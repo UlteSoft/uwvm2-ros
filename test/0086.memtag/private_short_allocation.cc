@@ -32,12 +32,8 @@ static void cases()
     using view = mt::shadow_view<Address,false>;
     constexpr auto width{sizeof(Address)==4u ? mt::address_width::i32 : mt::address_width::i64};
     constexpr Address address{24u*16u};
-#if defined(UWVM_SUPPORT_MMAP)
     constexpr auto status{sizeof(Address)==4u ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64};
     linear::mmap_memory_t candidate{65536u,status},reference{65536u,status};
-#else
-    linear::allocator_memory_t candidate,reference;
-#endif
     for(auto* owner : {&candidate,&reference})
     {
         owner->init_by_page_count(1,1);

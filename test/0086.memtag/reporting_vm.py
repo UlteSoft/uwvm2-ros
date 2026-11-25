@@ -46,7 +46,7 @@ def main():
  for name,raw,count,status in cases():
   wasm=a.out/(name+'.wasm');wasm.write_bytes(raw)
   for engine in a.engines.split(','):
-   base=shlex.split(a.runner)+[a.vm,'-R'+engine,'--runtime-compile-threads','0','--wasm-feature-enable-memory64','--wasm-feature-enable-multi-memory','--wasm-feature-enable-threads','-WFE-gc','-WFE-function-references','-WFE-reference-types']
+   base=shlex.split(a.runner)+[a.vm,'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.multi-memory', 'on','--wasm-policy-global', 'parser.threads', 'on','--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.reference-types', 'on']
    if engine=='aot':base+=['--runtime-llvm-jit-cache-path','disable']
    for mode in a.modes.split(','):
     for output in ('out','err','file'):
@@ -54,7 +54,7 @@ def main():
      cmd=base+[*m.mode_flags(mode),*m.report_flags(destination),'--run',str(wasm)]
      run(label,cmd,status,count,destination)
    if not name.startswith('gc-'):
-    run(f'{name}-{engine}-disabled-log',base+['--runtime-disable-memtag',*m.report_flags('err'),'--run',str(wasm)],status,0,'err')
+    run(f'{name}-{engine}-disabled-log',base+['--wasm-policy-global', 'runtime.memtag-checks', 'off',*m.report_flags('err'),'--run',str(wasm)],status,0,'err')
    # Omission of the report option retains fail-closed default behavior.
    if count:run(f'{name}-{engine}-default',base+['--run',str(wasm)],122,0,'err')
  print(json.dumps(dict(passed=True,executions=len(rows))))

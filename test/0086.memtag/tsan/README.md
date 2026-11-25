@@ -144,7 +144,7 @@ qualify the later owner-view tag-store repair; run the current dedicated
 `compile_component.py SOURCE BASELINE_VM FROZEN_SOURCE OUTPUT [--build-only]` reuses
 the installed paired compiler/provider arguments and instruments a component. Run:
 
-- `owner_parallel.cc`: 32 real workers across mmap/moving owners, memory32/64,
+- `owner_parallel.cc`: 16 real workers across mmap owners, memory32/64,
   shared atomic tags, aliases, independent owners, pinned copies and concurrent
   growth. Destruction occurs only after physical joins; it does not invent support
   for concurrent owner destruction.
