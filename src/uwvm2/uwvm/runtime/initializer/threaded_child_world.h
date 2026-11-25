@@ -299,7 +299,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             namespace mt=::uwvm2::extension::memtag;
             namespace rt_mt=::uwvm2::runtime::memtag;
-            if(::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)return true;
             // Source sections were validated before admission. Resolve aliases
             // again against this private graph. Borrowed shared owners retain
             // their existing tags; only newly instantiated owners are tagged.
@@ -323,7 +322,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     bool success=true;
                     auto checked=mt::visit_linear_globals({reinterpret_cast<::std::byte const*>(begin),static_cast<::std::size_t>(end-begin)},
                         [&](::std::uint32_t index,::std::uint64_t& bytes) noexcept
-                        {auto* mem=native_memory(m,index);if(!mem)return false;bytes=mem->get_page_size()*UINT64_C(65536);return true;},
+                        {
+                            auto* mem=native_memory(m,index);
+                            if(!mem || !mem->memtag_shadow.enabled())return false;
+                            bytes=mem->memory_length_p->load(::std::memory_order_acquire);
+                            return true;
+                        },
                         [&](mt::linear_global_descriptor descriptor) noexcept
                         {
                             if(!success||!descriptor.byte_length)return;
@@ -570,24 +574,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         [[nodiscard]] bool charge_memory_growth(::uwvm2::object::memory::linear::native_memory_t const& memory,
             ::std::uint64_t pages, ::std::size_t maximum_bytes) const noexcept
         {
-            auto const limit_pages{maximum_bytes / 65536u};
+            auto const shift{memory.custom_page_size_log2};
+            auto const limit_pages{maximum_bytes >> shift};
             auto const old_pages{memory.get_page_size()};
             if(old_pages > limit_pages || pages > limit_pages - old_pages) { return false; }
             ::std::size_t total{};bool owned{};auto const cap=admission().max_local_memory_bytes();
             for(::std::size_t m{};m<module_count();++m)
                 for(auto const& local:module(m)->local_defined_memory_vec_storage)
                 {
-                    auto const n=local.memory.get_page_size();if(n>(cap-total)/65536u)return false;
-                    total+=n*65536u;if(&local.memory==&memory)owned=true;
+                    auto const n=local.memory.memory_length_p->load(::std::memory_order_acquire);
+                    if(n>cap-total)return false;
+                    total+=n;if(&local.memory==&memory)owned=true;
                 }
             if(owned)
             {
-                if(pages>(cap-total)/65536u)return false;
-                auto bytes=static_cast<::std::size_t>(pages)*65536u;
+                if(pages>((cap-total)>>shift))return false;
+                auto const old_bytes{static_cast<::std::size_t>(old_pages)<<shift};
+                auto const new_bytes{static_cast<::std::size_t>(old_pages+pages)<<shift};
+                auto const old_charge{memory.charged_memory_bytes(old_bytes)}, new_charge{memory.charged_memory_bytes(new_bytes)};
+                if(old_charge==SIZE_MAX || new_charge==SIZE_MAX || new_charge<old_charge)return false;
+                auto bytes=new_charge-old_charge;
                 if(memory.memtag_shadow.enabled())
                 {
-                    auto const before=memory_tag_storage_bytes(old_pages,memory.sequentially_consistent_size);
-                    auto const after=memory_tag_storage_bytes(old_pages+pages,memory.sequentially_consistent_size);
+                    auto const before=memory_tag_storage_bytes(old_bytes,memory.sequentially_consistent_size);
+                    auto const after=memory_tag_storage_bytes(new_bytes,memory.sequentially_consistent_size);
                     if(before==SIZE_MAX||after==SIZE_MAX||after<before||after-before>SIZE_MAX-bytes)return false;
                     bytes+=after-before;
                 }
@@ -599,13 +609,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
         // The private account includes committed shadow pages and their shared
         // tag gate. Virtual address reservation alone does not consume bytes.
-        [[nodiscard]] static ::std::size_t memory_tag_storage_bytes(::std::uint64_t pages,bool shared) noexcept
+        [[nodiscard]] static ::std::size_t memory_tag_storage_bytes(::std::size_t bytes,bool shared) noexcept
         {
             auto const [page,valid]=::uwvm2::object::memory::platform_page::get_platform_page_size();
             if(!valid||page==0u||(page&(page-1u)))return SIZE_MAX;
             auto const stride=shared?sizeof(::std::atomic<::std::uint8_t>):sizeof(::std::uint8_t);
-            if(pages>(SIZE_MAX-(page-1u))/(4096u*stride))return SIZE_MAX;
-            auto const rounded=(static_cast<::std::size_t>(pages)*4096u*stride+page-1u)&~(page-1u);
+            auto const granules{bytes/16u+(bytes%16u != 0u)};
+            if(granules>(SIZE_MAX-(page-1u))/stride)return SIZE_MAX;
+            auto const rounded=(granules*stride+page-1u)&~(page-1u);
             auto const gate=shared?sizeof(::uwvm2::utils::mutex::rwlock_t):0u;
             return rounded>SIZE_MAX-gate?SIZE_MAX:rounded+gate;
         }
@@ -973,11 +984,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     bool const shared=wasm_memory_is_shared(*record.memory_type_ptr);
                     auto const pages=record.effective_limits.min;
                     constexpr auto metadata=sizeof(::std::atomic_size_t)+sizeof(::uwvm2::utils::mutex::mutex_t);
-                    if(pages>(SIZE_MAX-metadata)/65536u||!owner->allocation_.get().charge(static_cast<::std::size_t>(pages)*65536u+metadata))throw ::std::bad_alloc{};
+                    memory.custom_page_size_log2=original.custom_page_size_log2;
+                    if(pages>(SIZE_MAX>>memory.custom_page_size_log2))throw ::std::bad_alloc{};
+                    auto const bytes{static_cast<::std::size_t>(pages)<<memory.custom_page_size_log2};
+                    auto const charge{memory.charged_memory_bytes(bytes)};
+                    if(charge>SIZE_MAX-metadata || !owner->allocation_.get().charge(charge+metadata))throw ::std::bad_alloc{};
                     memory.status=wide?decltype(memory.status)::wasm64:decltype(memory.status)::wasm32;
                     // Retain the concrete parent's plan, including its local override and any narrow-host fallback.
                     memory.reservation_budget_bytes = original.get_acquire_reserved_space_ceil();
                     memory.reservation_limit_bytes = original.reservation_limit_bytes;
+                    memory.reservation_adm_bits = original.reservation_adm_bits;
+                    memory.reservation_tagged = original.reservation_tagged;
+                    memory.reservation_manual = original.reservation_manual;
+                    memory.reservation_alias_count = original.reservation_alias_count;
                     memory.allow_reservation_fallback = false;
                     memory.use_planned_reservation = true;
                     memory.sequentially_consistent_size=shared;
@@ -986,11 +1005,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         owner->parent_->imported_memory_vec_storage.size()+index))throw ::std::bad_alloc{};
                     if(source.memory.memtag_shadow.enabled())
                     {
-                        namespace mt=::uwvm2::extension::memtag;
-                        auto const tag_bytes=ThreadedChildWorld::memory_tag_storage_bytes(pages,shared);
+                        auto const tag_bytes=ThreadedChildWorld::memory_tag_storage_bytes(bytes,shared);
                         if(tag_bytes==SIZE_MAX||!owner->allocation_.get().charge(tag_bytes))throw ::std::bad_alloc{};
-                        if(memory.enable_memtag(wide?mt::address_width::i64:mt::address_width::i32,shared)!=mt::storage_error::none)
-                            throw ::std::bad_alloc{};
+                    }
+                    record.backend = original.memtag_shadow.resolved_backend();
+                    if(!configure_owner_addressing(record, current_module())) { throw ::std::bad_alloc{}; }
+                    if(memory.memtag_shadow.enabled())
+                    {
+                        namespace mt=::uwvm2::extension::memtag;
                         auto const hardware=::uwvm2::runtime::memtag::activate_owner_hardware(memory);
                         if(!hardware&&(hardware.error!=mt::hardware_mte::setup_error::unsupported||memory.memtag_shadow.hardware_selected()))
                             throw ::std::bad_alloc{};
@@ -1192,7 +1214,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     if(!leaf->effective_limits.present_max||!supports_shared_child_memory(leaf->memory))
                         return threaded_child_error::unsupported_import;
                     auto const maximum=static_cast<::std::uint_least64_t>(leaf->effective_limits.max);
-                    if(maximum>admission_->max_shared_memory_bytes()/65536u)return threaded_child_error::memory_limit;
+                    if(maximum>(admission_->max_shared_memory_bytes()>>leaf->memory.custom_page_size_log2))return threaded_child_error::memory_limit;
                     if(::std::find(shared_memories_.begin(),shared_memories_.end(),leaf)==shared_memories_.end())shared_memories_.push_back(leaf);
                 }
                 imported_memory_targets_.push_back(leaf);
@@ -1238,9 +1260,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             if(m.memory_type_ptr == nullptr) { return threaded_child_error::declaration_mismatch; }
             auto const minimum{static_cast<::std::uint_least64_t>(m.effective_limits.min)};
-            if(minimum > (admission_->max_local_memory_bytes() - local_bytes) / 65536u)
+            auto const shift{m.memory.custom_page_size_log2};
+            if(minimum > ((admission_->max_local_memory_bytes() - local_bytes) >> shift))
             { return threaded_child_error::memory_limit; }
-            local_bytes += minimum * 65536u;
+            local_bytes += minimum << shift;
         }
         ::std::uint_least64_t segment_bytes{};
         for(auto const& segment : p.local_defined_data_vec_storage)

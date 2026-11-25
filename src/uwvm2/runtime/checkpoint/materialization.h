@@ -84,7 +84,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     }
     // Resolved original-module syntax/validation policy DATA. Every effective
     // field that changes Core parsing/validation is represented: cli_mode,
-    // nineteen proposal switches, the independent memtag extension policy, and
+    // nineteen proposal switches, WasmADM and WasmMTE admission, and
     // two legacy controllable restrictions.
     // CLI ownership bookkeeping and parser resource quotas are separate; this
     // record is not a parser budget, compilation owner or restore credential.
@@ -100,17 +100,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         {
             module_feature_policy copied{};
             copied.cli_mode = static_cast<::std::uint64_t>(p.cli_mode);
-            ::std::array<bool, 20u> const fields{p.disable_multi_value, p.disable_reference_types,
+            ::std::array<bool, 21u> const fields{p.disable_multi_value, p.disable_reference_types,
                 p.disable_table_instructions, p.disable_multiple_tables, p.disable_bulk_memory,
                 p.disable_sign_extension, p.disable_nontrapping_float_to_int, p.disable_simd,
                 p.disable_extended_const, p.disable_table_initializer, p.disable_relaxed_simd,
                 p.disable_multi_memory, p.disable_tail_call, p.disable_memory64, p.disable_table64,
                 p.disable_function_references, p.disable_gc, p.disable_exceptions, p.disable_threads,
-                p.disable_memtag_extension};
+                p.disable_memtag_extension, p.disable_adm_extension};
             for(::std::size_t n{}; n != fields.size(); ++n)
             { if(fields[n]) { copied.disabled |= ::std::uint64_t{1u} << n; } }
             copied.controlled = (p.controllable_allow_multi_result_vector ? 1u : 0u) |
-                (p.controllable_allow_multi_table ? 2u : 0u);
+                (p.controllable_allow_multi_table ? 2u : 0u) | (p.disable_custom_page_sizes ? 0u : 4u);
             return copied;
         }
         // Compatibility requirements are derived from this actual enabled
@@ -126,7 +126,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             add(1u, 1u); add(7u, 2u); add(10u, 3u); add(4u, 4u);
             add(6u, 6u); add(5u, 7u); add(12u, 8u); add(13u, 9u);
             add(11u, 10u); add(14u, 11u); add(16u, 12u); add(15u, 13u);
-            add(17u, 14u); add(8u, 15u); add(18u, 16u); add(17u, 17u); add(19u, 18u);
+            add(17u, 14u); add(8u, 15u); add(18u, 16u); add(17u, 17u); add(20u, 19u);
+            if((disabled & (::std::uint64_t{1u} << 20u)) == 0u) { add(19u, 18u); }
+            if(controlled & 4u) { result |= ::std::uint64_t{1u} << 20u; }
             return result;
         }
         using identity = ::std::array<::std::uint64_t, 4u>;

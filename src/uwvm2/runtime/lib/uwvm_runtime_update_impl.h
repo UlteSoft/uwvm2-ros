@@ -16,8 +16,25 @@ namespace production_update_detail
     // from debugger permissions. Diagnostic continuation must never
     // masquerade as an enforcing crash policy in a signed update.
     namespace mt=::uwvm2::extension::memtag;
-    update::append_u64(material,2u); // Explicit software/hardware and sync/async policy contract.
-    update::append_u64(material,::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag);
+    update::append_u64(material,3u);
+    auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+    auto const& parameters{file.wasm_parameter};
+    auto const& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para)};
+    for(auto value: ::uwvm2::runtime::checkpoint::module_feature_policy::from_actual_parameter(parser).cache_identity())
+    { update::append_u64(material,value); }
+    update::append_u64(material,::uwvm2::runtime::checkpoint::memory_layout::module_policy(parameters.memory_policy));
+    auto const& limits{parameters.initializer_limits};
+    update::append_u64(material,limits.imported_memories);
+    update::append_u64(material,limits.local_defined_memories);
+    update::append_u64(material,limits.imported_globals);
+    update::append_u64(material,limits.local_defined_globals);
+    if(!g_runtime.modules.empty() && g_runtime.modules.front_unchecked().runtime_module)
+    {
+        auto const& memories{g_runtime.modules.front_unchecked().runtime_module->local_defined_memory_vec_storage};
+        update::append_u64(material,memories.size());
+        for(auto const& memory : memories)
+        { update::append_u64(material,::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow)); }
+    }
     update::append_u64(material,static_cast<unsigned>(mt::selected_fault_delivery.load(::std::memory_order_relaxed)));
     update::append_u64(material,static_cast<unsigned>(mt::selected_report_action.load(::std::memory_order_relaxed)));
     }

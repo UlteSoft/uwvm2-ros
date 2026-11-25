@@ -197,6 +197,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         ::std::size_t mapped_reservation_bytes{};
         bool allow_reservation_fallback{true};
         bool use_planned_reservation{};
+        ::std::uint_least8_t reservation_adm_bits{};
+        bool reservation_tagged{}, reservation_manual{}, full_protection{};
+        ::std::size_t reservation_alias_count{};
 
         /// @brief This macro is used to control the behavior of the non-img compiler.
         inline static constexpr bool can_mmap{true};
@@ -314,13 +317,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
         inline constexpr bool is_full_page_protection() const noexcept
         {
-            return mmap_reservation::host_bits >= 64u && this->status == mmap_memory_status_t::wasm32;
+            return this->full_protection;
         }
 
-        [[nodiscard]] inline constexpr mmap_reservation::layout planned_layout(::std::size_t maximum_pages, ::std::size_t os_page, bool keep_plan = true) const noexcept
+        [[nodiscard]] inline constexpr bool reservation_participates() const noexcept
+        { return mmap_reservation::host_bits < 64u || this->status == mmap_memory_status_t::wasm64 || this->reservation_adm_bits; }
+
+        [[nodiscard]] inline constexpr mmap_reservation::layout planned_layout(::std::size_t maximum_pages, ::std::size_t os_page,
+            mmap_reservation::bytes_type retry_cap = mmap_reservation::maximum_bytes) const noexcept
         {
             if(this->custom_page_size_log2 >= ::std::numeric_limits<::std::size_t>::digits) { return {}; }
-            auto cap{this->reservation_budget_bytes};
+            auto cap{(::std::min)(this->reservation_budget_bytes, retry_cap)};
             if(!this->use_planned_reservation)
             {
                 // Standalone owners also share the process pool with all live generations.
@@ -330,8 +337,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
             auto layout{mmap_reservation::make_layout(mmap_reservation::host_bits, this->status == mmap_memory_status_t::wasm64,
                 cap, (::std::min)(maximum_pages, this->reservation_limit_bytes >> this->custom_page_size_log2),
-                ::std::size_t{1} << this->custom_page_size_log2, os_page)};
-            if(layout && keep_plan && this->use_planned_reservation && !this->is_full_page_protection())
+                ::std::size_t{1} << this->custom_page_size_log2, os_page, this->reservation_tagged, this->reservation_adm_bits)};
+            if(layout && retry_cap == mmap_reservation::maximum_bytes && this->use_planned_reservation)
             {
                 if(this->reservation_budget_bytes > SIZE_MAX || this->reservation_budget_bytes % os_page) { return {}; }
                 layout.reserved = this->reservation_budget_bytes;
@@ -414,25 +421,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                 for(;;)
                 {
                     auto const bytes{static_cast<::std::size_t>(layout.reserved)};
-                    bool const charged{mmap_reservation::acquire(bytes, !this->is_full_page_protection())};
+                    bool const charged{mmap_reservation::acquire(bytes, this->reservation_participates())};
                     if(charged)
                     {
                         this->reserved_begin = reserve_native(bytes);
                         if(this->reserved_begin != nullptr)
                         {
                             this->mapped_reservation_bytes = bytes;
+                            auto const full{mmap_reservation::full_window(mmap_reservation::host_bits, this->status == mmap_memory_status_t::wasm64,
+                                this->reservation_adm_bits, custom_page_size, platform_page)};
+                            this->full_protection = full && bytes >= full;
                             break;
                         }
-                        mmap_reservation::release(bytes, !this->is_full_page_protection());
+                        mmap_reservation::release(bytes, this->reservation_participates());
                     }
-                    if constexpr(mmap_reservation::host_bits < 64u)
+                    if(this->allow_reservation_fallback && (mmap_reservation::host_bits < 64u || this->reservation_adm_bits))
                     {
-                        // A fragmented narrow address space may still fit the
-                        // initial memory. Recompute the rounded tail at each step.
-                        auto const capacity_pages{static_cast<::std::size_t>(layout.data >> this->custom_page_size_log2)};
-                        if(this->allow_reservation_fallback && capacity_pages > init_page_count)
+                        // A fragmented address space may fit the initial data plus
+                        // its guard even when a larger automatic window failed.
+                        auto const range{mmap_reservation::bounds(mmap_reservation::host_bits,
+                            this->status == mmap_memory_status_t::wasm64, init_page_count, declared_max_pages,
+                            custom_page_size, platform_page, nullptr, this->reservation_tagged, this->reservation_adm_bits)};
+                        if(range && layout.reserved > range.minimum_span)
                         {
-                            layout = this->planned_layout((::std::max)(capacity_pages / 2uz, init_page_count), platform_page, false);
+                            auto const smaller{(::std::max)(range.minimum_span, layout.reserved / 2u)};
+                            layout = this->planned_layout(declared_max_pages, platform_page, smaller);
                             if(layout && init_page_count <= (layout.data >> this->custom_page_size_log2)) { continue; }
                         }
                     }
@@ -919,6 +932,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->reservation_budget_bytes = other.reservation_budget_bytes;
             this->allow_reservation_fallback = other.allow_reservation_fallback;
             this->use_planned_reservation = other.use_planned_reservation;
+            this->reservation_adm_bits = other.reservation_adm_bits;
+            this->reservation_tagged = other.reservation_tagged;
+            this->reservation_manual = other.reservation_manual;
+            this->reservation_alias_count = other.reservation_alias_count;
+            this->full_protection = ::std::exchange(other.full_protection, false);
             this->mapped_reservation_bytes = ::std::exchange(other.mapped_reservation_bytes, 0uz);
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
             this->memtag_shadow = ::std::move(other.memtag_shadow);
@@ -957,6 +975,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             this->reservation_budget_bytes = other.reservation_budget_bytes;
             this->allow_reservation_fallback = other.allow_reservation_fallback;
             this->use_planned_reservation = other.use_planned_reservation;
+            this->reservation_adm_bits = other.reservation_adm_bits;
+            this->reservation_tagged = other.reservation_tagged;
+            this->reservation_manual = other.reservation_manual;
+            this->reservation_alias_count = other.reservation_alias_count;
+            this->full_protection = ::std::exchange(other.full_protection, false);
             this->mapped_reservation_bytes = ::std::exchange(other.mapped_reservation_bytes, 0uz);
             this->diagnostic_owner_memory_index = other.diagnostic_owner_memory_index;
             this->memtag_shadow = ::std::move(other.memtag_shadow);
@@ -1047,7 +1070,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             }
 # endif
 
-            mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), !this->is_full_page_protection());
+            mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), this->reservation_participates());
+            this->full_protection = false;
             this->reservation_limit_bytes = SIZE_MAX;
             this->reserved_begin = nullptr;
             this->memory_begin = nullptr;
@@ -1114,7 +1138,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                     if(::fast_io::details::sys_munmap_nothrow(this->reserved_begin, acquire_reserved_space_ceil)) [[unlikely]] { ::fast_io::fast_terminate(); }
                 }
 # endif
-                mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), !this->is_full_page_protection());
+                mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), this->reservation_participates());
+                this->full_protection = false;
             }
             else
             {
@@ -1188,7 +1213,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                     if(::fast_io::details::sys_munmap_nothrow(this->reserved_begin, acquire_reserved_space_ceil)) [[unlikely]] { ::fast_io::fast_terminate(); }
                 }
 # endif
-                mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), !this->is_full_page_protection());
+                mmap_reservation::release(::std::exchange(this->mapped_reservation_bytes, 0uz), this->reservation_participates());
+                this->full_protection = false;
             }
             else
             {

@@ -12,14 +12,14 @@
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
     // Conservative fast filter only: arbitrary immediates can match. A true
-    // result always requires authoritative typed validation before enabling an
-    // owner. Every valid canonical or padded MTE subopcode necessarily matches.
+    // result requires authoritative typed validation of the instruction.
+    // Every valid canonical or padded MTE subopcode necessarily matches.
     [[nodiscard]] inline constexpr bool may_contain_memtag(::std::span<::std::byte const> code) noexcept
     {
         for(::std::size_t i{};i<code.size();++i)
         {
             // A conservative FF match also catches padded and malformed
-            // instruction words. Typed validation alone can admit the owner.
+            // instruction words. The typed validator checks their memory type.
             if(code[i]==::std::byte{opcode_prefix}) { return true; }
             // Obsolete FC MTE must also reach authoritative validation, even
             // in an unused function. This is rejection detection, not support.
@@ -64,9 +64,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         bool valid{true};
         bool classify_only{};
         bool uses_allocation_directory{};
+        bool uses_undefined_placeholder{};
         inline constexpr void observe_memtag(::std::uint32_t index, opcode instruction, address_width width) noexcept
         {
             uses_allocation_directory |= is_allocation_operation(instruction);
+            uses_undefined_placeholder |= instruction == opcode::add;
             if(classify_only) { return; } // The typed validator already resolved the memory and operand widths.
             if(index>=memories.size()) {valid=false;return;}
             auto& entry{memories[index]};

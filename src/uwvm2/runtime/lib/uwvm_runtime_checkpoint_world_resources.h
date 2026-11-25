@@ -164,9 +164,10 @@ extern "C++"
                 auto const* memory{lookup(instance->links[first+imports+local])};
                 auto const& shadow{source.local_defined_memory_vec_storage.index_unchecked(local).memory.memtag_shadow};
                 if(!memory || memory->kind!=checkpoint_world_data::cp::object_kind::memory ||
-                   (memory->words[4]!=0u)!=shadow.enabled()) { return false; }
+                   (memory->words[4]!=0u)!=shadow.enabled() ||
+                   memory->words[7]!=::uwvm2::runtime::checkpoint::memory_layout::encode(shadow)) { return false; }
                 if(!shadow.enabled()) { continue; }
-                if(memory->words[4]!=(shadow.width()==mt::address_width::i32 ? 4u : 8u) ||
+                if(memory->words[4]!=4u ||
                    (memory->flags!=0u)!=shadow.shared()) { return false; }
                 mt::checkpoint_tag_image image{};
                 if(!mt::split_checkpoint_tag_image(static_cast<unsigned>(memory->words[4]),memory->words[5],memory->words[6],memory->bytes,image) ||
@@ -237,7 +238,8 @@ extern "C++"
                 auto const policy{::uwvm2::runtime::checkpoint::module_feature_policy::from_actual_parameter(
                     ::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(member.new_file->wasm_parameter.binfmt1_para))};
                 if(!policy.valid() || module->flags != 1u || module->words != ::std::array<::std::uint64_t,8u>{
-                    policy.revision,policy.cli_mode,policy.disabled,policy.controlled,0u,0u,0u,0u})
+                    policy.revision,policy.cli_mode,policy.disabled,policy.controlled,
+                    ::uwvm2::runtime::checkpoint::memory_layout::module_policy(member.new_file->wasm_parameter.memory_policy),0u,0u,0u})
                 { return fail(preparation_status::feature_mismatch); }
                 auto const found{prepared_source_->registry_.find(member.new_file->module_name)};
                 if(found == prepared_source_->registry_.end() || context_->unpublished_file_for_module(::std::addressof(found->second)) != member.new_file)
@@ -455,7 +457,6 @@ extern "C++"
                            (object->words[1u]==1u && !object->bytes.empty()) || (object->words[1u]>1u && object->bytes.empty()))
                         { return fail(preparation_status::source_mismatch); }
                         if(object->words[1u]>1u && !includes_memtag_directories_ &&
-                           !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
                            ::uwvm2::extension::memtag::may_require_allocation_directory(
                                {object->bytes.data(),object->bytes.size()}))
                         { return fail(preparation_status::source_mismatch); }
@@ -957,7 +958,7 @@ extern "C++"
             { return fail(preparation_status::quota_exceeded); }
             return context_->stage_saved_memory_image(actual,static_cast<unsigned>(saved->words[0u]),saved->flags!=0u,
                 saved->words[1u],saved->words[2u],saved->words[3u],{chunks.data(),chunks.size()},
-                tag_bits,image,static_cast<::std::size_t>(remaining)) || fail(preparation_status::allocation_failed);
+                tag_bits,saved->words[7u],image,static_cast<::std::size_t>(remaining)) || fail(preparation_status::allocation_failed);
         }
         [[nodiscard]] bool fill_table_object(object_id id)
         {

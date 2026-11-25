@@ -9,7 +9,6 @@ struct mmap_reservation_plan
     ::std::size_t os_page{};
     reservation::bytes_type share{};
     bool defer_owner_mapping{};
-    ::uwvm2::utils::container::unordered_flat_set<void const*> tagged_owner_declarations{};
 };
 
 [[nodiscard]] inline constexpr reservation::bytes_type const* local_mmap_data_cap(
@@ -28,7 +27,8 @@ struct mmap_reservation_plan
 {
     auto const* manual{local_mmap_data_cap(config, index)};
     auto const& declaration{memory.limits};
-    auto const page{default_linear_memory_page_size_bytes()};
+    auto const shift{::uwvm2::extension::adm::page_shift(memory)};
+    auto const page{reservation::bytes_type{1} << shift};
     constexpr auto unlimited{(::std::numeric_limits<reservation::bytes_type>::max)()};
     auto const declared_max{declaration.present_max ? declaration.max : unlimited};
     auto const wide{wasm_memory_is_address64(memory)};
@@ -40,8 +40,10 @@ struct mmap_reservation_plan
         if(override_limits->present_max)
         { maximum = (::std::min)(maximum, static_cast<reservation::bytes_type>(override_limits->max)); }
     }
-    bool const tagged{plan.tagged_owner_declarations.contains(static_cast<void const*>(::std::addressof(memory)))};
-    return reservation::bounds(reservation::host_bits, wide, minimum, maximum, page, plan.os_page, manual, tagged);
+    bool const tagged{::uwvm2::extension::memtag::is_tagged_memory(memory)};
+    auto const k{::uwvm2::extension::adm::ignored_bits(memory)};
+    if(k) { maximum = (::std::min)(maximum, ::uwvm2::extension::adm::maximum_pages(wide, k, tagged, shift)); }
+    return reservation::bounds(reservation::host_bits, wide, minimum, maximum, page, plan.os_page, manual, tagged, k);
 }
 
 template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
@@ -117,7 +119,7 @@ template <typename Visit>
                     auto const* manual{local_mmap_data_cap(config, i)};
                     auto const reason{[&]() -> ::uwvm2::utils::container::u8string_view
                     {
-                        if(manual && reservation::host_bits >= 64u && !wasm_memory_is_address64(type))
+                        if(manual && reservation::host_bits >= 64u && !wasm_memory_is_address64(type) && !::uwvm2::extension::adm::ignored_bits(type))
                         { return u8"wasm32 has a fixed reservation on this host"; }
                         if(manual && (!*manual || (wasm_memory_is_address64(type) && !::std::has_single_bit(*manual))))
                         { return u8"a manual quota must be positive and memory64 requires a power of two"; }
@@ -130,7 +132,7 @@ template <typename Visit>
                         u8", declared_max_pages=", type.limits.max, u8"): ", reason, u8".");
                     return false;
                 }
-                census.add(range, reservation::host_bits < 64u || wasm_memory_is_address64(type));
+                census.add(range, reservation::host_bits < 64u || wasm_memory_is_address64(type) || ::uwvm2::extension::adm::ignored_bits(type));
             }
         }
         return true;
@@ -156,9 +158,9 @@ template <typename Visit>
         ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
             u8"uwvm: [error] initializer: mmap reservation pool cannot cover all minimum data and guard windows (pool_bytes=", pool,
             u8", full_address64_pool=", full, u8", available_bytes=", state.remaining.bytes,
-            u8", available_full_address64=", state.remaining.full_address64, u8", already_live_participants=", state.participants, u8", participants=", census.participants, u8", minimum_mapping_bytes_per_owner=",
-            (reservation::host_bits >= 64u ? reservation::full_wasm32_window : 0u) +
-                reservation::outer_guard(default_linear_memory_page_size_bytes(), result.os_page), u8").");
+            u8", available_full_address64=", state.remaining.full_address64, u8", already_live_participants=", state.participants,
+            u8", participants=", census.participants, u8", default_page_outer_guard_bytes=",
+            reservation::outer_guard(default_linear_memory_page_size_bytes(), result.os_page), u8").");
         return false;
     }
     result.share = census.common_share();
@@ -211,8 +213,11 @@ inline constexpr void configure_mmap_owner(Memory& memory, auto const& type, con
         }
         memory.reservation_budget_bytes = range.span(plan.share);
         memory.use_planned_reservation = true;
+        memory.reservation_adm_bits = static_cast<::std::uint_least8_t>(::uwvm2::extension::adm::ignored_bits(type));
+        memory.reservation_tagged = ::uwvm2::extension::memtag::is_tagged_memory(type);
+        memory.reservation_manual = manual != nullptr;
         memory.reservation_limit_bytes = static_cast<::std::size_t>(range.maximum_data);
-        memory.allow_reservation_fallback = local_mmap_data_cap(config, index) == nullptr;
+        memory.allow_reservation_fallback = manual == nullptr;
         memory.status = wasm_memory_is_address64(type) ? decltype(memory.status)::wasm64 : decltype(memory.status)::wasm32;
     }
 }
@@ -232,8 +237,14 @@ inline constexpr void report_mmap_owner(Memory const& memory, auto const& declar
         }
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
         {
+            auto const [system_page,known]{::uwvm2::object::memory::platform_page::get_platform_page_size()};
             verbose_info(u8"initializer: mmap reservation (module=", name, u8", local_index=", index,
                 u8", address_bits=", memory.status == decltype(memory.status)::wasm64 ? 64u : 32u,
+                u8", ignored_bits=", static_cast<unsigned>(memory.reservation_adm_bits),
+                u8", protection=", memory.is_full_page_protection() ? ::uwvm2::utils::container::u8string_view{u8"full"} : ::uwvm2::utils::container::u8string_view{u8"partial"},
+                u8", allocation=", memory.reservation_manual ? ::uwvm2::utils::container::u8string_view{u8"manual"} : ::uwvm2::utils::container::u8string_view{u8"automatic"},
+                u8", aliases=", memory.reservation_alias_count, u8", wasm_page_bytes=", ::std::size_t{1} << memory.custom_page_size_log2,
+                u8", system_page_bytes=", known ? system_page : 0u,
                 u8", declared_min_pages=", declaration.min, u8", declared_max_present=", declaration.present_max,
                 u8", declared_max_pages=", declaration.max, u8", data_bytes=", data, u8", guard_bytes=", reserved - data,
                 u8", reserved_bytes=", reserved, u8"). ");

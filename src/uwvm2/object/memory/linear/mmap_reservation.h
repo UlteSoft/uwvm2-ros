@@ -65,23 +65,47 @@ namespace uwvm2::object::memory::linear::mmap_reservation
         bytes_type minimum_span{};
         bytes_type maximum_span{};
         bytes_type maximum_data{};
+        bytes_type full_span{}, full_share{};
         [[nodiscard]] constexpr explicit operator bool() const noexcept { return minimum_span != 0u; }
         [[nodiscard]] constexpr bytes_type span(bytes_type share) const noexcept
-        { return (::std::clamp)(share, minimum_span, maximum_span); }
+        {
+            if(full_span && share >= full_share) { return full_span; }
+            return (::std::clamp)(share, minimum_span, maximum_span);
+        }
     };
+
+    // The translator admits guard-only accesses for a normalized dynamic address
+    // and a static offset below the same domain. Their widened sum is below 2D.
+    // Offsets outside that proof and host arithmetic overflow are checked separately.
+    [[nodiscard]] inline constexpr bytes_type full_window(unsigned pointer_bits, bool address64, unsigned k,
+                                                           bytes_type wasm_page, bytes_type os_page) noexcept
+    {
+        auto const width{address64 ? 64u : 32u};
+        if(k >= width || width - k >= 63u) { return 0u; }
+        auto const twice_domain{bytes_type{1} << (width - k + 1u)};
+        auto const tail{outer_guard(wasm_page, os_page)};
+        auto const native{pointer_bits >= 64u ? maximum_bytes : hard_limit(pointer_bits) - 1u};
+        auto const window{round_up(twice_domain, os_page)};
+        if(!tail || !window || tail > native || window > native - tail) { return 0u; }
+        return window + tail;
+    }
 
     // Compare page counts before multiplying. A valid memory64 declaration
     // may describe 2^64 bytes, which is one more than a u64 byte count.
     [[nodiscard]] inline constexpr owner_range bounds(unsigned pointer_bits, bool address64, bytes_type minimum_pages,
-        bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page, bytes_type const* manual_data = nullptr, bool tagged = false) noexcept
+        bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page, bytes_type const* manual_data = nullptr,
+        bool tagged = false, unsigned k = 0u) noexcept
     {
         auto const tail{outer_guard(wasm_page, os_page)};
         if(!tail) { return {}; }
         auto const native{pointer_bits >= 64u ? maximum_bytes : hard_limit(pointer_bits) - 1u};
         auto const largest_span{(tagged && address64 ? (::std::min)(native, tagged_wasm64_span_limit) : native) & ~(os_page - 1u)};
-        if(tail > largest_span || (pointer_bits >= 64u && full_wasm32_window > largest_span - tail)) { return {}; }
-        bool const fixed_wasm32{pointer_bits >= 64u && !address64};
-        auto domain{fixed_wasm32 ? full_wasm32_window / 2u : largest_span - tail};
+        auto const width{address64 ? 64u : 32u};
+        if(k >= width || tail > largest_span) { return {}; }
+        bool const fixed_wasm32{pointer_bits >= 64u && !address64 && !k};
+        auto const bits{width - k};
+        auto const logical_domain{bits == 64u ? maximum_bytes : bytes_type{1} << bits};
+        auto domain{(::std::min)(logical_domain, largest_span - tail)};
         if(tagged && !address64) { domain = (::std::min)(domain, tagged_wasm32_data_limit); }
         auto const domain_pages{domain / wasm_page};
         auto const largest_pages{(::std::min)(maximum_pages, domain_pages)};
@@ -98,24 +122,33 @@ namespace uwvm2::object::memory::linear::mmap_reservation
             else { maximum_data = value; }
             if(maximum_data > domain) { return {}; }
         }
-        auto const floor{pointer_bits >= 64u ? full_wasm32_window + tail : tail};
+        if(!k && pointer_bits >= 64u && full_wasm32_window > largest_span - tail) { return {}; }
+        auto const floor{pointer_bits >= 64u && !k ? full_wasm32_window + tail : tail};
         if(fixed_wasm32) { return {floor, floor, maximum_data}; }
         auto span_for = [=](bytes_type data) noexcept
         {
             // data <= largest_span - tail; tail >= wasm_page + max_access_size.
-            return (::std::max)(floor, round_up(data + wasm_page + max_access_size, os_page));
+            return (::std::max)(floor, round_up(data, os_page) + tail);
         };
         auto const small{span_for(manual_data ? maximum_data : minimum_data)};
-        auto const large{!manual_data && maximum_pages >= domain_pages ? largest_span : span_for(maximum_data)};
+        auto const large{!manual_data && maximum_pages >= domain_pages && domain == largest_span - tail ? largest_span : span_for(maximum_data)};
+        auto const full{full_window(pointer_bits, address64, k, wasm_page, os_page)};
+        if(k && full && full <= largest_span)
+        {
+            if(!manual_data) { return {small, large, maximum_data, full, logical_domain * 2u}; }
+            if(*manual_data >= logical_domain) { return {full, full, maximum_data}; }
+        }
         return {small, large, maximum_data};
     }
 
     [[nodiscard]] inline constexpr layout make_layout(unsigned pointer_bits, bool address64, bytes_type cap,
-                                                     bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page) noexcept
+                                                     bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page,
+                                                     bool tagged = false, unsigned k = 0u) noexcept
     {
-        auto const range{bounds(pointer_bits, address64, 0u, maximum_pages, wasm_page, os_page)};
+        auto const range{bounds(pointer_bits, address64, 0u, maximum_pages, wasm_page, os_page, nullptr, tagged, k)};
         if(!range || cap > hard_limit(pointer_bits) || cap < range.minimum_span) { return {}; }
-        auto const reserved{range.span(cap & ~(os_page - 1u))};
+        auto const rounded{cap & ~(os_page - 1u)};
+        auto const reserved{(::std::min)(rounded, range.span(rounded))};
         auto const tail{outer_guard(wasm_page, os_page)};
         return {(::std::min)(range.maximum_data, (reserved - tail) / wasm_page * wasm_page), reserved};
     }

@@ -499,7 +499,12 @@ struct census_allocator_quiescence
     ::std::byte* base, ::std::size_t length)
 {
     auto const& declaration{*actual.memory_type_ptr};
-    if(actual.memory.custom_page_size_log2 != 16u || length % 65536u != 0u ||
+    if(actual.memory.custom_page_size_log2 != 16u)
+    {
+        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: checkpoint capture currently requires 64 KiB Wasm memory pages.");
+        return state.fail(census_error::unavailable_capability);
+    }
+    if(length % 65536u != 0u ||
         length > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) ||
         (length != 0u && base == nullptr) || length > UINTPTR_MAX - reinterpret_cast<::std::uintptr_t>(base))
     { return state.fail(census_error::invalid_shape); }
@@ -507,14 +512,16 @@ struct census_allocator_quiescence
     // The actual initializer's configured limits replace the declaration,
     // including accepted warned widening. Preserve that exact effective policy.
     auto const saved_bounds{::uwvm2::uwvm::runtime::storage::checkpoint_effective_memory_bounds(
-        declaration.address64, actual.effective_limits)};
+        declaration.address64, actual.effective_limits, declaration.adm_bits, declaration.memtag)};
     auto const minimum{saved_bounds.minimum}, effective_max{saved_bounds.maximum};
     if(pages < minimum || pages > effective_max || (declaration.shared && !declaration.limits.present_max))
     { return state.fail(census_error::invalid_shape); }
     auto* memory{state.object(wire)}; if(memory == nullptr) { return false; }
     memory->flags = declaration.shared ? 1u : 0u;
-    memory->words = {declaration.address64 ? 64u : 32u, pages, minimum, effective_max, 0u, 0u, 0u, 0u};
     auto const& tags{actual.memory.memtag_shadow};
+    if(tags.ignored_bits() != declaration.adm_bits || tags.enabled() != declaration.memtag) { return state.fail(census_error::invalid_shape); }
+    memory->words = {declaration.address64 ? 64u : 32u, pages, minimum, effective_max, 0u, 0u, 0u,
+        ::uwvm2::runtime::checkpoint::memory_layout::encode(tags)};
     if(tags.enabled())
     {
         namespace mt=::uwvm2::extension::memtag;
@@ -529,7 +536,7 @@ struct census_allocator_quiescence
         { return state.fail(census_error::limit_exceeded); }
         auto const payload{granules+extents*mt::checkpoint_extent_bytes};
         if(!state.charge_payload(payload)) { return false; }
-        memory->words[4u]=declaration.address64 ? 8u : 4u;
+        memory->words[4u]=4u;
         memory->words[5u]=mt::checkpoint_directory_revision;
         memory->words[6u]=extents;
         memory->bytes.resize(payload);
@@ -816,8 +823,7 @@ template<typename Memory>
         auto const& pin{state.actual.modules[owner]};
         auto const* file{pin.source->actual_validated_file(static_cast<::std::size_t>(pin.id), epoch_, pin.module)};
         if(file == nullptr || file->binfmt_ver != 1u || !file->has_owned_source_image() || file->source_size() < 8u ||
-            (!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
-             !::uwvm2::uwvm::runtime::validator::admits_memtag_checkpoint(*file,true)) ||
+            !::uwvm2::uwvm::runtime::validator::admits_memtag_checkpoint(*file,true) ||
             !census_declaration_preflight(state, owner, *file, file->wasm_module_storage.wasm_binfmt_ver1_storage))
         { return state.fail(census_error::unavailable_capability); }
         auto const& module{*pin.module};
@@ -844,7 +850,8 @@ template<typename Memory>
         // Exact immutable WF policy, after actual source/epoch/member proof.
         // Module flags1 records this policy; legacy flags0 is detached DATA only.
         state.object(module_wire)->flags = 1u;
-        state.object(module_wire)->words = {policy.revision, policy.cli_mode, policy.disabled, policy.controlled, 0u, 0u, 0u, 0u};
+        state.object(module_wire)->words = {policy.revision, policy.cli_mode, policy.disabled, policy.controlled,
+            ::uwvm2::runtime::checkpoint::memory_layout::module_policy(file.wasm_parameter.memory_policy), 0u, 0u, 0u};
         state.snapshot.required_features |= policy.compatibility_mask();
         if(bytes > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) ||
             bytes > UINTPTR_MAX - reinterpret_cast<::std::uintptr_t>(file.source_cbegin()) || !state.charge_payload(bytes))

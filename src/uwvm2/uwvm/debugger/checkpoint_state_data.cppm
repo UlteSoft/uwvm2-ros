@@ -16,4 +16,6 @@ export import uwvm2.runtime.checkpoint.feature_policy_schema;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 import uwvm2.extension.memtag.tag_image;
+import uwvm2.extension.adm.types;
+import uwvm2.runtime.checkpoint.memory_layout;
 #include "checkpoint_state.h"

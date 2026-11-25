@@ -4531,16 +4531,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
                     { details::fail_invalid_immediate(op_begin, err, u8"obsolete FC memtag encoding; regenerate with FF packed-u32"); }
                     if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
                     {
-                        if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
+                        if(wasm1p1_para.disable_adm_extension || wasm1p1_para.disable_memtag_extension) [[unlikely]]
                         {
                             details::fail_feature_required(op_begin, err, subopcode,
-                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                                wasm1p1_para.disable_adm_extension ? ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::adm_extension :
+                                    ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
                                 ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
                         }
                         auto const memory_index{details::read_leb128<
                             ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(
                                 code_curr, code_end, op_begin, err, u8"memtag.memoryidx")};
                         check_memory_index_zero(op_begin, memory_index, u8"memtag");
+                        auto const& memory{imported_memory_count ? imported_memories.index_unchecked(0u)->imports.storage.memory :
+                            memsec.memories.index_unchecked(0u)};
+                        if(!::uwvm2::extension::memtag::is_tagged_memory(memory)) [[unlikely]]
+                        { details::fail_invalid_immediate(op_begin, err, u8"memtag instruction requires a WasmMTE memory"); }
                         validate_i32_operands(op_begin, u8"memtag", memtag->operand_count);
                         if(memtag->result_count != 0u) { operand_stack.push_back({curr_operand_stack_value_type::i32}); }
                         break;

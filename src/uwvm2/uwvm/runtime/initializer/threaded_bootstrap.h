@@ -105,8 +105,9 @@ namespace uwvm2::uwvm::runtime::initializer
                 if(type->limits.min!=memory.effective_limits.min||type->limits.max!=memory.effective_limits.max)return {};
                 error=threaded_provider_error::memory_limit;
                 auto const maximum=static_cast<::std::uint64_t>(memory.effective_limits.max);
-                if(total>maximum_shared_bytes||maximum>(maximum_shared_bytes-total)/65536u)return {};
-                total+=maximum*65536u;
+                auto const shift{memory.memory.custom_page_size_log2};
+                if(total>maximum_shared_bytes||maximum>((maximum_shared_bytes-total)>>shift))return {};
+                total+=maximum<<shift;
                 auto const pages=memory.memory.get_page_size();
                 if(pages>maximum||pages<static_cast<::std::uint64_t>(type->limits.min))return {};
             }

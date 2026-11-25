@@ -58,6 +58,8 @@ import :compact_numeric;
 import :gc_trace_metadata;
 import :tag_instance_identity;
 import fast_io;
+import uwvm2.extension.adm.types;
+import uwvm2.extension.memtag.execution_policy;
 import uwvm2.runtime.gc.instance_phase;
 import uwvm2.utils.container;
 import uwvm2.utils.allocator.fast_io_strict;

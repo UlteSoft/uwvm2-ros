@@ -53,19 +53,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 #if defined(UWVM_SUPPORT_MMAP)
     using native_memory_t = mmap_memory_t;
 #else
-# if defined(UWVM_USE_MULTITHREAD_ALLOCATOR)
-    // Select the multithread allocator backend.
-
-    // check support atomic wait, notify_*
-#  if !(__cpp_lib_atomic_wait >= 201907L)
-#   error "The platform does not support atomic wait"
-#  else
-    using native_memory_t = allocator_memory_t;
-#  endif
-
-# else
-    using native_memory_t = single_thread_allocator_memory_t;
-# endif
+# error "uwvm2-ros requires mmap linear memory; allocator-backed native memories are disabled"
 #endif
 
 }  // namespace uwvm2::object::memory::wasm_page

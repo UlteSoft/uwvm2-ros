@@ -287,8 +287,8 @@ struct prepared_world_thread
             frame->values.back().type.kind!=cp::value_kind::i64 || address.low_bits!=pending.operation.address ||
             expected.low_bits!=pending.operation.expected)return fail(preparation_status::type_mismatch);
         auto const* memory_data=lookup(saved->links[0]);
-        auto const mask=memory_data->words[4]?(pending.operation.bits==32u?UINT64_C(0x0fffffff):UINT64_C(0x00ffffffffffffff)):
-            (pending.operation.bits==32u?UINT64_C(0xffffffff):UINT64_MAX);
+        if(!memory_data || memory_data->words[0] != pending.operation.bits) { return fail(preparation_status::type_mismatch); }
+        auto const mask=UINT64_MAX >> (64u - pending.operation.bits + ::uwvm2::runtime::checkpoint::memory_layout::ignored_bits(memory_data->words[7]));
         auto const untagged=address.low_bits&mask;
         if(pending.operation.offset>UINT64_MAX-untagged || untagged+pending.operation.offset!=pending.position)
             return fail(preparation_status::type_mismatch);

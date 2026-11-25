@@ -18,6 +18,7 @@
 # include <vector>
 # include <uwvm2/extension/memtag/tag_image.h>
 # include <uwvm2/runtime/checkpoint/feature_policy_schema.h>
+# include <uwvm2/runtime/checkpoint/memory_layout.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -320,7 +321,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                 case object_kind::module:
                     if((item.flags == 0u ? !zeros_from(0u) :
                         item.flags != 1u || w[0u] != ::uwvm2::runtime::checkpoint::feature_policy_schema::revision ||
-                        !::uwvm2::runtime::checkpoint::feature_policy_schema::valid(w[1u], w[2u], w[3u]) || !zeros_from(4u)) ||
+                        !::uwvm2::runtime::checkpoint::feature_policy_schema::valid(w[1u], w[2u], w[3u]) || w[4u] > 7u || !zeros_from(5u)) ||
                        !item.links.empty() || !item.values.empty() || item.bytes.size() < 8u ||
                        item.bytes[0] != ::std::byte{} || item.bytes[1] != ::std::byte{'a'} || item.bytes[2] != ::std::byte{'s'} || item.bytes[3] != ::std::byte{'m'} ||
                        item.bytes[4] != ::std::byte{1u} || item.bytes[5] != ::std::byte{} || item.bytes[6] != ::std::byte{} || item.bytes[7] != ::std::byte{})
@@ -353,15 +354,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint
                 case object_kind::table:
                 {
                     bool const is_memory{item.kind==object_kind::memory};
-                    if(item.flags > 1u || !zeros_from(is_memory?7u:4u) || !item.links.empty() ||
+                    if(item.flags > 1u || (!is_memory && !zeros_from(4u)) || !item.links.empty() ||
                        (!is_memory && !item.bytes.empty()) ||
                        (w[0] != 32u && w[0] != 64u) || w[1] < w[2] || w[1] > w[3] ||
                        (w[0] == 32u && w[3] > (is_memory ? 65536u : 0xffffffffu))) { return error::invalid_shape; }
                     if(is_memory)
                     {
-                        if(!item.values.empty() || w[3] > (::std::uint64_t{1u} << 48u) ||
-                           (item.flags != 0u && w[3] == (::std::numeric_limits<::std::uint64_t>::max)()) ||
-                           w[4]>8u) { return error::invalid_shape; }
+                        namespace ml = ::uwvm2::runtime::checkpoint::memory_layout;
+                        if(!item.values.empty() || !ml::valid(w[7], w[0], w[4]) ||
+                           w[3] > ::uwvm2::extension::adm::maximum_pages(w[0] == 64u, ml::ignored_bits(w[7]), w[4] != 0u, 16u))
+                        { return error::invalid_shape; }
                         // Untagged memories retain the entire standard 2^64-byte
                         // domain. Only tagged images need a representable byte count.
                         namespace mt=::uwvm2::extension::memtag;

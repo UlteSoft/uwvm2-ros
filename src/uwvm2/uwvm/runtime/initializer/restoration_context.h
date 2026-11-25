@@ -464,7 +464,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t* candidate,
                 unsigned address_bits, bool shared, ::std::uint64_t pages, ::std::uint64_t minimum,
                 ::std::uint64_t maximum, ::std::span<saved_memory_chunk const> chunks,
-                unsigned tag_bits, ::uwvm2::extension::memtag::checkpoint_tag_image image,
+                unsigned tag_bits, ::std::uint64_t layout_word, ::uwvm2::extension::memtag::checkpoint_tag_image image,
                 ::std::size_t maximum_native_bytes) noexcept
             {
                 ::std::size_t local{};
@@ -483,7 +483,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 // including accepted warned widening; cold census uses the SAME
                 // pure address-domain projection, never a second intersection.
                 auto const saved_bounds{::uwvm2::uwvm::runtime::storage::checkpoint_effective_memory_bounds(
-                    declaration.address64, actual.effective_limits)};
+                    declaration.address64, actual.effective_limits, declaration.adm_bits, declaration.memtag)};
                 auto const real_min{saved_bounds.minimum}, real_max{saved_bounds.maximum};
                 if(address_bits != (declaration.address64?64u:32u) || shared != declaration.shared ||
                     (shared && !declaration.limits.present_max) || minimum != real_min || maximum != real_max ||
@@ -491,10 +491,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     pages > static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/65536u) { return false; }
                 auto const bytes{static_cast<::std::size_t>(pages)*65536u}; // both native/ptrdiff quotients checked BEFORE multiplication.
                 namespace mt=::uwvm2::extension::memtag;
-                if(!image.valid(address_bits,tag_bits,bytes) || image.tags.size()>maximum_native_bytes-bytes ||
+                namespace ml=::uwvm2::runtime::checkpoint::memory_layout;
+                if(!ml::valid(layout_word,address_bits,tag_bits) || ml::ignored_bits(layout_word) != declaration.adm_bits ||
+                    (tag_bits != 0u) != declaration.memtag || !image.valid(address_bits,tag_bits,bytes) || image.tags.size()>maximum_native_bytes-bytes ||
                     image.records.size()/mt::checkpoint_extent_bytes >
-                        (maximum_native_bytes-bytes-image.tags.size())/mt::managed_allocations::bytes_per_extent ||
-                    (tag_bits!=0u && ::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)) { return false; }
+                        (maximum_native_bytes-bytes-image.tags.size())/mt::managed_allocations::bytes_per_extent) { return false; }
                 ::std::uint64_t last_end{}; bool seen{};
                 for(auto const& chunk : chunks)
                 {
@@ -538,12 +539,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         ::fast_io::freestanding::my_memcpy(memory.memory_begin+static_cast<::std::size_t>(chunk.offset),
                             chunk.bytes.data(), chunk.bytes.size());
                     }
+                    if(tag_bits)
+                    {
+                        auto const saved_backend{ml::backend(layout_word)};
+                        if(actual.backend != mt::owner_backend::automatic && actual.backend != saved_backend) { return false; }
+                        actual.backend = saved_backend;
+                    }
+                    if(!details::configure_owner_addressing(actual,name) || ml::encode(memory.memtag_shadow) != layout_word) { return false; }
                     if(tag_bits!=0u)
                     {
-                        namespace mt=::uwvm2::extension::memtag;
-                        auto const width{address_bits==32u?mt::address_width::i32:mt::address_width::i64};
-                        if(memory.enable_memtag(width,shared)!=mt::storage_error::none ||
-                            !mt::restore_checkpoint_tag_image(memory.memtag_shadow,bytes,image)) { return false; }
+                        if(!mt::restore_checkpoint_tag_image(memory.memtag_shadow,bytes,image)) { return false; }
                         auto const hardware{::uwvm2::runtime::memtag::activate_owner_hardware(memory)};
                         if(!hardware && (hardware.error!=mt::hardware_mte::setup_error::unsupported || memory.memtag_shadow.hardware_selected())) { return false; }
                     }
@@ -936,7 +941,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& main{source_->file_};
                 if(main.binfmt_ver != 1u || !main.has_owned_source_image())
                 { return state_ = skeleton_result::invalid_source; }
-                if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)
                 {
                     auto const compatible{[&](auto const& file) noexcept
                         { return ::uwvm2::uwvm::runtime::validator::admits_memtag_checkpoint(file,includes_memtag_directory); }};
@@ -1022,7 +1026,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 if(!details::validate_and_resolve_core3_tags_after_linking_in_context(world_) ||
                    !details::validate_wasm_file_module_import_types_after_linking_in_context(world_))
                 { return state_ = skeleton_result::dependency_error; }
-                if(!details::discover_mmap_tagged_owners(world_, reservation_plan) ||
+                details::mt_init::linked_plan memtag_plan{};
+                if(!details::plan_linked_memtag(world_, memtag_plan) ||
                    !details::plan_world_mmap_reservations(world_, reservation_plan))
                 { return state_ = skeleton_result::invalid_source; }
                 for(auto& [name, module] : modules)

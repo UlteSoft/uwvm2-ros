@@ -82,7 +82,9 @@
 # include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
 # include <uwvm2/uwvm/runtime/validator/validate.h>
 # include <uwvm2/extension/memtag/globals.h>
+# include <uwvm2/extension/adm/types.h>
 # include <uwvm2/extension/memtag/checkpoint.h>
+# include <uwvm2/runtime/checkpoint/memory_layout.h>
 # include <uwvm2/extension/memtag/debug_view.h>
 # include <uwvm2/runtime/memtag/bridge.h>
 # include <uwvm2/runtime/memtag/static_allocation.h>
@@ -742,7 +744,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     {.memory64 = memorysec.requires_memory64, .table64 = tablesec.requires_table64,
                      .shared = memorysec.requires_threads,
                      .multi_memory = ::uwvm2::validation::standard::wasm3::core3_has_multiple_declarations(
-                         importsec.importdesc.index_unchecked(2uz).size(), memorysec.memories.size())})};
+                         importsec.importdesc.index_unchecked(2uz).size(), memorysec.memories.size()),
+                     .adm = memorysec.requires_adm, .memtag = memorysec.requires_memtag, .custom_pages = memorysec.requires_custom_pages},
+                    !wasm1p1_para.disable_adm_extension, !wasm1p1_para.disable_memtag_extension, !wasm1p1_para.disable_custom_page_sizes)};
                 if(address_requirement.required) [[unlikely]]
                 {
                     ::uwvm2::utils::container::u8string_view const subject{
@@ -3386,6 +3390,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
 #include "mmap_reservation_plan.h"
 
+        [[nodiscard]] inline bool configure_owner_addressing(
+            ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t& record,
+            ::uwvm2::utils::container::u8string_view module_name, bool caller_checks = true) noexcept;
+
         template<bool Fallible = false, typename Memory>
         inline constexpr bool initialize_native_memory(Memory& memory, auto const& limits, ::std::size_t instance_index,
                                                        bool shared, bool address64) noexcept
@@ -4945,6 +4953,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         auto const& actual_memory{*resolved_memory.defined_ptr->memory_type_ptr};
                         if(wasm_memory_is_shared(expected_memory) != wasm_memory_is_shared(actual_memory) ||
                            wasm_memory_is_address64(expected_memory) != wasm_memory_is_address64(actual_memory) ||
+                           ::uwvm2::extension::adm::page_shift(expected_memory) != ::uwvm2::extension::adm::page_shift(actual_memory) ||
+                           ::uwvm2::extension::adm::ignored_bits(expected_memory) != ::uwvm2::extension::adm::ignored_bits(actual_memory) ||
+                           ::uwvm2::extension::memtag::is_tagged_memory(expected_memory) != ::uwvm2::extension::memtag::is_tagged_memory(actual_memory) ||
                            !wasm1_limits_match(expected_memory.limits, actual_memory.limits)) [[unlikely]]
                         {
 #ifdef UWVM2_USE_HUGE_FAST_IO_CPO_OUTPUT
@@ -5116,6 +5127,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         actual_memory.limits.max = static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(page_count_u64);
 
                         if(wasm_memory_is_shared(expected_memory) || wasm_memory_is_address64(expected_memory) ||
+                           ::uwvm2::extension::adm::page_shift(expected_memory) != 16u ||
+                           ::uwvm2::extension::adm::ignored_bits(expected_memory) ||
+                           ::uwvm2::extension::memtag::is_tagged_memory(expected_memory) ||
                            !wasm1_limits_match(expected_memory.limits, actual_memory.limits)) [[unlikely]]
                         {
 #ifdef UWVM2_USE_HUGE_FAST_IO_CPO_OUTPUT
@@ -5649,7 +5663,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module_storage,
             ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out,
-            mmap_reservation_plan const* reservation_plan = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
+            mmap_reservation_plan const* reservation_plan = nullptr,
+            ::uwvm2::uwvm::wasm::type::module_initializer_limits const& module_limits = {}) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using type_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>;
             using import_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>;
@@ -5751,6 +5766,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             out.memory_declarations_require_memory64 = memorysec.requires_memory64;
             out.table_declarations_require_table64 = tablesec.requires_table64;
             out.memory_declarations_require_threads = memorysec.requires_threads;
+            out.memory_declarations_require_memtag = memorysec.requires_memtag;
+            out.memory_declarations_require_adm = memorysec.requires_adm;
+            out.memory_declarations_require_custom_pages = memorysec.requires_custom_pages;
             out.memory_declarations_require_multi_memory = ::uwvm2::validation::standard::wasm3::core3_has_multiple_declarations(
                 importsec.importdesc.index_unchecked(2uz).size(), memorysec.memories.size());
             out.table_declarations_require_table_initializer = tablesec.requires_table_initializer;
@@ -5903,7 +5921,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     [&]<typename MemoryType>(MemoryType const& memory, ::uwvm2::utils::container::u8string_view kind, ::std::size_t index) constexpr noexcept
                     {
                         auto const& limits{memory.limits};
-                        auto const max_pages{::std::uint_least64_t{1u} << (wasm_memory_is_address64(memory) ? 48u : 16u)};
+                        auto const max_pages{::uwvm2::extension::adm::maximum_pages(wasm_memory_is_address64(memory),
+                            ::uwvm2::extension::adm::ignored_bits(memory), ::uwvm2::extension::memtag::is_tagged_memory(memory), ::uwvm2::extension::adm::page_shift(memory))};
                         if(limits.present_max && limits.max < limits.min) [[unlikely]]
                         {
 #ifdef UWVM2_USE_HUGE_FAST_IO_CPO_OUTPUT
@@ -6208,7 +6227,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
 
                 auto const& imported_memories{importsec.importdesc.index_unchecked(importdesc_memory_index)};
-                details::check_reserve_limit_in_context(world, u8"imported_memories", imported_memories.size(), world.limits().max_imported_memories);
+                details::check_reserve_limit_in_context(world, u8"imported_memories", imported_memories.size(),
+                    (::std::min)(world.limits().max_imported_memories, module_limits.imported_memories));
                 out.imported_memory_vec_storage.reserve(imported_memories.size());
                 for(auto const import_ptr: imported_memories)
                 {
@@ -6219,7 +6239,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
 
                 auto const& imported_globals{importsec.importdesc.index_unchecked(importdesc_global_index)};
-                details::check_reserve_limit_in_context(world, u8"imported_globals", imported_globals.size(), world.limits().max_imported_globals);
+                details::check_reserve_limit_in_context(world, u8"imported_globals", imported_globals.size(),
+                    (::std::min)(world.limits().max_imported_globals, module_limits.imported_globals));
                 out.imported_global_vec_storage.reserve(imported_globals.size());
                 for(auto const import_ptr: imported_globals)
                 {
@@ -6632,7 +6653,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                         u8"). ");
                 }
 
-                details::check_reserve_limit_in_context(world, u8"local_defined_memories", local_memory_count, world.limits().max_local_defined_memories);
+                details::check_reserve_limit_in_context(world, u8"local_defined_memories", local_memory_count,
+                    (::std::min)(world.limits().max_local_defined_memories, module_limits.local_defined_memories));
                 out.local_defined_memory_vec_storage.reserve(local_memory_count);
 
                 if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
@@ -6655,14 +6677,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                    memory_idx,
                                                    memory_type.limits,
                                                    effective_limits,
-                                                   default_linear_memory_page_size_bytes());
+                                                   linear_memory_page_size_bytes_from_log2(::uwvm2::extension::adm::page_shift(memory_type)));
 
                     if constexpr(Purpose == initialization_purpose::threaded_child)
                     { out.local_defined_memory_vec_storage.push_back({.memory=world.make_memory()}); }
                     else { out.local_defined_memory_vec_storage.emplace_back(); }
                     auto& rec{out.local_defined_memory_vec_storage.back()};
                     rec.memory_type_ptr = ::std::addressof(memory_type);
+                    rec.memory.custom_page_size_log2 = ::uwvm2::extension::adm::page_shift(memory_type);
                     rec.effective_limits = effective_limits;
+                    auto const k{::uwvm2::extension::adm::ignored_bits(memory_type)};
+                    if(k)
+                    {
+                        auto const cap{::uwvm2::extension::adm::maximum_pages(wasm_memory_is_address64(memory_type), k,
+                            ::uwvm2::extension::memtag::is_tagged_memory(memory_type), rec.memory.custom_page_size_log2)};
+                        auto& limits{rec.effective_limits};
+                        if(cap < limits.max) { limits.max = static_cast<::std::size_t>(cap); }
+                        limits.present_max = true;
+                    }
+                    rec.backend = ::uwvm2::uwvm::wasm::storage::module_policy::resolve_backend(
+                        world.current_module(), memory_idx, out.memory_policy.backend);
 
                     auto const runtime_page_size_bytes{linear_memory_page_size_bytes_from_log2(rec.memory.custom_page_size_log2)};
                     emit_local_memory_init_verbose_in_context(world, u8"construct record done", memory_idx, memory_type.limits, rec.effective_limits, runtime_page_size_bytes);
@@ -6687,6 +6721,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         {
                             initialize_native_memory(rec.memory, rec.effective_limits, out.imported_memory_vec_storage.size() + memory_idx,
                                                      wasm_memory_is_shared(memory_type), wasm_memory_is_address64(memory_type));
+                            if(!configure_owner_addressing(rec, world.current_module(), out.memory_policy.check_tags)) { exit_invalid_runtime_configuration(); }
                             report_mmap_owner(rec.memory, memory_type.limits, world.current_module(), memory_idx);
                         }
                     }
@@ -6742,7 +6777,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
             // local defined global
             {
-                details::check_reserve_limit_in_context(world, u8"local_defined_globals", globalsec.local_globals.size(), world.limits().max_local_defined_globals);
+                details::check_reserve_limit_in_context(world, u8"local_defined_globals", globalsec.local_globals.size(),
+                    (::std::min)(world.limits().max_local_defined_globals, module_limits.local_defined_globals));
                 out.local_defined_global_vec_storage.reserve(globalsec.local_globals.size());
                 for(auto const& local_global: globalsec.local_globals)
                 {
@@ -8260,7 +8296,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 {
                     if(wf.requires_verified_execution_authorization())
                     { wsea_require_import_capabilities(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.authorized_capabilities()); }
-                    initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.wasm_parameter.binfmt1_para, out, reservation_plan);
+                    out.memory_policy = wf.wasm_parameter.memory_policy;
+                    initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage,
+                        wf.wasm_parameter.binfmt1_para, out, reservation_plan, wf.wasm_parameter.initializer_limits);
                     break;
                 }
 

@@ -246,7 +246,10 @@
         return {.memory64 = curr_module.memory_declarations_require_memory64,
                 .table64 = curr_module.table_declarations_require_table64,
                 .shared = curr_module.memory_declarations_require_threads,
-                .multi_memory = curr_module.memory_declarations_require_multi_memory};
+                .multi_memory = curr_module.memory_declarations_require_multi_memory,
+                .adm = curr_module.memory_declarations_require_adm,
+                .memtag = curr_module.memory_declarations_require_memtag,
+                .custom_pages = curr_module.memory_declarations_require_custom_pages};
     }
     [[nodiscard]] inline constexpr ::uwvm2::validation::standard::wasm3::core3_constant_declaration_requirements
         runtime_constant_declaration_requirements(::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& curr_module) noexcept
@@ -359,6 +362,9 @@
         elemsec.reference_types_diagnostic_value = curr_module.element_reference_types_diagnostic_value;
         memsec.requires_memory64 = curr_module.memory_declarations_require_memory64;
         memsec.requires_threads = curr_module.memory_declarations_require_threads;
+        memsec.requires_memtag = curr_module.memory_declarations_require_memtag;
+        memsec.requires_adm = curr_module.memory_declarations_require_adm;
+        memsec.requires_custom_pages = curr_module.memory_declarations_require_custom_pages;
         tablesec.requires_table64 = curr_module.table_declarations_require_table64;
         tablesec.requires_table_initializer = curr_module.table_declarations_require_table_initializer;
         globalsec.constant_expressions_require_extended_const = curr_module.constant_expressions_require_extended_const;

@@ -264,18 +264,22 @@ namespace uwvm2::utils::update
     };
     struct function_body { ::std::size_t offset{}, size{}; };
     struct section { unsigned char id{}; ::std::size_t offset{}, size{}; };
-    inline bool u32(::std::span<unsigned char const> in, ::std::size_t& pos, ::std::uint32_t& value) noexcept
+    template<typename UInt>
+    inline bool unsigned_leb(::std::span<unsigned char const> in, ::std::size_t& pos, UInt& value) noexcept
     {
         value = 0;
-        for(unsigned shift{}; shift < 35; shift += 7)
+        constexpr unsigned bits{sizeof(UInt) * 8u};
+        for(unsigned shift{}; shift < bits; shift += 7)
         {
             if(pos >= in.size()) { return false; } auto b{in[pos++]};
-            if(shift == 28 && (b & 0xf0) != 0) { return false; }
-            value |= static_cast<::std::uint32_t>(b & 127) << shift;
+            if(bits - shift < 7u && (b >> (bits - shift)) != 0u) { return false; }
+            value |= static_cast<UInt>(b & 127u) << shift;
             if((b & 128) == 0) { return true; }
         }
         return false;
     }
+    inline bool u32(::std::span<unsigned char const> in, ::std::size_t& pos, ::std::uint32_t& value) noexcept
+    { return unsigned_leb(in, pos, value); }
     // Structural scope check, not a replacement for the actual Wasm validator.
     // Non-code bytes, including custom sections, must be identical. Changed bodies
     // still pass the existing feature-aware parser/type validator/compiler.

@@ -372,7 +372,7 @@
         template<typename Type>
         [[nodiscard]] static bool mutation_same_memory_type(Type const& a,Type const& b) noexcept
         {
-            return a.address64==b.address64 && a.shared==b.shared && a.limits.min==b.limits.min &&
+            return a.address64==b.address64 && a.shared==b.shared && a.page_size_log2==b.page_size_log2 && a.adm_bits==b.adm_bits && a.memtag==b.memtag && a.limits.min==b.limits.min &&
                 a.limits.present_max==b.limits.present_max && (!a.limits.present_max || a.limits.max==b.limits.max);
         }
         template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
@@ -425,12 +425,13 @@
                 auto const& actual{state.modules[owner].module->imported_memory_vec_storage.index_unchecked(record)};
                 using kind=typename ::std::remove_cvref_t<decltype(actual)>::imported_memory_link_kind;
                 auto const& declaration{actual.import_type_ptr->imports.storage.memory};
-                if(declaration.address64!=address64 || declaration.shared!=shared) { return false; }
+                if(declaration.address64!=address64 || declaration.shared!=shared || declaration.page_size_log2!=expected.page_size_log2 || declaration.adm_bits!=expected.adm_bits || declaration.memtag!=expected.memtag) { return false; }
                 if(actual.link_kind==kind::defined)
                 {
                     if(!mutation_memory_owner<false>(state,actual.target.defined_ptr,owner,local)) { return false; }
                     auto const& defined{state.modules[owner].module->local_defined_memory_vec_storage.index_unchecked(local)};
-                    return defined.memory_type_ptr->address64==address64 && defined.memory_type_ptr->shared==shared;
+                    return defined.memory_type_ptr->address64==address64 && defined.memory_type_ptr->shared==shared &&
+                        defined.memory_type_ptr->page_size_log2==expected.page_size_log2 && defined.memory_type_ptr->adm_bits==expected.adm_bits && defined.memory_type_ptr->memtag==expected.memtag;
                 }
                 if(actual.link_kind!=kind::imported) { return false; }
                 next=actual.target.imported_ptr; // Compare membership again BEFORE reading next pointee.
@@ -473,7 +474,8 @@
             ::uwvm2::uwvm::debugger::wasm_mutation::result& result) const noexcept
         {
             auto const& declaration{*actual.memory_type_ptr}; // whole closure proved exact parser pointer.
-            auto const bounds{::uwvm2::uwvm::runtime::storage::checkpoint_effective_memory_bounds(declaration.address64,actual.effective_limits)};
+            auto const bounds{::uwvm2::uwvm::runtime::storage::checkpoint_effective_memory_bounds(
+                declaration.address64, actual.effective_limits, declaration.adm_bits, declaration.memtag)};
             if(actual.memory.custom_page_size_log2!=16u || length%65536u!=0u || length/65536u<bounds.minimum || length/65536u>bounds.maximum ||
                length>static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) || (length!=0u && begin==nullptr) ||
                length>UINTPTR_MAX-reinterpret_cast<::std::uintptr_t>(begin) || (declaration.shared && !declaration.limits.present_max))

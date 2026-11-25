@@ -37,6 +37,8 @@
 # include <uwvm2/uwvm/runtime/macro/push_macros.h>
 // import
 # include <fast_io.h>
+# include <uwvm2/extension/adm/types.h>
+# include <uwvm2/extension/memtag/execution_policy.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/allocator/fast_io_strict/impl.h>
 # include <uwvm2/parser/wasm/base/error_code.h>
@@ -488,9 +490,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     // never intersect the resulting policy with the original declaration again.
     // The Wasm address-domain ceiling is independent of native allocation quota.
     [[nodiscard]] inline constexpr checkpoint_effective_memory_bounds_t checkpoint_effective_memory_bounds(
-        bool memory64, ::uwvm2::uwvm::wasm::type::module_memory_limit_t const& effective) noexcept
+        bool memory64, ::uwvm2::uwvm::wasm::type::module_memory_limit_t const& effective,
+        unsigned adm_bits = 0u, bool memtag = false) noexcept
     {
-        ::std::uint64_t const address_max{memory64 ? (::std::uint64_t{1u} << 48u) : 65536u};
+        auto const address_max{::uwvm2::extension::adm::maximum_pages(memory64, adm_bits, memtag, 16u)};
         auto const native_max{static_cast<::std::uint64_t>(effective.max)};
         return {static_cast<::std::uint64_t>(effective.min),
             effective.present_max && native_max < address_max ? native_max : address_max};
@@ -506,6 +509,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
         wasm_binfmt1_final_memory_type_t const* memory_type_ptr{};
         ::uwvm2::uwvm::wasm::type::module_memory_limit_t effective_limits{};
+        ::uwvm2::extension::memtag::owner_backend backend{};
     };
 
     struct imported_memory_storage_t
@@ -913,6 +917,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 {
     struct wasm_module_storage_t
     {
+        ::uwvm2::extension::memtag::module_memory_policy memory_policy{};
         // Native initializer and actual segment installation publish this cold
         // state. It is never read by ordinary memory/field guest instructions.
         ::uwvm2::runtime::gc::instance_collection_phase gc_collection_phase{};
@@ -948,7 +953,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         unsigned table_reference_types_diagnostic_value{}, global_reference_types_diagnostic_value{},
             element_reference_types_diagnostic_value{};
         bool memory_declarations_require_memory64{}, table_declarations_require_table64{},
-            memory_declarations_require_threads{}, memory_declarations_require_multi_memory{};
+            memory_declarations_require_threads{}, memory_declarations_require_multi_memory{}, memory_declarations_require_adm{}, memory_declarations_require_memtag{}, memory_declarations_require_custom_pages{};
         bool table_declarations_require_table_initializer{}, constant_expressions_require_extended_const{};
         unsigned extended_const_diagnostic_value{};
         ::uwvm2::parser::wasm::base::wasm1p1_error_subject extended_const_diagnostic_subject{};
@@ -1186,14 +1191,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             ::uwvm2::object::global::wasm_ref_kind::wasm_exn;
         return retain_runtime_table_reference(table, reference);
     }
-    [[nodiscard]] inline constexpr bool runtime_memory_is_address64(
+    [[nodiscard]] inline constexpr wasm_binfmt1_final_memory_type_t const& runtime_memory_type(
         ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module, ::std::size_t index) noexcept
     {
-        auto const declared_address64{[](auto const& memory) constexpr noexcept
-        {
-            if constexpr(requires { memory.address64; }) { return memory.address64; }
-            else { return false; }
-        }};
         auto const import_count{module.imported_memory_vec_storage.size()};
         if(index < import_count)
         {
@@ -1203,14 +1203,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(declaration == nullptr || declaration->imports.type !=
                ::uwvm2::parser::wasm::standard::wasm1::type::external_types::memory) [[unlikely]]
             { ::fast_io::fast_terminate(); }
-            return declared_address64(declaration->imports.storage.memory);
+            return declaration->imports.storage.memory;
         }
         auto const local_index{index - import_count};
         if(local_index >= module.local_defined_memory_vec_storage.size()) [[unlikely]] { ::fast_io::fast_terminate(); }
         // Subtraction and the local bound prove that this declaration belongs to memory[index].
         auto const declaration{module.local_defined_memory_vec_storage.index_unchecked(local_index).memory_type_ptr};
         if(declaration == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-        return declared_address64(*declaration);
+        return *declaration;
+    }
+    [[nodiscard]] inline constexpr bool runtime_memory_is_address64(
+        ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module, ::std::size_t index) noexcept
+    {
+        return []<typename Memory>(Memory const& memory) constexpr noexcept
+        {
+            if constexpr(requires { memory.address64; }) { return memory.address64; }
+            else { return false; }
+        }(runtime_memory_type(module, index));
     }
     [[nodiscard]] inline constexpr bool runtime_table_is_address64(
         ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module, ::std::size_t index) noexcept
@@ -1247,7 +1256,8 @@ UWVM_MODULE_EXPORT namespace fast_io::freestanding
     template <>
     struct is_zero_default_constructible<::uwvm2::uwvm::runtime::storage::wasm_module_storage_t>
     {
-        inline static constexpr bool value = ::fast_io::freestanding::is_zero_default_constructible_v<
+        inline static constexpr bool value = ::fast_io::freestanding::is_zero_default_constructible_v<::uwvm2::extension::memtag::module_memory_policy> &&
+                                             ::fast_io::freestanding::is_zero_default_constructible_v<
                                                  ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
                                                  ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner>> &&

@@ -15,14 +15,14 @@
     if(plan.memories.size() > s.pending_directories.size()) { return false; }
     for(auto& memory:plan.memories)
     {
+        if(memory.index >= module.local_defined_memory_vec_storage.size()) { return false; }
         auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(memory.index).memory};
-        memory.tagged=actual.memtag_shadow.enabled();
+        if(memory.tagged != actual.memtag_shadow.enabled() || memory.adm_bits != actual.memtag_shadow.ignored_bits()) { return false; }
         if(!memory.tagged) { continue; }
-        if(actual.memtag_shadow.width()!=mt::address_width::i32 || actual.memtag_shadow.shared() ||
-           memory.byte_size>actual.memtag_shadow.prepared_memory_bytes() || memory.byte_size%16u!=0u) { return false; }
-        memory.allocation_tags.assign(memory.byte_size/16u,0u);
+        if(actual.memtag_shadow.width()!=(memory.address64 ? mt::address_width::i64 : mt::address_width::i32) || actual.memtag_shadow.shared() ||
+           memory.byte_size>actual.memtag_shadow.prepared_memory_bytes()) { return false; }
+        memory.allocation_tags.assign(memory.byte_size/16u + (memory.byte_size%16u != 0u),0u);
     }
-    if(::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag) { return true; }
     // Module transition comparison requires identical custom sections. Read the
     // already validated original descriptors, but prepare fresh allocation tags
     // exactly as initial launch does; tagged pointers in active data stay bytes.
@@ -40,7 +40,7 @@
         bool valid{true};
         auto checked{mt::visit_linear_globals({begin,static_cast<::std::size_t>(end-begin)},
             [&](::std::uint32_t index,::std::uint64_t& bytes) noexcept
-            { if(index>=plan.memories.size()) { return false; } bytes=plan.memories[index].byte_size;return true; },
+            { if(index>=plan.memories.size() || !plan.memories[index].tagged) { return false; } bytes=plan.memories[index].byte_size;return true; },
             [&](mt::linear_global_descriptor descriptor)
             {
                 if(!valid || descriptor.byte_length==0u) { return; }
@@ -74,16 +74,18 @@
     {
         if(memory.index >= module.local_defined_memory_vec_storage.size()) { return false; }
         auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(memory.index).memory};
-        if(actual.custom_page_size_log2 != 16u || actual.get_page_size() != memory.byte_size / 65536u ||
+        auto const& tags{actual.memtag_shadow};
+        if(actual.custom_page_size_log2 != memory.page_shift || actual.get_page_size() != (memory.byte_size >> memory.page_shift) ||
+           tags.ignored_bits() != memory.adm_bits || tags.enabled() != memory.tagged ||
+           (tags.width() == ::uwvm2::extension::memtag::address_width::i64) != memory.address64 ||
            (memory.byte_size != 0u && actual.memory_begin == nullptr) || (plan.reset_state && memory.bytes.size() != memory.byte_size)) { return false; }
         if(plan.reset_state)
         {
-            auto const& tags{actual.memtag_shadow};
-            if(memory.tagged!=tags.enabled() || (!memory.tagged && !memory.allocation_tags.empty())) { return false; }
+            if(!memory.tagged && !memory.allocation_tags.empty()) { return false; }
             if(memory.tagged)
             {
-                if(tags.width()!=::uwvm2::extension::memtag::address_width::i32 || tags.shared() ||
-                   memory.byte_size>tags.prepared_memory_bytes() || memory.allocation_tags.size()!=memory.byte_size/16u) { return false; }
+                if(tags.shared() || memory.byte_size>tags.prepared_memory_bytes() ||
+                   memory.allocation_tags.size()!=memory.byte_size/16u + (memory.byte_size%16u != 0u)) { return false; }
                 for(auto tag:memory.allocation_tags) { if(tag>15u) { return false; } }
                 if(tags.hardware_active() && (tags.hardware_base()!=actual.memory_begin ||
                    !::uwvm2::extension::memtag::hardware_mte::enable_current_thread_sync())) { return false; }
@@ -196,13 +198,19 @@
         if(!::uwvm2::extension::memtag::copy_debug_memory(actual.memtag_shadow,
             {actual.memory_begin,memory.byte_size},0u,const_cast<unsigned char*>(memory.bytes.data()),memory.byte_size,true)) { return false; }
         if(!memory.tagged) { continue; }
-        auto const view{actual.memtag_shadow.template view<::std::uint32_t,false>(memory.byte_size)};
-        for(::std::size_t first{};first<memory.allocation_tags.size();)
+        auto publish_tags = [&]<typename Address>() noexcept
         {
-            auto last{first+1u};while(last<memory.allocation_tags.size() && memory.allocation_tags[last]==memory.allocation_tags[first]) { ++last; }
-            if(!view.store(view.insert(static_cast<::std::uint32_t>(first*16u),memory.allocation_tags[first]),(last-first)*16u)) { return false; }
-            first=last;
-        }
+            auto const view{actual.memtag_shadow.template view<Address,false>(memory.byte_size)};
+            for(::std::size_t first{};first<memory.allocation_tags.size();)
+            {
+                auto last{first+1u};while(last<memory.allocation_tags.size() && memory.allocation_tags[last]==memory.allocation_tags[first]) { ++last; }
+                auto const end{(::std::min)(memory.byte_size,last*16u)};
+                if(!view.store(view.with_tag(static_cast<Address>(first*16u),memory.allocation_tags[first]),end-first*16u)) { return false; }
+                first=last;
+            }
+            return true;
+        };
+        if(!(memory.address64 ? publish_tags.template operator()<::std::uint64_t>() : publish_tags.template operator()<::std::uint32_t>())) { return false; }
         actual.memtag_shadow.allocation_directory().take(s.pending_directories[memory.index]);
     }
     for(::std::size_t i{}; i < s.module_plan->data_segments.size(); ++i)

@@ -19,6 +19,8 @@ namespace uwvm2::utils::update
         // of the previous epoch's allocation tags. PRESERVE has no tag image.
         bool tagged{};
         ::uwvm2::utils::container::std_vector<unsigned char> allocation_tags{};
+        bool address64{};
+        unsigned adm_bits{}, page_shift{16u};
     };
     struct active_data_record
     {
@@ -44,19 +46,41 @@ namespace uwvm2::utils::update
             if(count>16u)return status::exhausted;
             for(::std::uint32_t i{};i<count;++i)
             {
-                ::std::uint32_t flags{},minimum{},maximum{};
-                if(!u32(bytes,pos,flags))return status::validation_failed;
-                // Memory64/shared/custom pages have a different transition ABI.
-                if(flags>1u)return status::unsupported;
-                if(!u32(bytes,pos,minimum) || minimum>65536u ||
-                   ((flags&1u) && (!u32(bytes,pos,maximum) || maximum<minimum || maximum>65536u)))
-                    return status::validation_failed;
-                auto const size=static_cast<::std::uint64_t>(minimum)*65536u;
+                if(pos == bytes.size()) { return status::validation_failed; }
+                auto const flags{bytes[pos++]};
+                if(flags & ~0x3fu) { return status::validation_failed; }
+                if(flags & 2u) { return status::unsupported; } // Shared live state cannot be reset by the single-owner transition.
+                memory_reset_record record{};
+                record.index = i;
+                record.address64 = (flags & 4u) != 0u;
+                record.tagged = (flags & 0x20u) != 0u;
+                if(flags & 0x10u)
+                {
+                    if(pos == bytes.size()) { return status::validation_failed; }
+                    record.adm_bits = bytes[pos++];
+                }
+                auto const width{record.address64 ? 64u : 32u};
+                if(record.adm_bits >= width || (record.tagged && record.adm_bits < 4u)) { return status::validation_failed; }
+                ::std::uint64_t minimum{}, maximum{};
+                if(!unsigned_leb(bytes,pos,minimum) || ((flags & 1u) && (!unsigned_leb(bytes,pos,maximum) || maximum < minimum)))
+                { return status::validation_failed; }
+                if(flags & 8u)
+                {
+                    ::std::uint32_t shift{};
+                    if(!u32(bytes,pos,shift) || (shift != 0u && shift != 16u)) { return status::validation_failed; }
+                    record.page_shift = shift;
+                }
+                auto const bits{(::std::min)(width-record.adm_bits, record.tagged && record.address64 ? 48u : width)};
+                auto const max_pages{bits < record.page_shift ? 0u : bits - record.page_shift == 64u ? UINT64_MAX :
+                    ::std::uint64_t{1u} << (bits-record.page_shift)};
+                if(minimum > max_pages || maximum > max_pages || (!record.address64 && (minimum > UINT32_MAX || maximum > UINT32_MAX)))
+                { return status::validation_failed; }
                 // A valid module can exceed the private reset-image budget.
                 // It is not an unsupported Wasm feature or a compiler failure.
-                if(size>maximum_image_bytes-total)return status::exhausted;
+                if(minimum > ((maximum_image_bytes-total) >> record.page_shift)) { return status::exhausted; }
+                auto const size{static_cast<::std::size_t>(minimum) << record.page_shift};
                 total+=static_cast<::std::size_t>(size);
-                memory_reset_record record{i,static_cast<::std::size_t>(size),{}};
+                record.byte_size = size;
                 if(reset)record.bytes.resize(record.byte_size);
                 records.push_back(::std::move(record));
             }
@@ -76,10 +100,11 @@ namespace uwvm2::utils::update
                 if(record.flags!=0u && record.flags!=2u)return status::unsupported;
                 if((record.flags==2u && !u32(bytes,pos,record.memory_index)) ||
                    record.memory_index>=memories.size() || pos==bytes.size())return status::validation_failed;
-                if(bytes[pos++]!=0x41u)return status::unsupported;
-                if(!scalar_detail::signed_integer(bytes,pos,32u,raw) || pos==bytes.size() || bytes[pos++]!=0x0bu ||
+                auto& memory{memories[record.memory_index]};
+                if(bytes[pos++] != (memory.address64 ? 0x42u : 0x41u)) { return status::unsupported; }
+                if(!scalar_detail::signed_integer(bytes,pos,memory.address64 ? 64u : 32u,raw) || pos==bytes.size() || bytes[pos++]!=0x0bu ||
                    !u32(bytes,pos,length) || length>bytes.size()-pos)return status::validation_failed;
-                record.offset=raw;auto& memory=memories[record.memory_index];
+                record.offset=raw;
                 if(raw>memory.byte_size || length>memory.byte_size-static_cast<::std::size_t>(raw))return status::validation_failed;
                 if(apply && length)
                 {
