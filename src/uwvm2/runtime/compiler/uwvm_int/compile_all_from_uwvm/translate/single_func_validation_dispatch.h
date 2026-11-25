@@ -4807,6 +4807,34 @@ auto const emit_memtag_origin_boundary{[&](unsigned flags) constexpr
     emit_imm_to(bytecode,flags);
 }};
 
+#if defined(UWVM_SUPPORT_MMAP)
+auto const select_adm_scalar_bounds{[&](::std::uint64_t offset, ::std::size_t bytes) noexcept
+{
+    namespace adm=::uwvm2::extension::adm;
+    namespace mt=::uwvm2::extension::memtag;
+    using bounds=::uwvm2::runtime::compiler::uwvm_int::optable::memtag_details::adm_scalar_bounds;
+    auto const& memory{*resolved_memory.memory_p};
+    auto const& shadow{memory.memtag_shadow};
+    if(bytes > 8u || shadow.shared() || (shadow.enabled() && options.execute_memtag) ||
+       shadow.hardware_selected() || mt::asynchronous_requested() || mt::logging_requested())
+    { return bounds::unavailable; }
+    auto const mask{shadow.address_mask()};
+    if(adm::masked_access_fits(mask,offset,bytes,resolved_memory.declared_minimum_bytes))
+    { return bounds::declared_minimum; }
+#if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_LLVM_JIT)
+    namespace guard=::uwvm2::runtime::compiler::shared::int_adm_guard;
+    if(guard::available() && memory.is_full_page_protection() && !memory.require_dynamic_determination_memory_size() &&
+       memory.memory_begin == memory.reserved_begin && offset <= mask &&
+       adm::masked_access_fits(mask,offset,bytes,memory.get_acquire_reserved_space_ceil()))
+    {
+        guard::selected.store(true,::std::memory_order_release);
+        return bounds::full_guard;
+    }
+#endif
+    return adm::masked_access_fits(mask,offset,bytes,UINT64_MAX) ? bounds::live_length : bounds::unavailable;
+}};
+#endif
+
 // Scalar memory64 handlers consume an i64 address and an eight-byte offset
 // slot. The memory32 path below retains its four-byte encoding and fusions.
 auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t Bytes, bool Signed, bool Store>(
@@ -4817,12 +4845,17 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
-#if defined(__x86_64__) || defined(_M_X64) || \
-    (defined(__linux__) && defined(__aarch64__) && defined(UWVM_STUDY_AARCH64_MEMTAG_SCALAR))
-        if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
-                     ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
+        namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
+        auto const& memory{*resolved_memory.memory_p};
+        constexpr bool integer{::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
+                               ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>};
+#if defined(UWVM_SUPPORT_MMAP)
+        using bounds=mtopt::memtag_details::adm_scalar_bounds;
+        auto const adm_bounds{select_adm_scalar_bounds(offset,Bytes)};
+#endif
+        if constexpr(integer)
         {
-            if(options.execute_memtag && resolved_memory.memory_p->memtag_shadow.enabled() && !resolved_memory.memory_p->memtag_shadow.shared())
+            [[maybe_unused]] auto const emit_cached{[&](auto select) constexpr
             {
                 auto const address_type{current_memory_address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
                 if constexpr(!Store)
@@ -4832,22 +4865,14 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
                     if(stacktop_enabled_for_vt(value_type) && !stacktop_ranges_merged_for(address_type,value_type))
                     { stacktop_prepare_push1_if_reachable(bytecode,value_type); }
                 }
-                namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
-                auto const select{[&]<typename Address>() constexpr
-                {
-                    using policy=mtopt::memtag_details::scalar_policy;
-                    if(memtag_sync_log)
-                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::synchronous_log,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
-                    if(memtag_software_async)
-                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::software_async,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
-                    if(!::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::hardware_checked_access_requested())
-                    { return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::enforcing,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple); }
-                    return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,policy::generic,CompileOption>(curr_stacktop,*resolved_memory.memory_p,interpreter_tuple);
-                }};
                 emit_opfunc_to(bytecode,current_memory_address64 ? select.template operator()<::std::uint64_t>() :
                                                                   select.template operator()<::std::uint32_t>());
                 emit_imm_to(bytecode,resolved_memory.memory_p);
                 emit_imm_to(bytecode,static_cast<::std::uint64_t>(offset));
+#if defined(UWVM_SUPPORT_MMAP)
+                if(adm_bounds != bounds::unavailable) { emit_imm_to(bytecode,adm_bounds); }
+                else
+#endif
                 if(memtag_sync_log || memtag_software_async)
                 {
                     emit_imm_to(bytecode,static_cast<::std::uint64_t>(options.curr_wasm_id));
@@ -4856,51 +4881,64 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
                 }
                 if constexpr(Store) { stacktop_after_pop_n_if_reachable(bytecode,2uz); }
                 else { stacktop_after_pop_n_push1_typed_if_reachable(bytecode,1uz,value_type); }
+            }};
+#if defined(UWVM_SUPPORT_MMAP)
+            if(adm_bounds != bounds::unavailable)
+            {
+                emit_cached([&]<typename Address>() constexpr
+                {
+                    return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,
+                        mtopt::memtag_details::scalar_policy::adm,CompileOption>(curr_stacktop,memory,interpreter_tuple);
+                });
                 return true;
             }
-        }
 #endif
+#if defined(__x86_64__) || defined(_M_X64) || \
+    (defined(__linux__) && defined(__aarch64__) && defined(UWVM_STUDY_AARCH64_MEMTAG_SCALAR))
+            if(options.execute_memtag && memory.memtag_shadow.enabled() && !memory.memtag_shadow.shared())
+            {
+                emit_cached([&]<typename Address>() constexpr
+                {
+                    using policy=mtopt::memtag_details::scalar_policy;
+                    auto const get{[&]<policy Policy>() constexpr
+                    {
+                        return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,
+                            Policy,CompileOption>(curr_stacktop,memory,interpreter_tuple);
+                    }};
+                    if(memtag_sync_log) { return get.template operator()<policy::synchronous_log>(); }
+                    if(memtag_software_async) { return get.template operator()<policy::software_async>(); }
+                    if(!::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::hardware_checked_access_requested())
+                    { return get.template operator()<policy::enforcing>(); }
+                    return get.template operator()<policy::generic>();
+                });
+                return true;
+            }
+#endif
+        }
         stacktop_flush_all_to_operand_stack(bytecode);
         if(memtag_sync_log || memtag_software_async) { emit_memtag_origin_boundary(0u); }
-        namespace mtopt = ::uwvm2::runtime::compiler::uwvm_int::optable;
         emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
         emit_imm_to(bytecode,resolved_memory.memory_p);
         auto select{[&]<typename Address>() constexpr
         {
-            if(resolved_memory.memory_p->memtag_shadow.shared())
+            if(memory.memtag_shadow.shared())
             { return static_cast<mtopt::memtag_details::action_t>(
                 mtopt::memtag_details::scalar<Address,true,Value,Bytes,Signed,Store>); }
 #if defined(UWVM_SUPPORT_MMAP)
-            auto const& memory{*resolved_memory.memory_p};
-            auto const& shadow{memory.memtag_shadow};
-            if constexpr(Bytes <= 8u)
+            if constexpr(!integer && Bytes <= 8u)
             {
-                if((!shadow.enabled() || !options.execute_memtag) && !shadow.hardware_selected() &&
-                   !::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::logging_requested())
-                {
-                    namespace adm=::uwvm2::extension::adm;
-                    using bounds=mtopt::memtag_details::adm_scalar_bounds;
-                    auto const mask{shadow.address_mask()};
-                    if(adm::masked_access_fits(mask,offset,Bytes,resolved_memory.declared_minimum_bytes))
-                    { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::declared_minimum,Address,Value,Bytes,Signed,Store>); }
+                if(adm_bounds == bounds::declared_minimum)
+                { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::declared_minimum,Address,Value,Bytes,Signed,Store>); }
 #if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_LLVM_JIT)
-                    namespace guard=::uwvm2::runtime::compiler::shared::int_adm_guard;
-                    if(guard::available() && memory.is_full_page_protection() && !memory.require_dynamic_determination_memory_size() &&
-                       memory.memory_begin == memory.reserved_begin && offset <= mask &&
-                       adm::masked_access_fits(mask,offset,Bytes,memory.get_acquire_reserved_space_ceil()))
-                    {
-                        guard::selected.store(true,::std::memory_order_release);
-                        return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::full_guard,Address,Value,Bytes,Signed,Store>);
-                    }
+                if(adm_bounds == bounds::full_guard)
+                { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::full_guard,Address,Value,Bytes,Signed,Store>); }
 #endif
-                    if(adm::masked_access_fits(mask,offset,Bytes,UINT64_MAX))
-                    { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::live_length,Address,Value,Bytes,Signed,Store>); }
-                }
+                if(adm_bounds == bounds::live_length)
+                { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::live_length,Address,Value,Bytes,Signed,Store>); }
             }
 #endif
 #if defined(__i386__) || defined(_M_IX86)
-            if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
-                         ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
+            if constexpr(integer)
             {
                 namespace mt=::uwvm2::extension::memtag;
                 if(!mt::asynchronous_requested() && !mt::hardware_requested() && !mt::logging_requested())

@@ -32,7 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 {
     namespace memtag_details
     {
-        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic };
+        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic, adm };
         using native_memory_t = ::uwvm2::object::memory::linear::native_memory_t;
         using action_t = void(*)(native_memory_t const&, ::std::byte*&, ::std::uint64_t) noexcept;
 
@@ -135,19 +135,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         }
 
 #if defined(UWVM_SUPPORT_MMAP)
-        enum class adm_scalar_bounds { live_length, declared_minimum, full_guard };
+        enum class adm_scalar_bounds : unsigned { unavailable, live_length, declared_minimum, full_guard };
 
         // Emitted for a private, stable mapping after proving mask+offset+Bytes
         // representable. A varying sub-OS-page tail always needs its byte length
         // unless the complete reachable access is below the declared minimum.
-        template<adm_scalar_bounds Bounds, ::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
-        inline void adm_scalar(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t offset) noexcept
+        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        UWVM_ALWAYS_INLINE inline void adm_scalar_access(adm_scalar_bounds bounds, native_memory_t const& memory,
+            ::std::uint64_t raw, ::std::uint64_t offset, Value& value) noexcept
         {
-            Value value{};
-            if constexpr(Store) { value=pop<Value>(stack); }
-            auto const raw{pop<Address>(stack)};
             auto const effective{(raw & memory.memtag_shadow.address_mask())+offset};
-            if constexpr(Bounds == adm_scalar_bounds::live_length)
+            if(bounds == adm_scalar_bounds::live_length)
             {
                 auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
                 if(effective+Bytes > length) [[unlikely]]
@@ -156,9 +154,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             // The translated range fits either the live data or the qualified,
             // immutable mmap reservation, including the final accessed byte.
             auto* begin{memory.memory_begin+static_cast<::std::size_t>(effective)};
-            if constexpr(Bounds == adm_scalar_bounds::full_guard)
+#if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_LLVM_JIT)
+            if(bounds == adm_scalar_bounds::full_guard)
             {
-#if UWVM2_HAS_INT_ADM_GUARD
                 namespace guard=::uwvm2::runtime::compiler::shared::int_adm_guard;
                 ::std::uint64_t bits{};
                 auto* encoded{reinterpret_cast<::std::byte*>(::std::addressof(bits))};
@@ -178,11 +176,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                     bits=guard::load<Bytes>(begin);
                     scalar_bytes<Value,Bytes,Signed,false>(encoded,value);
                 }
-#else
-                static_assert(Bounds != adm_scalar_bounds::full_guard);
-#endif
+                return;
             }
-            else { scalar_bytes<Value,Bytes,Signed,Store>(begin,value); }
+#endif
+            scalar_bytes<Value,Bytes,Signed,Store>(begin,value);
+        }
+
+        template<adm_scalar_bounds Bounds, ::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        inline void adm_scalar(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t offset) noexcept
+        {
+            Value value{};
+            if constexpr(Store)
+            {
+                // Moving a floating payload through an x87 return value may quiet a signalling NaN.
+                stack -= sizeof(Value);
+                ::std::memcpy(::std::addressof(value),stack,sizeof(Value));
+            }
+            auto const raw{pop<Address>(stack)};
+            adm_scalar_access<Value,Bytes,Signed,Store>(Bounds,memory,raw,offset,value);
             if constexpr(!Store) { push(stack,value); }
         }
 #endif
@@ -246,9 +257,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if constexpr(!Store) { push(stack,value); }
         }
 
-        // Private integer accesses can retain the normal register-ring ABI.
-        // The owner snapshot, complete bounds/tag proof, and callback lifetime
-        // are still supplied by the original checked-access bridge.
+        template<scalar_policy Policy, ::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        UWVM_ALWAYS_INLINE inline constexpr void checked_integer_access(native_memory_t const& memory, Address raw,
+            ::std::uint64_t offset, Value& value, ::std::byte const*& ip) noexcept
+        {
+            static_assert(Policy != scalar_policy::adm);
+            ::std::byte const* encoded_origin{};
+            if constexpr(Policy==scalar_policy::synchronous_log || Policy==scalar_policy::software_async)
+            {
+                // [module][function][Wasm offset][successor] in the translated instruction.
+                encoded_origin=ip;
+                ip+=3u*sizeof(::std::uint64_t);
+            }
+            auto access{[&](::std::span<::std::byte> data) noexcept
+            {
+                scalar_bytes<Value,Bytes,Signed,Store>(data.data(),value);
+            }};
+            auto const result{[&]() noexcept
+            {
+                if constexpr(Policy==scalar_policy::enforcing)
+                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,false,true>(
+                    memory,raw,offset,Bytes,access); }
+                else if constexpr(Policy==scalar_policy::synchronous_log)
+                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,false,false,true>(
+                    memory,raw,offset,Bytes,access,encoded_origin); }
+                else if constexpr(Policy==scalar_policy::software_async)
+                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,true,false,true>(
+                    memory,raw,offset,Bytes,access,encoded_origin); }
+                else { return ::uwvm2::runtime::memtag::with_guest_access<Address,false>(
+                    memory,raw,offset,Bytes,access); }
+            }()};
+            // The checked-access bridge has released every pin before reporting.
+            if(!result) { access_failed(memory,raw,offset,Bytes,result); }
+        }
+
+        // Both ADM and checked MTE access use the typed operand layout selected by the translator.
         template<::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store,
                  memtag_details::scalar_policy Policy, uwvm_interpreter_translate_option_t Option, ::std::size_t ValuePos, ::std::size_t AddressPos,
                  uwvm_int_stack_top_type... Type>
@@ -263,15 +306,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             constexpr auto address_end{details::stacktop_range_end_pos<Option,wasm_address>()};
             constexpr bool merged{value_begin!=value_end && value_begin==address_begin && value_end==address_end};
 
-            // [handler][native owner pointer][u64 offset][successor] owns all
-            // slots. No action-pointer slot or guest-source decoding is needed.
+            // [handler][owner][u64 offset][policy-specific immediates][successor]
+            // All slots belong to this translated instruction or its successor.
             if constexpr(Option.is_tail_call) { args...[0]+=sizeof(uwvm_interpreter_opfunc_t<Type...>); }
             else { args...[0]+=sizeof(uwvm_interpreter_opfunc_byref_t<Type...>); }
             auto const memory{details::read_imm<native_memory_t*>(args...[0])};
             auto const offset{details::read_imm<::std::uint64_t>(args...[0])};
-            ::std::byte const* encoded_origin{};
-            if constexpr(Policy==scalar_policy::synchronous_log || Policy==scalar_policy::software_async)
-            { encoded_origin=args...[0];args...[0]+=3u*sizeof(::std::uint64_t); }
             Value value{};
             if constexpr(Store)
             { value=get_curr_val_from_operand_stack_top<Option,Value,ValuePos>(args...); }
@@ -293,27 +333,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             }
             else { address=get_curr_val_from_operand_stack_top<Option,wasm_address,AddressPos>(args...); }
             auto const raw{static_cast<Address>(address)};
-            auto access{[&](::std::span<::std::byte> data) noexcept
+#if defined(UWVM_SUPPORT_MMAP)
+            if constexpr(Policy==scalar_policy::adm)
             {
-                if constexpr(Store) { details::memory64::store_integer<Bytes>(data.data(),value); }
-                else { value=details::memory64::load_integer<Value,Bytes,Signed>(data.data()); }
-            }};
-            auto const result{[&]() noexcept
+                // The site carries its proven bounds policy as data so another bounds
+                // specialization is unnecessary for each pair of register positions.
+                auto const bounds{details::read_imm<adm_scalar_bounds>(args...[0])};
+                adm_scalar_access<Value,Bytes,Signed,Store>(bounds,*memory,raw,offset,value);
+            }
+            else
+#endif
             {
-                if constexpr(Policy==scalar_policy::enforcing)
-                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,false,true>(
-                    *memory,raw,offset,Bytes,access); }
-                else if constexpr(Policy==scalar_policy::synchronous_log)
-                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,false,false,true>(
-                    *memory,raw,offset,Bytes,access,encoded_origin); }
-                else if constexpr(Policy==scalar_policy::software_async)
-                { return ::uwvm2::runtime::memtag::with_access_policy<Address,false,true,false,true>(
-                    *memory,raw,offset,Bytes,access,encoded_origin); }
-                else { return ::uwvm2::runtime::memtag::with_guest_access<Address,false>(
-                    *memory,raw,offset,Bytes,access); }
-            }()};
-            // The original bridge has released every pin before reporting.
-            if(!result) { access_failed(*memory,raw,offset,Bytes,result); }
+                checked_integer_access<Policy,Address,Value,Bytes,Signed,Store>(*memory,raw,offset,value,args...[0]);
+            }
             if constexpr(!Store)
             {
                 if constexpr(value_begin!=value_end)
@@ -430,35 +462,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 
         namespace details::memtag_scalar
         {
-            template<bool Store> struct write_marker {};
-            template<> struct write_marker<true> { using writes_memory=void; };
             template<typename Address,typename Value,::std::size_t Bytes,bool Signed,bool Store,memtag_details::scalar_policy Policy>
             struct operation
             {
                 template<uwvm_interpreter_translate_option_t O,::std::size_t ValuePos,::std::size_t AddrPos,uwvm_int_stack_top_type... T>
                 inline static constexpr uwvm_interpreter_opfunc_t<T...> choose() noexcept
                 { return uwvmint_memtag_scalar_cached<Address,Value,Bytes,Signed,Store,Policy,O,ValuePos,AddrPos,T...>; }
-                struct one : write_marker<Store>
+                struct one
                 {
-                    template<auto,auto,uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
+                    template<uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
                     inline static constexpr uwvm_interpreter_opfunc_t<T...> fptr() noexcept
                     { return operation::template choose<O,Pos,Pos,T...>(); }
                 };
-                struct two : write_marker<Store>
+                struct two
                 {
-                    template<auto,auto,uwvm_interpreter_translate_option_t O,::std::size_t ValuePos,::std::size_t AddrPos,uwvm_int_stack_top_type... T>
+                    template<uwvm_interpreter_translate_option_t O,::std::size_t ValuePos,::std::size_t AddrPos,uwvm_int_stack_top_type... T>
                     inline static constexpr uwvm_interpreter_opfunc_t<T...> fptr() noexcept
                     { return operation::template choose<O,ValuePos,AddrPos,T...>(); }
                 };
-                struct value_only : write_marker<Store>
+                struct value_only
                 {
-                    template<auto,auto,uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
+                    template<uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
                     inline static constexpr uwvm_interpreter_opfunc_t<T...> fptr() noexcept
                     { return operation::template choose<O,Pos,0uz,T...>(); }
                 };
-                struct address_only : write_marker<Store>
+                struct address_only
                 {
-                    template<auto,auto,uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
+                    template<uwvm_interpreter_translate_option_t O,::std::size_t Pos,uwvm_int_stack_top_type... T>
                     inline static constexpr uwvm_interpreter_opfunc_t<T...> fptr() noexcept
                     { return operation::template choose<O,0uz,Pos,T...>(); }
                 };
@@ -468,7 +498,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         template<::std::unsigned_integral Address,typename Value,::std::size_t Bytes,bool Signed,bool Store,memtag_details::scalar_policy Policy,
                  uwvm_interpreter_translate_option_t Option,uwvm_int_stack_top_type... Type>
         [[nodiscard]] inline constexpr auto get_uwvmint_memtag_scalar_cached_from_tuple(
-            uwvm_interpreter_stacktop_currpos_t const& positions,details::op_details::native_memory_t const& memory,
+            uwvm_interpreter_stacktop_currpos_t const& positions,details::op_details::native_memory_t const&,
             ::uwvm2::utils::container::tuple<Type...> const&) noexcept
         {
             namespace op=details::op_details;
@@ -483,12 +513,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 constexpr auto value_end{op::stacktop_range_end_pos<Option,Value>()};
                 constexpr auto address_begin{op::stacktop_range_begin_pos<Option,wasm_address>()};
                 constexpr auto address_end{op::stacktop_range_end_pos<Option,wasm_address>()};
+                // Bounds and tag policy were selected by the emitter. Only the register positions vary here.
                 if constexpr(Store)
-                { return details::select_binary_mem_fptr<Option,Value,wasm_address,value_begin,value_end,address_begin,address_end,
-                    typename operations::one,typename operations::two,typename operations::address_only,0u,Type...>(positions,memory); }
+                { return details::select_binary_fptr<Option,Value,wasm_address,value_begin,value_end,address_begin,address_end,
+                    typename operations::one,typename operations::two,typename operations::address_only,Type...>(positions); }
                 else
-                { return details::select_unary_mem_fptr<Option,wasm_address,Value,address_begin,address_end,value_begin,value_end,
-                    typename operations::one,typename operations::two,typename operations::value_only,0u,Type...>(positions,memory); }
+                { return details::select_unary_fptr<Option,wasm_address,Value,address_begin,address_end,value_begin,value_end,
+                    typename operations::one,typename operations::two,typename operations::value_only,Type...>(positions); }
             }
         }
 

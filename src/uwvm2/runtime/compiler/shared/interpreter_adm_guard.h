@@ -13,14 +13,22 @@ namespace uwvm2::runtime::compiler::shared::int_adm_guard
 {
     extern "C"
     {
+        // These assembly leaves take the C ABI arguments and modify only the load
+        // result register. Let cached interpreter operands survive a guard access.
+#if defined(__clang__) && __has_attribute(preserve_all)
+#define UWVM2_ADM_LEAF_CC __attribute__((preserve_all))
+#else
+#define UWVM2_ADM_LEAF_CC
+#endif
 #define UWVM2_ADM_ACCESS_DECL(N) \
-        __attribute__((weak,visibility("hidden"))) ::std::uint64_t uwvm_adm_load##N(void const*) noexcept; \
-        __attribute__((weak,visibility("hidden"))) void uwvm_adm_store##N(void*,::std::uint64_t) noexcept;
+        __attribute__((weak,visibility("hidden"))) UWVM2_ADM_LEAF_CC ::std::uint64_t uwvm_adm_load##N(void const*) noexcept; \
+        __attribute__((weak,visibility("hidden"))) UWVM2_ADM_LEAF_CC void uwvm_adm_store##N(void*,::std::uint64_t) noexcept;
         UWVM2_ADM_ACCESS_DECL(1)
         UWVM2_ADM_ACCESS_DECL(2)
         UWVM2_ADM_ACCESS_DECL(4)
         UWVM2_ADM_ACCESS_DECL(8)
 #undef UWVM2_ADM_ACCESS_DECL
+#undef UWVM2_ADM_LEAF_CC
     }
     inline ::std::atomic<bool> selected{};
     [[nodiscard]] inline bool available() noexcept { return uwvm_adm_load1 != nullptr; }
