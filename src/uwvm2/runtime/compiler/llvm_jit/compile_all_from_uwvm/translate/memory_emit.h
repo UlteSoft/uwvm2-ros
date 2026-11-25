@@ -442,11 +442,11 @@ template <typename LoadLength>
     // Instrumented Wasm failures must reach the cold runtime observer,
     // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
     if(
-defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
+#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
        // These targets lack ordinary-context guard delivery. Preserve their
        // explicit bounds until the target's fault ABI is supported.
        false &&
-if
+#endif
        !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
     {
         allow_fault_guard = true;
