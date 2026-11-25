@@ -101,5 +101,55 @@ int main()
         reservation::pool_bytes = saved_pool;
         reservation::fixed_participants = saved_count;
     }
-    ::fast_io::io::println("PASS memory64 declared reservation: shared/unshared, grow limit, zero maximum, move, memory32 full guard");
+    {
+        namespace reservation = linear::mmap_reservation;
+        auto const saved_pool{reservation::pool_bytes};
+        constexpr ::std::size_t page{65536u}, data{1uz << 28u};
+        auto const partial{data + tail}, full{2u * data + tail};
+        linear::mmap_memory_t memory{page, linear::mmap_memory_status_t::wasm32};
+        memory.reservation_adm_bits = 4u;
+        memory.reservation_manual = true;
+        memory.use_planned_reservation = true;
+        memory.reservation_budget_bytes = full;
+        memory.reservation_limit_bytes = data;
+
+        // Less pool space is available at acquisition than when the owner was planned.
+        reservation::pool_bytes = partial - 1u;
+        CHECK(!memory.try_init_by_page_count(0u, data / page, 0u));
+        CHECK(!memory.memory_begin && reservation::available_pool().remaining.bytes == partial - 1u);
+        reservation::pool_bytes = partial;
+        CHECK(memory.try_init_by_page_count(0u, data / page, 0u));
+        CHECK(!memory.is_full_page_protection() && memory.get_acquire_reserved_space_ceil() == partial);
+        CHECK(memory.reservation_limit_bytes == data && memory.try_grow_silently(data / page));
+        CHECK(!memory.try_grow_silently(1u));
+        memory.clear();
+        CHECK(reservation::available_pool().remaining.bytes == partial);
+        reservation::pool_bytes = saved_pool;
+    }
+    {
+        namespace reservation = linear::mmap_reservation;
+        auto const saved_pool{reservation::pool_bytes};
+        constexpr reservation::bytes_type requested{1ull << 62u};
+        constexpr ::std::size_t page{65536u}, pages{3u};
+        auto const owner{reservation::bounds(64u, true, 0u, pages, page, os_page, &requested, false, 2u)};
+        auto const full{owner.span(UINT64_MAX)};
+        CHECK(full == (1ull << 63u) + tail && owner.maximum_data == pages * page);
+        // The pool admits this full window. Its 8 EiB VMA exceeds Linux user
+        // address space, so the OS forces the retry at the clipped data quota.
+        reservation::pool_bytes = full;
+        linear::mmap_memory_t memory{page, linear::mmap_memory_status_t::wasm64};
+        memory.reservation_adm_bits = 2u;
+        memory.reservation_manual = true;
+        memory.use_planned_reservation = true;
+        memory.reservation_budget_bytes = full;
+        memory.reservation_limit_bytes = static_cast<::std::size_t>(owner.maximum_data);
+        CHECK(memory.try_init_by_page_count(0u, pages, 0u));
+        CHECK(!memory.is_full_page_protection() && memory.get_acquire_reserved_space_ceil() == owner.minimum_span);
+        CHECK(memory.try_grow_silently(pages) && !memory.try_grow_silently(1u));
+        memory.clear();
+        CHECK(memory.maximum_initial_page_count() == pages);
+        CHECK(reservation::available_pool().remaining.bytes == full);
+        reservation::pool_bytes = saved_pool;
+    }
+    ::fast_io::io::println("PASS memory64 declared reservation: shared/unshared, grow limit, zero maximum, move, memory32 full guard, manual ADM quota on retry");
 }

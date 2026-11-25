@@ -69,6 +69,8 @@ namespace uwvm2::object::memory::linear::mmap_reservation
         [[nodiscard]] constexpr explicit operator bool() const noexcept { return minimum_span != 0u; }
         [[nodiscard]] constexpr bytes_type span(bytes_type share) const noexcept
         {
+            // A nominal 2D share can select the full window. The census charges
+            // its actual OS-rounded span, including the guard, to the pool.
             if(full_span && share >= full_share) { return full_span; }
             return (::std::clamp)(share, minimum_span, maximum_span);
         }
@@ -133,22 +135,22 @@ namespace uwvm2::object::memory::linear::mmap_reservation
         auto const small{span_for(manual_data ? maximum_data : minimum_data)};
         auto const large{!manual_data && maximum_pages >= domain_pages && domain == largest_span - tail ? largest_span : span_for(maximum_data)};
         auto const full{full_window(pointer_bits, address64, k, wasm_page, os_page)};
-        if(k && full && full <= largest_span)
-        {
-            if(!manual_data) { return {small, large, maximum_data, full, logical_domain * 2u}; }
-            if(*manual_data >= logical_domain) { return {full, full, maximum_data}; }
-        }
+        // A manual quota covering the domain funds its data and tail at every
+        // share. The additional guard is optional when a full window fits.
+        if(k && full && full <= largest_span && (!manual_data || *manual_data >= logical_domain))
+        { return {small, large, maximum_data, full, logical_domain * 2u}; }
         return {small, large, maximum_data};
     }
 
     [[nodiscard]] inline constexpr layout make_layout(unsigned pointer_bits, bool address64, bytes_type cap,
                                                      bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page,
-                                                     bool tagged = false, unsigned k = 0u) noexcept
+                                                     bool tagged = false, unsigned k = 0u, bytes_type minimum_pages = 0u) noexcept
     {
-        auto const range{bounds(pointer_bits, address64, 0u, maximum_pages, wasm_page, os_page, nullptr, tagged, k)};
+        auto const range{bounds(pointer_bits, address64, minimum_pages, maximum_pages, wasm_page, os_page, nullptr, tagged, k)};
         if(!range || cap > hard_limit(pointer_bits) || cap < range.minimum_span) { return {}; }
         auto const rounded{cap & ~(os_page - 1u)};
-        auto const reserved{(::std::min)(rounded, range.span(rounded))};
+        // The byte budget for an actual mapping must cover the whole guard.
+        auto const reserved{range.full_span && rounded >= range.full_span ? range.full_span : (::std::min)(rounded, range.maximum_span)};
         auto const tail{outer_guard(wasm_page, os_page)};
         return {(::std::min)(range.maximum_data, (reserved - tail) / wasm_page * wasm_page), reserved};
     }

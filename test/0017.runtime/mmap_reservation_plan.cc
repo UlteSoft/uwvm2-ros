@@ -51,4 +51,39 @@ constexpr bool shares()
     return true;
 }
 static_assert(shares());
+
+constexpr bool manual_adm_windows()
+{
+    constexpr r::bytes_type domain{gib / 4u};
+    constexpr auto tail{r::outer_guard(page, os)};
+    constexpr auto partial{domain + tail}, full{2u * domain + tail};
+    for(bool wide : {false, true})
+    {
+        auto const k{wide ? 36u : 4u};
+        for(bool tagged : {false, true})
+        {
+            auto const owner{r::bounds(64, wide, 1u, domain / page, page, os, &domain, tagged, k)};
+            if(owner.minimum_span != partial || owner.maximum_data != domain) { return false; }
+            for(auto pool : {partial - 1u, partial, domain + domain / 2u, 2u * domain, full - 1u, full})
+            {
+                r::census census{{pool, false}};
+                census.add(owner, true);
+                auto const layout{r::make_layout(64, wide, pool, domain / page, page, os, tagged, k, domain / page)};
+                if(pool < partial)
+                {
+                    if(census.fits_minimum() || layout) { return false; }
+                    continue;
+                }
+                auto const expected{pool < full ? partial : full};
+                if(!census.fits_minimum() || owner.span(census.common_share()) != expected ||
+                   layout.reserved != expected || layout.data != domain) { return false; }
+            }
+            constexpr r::bytes_type smaller{domain / 2u};
+            auto const partial_only{r::bounds(64, wide, 0u, domain / page, page, os, &smaller, tagged, k)};
+            if(partial_only.span(UINT64_MAX) != smaller + tail) { return false; }
+        }
+    }
+    return true;
+}
+static_assert(manual_adm_windows());
 int main() {}

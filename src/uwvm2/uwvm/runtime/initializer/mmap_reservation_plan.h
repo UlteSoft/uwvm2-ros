@@ -217,7 +217,7 @@ inline constexpr void configure_mmap_owner(Memory& memory, auto const& type, con
         memory.reservation_tagged = ::uwvm2::extension::memtag::is_tagged_memory(type);
         memory.reservation_manual = manual != nullptr;
         memory.reservation_limit_bytes = static_cast<::std::size_t>(range.maximum_data);
-        memory.allow_reservation_fallback = manual == nullptr;
+        memory.allow_reservation_fallback = !manual || memory.reservation_budget_bytes > range.minimum_span;
         memory.status = wasm_memory_is_address64(type) ? decltype(memory.status)::wasm64 : decltype(memory.status)::wasm32;
     }
 }
