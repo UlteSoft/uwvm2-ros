@@ -176,8 +176,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
         template<::std::size_t Left, ::std::size_t Right=0>
-        constexpr void forbid_tags(::std::span<::std::uint8_t const,Left> left,
-                                   ::std::span<::std::uint8_t const,Right> right={}) noexcept
+        [[gnu::always_inline]] constexpr void forbid_tags(::std::span<::std::uint8_t const,Left> left,
+                                                          ::std::span<::std::uint8_t const,Right> right={}) noexcept
         {
             if(wide_)
             {

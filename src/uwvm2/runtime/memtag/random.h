@@ -93,19 +93,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     // The private allocation bridge can consume a complete native draw inside a
     // pinned snapshot only when it needs neither a callback nor a buffer refill.
     // position is exhausted until the atfork discard hook and OS refill succeed.
-    [[nodiscard]] inline bool try_buffered_allocation_entropy(::std::uint16_t& word) noexcept
+    // A speculative selection may leave this word for the full transition,
+    // which owns rejection sampling and its retry budget. accept cannot refill
+    // entropy or call outside the current owner snapshot.
+    template<typename Accept>
+    [[nodiscard,gnu::always_inline]] inline bool try_buffered_allocation_entropy_if(Accept&& accept) noexcept
     {
 #if defined(__linux__)
         auto& buffer{details::entropy_buffer};
         if(current_tag_entropy_observer || buffer.position > buffer.bytes.size()-2u) { return false; }
         auto const pos{buffer.position};
-        word=static_cast<::std::uint16_t>(buffer.bytes[pos] | (unsigned(buffer.bytes[pos+1u]) << 8u));
+        auto const word{static_cast<::std::uint16_t>(buffer.bytes[pos] | (unsigned(buffer.bytes[pos+1u]) << 8u))};
+        if(!accept(word)) { return false; }
         buffer.position=pos+2u;
         return true;
 #else
-        static_cast<void>(word);
+        static_cast<void>(accept);
         return false;
 #endif
+    }
+    [[nodiscard]] inline bool try_buffered_allocation_entropy(::std::uint16_t& word) noexcept
+    {
+        return try_buffered_allocation_entropy_if([&](::std::uint16_t candidate) noexcept
+        { word=candidate; return true; });
     }
     /// @brief Draw a uniform nonzero allocation tag for a newly instantiated linear global.
     /// @details Each draw passes through the same entropy source as a random-tag instruction.

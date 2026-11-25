@@ -58,16 +58,29 @@ template<bool ManagedTraps,typename Address>
     ::fast_io::fast_terminate();
 }
 
-// The private single-owner allocator has no unused register/stack arguments.
+template<::uwvm2::extension::memtag::opcode Operation,typename Address>
+[[nodiscard,gnu::noinline]] inline Address llvm_jit_private_allocation_full(runtime_native_memory_t const& memory,
+    Address input,Address length) noexcept
+{
+    auto const result{::uwvm2::runtime::memtag::execute_private_allocation<Operation>(memory,input,length)};
+    if(!result) [[unlikely]] { llvm_jit_memtag_operation_failure<false>(memory,input,length,result); }
+    return result.value;
+}
+
+// Keep the diagnostic result and entropy-retry frame in the full transition.
 // Preserve native-width Wasm operands even when the native pointer is 32 bits.
 template<::uwvm2::extension::memtag::opcode Operation,typename Address>
 [[nodiscard]] inline Address llvm_jit_private_allocation_bridge(::std::uintptr_t owner,Address input,Address length) noexcept
 {
+    namespace mt=::uwvm2::extension::memtag;
     auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
     if(memory==nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-    auto const result{::uwvm2::runtime::memtag::execute_private_allocation<Operation>(*memory,input,length)};
-    if(!result) [[unlikely]] { llvm_jit_memtag_operation_failure<false>(*memory,input,length,result); }
-    return result.value;
+    if constexpr(Operation == mt::opcode::claim || Operation == mt::opcode::claimz || Operation == mt::opcode::release)
+    {
+        Address value;
+        if(::uwvm2::runtime::memtag::try_short_private_allocation<Operation>(*memory,input,length,value)) { return value; }
+    }
+    return llvm_jit_private_allocation_full<Operation>(*memory,input,length);
 }
 
 template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shared,bool ManagedTraps=false,bool Journal=false>

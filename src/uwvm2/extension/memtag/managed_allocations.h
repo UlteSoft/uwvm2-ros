@@ -228,10 +228,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(v.first <= last && v.last >= first) { visitor(v); }
             if(v.last < last) { visit(item->child[1],first,last,visitor); }
         }
+        [[nodiscard]] bool tree_may_intersect(::std::uint64_t first, ::std::uint64_t last) const noexcept
+        { return first <= tree_last_ && tree_first_ <= last; }
         template<typename Visitor>
         void visit_tree(::std::uint64_t first, ::std::uint64_t last, Visitor& visitor) const noexcept
         {
-            if(first <= tree_last_ && tree_first_ <= last) { visit(root_,first,last,visitor); }
+            if(tree_may_intersect(first,last)) { visit(root_,first,last,visitor); }
         }
     public:
         // Checkpoint staging uses add(), one charged tree node per portable row.
@@ -281,7 +283,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
     private:
         template<typename Visitor>
-        static void visit_page(page const* entry, ::std::uint64_t first, ::std::uint64_t last, Visitor& visitor) noexcept
+        [[gnu::always_inline]] static void visit_page(page const* entry, ::std::uint64_t first, ::std::uint64_t last, Visitor& visitor) noexcept
         {
             if(entry)
             {
@@ -297,7 +299,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             friend class managed_allocations;
             page* entry_;
             explicit insertion_page(page* entry) noexcept : entry_{entry} {}
+        public:
+            [[nodiscard]] explicit operator bool() const noexcept { return entry_ != nullptr; }
         };
+        // Return a page only if it accounts for EVERY extent in this window.
+        // A tree interval can include cross-page objects and permanent globals.
+        template<typename Visitor>
+        [[gnu::always_inline]] insertion_page visit_indexed_window(::std::uint64_t first, ::std::uint64_t last, Visitor&& visitor) const noexcept
+        {
+            auto const number{first/page_granules};
+            if(number != last/page_granules || tree_may_intersect(first,last)) { return insertion_page{nullptr}; }
+            auto* entry{lookup_page(number)};
+            visit_page(entry,first,last,visitor);
+            return insertion_page{entry};
+        }
         template<typename Visitor>
         insertion_page visit_near(::std::uint64_t first,::std::uint64_t last,Visitor&& visitor) const noexcept
         {
@@ -323,7 +338,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             [[nodiscard]] extent* get() const noexcept { return item_; }
         };
 
-        [[nodiscard]] location locate(::std::uint64_t first,::std::uint64_t last) noexcept
+        [[nodiscard]] location locate_indexed(::std::uint64_t first,::std::uint64_t last) noexcept
         {
             if(auto* entry=lookup_page(first/page_granules))
             {
@@ -334,7 +349,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                     return {record.last == last ? &record : nullptr,entry};
                 }
             }
-            if(first < tree_first_ || last > tree_last_) { return {nullptr,nullptr}; }
+            return {nullptr,nullptr};
+        }
+        [[nodiscard]] location locate(::std::uint64_t first,::std::uint64_t last) noexcept
+        {
+            auto const found{locate_indexed(first,last)};
+            if(found.page_ || first < tree_first_ || last > tree_last_) { return found; }
             node* n{root_};
             while(n && first != n->value.first) { n=n->child[first > n->value.first]; }
             return {n && n->value.last==last ? &n->value : nullptr,nullptr};
@@ -357,6 +377,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(tree_last_ < value.last) { tree_last_=value.last; }
             return true;
         }
+        // The caller proved that value fits the borrowed page and is disjoint,
+        // and still holds the same owner snapshot. Publication cannot allocate.
+        void add_to_page(insertion_page target, extent value) noexcept
+        {
+            auto* entry{target.entry_};
+            auto const bit{static_cast<unsigned>(value.first % page_granules)};
+            ::new(static_cast<void*>(&entry->records[bit].value)) extent(value);
+            entry->starts |= ::std::uint64_t{1} << bit;
+            recent_page_=entry;
+        }
         [[nodiscard,gnu::always_inline]] bool add_private(extent value, insertion_page hint=insertion_page{nullptr}) noexcept
         {
             auto const number{value.first/page_granules};
@@ -366,10 +396,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 if(!entry) { entry=open_page(number); }
                 if(entry)
                 {
-                    auto const bit{static_cast<unsigned>(value.first % page_granules)};
-                    ::new(static_cast<void*>(&entry->records[bit].value)) extent(value);
-                    entry->starts |= ::std::uint64_t{1} << bit;
-                    recent_page_=entry;
+                    add_to_page(insertion_page{entry},value);
                     return true;
                 }
             }

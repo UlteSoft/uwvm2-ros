@@ -150,19 +150,76 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         // First and last words cover between one and two word widths of tags.
         template<typename Word>
-        [[nodiscard,gnu::always_inline]] static ::std::size_t matching_pair(::std::uint8_t const* tags, ::std::size_t count,
-                                                         ::std::uint8_t expected) noexcept
+        struct pair_difference { Word first, last; };
+
+        template<typename Word>
+        [[nodiscard,gnu::always_inline]] static pair_difference<Word> compare_pair(::std::uint8_t const* tags, ::std::size_t count,
+                                                                                 ::std::uint8_t expected) noexcept
         {
             Word first{},last{};
             ::std::memcpy(&first,tags,sizeof(Word));
             ::std::memcpy(&last,tags+count-sizeof(Word),sizeof(Word));
             auto const repeated{static_cast<Word>((::std::numeric_limits<Word>::max()/255u)*expected)};
-            first ^= repeated;
-            last ^= repeated;
+            return {static_cast<Word>(first ^ repeated),static_cast<Word>(last ^ repeated)};
+        }
+        template<typename Word>
+        [[nodiscard,gnu::always_inline]] static ::std::size_t matching_pair(::std::uint8_t const* tags, ::std::size_t count,
+                                                                           ::std::uint8_t expected) noexcept
+        {
+            auto const [first,last]{compare_pair<Word>(tags,count,expected)};
             if((first | last) == 0u) { return count; }
             return first ? first_different_byte(first) : count-sizeof(Word)+first_different_byte(last);
         }
 
+    public:
+        // A complete, pinned interval of one to four software allocation tags.
+        // The overlap of the two halfword operations also covers three tags.
+        class short_allocation_tags
+        {
+            friend class shadow_view;
+            ::std::uint8_t* tags_;
+            ::std::size_t count_;
+
+            short_allocation_tags(::std::uint8_t* tags, ::std::size_t count) noexcept : tags_{tags},count_{count} {}
+            [[nodiscard]] ::std::size_t matching_prefix(::std::uint8_t expected) const noexcept
+            {
+                return count_ == 1u ? static_cast<::std::size_t>(*tags_ == expected) :
+                                      matching_pair<::std::uint16_t>(tags_,count_,expected);
+            }
+
+        public:
+            static constexpr unsigned maximum_count{4u};
+            [[nodiscard]] explicit operator bool() const noexcept { return tags_ != nullptr; }
+            [[nodiscard]] bool matches(::std::uint8_t expected) const noexcept
+            {
+                if(count_ == 1u) { return *tags_ == expected; }
+                auto const [first,last]{compare_pair<::std::uint16_t>(tags_,count_,expected)};
+                return (first | last) == 0u;
+            }
+            void store(::std::uint8_t tag) const noexcept
+            {
+                if(count_ == 1u) { *tags_=tag; }
+                else
+                {
+                    auto const pair{static_cast<::std::uint16_t>(0x101u*tag)};
+                    ::std::memcpy(tags_,&pair,sizeof pair);
+                    ::std::memcpy(tags_+count_-sizeof pair,&pair,sizeof pair);
+                }
+            }
+        };
+
+        [[nodiscard]] short_allocation_tags short_software_allocation(Address input, Address bytes) const noexcept requires (!Shared)
+        {
+            if(!bytes || bytes > 16u*short_allocation_tags::maximum_count || ((input | bytes) & 15u)) { return {nullptr,0u}; }
+#if defined(__linux__) && defined(__aarch64__)
+            if(hardware_base_) { return {nullptr,0u}; }
+#endif
+            auto const proof{bounds(input,0u,bytes)};
+            if(!proof) { return {nullptr,0u}; }
+            return {tags_+static_cast<::std::size_t>(proof.address >> 4u),static_cast<::std::size_t>(bytes >> 4u)};
+        }
+
+    private:
         // A 32-tag block uses four consecutive words. For 16..31 tags the
         // same bounded loads cover both ends. Earlier words win in the overlap.
         [[nodiscard,gnu::always_inline]] static ::std::size_t matching_four_words(
@@ -195,10 +252,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             auto const* tags{tags_+first};
             auto const expected{result.pointer_tag};
             ::std::size_t matched{};
-            if(count <= 4u)
+            if(count <= short_allocation_tags::maximum_count)
             {
-                matched = count == 1u ? static_cast<::std::size_t>(*tags == expected)
-                                      : matching_pair<::std::uint16_t>(tags,count,expected);
+                matched = short_allocation_tags{tags_+first,count}.matching_prefix(expected);
                 if(matched != count) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
                 return result;
             }
@@ -355,15 +411,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 auto const count{end-first};
                 if constexpr(Allocation)
                 {
-                    if(count <= 4u)
+                    if(count <= short_allocation_tags::maximum_count)
                     {
-                        if(count == 1u) { tags_[first]=result.pointer_tag; }
-                        else
-                        {
-                            auto const pair{static_cast<::std::uint16_t>(0x101u*result.pointer_tag)};
-                            ::std::memcpy(tags_+first,&pair,sizeof pair);
-                            ::std::memcpy(tags_+end-sizeof pair,&pair,sizeof pair);
-                        }
+                        short_allocation_tags{tags_+first,count}.store(result.pointer_tag);
                         return;
                     }
                 }

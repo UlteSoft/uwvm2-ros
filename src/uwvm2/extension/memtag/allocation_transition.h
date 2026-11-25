@@ -105,6 +105,66 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
     namespace allocation_details
     {
+        [[nodiscard]] inline bool matches_issued(managed_allocations::extent const* item, ::std::uint8_t tag) noexcept
+        { return item && !item->permanent && item->tag == tag; }
+
+        [[nodiscard]] inline bool forbid_extent(allocation_neighborhood& colors, managed_allocations::extent const& item,
+                                                ::std::uint64_t first, ::std::uint64_t last) noexcept
+        {
+            colors.forbid(item.tag);
+            return item.first <= last && first <= item.last;
+        }
+
+        // A short software transition either commits in full or leaves both the
+        // owner and the entropy stream untouched for the general transition.
+        // try_entropy consumes its buffered word only when selection succeeds.
+        template<opcode Operation, ::std::unsigned_integral Address, typename TryEntropy>
+        [[nodiscard,gnu::always_inline]] inline bool try_short_private_transition(managed_allocations& directory,
+            Address input, Address length, ::std::span<::std::byte> data, shadow_view<Address,false> const& view,
+            TryEntropy&& try_entropy, Address& value) noexcept
+        {
+            using shadow = shadow_view<Address,false>;
+            static_assert(Operation == opcode::claim || Operation == opcode::claimz || Operation == opcode::release);
+            auto const tags{view.short_software_allocation(input,length)};
+            auto const address{static_cast<::std::uint64_t>(shadow::untag(input))};
+            if(!tags || address+length > data.size()) { return false; }
+            auto const first{address / granule_size}, last{first + length / granule_size - 1u};
+            if constexpr(Operation == opcode::release)
+            {
+                auto const found{directory.locate_indexed(first,last)};
+                auto const* item{found.get()};
+                if(!matches_issued(item,shadow::extract(input)) || !item->active || !tags.matches(item->tag)) { return false; }
+                value=shadow::insert(input,item->parent);
+                tags.store(item->parent);
+                directory.remove(found);
+            }
+            else
+            {
+                if(shadow::extract(input) || !tags.matches(0u) || first < reach) { return false; }
+                auto const lo{first-reach}, hi{last+reach};
+                if(hi > (data.size()-1u)/granule_size) { return false; }
+                auto const neighbors{view.private_tag_window(lo,hi)};
+                if(neighbors.empty()) { return false; }
+                allocation_neighborhood colors{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
+                bool overlaps{};
+                auto const page{directory.visit_indexed_window(lo,hi,[&](managed_allocations::extent const& item) noexcept
+                { overlaps |= forbid_extent(colors,item,first,last); })};
+                if(!page || overlaps) { return false; }
+                colors.forbid_tags(neighbors.template first<reach>(),neighbors.template last<reach>());
+                ::std::uint8_t tag{};
+                if(!try_entropy([&] [[gnu::always_inline]] (::std::uint16_t word) noexcept { return colors.select(word,tag) == tag_selection::selected; }))
+                { return false; }
+                // The proven page already owns this slot. Nothing below can
+                // allocate, fail, call outside the snapshot or request entropy.
+                directory.add_to_page(page,{first,last,tag,0u,true,false});
+                tags.store(tag);
+                if constexpr(Operation == opcode::claimz)
+                { operation_details::zero_memory<false>(data.data()+static_cast<::std::size_t>(address),static_cast<::std::size_t>(length)); }
+                value=shadow::insert(input,tag);
+            }
+            return true;
+        }
+
         // An instruction selected during native lowering can pass an integral_constant
         // here. The ordinary interpreter passes its decoded opcode to the same kernel.
         // A false entropy callback requests a refill outside the current owner snapshot.
@@ -144,7 +204,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             {
                 auto const found{directory.locate(first,last)};
                 auto* item{found.get()};
-                if(!item || item->permanent || item->tag != input_tag || (operation == opcode::activate && item->active))
+                if(!matches_issued(item,input_tag) || (operation == opcode::activate && item->active))
                 { return fail(operation_error::invalid_allocation); }
                 result.access = range.check(item->active ? item->tag : item->parent);
                 if(!result.access) { return fail(operation_error::memory_access); }
@@ -166,8 +226,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             bool overlaps{};
             auto const page{allocation_details::visit_directory(directory, first, last, [&](managed_allocations::extent const& item) noexcept
             {
-                if(item.first <= last && first <= item.last) { overlaps = true; }
-                colors.forbid(item.tag);
+                overlaps |= forbid_extent(colors,item,first,last);
             })};
             if(overlaps) { return fail(operation_error::allocation_conflict); }
             auto const count{data.size() / granule_size + (data.size() % granule_size != 0)};

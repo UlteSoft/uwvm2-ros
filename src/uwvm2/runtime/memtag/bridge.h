@@ -393,6 +393,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         return {.operation = descriptor.zeroes_memory ? details::with_snapshot(memory,apply) : apply({})};
     }
 
+    template<::uwvm2::extension::memtag::opcode Operation, ::std::unsigned_integral Address, typename Memory>
+    [[nodiscard,gnu::always_inline]] inline bool try_short_private_allocation(
+        Memory const& memory, Address input, Address length, Address& value) noexcept
+    {
+        namespace mt=::uwvm2::extension::memtag;
+        auto const make_view{memory.memtag_shadow.template private_view_factory<Address>()};
+        if(!make_view || memory.memtag_shadow.hardware_selected()) { return false; }
+        return details::with_snapshot(memory,[&] [[gnu::always_inline]] (::std::span<::std::byte> data) noexcept
+        {
+            auto buffered_entropy{[] [[gnu::always_inline]] (auto&& accept) noexcept { return try_buffered_allocation_entropy_if(accept); }};
+            return mt::allocation_details::try_short_private_transition<Operation>(memory.memtag_shadow.allocation_directory(),
+                input,length,data,(*make_view)(data.size()),buffered_entropy,value);
+        });
+    }
+
     // Compiled private lifecycle instructions carry a fixed opcode and two
     // Wasm operands. A cached native draw can share the validation/commit
     // snapshot. Journal callbacks and OS refills must run after the pin ends.
