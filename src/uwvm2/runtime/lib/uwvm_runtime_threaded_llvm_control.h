@@ -399,18 +399,24 @@
                 emit::apply_llvm_jit_host_calling_conv(*f);
                 return add_external(*f,target)?f:nullptr;
             };
-            auto const instruction_control=world_->admission().instruction_control();
-            auto* poll_fn=declare(poll_name,poll_type,instruction_control?address(&instruction_control_poll):address(&poll));
-            auto* enter_fn=declare(enter_name,poll_type,instruction_control?address(&instruction_control_enter):address(&enter));
+            // Cooperative debugger control requires an observed group.
+            // Instruction control services its debugger and journal at the
+            // separate before-instruction site.
+            auto const& admission{world_->admission()};
+            bool const debug_function_boundaries{
+                admission.debug_observation() != ::uwvm2::runtime::wasm_threads::threaded_debug_observation::none &&
+                !admission.instruction_control()};
+            auto* poll_fn=declare(poll_name,poll_type,debug_function_boundaries?address(&poll):address(&cancellation_poll));
+            auto* enter_fn=declare(enter_name,poll_type,debug_function_boundaries?address(&enter):address(&cancellation_enter));
             auto* leave_fn=declare("uwvm.threaded.leave.v1",leave_type,address(&leave));
             if(poll_fn==nullptr||enter_fn==nullptr||leave_fn==nullptr)return false;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             auto* ros_poll_type=::llvm::FunctionType::get(word,{word,word},false);
             auto* ros_leave_type=::llvm::FunctionType::get(::llvm::Type::getVoidTy(c),{word},false);
-            auto* ros_poll_fn=declare(ros_poll_name,ros_poll_type,instruction_control?
-                address(&ros_control_probe<&instruction_control_poll>):address(&ros_control_probe<&poll>));
-            auto* ros_enter_fn=declare(ros_enter_name,ros_poll_type,instruction_control?
-                address(&ros_control_probe<&instruction_control_enter>):address(&ros_control_probe<&enter>));
+            auto* ros_poll_fn=declare(ros_poll_name,ros_poll_type,debug_function_boundaries?
+                address(&ros_control_probe<&poll>):address(&ros_control_probe<&cancellation_poll>));
+            auto* ros_enter_fn=declare(ros_enter_name,ros_poll_type,debug_function_boundaries?
+                address(&ros_control_probe<&enter>):address(&ros_control_probe<&cancellation_enter>));
             auto* ros_leave_fn=declare("uwvm.threaded.leave.ros.v1",ros_leave_type,address(&ros_control_leave));
             if(ros_poll_fn==nullptr||ros_enter_fn==nullptr||ros_leave_fn==nullptr)return false;
 #endif
@@ -632,11 +638,11 @@
         {
             for(auto const& binding:externals_)
             {
-                if(binding.address!=address(&poll)&&binding.address!=address(&instruction_control_poll)
+                if(binding.address!=address(&poll)&&binding.address!=address(&cancellation_poll)
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                    &&binding.address!=address(&publish_ros_provenance)
                    &&binding.address!=address(&ros_control_probe<&poll>)
-                   &&binding.address!=address(&ros_control_probe<&instruction_control_poll>)
+                   &&binding.address!=address(&ros_control_probe<&cancellation_poll>)
 #endif
                 )continue;
                 auto* target=module.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(binding.name));

@@ -56,9 +56,12 @@ extern "C++"
         bool bound_tables_{},ever_entered_{},reference_dispatch_{};
         struct execution final
         {
-            ThreadedLlvmChild* child{};lease_type* lease{};
+            ThreadedLlvmChild* child{};lease_type* const lease{};
             ::std::size_t function{SIZE_MAX},depth{};
             bool rejected{},fp_active{},cross_module{};
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+            ThreadedLlvmChild const* authenticated_ros_child{};
+#endif
         };
         inline static thread_local execution* active_{};
         explicit ThreadedLlvmChild(world_type::owner world):world_{::std::move(world)}{}
@@ -202,18 +205,17 @@ extern "C++"
             // source-line claim is manufactured from optimized LLVM blocks.
             return poll(function);
         }
-        // These alternate control targets are selected by the cold compiler.
-        // The default profile retains its original poll/entry machine code and
-        // performs no per-block inspection of the instruction-control option.
-        [[nodiscard]] static ::std::uintptr_t instruction_control_poll(::std::size_t function) noexcept
+        // The cold compiler selects these targets for cancellation-only
+        // boundary polls. Entry also accounts for the native call depth.
+        [[nodiscard]] static ::std::uintptr_t cancellation_poll(::std::size_t function) noexcept
         {if(active_!=nullptr)active_->function=function;return stopped()?1u:0u;}
-        [[nodiscard]] static ::std::uintptr_t instruction_control_enter(::std::size_t function) noexcept
+        [[nodiscard]] static ::std::uintptr_t cancellation_enter(::std::size_t function) noexcept
         {
             if(active_==nullptr)return 1u;
             active_->function=function;++active_->depth;
             if(active_->depth>active_->child->call_limit_)
                 fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));
-            return instruction_control_poll(function);
+            return cancellation_poll(function);
         }
         static void leave() noexcept
         {if(active_==nullptr)return;if(active_->depth==0u)fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));else --active_->depth;}
@@ -222,16 +224,26 @@ extern "C++"
             ::std::uint64_t,::std::size_t,::std::uintptr_t,::std::uintptr_t) noexcept
         {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::memory_out_of_bounds));}
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
-        // Each private compilation uses its module index in the admitted graph.
-        // Authenticate that owner and the active lease on the native thread.
+        // run_entry installs this stack execution only in the authenticated
+        // worker's TLS. Its lease and the private module graph live through
+        // return. A different active child must authenticate its own identity.
+        [[nodiscard]] static bool authenticate_ros_child(execution& e) noexcept
+        {
+            auto const& child{*e.child};
+            if(!e.lease->owns_current_native_thread() ||
+               ::std::addressof(e.lease->world()) != child.world_.get() ||
+               child.module_index_ >= child.world_->module_count() ||
+               ::std::addressof(e.lease->admission()) != ::std::addressof(child.world_->admission()))
+            { return false; }
+            e.authenticated_ros_child = e.child;
+            return true;
+        }
         [[nodiscard]] static bool accepts_ros_provenance(::std::uintptr_t token) noexcept
         {
             auto* const e=active_;
             if(e==nullptr||e->child==nullptr||e->lease==nullptr)return false;
-            if((token&~::std::uintptr_t{1u})!=(e->child->module_index_+1u)*2u||!e->lease->owns_current_native_thread()||
-               ::std::addressof(e->lease->world())!=e->child->world_.get()||
-               e->child->module_index_>=e->child->world_->module_count()||
-               ::std::addressof(e->lease->admission())!=::std::addressof(e->child->world_->admission()))
+            if((token & ~::std::uintptr_t{1u}) != (e->child->module_index_ + 1u) * 2u ||
+               (e->authenticated_ros_child != e->child && !authenticate_ros_child(*e)))
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return false;}
             return !stopped();
         }
