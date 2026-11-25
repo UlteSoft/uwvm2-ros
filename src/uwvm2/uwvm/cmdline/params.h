@@ -178,6 +178,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
 #endif
 
             // wasm
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_policy_global),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_policy_group),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_policy_group_add_module),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_policy_single),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_policy_memory_backend),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_adm_extension),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_memtag_extension),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::secure),
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
@@ -230,8 +236,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_tail_call),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_tail_call),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_memory64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_custom_page_sizes),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_table64),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_memory64),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_custom_page_sizes),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_disable_table64),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_function_references),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_feature_enable_gc),

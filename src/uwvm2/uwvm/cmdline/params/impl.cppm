@@ -47,6 +47,7 @@ export import :wasm_set_initializer_limit;
 export import :wasm_set_resource_limit;
 export import :wasm_memory_grow_strict;
 export import :wasm_feature;
+export import :wasm_policy;
 
 // runtime
 export import :runtime_compiler_log;

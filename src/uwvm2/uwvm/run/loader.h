@@ -49,6 +49,7 @@
 # include <uwvm2/uwvm/utils/memory/impl.h>
 # include <uwvm2/uwvm/cmdline/impl.h>
 # include <uwvm2/uwvm/wasm/impl.h>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/uwvm/imported/wasi/wasip1/impl.h>
 # include <uwvm2/uwvm/runtime/storage/builtin_wasip1_loader.h>
 # include <uwvm2/runtime/lib/uwvm_runtime_threaded_profile_api.h>
@@ -200,6 +201,45 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 
     namespace details
     {
+        [[nodiscard]] inline constexpr bool validate_wasm_module_policy_targets() noexcept
+        {
+            namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
+            namespace files = ::uwvm2::uwvm::wasm::storage;
+            using file_type = ::uwvm2::uwvm::wasm::type::wasm_file_t;
+            auto find = [](policy::name_view name) noexcept -> file_type const*
+            {
+                if(files::active_execute_wasm().module_name == name) { return &files::active_execute_wasm(); }
+                for(auto const& file : files::active_preloaded_wasm()) { if(file.module_name == name) { return &file; } }
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Unknown Wasm policy module: ", name);
+                return nullptr;
+            };
+            for(auto const& entry : policy::singles) { if(!find(entry.first)) { return false; } }
+            for(auto const& entry : policy::membership) { if(!find(entry.first)) { return false; } }
+            for(auto const& [name, owners] : policy::owner_backends)
+            {
+                auto const* file{find(name)};
+                if(file == nullptr || file->binfmt_ver != 1u) { return false; }
+                auto const& sections{file->wasm_module_storage.wasm_binfmt_ver1_storage.sections};
+                auto validate = [&]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(::uwvm2::utils::container::tuple<Fs...>) noexcept
+                {
+                    using memory_section = ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>;
+                    auto const& memories{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<memory_section>(sections).memories};
+                    for(auto const& request : owners)
+                    {
+                        if(request.first >= memories.size() || !::uwvm2::extension::memtag::is_tagged_memory(memories.index_unchecked(request.first)))
+                        {
+                            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                u8"uwvm: [error] Tag backend requires a local WasmMTE memory: ", name, u8" [", request.first, u8"]");
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+                if(!validate(::uwvm2::uwvm::wasm::feature::all_features)) { return false; }
+            }
+            return true;
+        }
+
         /// @brief Test whether a parsed Wasm file needs a built-in namespace.
         /// @details Apply the same target-specific import rewrites as the
         /// dependency checker. Selection only registers an implementation;
@@ -249,6 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 
     inline constexpr int load_local_modules(bool preserve_host_state = false, [[maybe_unused]] bool initialize_host_resources = true) noexcept
     {
+        if(!details::validate_wasm_module_policy_targets()) { return static_cast<int>(retval::parameter_error); }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // An atomic host policy snapshot chooses namespace construction only.
         // Exposure also works without a private execution profile. In that

@@ -32,6 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     {
         inline bool wasm_feature_mvp_is_exist{};
         inline bool wasm_feature_disable_memtag_extension_is_exist{};
+        inline bool wasm_feature_disable_adm_extension_is_exist{};
         inline bool wasm_feature_wasm1p1_is_exist{};
         inline bool wasm_feature_wasm2_is_exist{};
         inline bool wasm_feature_wasm3_is_exist{};
@@ -75,6 +76,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         UWVM_WASM_FEATURE_CALLBACK_DECL ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_disable_memtag_extension_callback(
             ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
             ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
+        UWVM_WASM_FEATURE_CALLBACK_DECL ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_disable_adm_extension_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
 
 #define UWVM_DECLARE_WASM_FEATURE_PAIR(member_name)                                                                                                    \
     inline bool wasm_feature_enable_##member_name##_is_exist{};                                                                                        \
@@ -101,6 +105,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         UWVM_DECLARE_WASM_FEATURE_PAIR(threads)
         UWVM_DECLARE_WASM_FEATURE_PAIR(tail_call)
         UWVM_DECLARE_WASM_FEATURE_PAIR(memory64)
+        UWVM_DECLARE_WASM_FEATURE_PAIR(custom_page_sizes)
         UWVM_DECLARE_WASM_FEATURE_PAIR(table64)
         UWVM_DECLARE_WASM_FEATURE_PAIR(function_references)
         UWVM_DECLARE_WASM_FEATURE_PAIR(gc)
@@ -119,6 +124,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .describe{u8"Reject WasmMTE instructions and metadata during validation."},
         .handle{::std::addressof(details::wasm_feature_disable_memtag_extension_callback)},
         .is_exist{::std::addressof(details::wasm_feature_disable_memtag_extension_is_exist)},
+        .cate{::uwvm2::utils::cmdline::categorization::wasm}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_disable_adm_extension{
+        .name{u8"--wasm-feature-disable-adm-extension"},
+        .describe{u8"Reject ADM memory declarations during validation."},
+        .handle{::std::addressof(details::wasm_feature_disable_adm_extension_callback)},
+        .is_exist{::std::addressof(details::wasm_feature_disable_adm_extension_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasm}};
 
     /// @brief Command-line switch that disables the WebAssembly 1.1 feature collection and enforces MVP gates.
@@ -190,6 +201,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     UWVM_DEFINE_WASM_FEATURE_PAIR(threads, u8"threads")
     UWVM_DEFINE_WASM_FEATURE_PAIR(tail_call, u8"tail-call")
     UWVM_DEFINE_WASM_FEATURE_PAIR(memory64, u8"memory64")
+    UWVM_DEFINE_WASM_FEATURE_PAIR(custom_page_sizes, u8"custom-page-sizes")
     UWVM_DEFINE_WASM_FEATURE_PAIR(table64, u8"table64")
     UWVM_DEFINE_WASM_FEATURE_PAIR(function_references, u8"function-references")
     UWVM_DEFINE_WASM_FEATURE_PAIR(gc, u8"gc")

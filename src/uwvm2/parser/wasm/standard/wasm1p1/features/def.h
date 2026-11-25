@@ -96,6 +96,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         // Independent, nonstandard WasmMTE extension; accepted by default.
         // Core-version presets do not change this explicit extension policy.
         bool disable_memtag_extension{};
+        bool disable_adm_extension{};
+        bool disable_custom_page_sizes{true};
+        bool explicit_enable_custom_page_sizes{};
+        bool explicit_disable_custom_page_sizes{};
 
         bool explicit_feature_mvp{};
         bool explicit_feature_wasm1p1{};

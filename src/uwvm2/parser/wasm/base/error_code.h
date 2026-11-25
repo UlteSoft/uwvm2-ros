@@ -188,7 +188,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::base
         wasm3_rich_signature_not_integrated,
         wasm3_rich_value_not_integrated,
         wasm3_invalid_tag_type,
-        wasm3_invalid_tag_count
+        wasm3_invalid_tag_count,
+        invalid_adm_memory_type,
+        invalid_memory_page_size
     };
 
     /// @brief used for duplicate_imports_of_the_same_import_type
@@ -287,7 +289,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::base
         exceptions,
         extended_const,
         table_initializer,
-        memtag_extension
+        memtag_extension,
+        adm_extension,
+        custom_page_sizes
     };
 
     /// @brief WebAssembly 1.1 syntax/semantic site used by wasm1p1-specific diagnostics.

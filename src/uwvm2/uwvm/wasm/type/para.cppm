@@ -23,6 +23,7 @@ module;
 
 // std
 #include <cstdint>
+#include <limits>
 #include <cstddef>
 #include <cstring>
 #include <new>
@@ -34,6 +35,7 @@ module;
 export module uwvm2.uwvm.wasm.type:para;
 
 import fast_io;
+import uwvm2.extension.memtag.execution_policy;
 import uwvm2.parser.wasm.concepts;
 import uwvm2.parser.wasm.standard.wasm1.type;
 import uwvm2.parser.wasm_custom.customs;

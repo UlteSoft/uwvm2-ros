@@ -56,6 +56,7 @@ import uwvm2.uwvm.utils.ansies;
 import uwvm2.uwvm.utils.memory;
 import uwvm2.uwvm.cmdline;
 import uwvm2.uwvm.wasm;
+import uwvm2.extension.memtag.instruction;
 import uwvm2.uwvm.imported.wasi.wasip1;
 import uwvm2.uwvm.runtime.storage;
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API

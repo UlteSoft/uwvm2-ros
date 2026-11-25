@@ -44,5 +44,5 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
     inline ::uwvm2::uwvm::wasm::base::mode execute_wasm_mode{
         ::uwvm2::uwvm::wasm::base::mode::run};  // [global] No global variable dependencies from other translation units
 
-    inline ::uwvm2::uwvm::wasm::type::wasm_parameter_t wasm_parameter{};  // [global] No global variable dependencies from other translation units
+    inline ::uwvm2::uwvm::wasm::type::wasm_parameter_t wasm_parameter{.resolve_module_policy = true};  // [global] No global variable dependencies from other translation units
 }  // namespace uwvm2::uwvm::wasm::storage

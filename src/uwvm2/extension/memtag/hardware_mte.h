@@ -87,6 +87,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
         return false;
 #endif
     }
+    [[nodiscard]] inline bool backend_available(owner_backend requested) noexcept
+    {
+        if(requested == owner_backend::x86_mtt) { return hardware_mtt::supported(); }
+        if(requested != owner_backend::arm_mte) { return true; }
+#if defined(__linux__) && defined(__aarch64__)
+        return query_capabilities().checked_mappings;
+#else
+        return false;
+#endif
+    }
+
     // Request exactly one mode, then verify the kernel's accepted control.
     // Neither a target triple nor a successful IR build proves OS activation.
     [[nodiscard]] inline setup_result enable_current_thread(bool asynchronous) noexcept
@@ -124,7 +135,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     [[nodiscard]] inline setup_result enable_current_thread_sync() noexcept
     { return enable_current_thread(false); }
     [[nodiscard]] inline setup_result enable_current_thread_selected() noexcept
-    { return enable_current_thread(selected_fault_delivery.load(::std::memory_order_relaxed)==fault_delivery::hardware_async); }
+    { return enable_current_thread(asynchronous_requested()); }
     [[nodiscard]] inline bool select_for_owner() noexcept
     { return hardware_checked_access_requested() && supported(); }
 #if defined(__linux__) && defined(__aarch64__)
@@ -140,7 +151,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     inline void arm_asynchronous_execution() noexcept
     {
 #if defined(__linux__) && defined(__aarch64__)
-        if(!logging_requested() && selected_fault_delivery.load(::std::memory_order_relaxed)==fault_delivery::hardware_async)
+        if(hardware_checked_access_requested() && asynchronous_requested())
         { asynchronous_execution_armed=1; }
 #endif
     }

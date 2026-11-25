@@ -2223,18 +2223,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
           )
         {
             namespace mt = ::uwvm2::extension::memtag;
-            auto const delivery{mt::selected_fault_delivery.load(::std::memory_order_relaxed)};
-            if((mt::is_asynchronous(delivery) || mt::is_hardware(delivery)) &&
-               ::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)
+            auto const requested{::uwvm2::uwvm::wasm::storage::wasm_parameter.memory_policy.backend};
+            if(!mt::hardware_mte::backend_available(requested))
             {
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                    u8"uwvm: [error] asynchronous or hardware MTE cannot be combined with --runtime-disable-memtag");
-                return static_cast<int>(retval::parameter_error);
-            }
-            if(mt::is_hardware(delivery) && !mt::hardware_mte::supported())
-            {
-                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                    u8"uwvm: [error] hardware MTE requires OS-enabled checked mappings; no silent software fallback on unsupported platforms");
+                    u8"uwvm: [error] The requested memory tag backend has no supported checked mapping on this host.");
                 return static_cast<int>(retval::parameter_error);
             }
         }

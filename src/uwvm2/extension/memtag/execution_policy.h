@@ -10,6 +10,19 @@
 #endif
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
+    enum class owner_backend : unsigned char { software, automatic, arm_mte, x86_mtt };
+
+    struct module_memory_policy
+    {
+        owner_backend backend{owner_backend::software};
+        bool check_tags{true};
+    };
+
+    // A published VM can contain both software and hardware owners. This flag
+    // only steers process-wide slow paths; the physical backend belongs to the owner.
+    inline ::std::atomic<bool> selected_hardware_owner{};
+    inline void note_selected_hardware_backend() noexcept { selected_hardware_owner.store(true, ::std::memory_order_release); }
+
     // Four internal states; the CLI exposes orthogonal backend and delivery axes.
     enum class fault_delivery : unsigned char { synchronous, software_async, hardware_async, hardware_sync };
     // Configured during cold startup, before any owner or generated code is
@@ -35,7 +48,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     [[nodiscard]] inline bool hardware_requested() noexcept
     { return is_hardware(selected_fault_delivery.load(::std::memory_order_relaxed)); }
     [[nodiscard]] inline bool hardware_checked_access_requested() noexcept
-    { return hardware_requested() && !logging_requested(); }
+    { return (hardware_requested() || selected_hardware_owner.load(::std::memory_order_acquire)) && !logging_requested(); }
     // Cold host-only setters preserve the other axis regardless of CLI order.
     inline void select_backend(bool hardware) noexcept
     {

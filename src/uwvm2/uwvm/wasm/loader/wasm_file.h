@@ -66,6 +66,54 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 {
     namespace details
     {
+        // Resolve the registered module identity before any declaration is
+        // admitted. Walk only section frames and the module-name subsection.
+        // The ordinary parser validates the whole file and confirms this name.
+        [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view policy_module_name(
+            char8_t const* begin, char8_t const* end, ::uwvm2::utils::container::u8string_view fallback) noexcept
+        {
+            using view = ::uwvm2::utils::container::u8string_view;
+            if(end - begin < 8) { return fallback; }
+            auto field = [](char8_t const*& cursor, char8_t const* limit, view& payload) noexcept
+            {
+                ::std::uint32_t length{};
+                auto parsed{::fast_io::parse_by_scan(cursor, limit, ::fast_io::mnp::leb128_get(length))};
+                if(parsed.code != ::fast_io::parse_code::ok || length > static_cast<::std::size_t>(limit - parsed.iter)) { return false; }
+                payload = view{parsed.iter, static_cast<::std::size_t>(length)};
+                cursor = parsed.iter + length;
+                return true;
+            };
+            auto cursor{begin + 8u};
+            while(cursor != end)
+            {
+                auto const id{*cursor++};
+                view section{};
+                if(!field(cursor, end, section)) { return fallback; }
+                if(id != 0u) { continue; }
+                auto inner{section.cbegin()};
+                view name{};
+                if(!field(inner, section.cend(), name) || name != u8"name") { continue; }
+                while(inner != section.cend())
+                {
+                    auto const sub_id{*inner++};
+                    view subsection{};
+                    if(!field(inner, section.cend(), subsection)) { return fallback; }
+                    if(sub_id != 0u) { continue; }
+                    auto contents{subsection.cbegin()};
+                    view module{};
+                    if(!field(contents, subsection.cend(), module) || module.empty()) { continue; }
+                    auto const [position, error]{::uwvm2::utils::utf::check_legal_utf8_unchecked<
+                        ::uwvm2::utils::utf::utf8_specification::utf8_rfc3629>(module.cbegin(), module.cend())};
+                    static_cast<void>(position);
+                    if(error == ::uwvm2::utils::utf::utf_error_code::success)
+                    { return module; }
+                }
+                // Only the first name section contributes a module name.
+                break;
+            }
+            return fallback;
+        }
+
         template<typename Color>
         [[nodiscard]] inline constexpr auto diagnostic_color(Color&& color) noexcept
         {
@@ -427,6 +475,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             {
                 // handle exec (main) module
                 {
+                    ::uwvm2::utils::container::u8string_view policy_identity{};
+                    if(para.resolve_module_policy)
+                    {
+                        namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
+                        policy_identity = rename_module_name;
+                        if(policy_identity.empty() && (!policy::singles.empty() || !policy::membership.empty()))
+                        {
+                            policy_identity = details::policy_module_name(reinterpret_cast<char8_t const*>(wf.source_cbegin()),
+                                reinterpret_cast<char8_t const*>(wf.source_cend()), load_file_name);
+                        }
+                        policy::resolve(policy_identity, wf.wasm_parameter);
+                    }
+
                     // storage wasm err
                     ::uwvm2::parser::wasm::base::error_impl execute_wasm_binfmt_ver1_storage_wasm_err{};
 
@@ -812,6 +873,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     {
                         wf.module_name = rename_module_name;
                         if(!check_module_name(wf.module_name)) [[unlikely]] { return load_wasm_file_rtl::wasm_parser_error; }
+                    }
+
+                    if(!policy_identity.empty() && wf.module_name != policy_identity)
+                    {
+                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: [error] Ambiguous Wasm policy identity. Supply an explicit module name for ", load_file_name);
+                        return load_wasm_file_rtl::wasm_parser_error;
                     }
 
                     // Check whether the final result is an empty module. Whether this is an error is determined by conceptual manipulation.

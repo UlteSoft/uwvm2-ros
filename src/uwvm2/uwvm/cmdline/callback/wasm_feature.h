@@ -229,6 +229,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         return wasm_feature_details::parameter_return_type::def;
     }
 
+    UWVM_WASM_FEATURE_CALLBACK_LINKAGE ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_disable_adm_extension_callback(
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_begin,
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_curr,
+        [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_end) noexcept
+    {
+        // Extension acceptance is independent of the selected official Core
+        // version. Neither a later preset nor a guest can turn it back on.
+        wasm_feature_details::wasm1p1_parameter().disable_adm_extension = true;
+        return wasm_feature_details::parameter_return_type::def;
+    }
+
 #define UWVM_DEFINE_WASM_FEATURE_PAIR(member_name, cli_suffix, controls_multi_result, controls_multiple_tables)                                       \
     UWVM_WASM_FEATURE_CALLBACK_LINKAGE ::uwvm2::utils::cmdline::parameter_return_type wasm_feature_enable_##member_name##_callback(                   \
         [[maybe_unused]] ::uwvm2::utils::cmdline::parameter_parsing_results* para_begin,                                                              \
@@ -268,6 +279,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
     UWVM_DEFINE_WASM_FEATURE_PAIR(threads, "threads", false, false)
     UWVM_DEFINE_WASM_FEATURE_PAIR(tail_call, "tail-call", false, false)
     UWVM_DEFINE_WASM_FEATURE_PAIR(memory64, "memory64", false, false)
+    UWVM_DEFINE_WASM_FEATURE_PAIR(custom_page_sizes, "custom-page-sizes", false, false)
     UWVM_DEFINE_WASM_FEATURE_PAIR(table64, "table64", false, false)
     UWVM_DEFINE_WASM_FEATURE_PAIR(function_references, "function-references", false, false)
     UWVM_DEFINE_WASM_FEATURE_PAIR(gc, "gc", false, false)

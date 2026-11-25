@@ -47,6 +47,7 @@
 # include "wasm_set_resource_limit.h"
 # include "wasm_memory_grow_strict.h"
 # include "wasm_feature.h"
+# include "wasm_policy.h"
 
 // runtime
 # include "runtime_compiler_log.h"
