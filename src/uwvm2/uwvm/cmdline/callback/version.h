@@ -1118,25 +1118,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 #  endif
 # endif
 #endif
-                            // memmory
-                            u8"  * WASM Memory Model: "
-#if defined(UWVM_SUPPORT_MMAP)
-                            u8"Memory Map"
-#else
-# if defined(UWVM_USE_MULTITHREAD_ALLOCATOR)
-        // Select the multithread allocator backend.
-
-        // check support atomic wait, notify_*
-#  if !(__cpp_lib_atomic_wait >= 201907L)
-                            u8"Unknown"
-#  else
-                            u8"Multi-threaded Memory Allocator"
-#  endif
-# else
-                            u8"Single-threaded Memory Allocator"
-# endif
-#endif
-                            u8"\n"
+                            u8"  * WASM Memory Model: Memory Map\n"
                             // thread_local
                             u8"  * C++ thread_local: "
 #if defined(UWVM_USE_THREAD_LOCAL)

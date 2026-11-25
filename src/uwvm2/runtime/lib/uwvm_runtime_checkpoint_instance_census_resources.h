@@ -476,24 +476,6 @@ template<::uwvm2::parser::wasm::concepts::wasm_feature... Features>
     }
     return true;
 }
-struct census_allocator_quiescence
-{
-    ::std::atomic_flag* flag{};
-    explicit census_allocator_quiescence(::std::atomic_flag* actual) noexcept
-    { if(actual != nullptr && !actual->test_and_set(::std::memory_order_acquire)) { flag = actual; } }
-    census_allocator_quiescence(census_allocator_quiescence const&) = delete;
-    census_allocator_quiescence& operator=(census_allocator_quiescence const&) = delete;
-    ~census_allocator_quiescence()
-    {
-        if(flag != nullptr)
-        {
-            flag->clear(::std::memory_order_release);
-#if __cpp_lib_atomic_wait >= 201907L
-            flag->notify_all();
-#endif
-        }
-    }
-};
 [[nodiscard]] static bool census_copy_memory_extent(complete_census_work& state, census_object_id wire,
     ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t const& actual,
     ::std::byte* base, ::std::size_t length)
@@ -567,27 +549,11 @@ template<typename Memory>
 [[nodiscard]] static bool census_copy_memory(complete_census_work& state, census_object_id wire,
     ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t const& actual, Memory const& memory)
 {
-    if constexpr(Memory::can_mmap)
-    {
-        if(memory.memory_length_p == nullptr) { return state.fail(census_error::invalid_shape); }
-        // Stable mmap base; actual hostclose+allpark exclude writes/grow. No
-        // software access guard is added to generated memory instructions.
-        return census_copy_memory_extent(state, wire, actual, memory.memory_begin,
-            memory.memory_length_p->load(::std::memory_order_acquire));
-    }
-    else if constexpr(Memory::support_multi_thread)
-    {
-        if(memory.growing_flag_p == nullptr || memory.active_ops_p == nullptr)
-        { return state.fail(census_error::invalid_shape); }
-        census_allocator_quiescence guard{memory.growing_flag_p};
-        // Never wait while the ONE stopped-cohort mutex is held: a retained
-        // operation might need that cohort to resume. Return a cold retry instead.
-        if(guard.flag == nullptr || memory.active_ops_p->load(::std::memory_order_acquire) != 0u)
-        { return state.fail(census_error::unavailable_capability); }
-        return census_copy_memory_extent(state, wire, actual, memory.memory_begin, memory.memory_length);
-    }
-    else
-    { return census_copy_memory_extent(state, wire, actual, memory.memory_begin, memory.memory_length); }
+    static_assert(Memory::can_mmap);
+    if(memory.memory_length_p == nullptr) { return state.fail(census_error::invalid_shape); }
+    // The stopped cohort and closed host callbacks exclude writes and growth.
+    return census_copy_memory_extent(state, wire, actual, memory.memory_begin,
+        memory.memory_length_p->load(::std::memory_order_acquire));
 }
 [[nodiscard]] static bool census_reference_declaration(auto const& declaration, core_type& type) noexcept
 {

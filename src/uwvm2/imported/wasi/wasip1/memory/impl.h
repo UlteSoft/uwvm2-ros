@@ -22,7 +22,5 @@
 #pragma once
 
 #ifndef UWVM_MODULE
-# include "allocator.h"
-# include "single_thread_allocator.h"
 # include "mmap.h"
 #endif

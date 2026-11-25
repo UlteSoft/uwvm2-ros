@@ -3511,18 +3511,12 @@ struct runtime_memory_access_info_t
     // Stable base address for mmap-backed direct memory access.
     ::std::byte* stable_memory_begin{};
 
-    // Mutable base slot for directly addressable single-thread allocator memories. Growth may replace its value.
-    ::std::byte* const* memory_begin_value_p{};
-
     // Number of reserved bytes addressable from stable_memory_begin. LLVM uses this as the external object's extent;
     // inaccessible guard pages remain part of the reservation and turn invalid Wasm accesses into hardware faults.
     ::std::size_t stable_memory_reserved_span_bytes{};
 
     // Atomic byte-length slot used by mmap-backed memories whose length can change concurrently.
     ::std::atomic_size_t* stable_memory_length_p{};
-
-    // Non-atomic byte-length slot used by non-mmap memory backends.
-    ::std::size_t const* stable_memory_length_value_p{};
 
     // log2(page size), allowing custom-page-size memories to compute page counts by shifting.
     unsigned custom_page_size_log2{};
@@ -3555,52 +3549,37 @@ struct runtime_memory_access_info_t
 template <typename Memory>
 inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_memory_access_info_t& result, Memory& memory) noexcept
 {
-    if constexpr(requires { memory.memory_length; }) { result.stable_memory_length_value_p = ::std::addressof(memory.memory_length); }
-    result.memory_begin_value_p = ::std::addressof(memory.memory_begin);
-
-#if defined(UWVM_SUPPORT_MMAP)
-    if constexpr(Memory::can_mmap)
+    static_assert(Memory::can_mmap);
+    result.stable_memory_begin = memory.memory_begin;
+    result.stable_memory_length_p = memory.memory_length_p;
+    result.mmap_requires_dynamic_bounds = memory.require_dynamic_determination_memory_size();
+    if(memory.memory_begin != nullptr && memory.reserved_begin != nullptr)
     {
-        result.stable_memory_begin = memory.memory_begin;
-        result.stable_memory_length_p = memory.memory_length_p;
-        result.mmap_requires_dynamic_bounds = memory.require_dynamic_determination_memory_size();
-        if(memory.memory_begin != nullptr && memory.reserved_begin != nullptr)
+        auto const reserved_span_bytes{memory.get_acquire_reserved_space_ceil()};
+        auto const reserved_address{reinterpret_cast<::std::uintptr_t>(memory.reserved_begin)};
+        auto const memory_address{reinterpret_cast<::std::uintptr_t>(memory.memory_begin)};
+        if(memory_address >= reserved_address)
         {
-            auto const reserved_span_bytes{memory.get_acquire_reserved_space_ceil()};
-            auto const reserved_address{reinterpret_cast<::std::uintptr_t>(memory.reserved_begin)};
-            auto const memory_address{reinterpret_cast<::std::uintptr_t>(memory.memory_begin)};
-            if(memory_address >= reserved_address)
+            auto const memory_displacement{memory_address - reserved_address};
+            if(memory_displacement <= reserved_span_bytes)
             {
-                auto const memory_displacement{memory_address - reserved_address};
-                if(memory_displacement <= reserved_span_bytes)
-                {
-                    result.stable_memory_reserved_span_bytes = reserved_span_bytes - static_cast<::std::size_t>(memory_displacement);
-                }
+                result.stable_memory_reserved_span_bytes = reserved_span_bytes - static_cast<::std::size_t>(memory_displacement);
             }
         }
-        if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t) && sizeof(::std::uintptr_t) >= sizeof(::std::uint_least64_t))
-        {
-            constexpr auto required_unsigned_domain_span{
-                ::uwvm2::object::memory::linear::wasm32_max_effective_offset + ::uwvm2::object::memory::linear::mmap_guard_max_access_size};
-            result.mmap_covers_wasm32_effective_domain =
-                !result.mmap_requires_dynamic_bounds && memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32 &&
-                memory.memory_begin != nullptr && memory.memory_begin == memory.reserved_begin &&
-                result.stable_memory_reserved_span_bytes >= required_unsigned_domain_span;
-        }
-        result.mmap_covers_adm_domain = memory.memtag_shadow.ignored_bits() && memory.is_full_page_protection() &&
-            !result.mmap_requires_dynamic_bounds && result.stable_memory_reserved_span_bytes != 0u;
-        if(!result.mmap_requires_dynamic_bounds && !memory.is_full_page_protection())
-        { result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes(); }
     }
-    else
+    if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t) && sizeof(::std::uintptr_t) >= sizeof(::std::uint_least64_t))
     {
-        static_cast<void>(result);
-        static_cast<void>(memory);
+        constexpr auto required_unsigned_domain_span{
+            ::uwvm2::object::memory::linear::wasm32_max_effective_offset + ::uwvm2::object::memory::linear::mmap_guard_max_access_size};
+        result.mmap_covers_wasm32_effective_domain =
+            !result.mmap_requires_dynamic_bounds && memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32 &&
+            memory.memory_begin != nullptr && memory.memory_begin == memory.reserved_begin &&
+            result.stable_memory_reserved_span_bytes >= required_unsigned_domain_span;
     }
-#else
-    static_cast<void>(result);
-    static_cast<void>(memory);
-#endif
+    result.mmap_covers_adm_domain = memory.memtag_shadow.ignored_bits() && memory.is_full_page_protection() &&
+        !result.mmap_requires_dynamic_bounds && result.stable_memory_reserved_span_bytes != 0u;
+    if(!result.mmap_requires_dynamic_bounds && !memory.is_full_page_protection())
+    { result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes(); }
 }
 
 // Resolve memory index to either directly addressable native memory or a local-imported bridge provider.  The returned
@@ -3910,25 +3889,7 @@ template <typename MemoryT, typename Fn>
                                   return true;
                               }};
 
-    if constexpr(MemoryT::can_mmap)
-    {
-        return ::uwvm2::object::memory::linear::with_memory_access_snapshot(memory,
-                                                                            [&](::std::byte* memory_begin, ::std::size_t memory_length) constexpr noexcept
-                                                                            { return checked_access(memory_begin, memory_length); });
-    }
-    else if constexpr(MemoryT::support_multi_thread)
-    {
-#if __cpp_lib_atomic_wait >= 201907L
-        [[maybe_unused]] ::uwvm2::object::memory::linear::memory_operation_guard_t guard{memory.growing_flag_p, memory.active_ops_p};
-#else
-        static_assert(!MemoryT::support_multi_thread);
-#endif
-        return checked_access(memory.memory_begin, memory.memory_length);
-    }
-    else
-    {
-        return checked_access(memory.memory_begin, memory.memory_length);
-    }
+    return ::uwvm2::object::memory::linear::with_memory_access_snapshot(memory, checked_access);
 }
 
 // Convenience wrapper around checked native memory access that decodes the memory pointer address and emits a detailed
@@ -4933,25 +4894,7 @@ inline constexpr void llvm_jit_simd_local_imported_memory_store_bridge(::std::ui
 template <typename MemoryT, typename Fn>
 [[nodiscard]] inline constexpr bool llvm_jit_with_bulk_memory_snapshot(MemoryT const& memory, Fn&& fn) noexcept
 {
-    if constexpr(MemoryT::can_mmap)
-    {
-        return ::uwvm2::object::memory::linear::with_memory_access_snapshot(memory,
-                                                                            [&](::std::byte* memory_begin, ::std::size_t memory_length) constexpr noexcept
-                                                                            { return fn(memory_begin, memory_length); });
-    }
-    else if constexpr(MemoryT::support_multi_thread)
-    {
-#if __cpp_lib_atomic_wait >= 201907L
-        [[maybe_unused]] ::uwvm2::object::memory::linear::memory_operation_guard_t guard{memory.growing_flag_p, memory.active_ops_p};
-#else
-        static_assert(!MemoryT::support_multi_thread);
-#endif
-        return fn(memory.memory_begin, memory.memory_length);
-    }
-    else
-    {
-        return fn(memory.memory_begin, memory.memory_length);
-    }
+    return ::uwvm2::object::memory::linear::with_memory_access_snapshot(memory, ::std::forward<Fn>(fn));
 }
 
 // Resolve the current byte length of a local-imported memory without retaining the provider's raw snapshot pointer.
@@ -13409,21 +13352,6 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                 discriminator);
         }};
 
-    // Emit a native-memory memory.size bridge call when direct length loads are unavailable.
-    auto const emit_native_memory_page_count_bridge_call{
-        [&]() constexpr noexcept -> ::llvm::CallInst*
-        {
-            if(selected_memory_access_info.memory_p == nullptr) [[unlikely]] { return nullptr; }
-
-            auto llvm_intptr_type{::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
-            auto bridge_function_type{::llvm::FunctionType::get(ir_builder.getIntNTy(selected_memory_is_address64() ? 64u : 32u), {llvm_intptr_type}, false)};
-            auto memory_address{emit_native_memory_object_address()};
-            if(memory_address == nullptr) [[unlikely]] { return nullptr; }
-            if(selected_memory_is_address64())
-            { return emit_runtime_bridge_call.template operator()<llvm_jit_memory64_size_bridge>(bridge_function_type, {memory_address}); }
-            return emit_runtime_bridge_call.template operator()<llvm_jit_memory_size_bridge>(bridge_function_type, {memory_address});
-        }};
-
     // Pick the correct load fallback path: native bridge for directly owned memory, provider bridge for local-imported
     // memory.
     auto const emit_memory_load_bridge_fallback_call{
@@ -13558,10 +13486,6 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                                 if(selected_memory_access_info.local_imported_module_ptr != nullptr)
                                                 {
                                                     return emit_local_imported_memory_page_count_value();
-                                                }
-                                                if constexpr(!runtime_native_memory_t::can_mmap && runtime_native_memory_t::support_multi_thread)
-                                                {
-                                                    return emit_native_memory_page_count_bridge_call();
                                                 }
                                                 return emit_direct_memory_page_count_value();
                                             }};

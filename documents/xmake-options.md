@@ -347,7 +347,7 @@ Disables C++ exceptions for the project (sets Xmake exception policy `no-cxx`). 
 
 ### `--wasm-memory-model=mmap`
 
-The ROS product requires OS-backed guard pages for its linear memories. Xmake selects `mmap` by default. Existing configurations specifying `default` also select `mmap`. Building on a target without the required backend fails at compile time.
+The ROS product requires OS-backed guard pages for its linear memories. Xmake accepts `mmap` and `default`, both of which select the same mapped owner. Unsupported memory-model names fail during configuration. Building for a target without OS mapping support, or passing the old allocator C++ flags to the native-memory interface, fails at compile time.
 
 ### Mandatory WASI and ROS interfaces
 

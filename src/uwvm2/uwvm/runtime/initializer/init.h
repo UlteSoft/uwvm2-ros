@@ -7505,24 +7505,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         // Active-segment writes may target a memory imported from another live
-        // instance. A moving allocator must remain pinned from length/base
-        // acquisition through the final copy; mmap retains a stable reservation.
+        // instance. Its reservation retains the same base through the final copy.
         // This is an instantiation-only helper, never a guest load/store path.
         template<typename Memory, typename Function>
         inline constexpr void with_native_initialization_memory(Memory& memory, Function&& function) noexcept
         {
-            if constexpr(Memory::can_mmap)
-            { function(memory.memory_begin, memory.memory_length_p->load(::std::memory_order_acquire)); }
-            else if constexpr(Memory::support_multi_thread)
-            {
-#if __cpp_lib_atomic_wait >= 201907L
-                ::uwvm2::object::memory::linear::memory_operation_guard_t pin{memory.growing_flag_p, memory.active_ops_p};
-                function(memory.memory_begin, memory.memory_length);
-#else
-                static_assert(!Memory::support_multi_thread);
-#endif
-            }
-            else { function(memory.memory_begin, memory.memory_length); }
+            static_assert(Memory::can_mmap);
+            function(memory.memory_begin, memory.memory_length_p->load(::std::memory_order_acquire));
         }
 
         inline constexpr void refresh_active_element_call_indirect_view(

@@ -39,8 +39,6 @@ export module uwvm2.object.memory.linear:access;
 import uwvm2.utils.debug;
 import uwvm2.utils.mutex;
 import :base;
-import :allocator;
-import :single_thread_allocator;
 import :mmap;
 
 #ifndef UWVM_MODULE

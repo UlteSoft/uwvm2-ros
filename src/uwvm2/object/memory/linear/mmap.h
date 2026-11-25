@@ -138,9 +138,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
     ///            - When the custom page size is smaller than the platform page size, the base address is still stable, but page protection alone cannot
     ///              distinguish all intra-page overflows. In this mode, the `check_memory_bounds_*` helpers perform explicit `(offset, size)` range checks
     ///              using the atomically updated `memory_length_p`.
-    ///            - Because growth never relocates `memory_begin`, this backend does not require per-operation locks; concurrency is handled by the mutex used
-    ///              in `grow()` together with acquire/release operations on `memory_length_p`, unlike allocator-backed memories where multi-threaded `realloc`
-    ///              would otherwise require a double-atom guard.
+    ///            - Growth keeps `memory_begin` stable. The grow mutex and acquire/release operations on `memory_length_p` publish newly committed pages.
     ///            - WebAssembly linear memory is grow-only: once a given `(offset, size)` range has been validated against some length, that range remains
     ///              valid after subsequent grows, so callers do not need to re-run bounds checks for the same range after a successful grow.
 

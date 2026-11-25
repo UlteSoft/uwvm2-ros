@@ -3486,7 +3486,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         inline constexpr auto select_simd_memory_fptr(wasm1p1_simd_details::native_memory_t const& memory, Select select) noexcept
         {
             namespace mem = ::uwvm2::runtime::compiler::uwvm_int::optable::details;
-# if defined(UWVM_SUPPORT_MMAP)
             switch(details::select_mmap_variant(memory))
             {
                 case details::mmap_variant::full: return select.template operator()<mem::bounds_check_mmap_full>();
@@ -3497,10 +3496,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 case details::mmap_variant::judge: return select.template operator()<mem::bounds_check_mmap_judge>();
             }
             ::fast_io::fast_terminate();
-# else
-            static_cast<void>(memory);
-            return select.template operator()<mem::bounds_check_allocator>();
-# endif
         }
 
         template <uwvm_interpreter_translate_option_t CompileOption, uwvm_int_stack_top_type... Type>

@@ -1,11 +1,10 @@
 ## uwvm2 memory models (object layer)
 
-This document provides a high-level overview of the host memory models used by
+This document provides a high-level overview of the host mapping used by
 the `uwvm2::object::memory` subsystem to implement WebAssembly linear memory.
 
 It explains how logical WebAssembly pages, platform pages and host-side linear
-memory backends relate to each other, and how `native_memory_t` selects an
-appropriate implementation for the current build configuration and platform.
+memory mappings relate to each other and to the native memory type.
 
 ---
 
@@ -39,80 +38,18 @@ page size and APIs (for example `VirtualAlloc`, `mmap`, and related calls).
 
 ---
 
-### 3. Host linear memory models (`linear::native_memory_t`)
+### 3. Native linear memory (`linear::native_memory_t`)
 
-uwvm2 provides **three** concrete host-side models for implementing the
-WebAssembly linear address space. They live under
-`uwvm2::object::memory::linear` and are selected via the `native_memory_t`
-alias in `linear/native.h`. The Xmake option
-`--wasm-memory-model=default|mmap|multi-thread-alloc|single-thread-alloc`
-can keep the platform default or force one backend.
+The ROS VM uses `uwvm2::object::memory::linear::mmap_memory_t` for all guest
+linear memories. Both `--wasm-memory-model=mmap` and
+`--wasm-memory-model=default` select it. Building the VM requires OS-backed
+virtual memory on the target.
 
-#### 3.1 mmap-based linear memory (`mmap_memory_t`)
-
-- Enabled when `UWVM_SUPPORT_MMAP` is defined, or forced with
-  `--wasm-memory-model=mmap`.
-- Uses the operating system's virtual memory facilities (for example,
-  `VirtualAlloc` on Windows and `mmap` on POSIX) to reserve a large contiguous
-  address range for the linear memory.
-- Grows memory by committing additional pages inside the reserved range instead
-  of reallocating and copying.
-- Provides page-protection-based trapping semantics and is fully
-  multi-thread capable.
-- Exposed as `uwvm2::object::memory::linear::mmap_memory_t` and selected via:
-
-  ```cpp
-  using native_memory_t = mmap_memory_t;
-  ```
-
-#### 3.2 Multi-threaded allocator-based linear memory (`allocator_memory_t`)
-
-This model is used on platforms that **do not** support `mmap` but **do**
-support multi-threading and C++20 atomic wait/notify primitives.
-
-- Enabled when `UWVM_USE_MULTITHREAD_ALLOCATOR` is defined and the standard
-  library provides `std::atomic::wait` / `notify_*`; Xmake sets this when
-  `--wasm-memory-model=multi-thread-alloc` is selected.
-- Backed by a generic aligned allocator instead of virtual memory.
-- Implements a careful synchronization protocol for `memory.grow` and
-  in-flight memory operations:
-  - `growing_flag_guard_t` provides an exclusive region for `grow`.
-  - `memory_operation_guard_t` coordinates active readers/writers and prevents
-    races with relocation during growth.
-- Offers multi-thread-safe linear memory on embedded or constrained platforms
-  where virtual memory reservation is unavailable.
-- Exposed as `uwvm2::object::memory::linear::allocator_memory_t` and selected
-  via:
-
-  ```cpp
-  using native_memory_t = allocator_memory_t;
-  ```
-
-#### 3.3 Single-thread allocator-based linear memory
-(`single_thread_allocator_memory_t`)
-
-This is the fallback model for platforms without `mmap` and without the need
-for multi-threaded access to the WebAssembly linear memory.
-
-- Uses the same aligned allocator strategy as the multi-threaded allocator
-  model, but omits atomic counters and locks.
-- Intended for strictly single-threaded runtimes where `memory.grow` and all
-  memory operations are serialized by design.
-- Exposed as
-  `uwvm2::object::memory::linear::single_thread_allocator_memory_t` and
-  selected via:
-
-  ```cpp
-  using native_memory_t = single_thread_allocator_memory_t;
-  ```
-
-At compile time exactly **one** of these three implementations becomes the
-`native_memory_t` alias, providing a uniform interface to the rest of the
-object subsystem while allowing the backend to be tailored to the host. With
-`--wasm-memory-model=default`, uwvm2 preserves the existing automatic choice:
-use mmap when available, otherwise use the single-thread allocator unless the
-multithread allocator build macro is explicitly defined. Forced selections
-fail at build time when the requested backend is not supported.
+The runtime reserves a contiguous virtual address range with the host OS
+(`mmap` on POSIX or `VirtualAlloc` on Windows). Growth commits pages within
+the reservation. The base address stays fixed, and the VM publishes the new
+logical byte length atomically. Code generation uses the resolved reservation
+and page size to choose the required bounds checks for each access.
 
 ---
 
@@ -134,7 +71,7 @@ memories when required by the WebAssembly module.
 
 ### 5. Command-line control (`uwvm`): strict `memory.grow`
 
-The object-layer memory backends provide both *fail-fast* (terminate on
+The native mapping provides both *fail-fast* (terminate on
 allocation failure) and *strict* growth
 paths. The `uwvm` CLI exposes a switch that selects the strict policy for
 WebAssembly `memory.grow`.
@@ -214,9 +151,7 @@ There is no single host policy that is simultaneously ideal for:
 - Linux systems with configurable overcommit,
 - Windows systems with explicit reserve/commit accounting,
 - BSD-family systems that do not expose Linux's standardized three-mode
-  contract,
-- embedded or allocator-backed environments without full virtual-memory
-  reservation semantics.
+  contract.
 
 As a result, uwvm2 intentionally separates two concerns:
 
@@ -291,7 +226,7 @@ For a Wasm runtime, this is a different model from Linux mode `1`:
 That said, even Windows does not turn `memory.grow` into a universal future
 execution guarantee in the strong mathematical sense. It provides a more
 structured admission model, but uwvm2 still benefits from keeping the same two
-runtime policies for consistency across backends and platforms.
+runtime policies for consistency across supported operating systems.
 
 ##### BSD-family systems: host-defined admission, not Linux's 0/1/2 contract
 

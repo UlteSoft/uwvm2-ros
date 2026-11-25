@@ -23,21 +23,13 @@ template<class Visitor>
         if(!visitor(object_name,i8,static_cast<void const*>(info.memory_p))) { return false; }
         auto const begin_name{::uwvm2::utils::container::u8concat_uwvm(prefix,u8"_memory",index,u8"_begin")};
         auto const length_name{::uwvm2::utils::container::u8concat_uwvm(prefix,u8"_memory",index,u8"_length")};
-        if constexpr(d::runtime_native_memory_t::can_mmap)
-        {
-            if(info.stable_memory_reserved_span_bytes == 0uz) { return false; }
-            // The LLVM array extent is exactly the retained native reservation,
-            // including guards; changing it to a one-byte declaration loses the
-            // real object/provenance contract used by the validated emitter.
-            auto const span{::llvm::ArrayType::get(i8,info.stable_memory_reserved_span_bytes)};
-            if(!visitor(begin_name,span,static_cast<void const*>(info.stable_memory_begin)) ||
-               !visitor(length_name,word,static_cast<void const*>(info.stable_memory_length_p))) { return false; }
-        }
-        else
-        {
-            if(!visitor(begin_name,d::get_llvm_pointer_type(i8),static_cast<void const*>(info.memory_begin_value_p)) ||
-               !visitor(length_name,word,static_cast<void const*>(info.stable_memory_length_value_p))) { return false; }
-        }
+        if(info.stable_memory_reserved_span_bytes == 0uz) { return false; }
+        // The LLVM array extent is exactly the retained native reservation,
+        // including guards; changing it to a one-byte declaration loses the
+        // real object/provenance contract used by the validated emitter.
+        auto const span{::llvm::ArrayType::get(i8,info.stable_memory_reserved_span_bytes)};
+        if(!visitor(begin_name,span,static_cast<void const*>(info.stable_memory_begin)) ||
+           !visitor(length_name,word,static_cast<void const*>(info.stable_memory_length_p))) { return false; }
     }
     return true;
 }

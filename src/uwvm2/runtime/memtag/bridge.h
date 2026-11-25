@@ -121,26 +121,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         // The enclosing execution lease owns Memory. Imports resolve to this
         // same native owner before entry; a module index is never an identity.
         // A callback may neither retain a span/pointer nor invoke guest code or
-        // trap. Errors are returned by value after the relocation pin releases.
+        // trap. The mapping and its published length cover the entire callback.
         template<typename Memory, typename Function>
         [[gnu::always_inline]] inline auto with_snapshot(Memory const& memory, Function&& function) noexcept
         {
             static_assert(noexcept(function(::std::span<::std::byte>{})));
             auto span{[](::std::byte* begin, ::std::size_t bytes) noexcept
             { return ::std::span<::std::byte>{begin,begin == nullptr ? 0u : bytes}; }};
-            if constexpr(Memory::can_mmap)
-            {
-                auto const data{memory.memory_length_p == nullptr ? ::std::span<::std::byte>{} :
-                    span(memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire))};
-                return function(data);
-            }
-            else if constexpr(Memory::support_multi_thread)
-            {
-                ::uwvm2::object::memory::linear::memory_operation_guard_t pin{
-                    memory.growing_flag_p,memory.active_ops_p};
-                return function(span(memory.memory_begin,memory.memory_length));
-            }
-            else { return function(span(memory.memory_begin,memory.memory_length)); }
+            static_assert(Memory::can_mmap);
+            auto const data{memory.memory_length_p == nullptr ? ::std::span<::std::byte>{} :
+                span(memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire))};
+            return function(data);
         }
         template<::std::unsigned_integral Address, bool Shared, typename Memory>
         [[nodiscard]] inline bool configured(Memory const& memory) noexcept

@@ -225,10 +225,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::environment
         { ::uwvm2::imported::wasi::wasip1::memory::write_all_to_memory_unchecked(mem, offset, begin, end) };
     };
 
-#if __cpp_lib_atomic_wait >= 201907L
-    static_assert(wasip1_memory<::uwvm2::object::memory::linear::allocator_memory_t>);
-#endif
-
 #if defined(UWVM_SUPPORT_MMAP)
     static_assert(wasip1_memory<::uwvm2::object::memory::linear::mmap_memory_t>);
 #endif

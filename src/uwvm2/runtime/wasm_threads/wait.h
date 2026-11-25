@@ -119,19 +119,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::wasm_threads
                 ::std::forward<Function>(function)(pointer);
                 return true;
             }};
-            if constexpr(Memory::can_mmap)
-            { return checked(memory.memory_begin, memory.memory_length_p->load(::std::memory_order_acquire)); }
-            else if constexpr(Memory::support_multi_thread)
-            {
-#if __cpp_lib_atomic_wait >= 201907L
-                // Pin ONLY the value comparison/bounds snapshot, never the wait.
-                ::uwvm2::object::memory::linear::memory_operation_guard_t pin{memory.growing_flag_p, memory.active_ops_p};
-                return checked(memory.memory_begin, memory.memory_length);
-#else
-                static_assert(!Memory::support_multi_thread);
-#endif
-            }
-            else { return checked(memory.memory_begin, memory.memory_length); }
+            static_assert(Memory::can_mmap);
+            return checked(memory.memory_begin, memory.memory_length_p->load(::std::memory_order_acquire));
         }
     }
 

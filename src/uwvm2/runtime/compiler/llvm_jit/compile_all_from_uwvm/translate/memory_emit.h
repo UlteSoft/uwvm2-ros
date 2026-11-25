@@ -331,15 +331,13 @@ template <typename LoadLength>
     if(module == nullptr || info.memory_p == nullptr) { return nullptr; }
     auto& b{*state.ir_builder};
     auto type{b.getIntNTy(static_cast<unsigned>(sizeof(::std::uintptr_t) * CHAR_BIT))};
-    ::std::uintptr_t slot{};
-    if constexpr(runtime_native_memory_t::can_mmap) { slot = reinterpret_cast<::std::uintptr_t>(info.stable_memory_length_p); }
-    else { slot = reinterpret_cast<::std::uintptr_t>(info.stable_memory_length_value_p); }
+    auto const slot{reinterpret_cast<::std::uintptr_t>(info.stable_memory_length_p)};
     auto name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module), u8"_memory", state.current_memory_index, u8"_length")};
     auto pointer{get_llvm_external_host_object_pointer(b, slot, type, ::uwvm2::utils::container::u8string_view{name.data(), name.size()})};
     if(pointer == nullptr) { return nullptr; }
     auto load{b.CreateLoad(type, pointer, "memory.length")};
     load->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
-    if constexpr(runtime_native_memory_t::can_mmap) { load->setAtomic(::llvm::AtomicOrdering::Acquire); }
+    load->setAtomic(::llvm::AtomicOrdering::Acquire);
     // Preserve the same immutable-owner lower bound through later LLVM
     // simplification. Locals/PHIs and tag recomposition can hide a provable
     // address range during initial emission. Range metadata removes redundant
@@ -389,7 +387,7 @@ template <typename LoadLength>
     auto const& shadow{info.memory_p->memtag_shadow};
     auto const maximum{shadow.maximum_memory_bytes()};
     auto const extent{maximum/16u + (maximum%16u != 0u)};
-    if(!runtime_native_memory_t::can_mmap || !shadow.stable_address() || !shadow.tag_data() ||
+    if(!shadow.stable_address() || !shadow.tag_data() ||
        !info.stable_memory_begin || !info.stable_memory_length_p || !extent || extent>SIZE_MAX) { return nullptr; }
     auto const& module{*state.local_func_storage_ptr->runtime_module_ptr};
     auto* const tags{get_llvm_jit_memtag_shadow_pointer(state,module,shadow,extent)};
@@ -434,44 +432,26 @@ template <typename LoadLength>
     // tagged scalar/atomic operation must execute in its authenticated helper.
     if(info.memory_p->memtag_shadow.enabled() && info.memory_p->memtag_shadow.shared())
     { return nullptr; }
-    if constexpr(!runtime_native_memory_t::can_mmap && runtime_native_memory_t::support_multi_thread)
-    { return nullptr; } // Moving shared allocations need a pin spanning the actual load/store, not just a snapshot.
-
     auto& b{*state.ir_builder};
     ::llvm::Value* base{};
     auto protection{llvm_jit_memory_protection::software};
     bool allow_fault_guard{};
     auto name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module), u8"_memory", state.current_memory_index, u8"_begin")};
-    if constexpr(runtime_native_memory_t::can_mmap)
+    base = get_llvm_external_host_byte_span_pointer(b, reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
+                                                   info.stable_memory_reserved_span_bytes, ::uwvm2::utils::container::u8string_view{name.data(), name.size()});
+    // Instrumented Wasm failures must reach the cold runtime observer,
+    // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
+    if(
+defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
+       // These targets lack ordinary-context guard delivery. Preserve their
+       // explicit bounds until the target's fault ABI is supported.
+       false &&
+if
+       !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
     {
-        base = get_llvm_external_host_byte_span_pointer(b, reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
-                                                       info.stable_memory_reserved_span_bytes, ::uwvm2::utils::container::u8string_view{name.data(), name.size()});
-        // Instrumented Wasm failures must reach the cold runtime observer,
-        // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
-        if(
-#if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && !UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING
-           // These targets lack ordinary-context guard delivery. Preserve their
-           // explicit bounds until the target's fault ABI is supported.
-           false &&
-#endif
-           !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
-        {
-            allow_fault_guard = true;
-            if(info.mmap_covers_wasm32_effective_domain) { protection = llvm_jit_memory_protection::full_wasm32_guard; }
-            else if(info.mmap_partial_guard_limit != 0uz) { protection = llvm_jit_memory_protection::partial_guard; }
-        }
-    }
-    else
-    {
-        // Single-thread realloc can move the base at a Wasm/host call. Load the pointer SLOT rather than freezing the
-        // current allocation in the native object. LLVM can reuse this load only where intervening writes permit it.
-        auto pointer_type{get_llvm_pointer_type(b.getInt8Ty())};
-        auto slot{get_llvm_external_host_object_pointer(b, reinterpret_cast<::std::uintptr_t>(info.memory_begin_value_p),
-                                                       pointer_type, ::uwvm2::utils::container::u8string_view{name.data(), name.size()})};
-        if(slot == nullptr) { return nullptr; }
-        auto load{b.CreateLoad(pointer_type, slot, "memory.base")};
-        load->setAlignment(::llvm::Align{alignof(::std::uintptr_t)});
-        base = load;
+        allow_fault_guard = true;
+        if(info.mmap_covers_wasm32_effective_domain) { protection = llvm_jit_memory_protection::full_wasm32_guard; }
+        else if(info.mmap_partial_guard_limit != 0uz) { protection = llvm_jit_memory_protection::partial_guard; }
     }
     auto const raw_address{address};
     auto const& shadow{info.memory_p->memtag_shadow};
@@ -480,7 +460,7 @@ template <typename LoadLength>
     {
         // Owner policy is immutable during execution. This is a C++ translation
         // branch, not a generated runtime flag check. Ordinary IR is unchanged.
-        if((checked && (!runtime_native_memory_t::can_mmap || access_size > 16u)) ||
+        if((checked && access_size > 16u) ||
            address == nullptr || (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u)))
         { return nullptr; }
         auto const address64{address->getType()->isIntegerTy(64u)};

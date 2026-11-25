@@ -39,8 +39,6 @@
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/mutex/impl.h>
 # include <uwvm2/object/memory/wasm_page/impl.h>
-# include "allocator.h"
-# include "single_thread_allocator.h"
 # include "mmap.h"
 #endif
 
@@ -50,7 +48,9 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 {
-#if defined(UWVM_SUPPORT_MMAP)
+#if defined(UWVM_USE_MULTITHREAD_ALLOCATOR) || defined(UWVM_FORCE_DISABLE_MMAP)
+# error "uwvm2-ros requires OS-backed linear memory; remove allocator memory model flags"
+#elif defined(UWVM_SUPPORT_MMAP)
     using native_memory_t = mmap_memory_t;
 #else
 # error "uwvm2-ros requires mmap linear memory; allocator-backed native memories are disabled"

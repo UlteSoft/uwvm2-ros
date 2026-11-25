@@ -505,24 +505,9 @@
             Memory const& memory,::uwvm2::uwvm::debugger::wasm_mutation::request const& requested,
             ::uwvm2::uwvm::debugger::wasm_mutation::result& result) const noexcept
         {
-            if constexpr(Memory::can_mmap)
-            {
-                if(memory.memory_length_p==nullptr) { result.status=copy_status::invalid_data;return false; }
-                // Stable mmap base, genuine ALL-stop/closedhost closure excludes
-                // payload stores/grow. No ordinary software access guard added.
-                return mutation_memory_extent(actual,memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire),requested,result);
-            }
-            else if constexpr(Memory::support_multi_thread)
-            {
-                if(memory.growing_flag_p==nullptr || memory.active_ops_p==nullptr) { result.status=copy_status::invalid_data;return false; }
-                census_allocator_quiescence guard{memory.growing_flag_p};
-                // NEVER wait on a backend operation while ONE cohort is held.
-                // A busy descriptor must be retried at a fresh management stop.
-                if(guard.flag==nullptr || memory.active_ops_p->load(::std::memory_order_acquire)!=0u)
-                { result.status=copy_status::unavailable_foreign_host_state;return false; }
-                return mutation_memory_extent(actual,memory.memory_begin,memory.memory_length,requested,result);
-            }
-            else { return mutation_memory_extent(actual,memory.memory_begin,memory.memory_length,requested,result); }
+            static_assert(Memory::can_mmap);
+            if(memory.memory_length_p==nullptr) { result.status=copy_status::invalid_data;return false; }
+            return mutation_memory_extent(actual,memory.memory_begin,memory.memory_length_p->load(::std::memory_order_acquire),requested,result);
         }
         [[nodiscard]] bool mutate_memory(work& state,::uwvm2::uwvm::debugger::wasm_mutation::request const& requested,
             ::uwvm2::uwvm::debugger::wasm_mutation::result& result) const noexcept

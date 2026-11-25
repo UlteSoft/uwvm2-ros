@@ -38,8 +38,6 @@
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/utils/mutex/impl.h>
 # include "base.h"
-# include "allocator.h"
-# include "single_thread_allocator.h"
 # include "mmap.h"
 #endif
 
@@ -49,53 +47,16 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 {
-    /// @brief Execute `fn(memory_begin, byte_length)` against a consistent linear-memory snapshot.
-    /// @note  For allocator-backed multi-threaded memories, the callback runs under exclusive access: grow and other in-flight memory operations must drain
-    /// first.
+    /// @brief The mapping base stays fixed as growth publishes a new logical length.
     template <typename MemoryT, typename Fn>
+        requires MemoryT::can_mmap
     [[nodiscard]] inline constexpr bool with_memory_access_snapshot(MemoryT const& memory, Fn&& fn) noexcept
     {
-        if constexpr(MemoryT::can_mmap)
-        {
 #if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-            if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
+        if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
 #endif
-
-            auto const byte_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-            return static_cast<bool>(::std::forward<Fn>(fn)(memory.memory_begin, byte_length));
-        }
-        else if constexpr(MemoryT::support_multi_thread)
-        {
-#if __cpp_lib_atomic_wait >= 201907L
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-            if(memory.growing_flag_p == nullptr || memory.active_ops_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
-# endif
-
-            growing_flag_guard_t growing_flag_guard{memory.growing_flag_p};
-
-            unsigned spin_count{};
-            for(auto v{memory.active_ops_p->load(::std::memory_order_acquire)}; v != 0uz; v = memory.active_ops_p->load(::std::memory_order_acquire))
-            {
-                if(++spin_count > 1000u)
-                {
-                    memory.active_ops_p->wait(v, ::std::memory_order_acquire);
-                    spin_count = 0u;
-                }
-                else
-                {
-                    ::uwvm2::utils::mutex::rwlock_pause();
-                }
-            }
-
-            return static_cast<bool>(::std::forward<Fn>(fn)(memory.memory_begin, memory.memory_length));
-#else
-            return static_cast<bool>(::std::forward<Fn>(fn)(memory.memory_begin, memory.memory_length));
-#endif
-        }
-        else
-        {
-            return static_cast<bool>(::std::forward<Fn>(fn)(memory.memory_begin, memory.memory_length));
-        }
+        auto const byte_length{memory.memory_length_p->load(::std::memory_order_acquire)};
+        return static_cast<bool>(::std::forward<Fn>(fn)(memory.memory_begin, byte_length));
     }
 
 }  // namespace uwvm2::object::memory::linear

@@ -1878,7 +1878,6 @@ case wasm1_code::br_if:
                             // Validate the candidate load without dereferencing the embedded `memory_p`.
                             // This avoids crashing the translator when the back-scan lands on unrelated opfunc bytes.
                             fptr_t mega_fptr{};  // init
-#  if defined(UWVM_SUPPORT_MMAP)
                             auto const get_load_fptr{
                                 [&]<auto BoundsCheckFn, typename... TypeInTuple>(
                                     ::uwvm2::utils::container::tuple<TypeInTuple...> const&) constexpr noexcept -> fptr_t
@@ -1927,30 +1926,6 @@ case wasm1_code::br_if:
                             {
                                 return false;
                             }
-#  else
-                            auto const expected_load{
-                                [&]<typename... TypeInTuple>(::uwvm2::utils::container::tuple<TypeInTuple...> const&) constexpr noexcept -> fptr_t
-                                {
-                                    return translate::details::select_stacktop_fptr_or_default_with<CompileOption,
-                                                                                                    CompileOption.i32_stack_top_begin_pos,
-                                                                                                    CompileOption.i32_stack_top_end_pos,
-                                                                                                    translate::details::i32_load_localget_off_op_with,
-                                                                                                    &translate::details::op_details::bounds_check_allocator,
-                                                                                                    0uz,
-                                                                                                    TypeInTuple...>(pre_load_stacktop.i32_stack_top_curr_pos);
-                                }(interpreter_tuple)};
-                            if(stored_load != expected_load) { return false; }
-                            mega_fptr = [&]<typename... TypeInTuple>(::uwvm2::utils::container::tuple<TypeInTuple...> const&) constexpr noexcept -> fptr_t
-                            {
-                                return translate::details::select_stacktop_fptr_or_default_with<CompileOption,
-                                                                                                0uz,
-                                                                                                0uz,
-                                                                                                translate::details::br_if_i32_load_localget_off_eq_imm_op_with,
-                                                                                                &translate::details::op_details::bounds_check_allocator,
-                                                                                                0uz,
-                                                                                                TypeInTuple...>(0uz);
-                            }(interpreter_tuple);
-#  endif
 
                             bytecode.resize(load_site);
 

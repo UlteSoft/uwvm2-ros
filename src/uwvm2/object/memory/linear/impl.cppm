@@ -24,8 +24,6 @@ module;
 
 export module uwvm2.object.memory.linear;
 export import :base;
-export import :allocator;
-export import :single_thread_allocator;
 export import :threaded_grow_types;
 export import :mmap;
 export import :access;

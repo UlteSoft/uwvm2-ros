@@ -51,11 +51,9 @@ same environment are scheduled across threads.
 
 ## Memory model, safety, and concurrency
 
-The WASI P1 memory helpers live in `memory/allocator.h` and operate on UWVM2's linear memory back-ends. They embody several important properties:
+The WASI P1 memory helpers in `memory/mmap.h` operate on the VM's native virtual-memory mappings.
 
-- **Concurrency safety.** Access to the underlying linear memory is guarded by a `memory_operation_guard_t` (via `lock_memory` and related helpers),
-  which coordinates reads/writes with `memory.grow` operations using atomic flags and, where available, `std::atomic_wait`. This prevents races between
-  concurrent WASI calls and memory growth.
+- **Memory growth.** The base stays fixed across `memory.grow`. For each transfer the helpers read the published logical length and validate the complete guest range. Shared MTE access also uses the owner's tag lease where required.
 - **Bounds double-checking.** Helpers such as `check_memory_bounds*` and `check_memory_bounds_wasm32/wasm64` verify that a given byte range fits inside
   the current memory, taking into account potential overflows when converting between 32-bit/64-bit WASI pointers and `size_t`.
 - **Well-defined failure behavior.** If a bounds violation is detected, the helpers call `output_memory_error_and_terminate` with detailed diagnostic

@@ -40,8 +40,6 @@ import fast_io;
 import uwvm2.utils.debug;
 import uwvm2.utils.mutex;
 import uwvm2.object.memory.wasm_page;
-import :allocator;
-import :single_thread_allocator;
 import :mmap;
 
 #ifndef UWVM_MODULE

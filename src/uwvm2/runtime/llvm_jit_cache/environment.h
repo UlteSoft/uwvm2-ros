@@ -599,15 +599,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         details::append_cache_key_value(out, u8"windows-arm64-gnu-native-eh", u8"qualified-provider-itanium-seh-v1");
 #endif
         details::append_cache_key_value(out, u8"native-memory-layout", u8"owner-reserved-span-aligned64-v5");
-        // mmap emits direct accesses; moving allocations use pinning bridges.
-        // Source/version strings can be identical across these build configurations.
-#if defined(UWVM_SUPPORT_MMAP)
         details::append_cache_key_value(out, u8"native-memory-backend", u8"mmap");
-#elif defined(UWVM_USE_MULTITHREAD_ALLOCATOR)
-        details::append_cache_key_value(out, u8"native-memory-backend", u8"allocator-concurrent");
-#else
-        details::append_cache_key_value(out, u8"native-memory-backend", u8"allocator-single");
-#endif
         // Do not rely on git/source ids to distinguish products: both builds
         // may deliberately receive the same id from an embedding application.
         details::append_cache_key_value(out, u8"product", cache_product_name);
