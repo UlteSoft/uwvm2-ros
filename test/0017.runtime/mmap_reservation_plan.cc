@@ -17,7 +17,9 @@ static_assert(!r::bounds(64, true, 1, 1, page, os, &one));
 static_assert(!r::bounds(64, true, 0, 1, page, os, &odd));
 static_assert(r::bounds(64, true, 0, 1, page, os, &quota).maximum_data == page);
 static_assert(r::bounds(32, false, 0, 1, page, os, &one).maximum_data == 1u);
-static_assert(r::bounds(16, true, 0, 1, 1, 16, &one).minimum_span == 80u);
+// One accessible byte occupies a whole native page in addition to the guard.
+static_assert(r::outer_guard(1, 16) == 80u);
+static_assert(r::bounds(16, true, 0, 1, 1, 16, &one).minimum_span == 16u + 80u);
 constexpr auto tagged32{r::bounds(64,false,0,UINT64_MAX,page,os,nullptr,true)};
 constexpr auto tagged64{r::bounds(64,true,0,UINT64_MAX,page,os,nullptr,true)};
 static_assert(tagged32.maximum_data == (1ull << 28) && tagged32.maximum_span == fixed.maximum_span);
