@@ -2885,17 +2885,42 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
         if(descriptor->result_count!=0u) { operand_stack_push(type); }
         if(descriptor->operation==mt::opcode::add)
         { fail_invalid_immediate(op_begin,u8"memtag.add has no defined extension semantics"); }
+        // Disabled tag arithmetic uses the selected memory's integer width.
+        // Only zero-filling instructions still access the memory owner.
+        if(!options.execute_memtag && !descriptor->zeroes_memory)
+        {
+            auto const operation{descriptor->operation};
+            if(operation == mt::opcode::load || operation == mt::opcode::untag || operation == mt::opcode::random)
+            { break; } // The existing stack slot is the result.
+#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
+            flush_conbine_pending();
+#endif
+            if(operation == mt::opcode::sub)
+            {
+                auto const subtract{current_memory_address64
+                    ? mtopt::translate::get_uwvmint_i64_sub_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple)
+                    : mtopt::translate::get_uwvmint_i32_sub_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple)};
+                emit_opfunc_to(bytecode, subtract);
+                stacktop_after_pop_n_if_reachable(bytecode, 1uz);
+                break;
+            }
+            if(operation == mt::opcode::status || operation == mt::opcode::tagbits ||
+               operation == mt::opcode::startbit || operation == mt::opcode::extract)
+            {
+                if(operation == mt::opcode::extract) { emit_drop_typed_to(bytecode, type); }
+                if(current_memory_address64) { emit_const_i64_to(bytecode, operation == mt::opcode::startbit ? 64 : 0); }
+                else { emit_const_i32_to(bytecode, operation == mt::opcode::startbit ? 32 : 0); }
+                break;
+            }
+            // The remaining non-zeroing operations either return the first
+            // argument or have no result (store). Discard only trailing values.
+            for(auto count{descriptor->operand_count}; count > descriptor->result_count; --count)
+            { emit_drop_typed_to(bytecode, type); }
+            break;
+        }
         resolve_memory_storage();
         if(options.execute_memtag && !resolved_memory.memory_p->memtag_shadow.enabled())
         { fail_invalid_immediate(op_begin,u8"memtag execution requires configured memory-owner shadow"); }
-        // In disabled mode these unary operations return the input address
-        // verbatim. Validation above still consumes the complete immediate
-        // and checks the memory index and address type. Leave the existing
-        // runtime operand in its register or stack slot.
-        if(!options.execute_memtag && (descriptor->operation == mt::opcode::load ||
-                                      descriptor->operation == mt::opcode::untag ||
-                                      descriptor->operation == mt::opcode::random))
-        { break; }
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
