@@ -20,6 +20,7 @@ export module uwvm2.extension.memtag.storage;
 import fast_io;
 import uwvm2.utils.mutex;
 import uwvm2.object.memory.platform_page;
+import uwvm2.extension.adm.types;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.managed_allocations;

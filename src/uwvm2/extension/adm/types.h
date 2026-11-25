@@ -29,6 +29,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::adm
     [[nodiscard]] inline constexpr bool valid(bool address64, unsigned k, bool tagged) noexcept
     { return k < (address64 ? 64u : 32u) && (!tagged || k >= 4u); }
 
+    [[nodiscard]] inline constexpr bool valid_tag_field(bool address64, unsigned k, unsigned start) noexcept
+    {
+        unsigned const width{address64 ? 64u : 32u};
+        return valid(address64, k, true) && start >= width - k && start <= width - 4u;
+    }
+
     // Full unsigned arithmetic proves every masked base and every byte of a
     // fixed-width access stays within this extent, including its static memarg.
     [[nodiscard]] inline constexpr bool masked_access_fits(::std::uint_least64_t mask,

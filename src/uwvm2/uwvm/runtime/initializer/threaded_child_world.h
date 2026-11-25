@@ -4,6 +4,7 @@
 #include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <memory>
+# include <optional>
 # include <bit>
 # include <vector>
 # include <limits>
@@ -1009,7 +1010,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         if(tag_bytes==SIZE_MAX||!owner->allocation_.get().charge(tag_bytes))throw ::std::bad_alloc{};
                     }
                     record.backend = original.memtag_shadow.resolved_backend();
-                    if(!configure_owner_addressing(record, current_module())) { throw ::std::bad_alloc{}; }
+                    auto const saved_tag_start{original.memtag_shadow.enabled() ?
+                        ::std::optional<unsigned>{original.memtag_shadow.tag_start_bit()} : ::std::nullopt};
+                    if(!configure_owner_addressing(record, current_module(), owner->parent_->memory_policy.check_tags, saved_tag_start)) { throw ::std::bad_alloc{}; }
                     if(memory.memtag_shadow.enabled())
                     {
                         namespace mt=::uwvm2::extension::memtag;

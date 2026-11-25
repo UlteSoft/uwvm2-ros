@@ -43,6 +43,7 @@
 # include <concepts>
 # include <limits>
 # include <memory>
+# include <optional>
 # include <utility>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
@@ -3392,7 +3393,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
         [[nodiscard]] inline bool configure_owner_addressing(
             ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t& record,
-            ::uwvm2::utils::container::u8string_view module_name, bool caller_checks = true) noexcept;
+            ::uwvm2::utils::container::u8string_view module_name, bool caller_checks = true,
+            ::std::optional<unsigned> saved_tag_start = {}) noexcept;
 
         template<bool Fallible = false, typename Memory>
         inline constexpr bool initialize_native_memory(Memory& memory, auto const& limits, ::std::size_t instance_index,

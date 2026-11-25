@@ -549,6 +549,12 @@
                     state.journal_sources.push_back(::std::move(original));
                     // Authenticate logical initial values, never pointer bytes.
                     // Imported aliases resolve into this same owned source set.
+                    auto const memories{parent->imported_memory_vec_storage.size()+parent->local_defined_memory_vec_storage.size()};
+                    for(::std::size_t i{};i<memories;++i)
+                    {
+                        if(::uwvm2::extension::memtag::is_tagged_memory(st::runtime_memory_type(*parent,i)))
+                        { number(parent->memory_policy.check_tags);break; }
+                    }
                     number(parent->local_defined_global_vec_storage.size());
                     for(auto const& value:parent->local_defined_global_vec_storage)
                     {
@@ -590,6 +596,7 @@
                         {
                             if(!tags.allocation_directory().empty())return false;
                             number(static_cast<unsigned>(tags.width()));number(tags.shared());
+                            number(tags.ignored_bits());number(tags.tag_start_bit());number(static_cast<unsigned>(tags.resolved_backend()));
                             auto const tag_count=length/16u+(length%16u!=0u);number(tag_count);
                             tag_owners.push_back({&owner,length,initial_tags.size(),tag_count});
                             if(tag_count>SIZE_MAX-initial_tags.size())return false;

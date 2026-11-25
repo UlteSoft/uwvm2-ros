@@ -331,12 +331,15 @@ Turning ordinary access comparisons off preserves the five managed operations,
 their overlap and ownership rules, and their initialization effects. A full
 checkpoint records each tagged owner's shadow, active allocations, reservations
 and permanent global ranges. Restore binds this state to the same memory layout
-and aliases before publishing the owner.
+and aliases before publishing the owner. The receiving host selects a backend
+that can reproduce the saved tag field. Restoring to a fresh VM requires the
+matching modules, an admitted debugger stop and the usual host resource bindings.
 
 Older full checkpoints and the separate thread-history origin format carry
 only shadow bytes. Enabled MTE admits those formats for sources whose typed
 instructions and global descriptors require no managed allocations.
-Restoring a tag-only full checkpoint also checks replacement bodies for a
+The thread-history origin binds the original layout, physical backend and caller
+checks. Restoring a tag-only full checkpoint also checks replacement bodies for a
 possible managed instruction. Ordinary cold start installs the manifest
 registrations on the canonical memory owners.
 
@@ -368,16 +371,21 @@ tag, with one allocation tag per 16-byte granule.
 
 | Owner | Wasm pointer tag bits | Required geometry |
 | --- | --- | --- |
-| Software memory32 | [31:28] | k ≥ 4 |
-| Software memory64 | [63:60] | k ≥ 4 |
+| New software memory32 | [31:28] | k ≥ 4 |
+| New software memory64 | [63:60] | k ≥ 4 |
+| Restored software memory | [s+3:s] | W−k ≤ s ≤ W−4 |
 | Arm MTE memory32 | [31:28] | k ≥ 4. The host pointer carries the tag at [59:56]. |
 | Arm MTE memory64 | [59:56] | k ≥ 8 |
 | Intel MTT memory64 | [60:57] | k ≥ 7. The VM currently rejects this backend. |
 
 For example, memory32 with k = 4 has a 256 MiB address domain. Additional ignored
 bits reduce the domain to 2^(W−k) bytes. `memtag.tagbits` and `memtag.startbit`
-report the active layout. Finite tags can collide, and two objects can share an
-addressable granule.
+report the active layout. The tag field stays fixed across memory growth,
+imports, child memory copies and same-owner hot updates. Software can reproduce
+any saved four-bit field wholly inside the ADM bits, including the Arm and Intel
+positions. For example, memory64 with k = 16 accepts any saved start from 48
+through 60. A required Arm backend also needs its hardware field. Finite tags
+can collide, and two objects can share an addressable granule.
 
 ## Whole-range software checks
 

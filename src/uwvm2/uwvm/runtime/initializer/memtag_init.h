@@ -172,7 +172,8 @@ template<initialization_purpose Purpose>
     return true;
 }
 
-[[nodiscard]] inline bool configure_owner_addressing(mt_init::owner& record, ::uwvm2::utils::container::u8string_view module_name, bool caller_checks) noexcept
+[[nodiscard]] inline bool configure_owner_addressing(mt_init::owner& record, ::uwvm2::utils::container::u8string_view module_name,
+    bool caller_checks, ::std::optional<unsigned> saved_tag_start) noexcept
 {
     namespace mt = ::uwvm2::extension::memtag;
     auto& memory{record.memory};
@@ -181,7 +182,7 @@ template<initialization_purpose Purpose>
     auto const shared{wasm_memory_is_shared(type)};
     auto const k{::uwvm2::extension::adm::ignored_bits(type)};
     if(mt::is_tagged_memory(type) && !caller_checks && !mt_init::allow_unchecked_caller(record,module_name)) { return false; }
-    auto const result{mt::is_tagged_memory(type) ? memory.enable_memtag(width, shared, k, record.backend) :
+    auto const result{mt::is_tagged_memory(type) ? memory.enable_memtag(width, shared, k, record.backend, saved_tag_start) :
         memory.memtag_shadow.configure_adm(width, shared, k)};
     if(result != mt::storage_error::none)
     { return mt_init::error(module_name,u8"cannot initialize the declared memory address domain or selected WasmMTE backend"); }

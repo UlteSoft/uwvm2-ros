@@ -1,4 +1,5 @@
 module;
+#include <array>
 #include <cstdint>
 export module uwvm2.runtime.checkpoint.memory_layout;
 import uwvm2.extension.adm.types;

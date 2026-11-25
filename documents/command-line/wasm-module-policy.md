@@ -65,7 +65,7 @@ uwvm2-ros \
 
 Here `camera` must define an MTE memory at local definition index zero. The index excludes imports. The per-memory choice overrides the owner's module default. All aliases share the owner's backend, tag field and allocation state. The calling module still masks addresses, checks bounds and executes explicit tag and zeroing operations when ordinary comparisons are off. Another module can check tags on the same memory.
 
-A new software memory uses the highest four pointer bits by default. `auto` can select a compatible Linux/AArch64 checked mapping. A required Arm owner needs hardware support, compatible geometry, crash delivery and checked callers. The current VM rejects a required Intel MTT owner. The VM format admits ADM with either pointer width and variable ignored-bit counts. The SDK's instrumented release target is `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
+A new software memory uses the highest four pointer bits by default. A software owner rebuilt from a full snapshot preserves the saved four-bit field anywhere inside the ADM bits. For a memory64 owner with 16 ignored bits, its first bit can be 48 through 60. `auto` can select a compatible Linux/AArch64 checked mapping. A required Arm owner needs hardware support, compatible geometry, crash delivery and checked callers. The current VM rejects a required Intel MTT owner. The VM format admits ADM with either pointer width and variable ignored-bit counts. The SDK's instrumented release target is `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
 
 ## Process and host controls
 

@@ -11,6 +11,7 @@ module;
 export module uwvm2.uwvm.debugger.checkpoint_state_identity;
 import fast_io;
 import fast_io_crypto;
+import uwvm2.runtime.checkpoint.memory_layout;
 export import uwvm2.uwvm.debugger.checkpoint_binding;
 export import uwvm2.uwvm.debugger.checkpoint_codec;
 #define UWVM_MODULE

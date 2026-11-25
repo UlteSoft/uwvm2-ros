@@ -539,13 +539,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         ::fast_io::freestanding::my_memcpy(memory.memory_begin+static_cast<::std::size_t>(chunk.offset),
                             chunk.bytes.data(), chunk.bytes.size());
                     }
-                    if(tag_bits)
-                    {
-                        auto const saved_backend{ml::backend(layout_word)};
-                        if(actual.backend != mt::owner_backend::automatic && actual.backend != saved_backend) { return false; }
-                        actual.backend = saved_backend;
-                    }
-                    if(!details::configure_owner_addressing(actual,name) || ml::encode(memory.memtag_shadow) != layout_word) { return false; }
+                    auto const saved_tag_start{tag_bits ? ::std::optional<unsigned>{ml::tag_start(layout_word)} : ::std::nullopt};
+                    if(!details::configure_owner_addressing(actual, name, module->memory_policy.check_tags, saved_tag_start) ||
+                       ml::encode(memory.memtag_shadow) != layout_word) { return false; }
                     if(tag_bits!=0u)
                     {
                         if(!mt::restore_checkpoint_tag_image(memory.memtag_shadow,bytes,image)) { return false; }

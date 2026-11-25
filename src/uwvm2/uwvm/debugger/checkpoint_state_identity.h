@@ -12,6 +12,7 @@
 # include <vector>
 # include <fast_io.h>
 # include <fast_io_crypto.h>
+# include <uwvm2/runtime/checkpoint/memory_layout.h>
 # include "checkpoint_binding.h"
 # include "checkpoint_codec.h"
 #endif
@@ -274,7 +275,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger::checkpoint::state_identity
             while(live < current.objects.size() && current.objects[live].kind != object_kind::module) { ++live; }
             if(live == current.objects.size()) { return error::stale_generation; }
             auto const& actual = current.objects[live++];
-            if(module.flags != actual.flags || module.words != actual.words || module.bytes != actual.bytes)
+            if(module.flags != actual.flags || !::uwvm2::runtime::checkpoint::memory_layout::compatible_module_words(module.words, actual.words) ||
+               module.bytes != actual.bytes)
             { return error::stale_generation; }
         }
         return error::none;

@@ -20,6 +20,7 @@
 # include <utility>
 # include <fast_io.h>
 # include <uwvm2/object/memory/platform_page/impl.h>
+# include <uwvm2/extension/adm/types.h>
 # include <uwvm2/utils/mutex/rw_spin_lock.h>
 # include "instruction.h"
 # include "shadow.h"
@@ -64,6 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         ::std::size_t page_size_{};
         address_width width_{address_width::i32};
         ::std::uint8_t ignored_bits_{};
+        ::std::uint8_t tag_start_{28u};
         ::std::uint64_t address_mask_{UINT32_MAX};
         storage_backend backend_{};
         bool shared_{};
@@ -211,9 +213,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             prepared_memory_bytes_.store(other.prepared_memory_bytes_.load(::std::memory_order_relaxed), ::std::memory_order_relaxed);
             other.prepared_memory_bytes_.store(0u, ::std::memory_order_relaxed);
             page_size_ = ::std::exchange(other.page_size_, 0u);
-            width_ = other.width_;
+            width_ = ::std::exchange(other.width_, address_width::i32);
             address_mask_ = ::std::exchange(other.address_mask_, UINT32_MAX);
             ignored_bits_ = ::std::exchange(other.ignored_bits_, 0u);
+            tag_start_ = ::std::exchange(other.tag_start_, 28u);
             backend_ = ::std::exchange(other.backend_, storage_backend::disabled);
             shared_ = ::std::exchange(other.shared_, false);
 #if defined(__linux__) && defined(__aarch64__)
@@ -242,8 +245,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         { return ignored_bits_ ? raw & address_mask() : raw; }
         [[nodiscard]] constexpr owner_backend resolved_backend() const noexcept
         { return hardware_selected() ? owner_backend::arm_mte : owner_backend::software; }
-        [[nodiscard]] constexpr unsigned tag_start_bit() const noexcept
-        { return width_ == address_width::i32 ? 28u : hardware_selected() ? 56u : 60u; }
+        [[nodiscard]] constexpr unsigned tag_start_bit() const noexcept { return tag_start_; }
         [[nodiscard]] constexpr tag_geometry geometry() const noexcept
         { return make_tag_geometry(width_,ignored_bits_,tag_start_bit()); }
 
@@ -254,6 +256,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if((width != address_width::i32 && width != address_width::i64) || ignored_bits >= static_cast<unsigned>(width))
             { return storage_error::invalid_configuration; }
             width_ = width;
+            tag_start_ = static_cast<::std::uint8_t>(static_cast<unsigned>(width) - 4u);
             address_mask_ = adm_address_mask(width,ignored_bits);
             shared_ = shared;
             ignored_bits_ = static_cast<::std::uint8_t>(ignored_bits);
@@ -427,10 +430,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // Failed configuration leaves the storage disabled and unallocated.
         [[nodiscard]] storage_error enable(address_width width, bool shared, storage_backend backend,
                                              ::std::uint64_t current_bytes, ::std::uint64_t maximum_bytes,
-                                             unsigned ignored_bits = 4u, owner_backend requested = owner_backend::software) noexcept
+                                             unsigned ignored_bits = 4u, owner_backend requested = owner_backend::software,
+                                             ::std::optional<unsigned> saved_tag_start = {}) noexcept
         {
             if(enabled()) { return storage_error::already_enabled; }
-            if((width != address_width::i32 && width != address_width::i64) || ignored_bits < 4u || ignored_bits >= static_cast<unsigned>(width) ||
+            bool const address64{width == address_width::i64};
+            unsigned const software_start{static_cast<unsigned>(width) - 4u};
+            if((width != address_width::i32 && !address64) ||
+               !::uwvm2::extension::adm::valid_tag_field(address64, ignored_bits, saved_tag_start.value_or(software_start)) ||
                (backend != storage_backend::growable && backend != storage_backend::reserved))
             { return storage_error::invalid_configuration; }
             auto const encoding_capacity{adm_address_mask(width,ignored_bits)+1u};
@@ -450,12 +457,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             candidate.backend_ = backend;
             candidate.maximum_memory_bytes_ = maximum_bytes;
             if(requested == owner_backend::x86_mtt) { return storage_error::unsupported_backend; }
+            unsigned const arm_start{address64 ? 56u : 28u};
 #if defined(__linux__) && defined(__aarch64__)
             candidate.hardware_selected_ = (requested == owner_backend::arm_mte || requested == owner_backend::automatic) &&
-                backend == storage_backend::reserved && (width == address_width::i32 || ignored_bits >= 8u) &&
+                backend == storage_backend::reserved && ::uwvm2::extension::adm::valid_tag_field(address64, ignored_bits, arm_start) &&
+                saved_tag_start.value_or(arm_start) == arm_start &&
                 !logging_requested() && hardware_mte::supported();
 #endif
             if(requested == owner_backend::arm_mte && !candidate.hardware_selected()) { return storage_error::unsupported_backend; }
+            candidate.tag_start_ = static_cast<::std::uint8_t>(saved_tag_start.value_or(candidate.hardware_selected() ? arm_start : software_start));
             if(backend == storage_backend::reserved)
             {
 #if !defined(UWVM_SUPPORT_MMAP)
@@ -572,6 +582,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             width_ = address_width::i32;
             address_mask_ = UINT32_MAX;
             ignored_bits_ = 0u;
+            tag_start_ = 28u;
             backend_ = storage_backend::disabled;
             shared_ = false;
 #if defined(__linux__) && defined(__aarch64__)

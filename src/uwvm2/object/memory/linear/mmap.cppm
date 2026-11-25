@@ -31,6 +31,7 @@ module;
 #include <limits>
 #include <memory>
 #include <new>
+#include <optional>
 #include <atomic>
 #include <bit>
 #include <utility>

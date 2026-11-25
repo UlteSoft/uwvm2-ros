@@ -155,6 +155,7 @@ extern "C++"
         [[nodiscard]] bool check_source_memory_owners(::std::size_t owner, module_type const& source) const noexcept
         {
             namespace mt=::uwvm2::extension::memtag;
+            namespace ml=::uwvm2::runtime::checkpoint::memory_layout;
             ::std::size_t first{}, imports{}, locals{};
             if(!wire_space<2u>(owner,first,imports,locals) || imports!=source.imported_memory_vec_storage.size() ||
                locals!=source.local_defined_memory_vec_storage.size()) { return false; }
@@ -163,9 +164,13 @@ extern "C++"
             {
                 auto const* memory{lookup(instance->links[first+imports+local])};
                 auto const& shadow{source.local_defined_memory_vec_storage.index_unchecked(local).memory.memtag_shadow};
+                // A snapshot can come from another host. Bind its ADM declaration
+                // to this source. The new owner reconstructs the saved tag field.
                 if(!memory || memory->kind!=checkpoint_world_data::cp::object_kind::memory ||
                    (memory->words[4]!=0u)!=shadow.enabled() ||
-                   memory->words[7]!=::uwvm2::runtime::checkpoint::memory_layout::encode(shadow)) { return false; }
+                   memory->words[0]!=static_cast<unsigned>(shadow.width()) ||
+                   ml::ignored_bits(memory->words[7])!=shadow.ignored_bits() ||
+                   !ml::valid(memory->words[7],memory->words[0],memory->words[4])) { return false; }
                 if(!shadow.enabled()) { continue; }
                 if(memory->words[4]!=4u ||
                    (memory->flags!=0u)!=shadow.shared()) { return false; }
@@ -237,9 +242,9 @@ extern "C++"
                 // binding/build validation is a separate future restore entry.
                 auto const policy{::uwvm2::runtime::checkpoint::module_feature_policy::from_actual_parameter(
                     ::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(member.new_file->wasm_parameter.binfmt1_para))};
-                if(!policy.valid() || module->flags != 1u || module->words != ::std::array<::std::uint64_t,8u>{
+                if(!policy.valid() || module->flags != 1u || !::uwvm2::runtime::checkpoint::memory_layout::compatible_module_words(module->words, {
                     policy.revision,policy.cli_mode,policy.disabled,policy.controlled,
-                    ::uwvm2::runtime::checkpoint::memory_layout::module_policy(member.new_file->wasm_parameter.memory_policy),0u,0u,0u})
+                    ::uwvm2::runtime::checkpoint::memory_layout::module_policy(member.new_file->wasm_parameter.memory_policy),0u,0u,0u}))
                 { return fail(preparation_status::feature_mismatch); }
                 auto const found{prepared_source_->registry_.find(member.new_file->module_name)};
                 if(found == prepared_source_->registry_.end() || context_->unpublished_file_for_module(::std::addressof(found->second)) != member.new_file)

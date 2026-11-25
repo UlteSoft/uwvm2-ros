@@ -37,6 +37,7 @@ module;
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 // macro
 #include <uwvm2/utils/macro/push_macros.h>
