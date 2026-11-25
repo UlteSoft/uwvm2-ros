@@ -17,6 +17,10 @@ from check_wasm3_native_frame_codegen import decode_object
 from elf_executable_sections import write_executable_evidence, normalize_relocations, compare_executable_images, ELFCodeError
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--before',type=Path,required=True)
@@ -32,7 +36,7 @@ def main():
     a.out=a.out.resolve();a.out.mkdir(parents=True,exist_ok=False)
     commands=[];rows=[]
     def run(command,path):
-        command=list(map(str,command));r=subprocess.run(command,capture_output=True,timeout=120)
+        command=list(map(str,command));command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True,timeout=120)
         path.write_bytes(r.stdout+r.stderr)
         commands.append(dict(command=command,exit=r.returncode,log=str(path)))
         (a.out/'commands.json').write_text(json.dumps(commands,indent=2)+'\n')

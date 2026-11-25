@@ -8,6 +8,11 @@ Do not describe it as complete function-references or official WAST conformance.
 import argparse, hashlib, json, resource, subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES={
  'identity':('success','''(module (func $f) (elem declare func $f)
   (func $identity (param funcref) (result funcref) local.get 0 ref.as_non_null ref.as_non_null)
@@ -53,6 +58,7 @@ def main():
  for label,base in configs:
   for name,outcome,path in cases:
    command=base+(['-W','function-references=y'] if label=='wasmtime' else ['-WFE-function-references','--run'])+[str(path)]
+   command = product_command(a.ros, command)
    r=subprocess.run(command,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/(label+'-'+name+'.log')).write_bytes(log)
    success=outcome=='success' or (label=='validator' and outcome!='validation');passed=(r.returncode==0)==success
    if not success:
@@ -66,18 +72,19 @@ def main():
  if a.uwvm and not a.only:
   executable=str(a.uwvm.resolve());path=a.output/'identity.wasm';gate_rows=[]
   for name,flags in [('default',[]),('disabled',['-WFD-function-references']),('unrelated',['-WFE-tail-call']),('conflict',['-WFE-function-references','-WFD-function-references']),('legacy-conflict',['--wasm-feature-wasm2','-WFE-function-references'])]:
-   c=[executable,'-m','validation',*flags,'--run',str(path)];r=subprocess.run(c,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+name+'.log')).write_bytes(log);assert r.returncode!=0,(name,log)
-   if name=='disabled':assert b'WebAssembly 3.0' in log and b'--wasm-feature-enable-function-references' in log
+   c=[executable,'-m','validation',*flags,'--run',str(path)];c = product_command(a.ros, c); r=subprocess.run(c,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+name+'.log')).write_bytes(log);assert r.returncode!=0,(name,log)
+   if name=='disabled':assert b'WebAssembly 3.0' in log and feature_hint(a.ros, 'function-references').encode() in log
    if 'conflict' in name:assert b'conflict' in log.lower(),log
    gate_rows.append(dict(case=name,exit=r.returncode,command=c))
   (a.output/'gates.json').write_text(json.dumps(gate_rows,indent=2)+'\n')
   cache=a.output/'cache';cache.mkdir();cache_rows=[]
   for phase,switch in [('cold','-WFE-function-references'),('warm','-WFE-function-references'),('disabled','-WFD-function-references')]:
    compile_log=a.output/('cache-'+phase+'.compile.log');c=[executable]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),switch,'--run',str(path)]
+   c = product_command(a.ros, c)
    r=subprocess.run(c,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/('cache-'+phase+'.log')).write_bytes(log);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text()
    assert (r.returncode==0)==(phase!='disabled'),log
    assert phase!='warm' or hit
-   assert phase!='disabled' or (not hit and b'--wasm-feature-enable-function-references' in log)
+   assert phase!='disabled' or (not hit and feature_hint(a.ros, 'function-references').encode() in log)
    cache_rows.append(dict(phase=phase,exit=r.returncode,hit=hit))
   (a.output/'cache.json').write_text(json.dumps(cache_rows,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(cases),runs=len(rows),configs=len(configs),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n')

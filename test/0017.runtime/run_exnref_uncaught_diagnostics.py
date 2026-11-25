@@ -10,6 +10,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = {
     "exnref_uncaught_struct_execution": ("struct", "-WFE-gc"),
     "exnref_uncaught_exn_execution": ("exn", "-WFD-gc"),
@@ -62,6 +66,7 @@ def main():
             command = [str(args.uwvm), *compiler_flags(mode),
                        "-WFE-exceptions", "-WFD-function-references", gc_flag,
                        "--log-color", "enable", "--run", str(wasm)]
+            command = product_command(args.ros, command)
             result = run(command)
             raw = result.stdout + result.stderr
             log = args.out / f"{name}-{args.compiler}-{mode}.log"

@@ -2,6 +2,10 @@
 """First-decode Core3 i32 actual CLI gate; only the admitted Linux64GiB keeper."""
 import argparse, hashlib, json, resource, subprocess, sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
  p=argparse.ArgumentParser(description=__doc__)
@@ -72,7 +76,8 @@ def main():
  if not configs:raise RuntimeError('no actual configurations selected')
  rows=[]
  def execute(label,case,command,expected):
-  actual=subprocess.run(command+[str(case['path'])],capture_output=True,timeout=90)
+  invocation = product_command(a.ros, command+[str(case['path'])])
+  actual=subprocess.run(invocation,capture_output=True,timeout=90)
   log=actual.stdout+actual.stderr;name=label+'-'+case['name'];out=a.output/(name+'.log');out.write_bytes(log);lower=log.lower()
   if expected=='valid':passed=actual.returncode==0
   elif expected=='invalid':
@@ -82,7 +87,7 @@ def main():
    phrases=(b'integer divide by zero',b'integer division by zero',b'divide-by-zero') if expected=='divide-zero' else (b'integer overflow',b'integer division overflow')
    passed=(actual.returncode>0 or actual.returncode in (-4,-6)) and any(word in lower for word in phrases)
   rows.append({'configuration':label,'case':case['name'],'expect':expected,'returncode':actual.returncode,'passed':passed,
-   'command':command+[str(case['path'])],'wasm_sha256':digest(case['path']),'log_sha256':digest(out),'assertions':case['assertions']})
+   'command':invocation,'wasm_sha256':digest(case['path']),'log_sha256':digest(out),'assertions':case['assertions']})
   (a.output/'rows.json').write_text(json.dumps(rows,indent=2)+'\n')
   if not passed:raise RuntimeError(name+' actual result violates '+expected)
  for label,command in configs:

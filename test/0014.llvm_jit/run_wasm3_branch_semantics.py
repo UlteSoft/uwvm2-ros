@@ -9,6 +9,10 @@ import subprocess
 from pathlib import Path
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = ("br_if", "br_on_null", "br_on_non_null")
 ORDINARY = (
     ("int-full", ("-Rcc", "int", "-Rcm", "full")),
@@ -70,6 +74,7 @@ def main():
                         "-WFE-function-references", "--run", wasm)) for label, flags in modes),
         )
         for label, command in commands:
+            command = product_command(args.ros, command)
             actual = subprocess.run(tuple(str(part) for part in command), capture_output=True, timeout=120)
             (args.out / f"{stem}-{label}.log").write_bytes(actual.stdout + actual.stderr)
             passed = actual.returncode == 0

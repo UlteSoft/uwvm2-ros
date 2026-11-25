@@ -18,6 +18,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 BASE = '(type $base (sub (func (result i32)))) '
 CHILD = '(type $child (sub $base (func (result i32)))) '
@@ -161,6 +165,7 @@ def main():
     def check(label, command, outcome='success', oracle=False):
         argv = [str(part) for part in command]
         try:
+            argv = product_command(args.ros, argv)
             process = subprocess.run(argv, capture_output=True, timeout=120)
             code, raw = process.returncode, process.stdout + process.stderr
         except subprocess.TimeoutExpired as error:

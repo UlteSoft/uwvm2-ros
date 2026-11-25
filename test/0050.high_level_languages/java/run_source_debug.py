@@ -14,6 +14,9 @@ import sys
 import time
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ANSI = re.compile(rb'\x1b\[[0-?]*[ -/]*[@-~]')
 
 
@@ -178,6 +181,7 @@ def main():
     try:
         os.sched_setaffinity(0, compile_cpus)
         try:
+            argv = product_command(args.ros, argv)
             console = Console(argv)
         finally:
             os.sched_setaffinity(0, execution_cpus)

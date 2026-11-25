@@ -18,6 +18,10 @@ import time
 from bench_exception_cross_cli import fixture
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--uwvm', type=Path, required=True)
@@ -77,6 +81,7 @@ def main():
 
     def run(label, command, phase, count):
         start = time.perf_counter_ns()
+        command = product_command(a.ros, command)
         result = subprocess.run([str(x) for x in command], capture_output=True, timeout=240)
         elapsed = time.perf_counter_ns()-start
         (a.out/(label+'.log')).write_bytes(result.stdout+result.stderr)

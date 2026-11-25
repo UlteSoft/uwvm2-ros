@@ -7,6 +7,9 @@ from pathlib import Path
 from run_debug_source_tinygo_cli import TinyGoConsole,named_function
 import run_debug_source_inline_metadata_cli as meta
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
  ap=argparse.ArgumentParser(description=__doc__)
  for key in ('uwvm','wasm','objdump','out'):ap.add_argument('--'+key,type=Path,required=True)
@@ -21,9 +24,11 @@ def main():
   assert not any(n.startswith('.debug_') for n in names);record['actual_custom_sections']=names
   target,_=named_function(a.wasm,b'main.probeOuter');record['actual_guest_function']=target
   mode=['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full']
-  argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', 'instruction']),'-Rllvm-cache-path','disable','--run',str(a.wasm)];record['argv']=argv
+  argv=[str(a.uwvm),'-Rdbg',*mode,'-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', 'instruction']),'-Rllvm-cache-path','disable','--run',str(a.wasm)]
   if a.full_policy:argv[1:1]=['-Rllvm-full-policy',a.full_policy]
   record['full_policy_override']=a.full_policy
+  argv = product_command(a.ros, argv)
+  record['argv']=argv
   c=TinyGoConsole(argv,a.out/'console.log')
   def ask(command):
    reply=c.send(command);record['actions'].append({'command':command,'reply':reply.decode(errors='strict')});assert len(c.transcript)<8*1024*1024;return reply

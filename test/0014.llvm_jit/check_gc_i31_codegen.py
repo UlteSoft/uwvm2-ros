@@ -11,6 +11,10 @@ import subprocess
 from check_wasm3_native_frame_codegen import decode_object
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -59,6 +63,7 @@ def main():
         command = [args.uwvm, '-Raot'] if args.ros else [args.uwvm, '-Rcc', 'jit', '-Rcm', 'full']
         command += [*([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rllvm-cache-path', 'path', cache,
                     '-Rclog', 'file', directory / 'compile.log', '-WFE-gc', '--run', wasm]
+        command = product_command(args.ros, command)
         run(command, directory / 'run.log')
         objects = list(cache.rglob('*.uwvm-ljc'))
         if len(objects) != 1:

@@ -19,6 +19,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CHECK = 'i32.const 42 i32.ne if unreachable end'
 
 
@@ -293,6 +297,7 @@ def main():
     ansi = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
 
     def run(label, command, expectation=None, reference=False, trace_policy=None):
+        command = product_command(args.ros, command)
         result = subprocess.run([str(part) for part in command], capture_output=True, timeout=90)
         raw = result.stdout + result.stderr
         if expectation == 'uncaught' and not reference:

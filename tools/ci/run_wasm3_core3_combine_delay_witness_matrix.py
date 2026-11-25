@@ -28,6 +28,7 @@ import time
 from requalify_wasm3_cli_from_provenance import (
     bind_source_paths, embedded_source_ids, output_index,
 )
+from wasm_qualification_policy import feature_hint, feature_options
 from wasm3_compile_fatal_policy import negative_classification, prove_compile_fatal_trap
 
 
@@ -151,10 +152,6 @@ def load_generator(path: Path):
     if not set(CASES) <= set(module.CASES):
         raise RuntimeError("fixture generator lacks a selected Core 3 witness")
     return module
-
-
-def feature_flags(features: list[str]) -> list[str]:
-    return ["-WFE-" + feature for feature in features]
 
 
 def oracle_flags(features: list[str]) -> list[str]:
@@ -327,15 +324,17 @@ def ensure_fixture(generator, case: str, count: int, fixture_dir: Path,
 
 
 def run_product(source: Path, source_id: str, build: dict, config: str,
-                case: str, fixture: dict, modes: dict, output: Path,
+                case: str, fixture: dict, modes: dict, output: Path, ros: bool,
                 debugger: Path | None = None) -> None:
     binary = Path(build["cli_command"][-1])
     rows_path = output / "runs.json"
     rows = json.loads(rows_path.read_text()) if rows_path.exists() else {}
     combine = build["combine"]
-    tuning = (["-Rint-op-conbine-level", "disable" if combine == "none" else combine]
-              if combine != "none" else [])
-    flags = feature_flags(fixture["features"])
+    tuning = []
+    if combine != "none":
+        tuning = (["--wasm-policy-global", "runtime.interpreter.opcode-combine", combine] if ros
+                  else ["-Rint-op-conbine-level", combine])
+    flags = feature_options(ros, fixture["features"])
     for mode, backend in modes.items():
         key = f"{config}/{case}/{mode}/enabled"
         command = [str(binary), *backend, *tuning, *flags, "--run", fixture["wasm"]]
@@ -356,8 +355,7 @@ def run_product(source: Path, source_id: str, build: dict, config: str,
     # configuration proves each independently switchable proposal is rejected.
     for feature in dict.fromkeys(fixture["features"]):
         key = f"{config}/{case}/int-full/{feature}-disabled"
-        off_flags = ["-WFD-" + feature if enabled == feature else "-WFE-" + enabled
-                     for enabled in fixture["features"]]
+        off_flags = feature_options(ros, (name for name in fixture["features"] if name != feature), (feature,))
         command = [str(binary), *modes["int-full"], *tuning, *off_flags,
                    "--run", fixture["wasm"]]
         if key not in rows:
@@ -368,7 +366,7 @@ def run_product(source: Path, source_id: str, build: dict, config: str,
                                  # before reaching relaxed_swizzle. Other
                                  # proposal gates name their exact CLI switch.
                                  "requires simd" if feature == "simd" else
-                                 "wasm-feature-enable-" + feature, debugger)
+                                 feature_hint(ros, feature), debugger)
             rows[key] = {**row, "source_id": source_id, "binary_sha256": digest(binary),
                          "wasm_sha256": fixture["wasm_sha256"]}
             save(rows_path, rows)
@@ -430,6 +428,7 @@ def main() -> None:
             "wasmtime_sha256": digest(wasmtime),
             "wasmtime_version": wasmtime_version,
             "generator_sha256": digest(generator_path), "runner_sha256": runner_sha,
+            "module_policy_sha256": digest(Path(__file__).with_name("wasm_qualification_policy.py")),
             "negative_policy_sha256": digest(Path(__file__).with_name("wasm3_compile_fatal_policy.py")),
             "debugger": str(debugger) if debugger else None,
             "debugger_sha256": digest(debugger) if debugger else None,
@@ -452,7 +451,7 @@ def main() -> None:
     for config in selected_configs:
         build = ensure_build(source, source_id, runtime, cli, output, config)
         for case in selected_cases:
-            run_product(source, source_id, build, config, case, fixtures[case], modes, output, debugger)
+            run_product(source, source_id, build, config, case, fixtures[case], modes, output, args.ros, debugger)
         if fingerprint(source, output / f"source-after-{config}.json") != source_id:
             raise RuntimeError(f"source changed after {config}")
         if any(oom_counts(cgroup())[key] != oom_counts(before)[key]
@@ -470,6 +469,7 @@ def main() -> None:
         (generator_path, plan["generator_sha256"]),
         (wasm_tools, plan["wasm_tools_sha256"]),
         (wasmtime, plan["wasmtime_sha256"]),
+        (Path(__file__).with_name("wasm_qualification_policy.py"), plan["module_policy_sha256"]),
         (Path(__file__).with_name("wasm3_compile_fatal_policy.py"), plan["negative_policy_sha256"]),
     ):
         if digest(path) != expected_sha:

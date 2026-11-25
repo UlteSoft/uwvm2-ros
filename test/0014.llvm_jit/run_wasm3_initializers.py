@@ -10,6 +10,11 @@ import subprocess
 
 
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("uwvm", type=pathlib.Path)
@@ -51,6 +56,7 @@ def main():
                 if args.backend != "int":
                     command += ["-Rllvm-cache-path", "disable", *([] if args.ros else ['-Rllvm-call-stack', policy])]
                 command += ["-Rclog", "file", str(compile_log), *features, "--run", str(args.fixtures / f"{fixture}.wasm")]
+                command = product_command(args.ros, command)
                 run = subprocess.run(command, capture_output=True, timeout=60)
                 output = ansi.sub("", (run.stdout + run.stderr).decode(errors="replace"))
                 (args.output / f"{name}.run.log").write_text(output)
@@ -81,9 +87,10 @@ def main():
         command = [str(args.uwvm.resolve()), "-m", "validation"]
         command += [flag for flag in features if flag != omitted]
         command += ["--run", str(args.fixtures / "wasm3_initializers.wasm")]
+        command = product_command(args.ros, command)
         run = subprocess.run(command, capture_output=True, timeout=30)
         output = ansi.sub("", (run.stdout + run.stderr).decode(errors="replace"))
-        required_flag = "--wasm-feature-enable-" + omitted.removeprefix("-WFE-")
+        required_flag = feature_hint(args.ros, omitted.removeprefix("-WFE-"))
         if run.returncode == 0 or "Parsing error in WebAssembly File" not in output or required_flag not in output:
             raise RuntimeError(f"Disabled feature accepted or failure was not diagnosed: {omitted}\n{output}")
         rows.append({"case": f"disabled:{omitted}", "exit": run.returncode, "passed": True})

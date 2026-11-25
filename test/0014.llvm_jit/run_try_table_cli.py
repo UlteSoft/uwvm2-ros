@@ -6,6 +6,11 @@ import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
 from run_external_value_cli import leb
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES={
  'empty':'(module (func (export "_start") try_table end))',
  'result':'(module (func (export "_start") try_table (result i32) i32.const 42 end i32.const 42 i32.ne if unreachable end))',
@@ -52,12 +57,13 @@ def main():
  for label,base in configs:
   for name,valid,traps,path in cases:
    cmd=base+(['-W','exceptions=y'] if label=='wasmtime' else ['-WFE-exceptions','-WFE-function-references'])+([] if label=='wasmtime' else ['--run'])+[str(path)]
+   cmd = product_command(a.ros, cmd)
    r=subprocess.run(cmd,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/(label+'-'+name+'.log')).write_bytes(log);rows.append(dict(configuration=label,case=name,valid=valid,traps=traps,exit=r.returncode,command=cmd));(a.output/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');expect=valid and (not traps or label=='validator');assert (r.returncode==0)==expect,(label,name,log)
   print('PASS',label,flush=True)
  if a.uwvm:
   # The untouched complete legacy selector reports unknown opcodes; scoped flags must name exceptions.
   for label,base in configs:
    for flags in ([],['-WFD-exceptions'],['-WFE-function-references']):
-    r=subprocess.run(base+flags+['--run',str(a.output/'empty.wasm')],capture_output=True,timeout=30);assert r.returncode!=0 and (b'--wasm-feature-enable-exceptions' in r.stdout+r.stderr or (not flags and b'Illegal opcode base' in r.stdout+r.stderr)),(label,flags,r.stdout+r.stderr)
+    r=subprocess.run(product_command(a.ros, base+flags+['--run',str(a.output/'empty.wasm')]),capture_output=True,timeout=30);assert r.returncode!=0 and (feature_hint(a.ros, 'exceptions').encode() in r.stdout+r.stderr or (not flags and b'Illegal opcode base' in r.stdout+r.stderr)),(label,flags,r.stdout+r.stderr)
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(cases),runs=len(rows),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n');print('PASS Core 3 zero-handler try_table:',len(rows),'runs')
 if __name__=='__main__':main()

@@ -11,6 +11,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 FRAME = re.compile(r"#\d+[^\n]*?module_id=(\d+) module=\"([^\"]+)\" func_idx=(\d+)")
 
@@ -74,6 +78,7 @@ def main():
         if not args.ros:
             command += ["-Rclog", "file", compile_log]
         command += ["-WFE-exceptions", "-Wpre", provider, "p", "--run", main_wasm]
+        command = product_command(args.ros, command)
         result = run(command)
         raw = result.stdout + result.stderr
         (args.out / (label + ".run.log")).write_bytes(raw)

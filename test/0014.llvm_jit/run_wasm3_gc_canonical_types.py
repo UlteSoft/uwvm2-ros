@@ -15,6 +15,10 @@ import subprocess
 from run_wasm3_multi_memory import configurations
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -53,10 +57,12 @@ def main():
         wat = args.fixtures / f'wasm3_gc_canonical_{case}.wat'
         wasm = args.output / f'wasm3_gc_canonical_{case}.wasm'
         command = [str(args.wasm_tools), 'parse', str(wat), '-o', str(wasm)]
+        command = product_command(args.ros, command)
         code, output = run(command, args.output / f'{case}-parse.log')
         if code:
             raise RuntimeError(f'failed to parse {wat}: {output.decode(errors="replace")}')
         command = [str(args.wasm_tools), 'validate', str(wasm)]
+        command = product_command(args.ros, command)
         code, output = run(command, args.output / f'{case}-validate.log')
         if code:
             raise RuntimeError(f'failed to validate {wasm}: {output.decode(errors="replace")}')
@@ -97,6 +103,7 @@ def main():
                 # configurations() ends in --run; add the precise GC feature gate.
                 cmd = base[:-1] + ['-WFE-gc', '--run', str(wasm)]
             log = args.output / f'{name}-{case}.log'
+            cmd = product_command(args.ros, cmd)
             code, output = run(cmd, log)
             if case == 'positive':
                 passed = code == 0

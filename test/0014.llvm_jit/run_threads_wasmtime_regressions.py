@@ -13,6 +13,10 @@ import resource
 import subprocess
 from run_wasm3_multi_memory_spec import leb, read_leb, constant
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 COMMIT = '3f3f222b77a198db939863d8769af6092ee547e6'
 SOURCES = {
     'atomics_notify.wast': '63804099567c25313be20a9963629dc8f0fe6771a6dd643f6f40f12c38b8fe01',
@@ -104,6 +108,7 @@ def main():
         directory.mkdir()
         target = directory / 'original.json'
         command = [a.wast2json, '--enable-threads', str(source), '-o', str(target)]
+        command = product_command(a.ros, command)
         subprocess.run(command, check=True)
         module = None
         for i, assertion in enumerate(json.loads(target.read_text())['commands']):
@@ -116,6 +121,7 @@ def main():
             cases += 1
             for name, base in configs:
                 command = base + [str(fixture)]
+                command = product_command(a.ros, command)
                 run = subprocess.run(command, capture_output=True, timeout=45)
                 diagnostic = (run.stdout + run.stderr).decode(errors='replace')
                 (directory / f'{name}-{i}.log').write_text(diagnostic)

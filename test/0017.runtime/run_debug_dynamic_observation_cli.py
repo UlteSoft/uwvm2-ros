@@ -17,6 +17,9 @@ from run_debug_source_inline_metadata_cli import sha
 from run_debug_source_tinygo_cli import TinyGoConsole
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--uwvm', type=Path, required=True)
@@ -37,6 +40,7 @@ def main():
     record = {'binary_sha256': sha(binary), 'wasm_sha256': sha(wasm), 'actions': [], 'passed': False}
     console = None
     try:
+        command = product_command(a.ros, command)
         console = TinyGoConsole(command, out / 'console.log')
         def ask(command):
             reply = console.send(command).decode(errors='replace')

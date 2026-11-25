@@ -17,6 +17,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = {
     'null-exn-throws-trap': ('trap', '(module (func (export "_start") ref.null exn throw_ref))'),
     'null-noexn-throws-trap': ('trap', '(module (func (export "_start") ref.null noexn throw_ref))'),
@@ -130,6 +134,7 @@ def main():
         for label, flags in configs:
             command = [*args.wrapper_arg, str(args.uwvm), *flags, '-Rct', '0', '-WFE-function-references',
                        '-WFE-exceptions', '--run', str(wasm)]
+            command = product_command(args.ros, command)
             product = subprocess.run(command, capture_output=True, timeout=60)
             raw = product.stdout + product.stderr
             (args.out / f'{name}-{label}-uwvm.log').write_bytes(raw)

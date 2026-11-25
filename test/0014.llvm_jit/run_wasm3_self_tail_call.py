@@ -14,6 +14,10 @@ import subprocess
 
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('uwvm',type=Path)
@@ -33,6 +37,7 @@ def main():
     binary_hash=hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     rows=[]
     def run(label,cmd,error=None):
+        cmd = product_command(a.ros, cmd)
         r=subprocess.run(cmd,capture_output=True,timeout=60)
         log=(r.stdout+r.stderr).decode(errors='replace'); (a.output/(label+'.log')).write_text(log)
         ok=r.returncode==0 if error is None else r.returncode!=0 and error in log
@@ -116,7 +121,7 @@ def main():
                     compilation = log.read_text()
                     if 'call_stack=unwind ' not in compilation or 'unwind_check=live' not in compilation:
                         raise RuntimeError(label + ': checked native unwind was not active')
-        run(name+'-disabled',[str(a.uwvm),'-m','validation','-WFD-tail-call','--run',str(wasm)],'--wasm-feature-enable-tail-call')
+        run(name+'-disabled',[str(a.uwvm),'-m','validation','-WFD-tail-call','--run',str(wasm)],feature_hint(a.ros, 'tail-call'))
     assert binary_hash==hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
     (a.output/'summary.json').write_text(json.dumps(dict(passed=True,scope='self-return-call only',fixtures=len(cases),checks=len(rows),

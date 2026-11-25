@@ -11,6 +11,10 @@ import subprocess
 import time
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path: Path) -> str:
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -68,6 +72,7 @@ def main() -> int:
             command = [str(uwvm), '-m', 'run', *mode, *trace,
                        *features, '--run', str(wasm)]
             begin = time.monotonic()
+            command = product_command(args.ros, command)
             proc = subprocess.run(command, stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT, timeout=90)
             log = output / f'{name}-{gate}.log'

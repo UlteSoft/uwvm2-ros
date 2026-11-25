@@ -2,6 +2,10 @@
 """Source-only recipe; execute only through the keeper's original Linux cgroup."""
 import argparse, hashlib, json, resource, subprocess, sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -49,7 +53,7 @@ def main():
     if not configs: raise RuntimeError("no configurations selected")
     rows=[]
     for label,command in configs:
-        actual=subprocess.run(command+[str(wasm)],capture_output=True,timeout=90)
+        actual=subprocess.run(product_command(args.ros, command+[str(wasm)]),capture_output=True,timeout=90)
         log=output/(label+".log"); log.write_bytes(actual.stdout+actual.stderr)
         row=dict(configuration=label,command=command+[str(wasm)],returncode=actual.returncode,
             passed=actual.returncode==0,log_sha256=digest(log),wasm_sha256=digest(wasm),

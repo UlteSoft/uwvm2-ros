@@ -9,6 +9,9 @@ import resource
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 SOURCE_ROOT = Path(__file__).resolve().parent
 
@@ -70,6 +73,7 @@ def main():
     def run(name, argv):
         command = [str(v) for v in argv]
         try:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=30)
             rc, output = result.returncode, result.stdout + result.stderr
         except subprocess.TimeoutExpired as error:
@@ -154,7 +158,7 @@ def main():
                 disabled = ["-WFD-" + feature if f == "-WFE-" + feature else f for f in case["features"]]
                 rc, plain, result = run(case["name"] + "-" + mode + "-feature-off",
                     (args.uwvm, *flags, *stack, "-Rllvm-cache-path", "disable", "--log-verbose", *disabled, "--run", wasm))
-                gate_ok = rc is not None and rc > 0 and ("--wasm-feature-enable-" + feature) in plain
+                gate_ok = rc is not None and rc > 0 and (feature_hint(args.ros, feature)) in plain
                 products.append({"case": case["name"], "mode": mode, "stage": "exact-feature-off", "feature": feature,
                                  "result": result, "passed": gate_ok})
         save()

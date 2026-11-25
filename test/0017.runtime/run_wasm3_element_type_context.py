@@ -10,6 +10,10 @@ import subprocess
 from pathlib import Path
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = (
     ("wasm3_funcidx_nonnull_active", True),
     ("wasm3_funcidx_nonnull_passive", True),
@@ -75,6 +79,7 @@ def main():
                 break
         for configuration, flags in configurations:
             command = (args.uwvm, *flags, *FEATURES, "--run", wasm)
+            command = product_command(args.ros, command)
             actual = run(command)
             (args.out / f"{stem}-{configuration}.log").write_bytes(actual.stdout + actual.stderr)
             passed = (actual.returncode == 0) == expected_valid

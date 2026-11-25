@@ -7,6 +7,10 @@ The compiler writes original oracle locals; no Wasm/DWARF bytes are rewritten.
 from mandatory_native_cli import require_linux_ros, product_policy, product_policies
 from pathlib import Path
 import argparse,hashlib,json,os,re,shlex,subprocess,sys,time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 sys.dont_write_bytecode=True
 ap=argparse.ArgumentParser(description="Compare live -Rdbg expressions with original target compiler values in the controlled Linux cgroup")
 ap.add_argument('--source-root',type=Path,required=True)
@@ -66,7 +70,9 @@ for bits in [32,64]:
      if not a.ros:prefix+=['-Rcc','jit','-Rcm','full']
      prefix+=['-Rct','0',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-cache-path','disable']
      if bits==64:prefix+=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64']
-     prefix+=['--run',str(wasm)];row['argv']=prefix
+     prefix+=['--run',str(wasm)]
+     prefix = product_command(a.ros, prefix)
+     row['argv']=prefix
      console=Console(prefix,O/(stem+'-'+policy+'-console.log'))
      def ask(command):
       text=re.sub(rb'\x1b\[[0-?]*[ -/]*[@-~]',b'',console.send(command)).decode(errors='replace');row['actions'].append({'command':command,'reply':text});save();return text

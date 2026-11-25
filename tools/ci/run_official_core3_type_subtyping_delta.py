@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Compare 90 converted modules and the one equivalent invalid subtype binary."""
 
+from wasm_qualification_policy import feature_options
+
 import argparse
 import hashlib
 import json
@@ -65,7 +67,7 @@ def main():
         reference = [str(args.wasmtime), "compile", "-C", "cache=n", "-W", "all-proposals=n"]
         reference.extend(argument for feature in WASMTIME_FEATURES for argument in ("-W", feature + "=y"))
         reference.extend((str(wasm), "-o", "/dev/null"))
-        product = [str(args.binary), "-m", "validation", *("-WFE-" + feature for feature in UWVM_FEATURES), "--run", str(wasm)]
+        product = [str(args.binary), "-m", "validation", *feature_options(True, UWVM_FEATURES), "--run", str(wasm)]
         expected_exit, expected_log, expected_time = run(reference)
         actual_exit, actual_log, actual_time = run(product)
         matched = expected_exit != "timeout" and actual_exit != "timeout" and (expected_exit == 0) == (actual_exit == 0)

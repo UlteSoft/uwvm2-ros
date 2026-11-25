@@ -12,6 +12,10 @@ import resource
 import subprocess
 import sys
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 def invoke(argv, negative=False):
     result = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=120, check=False)
@@ -43,6 +47,7 @@ def main():
         target = args.output / (name + ".wasm")
         receipts.append(invoke([str(args.wasm_tools), "parse", str(here / (name + ".wat")), "-o", str(target)]))
         command = [str(args.wasm_tools), "validate", str(target)]
+        command = product_command(args.ros, command)
         actual = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, timeout=60, check=False)
         text = actual.stdout.decode("utf-8", "replace") + actual.stderr.decode("utf-8", "replace")
         if len(actual.stdout) + len(actual.stderr) > 1048576: raise RuntimeError("bounded official diagnostic")
@@ -63,7 +68,7 @@ def main():
     if not profiles: raise RuntimeError("no actual current profiles")
     for label, command in profiles:
         for index, target in enumerate(targets):
-            receipt = invoke(command + [str(target)], negative=index != 0)
+            receipt = invoke(product_command(args.ros, command + [str(target)]), negative=index != 0)
             receipt.update(configuration=label,wasm_sha256=digest(target),genuine_called_start_source=index==0,called_start_execution_configuration=index==0 and label!="validator",unused_invalid_function=index!=0)
             receipts.append(receipt)
     summary = dict(source_id=args.source_id,steps=receipts,product_sha256=digest(args.uwvm),official_tool_sha256=digest(args.wasm_tools),fresh_compilation_qualified=False,module_BMI_qualified=False,ASM_qualified=False,performance_qualified=False,whole_tiered_single_walk=False)

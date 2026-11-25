@@ -9,6 +9,9 @@ import resource
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = (("catch_noexn_upcast", True), ("catch_ref_noexn_rethrow", True),
          ("catch_noexn_exact_control", True), ("catch_nullable_payload_invalid", False),
          ("catch_cross_family_invalid", False), ("late_unused_catch_nullable_invalid", False))
@@ -48,6 +51,7 @@ def main():
     def run(name, argv):
         command = [str(value) for value in argv]
         try:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=30)
             rc, output = result.returncode, result.stdout + result.stderr
         except subprocess.TimeoutExpired as error:
@@ -82,7 +86,7 @@ def main():
             for mode, flags in modes:
                 rc, text, result = run(name + "-" + mode + "-exceptions-off", (args.uwvm, *flags,
                     "-Rllvm-cache-path", "disable", "-WFD-gc", "-WFD-function-references", "-WFE-reference-types", "-WFD-exceptions", "--run", wasm))
-                okay = rc is not None and rc > 0 and "--wasm-feature-enable-exceptions" in text
+                okay = rc is not None and rc > 0 and feature_hint(args.ros, 'exceptions') in text
                 rows.append({"case": name, "mode": mode, "exceptions_enabled": False,
                              "product_execution": result, "passed": okay})
     report = {"source_id": args.source_id, "product_sha256": sha(args.uwvm), "wasm_tools_sha256": sha(args.wasm_tools),

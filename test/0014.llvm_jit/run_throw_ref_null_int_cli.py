@@ -16,6 +16,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = {
     'null-exn': '(module (func (export "_start") ref.null exn throw_ref))',
     'null-noexn': '(module (func (export "_start") ref.null noexn throw_ref))',
@@ -48,6 +52,7 @@ def main():
     rows = []
 
     def run(label, command, oracle):
+        command = product_command(args.ros, command)
         result = subprocess.run([str(x) for x in command], capture_output=True, timeout=60)
         raw = result.stdout + result.stderr
         (args.out / (label + '.log')).write_bytes(raw)
@@ -75,13 +80,13 @@ def main():
                                            '-WFE-exceptions', '--run', wasm], False)
                 if name in ('null-exn', 'null-noexn'):
                     disabled = subprocess.run(
-                        [str(x) for x in [args.uwvm] + flags + ['-Rct', '0',
-                          '-WFE-function-references', '-WFD-exceptions', '--run', wasm]],
+                        product_command(args.ros, [str(x) for x in [args.uwvm] + flags + ['-Rct', '0',
+                          '-WFE-function-references', '-WFD-exceptions', '--run', wasm]]),
                         capture_output=True, timeout=60)
                     raw = disabled.stdout + disabled.stderr
                     (args.out / (name + '-' + mode + '-disabled.log')).write_bytes(raw)
                     output = ansi.sub('', raw.decode(errors='replace'))
-                    passed = disabled.returncode != 0 and '--wasm-feature-enable-exceptions' in output
+                    passed = disabled.returncode != 0 and feature_hint(args.ros, 'exceptions') in output
                     rows.append(dict(label=name + '-' + mode + '-disabled', exit=disabled.returncode,
                                      passed=passed, oracle=False))
                     (args.out / 'runs.json').write_text(json.dumps(rows, indent=2) + '\n')

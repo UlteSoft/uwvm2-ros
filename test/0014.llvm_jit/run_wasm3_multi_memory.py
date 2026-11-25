@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def llvm_stack_policies(ros):
     """@brief Select supported LLVM call-stack policies for the tested product.
 
@@ -60,7 +64,7 @@ def main():
     for label,command in configs:
         for case in cases:
             fixture=a.fixtures/(case['name']+'-exec.wasm')
-            run=subprocess.run(command+[str(fixture)],capture_output=True,timeout=60)
+            run=subprocess.run(product_command(a.ros, command+[str(fixture)]),capture_output=True,timeout=60)
             output=run.stdout+run.stderr;name=label+'-'+case['name'];(a.output/(name+'.log')).write_bytes(output)
             if label=='wasmtime' and case.get('memories',0)>100 and b'memories count exceeds limit of 100' in output:
                 reference_limits.append(dict(case=case['name'],reason='Wasmtime validator limit: 100 memories',exit=run.returncode)); continue
@@ -77,12 +81,12 @@ def main():
     if a.uwvm and not a.configuration:
         fixture=a.fixtures/'load-memory1-exec.wasm'
         for flags in ([],['-WFD-multi-memory']):
-            run=subprocess.run([str(a.uwvm),'-m','validation',*flags,'--run',str(fixture)],capture_output=True,timeout=30)
+            run=subprocess.run(product_command(a.ros, [str(a.uwvm),'-m','validation',*flags,'--run',str(fixture)]),capture_output=True,timeout=30)
             output=run.stdout+run.stderr
-            if run.returncode==0 or b'--wasm-feature-enable-multi-memory' not in output:
+            if run.returncode==0 or feature_hint(a.ros, 'multi-memory').encode() not in output:
                 raise RuntimeError(f'missing independent multi-memory feature rejection: {output!r}')
-        run=subprocess.run([str(a.uwvm),'-WFE-multi-memory','-WFD-multi-memory','--run',str(fixture)],capture_output=True,timeout=30)
-        if run.returncode==0 or b'conflicts' not in run.stdout+run.stderr:raise RuntimeError('multi-memory feature ownership conflict accepted')
+        run=subprocess.run(product_command(a.ros, [str(a.uwvm),'-WFE-multi-memory','-WFD-multi-memory','--run',str(fixture)]),capture_output=True,timeout=30)
+        if run.returncode==0 or (b'duplicate Wasm policy setting' if a.ros else b'conflicts') not in run.stdout+run.stderr:raise RuntimeError('multi-memory feature ownership conflict accepted')
     summary=dict(feature='multi-memory',new_syntax_cases=len(cases),positive=sum(c['valid'] for c in cases),negative=sum(not c['valid'] for c in cases),configurations=len(configs),runs=len(results),reference_limits=reference_limits,cases=results)
     (a.output/'results.json').write_text(json.dumps(summary,indent=2)+'\n')
     print(json.dumps({k:v for k,v in summary.items() if k!='cases'}))

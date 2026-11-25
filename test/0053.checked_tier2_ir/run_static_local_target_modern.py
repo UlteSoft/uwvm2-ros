@@ -16,6 +16,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = (("modern_unused_invalid_memory64", False), ("modern_unused_invalid_exception", False),
          ("modern_lazy_typed_calls", True), ("modern_lazy_exceptions", True))
 
@@ -46,6 +49,7 @@ def main():
     def run(name, argv):
         command = [str(value) for value in argv]
         try:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=args.timeout)
             rc, output = result.returncode, result.stdout + result.stderr
         except subprocess.TimeoutExpired as error:

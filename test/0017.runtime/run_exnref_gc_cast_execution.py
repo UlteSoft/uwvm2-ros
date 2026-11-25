@@ -18,6 +18,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = ("ref-test-exn-null", "ref-cast-exn-null", "br-on-cast-exn-null",
          "exn-cast-retained", "ref-cast-exn-null-trap",
          "exnref_param_unused", "exnref_result_unused", "exnref_call_abi",
@@ -84,6 +88,7 @@ def main():
     def run(label, command, expected_success=True, diagnostic=None):
         command = [str(part) for part in command]
         try:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, text=True,
                                     timeout=30, env=environment)
             output = result.stdout + result.stderr
@@ -125,6 +130,8 @@ def main():
         # to this exception/GC intersection and must remain independently off.
         int_policy = ("-Raot",) if args.ros else ("-Rcc", "int", "-Rcm", "full")
         for feature, off_flag, diagnostic in FEATURE_OFF:
+            if diagnostic.startswith("--wasm-feature-enable-"):
+                diagnostic = feature_hint(args.ros, feature)
             enabled = [flag for flag in ENABLED if flag != "-WFE-" + feature]
             # Exnref function signatures require exceptions, but not GC.
             independent = feature == "gc" and case in ABI_CASES

@@ -14,6 +14,10 @@ import re
 import resource
 import subprocess
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 FUSED_SHA = "43e6eaa651db9c302f68af12e61d229542604bf1416557617522310f21531cb1"
 FEATURES = ("-WFE-table64", "-WFE-reference-types", "-WFE-function-references",
             "-WFD-memory64", "-WFD-gc", "-WFD-exceptions", "-WFD-threads")
@@ -100,6 +104,7 @@ def main():
         stdout, stderr = args.out / (label + ".stdout.log"), args.out / (label + ".stderr.log")
         with stdout.open("xb") as out, stderr.open("xb") as err:
             try:
+                argv = product_command(args.ros, argv)
                 process = subprocess.run(argv, stdout=out, stderr=err, timeout=args.timeout)
                 code = process.returncode
             except subprocess.TimeoutExpired:
@@ -134,7 +139,7 @@ def main():
             continue
         policies = [("enabled-memory64-off", FEATURES, None)]
         if valid:
-            policies.append(("table64-off", tuple(flag for flag in FEATURES if flag != "-WFE-table64") + ("-WFD-table64",), "--wasm-feature-enable-table64"))
+            policies.append(("table64-off", tuple(flag for flag in FEATURES if flag != "-WFE-table64") + ("-WFD-table64",), feature_hint(args.ros, 'table64')))
         for policy, features, diagnostic in policies:
             for mode, flags in modes:
                 expected = "validation-error" if not valid else "success"

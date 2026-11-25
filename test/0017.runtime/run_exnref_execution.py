@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = {
     "exnref_local_global_execution": ("exceptions",),
     "exnref_struct_payload_execution": ("exceptions", "gc"),
@@ -78,8 +82,8 @@ def main():
         for mode in modes:
             enabled = [FEATURE_FLAG[feature] for feature in features]
             enabled.extend(UNRELATED_DISABLED[features])
-            product = run([str(args.uwvm), *compiler_flags(mode),
-                           *enabled, "--run", str(wasm)])
+            product = run(product_command(args.ros, [str(args.uwvm), *compiler_flags(mode),
+                           *enabled, "--run", str(wasm)]))
             rows.append(dict(case=name, engine=f"uwvm-{args.compiler}-{mode}", status=product.returncode,
                              output=product.stdout + product.stderr))
             if product.returncode:
@@ -88,17 +92,17 @@ def main():
 
             for disabled_feature in features:
                 other_flags = [FEATURE_FLAG[feature] for feature in features if feature != disabled_feature]
-                disabled = run([str(args.uwvm), *compiler_flags(mode),
-                                *other_flags, "--run", str(wasm)])
+                disabled = run(product_command(args.ros, [str(args.uwvm), *compiler_flags(mode),
+                                *other_flags, "--run", str(wasm)]))
                 rows.append(dict(case=name, engine=f"uwvm-{args.compiler}-{mode}-{disabled_feature}-off",
                                  status=disabled.returncode,
                                  output=disabled.stdout + disabled.stderr))
                 if disabled.returncode == 0:
                     raise RuntimeError(f"{name}/{mode}: {disabled_feature} feature-off accepted the module")
 
-            no_references = run([str(args.uwvm), *compiler_flags(mode),
+            no_references = run(product_command(args.ros, [str(args.uwvm), *compiler_flags(mode),
                                  *enabled, "-WFD-reference-types",
-                                 "--run", str(wasm)])
+                                 "--run", str(wasm)]))
             rows.append(dict(case=name, engine=f"uwvm-{args.compiler}-{mode}-reference-types-off",
                              status=no_references.returncode,
                              output=no_references.stdout + no_references.stderr))
@@ -115,8 +119,8 @@ def main():
                         if no_delay:
                             tuning.append("-Rint-no-delay-local")
                         label = f"{name}/int/{mode}/{level}/" + ("no-delay" if no_delay else "delay")
-                        product = run([str(args.uwvm), *compiler_flags(mode), *tuning,
-                                       *enabled, "--run", str(wasm)])
+                        product = run(product_command(args.ros, [str(args.uwvm), *compiler_flags(mode), *tuning,
+                                       *enabled, "--run", str(wasm)]))
                         rows.append(dict(case=name, engine=label, status=product.returncode,
                                          output=product.stdout + product.stderr))
                         if product.returncode:

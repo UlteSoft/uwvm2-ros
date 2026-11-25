@@ -10,6 +10,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 FIXTURES = ('i31_roundtrip', 'i31_bulk', 'struct_roundtrip',
             'array_roundtrip', 'i31_element', 'i31_into_anyref_table',
             'gc_struct_into_anyref_table',
@@ -58,6 +62,7 @@ def main():
     rows = []
 
     def check(name, command, expected, feature=None):
+        command = product_command(args.ros, command)
         result = subprocess.run([str(part) for part in command], capture_output=True, timeout=120)
         output = result.stdout + result.stderr
         (args.out / f'{name}.log').write_bytes(output)

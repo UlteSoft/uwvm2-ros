@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -32,6 +36,7 @@ def main():
     rows = []
 
     def check(name, command, success, message=None):
+        command = product_command(args.ros, command)
         process = subprocess.run([str(part) for part in command], capture_output=True, timeout=120)
         output = process.stdout + process.stderr
         (args.out / (name + '.log')).write_bytes(output)
@@ -96,7 +101,7 @@ def main():
     check('function-references-disabled',
           [args.uwvm, *modes['int-full'], '-WFE-gc', '-WFD-function-references',
            '-WFE-tail-call', *call_preload, '--run', binaries['call_consumer']],
-          False, b'--wasm-feature-enable-function-references')
+          False, feature_hint(args.ros, 'function-references').encode())
 
     summary = {'passed': all(row['passed'] for row in rows), 'checks': len(rows),
                'scope': 'uwvm2-ros' if args.ros else 'uwvm2',

@@ -15,6 +15,14 @@ import subprocess
 import time
 
 
+def feature_options(enabled, disabled=()):
+    args = ["--wasm-policy-global", "parser.baseline", "wasm2"]
+    for value, features in (("on", enabled), ("off", disabled)):
+        for feature in features:
+            args.extend(("--wasm-policy-global", "parser." + feature, value))
+    return args
+
+
 COMBINE = {
     "none": (),
     "soft": ("UWVM_ENABLE_UWVM_INT_COMBINE_OPS",),
@@ -135,9 +143,8 @@ def main():
             row["binary_sha256"] = sha256(binary)
             row["object_sha256"] = {name: sha256(path) for name, path in artifacts.items()}
             for name, features in TESTS.items():
-                command = [str(binary), "-Rint", *(f"-WFE-{feature}" for feature in features)]
-                if name == "eh-exnref":
-                    command.extend(("-WFD-gc", "-WFD-function-references"))
+                disabled = ("gc", "function-references") if name == "eh-exnref" else ()
+                command = [str(binary), "-Rint", *feature_options(features, disabled)]
                 command.extend(("--run", tests[name]["wasm"]))
                 rc, seconds, log = run(command, cwd=source, output=output / f"{profile}-{name}.run.log", timeout=30)
                 entry = {"test": name, "command": command, "exit": rc, "seconds": seconds}
@@ -153,23 +160,20 @@ def main():
                 elif feature == "exceptions" and args.exceptions_gate_wasm:
                     witness = str(args.exceptions_gate_wasm.resolve())
                 command = [str(binary), "-m", "validation",
-                           *(f"-WFE-{item}" for item in TESTS[name] if item != feature),
-                           f"-WFD-{feature}", "--run", witness]
+                           *feature_options((item for item in TESTS[name] if item != feature), (feature,)), "--run", witness]
                 rc, seconds, log = run(command, cwd=source,
                                        output=output / f"{profile}-{feature}-disabled.run.log", timeout=30)
                 entry = {"test": f"{feature}-disabled", "command": command,
                          "exit": rc, "seconds": seconds, "diagnostic": log[-500:],
                          "wasm_sha256": sha256(Path(witness))}
                 row["runs"].append(entry)
-                if rc == 0 or f"--wasm-feature-enable-{feature}" not in log:
+                if rc == 0 or f"parser.{feature} on" not in log:
                     results.append(row)
                     results_path.write_text(json.dumps(results, indent=2) + "\n")
                     raise RuntimeError(f"{profile} {feature} gate failed:\n{log[-8000:]}")
             if args.bottom_wasm:
                 bottom = args.bottom_wasm.resolve()
-                command = [str(binary), "-m", "validation", "-WFE-reference-types",
-                           "-WFE-function-references", "-WFE-gc", "-WFE-exceptions",
-                           "-WFE-tail-call", "--run", str(bottom)]
+                command = [str(binary), "-m", "validation", *feature_options(("reference-types", "function-references", "gc", "exceptions", "tail-call")), "--run", str(bottom)]
                 rc, seconds, log = run(command, cwd=source,
                                        output=output / f"{profile}-cast-convert-bottom.run.log", timeout=30)
                 row["runs"].append({"test": "cast-convert-bottom-validation", "command": command,

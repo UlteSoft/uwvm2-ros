@@ -7,6 +7,9 @@ the existing Linux cgroup guardian; this runner never grants native admission.
 import argparse, hashlib, json, resource, subprocess, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -71,7 +74,7 @@ def main():
     if not configs: raise RuntimeError('no actual products selected')
     rows=[]
     def execute(configuration,name,file,valid,command):
-        run=subprocess.run(command+[str(file)],capture_output=True,timeout=90)
+        run=subprocess.run(product_command(args.ros, command+[str(file)]),capture_output=True,timeout=90)
         log=output/(configuration+'-'+name+'.log');log.write_bytes(run.stdout+run.stderr)
         diagnostics=(run.stdout+run.stderr).lower()
         accepted=run.returncode==0 if valid else run.returncode>0 and any(x in diagnostics for x in (b'validat',b'parsing error',b'type mismatch',b'unknown memory',b'invalid',b'unknown 0xfe',b'nonzero flags',b'alignment',b'offset'))

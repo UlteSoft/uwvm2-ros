@@ -8,6 +8,11 @@ import resource
 import subprocess
 
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('uwvm', type=pathlib.Path)
@@ -61,6 +66,7 @@ def main():
                     base += ['-Rllvm-cache-path', 'disable', *([] if args.ros else ['-Rllvm-call-stack', policy]), '-Rclog', 'file', str(log)]
                     flags = ['-WFE-threads'] + (['-WFE-multi-memory'] if indexed else [])
                     command = base + flags + ['--run', str(binary)]
+                    command = product_command(args.ros, command)
                     result = subprocess.run(command, capture_output=True, timeout=30)
                     output = (result.stdout + result.stderr).decode(errors='replace')
                     (args.output / (label + '.run.log')).write_text(output)
@@ -73,9 +79,10 @@ def main():
                 features.remove('-WFE-' + flag)
                 features.append('-WFD-' + flag)
                 command = [str(args.uwvm.resolve()), '-m', 'validation', *features, '--run', str(binary)]
+                command = product_command(args.ros, command)
                 result = subprocess.run(command, capture_output=True, timeout=30)
                 output = (result.stdout + result.stderr).decode(errors='replace')
-                if result.returncode == 0 or '--wasm-feature-enable-' + flag not in output:
+                if result.returncode == 0 or feature_hint(args.ros, flag) not in output:
                     raise RuntimeError(f'{name} disabled {flag}: {output}')
                 rows.append({'case': name + '-disabled-' + flag, 'passed': True})
     (args.output / 'results.json').write_text(json.dumps({'passed': len(rows), 'cases': rows}, indent=2) + '\n')

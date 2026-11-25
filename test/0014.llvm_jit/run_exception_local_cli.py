@@ -3,6 +3,11 @@
 import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CHECK='i32.const 42 i32.ne if unreachable end'
 # Every value is checked after the exceptional edge. Interleaving 32 values of each
 # scalar register class and v128 exceeds the ring capacity and exercises spill,
@@ -82,6 +87,7 @@ def main():
    valid=not name.startswith('bad-');traps=name.endswith('trap');path=a.out/(name+'.wasm')
    preload=(['--preload','p='+str(provider)] if label=='wasmtime' else ['-Wpre',str(provider),'p']) if name.startswith('import') else []
    cmd=base+([] if label=='wasmtime' else ['-WFE-exceptions'])+preload+([] if label=='wasmtime' else ['--run'])+[str(path)]
+   cmd = product_command(a.ros, cmd)
    r=subprocess.run(cmd,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.out/(label+'-'+name+'.log')).write_bytes(log);runs.append(dict(configuration=label,case=name,command=cmd,exit=r.returncode));(a.out/'runs.json').write_text(json.dumps(runs,indent=2)+'\n')
    assert (r.returncode==0)==(valid and (not traps or label=='validator')),(label,name,log)
   print('PASS',label,len(CASES),'local exception cases',flush=True)
@@ -90,6 +96,6 @@ def main():
    if label=='wasmtime':continue
    for name in ('scalar','empty','all-first'):
     for flags in (['-WFD-exceptions'],['-WFE-function-references']):
-     cmd=base+flags+['--run',str(a.out/(name+'.wasm'))];r=subprocess.run(cmd,capture_output=True,timeout=30);assert r.returncode!=0 and b'--wasm-feature-enable-exceptions' in r.stdout+r.stderr,(label,name,flags)
+     cmd=base+flags+['--run',str(a.out/(name+'.wasm'))];cmd = product_command(a.ros, cmd); r=subprocess.run(cmd,capture_output=True,timeout=30);assert r.returncode!=0 and feature_hint(a.ros, 'exceptions').encode() in r.stdout+r.stderr,(label,name,flags)
  (a.out/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(CASES),runs=len(runs),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n');print('PASS Core 3 local exception execution:',len(runs),'runs')
 if __name__=='__main__':main()

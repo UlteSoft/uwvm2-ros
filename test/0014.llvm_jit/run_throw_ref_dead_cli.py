@@ -16,6 +16,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CHECK = 'i32.const 42 i32.ne if unreachable end'
 
 
@@ -94,6 +98,7 @@ def main():
 
     def run(label, command, outcome, reference=False):
         command = [str(part) for part in command]
+        command = product_command(args.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=60)
         raw = result.stdout + result.stderr
         (args.out / (label + '.log')).write_bytes(raw)
@@ -101,9 +106,9 @@ def main():
         if outcome == 'return':
             passed = result.returncode == 0
         elif outcome == 'disabled':
-            passed = result.returncode != 0 and '--wasm-feature-enable-exceptions' in text
+            passed = result.returncode != 0 and feature_hint(args.ros, 'exceptions') in text
         elif outcome == 'disabled-functions':
-            passed = result.returncode != 0 and '--wasm-feature-enable-function-references' in text
+            passed = result.returncode != 0 and feature_hint(args.ros, 'function-references') in text
         elif outcome == 'null-trap':
             passed = result.returncode != 0 and (
                 'wasm trap: null reference' in text if reference else

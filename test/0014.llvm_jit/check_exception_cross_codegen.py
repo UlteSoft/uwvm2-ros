@@ -16,6 +16,10 @@ from check_wasm3_native_frame_codegen import decode_object
 from elf_executable_sections import write_executable_evidence, normalize_relocations, compare_executable_images
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--uwvm', type=Path, required=True)
@@ -42,6 +46,7 @@ def main():
 
     def run(command, output, expected=0):
         command = list(map(str, command))
+        command = product_command(a.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=120)
         output.write_bytes(result.stdout+result.stderr)
         commands.append(dict(command=command, exit=result.returncode, log=str(output)))

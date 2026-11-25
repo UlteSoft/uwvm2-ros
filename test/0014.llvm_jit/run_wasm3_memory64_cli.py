@@ -10,6 +10,10 @@ from pathlib import Path
 from run_wasm3_multi_memory import configurations
 from run_wasm3_multi_memory_spec import wrap
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 OFFICIAL_LOAD64_SHA256 = '9309409e3471fcbd846829d54e12e742f8cd97aeb3650ffe7c0f622a36b06838'
 OFFICIAL_LOAD64_COMMIT = '10d212453286717b4bc59151810acd66ba2d0334'
 
@@ -75,6 +79,7 @@ def main():
  for name,(valid,features,wat) in CASES.items():
   path=a.output/(name+'.wat');path.write_text(wat);binary=path.with_suffix('.wasm')
   command=[a.wat2wasm,'--enable-memory64','--enable-multi-memory','--enable-threads','--no-check',str(path),'-o',str(binary)]
+  command = product_command(a.ros, command)
   subprocess.run(command,check=True);cases.append(dict(name=name,valid=valid,features=features,path=binary,assertions=None))
  if a.official_load64:
   assert a.wast2json;source=a.official_load64.read_bytes();assert hashlib.sha256(source).hexdigest()==OFFICIAL_LOAD64_SHA256
@@ -110,6 +115,7 @@ def main():
    switches=sum((['-W',f'{f}=y'] for f in case['features']),[]) if label=='wasmtime' else ['-WFE-'+f for f in case['features']]
    if label=='wasmtime' and 'threads' in case['features']:switches+=['-W','shared-memory=y']
    command=base+switches+([] if label=='wasmtime' else ['--run'])+[str(case['path'])]
+   command = product_command(a.ros, command)
    result=subprocess.run(command,capture_output=True,timeout=90);log=result.stdout+result.stderr
    (a.output/(label+'-'+case['name']+'.log')).write_bytes(log)
    passed=(result.returncode==0)==case['valid']
@@ -122,15 +128,15 @@ def main():
   for name in ('scalar','atomic'):
    case=next(c for c in cases if c['name']==name)
    for flags in ([],['-WFD-memory64']):
-    result=subprocess.run([str(a.uwvm.resolve()),'-m','validation',*flags,'--run',str(case['path'])],capture_output=True,timeout=30)
-    assert result.returncode!=0 and b'--wasm-feature-enable-memory64' in result.stdout+result.stderr
+    result=subprocess.run(product_command(a.ros, [str(a.uwvm.resolve()),'-m','validation',*flags,'--run',str(case['path'])]),capture_output=True,timeout=30)
+    assert result.returncode!=0 and feature_hint(a.ros, 'memory64').encode() in result.stdout+result.stderr
  if a.uwvm and not a.configuration:
   # The original u64 values must survive rendered CLI diagnostics too.
   from run_wasm3_multi_memory_spec import leb
   for name,minimum,maximum,needle in [('limit', (1<<48)+1, (1<<48)+1, str((1<<48)+1)), ('descending',1<<40,(1<<40)-1,str((1<<40)-1))]:
    payload=b'\x01\x05'+leb(minimum)+leb(maximum);wasm=a.output/('diagnostic-'+name+'.wasm')
    wasm.write_bytes(b'\0asm\1\0\0\0\x05'+leb(len(payload))+payload)
-   result=subprocess.run([str(a.uwvm.resolve()),'-m','validation','-WFE-memory64','--run',str(wasm)],capture_output=True,timeout=30)
+   result=subprocess.run(product_command(a.ros, [str(a.uwvm.resolve()),'-m','validation','-WFE-memory64','--run',str(wasm)]),capture_output=True,timeout=30)
    log=result.stdout+result.stderr;(a.output/('diagnostic-'+name+'.log')).write_bytes(log)
    assert result.returncode!=0 and needle.encode() in log
   # A genuine cache hit may never bypass a subsequently disabled feature.
@@ -140,12 +146,13 @@ def main():
   for phase,flag in [('cold','-WFE-memory64'),('warm','-WFE-memory64'),('disabled','-WFD-memory64')]:
    compilation=a.output/('cache-'+phase+'.compile.log')
    command=base+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compilation),flag,'--run',str(binary)]
+   command = product_command(a.ros, command)
    result=subprocess.run(command,capture_output=True,timeout=60);log=result.stdout+result.stderr
    (a.output/('cache-'+phase+'.log')).write_bytes(log);compiled=compilation.read_text() if compilation.exists() else ''
    hit='object-cache-hit' in compiled
    assert (result.returncode==0)==(phase!='disabled')
    assert phase!='warm' or hit
-   assert phase!='disabled' or (not hit and b'--wasm-feature-enable-memory64' in log)
+   assert phase!='disabled' or (not hit and feature_hint(a.ros, 'memory64').encode() in log)
    cache_rows.append(dict(phase=phase,exit=result.returncode,cache_hit=hit))
   (a.output/'cache-checks.json').write_text(json.dumps(cache_rows,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,runs=len(rows),cases=len(cases),configurations=len(configs),official_assertions=sum(c['assertions'] or 0 for c in cases),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n')

@@ -15,6 +15,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def load_cases(root):
     path = root / 'test/0013.uwvm_int/run_call_ref_typed_core3.py'
     spec = importlib.util.spec_from_file_location('typed_core3_cases', path)
@@ -73,6 +77,7 @@ def main():
             *function_reference_flags, *gc_flags, '-WFE-tail-call', '--run', str(wasm)]
             for mode, flags in modes.items()})
         for mode, command in commands.items():
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=120)
             log = (result.stdout + result.stderr).decode(errors='replace')
             (args.output / f'{name}-{mode}.log').write_text(log)

@@ -13,6 +13,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 MODES = {
     "int-full": ["-Rcc", "int", "-Rcm", "full"],
     "int-lazy": ["-Rcc", "int", "-Rcm", "lazy"],
@@ -60,6 +64,7 @@ def main():
     rows = []
 
     def check(name, command, expect_success, required_output=()):
+        command = product_command(args.ros, command)
         process = subprocess.run([str(part) for part in command], capture_output=True, timeout=120)
         output = process.stdout + process.stderr
         (args.out / f"{name}.log").write_bytes(output)

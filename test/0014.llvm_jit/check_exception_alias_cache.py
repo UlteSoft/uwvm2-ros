@@ -2,6 +2,11 @@
 """Change imported tag aliasing under an unchanged importer, with cold/warm persistent JIT objects."""
 import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('--uwvm',type=Path,required=True);p.add_argument('--wasm-tools',type=Path,required=True);p.add_argument('--wasmtime',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--ros',action='store_true');p.add_argument('--cross-function',action='store_true',help='Throw from the imported provider so native propagation and runtime tag matching are exercised');a=p.parse_args()
 root=Path(__file__).resolve().parents[2];subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True);resource.setrlimit(resource.RLIMIT_CORE,(0,0));a.out.mkdir(parents=True,exist_ok=False)
 def encode(name,wat):
@@ -22,6 +27,7 @@ for mode in (('full',) if a.ros else ('full','lazy','lazy+verification')):
   cache=a.out/(mode+'-'+policy+'-cache');cache.mkdir()
   for step,name in enumerate(('alias','alias','distinct','distinct','alias')):
    log=a.out/f'{mode}-{policy}-{step}.compile.log';command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm',mode])+['-WFE-exceptions',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(log),'-Wpre',str(providers[name]),'p','--run',str(importer)]
+   command = product_command(a.ros, command)
    r=subprocess.run(command,capture_output=True,timeout=60);(a.out/f'{mode}-{policy}-{step}.log').write_bytes(r.stdout+r.stderr);hit=log.exists() and 'object-cache-hit' in log.read_text();rows.append(dict(mode=mode,policy=policy,step=step,provider=name,exit=r.returncode,cache_hit=hit,command=command));(a.out/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');assert r.returncode==0,(mode,policy,step,r.stderr)
    assert step not in (1,3,4) or hit,(mode,policy,step,'expected warm cache hit')
 (a.out/'summary.json').write_text(json.dumps(dict(passed=True,cross_function=a.cross_function,runs=len(rows),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest(),importer_sha256=hashlib.sha256(importer.read_bytes()).hexdigest()),indent=2)+'\n')

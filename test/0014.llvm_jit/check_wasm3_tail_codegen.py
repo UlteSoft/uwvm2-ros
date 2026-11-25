@@ -11,6 +11,10 @@ from run_call_ref_typed_core3 import load_cases
 from run_wasm3_tail_transfer import fixtures
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def success_path_calls(assembly, *, noreturn_symbols=()):
     # A native trap is a cold non-returning call. Count calls only on CFG paths
     # that reach a normal return or a tail jump; a push/pop bookkeeping callback
@@ -84,6 +88,7 @@ def main():
                    '-Rclog', 'file', policy + '.compile.log',
                    *(['-WFE-function-references'] if a.case == 'typed-ref-local' else []),
                    '-WFE-tail-call', '--run', str(wasm)]
+        command = product_command(a.ros, command)
         result = subprocess.run(command, cwd=out, capture_output=True, timeout=90)
         (out / (policy + '.log')).write_bytes(result.stdout + result.stderr)
         assert result.returncode == 0, (policy, result.stderr)

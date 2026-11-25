@@ -15,6 +15,7 @@ import resource
 import subprocess
 import sys
 
+from wasm_qualification_policy import feature_hint, feature_options
 from wasm3_compile_fatal_policy import (
     negative_classification, prove_compile_fatal_trap,
 )
@@ -146,7 +147,7 @@ def tiered_evidence(log, forced_t1=False, native_entry_proof=None):
 def modes(ros):
     if ros:
         return {
-            "jit-full-mandatory-native": ["-Raot", "-Rllvm-full-policy", "pb-o3",
+            "jit-full-mandatory-native": ["-Raot", "--wasm-policy-global", "runtime.llvm.full-policy", "pb-o3",
                                           "-Rllvm-cache-path", "disable"],
         }
     result = {f"int-{kind}": ["-Rcc", "int", "-Rcm", kind]
@@ -234,7 +235,8 @@ def main():
     debugger = args.gdb.resolve(strict=True) if args.gdb is not None else None
     debugger_sha = sha(debugger) if debugger is not None else None
     input_hashes = {path: sha(path) for path in
-                    (Path(__file__), Path(__file__).with_name("wasm3_compile_fatal_policy.py"),
+                    (Path(__file__), Path(__file__).with_name("wasm_qualification_policy.py"),
+                     Path(__file__).with_name("wasm3_compile_fatal_policy.py"),
                      Path(__file__).with_name("wasm3_tiered_native_entry_policy.py"),
                      build_path, bundle_path, wasm_tools, wasmtime)}
     native_entry_site = None
@@ -301,7 +303,7 @@ def main():
         oracle = dict.fromkeys((*BASE, *(flag for feature in features for flag in FEATURES[feature])))
         execute(case + "-wasmtime49", [wasmtime, "-C", "cache=n", "-W",
                                         ",".join(oracle), wasm])
-        enabled = ["-WFE-" + feature for feature in features]
+        enabled = feature_options(args.ros, features)
         for mode in selected_modes:
             label = case + "-" + mode
             compile_log = output / (label + ".compile.log")
@@ -337,10 +339,9 @@ def main():
                         continue
                     raise RuntimeError(f"{label}: configured tier was not witnessed in {compile_log}")
         for feature in dict.fromkeys(features):
-            disabled = ["-WFD-" + feature if item == feature else "-WFE-" + item
-                        for item in features]
+            disabled = feature_options(args.ros, (item for item in features if item != feature), (feature,))
             diagnostic = ("requires simd" if feature == "simd" else
-                          "--wasm-feature-enable-" + feature)
+                          feature_hint(args.ros, feature))
             for mode in selected_modes:
                 execute(case + "-" + feature + "-off-" + mode,
                         [binary, *available[mode], "-Rct", "0", *disabled, "--run", wasm],

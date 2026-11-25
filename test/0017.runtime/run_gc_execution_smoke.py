@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = ('gc_i31_execution', 'gc_ref_null_abstract_execution', 'gc_ref_null_defined_execution',
          'gc_struct_execution', 'gc_array_execution', 'gc_ref_eq_execution', 'gc_cast_execution',
          'gc_abstract_cast_no_type_execution', 'gc_branch_cast_execution',
@@ -66,6 +70,7 @@ def main():
     def run(name, phase, command, expect_success=True, required_text=None):
         timed_out = False
         try:
+            command = product_command(args.ros, command)
             process = subprocess.run([str(part) for part in command], capture_output=True,
                                      timeout=args.timeout_seconds)
             output = process.stdout + process.stderr
@@ -141,7 +146,7 @@ def main():
                 True)
             run(case + '-gc-off-extended-const-off', 'feature-off',
                 [args.uwvm, *modes['int-full'], '-WFD-gc', '-WFD-extended-const', '--run', wasm],
-                False, b'--wasm-feature-enable-gc')
+                False, feature_hint(args.ros, 'gc').encode())
             run(case + '-function-references-off', 'product',
                 [args.uwvm, *modes['int-full'], *feature_flags,
                  '-WFD-function-references', '--run', wasm])

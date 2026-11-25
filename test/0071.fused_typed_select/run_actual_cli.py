@@ -12,6 +12,10 @@ import resource
 import subprocess
 import sys
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
 def invoke(argv, negative=False):
     result = subprocess.run(argv, stdin=subprocess.DEVNULL, capture_output=True, timeout=120, check=False)
@@ -43,6 +47,7 @@ def main():
         target = args.output / (name + ".wasm")
         receipts.append(invoke([str(args.wasm_tools), "parse", str(here / (name + ".wat")), "-o", str(target)]))
         command = [str(args.wasm_tools), "validate", str(target)]
+        command = product_command(args.ros, command)
         actual = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, timeout=60, check=False)
         text = actual.stdout.decode("utf-8", "replace") + actual.stderr.decode("utf-8", "replace")
         if len(actual.stdout) + len(actual.stderr) > 1048576: raise RuntimeError("bounded official diagnostic")

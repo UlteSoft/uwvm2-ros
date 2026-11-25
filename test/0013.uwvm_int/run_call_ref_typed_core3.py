@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = {
     'typed-param': ('ok', '''(module
       (type $t (func (param i32) (result i32)))
@@ -748,6 +752,7 @@ def main() -> None:
                 commands.append(('gc-off-runtime', [uwvm, *full_int,
                     '-WFE-function-references', '-WFD-gc', '-WFE-tail-call', '--run', str(wasm)]))
         for mode, command in commands:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=120)
             log = (result.stdout + result.stderr).decode(errors='replace')
             (args.output / f'{name}-{mode}.log').write_text(log)

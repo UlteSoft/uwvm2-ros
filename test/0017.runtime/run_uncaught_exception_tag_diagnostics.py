@@ -14,6 +14,9 @@ import resource
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ANSI = re.compile(rb"\x1b\[[0-9;]*m")
 TAG = re.compile(r'tag module_id=(\d+) module="(?:[^"\\]|\\.)*" tag_idx=(\d+) type_idx=(\d+)')
 FRAME = re.compile(r'\[info\]\s+#(\d+) module_id=\d+ module="(?:[^"\\]|\\.)*" func_idx=(\d+)')
@@ -88,6 +91,7 @@ def main():
                     command = [str(args.uwvm), *selected, *extra, "-WFE-exceptions",
                                "-WFD-function-references", "-WFD-gc", "--log-color", color,
                                "--run", str(wasm)]
+                    command = product_command(args.ros, command)
                     result = run(command)
                     raw = result.stdout + result.stderr
                     plain_bytes = ANSI.sub(b"", raw)

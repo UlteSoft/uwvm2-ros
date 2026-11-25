@@ -9,6 +9,9 @@ and is expressly not certified by a subprocess exit code in this CLI runner.
 import argparse, hashlib, json, resource, subprocess, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def digest(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
  p=argparse.ArgumentParser(description=__doc__)
@@ -90,13 +93,14 @@ def main():
  if not configs:raise RuntimeError('no actual configurations selected')
  rows=[]
  def execute(name,case,command,expect):
-  result=subprocess.run(command+[str(case['path'])],capture_output=True,timeout=90)
+  invocation = product_command(a.ros, command+[str(case['path'])])
+  result=subprocess.run(invocation,capture_output=True,timeout=90)
   log=result.stdout+result.stderr;label=name+'-'+case['name'];(a.output/(label+'.log')).write_bytes(log)
   low=log.lower()
   if expect=='valid':good=result.returncode==0
   elif expect=='invalid':good=result.returncode>0 and any(x in low for x in (b'validat',b'parsing error',b'type mismatch',b'alignment',b'memarg',b'offset'))
   else:good=(result.returncode>0 or result.returncode in (-4,-6)) and any(x in low for x in (b'out of bounds memory',b'out-of-bounds memory',b'memory access violation',b'memory access out of bounds',b'memory out of bounds'))
-  rows.append({'configuration':name,'case':case['name'],'expected':expect,'exit':result.returncode,'passed':good,'command':command+[str(case['path'])],
+  rows.append({'configuration':name,'case':case['name'],'expected':expect,'exit':result.returncode,'passed':good,'command':invocation,
    'wasm_sha256':digest(case['path']),'log_sha256':digest(a.output/(label+'.log')),'assertions':case['assertions']})
   (a.output/'rows.json').write_text(json.dumps(rows,indent=2)+'\n')
   if not good:raise RuntimeError(label+' actual result violates '+expect+'; see preserved original log')

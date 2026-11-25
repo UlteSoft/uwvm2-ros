@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -74,6 +78,7 @@ def main() -> None:
                                 '--run', str(consumer)]))
     rows = []
     for name, command in commands:
+        command = product_command(args.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=90)
         log = (result.stdout + result.stderr).decode(errors='replace')
         (args.output / (name + '.log')).write_text(log)

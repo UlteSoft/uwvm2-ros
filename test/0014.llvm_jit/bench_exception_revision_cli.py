@@ -18,6 +18,9 @@ import sys
 import time
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -64,6 +67,7 @@ def main() -> None:
     def execute(label: str, command: list[str], phase: str, count: int = 0) -> int:
         command = list(map(str, command))
         start = time.perf_counter_ns()
+        command = product_command(args.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=240)
         elapsed = time.perf_counter_ns() - start
         (args.out/(label+'.log')).write_bytes(result.stdout+result.stderr)
@@ -106,6 +110,7 @@ def main() -> None:
         execute(f'assemble-{attempt}', [args.wasm_tools, 'parse', wat, '-o', wasm], 'assemble')
         execute(f'validate-{attempt}', [args.wasm_tools, 'validate', wasm], 'validate')
         commands = [uwvm_command(args.before, wasm), uwvm_command(args.after, wasm)]
+        command = product_command(args.ros, command)
         times = [execute(f'calibration-{attempt}-{side}', command, 'calibration', count)
                  for side, command in zip(('before', 'after'), commands)]
         if min(times) >= target_ns * 1.2:

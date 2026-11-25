@@ -3,6 +3,11 @@
 import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES={
  'identity':'''(module (func $f) (elem declare func $f) (func $id (param funcref) (result funcref) local.get 0 ref.as_non_null)
  (func (export "_start") ref.func $f call $id ref.is_null if unreachable end))''',
@@ -69,16 +74,18 @@ def main():
  for label,base in configs:
   for name,path,count in cases:
    command=base+(['-W','function-references=y'] if label=='wasmtime' else ['-WFE-function-references','--run'])+[str(path)]
+   command = product_command(a.ros, command)
    r=subprocess.run(command,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/(label+'-'+name+'.log')).write_bytes(log)
    rows.append(dict(config=label,case=name,expanded_types=count,exit=r.returncode,command=command));(a.output/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');assert r.returncode==0,(label,name,log)
   print('PASS',label,flush=True)
  if a.uwvm:
   path=a.output/'identity.wasm';gates=[]
   for label,flags in [('default',[]),('disable',['-WFD-function-references']),('unrelated',['-WFE-tail-call']),('references-disabled',['-WFE-function-references','-WFD-reference-types']),('conflict',['-WFE-function-references','-WFD-function-references']),('legacy',['--wasm-feature-wasm2','-WFE-function-references'])]:
-   command=[str(a.uwvm),'-m','validation',*flags,'--run',str(path)];r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+label+'.log')).write_bytes(log);assert r.returncode!=0,(label,log);gates.append(dict(case=label,exit=r.returncode,command=command))
+   command=[str(a.uwvm),'-m','validation',*flags,'--run',str(path)];command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+label+'.log')).write_bytes(log);assert r.returncode!=0,(label,log);gates.append(dict(case=label,exit=r.returncode,command=command))
   (a.output/'gates.json').write_text(json.dumps(gates,indent=2)+'\n');cache=a.output/'cache';cache.mkdir();rows_cache=[]
   for phase,flag in [('cold','-WFE-function-references'),('warm','-WFE-function-references'),('disabled','-WFD-function-references')]:
    compile_log=a.output/('cache-'+phase+'.compile.log');command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),flag,'--run',str(path)]
+   command = product_command(a.ros, command)
    r=subprocess.run(command,capture_output=True,timeout=60);(a.output/('cache-'+phase+'.log')).write_bytes(r.stdout+r.stderr);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text();assert (r.returncode==0)==(phase!='disabled');assert phase!='warm' or hit;assert phase!='disabled' or not hit;rows_cache.append(dict(phase=phase,exit=r.returncode,hit=hit))
   (a.output/'cache.json').write_text(json.dumps(rows_cache,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(cases),runs=len(rows),configs=len(configs),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n')

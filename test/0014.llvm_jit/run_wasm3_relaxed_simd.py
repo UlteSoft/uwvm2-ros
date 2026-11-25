@@ -14,6 +14,10 @@ import subprocess
 
 from run_wasm3_multi_memory import configurations as runtime_configurations
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 HASHES = {
 'i16x8_relaxed_q15mulr_s':'fa3885a95e4818e8aa9782dc8d9fb76a94b511114730ffc0b31d471ddab5b068',
 'i32x4_relaxed_trunc':'8f93d17c35f0a4076df7c32219f029ec4fc18a17562f783618d522c67f282126',
@@ -121,19 +125,20 @@ def main():
     for label,cmd in configurations:
         selected=fixtures+([(args.focused,25)] if args.focused and label!='wasmtime' else [])
         for fixture,count in selected:
-            run=subprocess.run(cmd+[str(fixture)],capture_output=True,timeout=60)
+            run=subprocess.run(product_command(args.ros, cmd+[str(fixture)]),capture_output=True,timeout=60)
             log=args.output/(label+'-'+fixture.stem+'.log');log.write_bytes(run.stdout+run.stderr)
             rows.append(dict(configuration=label,fixture=fixture.name,assertions=count,exit=run.returncode))
             if run.returncode:raise RuntimeError(f'{label}: {fixture}: {run.returncode}: {log.read_text()}')
     if args.uwvm:
         for flags in ([],['-WFD-relaxed-simd'],['-WFE-relaxed-simd','-WFD-simd']):
             cmd=[str(args.uwvm),'-m','validation',*flags,'--run',str(fixtures[0][0])]
+            cmd = product_command(args.ros, cmd)
             run=subprocess.run(cmd,capture_output=True,timeout=60);out=run.stdout+run.stderr
-            expected = b'Illegal Value Type' if '-WFD-simd' in flags else b'--wasm-feature-enable-relaxed-simd'
+            expected = b'Illegal Value Type' if '-WFD-simd' in flags else feature_hint(args.ros, 'relaxed-simd').encode()
             if run.returncode==0 or expected not in out:raise RuntimeError(f'feature rejection failed: {flags}: {out!r}')
             (args.output/('gate-'+str(len(flags))+'.log')).write_bytes(out)
-        run=subprocess.run([str(args.uwvm),'-WFE-relaxed-simd','-WFD-relaxed-simd','--run',str(fixtures[0][0])],capture_output=True)
-        if run.returncode==0 or b'conflicts' not in run.stdout+run.stderr:raise RuntimeError('feature ownership conflict accepted')
+        run=subprocess.run(product_command(args.ros, [str(args.uwvm),'-WFE-relaxed-simd','-WFD-relaxed-simd','--run',str(fixtures[0][0])]),capture_output=True)
+        if run.returncode==0 or (b'duplicate Wasm policy setting' if args.ros else b'conflicts') not in run.stdout+run.stderr:raise RuntimeError('feature ownership conflict accepted')
     summary=dict(official_assertions=sum(n for _,n in fixtures),official_modules=len(fixtures),configurations=len(configurations),runs=len(rows),cases=rows)
     (args.output/'results.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps({k:v for k,v in summary.items() if k!='cases'}))
 

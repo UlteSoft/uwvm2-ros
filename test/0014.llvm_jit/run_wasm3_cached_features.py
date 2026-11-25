@@ -8,6 +8,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('uwvm', type=Path)
@@ -43,6 +47,7 @@ def main():
             if disabled is not None:
                 switches += ['-WFD-' + disabled]
             command = [*base, '-Rclog', 'file', str(compile_log.resolve()), *switches, '--run', str(wasm.resolve())]
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=60)
             output = ansi.sub('', (result.stdout + result.stderr).decode(errors='replace'))
             (args.output / (case + '.log')).write_text(output)
@@ -52,7 +57,7 @@ def main():
                     raise RuntimeError(f'{case}: execution failed: {output}')
                 if phase == 'warm' and 'object-cache-hit' not in compilation:
                     raise RuntimeError(f'{case}: no verified object cache hit: {compilation}')
-            elif result.returncode == 0 or '--wasm-feature-enable-' + disabled not in output or 'object-cache-hit' in compilation:
+            elif result.returncode == 0 or feature_hint(args.ros, disabled) not in output or 'object-cache-hit' in compilation:
                 raise RuntimeError(f'{case}: disabled feature reached cached execution: {output}\n{compilation}')
             rows.append({'case': case, 'exit': result.returncode, 'cache_hit': 'object-cache-hit' in compilation, 'passed': True})
     (args.output / 'results.json').write_text(json.dumps(rows, indent=2) + '\n')

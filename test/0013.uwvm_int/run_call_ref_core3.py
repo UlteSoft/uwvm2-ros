@@ -12,6 +12,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 CASES = {
     'direct': ('ok', '''(module
       (type $t (func (param i32) (result i32)))
@@ -133,6 +137,7 @@ def main():
             commands.append(('validator', [uwvm, '-m', 'validation', '-WFE-function-references', '-WFE-tail-call', *gc_product_flags,
                                            *(['-WFE-exceptions'] if name == 'protected-exception' else []), '--run', str(wasm)]))
         for mode, command in commands:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=90)
             log = (result.stdout + result.stderr).decode(errors='replace')
             (args.output / f'{name}-{mode}.log').write_text(log)
@@ -157,6 +162,7 @@ def main():
         if tail.exists():
             gates.append(('tail-disabled', [uwvm, '-m', 'validation', '-WFE-function-references', '-WFD-tail-call', '--run', str(tail)]))
         for label, command in gates:
+            command = product_command(args.ros, command)
             result = subprocess.run(command, capture_output=True)
             log = (result.stdout + result.stderr).decode(errors='replace')
             (args.output / f'{label}.log').write_text(log)

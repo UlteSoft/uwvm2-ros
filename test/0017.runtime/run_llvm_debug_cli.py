@@ -11,6 +11,10 @@ import shutil
 import subprocess
 import time
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--uwvm',type=Path,required=True)
 p.add_argument('--wasm-tools',type=Path,required=True)
@@ -558,6 +562,7 @@ except BaseException:c.close(False);raise
 incompatible=[['-Rint']] if a.ros else [['-Rcc','int','-Rcm','full'],['-Rcc','jit','-Rcm','lazy'],['-Rjit'],['-Rint'],['-Rcc','tiered']]
 for i,args in enumerate(incompatible):
  cmd=[str(a.uwvm),'-m','debug-jit',*args,'--log-color','enable','--run',str(a.out/'infinite.wasm')]
+ cmd = product_command(a.ros, cmd)
  r=subprocess.run(cmd,input=b'quit\n',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=20)
  (a.out/f'incompatible-{i}.log').write_bytes(r.stdout)
  assert r.returncode!=0 and b'[fatal]' in r.stdout and b'unsupported in the current mode' in r.stdout and b'\x1b[' in r.stdout and b'(uwvm-debug)' not in r.stdout,(cmd,r.returncode,r.stdout)

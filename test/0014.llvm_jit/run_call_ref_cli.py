@@ -15,6 +15,10 @@ from pathlib import Path
 from run_wasm3_multi_memory import configurations
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = {
     "direct": ("success", """(module
       (type $t (func (param i32) (result i32)))
@@ -116,6 +120,7 @@ def main():
                 "-WFE-function-references", "-WFE-tail-call",
                 *(["-WFE-exceptions"] if exception_case else []), "--run"]
             command = base + flags + [str(binary)]
+            command = product_command(args.ros, command)
             run = subprocess.run(command, capture_output=True, timeout=120)
             output = run.stdout + run.stderr
             (args.output / (label + "-" + name + ".log")).write_bytes(output)
@@ -135,13 +140,14 @@ def main():
     if args.uwvm and not args.configuration:
         gate_cases = [
             ("function-references-disabled", ["-WFD-function-references"], "direct",
-             b"--wasm-feature-enable-function-references"),
+             feature_hint(args.ros, 'function-references').encode()),
             ("tail-call-disabled", ["-WFE-function-references", "-WFD-tail-call"], "tail-deep",
-             b"--wasm-feature-enable-tail-call"),
+             feature_hint(args.ros, 'tail-call').encode()),
         ]
         for name, flags, case, diagnostic in gate_cases:
             binary = args.output / (case + ".wasm")
             command = [str(args.uwvm.resolve()), "-m", "validation", *flags, "--run", str(binary)]
+            command = product_command(args.ros, command)
             run = subprocess.run(command, capture_output=True, timeout=60)
             output = run.stdout + run.stderr
             (args.output / ("gate-" + name + ".log")).write_bytes(output)

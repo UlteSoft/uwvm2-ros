@@ -42,10 +42,13 @@ def main():
             wat.write_text(fixture(address, compare))
             subprocess.run([str(args.wasm_tools), "parse", str(wat), "-o", str(wasm)], check=True)
             subprocess.run([str(args.wasm_tools), "validate", "--features", "all", str(wasm)], check=True)
-            for policy in ("instruction", "unwind"):
+            for policy in (("mandatory-native",) if args.ros else ("instruction", "unwind")):
                 mode = ["-Raot"] if args.ros else ["-Rcc", "jit", "-Rcm", "full"]
+                options = (["--wasm-policy-global", "parser.threads", "on",
+                            "--wasm-policy-global", "parser.memory64", "on"] if args.ros
+                           else ["-Rllvm-call-stack", policy, "-WFE-threads", "-WFE-memory64"])
                 argv = prefix + [str(args.binary), *mode, "-Rct", "0", "-Rllvm-cache-path", "disable",
-                                 "-Rllvm-call-stack", policy, "-WFE-threads", "-WFE-memory64", "--run", str(wasm)]
+                                 *options, "--run", str(wasm)]
                 row = dict(address_bits=address, compare_bits=compare, policy=policy, argv=argv,
                            actual_VM=True, debugging_enabled=False,
                            asserted_results=dict(not_equal=1, timed_out=2, notify_without_waiters=0),

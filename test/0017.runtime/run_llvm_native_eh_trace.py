@@ -17,6 +17,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 FEATURES = ("-WFE-reference-types", "-WFE-function-references", "-WFE-gc", "-WFE-exceptions")
 PREFIX = "eh-native-trace-"
@@ -149,6 +153,7 @@ def main():
         stdout, stderr = args.out / (label + ".stdout.log"), args.out / (label + ".stderr.log")
         with stdout.open("xb") as out, stderr.open("xb") as err:
             try:
+                argv = product_command(args.ros, argv)
                 process = subprocess.run(argv, stdout=out, stderr=err, timeout=args.timeout)
                 code = process.returncode
             except subprocess.TimeoutExpired:

@@ -8,6 +8,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def literal(value, bits):
     value &= (1 << bits) - 1
     return str(value - (1 << bits) if value >> (bits - 1) else value)
@@ -88,6 +92,7 @@ def main():
                     if 'no-t2' in a.tiered_variant:
                         command += ['-Rtiered-disable-t2']
                 command += ['-Rclog', 'file', str(log), *features, '--run', str(wasm)]
+                command = product_command(a.ros, command)
                 result = subprocess.run(command, capture_output=True, timeout=90)
                 output = (result.stdout + result.stderr).decode(errors='replace')
                 (a.output / (label + '.run.log')).write_text(output)
@@ -100,9 +105,9 @@ def main():
                 rows.append({'case': label, 'assertion_pairs': cases, 'command': command, 'passed': True})
         for flag in ('threads', 'multi-memory') if indexed else ('threads',):
             selected = [f for f in features if f != '-WFE-' + flag] + ['-WFD-' + flag]
-            result = subprocess.run([str(a.uwvm.resolve()), '-m', 'validation', *selected, '--run', str(wasm)], capture_output=True, timeout=30)
+            result = subprocess.run(product_command(a.ros, [str(a.uwvm.resolve()), '-m', 'validation', *selected, '--run', str(wasm)]), capture_output=True, timeout=30)
             output = (result.stdout + result.stderr).decode(errors='replace')
-            if result.returncode == 0 or '--wasm-feature-enable-' + flag not in output:
+            if result.returncode == 0 or feature_hint(a.ros, flag) not in output:
                 raise RuntimeError(f'{name} disabled {flag}: {output}')
             rows.append({'case': name + '-disabled-' + flag, 'passed': True})
     (a.output / 'results.json').write_text(json.dumps({'passed': len(rows), 'cases': rows}, indent=2) + '\n')

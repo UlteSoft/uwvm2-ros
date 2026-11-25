@@ -14,6 +14,10 @@ import struct
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 FEATURES = ["-WFE-gc", "-WFE-function-references", "-WFE-exceptions",
             "-WFE-memory64", "-WFE-table64", "-WFE-multi-memory"]
 ANSI = re.compile(rb"\x1b\[[0-?]*[ -/]*[@-~]")
@@ -67,6 +71,7 @@ def main():
         stderr = args.out / (name + ".stderr.log")
         with stdout.open("xb") as out, stderr.open("xb") as err:
             try:
+                argv = product_command(args.ros, argv)
                 run = subprocess.run(argv, input=stdin, stdout=out, stderr=err, timeout=45)
                 code = run.returncode
             except subprocess.TimeoutExpired:

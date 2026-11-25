@@ -22,6 +22,7 @@ import sys
 
 CI_ROOT = Path(__file__).resolve().parents[3] / "tools/ci"
 sys.path.insert(0, str(CI_ROOT))
+from wasm_qualification_policy import feature_hint, product_command
 from wasm3_compile_fatal_policy import negative_classification, plain_output, prove_compile_fatal_trap
 from requalify_wasm3_cli_from_provenance import embedded_source_ids
 
@@ -551,6 +552,7 @@ def main():
                 if preload is not None:
                     argv.extend(("-Wpre", preload, "test"))
                 argv.extend(("--run", wasm))
+                argv = product_command(args.ros, argv)
                 result = run(argv, folder / f"{index}-{mode}.log")
                 executions.append({"stem": stem, "group": index,
                                    "engine": "uwvm", "mode": mode, **result})
@@ -568,8 +570,9 @@ def main():
                 if preload is not None:
                     argv.extend(("-Wpre", preload, "test"))
                 argv.extend(("--run", wasm))
+                argv = product_command(args.ros, argv)
                 gate = run(argv, folder / f"{index}-{feature}-off.log", expected=1,
-                           required="--wasm-feature-enable-" + feature)
+                           required=feature_hint(args.ros, feature))
                 proof = None
                 required = gate["required_diagnostic"]
                 if gate["exit"] == -signal.SIGILL and args.gdb is not None and not gate["timed_out"]:

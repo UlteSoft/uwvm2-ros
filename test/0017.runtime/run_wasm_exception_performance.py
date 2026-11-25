@@ -17,6 +17,10 @@ import subprocess
 import time
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 ORDINARY = {'int-full': ['-Rcc', 'int', '-Rcm', 'full'],
             'jit-full': ['-Rcc', 'jit', '-Rcm', 'full'],
             'tiered-lazy': ['-Rcc', 'tiered', '-Rcm', 'lazy']}
@@ -208,6 +212,7 @@ def main():
 
     def run(label, command):
         start = time.perf_counter_ns()
+        command = product_command(args.ros, command)
         result = subprocess.run([str(value) for value in command], capture_output=True, timeout=180)
         elapsed = time.perf_counter_ns() - start
         (args.out/(label+'.log')).write_bytes(result.stdout+result.stderr)

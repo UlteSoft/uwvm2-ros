@@ -2,6 +2,10 @@
 """Finite actual Core3 scalar typed-stack gate; native admission is keeper-only."""
 import argparse,hashlib,json,resource,subprocess,sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def pin(path):
     p=Path(path);data=p.read_bytes();return {'size':len(data),'sha256':hashlib.sha256(data).hexdigest()}
 def main():
@@ -56,7 +60,7 @@ def main():
     rows=[]
     for configuration,base in configs:
         for name,file,valid in cells:
-            command=base+[str(file)];result=subprocess.run(command,capture_output=True,timeout=90)
+            command=base+[str(file)];command = product_command(a.ros, command); result=subprocess.run(command,capture_output=True,timeout=90)
             log=output/(configuration+'-'+name+'.log');log.write_bytes(result.stdout+result.stderr)
             low=(result.stdout+result.stderr).lower()
             good=result.returncode==0 if valid else result.returncode>0 and any(x in low for x in (b'validat',b'parsing error',b'type mismatch',b'operand',b'invalid'))

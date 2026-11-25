@@ -14,6 +14,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES = {
     'gc-i31-constant': {
         'wat': '(module (global $g i31ref (ref.i31 (i32.const 7))) '
@@ -164,6 +168,7 @@ def main():
     supplemental = []
 
     def check(name, command, expected, diagnostic=None):
+        command = product_command(args.ros, command)
         result = subprocess.run([str(part) for part in command], capture_output=True,
                                 timeout=60)
         output = result.stdout + result.stderr
@@ -201,18 +206,19 @@ def main():
         unrelated = [] if case['disabled'] == 'multi-memory' else ['-WFE-multi-memory']
         check(name + '-feature-off', [args.uwvm, '-m', 'validation',
                                       *disabled, *unrelated, '--run', wasm],
-              False, '--wasm-feature-enable-' + case['disabled'])
+              False, feature_hint(args.ros, case['disabled']))
         if name == 'relaxed-simd-exact-lanes':
             # The base SIMD gate must independently reject the vector value
             # even when the relaxed extension remains enabled.
             command = [args.uwvm, '-m', 'validation', '-WFE-relaxed-simd',
                        '-WFD-simd', '--run', wasm]
+            command = product_command(args.ros, command)
             result = subprocess.run([str(part) for part in command], capture_output=True, timeout=60)
             output = result.stdout + result.stderr
             (args.out / 'relaxed-simd-base-simd-off.log').write_bytes(output)
             plain = re.sub(rb'\x1b\[[0-9;]*m', b'', output).decode(errors='replace').lower()
             passed = result.returncode != 0 and ('illegal value type' in plain or
-                                                   '--wasm-feature-enable-simd' in plain or
+                                                   feature_hint(args.ros, 'simd') in plain or
                                                    'requires simd' in plain)
             supplemental.append({'case': 'relaxed-simd-base-simd-off',
                                  'command': [str(part) for part in command],

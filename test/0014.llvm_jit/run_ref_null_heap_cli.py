@@ -3,6 +3,11 @@
 import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES={
  'identity':(True,[],'''(module (type $t (func)) (func (export "_start") ref.null $t ref.is_null i32.eqz if unreachable end))'''),
  'global':(True,[],'''(module (type $t (func)) (global $g funcref (ref.null $t)) (func (export "_start") global.get $g ref.is_null i32.eqz if unreachable end))'''),
@@ -43,6 +48,7 @@ def main():
  for label,base in configs:
   for name,valid,flags,path in cases:
    command=base+(['-W','function-references=y','-W','memory64=y'] if label=='wasmtime' else ['-WFE-function-references',*flags,'--run'])+[str(path)]
+   command = product_command(a.ros, command)
    r=subprocess.run(command,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/(label+'-'+name+'.log')).write_bytes(log)
    rows.append(dict(configuration=label,case=name,valid=valid,exit=r.returncode,command=command));(a.output/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');assert (r.returncode==0)==valid,(label,name,log)
    if not valid:assert any(x in log.lower() for x in (b'validat',b'parsing error',b'invalid input webassembly code',b'failed to parse webassembly module')),(label,name,log)
@@ -55,11 +61,12 @@ def main():
    path=a.output/(case+'.wasm')
    for label,flags in [('default',[]),('disabled',['-WFD-function-references']),('unrelated',['-WFE-tail-call'])]:
     extras=['-WFE-table-initializer'] if case=='table-initializer' else []
-    command=[str(a.uwvm),'-m','validation',*extras,*flags,'--run',str(path)];r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+case+'-'+label+'.log')).write_bytes(log);assert r.returncode!=0 and (b'--wasm-feature-enable-function-references' in log or (case=='identity' and label in ('default','disabled') and b'invalid wasm1.1 reference type immediate' in log.lower())),(case,label,log);gates.append(dict(case=case,policy=label,exit=r.returncode,command=command))
+    command=[str(a.uwvm),'-m','validation',*extras,*flags,'--run',str(path)];command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('gate-'+case+'-'+label+'.log')).write_bytes(log);assert r.returncode!=0 and (feature_hint(a.ros, 'function-references').encode() in log or (case=='identity' and label in ('default','disabled') and b'invalid wasm1.1 reference type immediate' in log.lower())),(case,label,log);gates.append(dict(case=case,policy=label,exit=r.returncode,command=command))
   (a.output/'gates.json').write_text(json.dumps(gates,indent=2)+'\n');cache=a.output/'cache';cache.mkdir();cache_rows=[]
   for phase,flag in [('cold','-WFE-function-references'),('warm','-WFE-function-references'),('disabled','-WFD-function-references')]:
    compile_log=a.output/('cache-'+phase+'.compile.log');command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),flag,'--run',str(a.output/'identity.wasm')]
-   r=subprocess.run(command,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/('cache-'+phase+'.log')).write_bytes(log);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text();assert (r.returncode==0)==(phase!='disabled');assert phase!='warm' or hit;assert phase!='disabled' or (not hit and (b'--wasm-feature-enable-function-references' in log or b'invalid wasm1.1 reference type immediate' in log.lower()));cache_rows.append(dict(phase=phase,exit=r.returncode,hit=hit))
+   command = product_command(a.ros, command)
+   r=subprocess.run(command,capture_output=True,timeout=60);log=r.stdout+r.stderr;(a.output/('cache-'+phase+'.log')).write_bytes(log);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text();assert (r.returncode==0)==(phase!='disabled');assert phase!='warm' or hit;assert phase!='disabled' or (not hit and (feature_hint(a.ros, 'function-references').encode() in log or b'invalid wasm1.1 reference type immediate' in log.lower()));cache_rows.append(dict(phase=phase,exit=r.returncode,hit=hit))
   (a.output/'cache.json').write_text(json.dumps(cache_rows,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(cases),runs=len(rows),configs=len(configs),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n');print('PASS ref.null heap CLI:',len(rows),'runs',flush=True)
 if __name__=='__main__':main()

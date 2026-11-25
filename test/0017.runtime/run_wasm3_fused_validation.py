@@ -22,6 +22,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 BASE_FEATURES = ("-WFE-reference-types", "-WFE-function-references", "-WFE-gc",
                  "-WFE-exceptions", "-WFE-tail-call", "-WFD-memory64")
@@ -623,6 +627,7 @@ def main():
     def command(label, argv):
         argv = [str(part) for part in argv]
         try:
+            argv = product_command(args.ros, argv)
             process = subprocess.run(argv, capture_output=True, timeout=args.timeout)
             code, raw = process.returncode, process.stdout + process.stderr
         except subprocess.TimeoutExpired as error:
@@ -668,10 +673,10 @@ def main():
             policies.append(("legacy-wasm2", ("-WF2",), "validation-error", None))
         if name.startswith("rec-") and case["valid"]:
             flags = tuple(flag for flag in BASE_FEATURES if flag != "-WFE-gc") + ("-WFD-gc",)
-            policies.append(("gc-off", flags, "parse-error", "--wasm-feature-enable-gc"))
+            policies.append(("gc-off", flags, "parse-error", feature_hint(args.ros, 'gc')))
         if case.get("eh_gate"):
             flags = tuple(flag for flag in BASE_FEATURES if flag != "-WFE-exceptions") + ("-WFD-exceptions",)
-            policies.append(("exceptions-off", flags, "validation-error", "--wasm-feature-enable-exceptions"))
+            policies.append(("exceptions-off", flags, "validation-error", feature_hint(args.ros, 'exceptions')))
         if case.get("gc_independent"):
             # exn/noexn depend on exceptions, not GC. Run the very same bytes
             # through the fallback reference decoder with GC explicitly off.

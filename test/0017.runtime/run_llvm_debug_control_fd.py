@@ -14,6 +14,10 @@ import subprocess
 import time
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--uwvm', required=True, type=Path)
 parser.add_argument('--wasm-tools', required=True, type=Path)
@@ -251,6 +255,7 @@ if launcher_pid == 0:
         handoff.close()
         control, vm_endpoint = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         cmd = command(peer_binary, vm_endpoint.fileno())
+        cmd = product_command(a.ros, cmd)
         child = subprocess.Popen(cmd, pass_fds=(vm_endpoint.fileno(),),
                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -324,6 +329,7 @@ for name, mode, compiler, compile_mode in incompatible:
     left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
     try:
         cmd = command(finite, right.fileno(), mode, compiler, compile_mode)
+        cmd = product_command(a.ros, cmd)
         result = subprocess.run(cmd, pass_fds=(right.fileno(),), stdin=subprocess.DEVNULL,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
     finally:
@@ -338,6 +344,7 @@ for alias in ('stdin', 'stdout'):
     left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
     try:
         cmd = command(finite, right.fileno())
+        cmd = product_command(a.ros, cmd)
         result = subprocess.run(cmd, pass_fds=(right.fileno(),),
             stdin=right if alias == 'stdin' else subprocess.DEVNULL,
             stdout=right if alias == 'stdout' else subprocess.PIPE,
@@ -353,6 +360,7 @@ for alias in ('stdin', 'stdout'):
                      expected='fatal stdio alias'))
 
 cmd = command(finite, 999)
+cmd = product_command(a.ros, cmd)
 result = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, timeout=30)
 (a.out/'invalid-descriptor.log').write_bytes(result.stdout)

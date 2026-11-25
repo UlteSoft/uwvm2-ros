@@ -21,6 +21,10 @@ import subprocess
 import time
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 SEED = 123456789
 MASK = (1 << 32) - 1
 STEP = 'i32.const 1664525 i32.mul i32.const 1013904223 i32.add'
@@ -146,6 +150,7 @@ def main():
 
     def run(label, command, phase, iterations=0):
         start = time.perf_counter_ns()
+        command = product_command(args.ros, command)
         result = subprocess.run([str(part) for part in command], capture_output=True, timeout=240)
         elapsed = time.perf_counter_ns() - start
         (args.out / (label + '.log')).write_bytes(result.stdout + result.stderr)

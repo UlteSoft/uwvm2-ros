@@ -7,6 +7,11 @@ import argparse,hashlib,json,resource,subprocess
 from pathlib import Path
 from run_wasm3_multi_memory import configurations
 from run_external_value_cli import leb,Reader
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 CASES={
  'empty-payload':'(module (tag (param)) (func (export "_start")))',
  'numeric-payload':'(module (tag (param i32 i64 f32 f64)) (func (export "_start") i64.const 42 i64.const 42 i64.ne if unreachable end))',
@@ -62,19 +67,20 @@ def main():
   for name,valid,path in cases:
    preload=(['--preload','p='+str(provider)] if label=='wasmtime' else ['-Wpre',str(provider),'p']) if name.startswith('import') else []
    command=base+(['-W','exceptions=y'] if label=='wasmtime' else ['-WFE-exceptions'])+preload+([] if label=='wasmtime' else ['--run'])+[str(path)]
+   command = product_command(a.ros, command)
    result=subprocess.run(command,capture_output=True,timeout=60);log=result.stdout+result.stderr;(a.output/(label+'-'+name+'.log')).write_bytes(log);rows.append(dict(configuration=label,case=name,valid=valid,exit=result.returncode,command=command));(a.output/'runs.json').write_text(json.dumps(rows,indent=2)+'\n');assert (result.returncode==0)==valid,(label,name,log)
   print('PASS',label,flush=True)
  if a.uwvm:
   for case in ('empty-section','empty-payload','import'):
    preload=['-Wpre',str(provider),'p'] if case=='import' else []
    for label,flags in [('default',[]),('disabled',['-WFD-exceptions']),('unrelated',['-WFE-function-references'])]:
-    command=[str(a.uwvm),'-m','validation',*preload,*flags,'--run',str(a.output/(case+'.wasm'))];r=subprocess.run(command,capture_output=True,timeout=30);log=r.stdout+r.stderr;(a.output/('gate-'+case+'-'+label+'.log')).write_bytes(log);assert r.returncode!=0 and b'--wasm-feature-enable-exceptions' in log,(case,label,log)
-  r=subprocess.run([str(a.uwvm),'-WFE-exceptions','-WFD-exceptions','--run',str(a.output/'memory.wasm')],capture_output=True);assert r.returncode!=0 and b'conflicts' in r.stdout+r.stderr
+    command=[str(a.uwvm),'-m','validation',*preload,*flags,'--run',str(a.output/(case+'.wasm'))];command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True,timeout=30);log=r.stdout+r.stderr;(a.output/('gate-'+case+'-'+label+'.log')).write_bytes(log);assert r.returncode!=0 and feature_hint(a.ros, 'exceptions').encode() in log,(case,label,log)
+  r=subprocess.run(product_command(a.ros, [str(a.uwvm),'-WFE-exceptions','-WFD-exceptions','--run',str(a.output/'memory.wasm')]),capture_output=True);assert r.returncode!=0 and (b'duplicate Wasm policy setting' if a.ros else b'conflicts') in r.stdout+r.stderr
   for case in ('same-signatures','import-alias'):
-   command=[str(a.uwvm),'-m','section-details','-WFE-exceptions','--run',str(a.output/(case+'.wasm'))];r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('details-'+case+'.log')).write_bytes(log);assert r.returncode==0 and b'tag[' in log,(case,log)
+   command=[str(a.uwvm),'-m','section-details','-WFE-exceptions','--run',str(a.output/(case+'.wasm'))];command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True);log=r.stdout+r.stderr;(a.output/('details-'+case+'.log')).write_bytes(log);assert r.returncode==0 and b'tag[' in log,(case,log)
   cache=a.output/'cache';cache.mkdir();cache_rows=[]
   for phase,flag in [('cold','-WFE-exceptions'),('warm','-WFE-exceptions'),('disabled','-WFD-exceptions')]:
-   compile_log=a.output/('cache-'+phase+'.compile.log');command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),flag,'--run',str(a.output/'memory.wasm')];r=subprocess.run(command,capture_output=True,timeout=60);(a.output/('cache-'+phase+'.log')).write_bytes(r.stdout+r.stderr);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text();assert (r.returncode==0)==(phase!='disabled');assert phase!='warm' or hit;assert phase!='disabled' or not hit;cache_rows.append(dict(phase=phase,exit=r.returncode,hit=hit))
+   compile_log=a.output/('cache-'+phase+'.compile.log');command=[str(a.uwvm)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),flag,'--run',str(a.output/'memory.wasm')];command = product_command(a.ros, command); r=subprocess.run(command,capture_output=True,timeout=60);(a.output/('cache-'+phase+'.log')).write_bytes(r.stdout+r.stderr);hit=compile_log.exists() and 'object-cache-hit' in compile_log.read_text();assert (r.returncode==0)==(phase!='disabled');assert phase!='warm' or hit;assert phase!='disabled' or not hit;cache_rows.append(dict(phase=phase,exit=r.returncode,hit=hit))
   (a.output/'cache.json').write_text(json.dumps(cache_rows,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,cases=len(cases),runs=len(rows),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n');print('PASS Core 3 tag declarations:',len(rows),'runs')
 if __name__=='__main__':main()

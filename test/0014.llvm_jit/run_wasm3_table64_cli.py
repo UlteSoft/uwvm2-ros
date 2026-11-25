@@ -15,6 +15,10 @@ import subprocess
 from run_wasm3_multi_memory import configurations
 from run_wasm3_multi_memory_spec import wrap
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 PIN = '10d212453286717b4bc59151810acd66ba2d0334'
 HASHES = {
     'call_indirect64': '1624a745dc4ea54431e736204bb991e815391852d62f60bd967734d0d74058ec',
@@ -116,6 +120,7 @@ def main():
    if case.get('validation_only') and label not in ('validator','wasmtime'):continue
    switches=sum((['-W',('memory64' if f=='table64' else f)+'=y'] for f in case['features']),[]) if label=='wasmtime' else ['-WFE-'+f for f in case['features']]
    command=base+switches+([] if label=='wasmtime' else ['--run'])+[str(case['path'])]
+   command = product_command(a.ros, command)
    run=subprocess.run(command,capture_output=True,timeout=90);log=run.stdout+run.stderr
    (a.output/(label+'-'+case['name']+'.log')).write_bytes(log)
    outcome=case['outcome'];expected_success=outcome=='success' or (label=='validator' and outcome!='validation')
@@ -130,19 +135,20 @@ def main():
  if a.uwvm and not a.configuration:
   binary=next(c['path'] for c in cases if c['name']=='operations')
   for flags in ([],['-WFE-memory64'],['-WFD-table64']):
-   run=subprocess.run([str(a.uwvm.resolve()),'-m','validation',*flags,'--run',str(binary)],capture_output=True,timeout=30)
-   assert run.returncode!=0 and b'--wasm-feature-enable-table64' in run.stdout+run.stderr
+   run=subprocess.run(product_command(a.ros, [str(a.uwvm.resolve()),'-m','validation',*flags,'--run',str(binary)]),capture_output=True,timeout=30)
+   assert run.returncode!=0 and feature_hint(a.ros, 'table64').encode() in run.stdout+run.stderr
   # Exercise a genuine signed object-cache hit, then forbid the same module with a narrower policy.
   cache=a.output/'cache';cache.mkdir();cache_rows=[]
   base=[str(a.uwvm.resolve())]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])
   for phase,switch in [('cold','-WFE-table64'),('warm','-WFE-table64'),('disabled','-WFD-table64')]:
    compilation=a.output/('cache-'+phase+'.compile.log')
    command=base+['-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compilation),switch,'--run',str(binary)]
+   command = product_command(a.ros, command)
    run=subprocess.run(command,capture_output=True,timeout=60);log=run.stdout+run.stderr
    (a.output/('cache-'+phase+'.log')).write_bytes(log);hit=compilation.exists() and 'object-cache-hit' in compilation.read_text()
    assert (run.returncode==0)==(phase!='disabled')
    assert phase!='warm' or hit
-   assert phase!='disabled' or (not hit and b'--wasm-feature-enable-table64' in log)
+   assert phase!='disabled' or (not hit and feature_hint(a.ros, 'table64').encode() in log)
    cache_rows.append(dict(phase=phase,exit=run.returncode,cache_hit=hit))
   (a.output/'cache-checks.json').write_text(json.dumps(cache_rows,indent=2)+'\n')
  (a.output/'summary.json').write_text(json.dumps(dict(passed=True,runs=len(rows),cases=len(cases),configurations=len(configs),official_assertions=sum(c['assertions'] for c in cases),binary_sha256=hashlib.sha256(a.uwvm.read_bytes()).hexdigest() if a.uwvm else None),indent=2)+'\n')

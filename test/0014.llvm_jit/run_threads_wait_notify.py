@@ -14,6 +14,10 @@ import resource
 import subprocess
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('uwvm', type=Path)
@@ -35,6 +39,7 @@ def main():
     rows = []
 
     def run(label, command, diagnostic=None):
+        command = product_command(a.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=45)
         output = (result.stdout + result.stderr).decode(errors='replace')
         (a.output / (label + '.log')).write_text(output)
@@ -130,7 +135,7 @@ def main():
             for flag in (['threads', 'multi-memory'] if indexed else ['threads']):
                 disabled = [f for f in features if f != '-WFE-' + flag] + ['-WFD-' + flag]
                 run(name + '-disabled-' + flag, [str(a.uwvm), '-m', 'validation', *disabled, '--run', str(binary)],
-                    '--wasm-feature-enable-' + flag)
+                    feature_hint(a.ros, flag))
     assert binary_hash == hashlib.sha256(a.uwvm.read_bytes()).hexdigest(), 'CLI changed during tests'
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     (a.output / 'summary.json').write_text(json.dumps(dict(passed=True, fixtures=len(fixtures), checks=len(rows),

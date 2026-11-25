@@ -16,6 +16,10 @@ import subprocess
 
 
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import feature_hint, product_command
+
 def fixtures(backend):
     mutual = '''(module
       (func $a (param $n i32) (param $s i64) (result i64) (local $z i64)
@@ -173,6 +177,7 @@ def main():
     ansi = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
     rows = []
     def run(label, command, diagnostic=None, stack=None):
+        command = product_command(a.ros, command)
         result = subprocess.run(command, capture_output=True, timeout=90)
         log = ansi.sub('', (result.stdout + result.stderr).decode(errors='replace'))
         (a.output / (label + '.log')).write_text(log)
@@ -199,7 +204,7 @@ def main():
                     base += ['-Rct', '0', '-Rllvm-cache-path', 'disable', *([] if a.ros else ['-Rllvm-call-stack', policy])]
                 run(f'{name}-{mode}-{policy}', [str(a.uwvm), *base, '-WFE-tail-call', '--run', str(wasm)],
                     trap[1] if trap else None, ([] if policy == 'none' else trap[2]) if trap else None)
-        run(name + '-disabled', [str(a.uwvm), '-m', 'validation', '-WFD-tail-call', '--run', str(wasm)], '--wasm-feature-enable-tail-call')
+        run(name + '-disabled', [str(a.uwvm), '-m', 'validation', '-WFD-tail-call', '--run', str(wasm)], feature_hint(a.ros, 'tail-call'))
     assert binary_hash == hashlib.sha256(a.uwvm.read_bytes()).hexdigest()
     subprocess.run(['bash', str(root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     (a.output / 'summary.json').write_text(json.dumps(dict(passed=True, checks=len(rows), backend=a.backend,

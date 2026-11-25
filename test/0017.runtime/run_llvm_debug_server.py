@@ -14,6 +14,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/debug"))
 import secure_server
 
@@ -64,6 +67,7 @@ vm_args += ["--run", str(wasm)]
 command = ["python3", str(args.source_root / "tools/debug/secure_server.py"),
            "serve", "--uwvm", str(args.uwvm), "--socket-dir", str(private),
            "--", *vm_args]
+command = product_command(args.ros, command)
 server = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           stdin=subprocess.DEVNULL, start_new_session=True)
 output = bytearray()
@@ -116,9 +120,9 @@ try:
         fields = Path(f'/proc/{guest_pid}/stat').read_text().rsplit(')', 1)[1].split()
         return int(fields[11]) + int(fields[12])
 
-    exposed = subprocess.run(["python3", str(args.source_root / "tools/debug/secure_server.py"),
+    exposed = subprocess.run(product_command(args.ros, ["python3", str(args.source_root / "tools/debug/secure_server.py"),
                               "serve", "--uwvm", str(args.uwvm), "--socket-dir", str(private),
-                              "--", "--wasip1-mount-dir", "/guest", "/", "--run", str(wasm)],
+                              "--", "--wasip1-mount-dir", "/guest", "/", "--run", str(wasm)]),
                              capture_output=True, timeout=12)
     assert exposed.returncode == 1 and b"overlaps a guest WASI preopen" in exposed.stderr, exposed
     assert server.poll() is None

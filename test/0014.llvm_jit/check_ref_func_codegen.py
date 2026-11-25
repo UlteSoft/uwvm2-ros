@@ -4,6 +4,11 @@ import argparse,hashlib,json,re,resource,subprocess
 from pathlib import Path
 from check_wasm3_native_frame_codegen import decode_object
 from run_function_signature_cli import expand
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 p=argparse.ArgumentParser(description=__doc__)
 for flag in ('uwvm','before-uwvm','wasm-tools','out'):p.add_argument('--'+flag,type=Path,required=True)
 p.add_argument('--ros',action='store_true');a=p.parse_args();root=Path(__file__).resolve().parents[2]
@@ -32,6 +37,7 @@ for policy in (('mandatory-native',) if a.ros else ('instruction', 'unwind')):
   for phase in ('cold','warm'):
    existing=set(cache.rglob('*.uwvm-ljc'));compile_log=out/(phase+'.compile.log')
    command=[str(binary)]+(['-Raot'] if a.ros else ['-Rcc','jit','-Rcm','full'])+['-Wpre',str(a.out/'provider.wasm'),'p','-WFE-function-references',*([] if a.ros else ['-Rllvm-call-stack', policy]),'-Rllvm-full-policy','pb-o3','-Rllvm-cache-path','path',str(cache),'-Rclog','file',str(compile_log),'--run',str(a.out/'consumer.wasm')]
+   command = product_command(a.ros, command)
    result=subprocess.run(command,capture_output=True,timeout=60);(out/(phase+'.log')).write_bytes(result.stdout+result.stderr);(out/(phase+'.command')).write_text(json.dumps(command)+'\n');assert result.returncode==0,result.stderr
    hits=compile_log.read_text().count('object-cache-hit');created=set(cache.rglob('*.uwvm-ljc'))-existing
    assert (hits>0)==(phase=='warm'),(version,phase,hits)

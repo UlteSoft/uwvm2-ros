@@ -14,6 +14,10 @@ from run_debug_run_cli import Console
 from run_debug_breakpoint_benchmark import exports
 from debug_sampling_safety import SamplingSession, durable_write, sampling_options, sync_artifacts
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  for n in ['uwvm','wasm','out']:p.add_argument('--'+n,type=Path,required=True)
@@ -109,6 +113,7 @@ def main():
   data['hardware_backend']='perf driverless custom clock/retired sampling' if a.driverless_hotspots else 'VTune preset'
   data.update(argv=argv,target_pid=c.pid)
   with (a.out/'collect.log').open('w') as log:
+   argv = product_command(a.ros, argv)
    vt=subprocess.Popen(argv,stdout=log,stderr=subprocess.STDOUT);deadline=time.monotonic()+60
    while time.monotonic()<deadline and vt.poll() is None:
     safety.check()
@@ -145,6 +150,7 @@ def main():
   for report in ['summary','hotspots']:
    argv=[str(a.vtune),'-report',report,'-r',str(a.out/'result'),'-format','csv']
    if report=='hotspots':argv+=['-group-by','function','-limit','40']
+   argv = product_command(a.ros, argv)
    q=subprocess.run(argv,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=120)
    (a.out/(report+'.csv')).write_bytes(q.stdout);assert q.returncode==0,q.stdout[-2500:]
   data['artifacts']={name:hashlib.sha256((a.out/name).read_bytes()).hexdigest() for name in ['collect.log','stop.log','summary.csv','hotspots.csv']}

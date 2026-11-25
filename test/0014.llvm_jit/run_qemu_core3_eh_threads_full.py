@@ -18,6 +18,9 @@ import subprocess
 import sys
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 WAT = '''(module
   (memory 1 1 shared)
   (tag $t (param i32))
@@ -104,6 +107,7 @@ def main():
     def run(label, argv, timeout=120):
         command = [str(value) for value in argv]
         try:
+            command = product_command(a.ros, command)
             result = subprocess.run(command, capture_output=True, timeout=timeout, env=host_env)
         except subprocess.TimeoutExpired as error:
             data = (error.stdout or b'') + (error.stderr or b'')

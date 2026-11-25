@@ -22,6 +22,10 @@ from run_debug_breakpoint_benchmark import exports
 from run_debug_run_cli import Console
 from run_debug_wasmtime_comparison import finish_batch
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ci"))
+from wasm_qualification_policy import product_command
+
 PROMPT = rb'(?:^|\n)\(uwvm-debug\) $'
 MODES = ('uwvm-ordinary', 'uwvm-none', 'uwvm-cold', 'uwvm-disabled',
          'wasmtime-ordinary', 'wasmtime-gdb', 'wasmtime-guest')
@@ -66,10 +70,12 @@ def uwvm_run(binary, wasm, row, mode, out, *, ros, timeout, cgroup):
             *['-WFE-' + feature for feature in row['required_features']], '--run', str(wasm)]
     begin = time.perf_counter()
     if not debug:
+        argv = product_command(ros, argv)
         process = run_logged(argv, out, timeout)
         assert process.returncode == 0, process.stdout[-3000:]
         return {**metrics(process.stdout, row['expected_checksum']), 'argv': argv,
                 'process_s': time.perf_counter() - begin, 'startup_s': None}
+    argv = product_command(ros, argv)
     console = Console(argv)
     try:
         console.wait(lambda b: re.search(PROMPT, b), 0, timeout)
