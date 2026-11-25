@@ -23,7 +23,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         result.memory_bytes=memory_bytes; result.first_granule=offset/16u;
         if(!storage.enabled()) { result.status=debug_tag_status::disabled; return result; }
         auto const width{storage.width()};
-        auto const capacity{::std::uint64_t{1u} << (width==address_width::i32 ? 28u : 56u)};
+        auto const capacity{storage.address_mask()+1u};
         if(memory_bytes>capacity || memory_bytes>storage.prepared_memory_bytes()) { return result; }
         auto const count{bytes==0u ? 0u : (offset+bytes-1u)/16u-result.first_granule+1u};
         if(count>destination.size() || (count!=0u && destination.data()==nullptr)) { return result; }
@@ -45,7 +45,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             (storage.shared() ? read.template operator()<::std::uint64_t,true>() : read.template operator()<::std::uint64_t,false>())};
         if(!copied) { return result; }
         result.status=debug_tag_status::available;result.count=static_cast<::std::size_t>(count);
-        result.tag_bits=width==address_width::i32 ? 4u : 8u;
+        result.tag_bits=4u;
         return result;
     }
     // A debugger holds a real owner/snapshot and complete stop. It may inspect
@@ -77,7 +77,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         if(!storage.enabled() || storage.hardware_base()!=memory.data() ||
            memory.size()>storage.prepared_memory_bytes()) { return false; }
         auto const width{storage.width()};
-        auto const capacity{::std::uint64_t{1u} << (width==address_width::i32 ? 28u : 56u)};
+        auto const capacity{storage.address_mask()+1u};
         if(memory.size()>capacity) { return false; }
         auto visit=[&]<typename Address, bool Shared>() noexcept
         {
@@ -113,13 +113,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         ::std::uint64_t raw, ::std::uint64_t& canonical) noexcept
     {
         canonical=raw;
-        if(!storage.enabled()) { return true; }
-        if(storage.width()==address_width::i32)
-        {
-            if(raw>UINT32_MAX) { return false; }
-            canonical=raw&UINT64_C(0x0fffffff);
-        }
-        else { canonical=raw&UINT64_C(0x00ffffffffffffff); }
+        if(!storage.ignored_bits()) { return true; }
+        if(storage.width()==address_width::i32 && raw>UINT32_MAX) { return false; }
+        canonical = raw & storage.address_mask();
         return true;
     }
 

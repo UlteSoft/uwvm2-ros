@@ -384,12 +384,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
         // Configure only after native initialization and before guest publication.
         [[nodiscard]] inline ::uwvm2::extension::memtag::storage_error enable_memtag(
-            ::uwvm2::extension::memtag::address_width width, bool shared) noexcept
+            ::uwvm2::extension::memtag::address_width width, bool shared, unsigned ignored_bits = 4u,
+            ::uwvm2::extension::memtag::owner_backend backend = ::uwvm2::extension::memtag::owner_backend::software) noexcept
         {
             namespace mt = ::uwvm2::extension::memtag;
             if(this->memory_begin == nullptr) { return mt::storage_error::invalid_configuration; }
             return this->memtag_shadow.enable(width, shared, mt::storage_backend::growable,
-                this->memory_length, ::std::numeric_limits<::std::size_t>::max());
+                this->memory_length, ::std::numeric_limits<::std::size_t>::max(), ignored_bits, backend);
         }
 
         /// @brief      Initialize the memory.
@@ -503,7 +504,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memory> relocation_peak;
             if(!relocation_peak.resize(this->memory_length)) { return false; }
 
-            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
+            if(this->memtag_shadow.ignored_bits() && this->memtag_shadow.prepare_growth(new_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
 
             // In this model, regardless of whether `memory_begin` changes, no thread safety issues will arise.
@@ -654,7 +655,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
             ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::memory> relocation_peak;
             if(!relocation_peak.resize(this->memory_length)) { return false; }
 
-            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(new_memory_length) !=
+            if(this->memtag_shadow.ignored_bits() && this->memtag_shadow.prepare_growth(new_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
 
             // In this model, regardless of whether `memory_begin` changes, no thread safety issues will arise.

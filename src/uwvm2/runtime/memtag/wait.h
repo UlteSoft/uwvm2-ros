@@ -41,7 +41,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         // Use the same alignment-first admission as other tagged atomics.
         // Unsigned low-bit arithmetic is valid even for a 65-bit effective sum;
         // check_access below still proves its complete range before any access.
-        if(((static_cast<::std::uint64_t>(pointer)+offset)&(bytes-1u))!=0u)
+        if(((memory.memtag_shadow.canonical_address(pointer)+offset)&(bytes-1u))!=0u)
         { result.wait.status=waiting::wait_status::unaligned;return result; }
         auto const checked{check_access<Address,Shared>(memory,pointer,offset,bytes)};
         result.access=checked;

@@ -63,6 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         ::std::atomic_size_t prepared_memory_bytes_{};
         ::std::size_t page_size_{};
         address_width width_{address_width::i32};
+        ::std::uint8_t ignored_bits_{};
         storage_backend backend_{};
         bool shared_{};
         // Allocated only for enabled shared owners. All aliases borrow this same
@@ -210,6 +211,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             other.prepared_memory_bytes_.store(0u, ::std::memory_order_relaxed);
             page_size_ = ::std::exchange(other.page_size_, 0u);
             width_ = other.width_;
+            ignored_bits_ = ::std::exchange(other.ignored_bits_, 0u);
             backend_ = ::std::exchange(other.backend_, storage_backend::disabled);
             shared_ = ::std::exchange(other.shared_, false);
 #if defined(__linux__) && defined(__aarch64__)
@@ -232,11 +234,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         [[nodiscard]] constexpr bool enabled() const noexcept { return backend_ != storage_backend::disabled; }
         [[nodiscard]] constexpr address_width width() const noexcept { return width_; }
+        [[nodiscard]] constexpr unsigned ignored_bits() const noexcept { return ignored_bits_; }
+        [[nodiscard]] constexpr ::std::uint64_t address_mask() const noexcept { return adm_address_mask(width_,ignored_bits_); }
+        [[nodiscard]] constexpr ::std::uint64_t canonical_address(::std::uint64_t raw) const noexcept
+        { return ignored_bits_ ? raw & address_mask() : raw; }
+        [[nodiscard]] constexpr owner_backend resolved_backend() const noexcept
+        { return hardware_selected() ? owner_backend::arm_mte : owner_backend::software; }
+        [[nodiscard]] constexpr unsigned tag_start_bit() const noexcept
+        { return width_ == address_width::i32 ? 28u : hardware_selected() ? 56u : 60u; }
+        [[nodiscard]] constexpr tag_geometry geometry() const noexcept
+        { return make_tag_geometry(width_,ignored_bits_,tag_start_bit()); }
+
+        // An ADM-only memory needs no allocation tags or native tag lease.
+        [[nodiscard]] constexpr storage_error configure_adm(address_width width, bool shared, unsigned ignored_bits) noexcept
+        {
+            if(enabled()) { return storage_error::already_enabled; }
+            if((width != address_width::i32 && width != address_width::i64) || ignored_bits >= static_cast<unsigned>(width))
+            { return storage_error::invalid_configuration; }
+            width_ = width;
+            shared_ = shared;
+            ignored_bits_ = static_cast<::std::uint8_t>(ignored_bits);
+            maximum_memory_bytes_ = ignored_bits ? address_mask()+1u : UINT64_MAX;
+            return storage_error::none;
+        }
         // Access requires the same read/write lease used for shadow tags.
         [[nodiscard]] managed_allocations& allocation_directory() const noexcept { return allocations_; }
         [[nodiscard]] constexpr bool shared() const noexcept { return shared_; }
         [[nodiscard]] constexpr bool shared_tag_lease_ready() const noexcept
-        { return !shared_ || shared_tag_gate_ != nullptr; }
+        { return !enabled() || !shared_ || shared_tag_gate_ != nullptr; }
 
         // The caller already owns the source and any relocation pin. The entire
         // tag proof and actual byte effect belong inside this short callback.
@@ -353,7 +378,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             using view_type = shadow_view<Address,Shared>;
             if(memory_bytes > prepared_memory_bytes()) { return {nullptr,0u,view_type::address_capacity+1u}; }
             return {static_cast<typename view_type::tag_type*>(data_),tags_for(static_cast<::std::size_t>(memory_bytes)),
-                    memory_bytes,hardware_base(),write_gate};
+                    memory_bytes,hardware_base(),write_gate,static_cast<Address>(address_mask()),tag_start_bit()};
         }
 
     public:
@@ -377,6 +402,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         template<::std::unsigned_integral Address, bool Shared = false>
         [[nodiscard]] shadow_view<Address, Shared> view(::std::uint64_t memory_bytes) const noexcept
         {
+            if(!enabled() && ignored_bits_ && static_cast<unsigned>(width_) == sizeof(Address)*8u && shared_ == Shared)
+            { return {nullptr,0u,memory_bytes,nullptr,nullptr,static_cast<Address>(address_mask()),tag_start_bit(),false}; }
             if(!configured_for_view<Address,Shared>()) { return {nullptr,0u,shadow_view<Address,Shared>::address_capacity+1u}; }
             return prepared_view<Address,Shared>(memory_bytes,shared_tag_gate_);
         }
@@ -395,31 +422,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // Call after native memory initialization and before guest publication.
         // Failed configuration leaves the storage disabled and unallocated.
         [[nodiscard]] storage_error enable(address_width width, bool shared, storage_backend backend,
-                                             ::std::uint64_t current_bytes, ::std::uint64_t maximum_bytes) noexcept
+                                             ::std::uint64_t current_bytes, ::std::uint64_t maximum_bytes,
+                                             unsigned ignored_bits = 4u, owner_backend requested = owner_backend::software) noexcept
         {
             if(enabled()) { return storage_error::already_enabled; }
-            if((width != address_width::i32 && width != address_width::i64) ||
+            if((width != address_width::i32 && width != address_width::i64) || ignored_bits < 4u || ignored_bits >= static_cast<unsigned>(width) ||
                (backend != storage_backend::growable && backend != storage_backend::reserved))
             { return storage_error::invalid_configuration; }
-            auto const encoding_capacity{::std::uint64_t{1u} << (width == address_width::i32 ? 28u : 56u)};
+            auto const encoding_capacity{adm_address_mask(width,ignored_bits)+1u};
             if(current_bytes > encoding_capacity || current_bytes > ::std::numeric_limits<::std::size_t>::max())
             { return storage_error::address_not_representable; }
-            // The i64 tagged pointer still encodes 56 address bits. The host admits at most
-            // 2^48 bytes of linear data per tagged memory, for either allocation backend.
-            constexpr ::std::uint64_t tagged_memory64_limit{::std::uint64_t{1u} << 48u};
-            auto const growth_limit{width == address_width::i64 ? tagged_memory64_limit : encoding_capacity};
+            auto const growth_limit{width == address_width::i64 && encoding_capacity > (UINT64_C(1) << 48u) ?
+                UINT64_C(1) << 48u : encoding_capacity};
             if(maximum_bytes > growth_limit) { maximum_bytes = growth_limit; }
             if(maximum_bytes > ::std::numeric_limits<::std::size_t>::max())
             { maximum_bytes = ::std::numeric_limits<::std::size_t>::max(); }
             if(current_bytes > maximum_bytes) { return storage_error::capacity_exceeded; }
             shadow_storage candidate;
             candidate.width_ = width;
+            candidate.ignored_bits_ = static_cast<::std::uint8_t>(ignored_bits);
             candidate.shared_ = shared;
             candidate.backend_ = backend;
             candidate.maximum_memory_bytes_ = maximum_bytes;
+            if(requested == owner_backend::x86_mtt) { return storage_error::unsupported_backend; }
 #if defined(__linux__) && defined(__aarch64__)
-            candidate.hardware_selected_ = backend == storage_backend::reserved && hardware_mte::select_for_owner();
+            candidate.hardware_selected_ = (requested == owner_backend::arm_mte || requested == owner_backend::automatic) &&
+                backend == storage_backend::reserved && (width == address_width::i32 || ignored_bits >= 8u) &&
+                !logging_requested() && hardware_mte::supported();
 #endif
+            if(requested == owner_backend::arm_mte && !candidate.hardware_selected()) { return storage_error::unsupported_backend; }
             if(backend == storage_backend::reserved)
             {
 #if !defined(UWVM_SUPPORT_MMAP)
@@ -458,6 +489,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 if(candidate.shared_tag_gate_ == nullptr) { return storage_error::allocation_failed; }
                 ::std::construct_at(candidate.shared_tag_gate_);
             }
+            if(candidate.hardware_selected()) { note_selected_hardware_backend(); }
             *this = ::std::move(candidate);
             return storage_error::none;
         }
@@ -468,7 +500,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // never publishes memory and preserves every previously accessible tag.
         [[nodiscard]] storage_error prepare_growth(::std::uint64_t new_memory_bytes) noexcept
         {
-            if(!enabled()) { return storage_error::none; }
+            if(!enabled())
+            {
+                if(ignored_bits_ && new_memory_bytes && new_memory_bytes-1u > address_mask()) { return storage_error::capacity_exceeded; }
+                return storage_error::none;
+            }
             if(new_memory_bytes > maximum_memory_bytes_) { return storage_error::capacity_exceeded; }
             if(new_memory_bytes > ::std::numeric_limits<::std::size_t>::max())
             { return storage_error::address_not_representable; }
@@ -529,6 +565,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             maximum_memory_bytes_ = 0u;
             prepared_memory_bytes_.store(0u, ::std::memory_order_relaxed);
             width_ = address_width::i32;
+            ignored_bits_ = 0u;
             backend_ = storage_backend::disabled;
             shared_ = false;
 #if defined(__linux__) && defined(__aarch64__)

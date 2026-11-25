@@ -56,6 +56,7 @@ import uwvm2.utils.mutex;
 import uwvm2.object.memory.wasm_page;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.storage;
+import uwvm2.extension.memtag.execution_policy;
 import uwvm2.extension.memtag.hardware_mte;
 import uwvm2.object.memory.platform_page;
 import uwvm2.object.memory.signal;

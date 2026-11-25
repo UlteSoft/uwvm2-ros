@@ -20,6 +20,14 @@
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
     inline constexpr ::std::uint_least8_t opcode_prefix{0xffu};
+    // WasmMTE owners reserve four of their memory's WasmADM bits for allocation tags.
+    inline constexpr unsigned memory_type_flag{0x20u};
+    template<typename Memory>
+    [[nodiscard]] inline constexpr bool is_tagged_memory(Memory const& memory) noexcept
+    {
+        if constexpr(requires { memory.memtag; }) { return memory.memtag; }
+        else { return false; } // MVP-only memory types have no extension flags.
+    }
     inline constexpr ::std::uint_least32_t encoding_version{1u};
     inline constexpr ::std::uint_least32_t linear_encoding_domain{1u};
     inline constexpr ::std::uint_least32_t linear_encoding_base{
@@ -57,6 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     };
 
     enum class address_width : ::std::uint_least8_t { i32 = 32u, i64 = 64u };
+
     struct allocation_extent
     {
         ::std::uint64_t first{}, last{}; // inclusive linear granule indices
@@ -149,9 +158,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     // Geometry is a representation contract, not permission to truncate an
     // effective address. Bounds and immediate-offset overflow are checked before
     // a host/shadow address is formed, independently of these masks.
-    inline constexpr tag_geometry memory32_geometry{4u, 28u, 0x0fffffffull, 0xf0000000ull, 0xfull};
-    inline constexpr tag_geometry memory64_software_geometry{8u, 56u, 0x00ffffffffffffffull, 0xff00000000000000ull, 0xffull};
-    inline constexpr tag_geometry memory64_arm_mte_geometry{4u, 56u, 0xf0ffffffffffffffull, 0x0f00000000000000ull, 0xfull};
+    [[nodiscard]] inline constexpr ::std::uint64_t adm_address_mask(address_width width, unsigned ignored_bits) noexcept
+    {
+        auto const bits{static_cast<unsigned>(width)};
+        return UINT64_MAX >> (64u - bits + ignored_bits);
+    }
+
+    [[nodiscard]] inline constexpr tag_geometry make_tag_geometry(address_width width, unsigned ignored_bits, unsigned start) noexcept
+    {
+        return {4u, static_cast<::std::uint_least8_t>(start), adm_address_mask(width,ignored_bits), UINT64_C(15) << start, 15u};
+    }
+
+    inline constexpr auto memory32_geometry = make_tag_geometry(address_width::i32,4u,28u);
+    inline constexpr auto memory64_software_geometry = make_tag_geometry(address_width::i64,4u,60u);
+    inline constexpr auto memory64_arm_mte_geometry = make_tag_geometry(address_width::i64,8u,56u);
+    inline constexpr auto memory64_intel_mtt_geometry = make_tag_geometry(address_width::i64,7u,57u);
 
     // Reference status values are ABI-observable. "full" must not be used as
     // permission to omit interior granules in this implementation.

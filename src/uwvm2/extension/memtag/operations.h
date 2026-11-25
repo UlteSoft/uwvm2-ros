@@ -76,14 +76,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         { result.error = operation_error::undefined_placeholder; return result; }
         if(operation == opcode::status)
         {
-            result.value = Enabled ? static_cast<Address>(runtime_status::software_full) : Address{};
+            result.value = Enabled ? static_cast<Address>(shadow.status()) : Address{};
             return result;
         }
         if(operation == opcode::tagbits)
         { result.value = Enabled ? static_cast<Address>(view::TagBits) : Address{}; return result; }
         if(operation == opcode::startbit)
         {
-            result.value = static_cast<Address>(Enabled ? view::start_bit : ::std::numeric_limits<Address>::digits);
+            result.value = static_cast<Address>(Enabled ? shadow.tag_start_bit() : ::std::numeric_limits<Address>::digits);
             return result;
         }
         // The descriptor and exact arity proof establish argument zero here.
@@ -91,36 +91,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         result.value = input;
         if(operation == opcode::sub)
         {
-            if constexpr(Enabled) { result.value = static_cast<Address>(view::untag(input) - view::untag(arguments[1])); }
+            if constexpr(Enabled) { result.value = static_cast<Address>(shadow.canonical_address(input) - shadow.canonical_address(arguments[1])); }
             else { result.value = static_cast<Address>(input - arguments[1]); }
             return result;
         }
         if(operation == opcode::extract)
         {
-            if constexpr(Enabled) { result.value = static_cast<Address>(view::extract(input)); }
+            if constexpr(Enabled) { result.value = static_cast<Address>(shadow.pointer_tag(input)); }
             else { result.value = 0u; }
             return result;
         }
         if(operation == opcode::insert)
         {
-            if constexpr(Enabled) { result.value = view::insert(input, arguments[1]); }
+            if constexpr(Enabled) { result.value = shadow.with_tag(input, arguments[1]); }
             return result;
         }
         if(operation == opcode::copy)
         {
-            if constexpr(Enabled) { result.value = view::insert(input, view::extract(arguments[1])); }
+            if constexpr(Enabled) { result.value = shadow.with_tag(input, shadow.pointer_tag(arguments[1])); }
             return result;
         }
         if(operation == opcode::untag)
         {
-            if constexpr(Enabled) { result.value = view::untag(input); }
+            if constexpr(Enabled) { result.value = shadow.clear_tag(input); }
             return result;
         }
         if(operation == opcode::load)
         {
             if constexpr(Enabled)
             {
-                auto const address{static_cast<::std::uint64_t>(view::untag(input))};
+                auto const address{static_cast<::std::uint64_t>(shadow.canonical_address(input))};
                 if(address >= memory.size())
                 {
                     result.error = operation_error::memory_access;
@@ -129,19 +129,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 }
                 result.access = shadow.load(input);
                 if(!result.access) { result.error = operation_error::memory_access; return result; }
-                result.value = view::insert(input, result.access.allocation_tag);
+                result.value = shadow.with_tag(input, result.access.allocation_tag);
             }
             return result;
         }
         if(operation == opcode::random)
         {
-            if constexpr(Enabled) { result.value = view::insert(input, static_cast<Address>(random_tag())); }
+            if constexpr(Enabled) { result.value = shadow.with_tag(input, static_cast<Address>(random_tag())); }
             return result;
         }
         if(operation == opcode::hint)
         {
             if constexpr(Enabled)
-            { result.value = view::insert(input, static_cast<Address>(view::extract(arguments[1]) + arguments[2])); }
+            { result.value = shadow.with_tag(input, static_cast<Address>(shadow.pointer_tag(arguments[1]) + arguments[2])); }
             return result;
         }
 
@@ -152,7 +152,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         // The remaining defined instructions have an address and byte count.
         auto const bytes{static_cast<::std::uint64_t>(arguments[1])};
-        auto const address{static_cast<::std::uint64_t>(Enabled ? view::untag(input) : input)};
+        auto const address{static_cast<::std::uint64_t>(Enabled ? shadow.canonical_address(input) : input)};
         // Bound BOTH the actual data snapshot and the shadow snapshot before any
         // zeroing/tag mutation. Callers cannot accidentally authorize a larger
         // shadow view than the data span supplied to this operation.
@@ -167,11 +167,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             result.access = shadow.bounds(input, 0u, bytes);
             if(!result.access) { result.error = operation_error::memory_access; return result; }
             if(operation == opcode::untagstore || operation == opcode::untagstorez)
-            { result.value = view::untag(input); }
+            { result.value = shadow.clear_tag(input); }
             else if(operation == opcode::randomstore || operation == opcode::randomstorez)
-            { result.value = view::insert(input, static_cast<Address>(random_tag())); }
+            { result.value = shadow.with_tag(input, static_cast<Address>(random_tag())); }
             else if(operation == opcode::hintstore || operation == opcode::hintstorez)
-            { result.value = view::insert(input, static_cast<Address>(view::extract(arguments[2]) + arguments[3])); }
+            { result.value = shadow.with_tag(input, static_cast<Address>(shadow.pointer_tag(arguments[2]) + arguments[3])); }
             result.access = shadow.store(result.value, bytes);
             if(!result.access) { result.error = operation_error::memory_access; return result; }
         }

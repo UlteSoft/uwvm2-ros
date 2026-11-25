@@ -17,12 +17,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     {
         if(address_bits!=32u && address_bits!=64u) { return false; }
         if(tag_bits==0u) { return tags.empty(); }
-        if(tag_bits!=(address_bits==32u?4u:8u) ||
-           memory_bytes>(::std::uint64_t{1u}<<(address_bits==32u?28u:56u))) { return false; }
+        if(tag_bits!=4u ||
+           memory_bytes>(::std::uint64_t{1u}<<(address_bits==32u?28u:48u))) { return false; }
         auto const count{memory_bytes/16u+(memory_bytes%16u!=0u)};
         if(count!=tags.size() || (count!=0u && tags.data()==nullptr)) { return false; }
-        if(tag_bits==4u)
-        { for(auto value:tags) { if(::std::to_integer<unsigned>(value)>15u) { return false; } } }
+        for(auto value:tags) { if(::std::to_integer<unsigned>(value)>15u) { return false; } }
         return true;
     }
 

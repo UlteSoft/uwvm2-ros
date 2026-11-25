@@ -85,11 +85,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         auto const proof{view.bounds(arguments[0], 0, arguments[1])};
         if(!proof) { return true; }
         using shadow = decltype(view);
-        auto tag{shadow::extract(arguments[0])};
+        auto tag{view.pointer_tag(arguments[0])};
         if(operation == opcode::randomstore || operation == opcode::randomstorez)
         { tag = static_cast<::std::uint8_t>(random & shadow::maximum_tag); }
         else if(operation == opcode::hintstore || operation == opcode::hintstorez)
-        { tag = static_cast<::std::uint8_t>((shadow::extract(arguments[2]) + arguments[3]) & shadow::maximum_tag); }
+        { tag = static_cast<::std::uint8_t>((view.pointer_tag(arguments[2]) + arguments[3]) & shadow::maximum_tag); }
         else if(operation == opcode::untagstore || operation == opcode::untagstorez) { tag = 0; }
 
         auto const first{proof.address / granule_size};
@@ -123,24 +123,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             Address input, Address length, ::std::span<::std::byte> data, shadow_view<Address,false> const& view,
             TryEntropy&& try_entropy, Address& value) noexcept
         {
-            using shadow = shadow_view<Address,false>;
             static_assert(Operation == opcode::claim || Operation == opcode::claimz || Operation == opcode::release);
             auto const tags{view.short_software_allocation(input,length)};
-            auto const address{static_cast<::std::uint64_t>(shadow::untag(input))};
+            auto const address{static_cast<::std::uint64_t>(view.canonical_address(input))};
             if(!tags || address+length > data.size()) { return false; }
             auto const first{address / granule_size}, last{first + length / granule_size - 1u};
             if constexpr(Operation == opcode::release)
             {
                 auto const found{directory.locate_indexed(first,last)};
                 auto const* item{found.get()};
-                if(!matches_issued(item,shadow::extract(input)) || !item->active || !tags.matches(item->tag)) { return false; }
-                value=shadow::insert(input,item->parent);
+                if(!matches_issued(item,view.pointer_tag(input)) || !item->active || !tags.matches(item->tag)) { return false; }
+                value=view.with_tag(input,item->parent);
                 tags.store(item->parent);
                 directory.remove(found);
             }
             else
             {
-                if(shadow::extract(input) || !tags.matches(0u) || first < reach) { return false; }
+                if(view.pointer_tag(input) || !tags.matches(0u) || first < reach) { return false; }
                 auto const lo{first-reach}, hi{last+reach};
                 if(hi > (data.size()-1u)/granule_size) { return false; }
                 auto const neighbors{view.private_tag_window(lo,hi)};
@@ -160,7 +159,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 tags.store(tag);
                 if constexpr(Operation == opcode::claimz)
                 { operation_details::zero_memory<false>(data.data()+static_cast<::std::size_t>(address),static_cast<::std::size_t>(length)); }
-                value=shadow::insert(input,tag);
+                value=view.with_tag(input,tag);
             }
             return true;
         }
@@ -173,7 +172,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             bool hardware, Operation operation, Address input, Address length, ::std::span<::std::byte> data,
             shadow_view<Address,Shared> const& view, Entropy&& get_entropy, bool& retry) noexcept
         {
-            using shadow = shadow_view<Address,Shared>;
             operation_result<Address> result{.value = input};
             auto const fail{[&](operation_error error) noexcept { result.error = error; return result; }};
             auto const range{view.allocation(input,length)};
@@ -186,10 +184,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(operation != opcode::activate && operation != opcode::release && !get_entropy(entropy))
             { return result; }
             auto const first{address / granule_size}, last{(address + length - 1) / granule_size};
-            auto const input_tag{shadow::extract(input)};
+            auto const input_tag{view.pointer_tag(input)};
             auto commit{[&] [[gnu::always_inline]] (::std::uint8_t tag) noexcept
             {
-                Address const tagged{shadow::insert(input,tag)};
+                Address const tagged{view.with_tag(input,tag)};
                 operation_result<Address> stored{.value=tagged};
                 // A successful shadow proof puts the exclusive end within the
                 // address capacity. The data span can still be shorter.
@@ -214,7 +212,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                     if(result) { item->active = true; }
                     return result;
                 }
-                result.value = shadow::insert(input, item->parent);
+                result.value = view.with_tag(input, item->parent);
                 if(item->active) { result = commit(item->parent); }
                 if(result) { directory.remove(found); }
                 return result;
@@ -241,7 +239,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             bool const added{Shared ? directory.add(item) : directory.add_private(item,page)};
             if(!added)
             { return fail(operation_error::allocation_resource_limit); }
-            result.value = shadow::insert(input, tag);
+            result.value = view.with_tag(input, tag);
             if(activate)
             {
                 result=commit(tag);

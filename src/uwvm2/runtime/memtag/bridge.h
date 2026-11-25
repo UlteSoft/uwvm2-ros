@@ -147,7 +147,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         {
             constexpr auto width{sizeof(Address)==4u ?
                 ::uwvm2::extension::memtag::address_width::i32 : ::uwvm2::extension::memtag::address_width::i64};
-            return memory.memtag_shadow.enabled() && memory.memtag_shadow.width()==width &&
+            return memory.memtag_shadow.ignored_bits() && memory.memtag_shadow.width()==width &&
                    memory.memtag_shadow.shared()==Shared &&
                    (!Shared || memory.memtag_shadow.shared_tag_lease_ready());
         }
@@ -215,14 +215,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
                     if(memory.memtag_shadow.hardware_active() &&
                        mt::hardware_checked_access_requested() &&
                        (mt::asynchronous_requested() || !deferred::controlled_fault_delivery()))
-                    { comparison_mask=sizeof(Address)==4u?0u:0xf0u; }
+                    { comparison_mask=0u; }
                 }
                 // Ordinary hardware execution delegates the low nibble to the
                 // physical access. A native recording owner additionally proves
                 // sync accesses before entering the callback: a SIGSEGV must not
                 // skip C++ tag/relocation leases or prevent sealing its history.
                 // Hardware remains enabled, and ASYNC uses the actual signal
-                // latch. memory64 always checks the upper four bits here.
+                // latch. All owner layouts expose exactly four tag bits.
                 mt::access_result result{};
                 if constexpr(Enforcing)
                 {
@@ -327,7 +327,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             // original bit and have no tag-domain capacity restriction.
             if(!memory.memtag_shadow.enabled())
             {
-                auto const address{static_cast<::std::uint64_t>(pointer)};
+                auto const address{memory.memtag_shadow.canonical_address(pointer)};
                 if(bytes>data.size() || address>data.size()-bytes)
                 { return {.error=mt::access_error::out_of_bounds,.address=address}; }
                 return {.address=address};
@@ -483,7 +483,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         { result.operation.error=mt::operation_error::undefined_placeholder; return result; }
         if constexpr(Enabled)
         {
-            if(!details::configured<Address,Shared>(memory))
+            if(!memory.memtag_shadow.enabled() || !details::configured<Address,Shared>(memory))
             { result.error=bridge_error::invalid_owner; return result; }
         }
         ::std::uint8_t random{};
@@ -515,7 +515,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
             {
                 // Scope every attempt separately. Entropy may refill from the OS,
                 // and a checkpoint hook may acquire its journal mutex.
-                if(!arguments[1] || (view_type::untag(arguments[0]) % mt::granule_size) ||
+                if(!arguments[1] || (arguments[0] % mt::granule_size) ||
                     (arguments[1] % mt::granule_size))
                 { result.operation.error=mt::operation_error::invalid_allocation; return result; }
                 for(unsigned attempt{}; attempt != 16u; ++attempt)

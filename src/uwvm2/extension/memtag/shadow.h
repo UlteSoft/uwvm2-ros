@@ -16,6 +16,7 @@
 # include <type_traits>
 # include <uwvm2/utils/macro/push_macros.h>
 # include "hardware_mte.h"
+# include "instruction.h"
 # include "software_x86.h"
 # include <uwvm2/utils/mutex/rw_spin_lock.h>
 #endif
@@ -25,6 +26,18 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
+    // Bridge calls execute under the accessing module's policy, including imports.
+    inline thread_local bool access_checks_enabled{true};
+    class scoped_access_checks
+    {
+        bool previous_;
+    public:
+        explicit scoped_access_checks(bool enabled) noexcept : previous_{access_checks_enabled} { access_checks_enabled=enabled; }
+        scoped_access_checks(scoped_access_checks const&) = delete;
+        scoped_access_checks& operator=(scoped_access_checks const&) = delete;
+        ~scoped_access_checks() { access_checks_enabled=previous_; }
+    };
+
     enum class access_error : unsigned
     {
         none,
@@ -58,9 +71,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     {
         static_assert(::std::numeric_limits<Address>::digits == 32 || ::std::numeric_limits<Address>::digits == 64);
     public:
-        static constexpr unsigned TagBits{::std::numeric_limits<Address>::digits == 32 ? 4u : 8u};
+        static constexpr unsigned TagBits{4u};
         using tag_type = ::std::conditional_t<Shared, ::std::atomic<::std::uint8_t>, ::std::uint8_t>;
-        static constexpr unsigned start_bit{::std::numeric_limits<Address>::digits == 32 ? 28u : 56u};
+        static constexpr unsigned start_bit{::std::numeric_limits<Address>::digits - TagBits};
         static constexpr Address address_mask{(Address{1u} << start_bit) - Address{1u}};
         static constexpr Address tag_mask{((Address{1u} << TagBits) - Address{1u}) << start_bit};
         static constexpr ::std::uint64_t address_capacity{::std::uint64_t{1u} << start_bit};
@@ -68,8 +81,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         constexpr shadow_view(tag_type* tags, ::std::size_t tag_count, ::std::uint64_t memory_bytes,
                               ::std::byte* hardware_base = nullptr,
-                              ::uwvm2::utils::mutex::rwlock_t* tag_write_gate = nullptr) noexcept
-            : tags_{tags}, count_{tag_count}, memory_bytes_{memory_bytes}, tag_write_gate_{tag_write_gate}
+                              ::uwvm2::utils::mutex::rwlock_t* tag_write_gate = nullptr,
+                              Address effective_mask = address_mask, unsigned tag_start = start_bit,
+                              bool has_tags = true) noexcept
+            : tags_{tags}, count_{tag_count}, memory_bytes_{memory_bytes}, tag_write_gate_{tag_write_gate}, effective_mask_{effective_mask}, tag_start_{tag_start}, has_tags_{has_tags}
 #if defined(__linux__) && defined(__aarch64__)
             , hardware_base_{hardware_base}
 #endif
@@ -91,21 +106,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         [[nodiscard]] static constexpr Address insert(Address pointer, Address tag) noexcept
         { return static_cast<Address>(untag(pointer) | ((tag << start_bit) & tag_mask)); }
 
+        [[nodiscard]] constexpr Address canonical_address(Address pointer) const noexcept { return pointer & effective_mask_; }
+        [[nodiscard]] constexpr unsigned tag_start_bit() const noexcept { return tag_start_; }
+        [[nodiscard]] constexpr ::std::uint8_t pointer_tag(Address pointer) const noexcept
+        { return static_cast<::std::uint8_t>((pointer >> tag_start_) & maximum_tag); }
+        [[nodiscard]] constexpr Address clear_tag(Address pointer) const noexcept
+        { return pointer & ~(static_cast<Address>(maximum_tag) << tag_start_); }
+        [[nodiscard]] constexpr Address with_tag(Address pointer, Address tag) const noexcept
+        { return clear_tag(pointer) | ((tag & maximum_tag) << tag_start_); }
+        [[nodiscard]] constexpr runtime_status status() const noexcept
+        {
+#if defined(__linux__) && defined(__aarch64__)
+            if(hardware_base_) { return runtime_status::arm_mte; }
+#endif
+            return runtime_status::software_full;
+        }
+
         // No pointer arithmetic or memory effect precedes the complete range
         // proof. Offset and length retain all 64 bits, including on ISA32.
         [[nodiscard]] constexpr access_result bounds(Address pointer, ::std::uint64_t offset,
                                                       ::std::uint64_t bytes) const noexcept
         {
-            access_result result{.pointer_tag = extract(pointer)};
-            if(memory_bytes_ > address_capacity)
+            access_result result{.pointer_tag = pointer_tag(pointer)};
+            if(memory_bytes_ && memory_bytes_ - 1u > effective_mask_)
             { result.error = access_error::memory_not_representable; return result; }
-            auto const base{static_cast<::std::uint64_t>(untag(pointer))};
-            if(offset > address_capacity - base)
+            auto const base{static_cast<::std::uint64_t>(canonical_address(pointer))};
+            if(offset > UINT64_MAX - base)
             { result.error = access_error::out_of_bounds; return result; }
             result.address = base + offset;
             if(result.address > memory_bytes_ || bytes > memory_bytes_ - result.address)
             { result.error = access_error::out_of_bounds; return result; }
-            if(bytes != 0u)
+            if(has_tags_ && bytes != 0u)
             {
                 auto const last{(result.address + bytes - 1u) >> 4u};
                 if(tags_ == nullptr || last >= count_)
@@ -118,7 +149,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                                            ::std::uint64_t bytes, ::std::uint8_t comparison_mask=0xffu) const noexcept
         {
             auto result{bounds(pointer, offset, bytes)};
-            if(!result || bytes == 0u || comparison_mask==0u) { return result; }
+            if(!result || bytes == 0u || !has_tags_ || !access_checks_enabled || comparison_mask==0u) { return result; }
             return check_tags(result,bytes,comparison_mask);
         }
 
@@ -470,7 +501,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             ::std::uint64_t first, ::std::uint64_t last) const noexcept requires (!Shared)
         {
             if(first > last || !tags_ || last >= count_ || !memory_bytes_ ||
-               memory_bytes_ > address_capacity || last > (memory_bytes_-1u)/16u) { return {}; }
+               memory_bytes_ - 1u > effective_mask_ || last > (memory_bytes_-1u)/16u) { return {}; }
             return {tags_+static_cast<::std::size_t>(first),static_cast<::std::size_t>(last-first+1u)};
         }
 
@@ -491,6 +522,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         ::std::size_t count_{};
         ::std::uint64_t memory_bytes_{};
         ::uwvm2::utils::mutex::rwlock_t* tag_write_gate_{};
+        Address effective_mask_{address_mask};
+        unsigned tag_start_{start_bit};
+        bool has_tags_{true};
 #if defined(__linux__) && defined(__aarch64__)
         ::std::byte* hardware_base_{};
 #endif

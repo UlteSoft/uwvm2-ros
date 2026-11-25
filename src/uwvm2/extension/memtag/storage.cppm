@@ -24,6 +24,7 @@ import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.managed_allocations;
 import uwvm2.extension.memtag.hardware_mte;
+import uwvm2.extension.memtag.execution_policy;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export
 #include "storage.h"

@@ -151,7 +151,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         if (!bytes || address >= shadow.prepared_memory_bytes() || bytes > shadow.prepared_memory_bytes() - address) { return false; }
         return with_static_view(shadow, [&](auto view) noexcept
         {
-            using address_type = decltype(view.insert(0, 0));
+            using address_type = decltype(view.with_tag(0, 0));
             if (!view.check(static_cast<address_type>(address), 0, bytes)) { return false; }
             return reserve_static_extent(shadow.allocation_directory(),
                 shadow.tag_count(), address / mt::granule_size, (address + bytes - 1u) / mt::granule_size,
@@ -171,8 +171,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     {
         return with_static_view(shadow, [&](auto view) noexcept
         {
-            using address_type = decltype(view.insert(0, 0));
-            return static_cast<bool>(view.store(view.insert(static_cast<address_type>(address), tag), bytes));
+            using address_type = decltype(view.with_tag(0, 0));
+            return static_cast<bool>(view.store(view.with_tag(static_cast<address_type>(address), tag), bytes));
         });
     }
 }

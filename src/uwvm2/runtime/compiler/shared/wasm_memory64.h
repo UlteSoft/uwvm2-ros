@@ -109,7 +109,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_memory64
         {
             if(memory.reservation_limit_bytes < maximum) { maximum = memory.reservation_limit_bytes; }
         }
-        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.maximum_memory_bytes() < maximum)
+        if(memory.memtag_shadow.ignored_bits() && memory.memtag_shadow.maximum_memory_bytes() < maximum)
         { maximum = static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
         return maximum;
     }

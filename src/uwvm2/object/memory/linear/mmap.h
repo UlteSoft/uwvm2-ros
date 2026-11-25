@@ -287,7 +287,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
 
         // Configure only after native initialization and before guest publication.
         [[nodiscard]] inline ::uwvm2::extension::memtag::storage_error enable_memtag(
-            ::uwvm2::extension::memtag::address_width width, bool shared) noexcept
+            ::uwvm2::extension::memtag::address_width width, bool shared, unsigned ignored_bits = 4u,
+            ::uwvm2::extension::memtag::owner_backend backend = ::uwvm2::extension::memtag::owner_backend::software) noexcept
         {
             namespace mt = ::uwvm2::extension::memtag;
             if(this->memory_begin == nullptr) { return mt::storage_error::invalid_configuration; }
@@ -300,7 +301,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                     mmap_reservation::tagged_wasm64_span_limit) { return mt::storage_error::capacity_exceeded; }
             }
             return this->memtag_shadow.enable(width, shared, mt::storage_backend::reserved,
-                this->memory_length_p->load(::std::memory_order_acquire), this->reservation_limit_bytes);
+                this->memory_length_p->load(::std::memory_order_acquire), this->reservation_limit_bytes, ignored_bits, backend);
         }
 
         inline constexpr bool require_dynamic_determination_memory_size() const noexcept
@@ -594,7 +595,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                 allocation_change{this->allocation_charge, charged_memory_bytes(grow_final_memory_length)};
             if(!allocation_change) { return false; }
 
-            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
+            if(this->memtag_shadow.ignored_bits() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
 
             // Set pages according to the initialized size
@@ -744,7 +745,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
                 allocation_change{this->allocation_charge, charged_memory_bytes(grow_final_memory_length)};
             if(!allocation_change) { return false; }
 
-            if(this->memtag_shadow.enabled() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
+            if(this->memtag_shadow.ignored_bits() && this->memtag_shadow.prepare_growth(grow_final_memory_length) !=
                ::uwvm2::extension::memtag::storage_error::none) [[unlikely]] { return false; }
 
 # if defined(_WIN32) || defined(__CYGWIN__)  // windows

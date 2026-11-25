@@ -24,7 +24,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     {
         namespace mt=::uwvm2::extension::memtag;
         static_assert(::std::is_nothrow_invocable_r_v<void,Function,::std::span<::std::byte>>);
-        if(!memory.memtag_shadow.enabled())
+        if(!memory.memtag_shadow.ignored_bits())
         {
             return details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
             {

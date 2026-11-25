@@ -44,6 +44,7 @@ import uwvm2.utils.allocator.fast_io_strict;
 import uwvm2.object.memory.wasm_page;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.extension.memtag.storage;
+import uwvm2.extension.memtag.execution_policy;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE
