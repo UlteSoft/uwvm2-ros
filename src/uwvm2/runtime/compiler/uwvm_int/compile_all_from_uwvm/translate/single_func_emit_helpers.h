@@ -5,7 +5,7 @@
 [[maybe_unused]] bool const module_has_memtag_memory{[&]() noexcept
 {
     for(auto const& memory:curr_module.local_defined_memory_vec_storage)
-    { if(memory.memory.memtag_shadow.enabled()) { return true; } }
+    { if(memory.memory.memtag_shadow.ignored_bits()) { return true; } }
     using imported_t = ::uwvm2::uwvm::runtime::storage::imported_memory_storage_t;
     using link_kind = imported_t::imported_memory_link_kind;
     for(auto const& imported:curr_module.imported_memory_vec_storage)
@@ -15,7 +15,7 @@
         {
             if(memory->link_kind==link_kind::imported) { memory=memory->target.imported_ptr; continue; }
             if(memory->link_kind==link_kind::defined && memory->target.defined_ptr!=nullptr &&
-               memory->target.defined_ptr->memory.memtag_shadow.enabled()) { return true; }
+               memory->target.defined_ptr->memory.memtag_shadow.ignored_bits()) { return true; }
             break;
         }
     }

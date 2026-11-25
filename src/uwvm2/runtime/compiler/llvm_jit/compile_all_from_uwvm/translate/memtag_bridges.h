@@ -393,7 +393,7 @@ template<typename Address,bool Shared>
     auto const bytes{::std::size_t{1u}<<descriptor.natural_alignment};
     // Match direct LLVM and interpreter atomics without reading a tag or
     // forming a native pointer for an already invalid unaligned access.
-    if(((pointer+offset)&(bytes-1u))!=0u) { return {.unaligned=true}; }
+    if(((memory.memtag_shadow.canonical_address(pointer)+offset)&(bytes-1u))!=0u) { return {.unaligned=true}; }
     ::std::uint64_t result{};
     auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,
         [&](::std::span<::std::byte> data) noexcept

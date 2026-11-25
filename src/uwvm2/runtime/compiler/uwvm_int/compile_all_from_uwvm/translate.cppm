@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/runtime/compiler/shared/interpreter_adm_guard.h>
 
 // std
 #include <algorithm>

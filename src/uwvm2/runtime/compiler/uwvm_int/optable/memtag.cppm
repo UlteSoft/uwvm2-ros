@@ -1,4 +1,5 @@
 module;
+#include <uwvm2/runtime/compiler/shared/interpreter_adm_guard.h>
 #include <array>
 #include <atomic>
 #include <bit>

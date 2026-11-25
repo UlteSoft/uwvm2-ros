@@ -1217,6 +1217,8 @@ case static_cast<wasm1_code>(::uwvm2::extension::memtag::opcode_prefix):
         auto const memory_index{::uwvm2::validation::standard::wasm3::read_memory_index(
             code_curr, code_end, op_begin, !wasm1p1_para.disable_multi_memory, err)};
         check_memory_index(memory_index, u8"memtag");
+        if(!::uwvm2::extension::memtag::is_tagged_memory(memory_type_at(memory_index))) [[unlikely]]
+        { fail_invalid_immediate(op_begin, u8"memtag instruction requires a WasmMTE memory"); }
         auto const type{memory_address_type_at(memory_index) ==
             ::uwvm2::validation::standard::wasm3::storage_address_type::i64 ?
             curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};

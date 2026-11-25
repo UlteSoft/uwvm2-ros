@@ -6,7 +6,7 @@
         }
         select_memory(instruction.memory.memory_index);
         if(!ensure_selected_memory_access_info() || selected_memory_access_info.memory_p == nullptr) { return false; }
-        bool const tagged{selected_memory_access_info.memory_p->memtag_shadow.enabled()};
+        bool const tagged{selected_memory_access_info.memory_p->memtag_shadow.ignored_bits() != 0u};
         bool const address64{selected_memory_is_address64()};
         if(!address64 && instruction.memory.offset > 0xffff'ffffull) { return false; }
         auto const address_type{address64 ? runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32};
@@ -150,7 +150,9 @@
         auto const result_type{wide ? runtime_operand_stack_value_type::i64 : runtime_operand_stack_value_type::i32};
         auto const llvm_result_type{wide ? ir_builder.getInt64Ty() : ir_builder.getInt32Ty()};
         auto const llvm_value_carrier_type{wide ? ir_builder.getInt64Ty() : llvm_address_carrier_type};
-        if(!emit_llvm_jit_atomic_alignment(ir_builder, address.value, offset, bytes)) { return false; }
+        auto* const alignment_address{tagged ? ir_builder.CreateAnd(address.value,::llvm::ConstantInt::get(
+            address.value->getType(),selected_memory_access_info.memory_p->memtag_shadow.address_mask())) : address.value};
+        if(!emit_llvm_jit_atomic_alignment(ir_builder, alignment_address, offset, bytes)) { return false; }
         auto const pointer{emit_llvm_jit_direct_memory_pointer(state, offset, bytes, address.value, is_store || is_rmw)};
         if(tagged && pointer==nullptr)
         {

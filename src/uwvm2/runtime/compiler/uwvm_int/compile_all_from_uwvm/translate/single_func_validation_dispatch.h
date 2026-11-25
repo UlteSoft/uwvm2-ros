@@ -1282,6 +1282,7 @@ struct resolved_memory_t
 {
     native_memory_t* memory_p{};
     ::std::size_t max_limit_memory_length{};
+    ::std::size_t declared_minimum_bytes{};
     bool resolved{};
     wasm_u32 memory_index{};
 };
@@ -1303,7 +1304,8 @@ auto const resolve_memory_storage{
         auto const max_limit_from_limits{[&](auto const& limits) constexpr noexcept -> ::std::size_t
                                          {
                                              auto const address64{::uwvm2::uwvm::runtime::storage::runtime_memory_is_address64(curr_module, current_memory_index)};
-                                             return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits);
+                                             return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits,
+            ::uwvm2::extension::adm::page_shift(::uwvm2::uwvm::runtime::storage::runtime_memory_type(curr_module, current_memory_index)));
                                          }};
 
         if(current_memory_index >= all_memory_count) [[unlikely]]
@@ -1366,6 +1368,8 @@ auto const resolve_memory_storage{
                         }
                         // The selected storage is owned by the module graph and remains alive for the compiled code.
                         resolved_memory.memory_p = ::std::addressof(def->memory);
+                        resolved_memory.declared_minimum_bytes = ::uwvm2::runtime::compiler::shared::wasm_memory64::maximum_bytes_from_pages(
+                            def->effective_limits.min, def->memory.custom_page_size_log2);
                         resolved_memory.max_limit_memory_length = max_limit_from_limits(def->effective_limits);
                         resolved_memory.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(def->memory, resolved_memory.max_limit_memory_length);
                         resolved_memory.resolved = true;
@@ -1397,6 +1401,8 @@ auto const resolve_memory_storage{
 #endif
                 ::fast_io::fast_terminate();
             }
+            resolved_memory.declared_minimum_bytes = ::uwvm2::runtime::compiler::shared::wasm_memory64::maximum_bytes_from_pages(
+                local_mem0.effective_limits.min, local_mem0.memory.custom_page_size_log2);
             resolved_memory.max_limit_memory_length = max_limit_from_limits(local_mem0.effective_limits);
             resolved_memory.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(local_mem0.memory, resolved_memory.max_limit_memory_length);
             resolved_memory.resolved = true;
@@ -1408,7 +1414,7 @@ auto const resolve_memory_storage{
 auto const ensure_memory_resolved{[&]() constexpr UWVM_THROWS
 {
     resolve_memory_storage();
-    if(resolved_memory.memory_p->memtag_shadow.enabled()) [[unlikely]]
+    if(resolved_memory.memory_p->memtag_shadow.ignored_bits()) [[unlikely]]
     { fail_invalid_immediate(code_curr,u8"tagged memory requires a checked MTE instruction path"); }
 }};
 
@@ -4806,7 +4812,7 @@ auto const emit_memtag_origin_boundary{[&](unsigned flags) constexpr
 auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t Bytes, bool Signed, bool Store>(
     ::std::uint_least64_t offset, curr_operand_stack_value_type value_type) constexpr -> bool
 {
-    if(resolved_memory.memory_p->memtag_shadow.enabled())
+    if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
     {
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
@@ -4816,7 +4822,7 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
         if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
                      ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
         {
-            if(!resolved_memory.memory_p->memtag_shadow.shared())
+            if(options.execute_memtag && resolved_memory.memory_p->memtag_shadow.enabled() && !resolved_memory.memory_p->memtag_shadow.shared())
             {
                 auto const address_type{current_memory_address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
                 if constexpr(!Store)
@@ -4857,13 +4863,41 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
         stacktop_flush_all_to_operand_stack(bytecode);
         if(memtag_sync_log || memtag_software_async) { emit_memtag_origin_boundary(0u); }
         namespace mtopt = ::uwvm2::runtime::compiler::uwvm_int::optable;
-        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
         emit_imm_to(bytecode,resolved_memory.memory_p);
         auto select{[&]<typename Address>() constexpr
         {
             if(resolved_memory.memory_p->memtag_shadow.shared())
             { return static_cast<mtopt::memtag_details::action_t>(
                 mtopt::memtag_details::scalar<Address,true,Value,Bytes,Signed,Store>); }
+#if defined(UWVM_SUPPORT_MMAP)
+            auto const& memory{*resolved_memory.memory_p};
+            auto const& shadow{memory.memtag_shadow};
+            if constexpr(Bytes <= 8u)
+            {
+                if((!shadow.enabled() || !options.execute_memtag) && !shadow.hardware_selected() &&
+                   !::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::logging_requested())
+                {
+                    namespace adm=::uwvm2::extension::adm;
+                    using bounds=mtopt::memtag_details::adm_scalar_bounds;
+                    auto const mask{shadow.address_mask()};
+                    if(adm::masked_access_fits(mask,offset,Bytes,resolved_memory.declared_minimum_bytes))
+                    { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::declared_minimum,Address,Value,Bytes,Signed,Store>); }
+#if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_LLVM_JIT)
+                    namespace guard=::uwvm2::runtime::compiler::shared::int_adm_guard;
+                    if(guard::available() && memory.is_full_page_protection() && !memory.require_dynamic_determination_memory_size() &&
+                       memory.memory_begin == memory.reserved_begin && offset <= mask &&
+                       adm::masked_access_fits(mask,offset,Bytes,memory.get_acquire_reserved_space_ceil()))
+                    {
+                        guard::selected.store(true,::std::memory_order_release);
+                        return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::full_guard,Address,Value,Bytes,Signed,Store>);
+                    }
+#endif
+                    if(adm::masked_access_fits(mask,offset,Bytes,UINT64_MAX))
+                    { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::adm_scalar<bounds::live_length,Address,Value,Bytes,Signed,Store>); }
+                }
+            }
+#endif
 #if defined(__i386__) || defined(_M_IX86)
             if constexpr(::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
                          ::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i64>)
@@ -5111,8 +5145,7 @@ auto const translate_one_opcode{
         bool const memtag_pure_control{(memtag_primary>=0x08u && memtag_primary<=0x0fu) ||
             memtag_primary==0x1fu || memtag_primary==0xd5u || memtag_primary==0xd6u};
         bool const memtag_scalar_site{memtag_primary>=0x28u && memtag_primary<=0x3eu};
-        if(!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
-           (::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && !is_polymorphic &&
+        if((::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && !is_polymorphic &&
            ::uwvm2::runtime::memtag::deferred::tracked_opcode(memtag_primary) &&
            !((memtag_sync_log || memtag_software_async) && memtag_scalar_site) &&
            !(memtag_sync_log && memtag_pure_control))

@@ -1013,7 +1013,7 @@ case static_cast<wasm_byte>(wasm1p1_code::simd_prefix):
     auto const emit_memory64_simd_if_selected{[&]<simd_opt::simd_code Op>(::std::uint64_t offset, wasm_byte lane = {}) constexpr UWVM_THROWS -> bool
     {
         resolve_memory_storage();
-        if(resolved_memory.memory_p->memtag_shadow.enabled())
+        if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
         {
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
             flush_conbine_pending();
@@ -1021,7 +1021,7 @@ case static_cast<wasm_byte>(wasm1p1_code::simd_prefix):
             stacktop_flush_all_to_operand_stack(bytecode);
             namespace mtopt = ::uwvm2::runtime::compiler::uwvm_int::optable;
             namespace wide = mtopt::details::memory64_simd;
-            emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_simd_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+            emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_simd_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
             emit_imm_to(bytecode,resolved_memory.memory_p);
             auto select{[&]<typename Address>() constexpr
             {
@@ -2876,6 +2876,8 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
         auto const memory_index{::uwvm2::validation::standard::wasm3::read_memory_index(
             code_curr,code_end,op_begin,!wasm1p1_para.disable_multi_memory,err)};
         check_memory_index(op_begin,memory_index,u8"memtag");
+        if(!mt::is_tagged_memory(::uwvm2::uwvm::runtime::storage::runtime_memory_type(curr_module, memory_index))) [[unlikely]]
+        { fail_invalid_immediate(op_begin, u8"memtag instruction requires a WasmMTE memory"); }
         current_memory_index=memory_index;
         current_memory_address64=memory_address_type_at(memory_index)==
             ::uwvm2::validation::standard::wasm3::storage_address_type::i64;
@@ -2885,64 +2887,23 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
         if(descriptor->result_count!=0u) { operand_stack_push(type); }
         if(descriptor->operation==mt::opcode::add)
         { fail_invalid_immediate(op_begin,u8"memtag.add has no defined extension semantics"); }
-        // Disabled tag arithmetic uses the selected memory's integer width.
-        // Only zero-filling instructions still access the memory owner.
-        if(!options.execute_memtag && !descriptor->zeroes_memory)
-        {
-            auto const operation{descriptor->operation};
-            if(operation == mt::opcode::load || operation == mt::opcode::untag || operation == mt::opcode::random)
-            { break; } // The existing stack slot is the result.
-#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
-            flush_conbine_pending();
-#endif
-            if(operation == mt::opcode::sub)
-            {
-                auto const subtract{current_memory_address64
-                    ? mtopt::translate::get_uwvmint_i64_sub_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple)
-                    : mtopt::translate::get_uwvmint_i32_sub_fptr_from_tuple<CompileOption>(curr_stacktop, interpreter_tuple)};
-                emit_opfunc_to(bytecode, subtract);
-                stacktop_after_pop_n_if_reachable(bytecode, 1uz);
-                break;
-            }
-            if(operation == mt::opcode::status || operation == mt::opcode::tagbits ||
-               operation == mt::opcode::startbit || operation == mt::opcode::extract)
-            {
-                if(operation == mt::opcode::extract) { emit_drop_typed_to(bytecode, type); }
-                if(current_memory_address64) { emit_const_i64_to(bytecode, operation == mt::opcode::startbit ? 64 : 0); }
-                else { emit_const_i32_to(bytecode, operation == mt::opcode::startbit ? 32 : 0); }
-                break;
-            }
-            // The remaining non-zeroing operations either return the first
-            // argument or have no result (store). Discard only trailing values.
-            for(auto count{descriptor->operand_count}; count > descriptor->result_count; --count)
-            { emit_drop_typed_to(bytecode, type); }
-            break;
-        }
         resolve_memory_storage();
-        if(options.execute_memtag && !resolved_memory.memory_p->memtag_shadow.enabled())
+        if(!resolved_memory.memory_p->memtag_shadow.enabled())
         { fail_invalid_immediate(op_begin,u8"memtag execution requires configured memory-owner shadow"); }
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
         stacktop_flush_all_to_operand_stack(bytecode);
-        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
         emit_imm_to(bytecode,resolved_memory.memory_p);
-        auto select{[&]<typename Address,bool Enabled>() constexpr
+        auto select{[&]<typename Address>() constexpr
         {
-            bool shared{};
-            if constexpr(Enabled) { shared=resolved_memory.memory_p->memtag_shadow.shared(); }
-            else
-            {
-                shared=::uwvm2::runtime::wasm_threads::is_shared(*resolved_memory.memory_p);
-                if(shared && !resolved_memory.memory_p->memtag_shadow.enabled())
-                { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<false,Address,true,true>); }
-            }
-            if(shared) { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<Enabled,Address,true>); }
-            return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<Enabled,Address,false>);
+            if(resolved_memory.memory_p->memtag_shadow.shared())
+            { return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<true,Address,true>); }
+            return static_cast<mtopt::memtag_details::action_t>(mtopt::memtag_details::instruction<true,Address,false>);
         }};
-        auto const action{options.execute_memtag ?
-            (current_memory_address64 ? select.template operator()<::std::uint64_t,true>() : select.template operator()<::std::uint32_t,true>()) :
-            (current_memory_address64 ? select.template operator()<::std::uint64_t,false>() : select.template operator()<::std::uint32_t,false>())};
+        auto const action{current_memory_address64 ? select.template operator()<::std::uint64_t>() :
+                                                    select.template operator()<::std::uint32_t>()};
         emit_imm_to(bytecode,action);
         emit_imm_to(bytecode,static_cast<::std::uint64_t>(subopcode));
         if(descriptor->result_count!=0u)
@@ -3099,10 +3060,10 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
             auto data_ptr{const_cast<::uwvm2::uwvm::runtime::storage::local_defined_data_storage_t*>(
                 ::std::addressof(curr_module.local_defined_data_vec_storage.index_unchecked(data_index)))};
             stacktop_flush_all_to_operand_stack(bytecode);
-            if(resolved_memory.memory_p->memtag_shadow.enabled())
+            if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
             {
                 namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
-                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
                 emit_imm_to(bytecode,resolved_memory.memory_p);
                 emit_imm_to(bytecode,static_cast<void const*>(data_ptr));
                 auto select{[&]<typename Address>() constexpr
@@ -3176,10 +3137,10 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
             current_memory_index = dst_memory_index;
             resolve_memory_storage();
             stacktop_flush_all_to_operand_stack(bytecode);
-            if(resolved_memory.memory_p->memtag_shadow.enabled() || source_memory->memtag_shadow.enabled())
+            if(resolved_memory.memory_p->memtag_shadow.ignored_bits() || source_memory->memtag_shadow.ignored_bits())
             {
                 namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
-                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
                 emit_imm_to(bytecode,resolved_memory.memory_p);
                 emit_imm_to(bytecode,static_cast<void const*>(source_memory));
                 mtopt::memtag_details::bulk_action_t action{};
@@ -3226,10 +3187,10 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
             current_memory_index = memory_index;
             resolve_memory_storage();
             stacktop_flush_all_to_operand_stack(bytecode);
-            if(resolved_memory.memory_p->memtag_shadow.enabled())
+            if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
             {
                 namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
-                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_bulk_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
                 emit_imm_to(bytecode,resolved_memory.memory_p);
                 emit_imm_to(bytecode,static_cast<void const*>(nullptr));
                 auto select{[&]<typename Address>() constexpr

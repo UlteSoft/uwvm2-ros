@@ -3529,6 +3529,7 @@ struct runtime_memory_access_info_t
 
     // True when mmap protection alone is not enough and every direct access must emit a dynamic bounds check.
     bool mmap_requires_dynamic_bounds{};
+    bool mmap_covers_adm_domain{};
 
     // Exclusive start limit for scalar/SIMD accesses in the partial guard.
     ::std::size_t mmap_partial_guard_limit{};
@@ -3586,6 +3587,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                 memory.memory_begin != nullptr && memory.memory_begin == memory.reserved_begin &&
                 result.stable_memory_reserved_span_bytes >= required_unsigned_domain_span;
         }
+        result.mmap_covers_adm_domain = memory.memtag_shadow.ignored_bits() && memory.is_full_page_protection() &&
+            !result.mmap_requires_dynamic_bounds && result.stable_memory_reserved_span_bytes != 0u;
         if(!result.mmap_requires_dynamic_bounds && !memory.is_full_page_protection())
         { result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes(); }
     }
@@ -3614,7 +3617,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
     auto const max_limit_from_limits{[&](auto const& limits) constexpr noexcept
     {
         auto const address64{::uwvm2::uwvm::runtime::storage::runtime_memory_is_address64(runtime_module, memory_index_uz)};
-        return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits);
+        return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits,
+            ::uwvm2::extension::adm::page_shift(::uwvm2::uwvm::runtime::storage::runtime_memory_type(runtime_module, memory_index_uz)));
     }};
 
     if(memory_index_uz < imported_memory_count)
@@ -12255,7 +12259,7 @@ template <llvm_jit_simd_code Op,
                 reinterpret_cast<::std::uintptr_t>(memory_info.memory_p),
                 ::uwvm2::utils::container::u8string_view{symbol_name.data(), symbol_name.size()})};
             if(memory_address == nullptr) [[unlikely]] { return false; }
-            if(memory_info.memory_p->memtag_shadow.enabled())
+            if(memory_info.memory_p->memtag_shadow.ignored_bits())
             {
                 auto const wide{ir_builder.getInt64Ty()};
                 auto const signature{::llvm::FunctionType::get(llvm_void_type,
@@ -13786,7 +13790,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
             }
 
             if(selected_memory_access_info.memory_p != nullptr &&
-               selected_memory_access_info.memory_p->memtag_shadow.enabled())
+               selected_memory_access_info.memory_p->memtag_shadow.ignored_bits())
             {
                 auto const loaded{emit_memtag_scalar_call.template operator()<ValueBits,Bytes,Signed,false>(static_offset,address.value,nullptr)};
                 if(loaded==nullptr) { return false; }
@@ -13846,7 +13850,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
             }
 
             if(selected_memory_access_info.memory_p != nullptr &&
-               selected_memory_access_info.memory_p->memtag_shadow.enabled())
+               selected_memory_access_info.memory_p->memtag_shadow.ignored_bits())
             {
                 return emit_memtag_scalar_call.template operator()<ValueBits,Bytes,false,true>(static_offset,address.value,value.value)!=nullptr;
             }
@@ -13976,8 +13980,8 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
 
                                          if(!ensure_selected_memory_access_info()) [[unlikely]] { return false; }
 
-                                         if((selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled()) ||
-                                            (tag_source.memory_p!=nullptr && tag_source.memory_p->memtag_shadow.enabled()))
+                                         if((selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.ignored_bits()) ||
+                                            (tag_source.memory_p!=nullptr && tag_source.memory_p->memtag_shadow.ignored_bits()))
                                          {
                                              if(selected_memory_access_info.memory_p==nullptr || tag_source.memory_p==nullptr) { return false; }
                                              auto const dst_owner{emit_native_memory_object_address()};
@@ -14084,7 +14088,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                          }
 
                                          if(!ensure_selected_memory_access_info()) [[unlikely]] { return false; }
-                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled())
+                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.ignored_bits())
                                          {
                                              auto const owner{emit_native_memory_object_address()};
                                              if(owner==nullptr) { return false; }
@@ -14182,7 +14186,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                                          auto llvm_intptr_type{
                                              ::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
 
-                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.enabled())
+                                         if(selected_memory_access_info.memory_p!=nullptr && selected_memory_access_info.memory_p->memtag_shadow.ignored_bits())
                                          {
                                              auto const owner{emit_native_memory_object_address()};
                                              if(owner==nullptr) { return false; }
@@ -14898,109 +14902,93 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                 if(operand.type != address_kind || operand.value == nullptr) { return false; }
                 arguments[index - 1u] = operand.value;
             }
-            if(state.execute_memtag)
-            {
-                namespace mt=::uwvm2::extension::memtag;
-                if(!ensure_selected_memory_access_info() || selected_memory_access_info.memory_p==nullptr) { return false; }
-                auto const& shadow{selected_memory_access_info.memory_p->memtag_shadow};
-                if(!shadow.enabled() || shadow.width()!=(address_type->getBitWidth()==64u ? mt::address_width::i64 : mt::address_width::i32))
-                { return false; }
-                auto const lowered{emit_enabled_memtag_ir(ir_builder,static_cast<mt::opcode>(subopcode),address_type,
-                    ::std::span<::llvm::Value* const>{arguments.data(),descriptor->operand_count},
-                    [&](mt::opcode operation,::std::span<::llvm::Value* const> operands) noexcept -> enabled_memtag_ir_result
-                    {
-                        bool const private_ordinary{!shadow.shared() && !shadow.hardware_selected() && !state.debug_activation_enabled &&
-                            !state.emit_debug_safe_points && !threaded_host_emission_scope::selected()};
-                        if(operation==mt::opcode::load && private_ordinary)
-                        {
-                            if(auto* tagged=emit_llvm_jit_private_memtag_load(state,operands[0])) { return {true,tagged}; }
-                        }
-                        auto const owner{emit_native_memory_object_address()};
-                        if(owner==nullptr) { return {}; }
-                        auto const wide{ir_builder.getInt64Ty()};
-                        auto const native{ir_builder.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
-                        auto const signature{::llvm::FunctionType::get(wide,{native,wide,wide,wide,wide},false)};
-                        ::std::array<::llvm::Value*,5> call_arguments{owner,ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0)};
-                        for(::std::size_t index{};index!=operands.size();++index)
-                        { call_arguments[index+1u]=ir_builder.CreateZExtOrTrunc(operands[index],wide); }
-                        auto const identity{::uwvm2::utils::container::u8concat_uwvm(
-                            state.debug_activation_enabled ? ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v2-journal-"} : ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v1-"},
-                            static_cast<unsigned>(operation),u8"-",address_type->getBitWidth(),u8"-",shadow.shared())};
-                        auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
-                        auto emit{[&]<mt::opcode Operation>() noexcept -> ::llvm::Value*
-                        {
-                            if constexpr(mt::is_allocation_operation(Operation))
-                            {
-                                if(private_ordinary)
-                                {
-                                    auto const type{::llvm::FunctionType::get(address_type,{native,address_type,address_type},false)};
-                                    auto const name{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-private-allocation-v1-",
-                                        static_cast<unsigned>(Operation),u8"-",address_type->getBitWidth())};
-                                    auto const tag{::uwvm2::utils::container::u8string_view{name.data(),name.size()}};
-                                    auto* const target{address_type->getBitWidth()==64u ?
-                                        get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint64_t>>(ir_builder,type,tag) :
-                                        get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint32_t>>(ir_builder,type,tag)};
-                                    if(!target) { return nullptr; }
-                                    return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,{owner,operands[0],operands[1]}));
-                                }
-                            }
-                            auto choose{[&]<typename Address,bool Shared>() noexcept
-                            {
-                                if(state.debug_activation_enabled)
-                                    return get_llvm_managed_helper_symbol<
-                                        llvm_jit_memtag_operation_bridge<Operation,Address,Shared,false,true>,
-                                        llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true,true>>(
-                                            ir_builder,signature,discriminator);
-                                return get_llvm_managed_helper_symbol<
-                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared>,
-                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true>>(
-                                        ir_builder,signature,discriminator);
-                            }};
-                            auto const target{address_type->getBitWidth()==64u ?
-                                (shadow.shared() ? choose.template operator()<::std::uint64_t,true>() : choose.template operator()<::std::uint64_t,false>()) :
-                                (shadow.shared() ? choose.template operator()<::std::uint32_t,true>() : choose.template operator()<::std::uint32_t,false>())};
-                            if(target==nullptr) { return nullptr; }
-                            return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(signature,target,call_arguments));
-                        }};
-                        ::llvm::Value* effect{};
-                        switch(operation)
-                        {
-                            case mt::opcode::load:effect=emit.template operator()<mt::opcode::load>();break;
-                            case mt::opcode::store:effect=emit.template operator()<mt::opcode::store>();break;
-                            case mt::opcode::storez:effect=emit.template operator()<mt::opcode::storez>();break;
-                            case mt::opcode::untagstore:effect=emit.template operator()<mt::opcode::untagstore>();break;
-                            case mt::opcode::untagstorez:effect=emit.template operator()<mt::opcode::untagstorez>();break;
-                            case mt::opcode::random:effect=emit.template operator()<mt::opcode::random>();break;
-                            case mt::opcode::randomstore:effect=emit.template operator()<mt::opcode::randomstore>();break;
-                            case mt::opcode::randomstorez:effect=emit.template operator()<mt::opcode::randomstorez>();break;
-                            case mt::opcode::hintstore:effect=emit.template operator()<mt::opcode::hintstore>();break;
-                            case mt::opcode::hintstorez:effect=emit.template operator()<mt::opcode::hintstorez>();break;
-                            case mt::opcode::claim:effect=emit.template operator()<mt::opcode::claim>();break;
-                            case mt::opcode::claimz:effect=emit.template operator()<mt::opcode::claimz>();break;
-                            case mt::opcode::reserve:effect=emit.template operator()<mt::opcode::reserve>();break;
-                            case mt::opcode::activate:effect=emit.template operator()<mt::opcode::activate>();break;
-                            case mt::opcode::release:effect=emit.template operator()<mt::opcode::release>();break;
-                            default:return {};
-                        }
-                        if(effect==nullptr) { return {}; }
-                        return {true,ir_builder.CreateZExtOrTrunc(effect,address_type)};
-                    })};
-                if(!lowered.valid) { return false; }
-                if(descriptor->result_count!=0u) { push_operand(address_kind,lowered.value); }
-                return true;
-            }
-            auto const lowered{emit_disabled_memtag_ir(ir_builder,
-                static_cast<::uwvm2::extension::memtag::opcode>(subopcode), address_type,
-                ::std::span<::llvm::Value* const>{arguments.data(), descriptor->operand_count},
-                [&](::llvm::Value* destination, ::llvm::Value* length) noexcept
+            namespace mt=::uwvm2::extension::memtag;
+            if(!ensure_selected_memory_access_info() || selected_memory_access_info.memory_p==nullptr) { return false; }
+            auto const& shadow{selected_memory_access_info.memory_p->memtag_shadow};
+            if(!shadow.enabled() || shadow.width()!=(address_type->getBitWidth()==64u ? mt::address_width::i64 : mt::address_width::i32))
+            { return false; }
+            auto const lowered{emit_enabled_memtag_ir(ir_builder,static_cast<mt::opcode>(subopcode),address_type,
+                ::std::span<::llvm::Value* const>{arguments.data(),descriptor->operand_count},
+                [&](mt::opcode operation,::std::span<::llvm::Value* const> operands) noexcept -> enabled_memtag_ir_result
                 {
-                    push_operand(address_kind, destination);
-                    push_operand(runtime_operand_stack_value_type::i32, ir_builder.getInt32(0u));
-                    push_operand(address_kind, length);
-                    return emit_memory_fill_call();
-                })};
+                    bool const private_ordinary{!shadow.shared() && !shadow.hardware_selected() && !state.debug_activation_enabled &&
+                        !state.emit_debug_safe_points && !threaded_host_emission_scope::selected()};
+                    if(operation==mt::opcode::load && private_ordinary)
+                    {
+                        if(auto* tagged=emit_llvm_jit_private_memtag_load(state,operands[0])) { return {true,tagged}; }
+                    }
+                    auto const owner{emit_native_memory_object_address()};
+                    if(owner==nullptr) { return {}; }
+                    auto const wide{ir_builder.getInt64Ty()};
+                    auto const native{ir_builder.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT)};
+                    auto const signature{::llvm::FunctionType::get(wide,{native,wide,wide,wide,wide},false)};
+                    ::std::array<::llvm::Value*,5> call_arguments{owner,ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0),ir_builder.getInt64(0)};
+                    for(::std::size_t index{};index!=operands.size();++index)
+                    { call_arguments[index+1u]=ir_builder.CreateZExtOrTrunc(operands[index],wide); }
+                    auto const identity{::uwvm2::utils::container::u8concat_uwvm(
+                        state.debug_activation_enabled ? ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v2-journal-"} : ::uwvm2::utils::container::u8string_view{u8"memtag-operation-v1-"},
+                        static_cast<unsigned>(operation),u8"-",address_type->getBitWidth(),u8"-",shadow.shared())};
+                    auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
+                    auto emit{[&]<mt::opcode Operation>() noexcept -> ::llvm::Value*
+                    {
+                        if constexpr(mt::is_allocation_operation(Operation))
+                        {
+                            if(private_ordinary)
+                            {
+                                auto const type{::llvm::FunctionType::get(address_type,{native,address_type,address_type},false)};
+                                auto const name{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-private-allocation-v1-",
+                                    static_cast<unsigned>(Operation),u8"-",address_type->getBitWidth())};
+                                auto const tag{::uwvm2::utils::container::u8string_view{name.data(),name.size()}};
+                                auto* const target{address_type->getBitWidth()==64u ?
+                                    get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint64_t>>(ir_builder,type,tag) :
+                                    get_llvm_runtime_bridge_function_symbol_value<llvm_jit_private_allocation_bridge<Operation,::std::uint32_t>>(ir_builder,type,tag)};
+                                if(!target) { return nullptr; }
+                                return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,{owner,operands[0],operands[1]}));
+                            }
+                        }
+                        auto choose{[&]<typename Address,bool Shared>() noexcept
+                        {
+                            if(state.debug_activation_enabled)
+                                return get_llvm_managed_helper_symbol<
+                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared,false,true>,
+                                    llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true,true>>(
+                                        ir_builder,signature,discriminator);
+                            return get_llvm_managed_helper_symbol<
+                                llvm_jit_memtag_operation_bridge<Operation,Address,Shared>,
+                                llvm_jit_memtag_operation_bridge<Operation,Address,Shared,true>>(
+                                    ir_builder,signature,discriminator);
+                        }};
+                        auto const target{address_type->getBitWidth()==64u ?
+                            (shadow.shared() ? choose.template operator()<::std::uint64_t,true>() : choose.template operator()<::std::uint64_t,false>()) :
+                            (shadow.shared() ? choose.template operator()<::std::uint32_t,true>() : choose.template operator()<::std::uint32_t,false>())};
+                        if(target==nullptr) { return nullptr; }
+                        return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(signature,target,call_arguments));
+                    }};
+                    ::llvm::Value* effect{};
+                    switch(operation)
+                    {
+                        case mt::opcode::load:effect=emit.template operator()<mt::opcode::load>();break;
+                        case mt::opcode::store:effect=emit.template operator()<mt::opcode::store>();break;
+                        case mt::opcode::storez:effect=emit.template operator()<mt::opcode::storez>();break;
+                        case mt::opcode::untagstore:effect=emit.template operator()<mt::opcode::untagstore>();break;
+                        case mt::opcode::untagstorez:effect=emit.template operator()<mt::opcode::untagstorez>();break;
+                        case mt::opcode::random:effect=emit.template operator()<mt::opcode::random>();break;
+                        case mt::opcode::randomstore:effect=emit.template operator()<mt::opcode::randomstore>();break;
+                        case mt::opcode::randomstorez:effect=emit.template operator()<mt::opcode::randomstorez>();break;
+                        case mt::opcode::hintstore:effect=emit.template operator()<mt::opcode::hintstore>();break;
+                        case mt::opcode::hintstorez:effect=emit.template operator()<mt::opcode::hintstorez>();break;
+                        case mt::opcode::claim:effect=emit.template operator()<mt::opcode::claim>();break;
+                        case mt::opcode::claimz:effect=emit.template operator()<mt::opcode::claimz>();break;
+                        case mt::opcode::reserve:effect=emit.template operator()<mt::opcode::reserve>();break;
+                        case mt::opcode::activate:effect=emit.template operator()<mt::opcode::activate>();break;
+                        case mt::opcode::release:effect=emit.template operator()<mt::opcode::release>();break;
+                        default:return {};
+                    }
+                    if(effect==nullptr) { return {}; }
+                    return {true,ir_builder.CreateZExtOrTrunc(effect,address_type)};
+                },shadow.geometry(),shadow.hardware_selected() ? mt::runtime_status::arm_mte : mt::runtime_status::software_full)};
             if(!lowered.valid) { return false; }
-            if(descriptor->result_count != 0u) { push_operand(address_kind, lowered.value); }
+            if(descriptor->result_count!=0u) { push_operand(address_kind,lowered.value); }
             return true;
         }
 

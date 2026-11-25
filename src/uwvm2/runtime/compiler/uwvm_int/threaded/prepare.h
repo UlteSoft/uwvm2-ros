@@ -36,10 +36,10 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             {
                 auto* owner=world_->memory(m,i);if(!owner||!owner->memory.memory_begin||!owner->memory.memory_length_p)return status::invalid_world;
                 auto const& effective=owner->effective_limits;
-                auto const domain=memory64(owner->memory)?(UINT64_MAX>>16u):UINT64_C(65536);
-                auto const pages=effective.present_max?(::std::min)(domain,static_cast<::std::uint64_t>(effective.max)):domain;
-                auto const native_pages=(::std::min)(pages,static_cast<::std::uint64_t>(SIZE_MAX>>16u));
-                auto const cap=world_->memory_growth_limit(owner->memory,static_cast<::std::size_t>(native_pages<<16u));
+                auto const shift{owner->memory.custom_page_size_log2};
+                if(shift != 0u && shift != 16u) { return status::unsupported_profile; }
+                auto const cap{world_->memory_growth_limit(owner->memory,
+                    ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(memory64(owner->memory),effective,shift))};
                 bound.memories.push_back({&owner->memory,cap});
                 has_tag_storage_ |= owner->memory.memtag_shadow.enabled();
             }

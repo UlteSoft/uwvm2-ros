@@ -64,6 +64,7 @@ import uwvm2.parser.wasm.standard.wasm3.type;
 import uwvm2.parser.wasm.standard.wasm1p1.features;
 import uwvm2.object.global;
 import uwvm2.runtime.compiler.shared.wasm_threads;
+import uwvm2.runtime.compiler.shared.wasm_memory64;
 #ifndef UWVM_MODULE
 #define UWVM_MODULE
 #endif

@@ -12,6 +12,7 @@ module;
 export module uwvm2.runtime.compiler.uwvm_int.optable:memtag_simd;
 import uwvm2.utils.container;
 import uwvm2.runtime.memtag;
+import uwvm2.extension.memtag.shadow;
 import uwvm2.runtime.compiler.shared.wasm1p1_simd;
 import :define;
 import :memory;

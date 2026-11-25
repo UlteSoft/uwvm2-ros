@@ -109,6 +109,7 @@
 # include "uwvm_runtime_execution_entry.h"
 # include "uwvm_runtime_native_stack_guard.h"
 # include "uwvm_runtime_memory_guard_landing.h"
+# include "uwvm_runtime_int_adm_guard.h"
 # include "uwvm_runtime_debug_native_stack.h"
 # include "uwvm_runtime_generated_wasm_bridge.h"
 # include "uwvm_runtime_debug_activation.h"
@@ -3692,6 +3693,14 @@ namespace uwvm2::runtime::lib
         {
             namespace landing = ::uwvm2::runtime::lib::memory_guard_landing;
             auto const pc{landing::instruction(fault)};
+#if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+            if(::uwvm2::runtime::compiler::shared::int_adm_guard::owns_pc(pc))
+            {
+                ::fast_io::io::perrln(runtime_fault_output(),u8"uwvm: [fatal] memory[",fault.memory_index,
+                    u8"] page protection fault: ",fault.offset,u8" (fault offset) >= ",fault.length,u8" (allocated)");
+                trap_fatal(trap_kind::memory_out_of_bounds);
+            }
+#endif
             auto const owner{resolve_llvm_jit_unwind_entry(pc)};
             // The reserved address alone cannot attribute a native host bug to
             // Wasm. Authenticate the actual PC while the original entry still
@@ -5223,9 +5232,28 @@ namespace uwvm2::runtime::lib
                 { ::fast_io::fast_terminate(); }
                 entered = true;
 #if UWVM2_RUNTIME_HAS_LINUX_MMAP_FAULT_LANDING && defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_SUPPORT_MMAP)
-                if(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_compiler !=
-                       ::uwvm2::uwvm::runtime::runtime_mode::runtime_compiler_t::uwvm_interpreter_only &&
-                   !memory_guard_scope.enter(deliver_mmap_guard_fault))
+                bool const needs_guard_scope{::uwvm2::uwvm::runtime::runtime_mode::global_runtime_compiler !=
+                       ::uwvm2::uwvm::runtime::runtime_mode::runtime_compiler_t::uwvm_interpreter_only
+#if UWVM2_HAS_INT_ADM_GUARD && defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+                    || ::uwvm2::runtime::compiler::shared::int_adm_guard::selected.load(::std::memory_order_acquire)
+                    || (!g_runtime.compiled_all.load(::std::memory_order_acquire) && []() noexcept
+                    {
+                        // Lazy compilation can select the first guarded INT opcode
+                        // inside this execution scope. Its owners already exist.
+                        for(auto const& entry : ::uwvm2::uwvm::runtime::storage::active_runtime_registry())
+                        {
+                            for(auto const& owner : entry.second.local_defined_memory_vec_storage)
+                            {
+                                auto const& memory{owner.memory};
+                                if(memory.memtag_shadow.ignored_bits() && memory.is_full_page_protection() &&
+                                   !memory.require_dynamic_determination_memory_size()) { return true; }
+                            }
+                        }
+                        return false;
+                    }())
+#endif
+                };
+                if(needs_guard_scope && !memory_guard_scope.enter(deliver_mmap_guard_fault))
                 {
                     if(memory_guard_scope.resource_exhausted())
                     {
@@ -6153,7 +6181,7 @@ namespace uwvm2::runtime::lib
 
             // A raw mmap view has no access width or tag proof. Tagged owners
             // remain available through the checked copy API and original rights.
-            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.ignored_bits())
             { return {::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_copy}; }
 
             if(rights.prefer_mmap && resolved.mmap_delivery_state != ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_none)
@@ -6278,7 +6306,7 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
-            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.ignored_bits())
             {
                 auto const checked{::uwvm2::runtime::memtag::copy_host_access<false>(
                     *resolved.native_memory,offset,destination,size)};
@@ -6342,7 +6370,7 @@ namespace uwvm2::runtime::lib
 
             resolved_preload_memory_t resolved{};
             if(!try_build_preload_memory_descriptor(memory_index, nullptr, ::std::addressof(resolved), nullptr)) [[unlikely]] { return false; }
-            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+            if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.ignored_bits())
             {
                 auto const checked{::uwvm2::runtime::memtag::copy_host_access<true>(
                     *resolved.native_memory,offset,const_cast<void*>(source),size)};
@@ -9870,6 +9898,20 @@ namespace uwvm2::runtime::lib
             auto llvm_jit_cache_context{::uwvm2::runtime::llvm_jit_cache::default_cache_context(
                 u8"native-object-v8", u8"llvm-object-emission", *target_machine)};
             llvm_jit_cache_context.cache_key_is_complete = false;
+            // Bound bridge-only objects to the same calling policy and ordered native
+            // memory layouts as inline accesses. Aliases are resolved before hashing.
+            auto cache_identity{::uwvm2::utils::container::u8string_ref_uwvm{::std::addressof(llvm_jit_cache_context.cache_key)}};
+            ::fast_io::io::print(cache_identity,u8"|adm-mte-v1|",runtime_module->memory_policy.check_tags);
+            auto const memory_count{runtime_module->imported_memory_vec_storage.size()+runtime_module->local_defined_memory_vec_storage.size()};
+            for(::std::size_t index{}; index != memory_count; ++index)
+            {
+                auto const memory{llvm_jit_translate_details::resolve_runtime_memory_access_info(*runtime_module,static_cast<::std::uint_least32_t>(index))};
+                if(!memory.memory_p) { ::fast_io::io::print(cache_identity,u8"|provider"); continue; }
+                auto const& shadow{memory.memory_p->memtag_shadow};
+                ::fast_io::io::print(cache_identity,u8"|",static_cast<unsigned>(shadow.width()),u8",",shadow.ignored_bits(),u8",",
+                    shadow.enabled(),u8",",shadow.enabled() ? shadow.tag_start_bit() : 0u,u8",",static_cast<unsigned>(shadow.resolved_backend()),
+                    u8",",memory.custom_page_size_log2,u8",",memory.stable_memory_reserved_span_bytes);
+            }
             auto llvm_jit_cache_policy{::uwvm2::runtime::llvm_jit_cache::default_cache_policy()};
             // Preserve the first real refusal. A selected cache directory must
             // not turn a generation-specific or debugging restriction into the
@@ -17919,7 +17961,7 @@ namespace uwvm2::runtime::lib
         resolved_preload_memory_t resolved{};
         if(!try_build_preload_memory_descriptor(memory_index,nullptr,::std::addressof(resolved),nullptr))
         { return false; }
-        if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.enabled())
+        if(resolved.native_memory != nullptr && resolved.native_memory->memtag_shadow.ignored_bits())
         {
             auto const checked{::uwvm2::runtime::memtag::check_host_access(*resolved.native_memory,offset,size)};
             ::uwvm2::runtime::memtag::record_host_fault(memory_index,offset,checked);

@@ -23,7 +23,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
     [[nodiscard]] inline enabled_memtag_ir_result emit_enabled_memtag_ir(
         ::llvm::IRBuilder<>& builder,::uwvm2::extension::memtag::opcode operation,
         ::llvm::IntegerType* address_type,::std::span<::llvm::Value* const> arguments,
-        EmitOperation&& emit_operation) noexcept
+        EmitOperation&& emit_operation, ::uwvm2::extension::memtag::tag_geometry geometry = {},
+        ::uwvm2::extension::memtag::runtime_status status = ::uwvm2::extension::memtag::runtime_status::software_full) noexcept
     {
         namespace mt=::uwvm2::extension::memtag;
         auto const* descriptor{mt::find_instruction(static_cast<unsigned>(operation))};
@@ -32,10 +33,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         { return {}; }
         for(auto const argument:arguments)
         { if(argument==nullptr || argument->getType()!=address_type) { return {}; } }
-        auto const geometry{address_type->getBitWidth()==32u ? mt::memory32_geometry : mt::memory64_software_geometry};
+        if(!geometry.tag_bits) { geometry = address_type->getBitWidth()==32u ? mt::memory32_geometry : mt::memory64_software_geometry; }
         auto constant{[&](::std::uint64_t value) { return ::llvm::ConstantInt::get(address_type,value); }};
-        auto untag{[&](::llvm::Value* value) { return builder.CreateAnd(value,constant(geometry.address_mask),"memtag.address"); }};
-        auto extract{[&](::llvm::Value* value) { return builder.CreateLShr(value,constant(geometry.start_bit),"memtag.tag"); }};
+        auto canonical{[&](::llvm::Value* value) { return builder.CreateAnd(value,constant(geometry.address_mask),"memtag.address"); }};
+        auto untag{[&](::llvm::Value* value) { return builder.CreateAnd(value,constant(~geometry.pointer_tag_mask),"memtag.untag"); }};
+        auto extract{[&](::llvm::Value* value) { return builder.CreateAnd(builder.CreateLShr(value,constant(geometry.start_bit)),constant(geometry.tag_value_mask),"memtag.tag"); }};
         auto insert{[&](::llvm::Value* pointer,::llvm::Value* tag)
         {
             return builder.CreateOr(untag(pointer),
@@ -43,14 +45,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         }};
         switch(operation)
         {
-            case mt::opcode::status:return {true,constant(static_cast<unsigned>(mt::runtime_status::software_full))};
+            case mt::opcode::status:return {true,constant(static_cast<unsigned>(status))};
             case mt::opcode::tagbits:return {true,constant(geometry.tag_bits)};
             case mt::opcode::startbit:return {true,constant(geometry.start_bit)};
             case mt::opcode::extract:return {true,extract(arguments[0])};
             case mt::opcode::insert:return {true,insert(arguments[0],arguments[1])};
             case mt::opcode::copy:return {true,insert(arguments[0],extract(arguments[1]))};
             case mt::opcode::untag:return {true,untag(arguments[0])};
-            case mt::opcode::sub:return {true,builder.CreateSub(untag(arguments[0]),untag(arguments[1]),"memtag.distance")};
+            case mt::opcode::sub:return {true,builder.CreateSub(canonical(arguments[0]),canonical(arguments[1]),"memtag.distance")};
             case mt::opcode::hint:return {true,insert(arguments[0],builder.CreateAdd(extract(arguments[1]),arguments[2]))};
             case mt::opcode::add:return {}; // Published undefined placeholder.
             default:break;

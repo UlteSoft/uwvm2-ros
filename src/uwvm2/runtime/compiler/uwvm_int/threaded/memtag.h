@@ -15,12 +15,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             ::std::array<Address,4> converted{};
             for(::std::size_t i{};i<descriptor->operand_count;++i)converted[i]=static_cast<Address>(arguments[i]);
             ::std::span<Address const> values{converted.data(),descriptor->operand_count};
-            auto const result=[&]() noexcept
-            {
-                if(execute_memtag_) { return rt::execute<true,Address,Shared>(memory,descriptor->operation,values); }
-                if(has_tag_storage_) { return rt::execute<false,Address,Shared>(memory,descriptor->operation,values); }
-                return rt::execute_untagged<Address,Shared>(memory,*descriptor,values);
-            }();
+            auto const result=rt::execute<true,Address,Shared>(memory,descriptor->operation,values);
             if(!result)
             {
                 if(result.operation.error==mt::operation_error::memory_access)

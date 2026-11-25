@@ -5,11 +5,10 @@
             ::std::size_t original_maximum_bytes,::uwvm2::utils::thread::stop_token cancellation) noexcept
         {
             using phase=threaded_grow_status;threaded_grow_result result{};
-            // No pre-existing byte may share a newly protected native page.
-            // Ordinary 64KiB pages have this disjoint commit geometry for
-            // shared/private memory32 and memory64 on every supported ABI.
+            // The logical byte count and its rounded OS commit boundary can
+            // differ. Rollback must preserve every page containing live bytes.
             if(memory_begin==nullptr||memory_length_p==nullptr||growing_mutex_p==nullptr||
-               custom_page_size_log2!=16u||(status!=mmap_memory_status_t::wasm32&&status!=mmap_memory_status_t::wasm64))
+               (custom_page_size_log2!=0u && custom_page_size_log2!=16u)||(status!=mmap_memory_status_t::wasm32&&status!=mmap_memory_status_t::wasm64))
                 return result;
             auto const [page_size,known_page]=::uwvm2::object::memory::platform_page::get_platform_page_size();
             if(!known_page||page_size==0u||page_size>65536u||!::std::has_single_bit(page_size))return result;
@@ -31,9 +30,9 @@
             } held{::std::addressof(growing_mutex_p->mutex)};
             if(cancellation.stop_requested()){result.status=phase::cancelled;return result;}
             auto const old=memory_length_p->load(::std::memory_order_seq_cst);
-            result.old_length=old;result.old_pages=old>>16u;
+            result.old_length=old;result.old_pages=old>>custom_page_size_log2;
             auto const base=reinterpret_cast<::std::uintptr_t>(memory_begin);
-            if((old&(page_size-1u))!=0u||(base&(page_size-1u))!=0u||old>reservation_limit_bytes||
+            if((old&((::std::size_t{1}<<custom_page_size_log2)-1u))!=0u||(base&(page_size-1u))!=0u||old>reservation_limit_bytes||
                base>UINTPTR_MAX-old)
                 return result;
 #if SIZE_MAX > UINT32_MAX
@@ -44,16 +43,19 @@
             auto maximum=(::std::min)(original_maximum_bytes,reservation_limit_bytes);
             if constexpr(sizeof(::std::size_t)>=8u)if(status==mmap_memory_status_t::wasm32)maximum=(::std::min)(maximum,static_cast<::std::size_t>(UINT64_C(4294967296)));
             if(old>maximum)return result;
-            if(delta_pages>(SIZE_MAX>>16u)){result.status=phase::limit;return result;}
-            auto const delta=delta_pages<<16u;
+            if(delta_pages>(SIZE_MAX>>custom_page_size_log2)){result.status=phase::limit;return result;}
+            auto const delta=delta_pages<<custom_page_size_log2;
             if(delta>maximum-old){result.status=phase::limit;return result;}
             auto const next=old+delta;result.attempted_length=next;
-            if(base>UINTPTR_MAX-next)return result;
+            if(next>SIZE_MAX-(page_size-1u))return result;
+            auto const old_commit{(old+page_size-1u)&~(page_size-1u)};
+            auto const next_commit{(next+page_size-1u)&~(page_size-1u)};
+            if(next_commit>mapped_reservation_bytes || base>UINTPTR_MAX-next_commit)return result;
             if(delta==0u){result.status=phase::success;return result;}
             ::uwvm2::utils::allocator::resource::resize_transaction<::uwvm2::utils::allocator::resource::pool::memory>
                 allocation_change{allocation_charge,next};
             if(!allocation_change){result.status=phase::limit;return result;}
-            if(memtag_shadow.enabled())
+            if(memtag_shadow.ignored_bits())
             {
                 auto const shadow_error{memtag_shadow.prepare_growth(next)};
                 if(shadow_error != ::uwvm2::extension::memtag::storage_error::none)
@@ -64,17 +66,16 @@
                     return result;
                 }
             }
-            // Both ends are exact native page boundaries, so [base+old,base+next)
-            // is disjoint from ALL previously valid bytes, including rollback.
-            auto* begin=memory_begin+old;
-            if(details::threaded_profile_mprotect(begin,delta,PROT_READ|PROT_WRITE|\
+            auto* begin=memory_begin+old_commit;
+            auto const commit_bytes{next_commit-old_commit};
+            if(commit_bytes && details::threaded_profile_mprotect(begin,commit_bytes,PROT_READ|PROT_WRITE|\
                 ::uwvm2::extension::memtag::hardware_mte::protection_for(memtag_shadow.hardware_active()))!=0)
             {
                 result.os_error=errno;
                 // POSIX may partially change permissions before an error.
                 // No length publication. All admitted software accesses retain
                 // old logical length; Root forbids old-engine/source reuse.
-                if(details::threaded_profile_mprotect(begin,delta,PROT_NONE)!=0)
+                if(details::threaded_profile_mprotect(begin,commit_bytes,PROT_NONE)!=0)
                 {
                     result.rollback_error=errno;result.tainted=true;
                     result.status=phase::rollback_failed;return result;
@@ -84,7 +85,7 @@
             // A stop racing after commit does not roll back a real Wasm grow
             // effect. Publish once; mandatory post-call probe prevents more work.
             allocation_change.commit();
-            ::uwvm2::utils::allocator::sanitizer_mapping::accessible(begin,delta);
+            ::uwvm2::utils::allocator::sanitizer_mapping::accessible(memory_begin+old,delta);
             memory_length_p->store(next,::std::memory_order_seq_cst);
             result.status=phase::success;return result;
         }

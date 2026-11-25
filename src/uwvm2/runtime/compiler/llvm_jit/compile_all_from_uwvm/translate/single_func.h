@@ -2126,13 +2126,17 @@ namespace details
                 operand_stack_push(result_type);
             }};
 
-        auto const memory_address_type_at{[&](::std::uint_least32_t index) constexpr noexcept
+        auto const memory_type_at{[&](::std::uint_least32_t index) constexpr noexcept -> auto const&
         {
             // [imported declarations][local declarations] are parser-owned.
             // The bounded memarg decoder checks the combined index before lookup.
-            auto const& memory{index < imported_memory_count ?
+            return index < imported_memory_count ?
                 imported_memories.index_unchecked(index)->imports.storage.memory :
-                memsec.memories.index_unchecked(index - imported_memory_count)};
+                memsec.memories.index_unchecked(index - imported_memory_count);
+        }};
+        auto const memory_address_type_at{[&](::std::uint_least32_t index) constexpr noexcept
+        {
+            auto const& memory{memory_type_at(index)};
             return memory.address64 ? ::uwvm2::validation::standard::wasm3::storage_address_type::i64 :
                 ::uwvm2::validation::standard::wasm3::storage_address_type::i32;
         }};

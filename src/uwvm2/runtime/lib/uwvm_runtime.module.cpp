@@ -70,6 +70,7 @@ module;
 #include "uwvm_runtime_execution_entry.h"
 #include "uwvm_runtime_native_stack_guard.h"
 #include "uwvm_runtime_memory_guard_landing.h"
+#include "uwvm_runtime_int_adm_guard.h"
 #include "uwvm_runtime_debug_native_stack.h"
 #include "uwvm_runtime_generated_wasm_bridge.h"
 #include "uwvm_runtime_debug_activation.h"
@@ -214,6 +215,7 @@ import uwvm2.extension.memtag.shadow;
 import uwvm2.extension.memtag.debug_view;
 import uwvm2.extension.memtag.checkpoint;
 import uwvm2.extension.memtag.tag_image;
+import uwvm2.runtime.checkpoint.memory_layout;
 import uwvm2.extension.memtag.managed_allocations;
 import uwvm2.extension.memtag.instruction;
 import uwvm2.runtime.memtag.hardware_thread;

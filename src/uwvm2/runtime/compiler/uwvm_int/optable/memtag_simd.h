@@ -65,7 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if constexpr(!store) { push(stack,value); }
         }
     }
-    template<uwvm_interpreter_translate_option_t Option,uwvm_int_stack_top_type... Type>
+    template<uwvm_interpreter_translate_option_t Option,bool CheckTags, uwvm_int_stack_top_type... Type>
         requires(Option.is_tail_call)
     UWVM_INTERPRETER_OPFUNC_HOT_MACRO inline constexpr void uwvmint_memtag_simd_dispatch(Type... args) UWVM_THROWS
     {
@@ -74,12 +74,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         auto const action{details::read_imm<memtag_details::simd_action_t>(args...[0])};
         auto const offset{details::read_imm<::std::uint64_t>(args...[0])};
         auto const lane{details::read_imm<::std::uint8_t>(args...[0])};
-        action(*memory,args...[1],offset,lane);
+        { ::uwvm2::extension::memtag::scoped_access_checks checks{CheckTags}; action(*memory,args...[1],offset,lane); }
         uwvm_interpreter_opfunc_t<Type...> next{};
         ::std::memcpy(::std::addressof(next),args...[0],sizeof(next));
         UWVM_MUSTTAIL return next(args...);
     }
-    template<uwvm_interpreter_translate_option_t Option,uwvm_int_stack_top_type... Type>
+    template<uwvm_interpreter_translate_option_t Option,bool CheckTags, uwvm_int_stack_top_type... Type>
         requires(!Option.is_tail_call)
     UWVM_INTERPRETER_OPFUNC_HOT_MACRO inline constexpr void uwvmint_memtag_simd_dispatch(Type&... args) UWVM_THROWS
     {
@@ -88,16 +88,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         auto const action{details::read_imm<memtag_details::simd_action_t>(args...[0])};
         auto const offset{details::read_imm<::std::uint64_t>(args...[0])};
         auto const lane{details::read_imm<::std::uint8_t>(args...[0])};
-        action(*memory,args...[1],offset,lane);
+        { ::uwvm2::extension::memtag::scoped_access_checks checks{CheckTags}; action(*memory,args...[1],offset,lane); }
     }
     namespace translate
     {
         template<uwvm_interpreter_translate_option_t Option,uwvm_int_stack_top_type... Type>
-        inline constexpr auto get_uwvmint_memtag_simd_dispatch_from_tuple(::uwvm2::utils::container::tuple<Type...>) noexcept
+        inline constexpr auto get_uwvmint_memtag_simd_dispatch_from_tuple(::uwvm2::utils::container::tuple<Type...>, bool check_tags=true) noexcept
         {
             if constexpr(Option.is_tail_call)
-            { return static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,Type...>); }
-            else { return static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,Type...>); }
+            { return check_tags ? static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,true,Type...>) :
+                     static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,false,Type...>); }
+            else { return check_tags ? static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,true,Type...>) :
+                     static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_simd_dispatch<Option,false,Type...>); }
         }
     }
 }

@@ -64,6 +64,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         ::std::size_t page_size_{};
         address_width width_{address_width::i32};
         ::std::uint8_t ignored_bits_{};
+        ::std::uint64_t address_mask_{UINT32_MAX};
         storage_backend backend_{};
         bool shared_{};
         // Allocated only for enabled shared owners. All aliases borrow this same
@@ -211,6 +212,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             other.prepared_memory_bytes_.store(0u, ::std::memory_order_relaxed);
             page_size_ = ::std::exchange(other.page_size_, 0u);
             width_ = other.width_;
+            address_mask_ = ::std::exchange(other.address_mask_, UINT32_MAX);
             ignored_bits_ = ::std::exchange(other.ignored_bits_, 0u);
             backend_ = ::std::exchange(other.backend_, storage_backend::disabled);
             shared_ = ::std::exchange(other.shared_, false);
@@ -235,7 +237,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         [[nodiscard]] constexpr bool enabled() const noexcept { return backend_ != storage_backend::disabled; }
         [[nodiscard]] constexpr address_width width() const noexcept { return width_; }
         [[nodiscard]] constexpr unsigned ignored_bits() const noexcept { return ignored_bits_; }
-        [[nodiscard]] constexpr ::std::uint64_t address_mask() const noexcept { return adm_address_mask(width_,ignored_bits_); }
+        [[nodiscard]] constexpr ::std::uint64_t address_mask() const noexcept { return address_mask_; }
         [[nodiscard]] constexpr ::std::uint64_t canonical_address(::std::uint64_t raw) const noexcept
         { return ignored_bits_ ? raw & address_mask() : raw; }
         [[nodiscard]] constexpr owner_backend resolved_backend() const noexcept
@@ -252,6 +254,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if((width != address_width::i32 && width != address_width::i64) || ignored_bits >= static_cast<unsigned>(width))
             { return storage_error::invalid_configuration; }
             width_ = width;
+            address_mask_ = adm_address_mask(width,ignored_bits);
             shared_ = shared;
             ignored_bits_ = static_cast<::std::uint8_t>(ignored_bits);
             maximum_memory_bytes_ = ignored_bits ? address_mask()+1u : UINT64_MAX;
@@ -415,6 +418,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         template<::std::unsigned_integral Address, bool Shared = false>
         [[nodiscard]] shadow_view<Address, Shared> view_under_tag_lease(::std::uint64_t memory_bytes) const noexcept
         {
+            if(!enabled()) { return view<Address,Shared>(memory_bytes); }
             if(!configured_for_view<Address,Shared>()) { return {nullptr,0u,shadow_view<Address,Shared>::address_capacity+1u}; }
             return prepared_view<Address,Shared>(memory_bytes,nullptr);
         }
@@ -440,6 +444,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             if(current_bytes > maximum_bytes) { return storage_error::capacity_exceeded; }
             shadow_storage candidate;
             candidate.width_ = width;
+            candidate.address_mask_ = adm_address_mask(width,ignored_bits);
             candidate.ignored_bits_ = static_cast<::std::uint8_t>(ignored_bits);
             candidate.shared_ = shared;
             candidate.backend_ = backend;
@@ -565,6 +570,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             maximum_memory_bytes_ = 0u;
             prepared_memory_bytes_.store(0u, ::std::memory_order_relaxed);
             width_ = address_width::i32;
+            address_mask_ = UINT32_MAX;
             ignored_bits_ = 0u;
             backend_ = storage_backend::disabled;
             shared_ = false;

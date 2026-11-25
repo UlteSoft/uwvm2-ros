@@ -66,7 +66,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 // Match untagged atomics and LLVM: reject natural misalignment
                 // before consulting bounds or tags. High pointer tags do not
                 // affect these low bits; no host address or memory is touched.
-                if(((static_cast<::std::uint64_t>(pointer)+offset)&(bytes-1u))!=0u)
+                if(((memory.memtag_shadow.canonical_address(pointer)+offset)&(bytes-1u))!=0u)
                 { details::atomic_unaligned_terminate(); }
                 auto const checked{::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
                     memory,pointer,offset,bytes,[&](::std::span<::std::byte> data) noexcept

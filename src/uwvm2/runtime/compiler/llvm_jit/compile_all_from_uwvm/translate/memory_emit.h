@@ -59,7 +59,9 @@ enum class llvm_jit_memory_protection
 {
     software,
     partial_guard,
-    full_wasm32_guard
+    full_wasm32_guard,
+    full_adm_guard,
+    masked_length
 };
 
 // Memory32 and memory64 share atomic alignment and value lowering. Alignment
@@ -252,12 +254,12 @@ template <typename LoadLength>
 #else
     constexpr ::std::size_t guard_width{};
 #endif
-    if(access_size > guard_width ||
+    if((protection != llvm_jit_memory_protection::masked_length && access_size > guard_width) ||
        (protection == llvm_jit_memory_protection::full_wasm32_guard && (address_bits != 32u || pointer_bits != 64u)))
     { protection = llvm_jit_memory_protection::software; }
 
     ::llvm::Value* overflow{};
-    if(protection != llvm_jit_memory_protection::full_wasm32_guard)
+    if(protection == llvm_jit_memory_protection::software || protection == llvm_jit_memory_protection::partial_guard)
     {
         // Memory64 requires the 65th address bit even on ISA32: carry must trap
         // before any conversion to the native pointer width.
@@ -281,13 +283,22 @@ template <typename LoadLength>
         if(!length->getType()->isIntegerTy(pointer_bits)) { return false; }
         auto length64{b.CreateZExtOrTrunc(length, b.getInt64Ty())};
         auto width{b.getInt64(access_size)};
+        if(protection == llvm_jit_memory_protection::masked_length)
+        {
+            // The complete mask + immediate + width fits u64. Compare the
+            // exclusive end to the live byte count, including sub-OS-page tails.
+            auto end{b.CreateAdd(offset, width, "memory.end")};
+            emit_llvm_conditional_memory_out_of_bounds_trap(module, b, b.CreateICmpUGT(end, length64),
+                memory_index, static_offset, offset, nullptr, length, access_size);
+            return true;
+        }
         auto small{b.CreateICmpULT(length64, width)};
         auto outside{b.CreateICmpUGT(offset, b.CreateSub(length64, width))};
         emit_llvm_conditional_memory_out_of_bounds_trap(module, b,
             b.CreateOr(overflow, b.CreateOr(small, outside)), memory_index, static_offset, offset, overflow, length, access_size);
         return true;
     }};
-    if(protection == llvm_jit_memory_protection::software)
+    if(protection == llvm_jit_memory_protection::software || protection == llvm_jit_memory_protection::masked_length)
     {
         if(!check()) { return nullptr; }
     }
@@ -385,8 +396,7 @@ template <typename LoadLength>
     if(!tags) { return nullptr; }
 
     auto& b{*state.ir_builder};
-    auto const geometry{input->getType()->isIntegerTy(64u) ? ::uwvm2::extension::memtag::memory64_software_geometry :
-        ::uwvm2::extension::memtag::memory32_geometry};
+    auto const geometry{shadow.geometry()};
     auto const address{b.CreateAnd(input,::llvm::ConstantInt::get(input->getType(),geometry.address_mask),"memtag.load.offset")};
     auto const wide_address{b.CreateZExtOrTrunc(address,b.getInt64Ty())};
     auto& ir_module{*b.GetInsertBlock()->getModule()};
@@ -402,7 +412,8 @@ template <typename LoadLength>
     auto const index{b.CreateZExtOrTrunc(granule,b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT))};
     auto const stored{b.CreateLoad(b.getInt8Ty(),b.CreateGEP(b.getInt8Ty(),tags,index),"memtag.load.tag")};
     stored->setAlignment(::llvm::Align{1u});
-    return b.CreateOr(address,b.CreateShl(b.CreateZExt(stored,input->getType()),geometry.start_bit),"memtag.load.pointer");
+    auto const clear{b.CreateAnd(input,::llvm::ConstantInt::get(input->getType(),~geometry.pointer_tag_mask))};
+    return b.CreateOr(clear,b.CreateShl(b.CreateZExt(stored,input->getType()),geometry.start_bit),"memtag.load.pointer");
 }
 
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_direct_memory_pointer(runtime_local_func_llvm_jit_emit_state_t& state,
@@ -429,6 +440,7 @@ template <typename LoadLength>
     auto& b{*state.ir_builder};
     ::llvm::Value* base{};
     auto protection{llvm_jit_memory_protection::software};
+    bool allow_fault_guard{};
     auto name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module), u8"_memory", state.current_memory_index, u8"_begin")};
     if constexpr(runtime_native_memory_t::can_mmap)
     {
@@ -444,6 +456,7 @@ template <typename LoadLength>
 #endif
            !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
         {
+            allow_fault_guard = true;
             if(info.mmap_covers_wasm32_effective_domain) { protection = llvm_jit_memory_protection::full_wasm32_guard; }
             else if(info.mmap_partial_guard_limit != 0uz) { protection = llvm_jit_memory_protection::partial_guard; }
         }
@@ -461,27 +474,32 @@ template <typename LoadLength>
         base = load;
     }
     auto const raw_address{address};
-    bool const tagged{info.memory_p->memtag_shadow.enabled()};
-    if(tagged)
+    auto const& shadow{info.memory_p->memtag_shadow};
+    bool const checked{shadow.enabled() && state.execute_memtag};
+    if(shadow.ignored_bits())
     {
         // Owner policy is immutable during execution. This is a C++ translation
         // branch, not a generated runtime flag check. Ordinary IR is unchanged.
-        if(!state.execute_memtag || !runtime_native_memory_t::can_mmap || access_size > 16u ||
+        if((checked && (!runtime_native_memory_t::can_mmap || access_size > 16u)) ||
            address == nullptr || (!address->getType()->isIntegerTy(32u) && !address->getType()->isIntegerTy(64u)))
         { return nullptr; }
         auto const address64{address->getType()->isIntegerTy(64u)};
         if(info.memory_p->memtag_shadow.width() != (address64 ?
             ::uwvm2::extension::memtag::address_width::i64 : ::uwvm2::extension::memtag::address_width::i32))
         { return nullptr; }
-        auto const mask{address64 ? 0x00ffffffffffffffull : 0x0fffffffull};
+        auto const mask{shadow.address_mask()};
         address = b.CreateAnd(address, ::llvm::ConstantInt::get(address->getType(), mask), "memory.untagged");
-        protection = llvm_jit_memory_protection::software;
+        if(allow_fault_guard && info.mmap_covers_adm_domain && static_offset <= mask &&
+           ::uwvm2::extension::adm::masked_access_fits(mask,static_offset,access_size,info.stable_memory_reserved_span_bytes))
+        { protection = llvm_jit_memory_protection::full_adm_guard; }
+        else if(::uwvm2::extension::adm::masked_access_fits(mask,static_offset,access_size,UINT64_MAX))
+        { protection = llvm_jit_memory_protection::masked_length; }
+        else { protection = llvm_jit_memory_protection::software; }
     }
     auto pointer{emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection,
                                         info.mmap_partial_guard_limit, [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
-    if(pointer != nullptr && tagged)
+    if(pointer != nullptr && checked)
     {
-        auto const& shadow{info.memory_p->memtag_shadow};
         auto const tag_extent{shadow.maximum_memory_bytes() / 16u + (shadow.maximum_memory_bytes() % 16u != 0u)};
         if(tag_extent > SIZE_MAX || !shadow.stable_address() || shadow.tag_data() == nullptr) { return nullptr; }
         auto const tags{get_llvm_jit_memtag_shadow_pointer(state,*module,shadow,tag_extent)};
@@ -489,9 +507,20 @@ template <typename LoadLength>
         bool const deferred_fault{::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()};
         ::std::uint8_t comparison_mask{0xffu};
 #if defined(__linux__) && defined(__aarch64__)
-        if(shadow.hardware_selected() && ::uwvm2::extension::memtag::hardware_checked_access_requested())
-        { comparison_mask=raw_address->getType()->isIntegerTy(32u)?0u:0xf0u; }
+        if(shadow.hardware_selected()) { comparison_mask=0u; }
 #endif
+        if(comparison_mask && protection == llvm_jit_memory_protection::full_adm_guard &&
+           !llvm_jit_memory_span_within_declared_minimum(info,address,static_offset,access_size))
+        {
+            // A grow-only committed prefix contains the whole interval iff it
+            // contains its final byte. Resolve a data fault before reading the
+            // software shadow or reporting a color mismatch.
+            auto last{b.CreateGEP(b.getInt8Ty(),pointer,b.getInt64(access_size-1u))};
+            auto probe{b.CreateLoad(b.getInt8Ty(),last,"memtag.data.preflight")};
+            probe->setAlignment(::llvm::Align{1u});
+            probe->setVolatile(true);
+            emit_llvm_jit_memory_clobber(b);
+        }
         bool emitted{true};
         if(!emit_memtag_scalar_check(b,tags,raw_address,effective,access_size,shadow.shared(),
             [&](::llvm::Value* raw, ::llvm::Value* granule, ::llvm::Value* pointer_tag, ::llvm::Value* stored_tag) noexcept
@@ -518,7 +547,7 @@ template <typename LoadLength>
                 emit_llvm_jit_memory_clobber(b);
                 if(!deferred_fault) { b.CreateUnreachable(); }
             }, base, !state.emit_debug_safe_points && !threaded_host_emission_scope::selected()
-                ? info.declared_minimum_byte_length : 0u,deferred_fault,comparison_mask) || !emitted) { return nullptr; }
+                ? info.declared_minimum_byte_length : 0u,deferred_fault,comparison_mask,shadow.tag_start_bit()) || !emitted) { return nullptr; }
         if(deferred_fault && state.memtag_direct_origin_offset==state.current_wasm_op_offset)
         {
             // This direct private access never acquires an owner lock or calls
@@ -543,7 +572,9 @@ template <typename LoadLength>
         }
 #endif
     }
-    if(pointer != nullptr && is_store && protection != llvm_jit_memory_protection::software)
+    if(pointer != nullptr && is_store && protection != llvm_jit_memory_protection::software &&
+       protection != llvm_jit_memory_protection::masked_length &&
+       !(protection == llvm_jit_memory_protection::full_adm_guard && checked && !shadow.hardware_selected()))
     {
         auto effective{b.CreateAdd(b.CreateZExtOrTrunc(address, b.getInt64Ty()), b.getInt64(static_offset))};
         // Proven in-bounds stores need no last-byte probe. The actual store

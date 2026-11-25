@@ -18,20 +18,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
     // wrapping IR: even invalid inputs cannot manufacture poison/inbounds UB.
     [[nodiscard]] inline ::llvm::Value* emit_memtag_hardware_pointer(::llvm::IRBuilder<>& b,
         ::llvm::Value* base,::llvm::Value* raw,::llvm::Value* checked_pointer,
-        ::std::uint64_t static_offset,bool canonical_owner) noexcept
+        ::std::uint64_t /*static_offset*/,bool canonical_owner) noexcept
     {
         if(!base || !raw || !checked_pointer || !base->getType()->isPointerTy() ||
            !checked_pointer->getType()->isPointerTy() ||
            (!raw->getType()->isIntegerTy(32u) && !raw->getType()->isIntegerTy(64u)) ||
            b.GetInsertBlock()->getModule()->getDataLayout().getPointerSizeInBits()!=64u) { return nullptr; }
         auto* const i64{b.getInt64Ty()};
-        if(canonical_owner && raw->getType()->isIntegerTy(64u))
-        {
-            auto* offset{b.CreateAnd(raw,b.getInt64(0x0fffffffffffffffull))};
-            offset=b.CreateAdd(offset,b.getInt64(static_offset));
-            return b.CreateIntToPtr(b.CreateAdd(b.CreatePtrToInt(base,i64),offset),
-                checked_pointer->getType(),"memory.hardware.tagged");
-        }
         auto* const tag{raw->getType()->isIntegerTy(32u) ?
             b.CreateZExt(b.CreateLShr(raw,28u),i64) :
             b.CreateAnd(b.CreateLShr(raw,56u),b.getInt64(15u))};
@@ -53,7 +46,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         ::llvm::Value* tags, ::llvm::Value* raw, ::llvm::Value* offset,
         ::std::size_t bytes, bool shared, Failure&& fail,
         ::llvm::Value* private_data = nullptr, ::std::uint64_t immutable_minimum = 0,
-        bool deferred_fault=false, ::std::uint8_t comparison_mask=0xffu) noexcept
+        bool deferred_fault=false, ::std::uint8_t comparison_mask=0xffu, unsigned tag_start=0u) noexcept
     {
         if(!tags || !raw || !offset || bytes==0u || bytes>16u ||
            !tags->getType()->isPointerTy() || !offset->getType()->isIntegerTy(64u) ||
@@ -61,8 +54,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         auto const bits{b.GetInsertBlock()->getModule()->getDataLayout().getPointerSizeInBits()};
         if(bits!=32u && bits!=64u) {return false;}
         if(comparison_mask==0u) { return true; } // Authenticated active MTE mapping checks the complete 4-bit tag.
-        auto const tag{b.CreateTrunc(b.CreateLShr(raw,raw->getType()->isIntegerTy(32u)?28u:56u),
-            b.getInt8Ty(),"memtag.pointer")};
+        if(!tag_start) { tag_start=raw->getType()->getIntegerBitWidth()-4u; }
+        auto const tag{b.CreateAnd(b.CreateTrunc(b.CreateLShr(raw,tag_start),b.getInt8Ty()),b.getInt8(15u),"memtag.pointer")};
         auto const first{b.CreateLShr(offset,4u,"memtag.first")};
         auto const check{[&](::llvm::Value* granule) noexcept
         {

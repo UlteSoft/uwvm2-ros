@@ -5,7 +5,8 @@
  *************************************************************/
 #pragma once
 #ifndef UWVM_MODULE
-# include <array>
+# include <uwvm2/runtime/compiler/shared/interpreter_adm_guard.h>
+#include <array>
 # include <atomic>
 # include <bit>
 # include <concepts>
@@ -113,13 +114,85 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if(descriptor->result_count!=0u) { push(stack,result.operation.value); }
         }
 
+        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        inline void scalar_bytes(::std::byte* buffer, Value& value) noexcept
+        {
+            if constexpr(::std::is_integral_v<Value>)
+            {
+                if constexpr(Store) { details::memory64::store_integer<Bytes>(buffer,value); }
+                else { value=details::memory64::load_integer<Value,Bytes,Signed>(buffer); }
+            }
+            else
+            {
+                static_assert(Bytes==sizeof(Value));
+                if constexpr(Store && Bytes==4u) { details::store_f32_le(buffer,value); }
+                else if constexpr(Store && Bytes==8u) { details::store_f64_le(buffer,value); }
+                else if constexpr(!Store && Bytes==4u) { details::load_f32_le(buffer,value); }
+                else if constexpr(!Store && Bytes==8u) { details::load_f64_le(buffer,value); }
+                else if constexpr(Store) { ::std::memcpy(buffer,::std::addressof(value),Bytes); }
+                else { ::std::memcpy(::std::addressof(value),buffer,Bytes); }
+            }
+        }
+
+#if defined(UWVM_SUPPORT_MMAP)
+        enum class adm_scalar_bounds { live_length, declared_minimum, full_guard };
+
+        // Emitted for a private, stable mapping after proving mask+offset+Bytes
+        // representable. A varying sub-OS-page tail always needs its byte length
+        // unless the complete reachable access is below the declared minimum.
+        template<adm_scalar_bounds Bounds, ::std::unsigned_integral Address, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        inline void adm_scalar(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t offset) noexcept
+        {
+            Value value{};
+            if constexpr(Store) { value=pop<Value>(stack); }
+            auto const raw{pop<Address>(stack)};
+            auto const effective{(raw & memory.memtag_shadow.address_mask())+offset};
+            if constexpr(Bounds == adm_scalar_bounds::live_length)
+            {
+                auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
+                if(effective+Bytes > length) [[unlikely]]
+                { details::memory_oob_terminate(memory,offset,{.offset=effective,.offset_65_bit=false},length,Bytes); }
+            }
+            // The translated range fits either the live data or the qualified,
+            // immutable mmap reservation, including the final accessed byte.
+            auto* begin{memory.memory_begin+static_cast<::std::size_t>(effective)};
+            if constexpr(Bounds == adm_scalar_bounds::full_guard)
+            {
+#if UWVM2_HAS_INT_ADM_GUARD
+                namespace guard=::uwvm2::runtime::compiler::shared::int_adm_guard;
+                ::std::uint64_t bits{};
+                auto* encoded{reinterpret_cast<::std::byte*>(::std::addressof(bits))};
+                if constexpr(Store)
+                {
+                    if constexpr(Bytes>1u)
+                    {
+                        auto const page{::std::uint64_t{1} << memory.custom_page_size_log2};
+                        if((effective&(page-1u)) > page-Bytes)
+                        { static_cast<void>(guard::load<1u>(begin+Bytes-1u)); }
+                    }
+                    scalar_bytes<Value,Bytes,Signed,true>(encoded,value);
+                    guard::store<Bytes>(begin,bits);
+                }
+                else
+                {
+                    bits=guard::load<Bytes>(begin);
+                    scalar_bytes<Value,Bytes,Signed,false>(encoded,value);
+                }
+#else
+                static_assert(Bounds != adm_scalar_bounds::full_guard);
+#endif
+            }
+            else { scalar_bytes<Value,Bytes,Signed,Store>(begin,value); }
+            if constexpr(!Store) { push(stack,value); }
+        }
+#endif
+
         // Separate tagged scalar handlers preserve the ordinary memory opfuncs.
         // No tag-mode branch is inserted into disabled/uninstrumented execution.
         template<::std::unsigned_integral Address, bool Shared, typename Value, ::std::size_t Bytes, bool Signed, bool Store>
         inline void scalar(native_memory_t const& memory,::std::byte*& stack,::std::uint64_t offset) noexcept
         {
             static_assert(Bytes>=1u && Bytes<=sizeof(Value) && sizeof(Value)<=16u);
-            constexpr bool integer{::std::is_integral_v<Value>};
             Value value{};
             if constexpr(Store)
             {
@@ -142,32 +215,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                             { buffer[index]=::std::atomic_ref<::std::byte>(data[index]).load(::std::memory_order_relaxed); }
                         }
                     }
-                    if constexpr(Store)
+                    scalar_bytes<Value,Bytes,Signed,Store>(buffer,value);
+                    if constexpr(Shared && Store)
                     {
-                        if constexpr(integer) { details::memory64::store_integer<Bytes>(buffer,value); }
-                        else
-                        {
-                            static_assert(Bytes==sizeof(Value));
-                            if constexpr(sizeof(Value)==4u) { details::store_f32_le(buffer,value); }
-                            else if constexpr(sizeof(Value)==8u) { details::store_f64_le(buffer,value); }
-                            else { ::std::memcpy(buffer,::std::addressof(value),Bytes); }
-                        }
-                        if constexpr(Shared)
-                        {
-                            for(::std::size_t index{};index!=Bytes;++index)
-                            { ::std::atomic_ref<::std::byte>(data[index]).store(buffer[index],::std::memory_order_relaxed); }
-                        }
-                    }
-                    else
-                    {
-                        if constexpr(integer) { value=details::memory64::load_integer<Value,Bytes,Signed>(buffer); }
-                        else
-                        {
-                            static_assert(Bytes==sizeof(Value));
-                            if constexpr(sizeof(Value)==4u) { details::load_f32_le(buffer,value); }
-                            else if constexpr(sizeof(Value)==8u) { details::load_f64_le(buffer,value); }
-                            else { ::std::memcpy(::std::addressof(value),buffer,Bytes); }
-                        }
+                        for(::std::size_t index{};index!=Bytes;++index)
+                        { ::std::atomic_ref<::std::byte>(data[index]).store(buffer[index],::std::memory_order_relaxed); }
                     }
                 })};
             if(!result) { access_failed(memory,pointer,offset,Bytes,result); }
@@ -306,7 +358,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
     UWVM_INTERPRETER_OPFUNC_HOT_MACRO inline constexpr void uwvmint_memtag_scalar_cached(Type&... args) UWVM_THROWS
     { memtag_details::execute_scalar_cached<Address,Value,Bytes,Signed,Store,Policy,Option,ValuePos,AddressPos>(args...); }
 
-    template<uwvm_interpreter_translate_option_t Option, uwvm_int_stack_top_type... Type>
+    template<uwvm_interpreter_translate_option_t Option, bool CheckTags, uwvm_int_stack_top_type... Type>
         requires(Option.is_tail_call)
     UWVM_INTERPRETER_OPFUNC_HOT_MACRO inline constexpr void uwvmint_memtag_dispatch(Type... args) UWVM_THROWS
     {
@@ -314,12 +366,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         auto const memory{details::read_imm<memtag_details::native_memory_t*>(args...[0])};
         auto const action{details::read_imm<memtag_details::action_t>(args...[0])};
         auto const immediate{details::read_imm<::std::uint64_t>(args...[0])};
-        action(*memory,args...[1],immediate);
+        { ::uwvm2::extension::memtag::scoped_access_checks checks{CheckTags}; action(*memory,args...[1],immediate); }
         uwvm_interpreter_opfunc_t<Type...> next{};
         ::std::memcpy(::std::addressof(next),args...[0],sizeof(next));
         UWVM_MUSTTAIL return next(args...);
     }
-    template<uwvm_interpreter_translate_option_t Option, uwvm_int_stack_top_type... Type>
+    template<uwvm_interpreter_translate_option_t Option, bool CheckTags, uwvm_int_stack_top_type... Type>
         requires(!Option.is_tail_call)
     UWVM_INTERPRETER_OPFUNC_HOT_MACRO inline constexpr void uwvmint_memtag_dispatch(Type&... args) UWVM_THROWS
     {
@@ -327,7 +379,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         auto const memory{details::read_imm<memtag_details::native_memory_t*>(args...[0])};
         auto const action{details::read_imm<memtag_details::action_t>(args...[0])};
         auto const immediate{details::read_imm<::std::uint64_t>(args...[0])};
-        action(*memory,args...[1],immediate);
+        { ::uwvm2::extension::memtag::scoped_access_checks checks{CheckTags}; action(*memory,args...[1],immediate); }
     }
     template<uwvm_interpreter_translate_option_t Option, uwvm_int_stack_top_type... Type>
         requires(Option.is_tail_call)
@@ -441,12 +493,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         }
 
         template<uwvm_interpreter_translate_option_t Option, uwvm_int_stack_top_type... Type>
-        inline constexpr auto get_uwvmint_memtag_dispatch_from_tuple(::uwvm2::utils::container::tuple<Type...>) noexcept
+        inline constexpr auto get_uwvmint_memtag_dispatch_from_tuple(::uwvm2::utils::container::tuple<Type...>, bool check_tags=true) noexcept
         {
             if constexpr(Option.is_tail_call)
-            { return static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_dispatch<Option,Type...>); }
+            { return check_tags ? static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_dispatch<Option,true,Type...>) :
+                     static_cast<uwvm_interpreter_opfunc_t<Type...>>(uwvmint_memtag_dispatch<Option,false,Type...>); }
             else
-            { return static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_dispatch<Option,Type...>); }
+            { return check_tags ? static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_dispatch<Option,true,Type...>) :
+                     static_cast<uwvm_interpreter_opfunc_byref_t<Type...>>(uwvmint_memtag_dispatch<Option,false,Type...>); }
         }
         template<uwvm_interpreter_translate_option_t Option,uwvm_int_stack_top_type... Type>
         inline constexpr auto get_uwvmint_memtag_poll_from_tuple(::uwvm2::utils::container::tuple<Type...>) noexcept

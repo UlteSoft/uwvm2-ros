@@ -6,6 +6,7 @@
 #include <uwvm2/runtime/diagnostic/crash_policy.h>
 #include "program.h"
 #include <uwvm2/runtime/compiler/shared/gc_aggregate.h>
+#include <uwvm2/runtime/compiler/shared/wasm_memory64.h>
 #include <array>
 #include <atomic>
 #include <new>
@@ -345,7 +346,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         {
             // The snapshot and tag proof cover the complete range before callback
             // entry. Do not trap or retain a native pointer inside the callback.
-            if(has_tag_storage_ && memory.memtag_shadow.enabled())
+            if(memory.memtag_shadow.ignored_bits())
             {
                 auto const proof=memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
                 {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(
@@ -399,7 +400,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         [[nodiscard]] bool atomic_access(memory_type& memory, unsigned operation, ::std::uint64_t address, ::std::uint64_t offset,
                                          ::std::uint64_t& value, ::std::uint64_t expected) noexcept
         {
-            if((static_cast<::std::uint64_t>(address)+offset)&(Bytes-1uz)) { return fail(status::trap_unaligned); }
+            if((memory.memtag_shadow.canonical_address(address)+offset)&(Bytes-1uz)) { return fail(status::trap_unaligned); }
             namespace atomic=::uwvm2::runtime::compiler::shared::wasm_threads;
             bool const ok{memory_span(memory,address,offset,Bytes,[&](::std::span<::std::byte> data) noexcept
             {
@@ -432,7 +433,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 if(sub && !pop(timeout)) { return false; }if(!pop(expected)||!pop(address)) { return false; }
                 auto const offset{ins.immediate};
                 threads::wait_result result{};
-                if(has_tag_storage_ && memory.memtag_shadow.enabled())
+                if(memory.memtag_shadow.ignored_bits())
                 {
                     ::uwvm2::runtime::memtag::wait_execution_result checked{};
                     auto const pointer=memory_address(memory,address);

@@ -99,14 +99,14 @@ case static_cast<wasm_byte>(wasm1p1_code::atomic_prefix):
         else { emit_imm_to(bytecode, static_cast<::std::uint32_t>(instruction.memory.offset)); }
     }};
     resolve_memory_storage();
-    if(resolved_memory.memory_p->memtag_shadow.enabled())
+    if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
     {
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
         stacktop_flush_all_to_operand_stack(bytecode);
         namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
-        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple));
+        emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_dispatch_from_tuple<CompileOption>(interpreter_tuple,options.execute_memtag));
         emit_imm_to(bytecode,resolved_memory.memory_p);
         auto select{[&]<typename Address>() constexpr
         {

@@ -210,7 +210,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             case 0x3f:
             {
                 ::std::size_t length{};if(!threads::details::access(*bound.memories[ins.immediate].memory,0,0,length,[](::std::byte*) noexcept{})) { return fail(status::trap_memory); }
-                return push(length>>16u);
+                return push(length >> bound.memories[ins.immediate].memory->custom_page_size_log2);
             }
             case 0x40:return grow_memory(lease,*bound.memories[ins.immediate].memory,bound.memories[ins.immediate].maximum);
             case 0x41:return push(static_cast<::std::uint32_t>(ins.immediate));

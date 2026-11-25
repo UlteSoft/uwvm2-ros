@@ -508,7 +508,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                         // - wasm32: full protection covers widened u32+u32, including logical overflow into its back guard
                         // - wasm64: partial protection ends at the owner-specific guard limit
 # if defined(UWVM_SUPPORT_MMAP)
-                        if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64) [[unlikely]]
+                        if(!memory.is_full_page_protection() || memory.memtag_shadow.ignored_bits() ||
+                       memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64) [[unlikely]]
                         {
                             if(partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes))
                             {
@@ -585,7 +586,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
                 {
 # if defined(UWVM_SUPPORT_MMAP)
-                    if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64)
+                    if(!memory.is_full_page_protection() || memory.memtag_shadow.ignored_bits() ||
+                       memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64)
                     {
                         return partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes);
                     }
@@ -4235,7 +4237,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
                 {
                     // 64-bit: wasm32 full protection; wasm64 partial protection.
-                    if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32)
+                    if(memory.is_full_page_protection() && !memory.memtag_shadow.ignored_bits() &&
+                       memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32)
                     {
                         return memory.custom_page_size_log2 == 16u ? mmap_variant::full_standard_page : mmap_variant::full;
                     }

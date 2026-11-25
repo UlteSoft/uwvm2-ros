@@ -41,7 +41,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
         auto copy{[&](::std::span<::std::byte> destination_bytes,::std::span<::std::byte> source_bytes) noexcept
         {
             auto untag=[](memory_type const& memory,::std::uint64_t address) noexcept
-            {return !memory.memtag_shadow.enabled()?address:address&(memory64(memory)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff));};
+            {return memory.memtag_shadow.canonical_address(address);};
             auto const destination_offset=untag(dst_memory,dst);
             auto const source_offset=src_memory?untag(*src_memory,src):0u;
             bool const backwards=src_memory==&dst_memory&&destination_offset>source_offset&&destination_offset-source_offset<n;
