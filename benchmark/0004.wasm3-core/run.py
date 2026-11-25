@@ -225,6 +225,15 @@ def run_one(command, label, logs, env, allow_failure=False, timeout_seconds=180)
     return row
 
 
+def product_features(ros, features):
+    if not ros:
+        return ["-WFE-" + feature for feature in features]
+    args = ["--wasm-policy-global", "parser.baseline", "wasm2"]
+    for feature in features:
+        args.extend(["--wasm-policy-global", "parser." + feature, "on"])
+    return args
+
+
 def command(engine, vm, wasm, features, trace, cpu):
     pinned = ["taskset", "-c", str(cpu)]
     if engine == "wasmtime" or engine.startswith("wasmtime-"):
@@ -248,15 +257,17 @@ def command(engine, vm, wasm, features, trace, cpu):
         flags = list(dict.fromkeys(WASMER_FLAGS[feature] for feature in features
                                    if feature in WASMER_FLAGS))
         return pinned + [str(vm), "run", *flags, "--invoke", "_start", str(wasm)]
-    feature_args = ["-WFE-" + feature for feature in features]
+    feature_args = product_features(engine.startswith("ros-"), features)
     if engine == "ordinary-jit":
         mode = ["-Rcc", "jit", "-Rcm", "full", "-Rllvm-full-policy", "pb-o3",
                 "-Rllvm-call-stack", trace, "-Rllvm-cache-path", "disable"]
     elif engine == "ordinary-int":
         mode = ["-Rcc", "int", "-Rcm", "full"]
     elif engine == "ros-jit":
-        mode = ["-Raot", "-Rllvm-full-policy", "pb-o3",
-                "-Rllvm-call-stack", trace, "-Rllvm-cache-path", "disable"]
+        if trace != "unwind":
+            raise ValueError("ROS LLVM uses native unwinding")
+        mode = ["-Raot", "--wasm-policy-global", "runtime.llvm.full-policy", "pb-o3",
+                "-Rllvm-cache-path", "disable"]
     elif engine == "ros-int":
         mode = ["-Rint"]
     else:
@@ -340,7 +351,9 @@ def main():
                 "fixtures": {},
                 "include_gc_collector_matrix": args.include_gc_collector_matrix,
                 "feature_policy": {
-                    "ordinary_ros": "case-required -WFE flags; direct-call-step also enables function-references to match call-ref-step codegen configuration",
+                    "ordinary": "case-required -WFE flags",
+                    "ros": "parser.baseline wasm2 plus case-required parser.FEATURE on",
+                    "call_ref": "direct-call-step also enables function-references to match call-ref-step codegen configuration",
                     "wasmtime": "Wasm2 baseline plus case-required Core3 flags; direct-call-step also enables function-references as a matched control",
                     "wasmer": "case-required supported --enable flags",
                     "wasmedge": "--wasm-3 plus threads enabled for every case",
@@ -395,6 +408,8 @@ def main():
             parser.error(f"--engine names unavailable modes: {sorted(unknown)}")
         engine_paths = {name: vm for name, vm in engine_paths.items()
                         if name in args.engine}
+    if "ros-jit" in engine_paths and args.trace != "unwind":
+        parser.error("ROS LLVM uses native unwinding; select --trace unwind for ros-jit")
     if high_case:
         preflight = json.loads(args.high_memory_preflight.read_text())
         preflight_metadata = json.loads(

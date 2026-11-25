@@ -187,7 +187,7 @@ Earlier harness attempts missing framework macros or linking an older
 libstdc++ against newer LLVM dependencies are retained as failed setup attempts.
 No production protection or hot-path instruction changed in this follow-up.
 
-### No-mmap test expectation correction and three-configuration replay
+### Historical no-mmap test expectation correction and three-configuration replay
 
 Compiling that test with UWVM_FORCE_DISABLE_MMAP reproduced a test failure
 (exit 2): the fixture still assumed a 64-byte mmap guard existed and therefore
@@ -205,9 +205,9 @@ checks 18 full-guard configurations with no software checks; allocator runs
 correctly report zero and exercise software fallback. For each selection,
 the ordinary and ROS test executable hashes also match.
 
-The two allocator selections add --compile-flag=-DUWVM_FORCE_DISABLE_MMAP;
-the multi-thread selection additionally adds
---compile-flag=-DUWVM_USE_MULTITHREAD_ALLOCATOR to the example above.
+Those archived builds used `UWVM_FORCE_DISABLE_MMAP` for both allocator
+selections and `UWVM_USE_MULTITHREAD_ALLOCATOR` for the multi-thread selection.
+Current ROS builds require mmap guest linear memory.
 As with the original oracle, this is emitted address-decision execution under
 those compile-time selections. It does not allocate/grow real linear memory,
 exercise a moving provider's pinning callback, or validate actual ISA32 JIT

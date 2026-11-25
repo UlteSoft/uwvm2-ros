@@ -15,6 +15,7 @@ import sys
 import time
 
 from generate_exnref_reclamation import CASES, expected_after, module
+from run import product_features
 
 
 def sha256(path):
@@ -57,11 +58,11 @@ def main():
     staged_watcher = args.out / "macos_rss_limit.py"
     shutil.copyfile(watcher, staged_watcher)
     watcher_sha = sha256(staged_watcher)
-    modes = (("int-full", ("-Rint",)) if args.ros else
-             ("int-full", ("-Rcc", "int", "-Rcm", "full")))
-    selected = [("jit-instruction", "instruction"), ("jit-unwind", "unwind")]
     if args.ros:
-        selected.insert(0, modes)
+        selected = [("int-full", ["-Rint"]), ("jit-unwind", ["-Raot", "-Rllvm-cache-path", "disable"])]
+    else:
+        selected = [("jit-" + trace, ["-Rcc", "jit", "-Rcm", "full", "-Rllvm-call-stack", trace,
+                                     "-Rllvm-cache-path", "disable"]) for trace in ("instruction", "unwind")]
     rows = []
     for case in CASES:
         text, features = module(case, args.count)
@@ -70,16 +71,9 @@ def main():
         wat.write_text(text)
         subprocess.run([str(args.wasm_tools), "parse", str(wat), "-o", str(wasm)], check=True)
         subprocess.run([str(args.wasm_tools), "validate", str(wasm)], check=True)
-        for label, mode in selected:
-            if isinstance(mode, tuple):
-                policy = list(mode)
-            else:
-                policy = (["-Raot"] if args.ros else
-                          ["-Rcc", "jit", "-Rcm", "full"])
-                policy += ["-Rllvm-call-stack", mode, "-Rllvm-cache-path", "disable"]
+        for label, policy in selected:
             invocation = [str(args.uwvm), *policy, "-Rct", "0",
-                          *("-WFE-" + feature for feature in features),
-                          "--run", str(wasm)]
+                          *product_features(args.ros, features), "--run", str(wasm)]
             command = [sys.executable, str(staged_watcher), "--limit-bytes", str(4 * 1024**3),
                        "--", *invocation]
             result = subprocess.run(command, text=True, stdout=subprocess.PIPE,

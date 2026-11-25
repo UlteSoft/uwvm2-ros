@@ -486,16 +486,16 @@ class ReleaseGateMainTests(unittest.TestCase):
             self.assertEqual(raised.exception.code, 2)
             return stderr.getvalue()
 
-    def test_feature_override_rejects_runtime_argument_injection(self) -> None:
+    def test_baseline_override_requires_a_profile(self) -> None:
         for injected in ("--mode", "--run", "-Rint", "-Raot"):
             with self.subTest(injected=injected):
-                stderr = self.parser_error(f"--uwvm-feature-arg={injected}")
+                stderr = self.parser_error(f"--uwvm-baseline={injected}")
                 self.assertIn("invalid choice", stderr)
 
-    def test_feature_override_accepts_only_one_known_switch(self) -> None:
+    def test_baseline_override_accepts_only_one_profile(self) -> None:
         stderr = self.parser_error(
-            "--uwvm-feature-arg=--wasm-feature-mvp",
-            "--uwvm-feature-arg=--wasm-feature-wasm2",
+            "--uwvm-baseline=mvp",
+            "--uwvm-baseline=wasm2",
         )
         self.assertIn("at most once", stderr)
 

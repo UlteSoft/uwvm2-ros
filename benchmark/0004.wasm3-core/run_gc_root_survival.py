@@ -18,7 +18,7 @@ import sys
 import time
 
 from generate_gc_root_survival import ROOTS, module
-from run import (LIB_PATHS, cgroup_preflight, command, run_one, sha256,
+from run import (LIB_PATHS, cgroup_preflight, command, product_features, run_one, sha256,
                  verify_product_build)
 
 
@@ -47,10 +47,7 @@ ORDINARY_MODES = {
 }
 ROS_MODES = {
     "int-full": ("-Rint",),
-    "jit-full-unwind": ("-Raot", "-Rllvm-full-policy", "pb-o3",
-                        "-Rllvm-call-stack", "unwind"),
-    "jit-full-instruction": ("-Raot", "-Rllvm-full-policy", "pb-o3",
-                             "-Rllvm-call-stack", "instruction"),
+    "jit-full-unwind": ("-Raot", "--wasm-policy-global", "runtime.llvm.full-policy", "pb-o3"),
 }
 FEATURES = ("gc", "exceptions", "function-references")
 
@@ -127,7 +124,7 @@ def main():
             invocation = ["taskset", "-c", str(args.cpu), str(binary), *options,
                           "-Rllvm-cache-path", "disable", "-Rct", "0",
                           *(["-Rclog", "file", str(tiered_log)] if tiered_log else []),
-                          *("-WFE-" + feature for feature in FEATURES),
+                          *product_features(label == "ros", FEATURES),
                           "--run", str(wasm)]
             row = run_one(invocation, f"{mode}-{root}", logs, env)
             row.update(mode=mode, root=root, wasm_sha256=sha256(wasm))

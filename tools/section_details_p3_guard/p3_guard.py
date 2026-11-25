@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 
@@ -187,16 +188,26 @@ def configure_and_build(root: Path, stack_usage: bool) -> tuple[float, str]:
 
 
 def binary_path(root: Path) -> Path:
-    path = root / "build/linux/x86_64/release/uwvm"
-    if not path.exists():
-        raise FileNotFoundError(f"missing release uwvm binary: {path}")
-    return path
+    directory = root / "build/linux/x86_64/release"
+    for name in ("uwvm2-ros", "uwvm"):
+        path = directory / name
+        if path.is_file():
+            return path
+    raise FileNotFoundError(f"missing release uwvm binary in {directory}")
+
+
+@cache
+def baseline_option(binary: Path) -> tuple[str, ...]:
+    result = run([str(binary), "--help", "all"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if b"--wasm-policy-global" in result.stdout:
+        return ("--wasm-policy-global", "parser.baseline", "wasm1p1")
+    return ("--wasm-feature-wasm1.1",)
 
 
 def command(binary: Path, case: Case) -> list[str]:
     args = [str(binary)]
     if case.feature_1p1:
-        args.append("--wasm-feature-wasm1.1")
+        args.extend(baseline_option(binary))
     args.extend(["--mode", "section-details", str(case.path)])
     return args
 

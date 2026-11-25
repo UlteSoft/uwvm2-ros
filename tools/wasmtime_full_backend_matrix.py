@@ -57,12 +57,8 @@ VALIDATION_PROFILES: dict[str, tuple[str, ...]] = {
 # case. The Wasm 2.0 profile is materially different from Wasm 1.1 for encoded
 # immediates such as call_indirect's table index, even when both profiles enable
 # the same proposal families.
-UWVM_FEATURE_ARGS: dict[str, tuple[str, ...]] = {
-    "mvp": ("--wasm-feature-mvp",),
-    "wasm2-core": ("--wasm-feature-wasm2",),
-    "all": ("--wasm-feature-wasm2",),
-}
-ALLOWED_UWVM_FEATURE_ARGS = ("--wasm-feature-mvp", "--wasm-feature-wasm2")
+UWVM_BASELINES = {"mvp": "mvp", "wasm2-core": "wasm2", "all": "wasm2"}
+
 
 SKIP_STATUS_COUNTERS: dict[str, str] = {
     "wat-compile-skipped": "wat_compile_skipped",
@@ -578,14 +574,11 @@ def main(argv: list[str]) -> int:
         help="execute entry-point fixtures, or validate every profile-compatible WAT without running it",
     )
     parser.add_argument(
-        "--uwvm-feature-arg",
+        "--uwvm-baseline",
         action="append",
-        choices=ALLOWED_UWVM_FEATURE_ARGS,
+        choices=("mvp", "wasm2"),
         default=[],
-        help=(
-            "override the profile-derived uwvm feature switch with one known product switch "
-            "(use --uwvm-feature-arg=--wasm-feature-wasm2 because the value begins with '-')"
-        ),
+        help="override the parser.baseline derived from the corpus feature profile",
     )
     parser.add_argument(
         "--feature-profile",
@@ -646,11 +639,14 @@ def main(argv: list[str]) -> int:
         parser.error("--strict requires an explicit --minimum-executed reviewed floor")
     if args.strict and args.allow_reference_mismatch:
         parser.error("--strict and --allow-reference-mismatch are mutually exclusive")
-    if len(args.uwvm_feature_arg) > 1:
-        parser.error("--uwvm-feature-arg may be specified at most once")
+    if len(args.uwvm_baseline) > 1:
+        parser.error("--uwvm-baseline may be specified at most once")
     if args.only_profile_delta and args.feature_profile == "mvp":
         parser.error("--only-profile-delta requires wasm2-core or all")
     minimum_executed = args.minimum_executed if args.minimum_executed is not None else 1
+
+    baseline = args.uwvm_baseline[0] if args.uwvm_baseline else UWVM_BASELINES[args.feature_profile]
+    uwvm_feature_args = ("--wasm-policy-global", "parser.baseline", baseline)
 
     uwvm_int = args.uwvm_int or args.uwvm
     uwvm_llvm = args.uwvm_llvm or args.uwvm
@@ -832,7 +828,6 @@ def main(argv: list[str]) -> int:
                 cases.append(case)
                 continue
 
-        uwvm_feature_args = tuple(args.uwvm_feature_arg) or UWVM_FEATURE_ARGS[args.feature_profile]
         if args.mode == "validate":
             engines = {
                 "uwvm_int_validation": [
@@ -968,7 +963,7 @@ def main(argv: list[str]) -> int:
         "uwvm_llvm": str(uwvm_llvm),
         "mode": args.mode,
         "feature_profile": args.feature_profile,
-        "uwvm_feature_args": list(tuple(args.uwvm_feature_arg) or UWVM_FEATURE_ARGS[args.feature_profile]),
+        "uwvm_feature_args": list(uwvm_feature_args),
         "only_profile_delta": args.only_profile_delta,
         "strict": args.strict,
         "selection": selection_counts,

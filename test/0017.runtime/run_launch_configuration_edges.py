@@ -98,6 +98,19 @@ def main():
     for quota in ("runtime_modules", "local_defined_memories", "local_defined_functions", "local_defined_codes"):
         run("quota-" + quota, flags=["--wasm-process-initializer-limit", quota, "0"], expected=126, diagnostic="reserve limit exceeded")
     run("zero-unused-quota", fixture="none", flags=["--wasm-policy-single", "main", "init.local-defined-memories", "0"])
+    # The preloaded peer defines one memory. The two-memory main needs its single override.
+    group = ["--wasm-preload-library", str(args.out / "ok.wasm"), "peer",
+             "--wasm-policy-global", "init.local-defined-memories", "0",
+             "--wasm-policy-group", "workers", "init.local-defined-memories", "1",
+             "--wasm-policy-group-add-module", "workers", "main",
+             "--wasm-policy-group-add-module", "workers", "peer"]
+    single = ["--wasm-policy-single", "main", "init.local-defined-memories", "2"]
+    run("group-single", fixture="multi", flags=group + single)
+    run("single-before-group", fixture="multi", flags=single + group)
+    run("group-limit", fixture="multi", flags=group, expected=126, diagnostic="reserve limit exceeded")
+    run("process-ceiling", fixture="multi", flags=group + single +
+        ["--wasm-process-initializer-limit", "local_defined_memories", "1"],
+        expected=126, diagnostic="reserve limit exceeded")
     run("zero-memory-min", flags=["-Wmemlim", "main", "all", "0", "0"])
     # Read the target ELF class, not the Python launcher's native word size.
     image = args.vm.read_bytes()

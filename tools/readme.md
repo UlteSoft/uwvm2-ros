@@ -33,7 +33,7 @@ allowed. For example:
 : "${EXPECTED_SELECTED:?set the reviewed post-limit selection count}"
 python3 tools/wasmtime_full_backend_matrix.py \
   --source-root /path/to/wasmtime-tests \
-  --uwvm /path/to/uwvm \
+  --uwvm /path/to/uwvm2-ros \
   --wasmtime /path/to/wasmtime \
   --wat2wasm /path/to/wat2wasm \
   --wasm-validate /path/to/wasm-validate \
@@ -53,8 +53,9 @@ incompatible with `--allow-reference-mismatch`; `--expected-selected` adds an
 exact post-limit corpus contract. The report records include/exclude patterns,
 `--max-cases`, and selection counts before and after that limit.
 
-`--uwvm-feature-arg` accepts at most one of `--wasm-feature-mvp` and
-`--wasm-feature-wasm2`; it cannot inject runtime mode or `--run` arguments.
+`--uwvm-baseline mvp` and `--uwvm-baseline wasm2` override the profile-derived
+parser baseline. The driver passes `--wasm-policy-global parser.baseline VALUE`
+to both ROS backends and records that argument vector in the report.
 The JSON report schema v6 preserves stdout as exact base64 plus byte count and
 SHA-256, and every outcome comparison includes those original stdout bytes. It
 also records per-status executed/skipped counts, case-level skip detail, the
