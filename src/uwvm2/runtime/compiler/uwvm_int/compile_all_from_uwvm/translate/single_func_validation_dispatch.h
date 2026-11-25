@@ -1306,60 +1306,6 @@ auto const resolve_memory_storage{
                                              return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits);
                                          }};
 
-        auto const backend_max_limit_from_memory{
-            [&](native_memory_t const& memory) constexpr noexcept -> ::std::size_t
-            {
-#if defined(UWVM_SUPPORT_MMAP)
-                if constexpr(native_memory_t::can_mmap)
-                {
-                    if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
-                    {
-                        switch(memory.status)
-                        {
-                            case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32:
-                            {
-                                constexpr auto max_full_protection_wasm32_length_half{::uwvm2::object::memory::linear::max_full_protection_wasm32_length / 2u};
-                                return static_cast<::std::size_t>(max_full_protection_wasm32_length_half);
-                            }
-                            case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64:
-                            {
-                                return static_cast<::std::size_t>(::uwvm2::object::memory::linear::max_partial_protection_wasm64_length);
-                            }
-                            [[unlikely]] default:
-                            {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                                ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-# endif
-                                return 0uz;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        return static_cast<::std::size_t>(::uwvm2::object::memory::linear::max_partial_protection_wasm32_length);
-                    }
-                }
-                else
-                {
-                    static_cast<void>(memory);
-                    return ::std::numeric_limits<::std::size_t>::max();
-                }
-#else
-                static_cast<void>(memory);
-                return ::std::numeric_limits<::std::size_t>::max();
-#endif
-            }};
-
-        auto const refine_max_limit_for_memory{[&](native_memory_t const& memory, ::std::size_t max_limit_memory_length) constexpr noexcept -> ::std::size_t
-                                               {
-                                                   auto backend_max_limit_length{backend_max_limit_from_memory(memory)};
-                                                   if(memory.memtag_shadow.enabled() &&
-                                                      memory.memtag_shadow.maximum_memory_bytes() < backend_max_limit_length)
-                                                   { backend_max_limit_length=static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
-                                                   return backend_max_limit_length < max_limit_memory_length ? backend_max_limit_length
-                                                                                                             : max_limit_memory_length;
-                                               }};
-
         if(current_memory_index >= all_memory_count) [[unlikely]]
         {
 #if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
@@ -1421,7 +1367,7 @@ auto const resolve_memory_storage{
                         // The selected storage is owned by the module graph and remains alive for the compiled code.
                         resolved_memory.memory_p = ::std::addressof(def->memory);
                         resolved_memory.max_limit_memory_length = max_limit_from_limits(def->effective_limits);
-                        resolved_memory.max_limit_memory_length = refine_max_limit_for_memory(def->memory, resolved_memory.max_limit_memory_length);
+                        resolved_memory.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(def->memory, resolved_memory.max_limit_memory_length);
                         resolved_memory.resolved = true;
                         return;
                     }
@@ -1452,7 +1398,7 @@ auto const resolve_memory_storage{
                 ::fast_io::fast_terminate();
             }
             resolved_memory.max_limit_memory_length = max_limit_from_limits(local_mem0.effective_limits);
-            resolved_memory.max_limit_memory_length = refine_max_limit_for_memory(local_mem0.memory, resolved_memory.max_limit_memory_length);
+            resolved_memory.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(local_mem0.memory, resolved_memory.max_limit_memory_length);
             resolved_memory.resolved = true;
         }
     }};

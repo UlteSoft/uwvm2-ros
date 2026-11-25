@@ -442,7 +442,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             }
             template<typename Record, typename Selector>
             [[nodiscard]] storage_module* locate_unpublished_record(Record const* candidate, Selector select,
-                ::std::size_t& local) noexcept
+                ::std::size_t& local, ::uwvm2::utils::container::u8string_view* owner_name = nullptr) noexcept
             {
                 if(state_ != skeleton_result::built || !resource_fixups_started_ || !source_ || source_->initialized_ ||
                     candidate == nullptr || record_completed(candidate)) { return nullptr; }
@@ -452,7 +452,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     // [actual FINAL source registry][its actual bounded record vector]
                     // [safe] supplied candidate address is only COMPARED by exact
                     // aligned element membership before any candidate pointee read.
-                    if(details::linked_function_record_index(candidate, select(module), local)) { return ::std::addressof(module); }
+                    if(details::linked_function_record_index(candidate, select(module), local))
+                    {
+                        if(owner_name) { *owner_name = name; }
+                        return ::std::addressof(module);
+                    }
                 }
                 return nullptr;
             }
@@ -464,7 +468,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::std::size_t maximum_native_bytes) noexcept
             {
                 ::std::size_t local{};
-                auto* module{locate_unpublished_record(candidate, [](auto& m)->auto& { return m.local_defined_memory_vec_storage; }, local)};
+                ::uwvm2::utils::container::u8string_view name{};
+                auto* module{locate_unpublished_record(candidate, [](auto& m)->auto& { return m.local_defined_memory_vec_storage; }, local, ::std::addressof(name))};
                 if(module == nullptr) { return false; }
                 // [actual owned metadata-only memory record][real immutable type]
                 // [safe] candidate was authenticated to the actual vector above.
@@ -501,21 +506,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
                 auto initialize = [&]<typename Memory>(Memory& memory) noexcept
                 {
+                    if(module->imported_memory_vec_storage.size() > SIZE_MAX-local) { return false; }
                     if(shared && !Memory::support_multi_thread) { return false; }
                     if constexpr(Memory::can_mmap)
                     {
-                        // Match the allocator's actual reservation ceiling before
-                        // invoking its fatal-on-invalid native initialization API.
-                        constexpr ::std::uint64_t host64_wasm32{(::std::uint64_t{1u}<<32u)};
-                        constexpr ::std::uint64_t host64_wasm64{(::std::uint64_t{1u}<<40u)};
-                        constexpr ::std::uint64_t host32_memory{(::std::uint64_t{1u}<<28u)};
-                        auto const ceiling{sizeof(::std::size_t)>=8u ? (declaration.address64?host64_wasm64:host64_wasm32) : host32_memory};
-                        if(bytes > ceiling || bytes > memory.reservation_limit_bytes) { return false; }
+                        if(pages > memory.maximum_initial_page_count() || (tag_bits && address_bits == 64u &&
+                           memory.reservation_budget_bytes > ::uwvm2::object::memory::linear::mmap_reservation::tagged_wasm64_span_limit))
+                        { return false; }
+                        memory.sequentially_consistent_size = shared;
+                        if(!memory.try_init_by_page_count(static_cast<::std::size_t>(pages),
+                            actual.effective_limits.present_max ? actual.effective_limits.max : SIZE_MAX,
+                            module->imported_memory_vec_storage.size() + local)) { return false; }
+                        details::report_mmap_owner(memory, declaration.limits, name, local);
                     }
-                    auto restored_limits{actual.effective_limits}; restored_limits.min=static_cast<::std::size_t>(pages);
-                    if(module->imported_memory_vec_storage.size() > SIZE_MAX-local) { return false; }
-                    details::initialize_native_memory(memory, restored_limits,
-                        module->imported_memory_vec_storage.size()+local, shared, declaration.address64);
+                    else
+                    {
+                        auto restored_limits{actual.effective_limits};
+                        restored_limits.min = static_cast<::std::size_t>(pages);
+                        details::initialize_native_memory(memory, restored_limits, module->imported_memory_vec_storage.size() + local,
+                            shared, declaration.address64);
+                    }
                     if((bytes!=0u && memory.memory_begin==nullptr) ||
                         bytes > UINTPTR_MAX-reinterpret_cast<::std::uintptr_t>(memory.memory_begin)) { return false; }
                     for(auto const& chunk : chunks)
@@ -914,6 +924,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     auto const inserted{memory.try_emplace(::uwvm2::utils::container::u8string{name})};
                     auto& copied{inserted.first->second}; copied.all_limits = actual.all_limits;
                     copied.apply_to_all_memories = actual.apply_to_all_memories;
+                    for(auto const& [index, value] : actual.local_defined_mmap_reservations)
+                    { copied.local_defined_mmap_reservations.try_emplace(index, value); }
                     for(auto const& [index, limit] : actual.local_defined_memory_limits)
                     { copied.local_defined_memory_limits.try_emplace(index, limit); }
                 }
@@ -983,6 +995,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     build_dependency_graph_and_check_import_exist_and_construct_all_module_export_in_context(world_)};
                 if(dependencies.ok != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)
                 { return state_ = skeleton_result::dependency_error; }
+                details::mmap_reservation_plan reservation_plan{};
+                reservation_plan.defer_owner_mapping = true;
                 auto& modules{world_.modules()};
                 modules.reserve(wasm_count);
                 for(auto const& [name, declaration] : declared)
@@ -991,7 +1005,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     if(declaration.type != kind::exec_wasm && declaration.type != kind::preloaded_wasm) { continue; }
                     current_module_ = name;
                     storage_module module{};
-                    details::initialize_from_wasm_file_in_context(world_, *declaration.module_storage_ptr.wf, module);
+                    details::initialize_from_wasm_file_in_context(world_, *declaration.module_storage_ptr.wf, module, ::std::addressof(reservation_plan));
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     module.module_name = name;
 #endif
@@ -1008,6 +1022,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 if(!details::validate_and_resolve_core3_tags_after_linking_in_context(world_) ||
                    !details::validate_wasm_file_module_import_types_after_linking_in_context(world_))
                 { return state_ = skeleton_result::dependency_error; }
+                if(!details::discover_mmap_tagged_owners(world_, reservation_plan) ||
+                   !details::plan_world_mmap_reservations(world_, reservation_plan))
+                { return state_ = skeleton_result::invalid_source; }
+                for(auto& [name, module] : modules)
+                {
+                    auto const* config{world_.find_memory_limit(name)};
+                    ::std::size_t index{};
+                    for(auto& local : module.local_defined_memory_vec_storage)
+                    { details::configure_mmap_owner(local.memory, *local.memory_type_ptr, config, index++, reservation_plan); }
+                }
                 // Actual in-map addresses are now stable. No original global/table
                 // initializer runs and no ref value is read from an uninitialized slot.
                 for(auto& [name, module] : modules)

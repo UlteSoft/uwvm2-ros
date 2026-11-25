@@ -167,7 +167,9 @@ int main(int argc, char** argv)
                 llvm::Function::ExternalLinkage, "address_" + std::to_string(cases.size()), *module)};
             b.SetInsertPoint(llvm::BasicBlock::Create(context, "entry", fn));
             unsigned length_reads{};
-            std::uint64_t partial{pointer_bits == 32 ? 1ull << 28 : 1ull << 40};
+            // Each partial guard leaves room for the largest scalar/SIMD access.
+            // Exercise actual non-power-of-two escape limits on both host ABIs.
+            std::uint64_t partial{(pointer_bits == 32 ? 17ull << 16 : 1ull << 41) - 63u};
             auto pointer{d::emit_llvm_jit_memory_address(b, llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(context)),
                 b.CreateZExtOrTrunc(fn->getArg(0), b.getIntNTy(address_bits)), offset, width, mode, partial,
                 [&]() -> llvm::Value* { ++length_reads; return b.CreateZExtOrTrunc(fn->getArg(1), b.getIntNTy(pointer_bits)); })};
@@ -235,6 +237,8 @@ int main(int argc, char** argv)
                                    0xffffffffull, 0x100000000ull, (1ull << 40) - 1, 1ull << 40, 0xffffffffffffffffull})
         for(std::uint64_t length: {0ull, 1ull, 15ull, 16ull, 64ull, 65536ull, 0xffffffffull, 0x100000000ull, 0xffffffffffffffffull})
         { if(!check(address, length)) { return 6; } }
+        if(test.mode == protection::partial_guard &&
+           (!check(test.partial - 1u, 0u) || !check(test.partial, 0u))) { return 6; }
 
         std::uint64_t seed{0x9e3779b97f4a7c15ull};
         auto const random{[&]()

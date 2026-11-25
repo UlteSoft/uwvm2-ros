@@ -21,6 +21,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/object/memory/linear/mmap_reservation.h>
 
 // std
 #include <cstddef>

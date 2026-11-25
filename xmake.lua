@@ -192,19 +192,12 @@ function def_build(opt)
 		add_defines("UWVM_TIMER")
 	end
 
-	local wasm_memory_model = get_config("wasm-memory-model") or "default"
-	if wasm_memory_model == "default" then
-		-- Keep the existing automatic backend selection.
-	elseif wasm_memory_model == "mmap" then
-		add_defines("UWVM_FORCE_USE_MMAP")
-	elseif wasm_memory_model == "multi-thread-alloc" then
-		add_defines("UWVM_FORCE_DISABLE_MMAP")
-		add_defines("UWVM_USE_MULTITHREAD_ALLOCATOR")
-	elseif wasm_memory_model == "single-thread-alloc" then
-		add_defines("UWVM_FORCE_DISABLE_MMAP")
-	else
-		error("unsupported wasm-memory-model: " .. tostring(wasm_memory_model))
+	-- Every ROS runtime target uses the same OS-backed linear memory layout.
+	local wasm_memory_model = get_config("wasm-memory-model") or "mmap"
+	if wasm_memory_model ~= "mmap" and wasm_memory_model ~= "default" then
+		error("uwvm2-ros requires the mmap linear memory backend")
 	end
+	add_defines("UWVM_FORCE_USE_MMAP")
 
 	-- Always build the complete interface set. Socket ABI selection is an
 	-- immutable runtime decision, independent of exposure and descriptor rights.

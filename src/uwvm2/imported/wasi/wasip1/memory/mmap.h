@@ -83,114 +83,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
         if(memory_begin == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
 # endif
 
-        bool const need_dynamic_determination_memory_size{memory.require_dynamic_determination_memory_size()};
-
-        if(need_dynamic_determination_memory_size)
+        // An access entirely inside the owner's VMA has hardware protection
+        // when every logical page is representable by host pages. Empty spans
+        // have no memory instruction to fault and still need a logical check.
+        auto const reserved{memory.get_acquire_reserved_space_ceil()};
+        if(!memory.require_dynamic_determination_memory_size() && wasm_bytes && offset < reserved && wasm_bytes <= reserved - offset) { return; }
+        auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
+        if(wasm_bytes > length || offset > length - wasm_bytes) [[unlikely]]
         {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-            if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
-# endif
-
-            auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-
-            // There is no need to distinguish whether it is fully protected here, as the system will automatically check during expansion whether the expansion
-            // exceeds the limit. Therefore, using `memory_length` directly is sufficient for this determination.
-
-            // The remaining size does not support reading a single type.
-            // Here, since the custom page size is smaller than the platform page size, page protection cannot be used to determine whether a cross-page read is
-            // required. Therefore, an inter-page check must be performed.
-            if(wasm_bytes > memory_length || offset > memory_length - wasm_bytes) [[unlikely]]
-            {
-                ::uwvm2::object::memory::error::output_memory_error_and_terminate({
-                    .memory_idx = 0uz,
-                    .memory_offset = {.offset = static_cast<::std::uint_least64_t>(offset), .offset_65_bit = false},
-                    .memory_static_offset = 0u,
-                    .memory_length = static_cast<::std::uint_least64_t>(memory_length),
-                    .memory_type_size = wasm_bytes
-                });
-            }
-        }
-        else
-        {
-            bool const is_full_page_protection{memory.is_full_page_protection()};
-
-            // if (is_full_page_protection)
-            // Any operation within the bounds of the memory length data type is safe.
-            // | max_protection_space (SIZE_MAX) | custom_page_size | max_type_size | ... align to platform page size ... |
-            // no need to check
-
-            if(!is_full_page_protection)
-            {
-
-                // No dynamic checks are required, but static checks are necessary.
-
-                switch(memory.status)
-                {
-                    case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32:
-                    {
-                        // Since there is a page at the boundary and a protection page of the maximum possible type, no type size reduction check is required
-                        // here.
-                        // | max_protection_space | custom_page_size | max_type_size | ... align to platform page size ... |
-                        if constexpr(::std::numeric_limits<::std::remove_cvref_t<decltype(offset)>>::max() >
-                                     ::std::numeric_limits<
-                                         ::std::remove_cvref_t<decltype(::uwvm2::object::memory::linear::max_partial_protection_wasm32_length)>>::max())
-                        {
-                            if(offset > ::uwvm2::object::memory::linear::max_partial_protection_wasm32_length) [[unlikely]]
-                            {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                                if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
-# endif
-
-                                auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-                                ::uwvm2::object::memory::error::output_memory_error_and_terminate({
-                                    .memory_idx = 0uz,
-                                    .memory_offset = {.offset = static_cast<::std::uint_least64_t>(offset), .offset_65_bit = false},
-                                    .memory_static_offset = 0u,
-                                    .memory_length = static_cast<::std::uint_least64_t>(memory_length),
-                                    .memory_type_size = wasm_bytes
-                                });
-                            }
-                        }
-
-                        break;
-                    }
-                    case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64:
-                    {
-                        // Since there is a page at the boundary and a protection page of the maximum possible type, no type size reduction check is required
-                        // here.
-                        // | max_protection_space | custom_page_size | max_type_size | ... align to platform page size ... |
-                        if constexpr(::std::numeric_limits<::std::remove_cvref_t<decltype(offset)>>::max() >
-                                     ::std::numeric_limits<
-                                         ::std::remove_cvref_t<decltype(::uwvm2::object::memory::linear::max_partial_protection_wasm64_length)>>::max())
-                        {
-                            if(offset > ::uwvm2::object::memory::linear::max_partial_protection_wasm64_length) [[unlikely]]
-                            {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                                if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
-# endif
-
-                                auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-                                ::uwvm2::object::memory::error::output_memory_error_and_terminate({
-                                    .memory_idx = 0uz,
-                                    .memory_offset = {.offset = static_cast<::std::uint_least64_t>(offset), .offset_65_bit = false},
-                                    .memory_static_offset = 0u,
-                                    .memory_length = static_cast<::std::uint_least64_t>(memory_length),
-                                    .memory_type_size = wasm_bytes
-                                });
-                            }
-                        }
-
-                        break;
-                    }
-                    [[unlikely]] default:
-                    {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                        ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-# endif
-                        ::std::unreachable();
-                    }
-                }
-            }
+            ::uwvm2::object::memory::error::output_memory_error_and_terminate({
+                .memory_idx = 0uz,
+                .memory_offset = {.offset = static_cast<::std::uint_least64_t>(offset), .offset_65_bit = false},
+                .memory_static_offset = 0u,
+                .memory_length = static_cast<::std::uint_least64_t>(length),
+                .memory_type_size = wasm_bytes
+            });
         }
     }
 

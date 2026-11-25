@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/object/memory/linear/mmap_reservation.h>
 #include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/control/wasithread.h>
 #include <uwvm2/utils/allocator/resource_limit.h>

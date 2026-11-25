@@ -5989,27 +5989,6 @@ namespace uwvm2::runtime::lib
             return true;
         }
 
-#if defined(UWVM_SUPPORT_MMAP)
-        [[nodiscard]] inline constexpr ::std::uint_least64_t preload_partial_protection_limit_bytes(native_memory_t const& memory) noexcept
-        {
-
-            // Partial guard-page mmap exposure needs the same architecture-sized limit used by the native linear-memory backend.
-            if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
-            {
-                if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64)
-                {
-                    return ::uwvm2::object::memory::linear::max_partial_protection_wasm64_length;
-                }
-                return ::uwvm2::object::memory::linear::max_partial_protection_wasm32_length;
-            }
-            else
-            {
-                static_cast<void>(memory);
-                return ::uwvm2::object::memory::linear::max_partial_protection_wasm32_length;
-            }
-        }
-#endif
-
         [[nodiscard]] inline constexpr bool resolve_defined_preload_memory(native_memory_t const& memory, resolved_preload_memory_t& resolved) noexcept
         {
             // Take a snapshot so descriptor fields describe one coherent memory view even if the memory can grow later.
@@ -6054,7 +6033,7 @@ namespace uwvm2::runtime::lib
                 else
                 {
                     resolved.mmap_delivery_state = ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_mmap_partial_protection;
-                    resolved.partial_protection_limit_bytes = preload_partial_protection_limit_bytes(memory);
+                    resolved.partial_protection_limit_bytes = memory.partial_guard_limit_bytes();
                 }
             }
 #endif

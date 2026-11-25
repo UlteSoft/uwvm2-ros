@@ -347,7 +347,7 @@ extern "C++"
             {e->rejected=true;e->lease->report_memory_failure(static_cast<::std::uint32_t>(why),tainted,e->child->module_index_,e->function,UINT64_MAX);};
             if(!e->lease->full_source_reset_required()){record_failure(phase::invalid,false);return UINT64_MAX;}
             auto const cap=e->child->world_->memory_growth_limit(*memory,original_maximum);
-            if(delta>SIZE_MAX||!e->child->world_->charge_memory_growth(*memory,delta))return UINT64_MAX;
+            if(delta>SIZE_MAX||!e->child->world_->charge_memory_growth(*memory,delta,cap))return UINT64_MAX;
             auto const result=memory->grow_threaded_profile(static_cast<::std::size_t>(delta),cap,e->lease->cancellation());
             e->child->last_grow_=result;
             switch(result.status)

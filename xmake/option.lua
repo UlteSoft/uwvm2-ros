@@ -694,17 +694,9 @@ option("fno-exceptions", function()
 end)
 
 option("wasm-memory-model", function()
-    set_description
-    (
-        "Select the WebAssembly linear memory backend.",
-        "default: keep the platform default selection.",
-        "mmap: force the mmap/VirtualAlloc backend and fail when unavailable.",
-        "multi-thread-alloc: force the multithread allocator backend and fail when unavailable.",
-        "single-thread-alloc: force the single-thread allocator backend.",
-        "default = default"
-    )
-    set_default("default")
-    set_values("default", "mmap", "multi-thread-alloc", "single-thread-alloc")
+    set_description("Use OS-backed guard pages for ROS linear memories. Both accepted values select mmap.")
+    set_default("mmap")
+    set_values("mmap", "default")
 end)
 
 option("disable-local-imported-wasip1", function()

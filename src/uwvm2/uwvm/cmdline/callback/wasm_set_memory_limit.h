@@ -25,6 +25,7 @@
 #ifndef UWVM_MODULE
 // std
 # include <cstddef>
+# include <cstdint>
 # include <limits>
 # include <memory>
 // macro
@@ -51,6 +52,72 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
 {
+#if defined(UWVM_MODULE)
+    extern "C++"
+#else
+    inline constexpr
+#endif
+    ::uwvm2::utils::cmdline::parameter_return_type runtime_memory_reservation_callback(
+        ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results* current,
+        ::uwvm2::utils::cmdline::parameter_parsing_results* end) noexcept
+    {
+        using namespace ::uwvm2::utils::cmdline;
+        namespace storage = ::uwvm2::uwvm::wasm::storage;
+        auto const invalid{[]() noexcept {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Invalid memory reservation. ",
+                print_usage(::uwvm2::uwvm::cmdline::params::runtime_memory_reservation));
+            return parameter_return_type::return_m1_imme;
+        }};
+        if(end - current < 3) { return invalid(); }
+        auto const setting{current[1].str};
+        bool const local{setting == u8"memory"};
+        auto const count{local ? 4 : 2};
+        if(end - current <= count) { return invalid(); }
+        for(int i{1}; i <= count; ++i)
+        { if(current[i].type != parameter_parsing_results_type::arg) { return invalid(); } }
+        auto const number{[](auto text, auto& value) noexcept {
+            if(text.empty()) { return false; }
+            for(auto ch : text) { if(ch < u8'0' || ch > u8'9') { return false; } }
+            auto const parsed{::fast_io::parse_by_scan(text.cbegin(), text.cend(), value)};
+            return parsed.code == ::fast_io::parse_code::ok && parsed.iter == text.cend();
+        }};
+        // The inclusive process pool endpoint is one byte larger than UINT64_MAX.
+        // Individual mapping lengths must still be representable on the host.
+        auto const amount{current[count].str};
+        bool const full_pool{setting == u8"pool" && ::std::numeric_limits<::std::uintptr_t>::digits == 64 &&
+                             amount == u8"18446744073709551616"};
+        ::std::uint_least64_t value{};
+        if(!full_pool && (!number(amount, value) || value == 0u)) { return invalid(); }
+        if(setting == u8"participants")
+        {
+            if(value > (::std::numeric_limits<::std::size_t>::max)()) { return invalid(); }
+            storage::mmap_reservation_participants = static_cast<::std::size_t>(value);
+        }
+        else
+        {
+            if(value > storage::mmap_reservation_hard_limit_bytes) { return invalid(); }
+            if(setting == u8"pool")
+            {
+                storage::mmap_reservation_pool_bytes = value;
+                storage::mmap_reservation_pool_full_address_space = full_pool;
+                storage::mmap_reservation_pool_specified = true;
+            }
+            else if(local)
+            {
+                auto const name{::uwvm2::utils::container::u8string_view{current[2].str}};
+                ::std::size_t index{};
+                if(name.empty() || !number(current[3].str, index)) { return invalid(); }
+                using namespace ::uwvm2::uwvm::wasm::feature;
+                auto const [name_end, name_error]{handle_text_format(wasm_binfmt_ver1_text_format_wapper, name.cbegin(), name.cend())};
+                if(name_end != name.cend() || name_error != ::uwvm2::utils::utf::utf_error_code::success) { return invalid(); }
+                storage::upsert_configured_module_memory_limit(name).local_defined_mmap_reservations.insert_or_assign(index, value);
+            }
+            else { return invalid(); }
+        }
+        for(int i{1}; i <= count; ++i) { current[i].type = parameter_parsing_results_type::occupied_arg; }
+        return parameter_return_type::def;
+    }
+
 #if defined(UWVM_MODULE)
     extern "C++" UWVM_GNU_COLD
 #else

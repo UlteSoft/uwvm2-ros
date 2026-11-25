@@ -549,9 +549,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
 #else
         details::append_cache_key_value(out, u8"mips-n64el-r2-tailcc", u8"producer-default");
 #endif
-        // A limited Memory64 reservation uses software bounds instead of the
-        // fixed partial-guard threshold. Retire older generated address checks.
-        details::append_cache_key_value(out, u8"memory64-reservation-bounds", u8"declared-maximum-v1");
+        // The object key hashes the actual codegen bitcode, including each
+        // referenced owner's span, partial-guard threshold and growth limit.
+        details::append_cache_key_value(out, u8"memory64-reservation-bounds", u8"owner-guard-limit-v2");
         // A guard-using object requires ordinary-context terminal delivery.
         // Neither an unchanged Git label nor an embedder source ID may replay
         // it in a runtime that only has the signal-context emergency exit.
@@ -598,9 +598,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::llvm_jit_cache
         // This identity separates the opt-in; it is not proof of provider support.
         details::append_cache_key_value(out, u8"windows-arm64-gnu-native-eh", u8"qualified-provider-itanium-seh-v1");
 #endif
-        // mmap records now carry a per-instance reservation extent. Small 32-bit memories require
-        // software checks; old fixed-window objects must not survive an unchanged embedder source ID.
-        details::append_cache_key_value(out, u8"native-memory-layout", u8"bounded-reservation-aligned64-owner-ordered-size-v4");
+        details::append_cache_key_value(out, u8"native-memory-layout", u8"owner-reserved-span-aligned64-v5");
         // mmap emits direct accesses; moving allocations use pinning bridges.
         // Source/version strings can be identical across these build configurations.
 #if defined(UWVM_SUPPORT_MMAP)

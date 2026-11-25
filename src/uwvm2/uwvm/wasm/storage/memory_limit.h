@@ -21,6 +21,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/object/memory/linear/mmap_reservation.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -40,11 +41,21 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
 {
+    inline constexpr auto mmap_reservation_hard_limit_bytes{
+        ::uwvm2::object::memory::linear::mmap_reservation::hard_limit(::uwvm2::object::memory::linear::mmap_reservation::host_bits)};
+    inline constexpr auto default_mmap_reservation_pool_bytes{
+        ::uwvm2::object::memory::linear::mmap_reservation::default_pool(::uwvm2::object::memory::linear::mmap_reservation::host_bits)};
+    inline auto& mmap_reservation_pool_bytes{::uwvm2::object::memory::linear::mmap_reservation::pool_bytes};
+    inline auto& mmap_reservation_pool_full_address_space{::uwvm2::object::memory::linear::mmap_reservation::pool_full_address_space}; // Exact 2^64-byte pool on a 64-bit host.
+    inline auto& mmap_reservation_participants{::uwvm2::object::memory::linear::mmap_reservation::fixed_participants};
+    inline bool mmap_reservation_pool_specified{};
+
     struct configured_module_memory_limit_t
     {
         ::uwvm2::utils::container::unordered_flat_map<::std::size_t, ::uwvm2::uwvm::wasm::type::module_memory_limit_t> local_defined_memory_limits{};
         ::uwvm2::uwvm::wasm::type::module_memory_limit_t all_limits{};
         bool apply_to_all_memories{};
+        ::uwvm2::utils::container::unordered_flat_map<::std::size_t, ::std::uint_least64_t> local_defined_mmap_reservations{};
     };
 
     using configured_module_memory_limit_map_t = ::uwvm2::utils::container::unordered_flat_map<::uwvm2::utils::container::u8string,

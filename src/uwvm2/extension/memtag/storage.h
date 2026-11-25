@@ -404,7 +404,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             auto const encoding_capacity{::std::uint64_t{1u} << (width == address_width::i32 ? 28u : 56u)};
             if(current_bytes > encoding_capacity || current_bytes > ::std::numeric_limits<::std::size_t>::max())
             { return storage_error::address_not_representable; }
-            if(maximum_bytes > encoding_capacity) { maximum_bytes = encoding_capacity; }
+            // The i64 tagged pointer still encodes 56 address bits. The host admits at most
+            // 2^48 bytes of linear data per tagged memory, for either allocation backend.
+            constexpr ::std::uint64_t tagged_memory64_limit{::std::uint64_t{1u} << 48u};
+            auto const growth_limit{width == address_width::i64 ? tagged_memory64_limit : encoding_capacity};
+            if(maximum_bytes > growth_limit) { maximum_bytes = growth_limit; }
             if(maximum_bytes > ::std::numeric_limits<::std::size_t>::max())
             { maximum_bytes = ::std::numeric_limits<::std::size_t>::max(); }
             if(current_bytes > maximum_bytes) { return storage_error::capacity_exceeded; }

@@ -7,6 +7,12 @@ namespace mt_init
     using owner=::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t;
     struct memory_plan { owner* memory{}; mt::address_width width{}; bool shared{}; };
     struct global_plan { owner* memory{}; ::std::uint64_t address{},bytes{}; ::std::uint8_t tag{}; };
+    struct linked_plan
+    {
+        ::uwvm2::utils::container::std_vector<memory_plan> memories{};
+        ::uwvm2::utils::container::std_vector<global_plan> globals{};
+        ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
+    };
     inline bool error(::uwvm2::utils::container::u8string_view module,char8_t const* message) noexcept
     {
         ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
@@ -32,16 +38,14 @@ namespace mt_init
     }
 }
 
-// Configure the actual resolved owners before any guest body is compiled.
-// Imported aliases therefore share one shadow; unused ordinary memories keep
-// their full address domain and never allocate shadow storage.
+// Link imports first so all aliases select one declaration for the census.
+// No linear memory needs a mapping to validate its initial byte extent.
 template<initialization_purpose Purpose>
-[[nodiscard]] inline bool prepare_memtag_after_linking_in_context(initialization_context<Purpose>& world) noexcept
+[[nodiscard]] inline bool discover_mmap_tagged_owners(initialization_context<Purpose>& world,
+    mmap_reservation_plan& reservations, mt_init::linked_plan& linked) noexcept
 {
     namespace mt=::uwvm2::extension::memtag;
-    namespace rt_mt=::uwvm2::runtime::memtag;
-    ::uwvm2::utils::container::std_vector<mt_init::memory_plan> memories{};
-    ::uwvm2::utils::container::std_vector<mt_init::global_plan> globals{};
+    auto& globals{linked.globals};
     bool const execute{!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag};
     auto const delivery{mt::selected_fault_delivery.load(::std::memory_order_relaxed)};
     if(!execute && (mt::is_asynchronous(delivery) || mt::is_hardware(delivery)))
@@ -90,8 +94,11 @@ template<initialization_purpose Purpose>
                 if(index>=count) { return false; }
                 auto* memory{mt_init::resolve(world,runtime,index)};
                 if(memory==nullptr || memory->memory_type_ptr==nullptr) { return false; }
-                return ::uwvm2::object::memory::linear::with_memory_access_snapshot(
-                    memory->memory,[&](::std::byte*,::std::size_t length) noexcept {bytes=length;return true;});
+                auto const shift{memory->memory.custom_page_size_log2};
+                auto const pages{memory->effective_limits.min};
+                if(shift >= 64u || pages > (UINT64_MAX >> shift)) { return false; }
+                bytes = static_cast<::std::uint64_t>(pages) << shift;
+                return true;
             }};
             auto plan_global{[&](::std::uint32_t index,::std::uint64_t address,::std::uint64_t bytes)
             {
@@ -123,18 +130,13 @@ template<initialization_purpose Purpose>
             auto const width{wasm_memory_is_address64(*memory->memory_type_ptr)?mt::address_width::i64:mt::address_width::i32};
             auto const shared{wasm_memory_is_shared(*memory->memory_type_ptr)};
             if(width!=item.width) { return mt_init::error(name,u8"memory address width differs from its validated use"); }
-            bool existing{};
-            for(auto const& planned:memories)
+            if(reservations.tagged_owner_declarations.insert(static_cast<void const*>(memory->memory_type_ptr)).second)
             {
-                if(planned.memory!=memory) { continue; }
-                if(planned.width!=width || planned.shared!=shared)
-                { return mt_init::error(name,u8"imported aliases disagree about memory geometry"); }
-                existing=true;break;
+                linked.memories.push_back({memory,width,shared});
             }
-            if(!existing) { memories.push_back({memory,width,shared}); }
         }
     }
-    ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
+    auto& global_ranges{linked.global_ranges};
     if(!globals.empty())
     {
         global_ranges.reserve(globals.size());
@@ -150,12 +152,46 @@ template<initialization_purpose Purpose>
         if(!mt::validate_global_tag_ranges(global_ranges))
         { return mt_init::error({},u8"linear globals descriptors overlap an allocation-tag granule on the same memory owner"); }
     }
-    // Disabled execution still validates declarations and cross-owner plans,
-    // but never allocates shadow storage, consumes entropy or mutates tags.
-    if(!execute) { return true; }
+    return true;
+}
+
+template<initialization_purpose Purpose>
+[[nodiscard]] inline bool discover_mmap_tagged_owners(initialization_context<Purpose>& world, mmap_reservation_plan& reservations) noexcept
+{
+    mt_init::linked_plan linked{};
+    return discover_mmap_tagged_owners(world, reservations, linked);
+}
+
+[[nodiscard]] inline bool prepare_memtag_after_linking_in_context(initialization_context<initialization_purpose::ordinary>& world,
+    mmap_reservation_plan& reservations) noexcept
+{
+    namespace mt=::uwvm2::extension::memtag;
+    namespace rt_mt=::uwvm2::runtime::memtag;
+    mt_init::linked_plan linked{};
+    if(!discover_mmap_tagged_owners(world, reservations, linked) || !plan_world_mmap_reservations(world, reservations)) { return false; }
+    for(auto& [name, module] : world.modules())
+    {
+        auto const* config{world.find_memory_limit(name)};
+        auto const imports{module.imported_memory_vec_storage.size()};
+        ::std::size_t index{};
+        for(auto& record : module.local_defined_memory_vec_storage)
+        {
+            auto const& declaration{*record.memory_type_ptr};
+            configure_mmap_owner(record.memory, declaration, config, index, reservations);
+            if(!initialize_native_memory<true>(record.memory, record.effective_limits, imports + index,
+                                               wasm_memory_is_shared(declaration), wasm_memory_is_address64(declaration)))
+            { return false; }
+            report_mmap_owner(record.memory, declaration.limits, name, index);
+            ++index;
+        }
+    }
+    if(::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag) { return true; }
+    auto const delivery{mt::selected_fault_delivery.load(::std::memory_order_relaxed)};
+    auto& globals{linked.globals};
+    auto const& global_ranges{linked.global_ranges};
     // All source declarations and globals descriptors have been checked before
     // the first owner changes. Failure still leaves the registry unpublished.
-    for(auto const& plan:memories)
+    for(auto const& plan:linked.memories)
     {
         auto& memory{plan.memory->memory};
         if(mt::is_hardware(delivery) && !mt::logging_requested() && !::std::remove_reference_t<decltype(memory)>::can_mmap)

@@ -51,6 +51,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             ::uwvm2::utils::cmdline::parameter_return_type wasm_set_memory_limit_callback(::uwvm2::utils::cmdline::parameter_parsing_results*,
                                                                                           ::uwvm2::utils::cmdline::parameter_parsing_results*,
                                                                                           ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
+#if defined(UWVM_MODULE)
+        extern "C++"
+#else
+        inline constexpr
+#endif
+        ::uwvm2::utils::cmdline::parameter_return_type runtime_memory_reservation_callback(
+            ::uwvm2::utils::cmdline::parameter_parsing_results*, ::uwvm2::utils::cmdline::parameter_parsing_results*,
+            ::uwvm2::utils::cmdline::parameter_parsing_results*) noexcept;
     }  // namespace details
 
 #if defined(__clang__)
@@ -64,6 +72,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasm_set_memory_limit_alias), 1uz}},
         .handle{::std::addressof(details::wasm_set_memory_limit_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasm}};
+    inline constexpr ::uwvm2::utils::cmdline::parameter runtime_memory_reservation{
+        .name{u8"--runtime-memory-reservation"},
+        .describe{u8"Plan the process-wide virtual address pool in bytes, set a stable participant count, or set the data quota of one local memory definition."},
+        .usage{u8"pool <bytes> | participants <count> | memory <module> <local-index> <data-bytes>"},
+        .handle{::std::addressof(details::runtime_memory_reservation_callback)},
+        .cate{::uwvm2::utils::cmdline::categorization::runtime}};
 #if defined(__clang__)
 # pragma clang diagnostic pop
 #endif

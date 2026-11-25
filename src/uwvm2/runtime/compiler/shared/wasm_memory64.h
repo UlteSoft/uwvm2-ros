@@ -101,6 +101,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_memory64
         return maximum_bytes_from_pages<Native>(pages, 16u);
     }
 
+    template<typename Memory>
+    [[nodiscard]] inline constexpr ::std::size_t owner_growth_limit_bytes(
+        Memory const& memory, ::std::size_t maximum) noexcept
+    {
+        if constexpr(Memory::can_mmap)
+        {
+            if(memory.reservation_limit_bytes < maximum) { maximum = memory.reservation_limit_bytes; }
+        }
+        if(memory.memtag_shadow.enabled() && memory.memtag_shadow.maximum_memory_bytes() < maximum)
+        { maximum = static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
+        return maximum;
+    }
+
     // Core 3 execution/memory.grow: interpret delta as an unsigned i64 bit
     // pattern. A native size_t is only formed after the complete width/limit
     // proof, including on ISA32. No address or byte-count wrap is permitted.

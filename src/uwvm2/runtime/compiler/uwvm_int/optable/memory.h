@@ -319,17 +319,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             return old_pages_out > limit_pages || delta_pages > (limit_pages - old_pages_out);
         }
 
-        template <unsigned Shift, typename OffsetT>
-        UWVM_ALWAYS_INLINE inline constexpr bool offset_in_pow2_bound(OffsetT offset) noexcept
-        {
-            using U = ::std::make_unsigned_t<OffsetT>;
-            if constexpr(Shift >= ::std::numeric_limits<U>::digits) { return true; }
-            else
-            {
-                return (static_cast<U>(offset) >> Shift) == 0u;
-            }
-        }
-
         using memory_offset_t = ::uwvm2::object::memory::error::basic_memory_65bit_offset_t;
 
         template <::std::unsigned_integral I>
@@ -453,6 +442,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             return ::uwvm2::object::memory::linear::wasm32_full_protection_covers_access(effective_offset.offset, wasm_bytes) &&
                    (!effective_offset.offset_65_bit || effective_offset.offset > 0xffffffffull);
         }
+
+        template <typename Memory>
+        UWVM_ALWAYS_INLINE inline constexpr bool partial_mmap_access_is_oob(
+            Memory const& memory, memory_offset_t offset, ::std::size_t width) noexcept
+        {
+            if(offset.offset_65_bit) { return true; }
+            if(width <= ::uwvm2::object::memory::linear::mmap_guard_max_access_size)
+            {
+                // The trailing guard covers the last byte for every supported
+                // scalar/SIMD width starting below this owner's exclusive limit.
+                return offset.offset >= memory.partial_guard_limit_bytes();
+            }
+            auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
+            return width > length || offset.offset > length - width;
+        }
 # endif
 
         // ROS interpreter faults use normal runtime callbacks. A raw mmap
@@ -482,7 +486,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 
                 // mmap backend:
                 // - Full protection: the unsigned u32+u32 domain and supported access width fit entirely in the reservation.
-                // - Partial fixed protection: only check the fixed max (power-of-two) to avoid UB pointer overflow; the rest relies on page protection.
+                // - Partial protection uses the actual reserved extent of this memory.
                 // - custom_page < platform_page: must do per-access dynamic bounds check using the atomic memory length.
                 if(explicit_mmap_bounds || memory.require_dynamic_determination_memory_size())
                 {
@@ -502,12 +506,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                     {
                         // 64-bit platform:
                         // - wasm32: full protection covers widened u32+u32, including logical overflow into its back guard
-                        // - wasm64: partial fixed protection (1<<::uwvm2::object::memory::linear::max_partial_protection_wasm64_index)
+                        // - wasm64: partial protection ends at the owner-specific guard limit
 # if defined(UWVM_SUPPORT_MMAP)
                         if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64) [[unlikely]]
                         {
-                            if(effective_offset.offset_65_bit ||
-                               !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm64_index>(effective_offset.offset))
+                            if(partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes))
                             {
 #  if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
                                 if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
@@ -531,10 +534,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                     }
                     else
                     {
-                        // 32-bit platform: always partial fixed protection (1<<::uwvm2::object::memory::linear::max_partial_protection_wasm32_index).
+                        // Both address widths use partial protection on 32-bit hosts.
 # if defined(UWVM_SUPPORT_MMAP)
-                        if(effective_offset.offset_65_bit ||
-                           !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm32_index>(effective_offset.offset))
+                        if(partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes))
                         {
 #  if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
                             if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
@@ -585,8 +587,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 # if defined(UWVM_SUPPORT_MMAP)
                     if(memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64)
                     {
-                        return effective_offset.offset_65_bit ||
-                               !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm64_index>(effective_offset.offset);
+                        return partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes);
                     }
                     if(!wasm32_full_mmap_can_use_hardware_bounds(effective_offset, wasm_bytes))
                     {
@@ -601,8 +602,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 else
                 {
 # if defined(UWVM_SUPPORT_MMAP)
-                    return effective_offset.offset_65_bit ||
-                           !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm32_index>(effective_offset.offset);
+                    return partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes);
 # else
                     return true;
 # endif
@@ -771,23 +771,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if(memory.memory_length_p == nullptr) [[unlikely]] { ::uwvm2::utils::debug::trap_and_inform_bug_pos(); }
 #  endif
 
-            if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
+            if(partial_mmap_access_is_oob(memory, effective_offset, wasm_bytes)) [[unlikely]]
             {
-                if(effective_offset.offset_65_bit ||
-                   !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm64_index>(effective_offset.offset)) [[unlikely]]
-                {
-                    auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-                    memory_oob_terminate(memory, memory_static_offset, effective_offset, memory_length, wasm_bytes);
-                }
-            }
-            else
-            {
-                if(effective_offset.offset_65_bit ||
-                   !offset_in_pow2_bound<::uwvm2::object::memory::linear::max_partial_protection_wasm32_index>(effective_offset.offset)) [[unlikely]]
-                {
-                    auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
-                    memory_oob_terminate(memory, memory_static_offset, effective_offset, memory_length, wasm_bytes);
-                }
+                auto const memory_length{memory.memory_length_p->load(::std::memory_order_acquire)};
+                memory_oob_terminate(memory, memory_static_offset, effective_offset, memory_length, wasm_bytes);
             }
         }
 

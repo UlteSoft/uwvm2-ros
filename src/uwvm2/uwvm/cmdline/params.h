@@ -193,6 +193,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_reset_import),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_preload_module_attribute),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_memory_limit),
+            ::std::addressof(::uwvm2::uwvm::cmdline::params::runtime_memory_reservation),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_parser_limit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_initializer_limit),
             ::std::addressof(::uwvm2::uwvm::cmdline::params::wasm_set_resource_limit),

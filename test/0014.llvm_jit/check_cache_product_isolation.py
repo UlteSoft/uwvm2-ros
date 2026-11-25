@@ -49,7 +49,11 @@ for product, values in defaults.items():
     assert b'typed-call-abi' in abi and b'qualified-tailcc-explicit-tuple-buffer-v3' in abi
     assert b'wasm-memory-addresses' in abi and b'typed-u64-limits-and-memarg-v1' in abi
     assert b'native-memory-backend' in abi
-    assert b'native-memory-layout' in abi and b'bounded-reservation-aligned64-owner-ordered-size-v4' in abi
+    memory_layout = (b'bounded-reservation-aligned64-owner-ordered-size-v4' if product == 'uwvm2'
+                     else b'owner-reserved-span-aligned64-v5')
+    assert b'native-memory-layout' in abi and memory_layout in abi
+    if product == 'uwvm2ros':
+        assert b'memory64-reservation-bounds' in abi and b'owner-guard-limit-v2' in abi
     policy = 'unique-temporary-labels-v1' if product == 'uwvm2' else 'symbol-entry-identity-v1'
     assert b'llvm-elf-local-symbols' in abi and policy.encode() in abi
     assert b'llvm-mips-call-relocations' in abi and b'full-width-noabicalls-c-abi-v2' in abi

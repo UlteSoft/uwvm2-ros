@@ -26,6 +26,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/object/memory/linear/mmap_reservation.h>
 #include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/control/wasithread.h>
 
@@ -3383,8 +3384,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             else { return false; }
         }
 
-        template<typename Memory>
-        inline constexpr void initialize_native_memory(Memory& memory, auto const& limits, ::std::size_t instance_index,
+#include "mmap_reservation_plan.h"
+
+        template<bool Fallible = false, typename Memory>
+        inline constexpr bool initialize_native_memory(Memory& memory, auto const& limits, ::std::size_t instance_index,
                                                        bool shared, bool address64) noexcept
         {
             // Validate the effective (possibly overridden) minimum against the
@@ -3411,7 +3414,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     u8"uwvm: [error] initializer: memory minimum exceeds the selected backend initial-allocation limit (memory_idx=",
                     instance_index, u8", address_bits=", address64 ? 64u : 32u, u8", page_size_log2=", page_log2,
                     u8", requested_pages=", limits.min, u8", maximum_pages=", maximum_initial_pages, u8").");
-                exit_invalid_runtime_configuration();
+                if constexpr(Fallible) { return false; }
+                else { exit_invalid_runtime_configuration(); }
             }
             if constexpr(requires { memory.sequentially_consistent_size; })
             { memory.sequentially_consistent_size = shared; }
@@ -3419,16 +3423,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                     u8"uwvm: [fatal] initializer: shared memory requires a concurrent memory backend.\n\n");
-                exit_invalid_runtime_configuration();
+                if constexpr(Fallible) { return false; }
+                else { exit_invalid_runtime_configuration(); }
             }
             if constexpr(Memory::can_mmap)
             {
-                // Select the address domain before reserving or committing memory. Memory32
-                // retains its full hardware protection; memory64 uses the existing partial map.
-                memory.init_by_page_count(limits.min,
-                    limits.present_max ? limits.max : ::std::numeric_limits<::std::size_t>::max(), instance_index);
+                auto const maximum{limits.present_max ? limits.max : SIZE_MAX};
+                if constexpr(Fallible)
+                {
+                    if(!memory.try_init_by_page_count(limits.min, maximum, instance_index)) [[unlikely]]
+                    {
+                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: [error] initializer: unable to reserve or commit the planned mmap memory (memory_idx=", instance_index,
+                            u8", reserved_bytes=", memory.reservation_budget_bytes, u8", initial_pages=", limits.min,
+                            u8"). Check available host address space and process memory limits.");
+                        return false;
+                    }
+                }
+                else { memory.init_by_page_count(limits.min, maximum, instance_index); }
             }
             else { memory.init_by_page_count(limits.min, instance_index); }
+            return true;
         }
 
         using ::uwvm2::uwvm::runtime::storage::runtime_memory_is_address64;
@@ -5633,7 +5648,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         inline constexpr void initialize_from_binfmt_ver1_module_storage_in_context(initialization_context<Purpose>& world,
             ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module_storage,
             ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para,
-            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out) noexcept(Purpose == initialization_purpose::ordinary)
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out,
+            mmap_reservation_plan const* reservation_plan = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using type_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>;
             using import_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>;
@@ -5657,6 +5673,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             auto const& elemsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<element_section_storage_t>(module_storage.sections)};
             auto const& codesec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<code_section_storage_t>(module_storage.sections)};
             auto const& datasec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<data_section_storage_t>(module_storage.sections)};
+
+            mmap_reservation_plan single_module_plan{};
+            if constexpr(Purpose != initialization_purpose::threaded_child)
+            {
+                if(reservation_plan == nullptr)
+                {
+                    auto const visit = [&](auto const& collect)
+                    { return collect(world.current_module(), memorysec.memories, world.find_memory_limit(world.current_module())); };
+                    if(!plan_mmap_reservations(visit, single_module_plan)) { exit_invalid_runtime_configuration(); }
+                    reservation_plan = ::std::addressof(single_module_plan);
+                }
+            }
 
             enforce_wasm1p1_initializer_feature_parameters_in_context(world, module_storage, fs_para);
             auto const& datacountsec{
@@ -6652,10 +6680,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     // index for fault diagnostics; 32-bit reservations also honor the effective maximum.
                     if constexpr(Purpose == initialization_purpose::threaded_child)
                     { world.prepare_memory(rec,memory_idx); }
-                    else if constexpr(Purpose != initialization_purpose::unpublished_restore)
+                    else if(!reservation_plan->defer_owner_mapping)
                     {
-                    initialize_native_memory(rec.memory, rec.effective_limits, out.imported_memory_vec_storage.size() + memory_idx,
-                                             wasm_memory_is_shared(memory_type), wasm_memory_is_address64(memory_type));
+                        configure_mmap_owner(rec.memory, memory_type, module_memory_limit_override, memory_idx, *reservation_plan);
+                        if constexpr(Purpose == initialization_purpose::ordinary)
+                        {
+                            initialize_native_memory(rec.memory, rec.effective_limits, out.imported_memory_vec_storage.size() + memory_idx,
+                                                     wasm_memory_is_shared(memory_type), wasm_memory_is_address64(memory_type));
+                            report_mmap_owner(rec.memory, memory_type.limits, world.current_module(), memory_idx);
+                        }
                     }
                     // Restoration batch owns the one exact saved-size allocation after quotas.
                     emit_local_memory_init_verbose_in_context(world, u8"init_by_page_count done", memory_idx, memory_type.limits, rec.effective_limits, runtime_page_size_bytes);
@@ -8210,7 +8243,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
         template <initialization_purpose Purpose>
         inline constexpr void initialize_from_wasm_file_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::wasm::type::wasm_file_t const& wf,
-                                                        ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out) noexcept(Purpose == initialization_purpose::ordinary)
+                                                        ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out,
+            mmap_reservation_plan const* reservation_plan = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
         {
             // Embedding, threaded worlds and restored source graphs must hold
             // the same genuine authorization as the ordinary CLI loader.
@@ -8226,7 +8260,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 {
                     if(wf.requires_verified_execution_authorization())
                     { wsea_require_import_capabilities(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.authorized_capabilities()); }
-                    initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.wasm_parameter.binfmt1_para, out);
+                    initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.wasm_parameter.binfmt1_para, out, reservation_plan);
                     break;
                 }
 
@@ -9656,6 +9690,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 #endif
         }
 
+        details::initialization_context<details::initialization_purpose::ordinary> allocation_world{};
+        details::mmap_reservation_plan reservation_plan{};
+        reservation_plan.defer_owner_mapping = true;
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Clear runtime storage. "); }
         ::uwvm2::uwvm::runtime::storage::active_runtime_registry().clear();
         details::import_alias_sanity_checked = false;
@@ -9701,7 +9738,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     }
 
                     details::current_initializing_module_name = module_name;
-                    details::initialize_from_wasm_file(*mod.module_storage_ptr.wf, rt);
+                    details::initialize_from_wasm_file_in_context(allocation_world, *mod.module_storage_ptr.wf, rt, ::std::addressof(reservation_plan));
                     details::current_initializing_module_name = {};
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     rt.module_name = module_name;
@@ -9794,7 +9831,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
         {
             details::initialization_context<details::initialization_purpose::ordinary> world{};
-            if(!details::prepare_memtag_after_linking_in_context(world)) { return false; }
+            if(!details::prepare_memtag_after_linking_in_context(world, reservation_plan)) { return false; }
         }
 
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Finalize wasm1 globals. "); }

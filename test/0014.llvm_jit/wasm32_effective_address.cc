@@ -43,19 +43,22 @@ namespace
     static_assert(check_pure_effective_address_helpers());
 
 #if defined(UWVM_SUPPORT_MMAP)
-    struct wasm32_full_protection_memory_mock
+    struct mmap_memory_mock
     {
         inline static constexpr bool can_mmap{true};
         ::std::atomic_size_t* memory_length_p{};
         ::uwvm2::object::memory::linear::mmap_memory_status_t status{
             ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32};
+        ::std::size_t reserved_bytes{2uz * 65536uz};
 
         [[nodiscard]] constexpr bool require_dynamic_determination_memory_size() const noexcept { return false; }
+        [[nodiscard]] constexpr ::std::size_t partial_guard_limit_bytes() const noexcept
+        { return reserved_bytes - ::uwvm2::object::memory::linear::mmap_guard_max_access_size + 1uz; }
     };
 
     consteval bool check_full_protection_software_gate() noexcept
     {
-        wasm32_full_protection_memory_mock memory{};
+        mmap_memory_mock memory{};
         if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
         {
             // These remain OOB Wasm accesses, but the full reservation now owns their complete native address range.
@@ -73,6 +76,23 @@ namespace
     }
 
     static_assert(check_full_protection_software_gate());
+
+    consteval bool check_partial_guard_limits() noexcept
+    {
+        mmap_memory_mock memory{};
+        memory.status = ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64;
+        for(auto span : {2uz * 65536uz, 17uz * 65536uz})
+        {
+            memory.reserved_bytes = span;
+            auto const limit{memory.partial_guard_limit_bytes()};
+            if(int_details::partial_mmap_access_is_oob(memory, {.offset = limit - 1uz}, 64uz) ||
+               !int_details::partial_mmap_access_is_oob(memory, {.offset = limit}, 1uz) ||
+               !int_details::partial_mmap_access_is_oob(memory, {.offset = 0u, .offset_65_bit = true}, 1uz))
+            { return false; }
+        }
+        return true;
+    }
+    static_assert(check_partial_guard_limits());
 #endif
 
     [[nodiscard]] int check_direct_llvm_ir() noexcept

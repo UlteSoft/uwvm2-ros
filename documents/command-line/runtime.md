@@ -39,6 +39,55 @@ The independent WASI Threads execution profile has its own backend admission.
 Its LLVM implementation is currently limited to x86_64; ordinary non-threaded
 interpreter/AOT results do not qualify threaded AOT on other architectures.
 
+## Linear memory reservations
+
+Use `--runtime-memory-reservation` before `--run`. Sizes are decimal bytes.
+The process pool accounts for mappings, including inaccessible guard pages.
+The initial committed data size comes from the memory's minimum in Wasm pages.
+
+```sh
+uwvm2-ros --runtime-memory-reservation pool 17592186044416 --run app.wasm
+uwvm2-ros --runtime-memory-reservation participants 300 --run app.wasm
+uwvm2-ros --runtime-memory-reservation memory app 0 16777216 --run app.wasm
+```
+
+The default pool is 16 TiB on 64-bit hosts and 2 GiB on 32-bit hosts. On a
+64-bit host the pool accepts the inclusive endpoint `18446744073709551616`.
+The OS must still be able to map each selected window. Each local memory
+definition has one owner. All its imports and re-exports share the same
+reservation. A stable participant count allows for future owners when
+calculating the common power-of-two share. The `memory` selector uses the
+defining module name and a zero-based index among its local memory definitions.
+
+On a 64-bit host each memory32 owner keeps a fixed full guard window. A manual
+reservation for that owner is an initialization error. For memory64, request a
+power-of-two data quota. A request above a declared maximum is clipped with a
+warning. A quota below a finite declared maximum also produces a warning. The
+planner must cover every declared minimum, the per-owner guard and the host
+mapping floor. Use `--verbose` to see each owner's data quota and mapping size.
+
+## Passing pointers between modules with different MTE compiler settings
+
+An instrumented producer can pass an object pointer to a separately compiled
+ordinary consumer. Both modules must address the same memory instance with the
+same pointer width. The call, return, or pointer-sized slot used to transfer
+the pointer carries all its bits. When the consumer dereferences the pointer,
+the VM checks its tag against the owning memory. The consumer can use its
+ordinary load and store instructions for this purpose.
+
+A protocol that transmits a linear byte offset discards any pointer tag. For
+example, a consumer that independently computes offset `0x1000` gets a
+pointer with tag zero, even if its producer allocated a nonzero-tagged object
+there. On a checked owner the consumer can dereference that offset only when
+the corresponding granule has tag zero. A bare-offset interface needs storage
+kept at tag zero for the entire exposure period, including every granule of the
+buffer. A pointer-passing interface can instead carry the complete pointer
+produced for the current lifetime of the object.
+
+With process-wide MTE execution disabled, the producer's tagging instructions
+produce ordinary addresses and zeroing operations still clear the indicated
+bytes. The parser must accept the instruction extension to load this binary.
+
 ## Runtime Selection
 
 `runtime_mode_t` contains only `full_compile`. Runtime selection therefore chooses a backend, not a compilation lifecycle:

@@ -1,8 +1,5 @@
-// Geometry queries never reserve a VMA. The executable allocation checks use
-// at most three small pages and an explicitly bounded reservation. In the
-// native64 memory32 case, byte/16-byte pages retain software bounds and avoid
-// the default full-domain 8 GiB virtual reservation. This is a backend capacity
-// regression test, not a promise that the OS can allocate the theoretical cap.
+// Check native page geometry without committing large page counts. Tiny declared
+// maxima limit growth even when ISA64 reserves its complete guard window.
 #include <uwvm2/utils/macro/push_macros.h>
 #include <uwvm2/object/memory/linear/impl.h>
 #include <array>
@@ -33,14 +30,17 @@ static constexpr auto native_max{(::std::numeric_limits<::std::size_t>::max)()};
 
 static void query_geometry(linear::mmap_memory_status_t status)
 {
-    // Independent byte-domain oracle: use division, not the implementation's
-    // shift/count expression. Both 32-bit-host address domains share 256 MiB.
-    auto const domain_bytes{native_bits==32 ? (::std::uint64_t{1}<<28u) :
-        (::std::uint64_t{1}<<(status==linear::mmap_memory_status_t::wasm32 ? 32u : 40u))};
+    auto const [os_page, known]{::uwvm2::object::memory::platform_page::get_platform_page_size()};
+    CHECK(known && os_page);
+    auto const pool{native_bits >= 64 ? (16ull << 40u) : (2ull << 30u)};
+    bool const fixed{native_bits >= 64 && status == linear::mmap_memory_status_t::wasm32};
     for(unsigned log2{};log2<static_cast<unsigned>(native_bits);++log2)
     {
         auto const page_bytes{::std::size_t{1}<<log2};
         linear::mmap_memory_t memory{page_bytes,status};
+        auto const tail{(static_cast<::std::uint64_t>(page_bytes) + 64u + os_page - 1u) / os_page * os_page};
+        auto const required{native_bits >= 64 ? (1ull << 33u) + tail : tail};
+        auto const domain_bytes{pool < required ? 0ull : fixed ? 1ull << 32u : pool - tail};
         ::std::array<::std::size_t,8> limits{
             0u,1u,page_bytes-1u,page_bytes,page_bytes+1u,65535u,
             static_cast<::std::size_t>(domain_bytes),native_max};
@@ -70,7 +70,6 @@ static void small_initialization(linear::mmap_memory_status_t status)
     for(::std::size_t page_bytes:{1u,16u,4096u,65536u})
     {
         bool const native64_memory32{native_bits>32 && status==linear::mmap_memory_status_t::wasm32};
-        if(native64_memory32 && page_bytes>=4096u) {continue;}
         for(auto const [initial,capacity]:{::std::array<::std::size_t,2>{0u,0u},
                                           ::std::array<::std::size_t,2>{0u,3u},
                                           ::std::array<::std::size_t,2>{2u,3u},
@@ -79,7 +78,6 @@ static void small_initialization(linear::mmap_memory_status_t status)
             linear::mmap_memory_t memory{page_bytes,status};
             if(native64_memory32)
             {
-                CHECK(memory.require_dynamic_determination_memory_size());
                 memory.reservation_limit_bytes=capacity*page_bytes;
             }
             auto const before{memory.maximum_initial_page_count()};

@@ -445,7 +445,7 @@ template <typename LoadLength>
            !state.emit_debug_safe_points && !threaded_host_emission_scope::selected() && !info.mmap_requires_dynamic_bounds)
         {
             if(info.mmap_covers_wasm32_effective_domain) { protection = llvm_jit_memory_protection::full_wasm32_guard; }
-            else if(info.mmap_uses_partial_protection) { protection = llvm_jit_memory_protection::partial_guard; }
+            else if(info.mmap_partial_guard_limit != 0uz) { protection = llvm_jit_memory_protection::partial_guard; }
         }
     }
     else
@@ -478,7 +478,7 @@ template <typename LoadLength>
         protection = llvm_jit_memory_protection::software;
     }
     auto pointer{emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection,
-                                        get_runtime_partial_protection_limit_escape_offset(), [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
+                                        info.mmap_partial_guard_limit, [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
     if(pointer != nullptr && tagged)
     {
         auto const& shadow{info.memory_p->memtag_shadow};

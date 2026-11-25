@@ -36,6 +36,7 @@ export module uwvm2.uwvm.runtime.initializer:threaded_child_world;
 import fast_io;
 import uwvm2.utils.container;
 import uwvm2.runtime.wasm_threads;
+import uwvm2.runtime.compiler.shared.wasm_memory64;
 import :init;
 import :threaded_registry_view;
 import uwvm2.runtime.gc.entry_admission;

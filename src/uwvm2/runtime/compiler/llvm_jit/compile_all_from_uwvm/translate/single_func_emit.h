@@ -3494,8 +3494,8 @@ struct runtime_memory_access_info_t
     // True when mmap protection alone is not enough and every direct access must emit a dynamic bounds check.
     bool mmap_requires_dynamic_bounds{};
 
-    // True when mmap protection covers only a prefix of the address space and high offsets need a dynamic slow check.
-    bool mmap_uses_partial_protection{};
+    // Exclusive start limit for scalar/SIMD accesses in the partial guard.
+    ::std::size_t mmap_partial_guard_limit{};
 
     // True only after resolving a concrete full wasm32 reservation with the unsigned 8-GiB address domain.
     bool mmap_covers_wasm32_effective_domain{};
@@ -3512,54 +3512,6 @@ struct runtime_memory_access_info_t
         if(page_size_bytes > static_cast<::std::uint_least64_t>((::std::numeric_limits<::std::size_t>::max)())) [[unlikely]] { return false; }
     }
     return true;
-}
-
-// Return the largest byte length that the concrete memory backend can safely expose for direct addressing.  This is
-// stricter than the Wasm declared max when mmap guard/protection strategy imposes a smaller usable range.
-template <typename Memory>
-[[nodiscard]] inline constexpr ::std::size_t get_runtime_memory_backend_max_limit_length_impl(Memory const& memory) noexcept
-{
-#if defined(UWVM_SUPPORT_MMAP)
-    if constexpr(Memory::can_mmap)
-    {
-        if constexpr(sizeof(::std::size_t) >= sizeof(::std::uint_least64_t))
-        {
-            switch(memory.status)
-            {
-                case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm32:
-                {
-                    // Full guard/protection layouts reserve additional address space beyond the declared maximum.  Limit
-                    // direct exposure to the portion the backend can protect without wraparound ambiguity.
-                    constexpr auto max_full_protection_wasm32_length_half{::uwvm2::object::memory::linear::max_full_protection_wasm32_length / 2u};
-                    return static_cast<::std::size_t>(max_full_protection_wasm32_length_half);
-                }
-                case ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64:
-                {
-                    return static_cast<::std::size_t>(::uwvm2::object::memory::linear::max_partial_protection_wasm64_length);
-                }
-                [[unlikely]] default:
-                {
-# if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                    ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-# endif
-                    return 0uz;
-                }
-            }
-        }
-        else
-        {
-            return static_cast<::std::size_t>(::uwvm2::object::memory::linear::max_partial_protection_wasm32_length);
-        }
-    }
-    else
-    {
-        static_cast<void>(memory);
-        return ::std::numeric_limits<::std::size_t>::max();
-    }
-#else
-    static_cast<void>(memory);
-    return ::std::numeric_limits<::std::size_t>::max();
-#endif
 }
 
 // Copy mmap-specific direct-access fields from a concrete memory backend into the generic access-info record.
@@ -3598,19 +3550,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                 memory.memory_begin != nullptr && memory.memory_begin == memory.reserved_begin &&
                 result.stable_memory_reserved_span_bytes >= required_unsigned_domain_span;
         }
-        if(!result.mmap_requires_dynamic_bounds)
-        {
-            // If hardware protection covers the complete usable range, generated loads/stores can skip explicit dynamic
-            // bounds checks for the common path.  Partial protection still needs a high-offset software check.
-            if constexpr(sizeof(::std::uintptr_t) >= sizeof(::std::uint_least64_t))
-            {
-                result.mmap_uses_partial_protection = memory.status == ::uwvm2::object::memory::linear::mmap_memory_status_t::wasm64;
-            }
-            else
-            {
-                result.mmap_uses_partial_protection = true;
-            }
-        }
+        if(!result.mmap_requires_dynamic_bounds && !memory.is_full_page_protection())
+        { result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes(); }
     }
     else
     {
@@ -3621,38 +3562,6 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
     static_cast<void>(result);
     static_cast<void>(memory);
 #endif
-}
-
-// Wrapper for native memory backends; keeps call sites independent of the concrete memory template type.
-[[nodiscard]] inline constexpr ::std::size_t get_runtime_memory_backend_max_limit_length(runtime_native_memory_t const& memory) noexcept
-{ return get_runtime_memory_backend_max_limit_length_impl(memory); }
-
-// Offset at which partial mmap protection can no longer guarantee that an invalid access traps in hardware.
-[[nodiscard]] inline constexpr ::std::uint_least64_t get_runtime_partial_protection_limit_escape_offset() noexcept
-{
-#if defined(UWVM_SUPPORT_MMAP)
-    if constexpr(sizeof(::std::uintptr_t) >= sizeof(::std::uint_least64_t))
-    {
-        return static_cast<::std::uint_least64_t>(1u) << ::uwvm2::object::memory::linear::max_partial_protection_wasm64_index;
-    }
-    else
-    {
-        return static_cast<::std::uint_least64_t>(1u) << ::uwvm2::object::memory::linear::max_partial_protection_wasm32_index;
-    }
-#else
-    return 0u;
-#endif
-}
-
-// Combine the Wasm/user limit with backend limits so memory.grow and direct-access checks agree.
-[[nodiscard]] inline constexpr ::std::size_t refine_runtime_memory_max_limit_length(runtime_native_memory_t const& memory,
-                                                                                    ::std::size_t max_limit_memory_length) noexcept
-{
-    auto const backend_max_limit_length{get_runtime_memory_backend_max_limit_length(memory)};
-    auto result{backend_max_limit_length < max_limit_memory_length ? backend_max_limit_length : max_limit_memory_length};
-    if(memory.memtag_shadow.enabled() && memory.memtag_shadow.maximum_memory_bytes() < result)
-    { result = static_cast<::std::size_t>(memory.memtag_shadow.maximum_memory_bytes()); }
-    return result;
 }
 
 // Resolve memory index to either directly addressable native memory or a local-imported bridge provider.  The returned
@@ -3705,7 +3614,7 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                     if(defined_memory == nullptr) [[unlikely]] { return {}; }
                     result.memory_p = ::std::addressof(defined_memory->memory);
                     result.max_limit_memory_length = max_limit_from_limits(defined_memory->effective_limits);
-                    result.max_limit_memory_length = refine_runtime_memory_max_limit_length(defined_memory->memory, result.max_limit_memory_length);
+                    result.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(defined_memory->memory, result.max_limit_memory_length);
                     result.custom_page_size_log2 = defined_memory->memory.custom_page_size_log2;
                     populate_runtime_memory_access_info_mmap_fields(result, defined_memory->memory);
                     return result;
@@ -3743,7 +3652,7 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
 
     result.memory_p = const_cast<runtime_native_memory_t*>(::std::addressof(local_memory_rec.memory));
     result.max_limit_memory_length = max_limit_from_limits(local_memory_rec.effective_limits);
-    result.max_limit_memory_length = refine_runtime_memory_max_limit_length(local_memory_rec.memory, result.max_limit_memory_length);
+    result.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(local_memory_rec.memory, result.max_limit_memory_length);
     result.custom_page_size_log2 = local_memory_rec.memory.custom_page_size_log2;
     result.direct_memory_is_shared = ::uwvm2::runtime::wasm_threads::is_shared(local_memory_rec.memory);
     auto const page_log2{result.custom_page_size_log2};

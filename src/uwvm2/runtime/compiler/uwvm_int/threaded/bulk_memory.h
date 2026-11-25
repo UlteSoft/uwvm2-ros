@@ -91,7 +91,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
             auto value=threads::journal_memory_grow(memory_address(memory,delta),memory.get_page_size(),maximum,[&]() noexcept -> ::std::uint64_t
             {
                 auto const pages=memory_address(memory,delta);
-                if(pages>SIZE_MAX||!world_->charge_memory_growth(memory,pages))return UINT64_MAX;
+                if(pages>SIZE_MAX||!world_->charge_memory_growth(memory,pages,maximum))return UINT64_MAX;
                 last_grow_=memory.grow_threaded_profile(static_cast<::std::size_t>(pages),maximum,lease.cancellation());
                 switch(last_grow_.status)
                 {

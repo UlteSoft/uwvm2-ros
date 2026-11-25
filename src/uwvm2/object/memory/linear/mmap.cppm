@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/object/memory/linear/mmap_reservation.h>
 #include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/utils/allocator/sanitizer_mapping.h>
 

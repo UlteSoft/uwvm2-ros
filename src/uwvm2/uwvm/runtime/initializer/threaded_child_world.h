@@ -11,6 +11,7 @@
 # include <utility>
 # include "threaded_allocation.h"
 # include "init.h"
+# include <uwvm2/runtime/compiler/shared/wasm_memory64.h>
 # include <uwvm2/runtime/wasm_threads/admission.h>
 #endif
 
@@ -556,18 +557,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         [[nodiscard]] ::std::size_t memory_growth_limit(::uwvm2::object::memory::linear::native_memory_t const& memory,
             ::std::size_t declared) const noexcept
         {
+            auto const owner_limit{::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(memory, declared)};
             for(::std::size_t m{};m<module_count();++m)
             {
                 for(auto const& owned:module(m)->local_defined_memory_vec_storage)
-                    if(&owned.memory==&memory)return (::std::min)(declared,admission().max_local_memory_bytes());
+                    if(&owned.memory==&memory)return (::std::min)(owner_limit,admission().max_local_memory_bytes());
                 for(auto const* shared:node(m)->shared_memories_)
-                    if(&shared->memory==&memory)return (::std::min)(declared,admission().max_shared_memory_bytes());
+                    if(&shared->memory==&memory)return (::std::min)(owner_limit,admission().max_shared_memory_bytes());
             }
             return 0u;
         }
         [[nodiscard]] bool charge_memory_growth(::uwvm2::object::memory::linear::native_memory_t const& memory,
-            ::std::uint64_t pages) const noexcept
+            ::std::uint64_t pages, ::std::size_t maximum_bytes) const noexcept
         {
+            auto const limit_pages{maximum_bytes / 65536u};
+            auto const old_pages{memory.get_page_size()};
+            if(old_pages > limit_pages || pages > limit_pages - old_pages) { return false; }
             ::std::size_t total{};bool owned{};auto const cap=admission().max_local_memory_bytes();
             for(::std::size_t m{};m<module_count();++m)
                 for(auto const& local:module(m)->local_defined_memory_vec_storage)
@@ -581,10 +586,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto bytes=static_cast<::std::size_t>(pages)*65536u;
                 if(memory.memtag_shadow.enabled())
                 {
-                    auto const old=static_cast<::std::uint64_t>(memory.get_page_size());
-                    if(pages>UINT64_MAX-old)return false;
-                    auto const before=memory_tag_storage_bytes(old,memory.sequentially_consistent_size);
-                    auto const after=memory_tag_storage_bytes(old+pages,memory.sequentially_consistent_size);
+                    auto const before=memory_tag_storage_bytes(old_pages,memory.sequentially_consistent_size);
+                    auto const after=memory_tag_storage_bytes(old_pages+pages,memory.sequentially_consistent_size);
                     if(before==SIZE_MAX||after==SIZE_MAX||after<before||after-before>SIZE_MAX-bytes)return false;
                     bytes+=after-before;
                 }
@@ -962,7 +965,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             auto owner=owner_->lock();if(!owner||index>=owner->parent_->local_defined_memory_vec_storage.size())throw ::std::bad_alloc{};
             auto const& source=owner->parent_->local_defined_memory_vec_storage.index_unchecked(index);
-            auto prepare=[&]<typename Memory>(Memory& memory)
+            auto prepare=[&]<typename Memory>(Memory& memory, Memory const& original)
             {
                 if constexpr(requires{typename Memory::fallible_construction_t;})
                 {
@@ -972,6 +975,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     constexpr auto metadata=sizeof(::std::atomic_size_t)+sizeof(::uwvm2::utils::mutex::mutex_t);
                     if(pages>(SIZE_MAX-metadata)/65536u||!owner->allocation_.get().charge(static_cast<::std::size_t>(pages)*65536u+metadata))throw ::std::bad_alloc{};
                     memory.status=wide?decltype(memory.status)::wasm64:decltype(memory.status)::wasm32;
+                    // Retain the concrete parent's plan, including its local override and any narrow-host fallback.
+                    memory.reservation_budget_bytes = original.get_acquire_reserved_space_ceil();
+                    memory.reservation_limit_bytes = original.reservation_limit_bytes;
+                    memory.allow_reservation_fallback = false;
+                    memory.use_planned_reservation = true;
                     memory.sequentially_consistent_size=shared;
                     if(!memory.try_init_by_page_count(static_cast<::std::size_t>(pages),record.effective_limits.present_max?
                         static_cast<::std::size_t>((::std::min)(static_cast<::std::uint64_t>(record.effective_limits.max),static_cast<::std::uint64_t>(SIZE_MAX))):SIZE_MAX,
@@ -989,7 +997,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     }
                 }
                 else throw ::std::bad_alloc{};
-            };prepare(record.memory);
+            };prepare(record.memory, source.memory);
         }
         inline void initialization_context<initialization_purpose::threaded_child>::prepare_table(
             ::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t& table, ::std::size_t index) const noexcept

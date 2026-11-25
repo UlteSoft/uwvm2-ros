@@ -26,14 +26,14 @@ int main()
     {
         // Use the production container allocator, including its over-aligned
         // element path. Stack-only arrays would hide an allocation alignment bug.
-        uwvm2::utils::container::vector<linear::mmap_memory_t> memories(130);
+        uwvm2::utils::container::vector<linear::mmap_memory_t> memories(321);
         for(std::size_t i{}; i != memories.size(); ++i)
         {
             auto& memory{memories[i]};
             require(reinterpret_cast<std::uintptr_t>(&memory) % alignof(linear::mmap_memory_t) == 0);
             memory.init_by_page_count(1, 4, i);
             require(memory.get_page_size() == 1);
-            require(memory.require_dynamic_determination_memory_size() == (sizeof(std::size_t) == 4));
+            require(memory.require_dynamic_determination_memory_size() == (65536u < ::uwvm2::object::memory::platform_page::get_platform_page_size().page_size));
             if constexpr(sizeof(std::size_t) == 4)
             {
                 require(memory.get_acquire_reserved_space_ceil() < 1024 * 1024);
@@ -56,7 +56,7 @@ int main()
         }
         // Reallocation moves the records but keeps each reservation, length
         // atomic and signal registration alive. No compiled function exists yet.
-        memories.reserve(300);
+        memories.reserve(400);
         for(std::size_t i{}; i != memories.size(); ++i)
         {
             auto const& memory{memories[i]};
@@ -91,5 +91,5 @@ int main()
         if constexpr(sizeof(std::size_t) == 4) { require(!assigned.try_grow_silently(1)); }
     }
     require(signals::detail::segments.size() == baseline);
-    std::puts("PASS 130 memory instances: bounded reservations, both grow paths, move/clear and index-129 signal ownership");
+    std::puts("PASS 321 memory instances: bounded reservations, both grow paths, move/clear and index-129 signal ownership");
 }
