@@ -43,7 +43,7 @@ namespace uwvm2::object::memory::linear::mmap_reservation
 
     struct layout
     {
-        bytes_type data{};     // Prefix eligible for memory.grow, in complete Wasm pages.
+        bytes_type data{};     // Data quota in bytes. memory.grow consumes complete Wasm pages.
         bytes_type reserved{}; // Complete OS-page-rounded mapping starting at the Wasm base.
         [[nodiscard]] constexpr explicit operator bool() const noexcept { return reserved != 0u; }
     };
@@ -94,7 +94,7 @@ namespace uwvm2::object::memory::linear::mmap_reservation
 
     // Compare page counts before multiplying. A valid memory64 declaration
     // may describe 2^64 bytes, which is one more than a u64 byte count.
-    [[nodiscard]] inline constexpr owner_range bounds(unsigned pointer_bits, bool address64, bytes_type minimum_pages,
+    [[nodiscard]] inline constexpr owner_range layout_bounds(unsigned pointer_bits, bool address64, bytes_type minimum_pages,
         bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page, bytes_type const* manual_data = nullptr,
         bool tagged = false, unsigned k = 0u) noexcept
     {
@@ -117,7 +117,7 @@ namespace uwvm2::object::memory::linear::mmap_reservation
         if(manual_data)
         {
             auto const value{*manual_data};
-            if(fixed_wasm32 || !value || (address64 && !::std::has_single_bit(value)) || value < minimum_data) { return {}; }
+            if(fixed_wasm32 || value < minimum_data) { return {}; }
             // A declared maximum clips a valid fixed request. If the resulting
             // data plus its guard cannot fit a native mapping, refuse it.
             if(maximum_pages <= maximum_bytes / wasm_page) { maximum_data = (::std::min)(value, maximum_pages * wasm_page); }
@@ -135,24 +135,35 @@ namespace uwvm2::object::memory::linear::mmap_reservation
         auto const small{span_for(manual_data ? maximum_data : minimum_data)};
         auto const large{!manual_data && maximum_pages >= domain_pages && domain == largest_span - tail ? largest_span : span_for(maximum_data)};
         auto const full{full_window(pointer_bits, address64, k, wasm_page, os_page)};
-        // A manual quota covering the domain funds its data and tail at every
-        // share. The additional guard is optional when a full window fits.
-        if(k && full && full <= largest_span && (!manual_data || *manual_data >= logical_domain))
+        // The process share funds the full guard independently of the owner's data quota.
+        if(k && full && full <= largest_span)
         { return {small, large, maximum_data, full, logical_domain * 2u}; }
         return {small, large, maximum_data};
     }
 
+    [[nodiscard]] inline constexpr owner_range bounds(unsigned pointer_bits, bool address64, bytes_type minimum_pages,
+        bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page, bytes_type const* manual_data = nullptr,
+        bool tagged = false, unsigned k = 0u) noexcept
+    {
+        // Validate the original request once. Clipping at the declared maximum may
+        // produce zero or a non-power-of-two quota, both valid inputs to the mapping.
+        if(manual_data && (!*manual_data || (address64 && !::std::has_single_bit(*manual_data)))) { return {}; }
+        return layout_bounds(pointer_bits, address64, minimum_pages, maximum_pages, wasm_page, os_page, manual_data, tagged, k);
+    }
+
     [[nodiscard]] inline constexpr layout make_layout(unsigned pointer_bits, bool address64, bytes_type cap,
                                                      bytes_type maximum_pages, bytes_type wasm_page, bytes_type os_page,
-                                                     bool tagged = false, unsigned k = 0u, bytes_type minimum_pages = 0u) noexcept
+                                                     bool tagged = false, unsigned k = 0u, bytes_type minimum_pages = 0u,
+                                                     bytes_type const* accepted_data = nullptr) noexcept
     {
-        auto const range{bounds(pointer_bits, address64, minimum_pages, maximum_pages, wasm_page, os_page, nullptr, tagged, k)};
+        auto const range{layout_bounds(pointer_bits, address64, minimum_pages, maximum_pages, wasm_page, os_page, accepted_data, tagged, k)};
         if(!range || cap > hard_limit(pointer_bits) || cap < range.minimum_span) { return {}; }
         auto const rounded{cap & ~(os_page - 1u)};
         // The byte budget for an actual mapping must cover the whole guard.
         auto const reserved{range.full_span && rounded >= range.full_span ? range.full_span : (::std::min)(rounded, range.maximum_span)};
         auto const tail{outer_guard(wasm_page, os_page)};
-        return {(::std::min)(range.maximum_data, (reserved - tail) / wasm_page * wasm_page), reserved};
+        auto const data{accepted_data ? range.maximum_data : (::std::min)(range.maximum_data, (reserved - tail) / wasm_page * wasm_page)};
+        return {data, reserved};
     }
 
     // Find the largest common power-of-two share that satisfies every owner's

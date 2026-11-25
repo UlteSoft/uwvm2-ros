@@ -65,7 +65,10 @@ owner with ignored address bits can use a manual quota. For memory64, request a
 power-of-two data quota. A request above a declared maximum is clipped with a
 warning. A quota below a finite declared maximum also produces a warning. The
 planner must cover every declared minimum, the per-owner guard and the host
-mapping floor. Use `--verbose` to see each owner's data quota and mapping size.
+mapping floor. For ADM it prefers a full protection window even for a small
+manual data quota. A partial window preserves the accepted data quota when the
+process pool or OS cannot provide the full window. Use `--verbose` to see
+each owner's data quota and mapping size.
 
 ## Passing pointers between modules with different MTE compiler settings
 

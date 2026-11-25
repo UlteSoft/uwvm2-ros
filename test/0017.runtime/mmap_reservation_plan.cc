@@ -52,23 +52,24 @@ constexpr bool shares()
 }
 static_assert(shares());
 
-constexpr bool manual_adm_windows()
+constexpr bool manual_adm_windows(unsigned pointer_bits, bool wide)
 {
     constexpr r::bytes_type domain{gib / 4u};
     constexpr auto tail{r::outer_guard(page, os)};
-    constexpr auto partial{domain + tail}, full{2u * domain + tail};
-    for(bool wide : {false, true})
+    constexpr auto full{2u * domain + tail};
+    auto const k{wide ? 36u : 4u};
+    for(bool tagged : {false, true})
     {
-        auto const k{wide ? 36u : 4u};
-        for(bool tagged : {false, true})
+        for(auto data : {domain, domain / 16u, wide ? page / 2u : page + 1u})
         {
-            auto const owner{r::bounds(64, wide, 1u, domain / page, page, os, &domain, tagged, k)};
-            if(owner.minimum_span != partial || owner.maximum_data != domain) { return false; }
+            auto const partial{r::round_up(data, os) + tail};
+            auto const owner{r::bounds(pointer_bits, wide, 0u, domain / page, page, os, &data, tagged, k)};
+            if(owner.minimum_span != partial || owner.maximum_data != data || owner.full_span != full) { return false; }
             for(auto pool : {partial - 1u, partial, domain + domain / 2u, 2u * domain, full - 1u, full})
             {
                 r::census census{{pool, false}};
                 census.add(owner, true);
-                auto const layout{r::make_layout(64, wide, pool, domain / page, page, os, tagged, k, domain / page)};
+                auto const layout{r::make_layout(pointer_bits, wide, pool, domain / page, page, os, tagged, k, 0u, &owner.maximum_data)};
                 if(pool < partial)
                 {
                     if(census.fits_minimum() || layout) { return false; }
@@ -76,14 +77,20 @@ constexpr bool manual_adm_windows()
                 }
                 auto const expected{pool < full ? partial : full};
                 if(!census.fits_minimum() || owner.span(census.common_share()) != expected ||
-                   layout.reserved != expected || layout.data != domain) { return false; }
+                   layout.reserved != expected || layout.data != data) { return false; }
             }
-            constexpr r::bytes_type smaller{domain / 2u};
-            auto const partial_only{r::bounds(64, wide, 0u, domain / page, page, os, &smaller, tagged, k)};
-            if(partial_only.span(UINT64_MAX) != smaller + tail) { return false; }
         }
+    }
+    for(auto pages : {0u, 3u})
+    {
+        auto const owner{r::bounds(pointer_bits, wide, 0u, pages, page, os, &domain, false, k)};
+        auto const layout{r::make_layout(pointer_bits, wide, full, UINT64_MAX, page, os, false, k, 0u, &owner.maximum_data)};
+        if(layout.reserved != full || layout.data != pages * page) { return false; }
     }
     return true;
 }
-static_assert(manual_adm_windows());
+static_assert(manual_adm_windows(32, false));
+static_assert(manual_adm_windows(32, true));
+static_assert(manual_adm_windows(64, false));
+static_assert(manual_adm_windows(64, true));
 int main() {}
