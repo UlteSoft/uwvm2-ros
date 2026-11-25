@@ -40,7 +40,7 @@ if constexpr(::std::same_as<char_type, char>)
                                                              UWVM_WIN32_TEXTATTR_WHITE,
                                                              "(offset=",
                                                              ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                             ") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                             ") Extended constant expressions require parser.extended-const on.",
                                                              UWVM_WIN32_TEXTATTR_RST_ALL);
             return;
         }
@@ -54,7 +54,7 @@ if constexpr(::std::same_as<char_type, char>)
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_WHITE),
                                                      "(offset=",
                                                      ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                     ") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                     ") Extended constant expressions require parser.extended-const on.",
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_RST_ALL));
     return;
 }
@@ -76,7 +76,7 @@ else if constexpr(::std::same_as<char_type, wchar_t>)
                                                              UWVM_WIN32_TEXTATTR_WHITE,
                                                              L"(offset=",
                                                              ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                             L") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                             L") Extended constant expressions require parser.extended-const on.",
                                                              UWVM_WIN32_TEXTATTR_RST_ALL);
             return;
         }
@@ -90,7 +90,7 @@ else if constexpr(::std::same_as<char_type, wchar_t>)
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_W_WHITE),
                                                      L"(offset=",
                                                      ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                     L") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                     L") Extended constant expressions require parser.extended-const on.",
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_W_RST_ALL));
     return;
 }
@@ -112,7 +112,7 @@ else if constexpr(::std::same_as<char_type, char8_t>)
                                                              UWVM_WIN32_TEXTATTR_WHITE,
                                                              u8"(offset=",
                                                              ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                             u8") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                             u8") Extended constant expressions require parser.extended-const on.",
                                                              UWVM_WIN32_TEXTATTR_RST_ALL);
             return;
         }
@@ -126,7 +126,7 @@ else if constexpr(::std::same_as<char_type, char8_t>)
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U8_WHITE),
                                                      u8"(offset=",
                                                      ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                     u8") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                     u8") Extended constant expressions require parser.extended-const on.",
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U8_RST_ALL));
     return;
 }
@@ -148,7 +148,7 @@ else if constexpr(::std::same_as<char_type, char16_t>)
                                                              UWVM_WIN32_TEXTATTR_WHITE,
                                                              u"(offset=",
                                                              ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                             u") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                             u") Extended constant expressions require parser.extended-const on.",
                                                              UWVM_WIN32_TEXTATTR_RST_ALL);
             return;
         }
@@ -162,7 +162,7 @@ else if constexpr(::std::same_as<char_type, char16_t>)
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U16_WHITE),
                                                      u"(offset=",
                                                      ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                     u") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                     u") Extended constant expressions require parser.extended-const on.",
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U16_RST_ALL));
     return;
 }
@@ -184,7 +184,7 @@ else if constexpr(::std::same_as<char_type, char32_t>)
                                                              UWVM_WIN32_TEXTATTR_WHITE,
                                                              U"(offset=",
                                                              ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                             U") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                             U") Extended constant expressions require parser.extended-const on.",
                                                              UWVM_WIN32_TEXTATTR_RST_ALL);
             return;
         }
@@ -198,7 +198,7 @@ else if constexpr(::std::same_as<char_type, char32_t>)
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U32_WHITE),
                                                      U"(offset=",
                                                      ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
-                                                     U") Extended constant expressions require --wasm-feature-enable-extended-const.",
+                                                     U") Extended constant expressions require parser.extended-const on.",
                                                      ::fast_io::mnp::cond(enable_ansi, UWVM_AES_U32_RST_ALL));
     return;
 }

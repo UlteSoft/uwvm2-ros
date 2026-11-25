@@ -271,13 +271,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 case feature_kind::nontrapping_float_to_int: return u8"nontrapping-float-to-int";
                 case feature_kind::simd: return u8"simd";
                 case feature_kind::threads: return u8"threads";
-                case feature_kind::memory64: return u8"--wasm-feature-enable-memory64";
-                case feature_kind::table64: return u8"--wasm-feature-enable-table64";
-                case feature_kind::function_references: return u8"--wasm-feature-enable-function-references";
-                case feature_kind::gc: return u8"--wasm-feature-enable-gc";
-                case feature_kind::exceptions: return u8"--wasm-feature-enable-exceptions";
-                case feature_kind::extended_const: return u8"--wasm-feature-enable-extended-const";
-                case feature_kind::table_initializer: return u8"--wasm-feature-enable-table-initializer";
+                case feature_kind::memory64: return u8"parser.memory64 on";
+                case feature_kind::table64: return u8"parser.table64 on";
+                case feature_kind::function_references: return u8"parser.function-references on";
+                case feature_kind::gc: return u8"parser.gc on";
+                case feature_kind::exceptions: return u8"parser.exceptions on";
+                case feature_kind::extended_const: return u8"parser.extended-const on";
+                case feature_kind::table_initializer: return u8"parser.table-initializer on";
                 [[unlikely]] default: return u8"unknown";
             }
         }
@@ -530,7 +530,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
                         u8"[fatal] ",
                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                        u8"initializer: ", subject, u8" requires --wasm-feature-enable-extended-const.\n\n",
+                        u8"initializer: ", subject, u8" requires parser.extended-const on.\n\n",
                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                     ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
                 }
@@ -845,7 +845,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
                             u8"[fatal] ",
                             ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                            u8"initializer: table initializer requires --wasm-feature-enable-table-initializer.\n\n",
+                            u8"initializer: table initializer requires parser.table-initializer on.\n\n",
                             ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
                         ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
                     }
@@ -5901,7 +5901,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                         world.current_module(),
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                        u8"\", multiple memories require --wasm-feature-enable-multi-memory (imported_memories=",
+                                        u8"\", multiple memories require parser.multi-memory on (imported_memories=",
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW),
                                         imported_memory_count,
                                         ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),

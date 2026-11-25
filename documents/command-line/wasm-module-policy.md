@@ -67,6 +67,14 @@ Here `camera` must define an MTE memory at local definition index zero. The inde
 
 A new software memory uses the highest four pointer bits by default. A software owner rebuilt from a full snapshot preserves the saved four-bit field anywhere inside the ADM bits. For a memory64 owner with 16 ignored bits, its first bit can be 48 through 60. `auto` can select a compatible Linux/AArch64 checked mapping. A required Arm owner needs hardware support, compatible geometry, crash delivery and checked callers. The current VM rejects a required Intel MTT owner. The VM format admits ADM with either pointer width and variable ignored-bit counts. The SDK's instrumented release target is `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
 
+### Pointers shared between modules
+
+A tagged load or store uses the original pointer in two ways. WasmADM masks its ignored high bits to obtain the dynamic offset. WasmMTE extracts the logical tag from the owner's four-bit field in the original pointer and compares it with the allocation tag of each 16-byte granule touched. With synchronous checking and the default crash action, a pointer tagged zero accessing a granule tagged `0xA` faults before it reads or writes the data.
+
+A module built without tag instrumentation can forward a tagged pointer to another module that shares the owner. The interface must carry the complete `i32` or `i64` value, including the tag. Setting `runtime.memtag-checks off` for the forwarding module preserves this pointer ABI. The receiving module applies its own access policy when it dereferences the pointer.
+
+For an ordinary 4 GiB memory32, `0xA0001234` is byte offset `0xA0001234`. For a tagged memory32 with four ignored bits, the same pointer carries tag `0xA` and dynamic offset `0x1234`. Its dynamic address domain is 256 MiB. Passing offsets between these two layouts requires an interface that accounts for their different meanings.
+
 ## Process and host controls
 
 | Control | Reason for its scope |

@@ -4,8 +4,8 @@
 
 An enabled full LLVM JIT debug session defaults to the `debug` compilation
 policy, so large instrumented functions can reach their first pause without
-running the O3 pipeline. An explicit `-Rllvm-full-policy` or `-Rllvm-policy`
-overrides this default; `auto` and `default` still select the session default.
+running the O3 pipeline. The module's `runtime.llvm.full-policy` and `runtime.llvm.policy`
+settings can override this default. Their respective `auto` and `default` values use the session default.
 Normal execution without an enabled debug session keeps its existing JIT
 policy. The selection happens during compilation, not in the guest execution
 path.

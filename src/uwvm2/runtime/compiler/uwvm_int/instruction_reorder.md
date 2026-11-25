@@ -306,14 +306,10 @@ The optimization must be compiled in explicitly:
 Even when compiled in, runtime defaults to off. It must be enabled explicitly:
 
 ```text
---runtime-uwvm-int-enable-instruction-reorder
+--wasm-policy-global runtime.interpreter.instruction-reorder on
 ```
 
-Alias:
-
-```text
--Rint-reorder
-```
+Use a group or single-module policy to enable it for selected modules.
 
 The opcode-combination runtime disable switch does not disable instruction reorder. Reorder has its own opt-in switch because it is a separate recompilation layer, not a combine submode.
 

@@ -573,7 +573,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     if(import_module_name == u8"wasi" && import_extern_name == u8"thread-spawn")
                                     {
                                         ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                            u8"uwvm: [error] wasi.thread-spawn is exposed but the WASI Threads execution profile is disabled. Configure: --wasm-feature-enable-threads --wasi-threads <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>; see --help runtime.");
+                                            u8"uwvm: [error] wasi.thread-spawn is exposed but the WASI Threads execution profile is disabled. Configure --wasi-threads <max-active> <max-spawns> <native-stack-bytes> <per-child-storage> <per-child-code> <shared-memory-bytes>. Modules using Wasm thread features require parser.threads on. See --help runtime.");
                                     }
                                     else
                                     {

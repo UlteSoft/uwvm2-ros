@@ -98,7 +98,7 @@ A candidate is rejected when any of the following holds:
 The byte-size budget is controlled by:
 
 ```text
---runtime-uwvm-int-loop-unwind-max-size <bytes:size_t>
+--wasm-policy-global runtime.interpreter.loop-unwind-max-size <bytes:size_t>
 ```
 
 The optimization is also capped by an internal maximum unfold count. This prevents pathological code growth even when the loop body is small and the mathematical recovery period is large.
@@ -128,28 +128,20 @@ translator. When it is true, the optimization remains subject to runtime policy.
 Runtime controls:
 
 ```text
---runtime-uwvm-int-disable-loop-unwind
---runtime-uwvm-int-loop-unwind-max-size <bytes:size_t>
+--wasm-policy-global runtime.interpreter.loop-unwind off
+--wasm-policy-global runtime.interpreter.loop-unwind-max-size <bytes:size_t>
 ```
 
-The default max-size budget is 4096 Wasm body bytes. The runtime aliases are:
-
-```text
--Rint-no-loop-unwind
--Rint-loop-unwind-size
-```
+The default maximum is 4096 Wasm body bytes. Group and single-module policies can override the global setting.
 
 Related runtime controls for isolating measurements:
 
 ```text
---runtime-uwvm-int-set-opcode-conbination-level disable
---runtime-uwvm-int-disable-delay-local
+--wasm-policy-global runtime.interpreter.opcode-combine disable
+--wasm-policy-global runtime.interpreter.delay-local off
 ```
 
-The first option keeps the existing public spelling `conbination`; the level
-selector is only present when opcode conbination is compiled in. In design text,
-this document uses the standard spelling "combination" unless it refers to an
-actual command-line option, source file, or symbol.
+The opcode combination level is configurable when that pass is compiled in.
 
 ## 7. Full and Partial Unwind
 

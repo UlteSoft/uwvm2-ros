@@ -80,115 +80,115 @@ constexpr auto get_wasm1p1_feature_name{[]<::std::integral char_type2>(::uwvm2::
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::relaxed_simd:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-relaxed-simd"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-relaxed-simd"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-relaxed-simd"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-relaxed-simd"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-relaxed-simd"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.relaxed-simd on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.relaxed-simd on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.relaxed-simd on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.relaxed-simd on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.relaxed-simd on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::multi_memory:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-multi-memory"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-multi-memory"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-multi-memory"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-multi-memory"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-multi-memory"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.multi-memory on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.multi-memory on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.multi-memory on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.multi-memory on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.multi-memory on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"memtag-extension (remove --wasm-feature-disable-memtag-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"memtag-extension (remove --wasm-feature-disable-memtag-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"memtag-extension (remove --wasm-feature-disable-memtag-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"memtag-extension (remove --wasm-feature-disable-memtag-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"memtag-extension (remove --wasm-feature-disable-memtag-extension)"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.memtag on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.memtag on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.memtag on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.memtag on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.memtag on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::adm_extension:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"adm-extension (remove --wasm-feature-disable-adm-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"adm-extension (remove --wasm-feature-disable-adm-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"adm-extension (remove --wasm-feature-disable-adm-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"adm-extension (remove --wasm-feature-disable-adm-extension)"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"adm-extension (remove --wasm-feature-disable-adm-extension)"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.adm on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.adm on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.adm on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.adm on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.adm on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::custom_page_sizes:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-custom-page-sizes"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-custom-page-sizes"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-custom-page-sizes"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-custom-page-sizes"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-custom-page-sizes"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.custom-page-sizes on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.custom-page-sizes on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.custom-page-sizes on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.custom-page-sizes on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.custom-page-sizes on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::threads:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-threads"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-threads"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-threads"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-threads"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-threads"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.threads on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.threads on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.threads on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.threads on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.threads on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::tail_call:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-tail-call"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-tail-call"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-tail-call"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-tail-call"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-tail-call"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.tail-call on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.tail-call on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.tail-call on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.tail-call on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.tail-call on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memory64:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-memory64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-memory64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-memory64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-memory64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-memory64"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.memory64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.memory64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.memory64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.memory64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.memory64 on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::table64:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-table64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-table64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-table64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-table64"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-table64"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.table64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.table64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.table64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.table64 on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.table64 on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::function_references:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-function-references"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-function-references"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-function-references"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-function-references"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-function-references"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.function-references on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.function-references on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.function-references on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.function-references on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.function-references on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::exceptions:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-exceptions"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-exceptions"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-exceptions"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-exceptions"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-exceptions"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.exceptions on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.exceptions on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.exceptions on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.exceptions on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.exceptions on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::gc:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-gc"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-gc"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-gc"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-gc"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-gc"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.gc on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.gc on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.gc on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.gc on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.gc on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::extended_const:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-extended-const"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-extended-const"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-extended-const"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-extended-const"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-extended-const"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.extended-const on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.extended-const on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.extended-const on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.extended-const on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.extended-const on"}; }
                                                 }
                                                 case ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::table_initializer:
                                                 {
-                                                    if constexpr(::std::same_as<char_type2, char>) { return {"--wasm-feature-enable-table-initializer"}; }
-                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"--wasm-feature-enable-table-initializer"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"--wasm-feature-enable-table-initializer"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"--wasm-feature-enable-table-initializer"}; }
-                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"--wasm-feature-enable-table-initializer"}; }
+                                                    if constexpr(::std::same_as<char_type2, char>) { return {"parser.table-initializer on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, wchar_t>) { return {L"parser.table-initializer on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char8_t>) { return {u8"parser.table-initializer on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char16_t>) { return {u"parser.table-initializer on"}; }
+                                                    else if constexpr(::std::same_as<char_type2, char32_t>) { return {U"parser.table-initializer on"}; }
                                                 }
                                                 [[unlikely]] default:
                                                 {
