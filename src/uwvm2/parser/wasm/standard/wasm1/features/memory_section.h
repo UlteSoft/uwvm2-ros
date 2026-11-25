@@ -67,7 +67,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte>(::uwvm2::parser::wasm::standard::wasm1::section::section_id::memory_sec)};
 
         // Aggregates include actual definitions and imports, collected only after bounded limits decode.
-        bool requires_memory64{}, requires_threads{};
+        bool requires_memory64{}, requires_threads{}, requires_adm{}, requires_memtag{}, requires_custom_pages{};
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
         ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_memory_type<Fs...>> memories{};

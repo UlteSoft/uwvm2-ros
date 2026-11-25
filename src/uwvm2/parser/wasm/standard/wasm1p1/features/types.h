@@ -46,6 +46,8 @@
 # include <uwvm2/utils/macro/push_macros.h>
 // import
 # include <fast_io.h>
+# include <uwvm2/extension/adm/types.h>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/parser/wasm/base/impl.h>
@@ -1009,7 +1011,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // ^^ begin borrows curr; the transactional decoder checks each consumed byte.
         auto const begin{curr};
         auto const decoded{w3::scan_address_limits(curr, end, w3::address_limits_kind::memory,
-            !options.disable_memory64, !options.disable_threads, !options.disable_memory64)};
+            !options.disable_memory64, !options.disable_threads, !options.disable_memory64,
+            !options.disable_adm_extension, !options.disable_memtag_extension, !options.disable_custom_page_sizes)};
         // [flags min max?] ... (end) on success, or unchanged begin on failure.
         // [safe          ] unsafe (could be end)
         //                  ^^ curr on success; no partially decoded type is published.
@@ -1044,9 +1047,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                     // [safe          ] complete bounded limits; point at their flag.
                     // ^^ err_curr borrows begin, without advancing or dereferencing end.
                     err.err_curr = begin;
-                    auto const maximum{w3::address_limit_maximum(w3::address_limits_kind::memory, decoded.limits.address_type)};
+                    auto const maximum{w3::address_limit_maximum(w3::address_limits_kind::memory, decoded.limits.address_type, decoded.limits.adm_bits, decoded.limits.memtag, decoded.limits.page_size_log2)};
                     auto const actual{decoded.limits.min > maximum ? decoded.limits.min : decoded.limits.max};
-                    if(!options.disable_memory64)
+                    if(!options.disable_memory64 || decoded.limits.adm_bits || decoded.limits.page_size_log2 != 16u)
                     {
                         err.err_code = error::wasm3_memory_limit_out_of_range;
                         err.err_selectable.u64arr[0] = actual;
@@ -1073,6 +1076,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                         .feature = ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::threads,
                         .subject = ::uwvm2::parser::wasm::base::wasm1p1_error_subject::memory_type};
                     break;
+                case w3::address_limits_error::memtag_disabled:
+                    err.err_code = error::wasm1p1_feature_required;
+                    err.err_selectable.wasm1p1_feature_required = {
+                        .value = ::uwvm2::extension::memtag::memory_type_flag,
+                        .feature = ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                        .subject = ::uwvm2::parser::wasm::base::wasm1p1_error_subject::memory_type};
+                    break;
+                case w3::address_limits_error::adm_disabled:
+                    err.err_code = error::wasm1p1_feature_required;
+                    err.err_selectable.wasm1p1_feature_required = {
+                        .value = ::uwvm2::extension::adm::memory_type_flag,
+                        .feature = ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::adm_extension,
+                        .subject = ::uwvm2::parser::wasm::base::wasm1p1_error_subject::memory_type};
+                    break;
+                case w3::address_limits_error::invalid_page_size:
+                    err.err_code = error::invalid_memory_page_size;
+                    break;
+                case w3::address_limits_error::custom_pages_disabled:
+                    err.err_code = error::wasm1p1_feature_required;
+                    err.err_selectable.wasm1p1_feature_required = {
+                        .value = 8u,
+                        .feature = ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::custom_page_sizes,
+                        .subject = ::uwvm2::parser::wasm::base::wasm1p1_error_subject::memory_type};
+                    break;
+                case w3::address_limits_error::invalid_adm_bits:
+                    err.err_code = error::invalid_adm_memory_type;
+                    break;
                 default:
                     err.err_code = error::limit_type_illegal_flag;
                     // A missing flag was handled above; every remaining error
@@ -1088,6 +1118,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         memory.limits.present_max = decoded.limits.present_max;
         memory.shared = decoded.limits.shared;
         memory.address64 = decoded.limits.address_type == w3::storage_address_type::i64;
+        memory.adm_bits = decoded.limits.adm_bits;
+        memory.memtag = decoded.limits.memtag;
+        memory.page_size_log2 = decoded.limits.page_size_log2;
         return curr;
     }
 
@@ -1189,6 +1222,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections)};
         section.requires_memory64 |= memory.address64;
         section.requires_threads |= memory.shared;
+        // An explicit zero is an ordinary memory type, but its binary syntax still requires WasmADM admission.
+        section.requires_adm |= (::std::to_integer<unsigned>(*curr) & ::uwvm2::extension::adm::memory_type_flag) != 0u;
+        section.requires_memtag |= memory.memtag;
+        section.requires_custom_pages |= (::std::to_integer<unsigned>(*curr) & 8u) != 0u;
         // [complete checked limits] next ... end
         // [safe                   ] ^^ checked_end is within the original span or exactly one-past; no read follows.
         return checked_end;

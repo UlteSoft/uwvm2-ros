@@ -7,6 +7,8 @@
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
+# include <uwvm2/extension/adm/types.h>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <uwvm2/utils/macro/push_macros.h>
 # include "reference_policy.h"
 # include "value_immediate.h"
@@ -175,7 +177,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         return core3_value_declaration_policy_fully_enabled(policy) && !policy.disable_memory64 &&
             !policy.disable_table64 && !policy.disable_threads && !policy.disable_multi_memory &&
-            !policy.disable_table_initializer && !policy.disable_extended_const;
+            !policy.disable_table_initializer && !policy.disable_extended_const && !policy.disable_adm_extension && !policy.disable_memtag_extension && !policy.disable_custom_page_sizes;
     }
     struct core3_type_declaration_requirements
     {
@@ -267,7 +269,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
 
     struct core3_address_declaration_requirements
-    { bool memory64{}, table64{}, shared{}, multi_memory{}; };
+    { bool memory64{}, table64{}, shared{}, multi_memory{}, adm{}, memtag{}, custom_pages{}; };
     [[nodiscard]] inline constexpr bool core3_has_multiple_declarations(::std::size_t imported, ::std::size_t local) noexcept
     {
         // Counts already belong to the actual decoded vectors. No addition,
@@ -276,7 +278,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
     [[nodiscard]] inline constexpr core3_storage_declaration_requirement get_address_declaration_requirement(
         bool memory64_enabled, bool table64_enabled, bool threads_enabled, bool multi_memory_enabled,
-        core3_address_declaration_requirements requirements) noexcept
+        core3_address_declaration_requirements requirements, bool adm_enabled = true, bool memtag_enabled = true, bool custom_pages_enabled = true) noexcept
     {
         using feature = ::uwvm2::parser::wasm::base::wasm1p1_feature_kind;
         using subject = ::uwvm2::parser::wasm::base::wasm1p1_error_subject;
@@ -288,14 +290,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         { return {true, feature::threads, subject::memory_type, 3u}; }
         if(!multi_memory_enabled && requirements.multi_memory)
         { return {true, feature::multi_memory, subject::memory_type, 2u}; }
+        if(!custom_pages_enabled && requirements.custom_pages)
+        { return {true, feature::custom_page_sizes, subject::memory_type, 8u}; }
+        if(!adm_enabled && (requirements.adm || requirements.memtag))
+        { return {true, feature::adm_extension, subject::memory_type, ::uwvm2::extension::adm::memory_type_flag}; }
+        if(!memtag_enabled && requirements.memtag)
+        { return {true, feature::memtag_extension, subject::memory_type, ::uwvm2::extension::memtag::memory_type_flag}; }
         return {};
     }
     inline constexpr void require_address_declaration_policy(bool memory64_enabled, bool table64_enabled,
         bool threads_enabled, bool multi_memory_enabled, core3_address_declaration_requirements requirements,
-        ::std::byte const* diagnostic, ::uwvm2::validation::error::code_validation_error_impl& err) UWVM_THROWS
+        ::std::byte const* diagnostic, ::uwvm2::validation::error::code_validation_error_impl& err,
+        bool adm_enabled = true, bool memtag_enabled = true, bool custom_pages_enabled = true) UWVM_THROWS
     {
         auto const required{get_address_declaration_requirement(memory64_enabled, table64_enabled,
-            threads_enabled, multi_memory_enabled, requirements)};
+            threads_enabled, multi_memory_enabled, requirements, adm_enabled, memtag_enabled, custom_pages_enabled)};
         if(!required.required) { return; }
         // [caller-proven actual module/body allocation ...] end, or null runtime diagnostic.
         // [safe                                           ] borrow only; no pointer arithmetic or byte read.
@@ -448,7 +457,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             !(policy.disable_multi_value || policy.controllable_allow_multi_result_vector), types, diagnostic, err);
         require_storage_declaration_policy(!policy.disable_reference_types, !policy.disable_simd, storage, diagnostic, err);
         require_address_declaration_policy(!policy.disable_memory64, !policy.disable_table64,
-            !policy.disable_threads, !policy.disable_multi_memory, address, diagnostic, err);
+            !policy.disable_threads, !policy.disable_multi_memory, address, diagnostic, err, !policy.disable_adm_extension, !policy.disable_memtag_extension, !policy.disable_custom_page_sizes);
         require_constant_declaration_policy(!policy.disable_table_initializer, !policy.disable_extended_const,
             constants, diagnostic, err);
         require_constant_opcode_policy(policy, constants.opcodes, diagnostic, err);

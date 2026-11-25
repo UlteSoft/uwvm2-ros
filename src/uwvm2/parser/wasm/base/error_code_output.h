@@ -283,6 +283,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::base
 #include "error_code_outputs/eco_limit_type_invalid_min.h"
                 return;
             }
+            case ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_memory_page_size:
+                ::fast_io::operations::print_freestanding<false>(::std::forward<Stm>(stream),
+                    ::fast_io::mnp::code_cvt(u8"uwvm: [error] (offset="), ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
+                    ::fast_io::mnp::code_cvt(u8") A custom memory page size requires a u32 exponent of 0 or 16."));
+                return;
+            case ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_adm_memory_type:
+                ::fast_io::operations::print_freestanding<false>(::std::forward<Stm>(stream),
+                    ::fast_io::mnp::code_cvt(u8"uwvm: [error] (offset="), ::fast_io::mnp::addrvw(errout.err.err_curr - errout.module_begin),
+                    ::fast_io::mnp::code_cvt(u8") WasmADM requires one raw ignored-bit count smaller than the address width. WasmMTE requires at least four ignored bits."));
+                return;
             case ::uwvm2::parser::wasm::base::wasm_parse_error_code::limit_type_invalid_max:
             {
 #include "error_code_outputs/eco_limit_type_invalid_max.h"

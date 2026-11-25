@@ -553,7 +553,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
              .global_reference_value = globalsec.reference_types_diagnostic_value,
              .element_reference_value = elemsec.reference_types_diagnostic_value},
             {.memory64 = memsec.requires_memory64, .table64 = tablesec.requires_table64,
-             .shared = memsec.requires_threads, .multi_memory = all_memory_count > 1u},
+             .shared = memsec.requires_threads, .multi_memory = all_memory_count > 1u, .adm = memsec.requires_adm, .memtag = memsec.requires_memtag, .custom_pages = memsec.requires_custom_pages},
             {.table_initializer = tablesec.requires_table_initializer,
              .extended_const = globalsec.constant_expressions_require_extended_const,
              .extended_const_value = globalsec.extended_const_diagnostic_value,
@@ -1467,14 +1467,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                                                operand_stack.push_back({result_type});
                                            }};
 
-        auto const memory_address_type_at{[&](wasm_u32 index) constexpr noexcept
+        auto const memory_type_at{[&](wasm_u32 index) constexpr noexcept -> auto const&
         {
             // [imported memories][local memories]
             // [safe                              ] index was checked by the caller.
             // Imported descriptors borrow immutable parser-owned records.
-            auto const& memory{index < imported_memory_count ?
+            return index < imported_memory_count ?
                 imported_memories.index_unchecked(index)->imports.storage.memory :
-                memsec.memories.index_unchecked(index - imported_memory_count)};
+                memsec.memories.index_unchecked(index - imported_memory_count);
+        }};
+        auto const memory_address_type_at{[&](wasm_u32 index) constexpr noexcept
+        {
+            auto const& memory{memory_type_at(index)};
             if constexpr(requires { memory.address64; })
             { return memory.address64 ? storage_address_type::i64 : storage_address_type::i32; }
             else { return storage_address_type::i32; }
@@ -6923,10 +6927,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     { details::fail_invalid_immediate(op_begin, err, u8"obsolete FC memtag encoding; regenerate with FF packed-u32"); }
                     if(auto const* memtag{::uwvm2::extension::memtag::find_instruction(subopcode)}; memtag != nullptr)
                     {
-                        if(wasm1p1_para.disable_memtag_extension) [[unlikely]]
+                        if(wasm1p1_para.disable_adm_extension || wasm1p1_para.disable_memtag_extension) [[unlikely]]
                         {
                             details::fail_feature_required(op_begin, err, subopcode,
-                                ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
+                                wasm1p1_para.disable_adm_extension ? ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::adm_extension :
+                                    ::uwvm2::parser::wasm::base::wasm1p1_feature_kind::memtag_extension,
                                 ::uwvm2::parser::wasm::base::wasm1p1_error_subject::instruction);
                         }
                         // Use the same bounded index decoder as both full compilers.
@@ -6935,6 +6940,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                         auto const memory_index{::uwvm2::validation::standard::wasm3::read_memory_index(
                             code_curr, code_end, op_begin, !wasm1p1_para.disable_multi_memory, err)};
                         check_memory_index(op_begin, memory_index, u8"memtag");
+                        if(!::uwvm2::extension::memtag::is_tagged_memory(memory_type_at(memory_index))) [[unlikely]]
+                        { details::fail_invalid_immediate(op_begin, err, u8"memtag instruction requires a WasmMTE memory"); }
                         auto const address_type{memory_operand_type(memory_index)};
                         if(!is_polymorphic && concrete_operand_count() < memtag->operand_count) [[unlikely]]
                         { report_operand_stack_underflow(op_begin, u8"memtag", memtag->operand_count); }
@@ -8258,7 +8265,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
              .element_reference_value = elements.reference_types_diagnostic_value},
             {.memory64 = memories.requires_memory64, .table64 = tables.requires_table64,
              .shared = memories.requires_threads, .multi_memory = core3_has_multiple_declarations(
-                 imports.importdesc.index_unchecked(2uz).size(), memories.memories.size())},
+                 imports.importdesc.index_unchecked(2uz).size(), memories.memories.size()), .adm = memories.requires_adm, .memtag = memories.requires_memtag, .custom_pages = memories.requires_custom_pages},
             {.table_initializer = tables.requires_table_initializer,
              .extended_const = globals.constant_expressions_require_extended_const,
              .extended_const_value = globals.extended_const_diagnostic_value,
@@ -8361,7 +8368,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                                 ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                                     ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>(module_storage.sections).importdesc.index_unchecked(2uz).size(),
                                 ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
-                                    ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections).memories.size())},
+                                    ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections).memories.size()),
+                             .adm = ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                                ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections).requires_adm,
+                             .memtag = ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                                ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections).requires_memtag,
+                             .custom_pages = ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
+                                ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(module_storage.sections).requires_custom_pages},
                             {.table_initializer = ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                                 ::uwvm2::parser::wasm::standard::wasm1::features::table_section_storage_t<Fs...>>(module_storage.sections).requires_table_initializer,
                              .extended_const = ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<

@@ -215,16 +215,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         return ::uwvm2::parser::wasm::standard::wasm1::type::details::section_details_copy_literal(iter, ::uwvm2::parser::wasm::standard::wasm1::type::details::right_brace<char_type>());
     }
 
-    // The MVP root type remains unchanged. The layered type carries sharedness
-    // and Core 3 address width without narrowing the declared limits.
+    // The layered memory type retains its addressing and access semantics through linking.
     struct memory_type
     {
         memory_limits_type limits{};
         bool shared{};
-        // Core 3 validation uses the declared address type, independently of the
-        // memory's limits or sharedness. The current binary parser still rejects
-        // address64 declarations until all runtime translation paths are ready.
         bool address64{};
+        ::std::uint_least8_t adm_bits{};
+        bool memtag{};
+        ::std::uint_least8_t page_size_log2{16u};
     };
     struct memory_type_section_details_wrapper_t { memory_type memory{}; };
     inline constexpr memory_type_section_details_wrapper_t section_details(memory_type memory) noexcept { return {memory}; }
@@ -247,6 +246,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         else if constexpr(::std::same_as<Char, char32_t>)
         { ::fast_io::operations::print_freestanding<false>(::std::forward<Stream>(stream), section_details(wrapper.memory.limits),
              U", shared: ", wrapper.memory.shared, ", address64: ", wrapper.memory.address64); }
+        if(wrapper.memory.page_size_log2 != 16u)
+        { ::fast_io::operations::print_freestanding<false>(::std::forward<Stream>(stream), ::fast_io::mnp::code_cvt(u8", page bytes: "), 1u << wrapper.memory.page_size_log2); }
+        if(wrapper.memory.adm_bits)
+        { ::fast_io::operations::print_freestanding<false>(::std::forward<Stream>(stream), ::fast_io::mnp::code_cvt(u8", WasmADM ignored bits: "), static_cast<unsigned>(wrapper.memory.adm_bits)); }
+        if(wrapper.memory.memtag)
+        { ::fast_io::operations::print_freestanding<false>(::std::forward<Stream>(stream), ::fast_io::mnp::code_cvt(u8", WasmMTE")); }
     }
 
     /// @brief wasm1.1 table type with funcref/externref reference type support.

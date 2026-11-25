@@ -32,6 +32,8 @@ module;
 export module uwvm2.parser.wasm.standard.wasm1p1.features:types;
 
 import fast_io;
+import uwvm2.extension.adm.types;
+import uwvm2.extension.memtag.instruction;
 import uwvm2.utils.container;
 import uwvm2.utils.debug;
 import uwvm2.parser.wasm.base;

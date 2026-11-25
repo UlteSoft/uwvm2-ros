@@ -4,6 +4,8 @@ module;
 #include <uwvm2/utils/macro/push_macros.h>
 export module uwvm2.validation.standard.wasm3.declaration_policy;
 import fast_io;
+import uwvm2.extension.adm.types;
+import uwvm2.extension.memtag.instruction;
 import uwvm2.parser.wasm.base;
 import uwvm2.parser.wasm.standard.wasm3.type;
 import uwvm2.validation.error;

@@ -27,7 +27,7 @@ namespace
         while(padding) { out.push_back(static_cast<std::byte>(--padding ? 128u : 0u)); }
     }
     auto scan(bytes const& encoded, kind k, bool enabled=true, bool threads=true, bool wide=true,
-              error expected=error::ok)
+              error expected=error::ok, bool adm=false, bool memtag=false, bool custom_pages=false)
     {
         // Place the input immediately before an inaccessible page. Every truncated
         // prefix, including an empty one, must be handled without overreading it.
@@ -39,7 +39,7 @@ namespace
         if(!encoded.empty()) { std::memcpy(start,encoded.data(),encoded.size()); }
         auto cursor=static_cast<std::byte const*>(start);
         auto end=static_cast<std::byte const*>(allocation+page);
-        auto result=w3::scan_address_limits(cursor,end,k,enabled,threads,wide);
+        auto result=w3::scan_address_limits(cursor,end,k,enabled,threads,wide,adm,memtag,custom_pages);
         require(result.error==expected);
         require(cursor==(expected==error::ok ? end : start));
         require(result.error_offset<=encoded.size());
@@ -104,8 +104,12 @@ int main(int argc, char** argv)
         bytes e{static_cast<std::byte>(flag)};leb(e,0);if(flag&1u) { leb(e,1); }
         for(auto k:{kind::memory,kind::table})
         {
-            auto expected=flag>=8u || (k==kind::table && (flag&2u)) ? error::invalid_flags :
-                ((flag&2u) && !(flag&1u)) ? error::shared_without_maximum : error::ok;
+            auto expected=error::ok;
+            if(flag & ~(k == kind::table ? 5u : 63u)) { expected=error::invalid_flags; }
+            else if(flag & 8u) { expected=error::custom_pages_disabled; }
+            else if(flag & 16u) { expected=error::adm_disabled; }
+            else if(flag & 32u) { expected=error::memtag_disabled; }
+            else if((flag & 2u) && !(flag & 1u)) { expected=error::shared_without_maximum; }
             auto r=scan(e,k,true,true,true,expected);
             if(expected==error::ok && flag&2u)
             {
@@ -138,6 +142,32 @@ int main(int argc, char** argv)
         actual.present_max=false;require(!w3::address_limits_match(expected,actual));actual.present_max=true;
         actual.max=6;require(!w3::address_limits_match(expected,actual));actual.max=4;
         actual.min=0;require(!w3::address_limits_match(expected,actual));
+    }
+    // Check both sides of the ADM domain using the declared unit of growth.
+    // Explicitly encoding the default page size has the same memory type.
+    for(bool wide : {false, true}) for(bool tagged : {false, true})
+    {
+        auto const width = wide ? 64u : 32u;
+        auto const flag = (wide ? 4u : 0u) | 0x19u | (tagged ? 0x20u : 0u);
+        for(unsigned shift : {0u, 16u})
+        {
+            constexpr unsigned ignored = 16;
+            auto const max = std::uint64_t{1} << (width - ignored - shift);
+            bytes e{static_cast<std::byte>(flag), static_cast<std::byte>(ignored)};
+            leb(e, 0); leb(e, max);
+            scan(e,kind::memory,true,true,true,error::invalid_page_size,true,true,true);
+            leb(e, shift);
+            auto decoded = scan(e,kind::memory,true,true,true,error::ok,true,true,true).limits;
+            require(decoded.page_size_log2 == shift && decoded.adm_bits == ignored && decoded.memtag == tagged);
+            auto changed = decoded;
+            changed.page_size_log2 = shift ? 0 : 16;
+            require(!w3::address_limits_match(changed, decoded));
+            e.back() = std::byte{15};
+            scan(e,kind::memory,true,true,true,error::invalid_page_size,true,true,true);
+            e.resize(2);
+            leb(e, 0); leb(e, max + 1); leb(e, shift);
+            scan(e,kind::memory,true,true,true,error::limit_out_of_range,true,true,true);
+        }
     }
     // Core 3 memargs retain all 64 offset bits, with and without an indexed
     // memory. The existing memory32 entry point must reject large offsets and
