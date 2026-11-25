@@ -2888,6 +2888,14 @@ case static_cast<wasm_byte>(::uwvm2::extension::memtag::opcode_prefix):
         resolve_memory_storage();
         if(options.execute_memtag && !resolved_memory.memory_p->memtag_shadow.enabled())
         { fail_invalid_immediate(op_begin,u8"memtag execution requires configured memory-owner shadow"); }
+        // In disabled mode these unary operations return the input address
+        // verbatim. Validation above still consumes the complete immediate
+        // and checks the memory index and address type. Leave the existing
+        // runtime operand in its register or stack slot.
+        if(!options.execute_memtag && (descriptor->operation == mt::opcode::load ||
+                                      descriptor->operation == mt::opcode::untag ||
+                                      descriptor->operation == mt::opcode::random))
+        { break; }
 #ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
         flush_conbine_pending();
 #endif
