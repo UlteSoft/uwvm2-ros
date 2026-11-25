@@ -66,6 +66,7 @@
                 return;
             }
             auto* caller=e->child;auto const saved_function=e->function;auto const saved_crossing=e->cross_module;
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{callee->module_->memory_policy.check_tags};
             e->child=callee;e->cross_module|=callee!=caller;
             using entry=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
             auto const raw=callee->entries_[function-callee->imports_].raw;

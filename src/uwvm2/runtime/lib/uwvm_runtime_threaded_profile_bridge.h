@@ -244,6 +244,7 @@ extern "C++"
             if(!caller || caller_function < caller->imported_function_vec_storage.size() ||
                caller_function - caller->imported_function_vec_storage.size() >= caller->local_defined_function_vec_storage.size())
             { return dispatch_status::rejected; }
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{caller->memory_policy.check_tags};
             imported_leaf leaf{};
             if(!resolve_leaf(instance, module, imported, leaf) || results.size() != leaf.result_bytes || params.size() != leaf.parameter_bytes)
             { return dispatch_status::rejected; }

@@ -611,6 +611,7 @@ namespace uwvm2::runtime::compiler::uwvm_int::threaded
                 {
                     auto& frame{calls_[call_top_-1uz]};auto const* instance{world_->module(frame.module)};
                     auto const& source_function{modules_[frame.module].program.functions[frame.function-instance->imported_function_vec_storage.size()]};
+                    ::uwvm2::extension::memtag::scoped_access_checks tag_checks{instance->memory_policy.check_tags};
                     auto const& code{source_function.instructions};
                     result_.module=frame.module;result_.function=frame.function;
                     if(frame.pc>=code.size()) { static_cast<void>(fail(status::invariant_failure));break; }

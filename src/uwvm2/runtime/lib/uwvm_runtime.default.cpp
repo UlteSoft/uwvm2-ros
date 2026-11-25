@@ -5441,6 +5441,13 @@ namespace uwvm2::runtime::lib
                 if(rt.local_defined_memory_vec_storage.empty()) { return nullptr; }
                 return ::std::addressof(rt.local_defined_memory_vec_storage.index_unchecked(0uz).memory);
             }
+        [[nodiscard]] inline bool check_tags_for_import_caller(::std::size_t module_id) noexcept
+        {
+            if(module_id >= g_runtime.modules.size()) { return true; }
+            auto const* caller{g_runtime.modules.index_unchecked(module_id).runtime_module};
+            return caller == nullptr || caller->memory_policy.check_tags;
+        }
+
 
             constexpr ::std::size_t kMaxChain{4096uz};
             auto curr{::std::addressof(rt.imported_memory_vec_storage.index_unchecked(0uz))};
@@ -5690,6 +5697,7 @@ namespace uwvm2::runtime::lib
             preload_call_context_guard ros_context{ros_call ? ::std::addressof(ros_memory_attribute) : nullptr, nullptr, caller_module_id,
                                                   ros_call, ::std::addressof(module), function_index};
 #endif
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS)
             if(module.get_module_name() == u8"wasi_snapshot_preview1")
             {
@@ -5821,6 +5829,7 @@ namespace uwvm2::runtime::lib
                 finish_host_memtag_fault<false>();
                 return;
             }
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 
             auto& wasip1_env{resolve_wasip1_env_for_preload_capi_function(::std::addressof(function))};
             ::uwvm2::uwvm::imported::wasi::wasip1::storage::scoped_current_wasip1_memory_t memory_guard{
@@ -5877,6 +5886,7 @@ namespace uwvm2::runtime::lib
                 [&]() noexcept { module.call_func_index(function_index, result_buffer, param_buffer); });
             finish_host_memtag_fault<true>();
         }
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
 
         inline constexpr void call_capi_with_wasip1_env(capi_function_t const& function,
                                                         preload_module_memory_attribute_t const* preload_module_memory_attribute,
@@ -5897,6 +5907,7 @@ namespace uwvm2::runtime::lib
 #endif
             // Preload host APIs are context-sensitive: they operate on the wasm module that is currently calling the C API.
             auto const& ctx{get_preload_call_context()};
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{check_tags_for_import_caller(caller_module_id)};
             if(ctx.module_id == preload_call_context_t::invalid_module_id) [[unlikely]] { return nullptr; }
             if(ctx.module_id >= g_runtime.modules.size()) [[unlikely]] { return nullptr; }
             return g_runtime.modules.index_unchecked(ctx.module_id).runtime_module;
@@ -11878,7 +11889,7 @@ namespace uwvm2::runtime::lib
 # if defined(UWVM_RUNTIME_UWVM_INTERPRETER)
                 ::uwvm2::runtime::compiler::uwvm_int::optable::compile_option opt{};
                 opt.curr_wasm_id = module_id;
-                opt.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
+                opt.execute_memtag = rec.runtime_module->memory_policy.check_tags;
 # endif
                 // Resolve split sizing through the selected backend. A combined binary must make the same scheduling decision as the
                 // corresponding pure-backend binary rather than selecting an adapter at preprocessing time.
@@ -12060,7 +12071,7 @@ namespace uwvm2::runtime::lib
                         }
                         ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::compile_option llvm_jit_opt{};
                         llvm_jit_opt.curr_wasm_id = module_id;
-                        llvm_jit_opt.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
+                        llvm_jit_opt.execute_memtag = rec.runtime_module->memory_policy.check_tags;
                         llvm_jit_opt.compilation_mode = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::llvm_jit_compilation_mode::full;
 # if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
                         llvm_jit_opt.emit_debug_safe_points = static_cast<bool>(g_runtime.debug_pause_control);
@@ -14714,7 +14725,7 @@ namespace uwvm2::runtime::lib
 
             translator::compile_option option{};
             option.curr_wasm_id = transaction->module_id;
-            option.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
+            option.execute_memtag = runtime_module->memory_policy.check_tags;
             option.compilation_mode = translator::llvm_jit_compilation_mode::full;
             option.emit_debug_safe_points = true;
             option.debug_compiled_function_generation = static_cast<::std::uint64_t>(generation + 1u);

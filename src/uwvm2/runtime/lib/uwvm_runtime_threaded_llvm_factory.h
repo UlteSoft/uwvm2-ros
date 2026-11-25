@@ -412,7 +412,7 @@
                 auto validation=emit::build_runtime_validation_module(module);
                 compile::compile_option options{};options.curr_wasm_id=module_index;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;
-                options.execute_memtag=data->execute_memtag_;
+                options.execute_memtag=module.memory_policy.check_tags;
                 options.validator_feature_parameter=data->world_->feature_parameter(module_index);options.verify_llvm_jit_ir=true;
                 options.emit_call_stack_frames=false;options.emit_unwind_call_stack_frames=false;
                 options.emit_precise_gc_root_frames=false;options.emit_debug_safe_points=false;

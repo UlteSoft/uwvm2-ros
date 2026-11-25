@@ -219,7 +219,7 @@
                     budget.exception_objects = limits.max_call_frames;
                     budget.exception_values = budget.values;
                     ::uwvm2::validation::error::code_validation_error_impl error{};
-                    auto built{integer::engine::compile(world_, budget, error,!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag)};
+                    auto built{integer::engine::compile(world_, budget, error)};
                     if(!built.code && built.outcome.code==integer::status::resource_limit)return reject_budget("interpreter");
                     if(!built.code || !built.outcome.normal())
                     {

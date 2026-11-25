@@ -206,8 +206,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
             namespace files = ::uwvm2::uwvm::wasm::storage;
             using file_type = ::uwvm2::uwvm::wasm::type::wasm_file_t;
-            auto find = [](policy::name_view name) noexcept -> file_type const*
+            auto find = [](policy::owned_name const& key) noexcept -> file_type const*
             {
+                policy::name_view const name{key.data(), key.size()};
                 if(files::active_execute_wasm().module_name == name) { return &files::active_execute_wasm(); }
                 for(auto const& file : files::active_preloaded_wasm()) { if(file.module_name == name) { return &file; } }
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Unknown Wasm policy module: ", name);

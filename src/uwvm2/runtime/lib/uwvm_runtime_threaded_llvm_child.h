@@ -54,7 +54,6 @@ extern "C++"
         ::uwvm2::utils::container::std_unique_ptr<details::pending_llvm_jit_code_ranges> ranges_{};
         ::std::atomic_flag running_=ATOMIC_FLAG_INIT;
         bool bound_tables_{},ever_entered_{},reference_dispatch_{};
-        bool const execute_memtag_{!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag};
         struct execution final
         {
             ThreadedLlvmChild* child{};lease_type* lease{};
@@ -152,7 +151,7 @@ extern "C++"
             // Drain after the previous opcode and before choosing the next
             // journal turn. Hardware ASYNC latches are collected without
             // unwinding across a memory/tag lease or inventing a faulting PC.
-            if(e->child->execute_memtag_ && ::uwvm2::runtime::memtag::deferred::controlled_fault_delivery() &&
+            if(::uwvm2::runtime::memtag::deferred::controlled_fault_delivery() &&
                ::uwvm2::extension::memtag::asynchronous_requested() &&
                !::uwvm2::runtime::memtag::deferred::poll(true))return;
             auto* child=e->child;
@@ -279,6 +278,7 @@ extern "C++"
                 if(!layout.valid || layout.parameter_bytes!=param_bytes || layout.result_bytes!=result_bytes)
                 {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
                 auto* const caller=e->child;auto const previous_function=e->function;auto const previous_crossing=e->cross_module;
+                ::uwvm2::extension::memtag::scoped_access_checks tag_checks{callee->module_->memory_policy.check_tags};
                 e->child=callee;e->cross_module=previous_crossing || caller!=callee;
                 using entry=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
                 auto raw=reinterpret_cast<entry>(callee->entries_[target_function-callee->imports_].raw);
@@ -517,11 +517,12 @@ extern "C++"
                 return run_status::rejected;
             struct reset_flag{::std::atomic_flag& value;~reset_flag(){value.clear();}} reset{running_};
             if(!bound_tables_)return run_status::rejected;
-            if(execute_memtag_ && !::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
+            if(!::uwvm2::runtime::memtag::prepare_hardware_thread()) { return run_status::rejected; }
             ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
-            if(execute_memtag_ && !memtag_delivery.enter()) { return run_status::rejected; }
+            if(!memtag_delivery.enter()) { return run_status::rejected; }
             ever_entered_=true;
             if(lease.cancellation().stop_requested())return run_status::group_stopped;
+            ::uwvm2::extension::memtag::scoped_access_checks tag_checks{module_->memory_policy.check_tags};
             execution e{this,::std::addressof(lease)};active_=::std::addressof(e);
             struct reset_active{~reset_active(){active_=nullptr;}} reset_scope;
             ::uwvm2::runtime::wasm_threads::execution_scope waits{lease.waits(),lease.cancellation(),lease.debug_wait_attachment()};

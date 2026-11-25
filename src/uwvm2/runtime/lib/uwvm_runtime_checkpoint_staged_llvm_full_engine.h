@@ -235,7 +235,7 @@ extern "C++"
                 options.curr_wasm_id = actual_module_id;
                 options.compiler_registry = ::std::addressof(data->owner_.source()->registry());
                 options.compilation_mode = compile::llvm_jit_compilation_mode::full;
-                options.execute_memtag = !::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag;
+                options.execute_memtag = runtime_module.memory_policy.check_tags;
                 options.emit_debug_safe_points = true; options.checkpoint_profile = data->profile_;
                 options.debug_safe_point_granularity = granularity;
                 options.debug_full_patchable_typed_target_base_address = count == 0u ? 0u :

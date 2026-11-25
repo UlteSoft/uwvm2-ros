@@ -530,6 +530,42 @@ template<auto Ordinary, auto Managed>
     return get_llvm_runtime_bridge_function_symbol_value<Ordinary>(builder,type,tag);
 }
 
+// Ordinary generated memory accesses carry the *accessing* module's check
+// policy, including when the native memory was reached through an import.
+template<auto Function, bool Checks, typename Signature = decltype(Function)>
+struct llvm_jit_access_policy_bridge;
+
+template<auto Function, bool Checks, typename Result, bool Nothrow, typename... Args>
+struct llvm_jit_access_policy_bridge<Function, Checks, Result (*)(Args...) noexcept(Nothrow)>
+{
+    static Result invoke(Args... args) noexcept(Nothrow)
+    {
+        ::uwvm2::extension::memtag::scoped_access_checks scope{Checks};
+        return Function(args...);
+    }
+};
+
+template<auto Ordinary, auto Managed>
+[[nodiscard]] inline ::llvm::Value* get_llvm_memtag_access_symbol(::llvm::IRBuilder<>& builder, ::llvm::FunctionType* type,
+    ::uwvm2::utils::container::u8string_view identity, bool checks) noexcept
+{
+    // The private child authenticates and rebinds the original function. Its
+    // entry and cross-module call guards install the destination module's policy.
+    if(threaded_host_emission_scope::selected())
+    { return get_llvm_managed_helper_symbol<Ordinary, Managed>(builder, type, identity); }
+    auto select = [&]<bool Checks>() noexcept
+    {
+        constexpr auto ordinary{&llvm_jit_access_policy_bridge<Ordinary, Checks>::invoke};
+        constexpr auto managed{&llvm_jit_access_policy_bridge<Managed, Checks>::invoke};
+#if !(defined(UWVM_ROS_ZERO_HOST_DEFAULTS) && defined(UWVM_CPP_EXCEPTIONS) && defined(__linux__))
+        if constexpr(llvm_jit_debug_control_bridge<Ordinary>)
+        { return get_llvm_runtime_bridge_function_symbol_value_unwrapped<ordinary>(builder, type, identity); }
+#endif
+        return get_llvm_managed_helper_symbol<ordinary, managed>(builder, type, identity);
+    };
+    return checks ? select.template operator()<true>() : select.template operator()<false>();
+}
+
 [[nodiscard]] inline constexpr ::llvm::Value* get_llvm_external_host_object_pointer(::llvm::IRBuilder<>& ir_builder,
                                                                                     ::std::uintptr_t host_address,
                                                                                     ::llvm::Type* object_type,
@@ -7621,7 +7657,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
 [[nodiscard]] inline constexpr bool emit_runtime_local_func_llvm_jit_native_provenance(
     runtime_local_func_llvm_jit_emit_state_t& state, ::std::size_t wasm_offset) noexcept
 {
-    if(state.execute_memtag && (::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && state.ir_builder &&
+    if((::uwvm2::extension::memtag::asynchronous_requested() || ::uwvm2::extension::memtag::logging_requested()) && state.ir_builder &&
        state.ir_builder->GetInsertBlock() && !llvm_jit_basic_block_has_terminator(state.ir_builder->GetInsertBlock()) &&
        !state.control_stack.empty() && state.control_stack.back().is_reachable)
     {
@@ -12233,8 +12269,8 @@ template <llvm_jit_simd_code Op,
                 auto const discriminator{::uwvm2::utils::container::u8string_view{identity.data(),identity.size()}};
                 auto typed{[&]<typename Address,bool Shared>() noexcept -> ::llvm::CallInst*
                 {
-                    auto const target{get_llvm_managed_helper_symbol<llvm_jit_memtag_simd_bridge<Op,Address,Shared>,
-                        llvm_jit_memtag_simd_bridge<Op,Address,Shared,true>>(ir_builder,signature,discriminator)};
+                    auto const target{get_llvm_memtag_access_symbol<llvm_jit_memtag_simd_bridge<Op,Address,Shared>,
+                        llvm_jit_memtag_simd_bridge<Op,Address,Shared,true>>(ir_builder,signature,discriminator,state.execute_memtag)};
                     if(target==nullptr) { return nullptr; }
                     return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(signature,target,arguments));
                 }};
@@ -12494,7 +12530,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
         ::llvm::FunctionType* type,::llvm::ArrayRef<::llvm::Value*> arguments,
         ::uwvm2::utils::container::u8string_view discriminator) noexcept -> ::llvm::CallInst*
     {
-        auto const target{get_llvm_managed_helper_symbol<Ordinary,Managed>(ir_builder,type,discriminator)};
+        auto const target{get_llvm_memtag_access_symbol<Ordinary,Managed>(ir_builder,type,discriminator,state.execute_memtag)};
         if(target==nullptr) { return nullptr; }
         return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,arguments));
     }};
