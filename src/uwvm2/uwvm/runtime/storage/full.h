@@ -72,7 +72,12 @@ namespace uwvm2::runtime::lib
 #if !defined(UWVM_MODULE)
 namespace uwvm2::uwvm::run
 {
-    extern "C++" { struct dev_rebuild_input; inline int prepare_owned_full_cli_source(bool, bool, dev_rebuild_input*) noexcept; }
+    extern "C++"
+    {
+        struct dev_rebuild_input;
+        inline int prepare_owned_full_cli_source(bool, bool, dev_rebuild_input*) noexcept;
+        inline int prepare_owned_full_cli_generation(bool, bool, dev_rebuild_input*, bool) noexcept;
+    }
 }
 #endif
 
@@ -131,7 +136,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
     class full_source_instance final
     {
 #if !defined(UWVM_MODULE)
-        friend int ::uwvm2::uwvm::run::prepare_owned_full_cli_source(bool, bool, ::uwvm2::uwvm::run::dev_rebuild_input*) noexcept;
+        friend int ::uwvm2::uwvm::run::prepare_owned_full_cli_generation(bool, bool, ::uwvm2::uwvm::run::dev_rebuild_input*, bool) noexcept;
 #endif
         enum class cache_cli_origin { unknown, ordinary_full_cli };
         cache_cli_origin cache_cli_origin_{cache_cli_origin::unknown};

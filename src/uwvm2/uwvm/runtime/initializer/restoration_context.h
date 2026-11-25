@@ -931,7 +931,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     { copied.local_defined_memory_limits.try_emplace(index, limit); }
                 }
             }
-            [[nodiscard]] skeleton_result build_resource_skeleton(bool includes_memtag_directory = false)
+            [[nodiscard]] skeleton_result build_resource_skeleton(source_type const& predecessor, bool includes_memtag_directory)
             {
                 if(state_ != skeleton_result::empty) { return state_; }
                 auto const& main{source_->file_};
@@ -997,6 +997,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 { return state_ = skeleton_result::dependency_error; }
                 details::mmap_reservation_plan reservation_plan{};
                 reservation_plan.defer_owner_mapping = true;
+                reservation_plan.live_predecessor = ::std::addressof(predecessor.registry());
                 auto& modules{world_.modules()};
                 modules.reserve(wasm_count);
                 for(auto const& [name, declaration] : declared)

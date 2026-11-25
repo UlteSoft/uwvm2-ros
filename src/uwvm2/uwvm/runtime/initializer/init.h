@@ -9676,6 +9676,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             return error_on_unresolved_imports_after_linking_in_context(world);
         }
 #include "memtag_init.h"
+        [[nodiscard]] inline constexpr bool initialize_runtime_storage(bool defer_active_segments, bool reserve_restore_peer) noexcept;
     }  // namespace details
 
     [[nodiscard]] inline constexpr details::active_segment_result apply_runtime_active_segments(::uwvm2::utils::container::u8string_view module_name) noexcept
@@ -9701,7 +9702,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
     // defers active segments to its ordered per-module start dispatcher.
     // Import incompatibility is an ordinary admission failure. Callers must
     // stop before globals, active segments, compilation or source publication.
-    [[nodiscard]] inline constexpr bool initialize_runtime(bool defer_active_segments = false) noexcept
+    [[nodiscard]] inline constexpr bool details::initialize_runtime_storage(bool defer_active_segments, bool reserve_restore_peer) noexcept
     {
         if(::uwvm2::uwvm::wasm::storage::details::selected_execute_wasm_initialized)
         { ::fast_io::fast_terminate(); } // never clear a sealed owner registry in place
@@ -9732,6 +9733,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         details::initialization_context<details::initialization_purpose::ordinary> allocation_world{};
         details::mmap_reservation_plan reservation_plan{};
         reservation_plan.defer_owner_mapping = true;
+        reservation_plan.reserve_restore_peer = reserve_restore_peer;
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { details::verbose_info(u8"initializer: Clear runtime storage. "); }
         ::uwvm2::uwvm::runtime::storage::active_runtime_registry().clear();
         details::import_alias_sanity_checked = false;
@@ -9922,6 +9924,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
         return true;
     }
+
+    [[nodiscard]] inline constexpr bool initialize_runtime(bool defer_active_segments = false) noexcept
+    { return details::initialize_runtime_storage(defer_active_segments, false); }
 }
 
 #include "restoration_context.h"

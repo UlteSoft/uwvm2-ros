@@ -2272,6 +2272,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         // consumes the resulting global command-line/storage state and performs the final ordered load/execute sequence.
 
         bool owned_full_prepared{};
+        [[maybe_unused]] bool reserve_restore_peer{};
 #if defined(UWVM2_HAS_THREADED_PROFILE_HOST_API) && UWVM2_HAS_THREADED_PROFILE_HOST_API
         {
             ::uwvm2::runtime::wasm_threads::threaded_profile_limits selected_thread_limits{};
@@ -2352,6 +2353,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         // cache, debugger memory capture and executable state replacement.
         if(own_single_source)
         {
+            namespace options = ::uwvm2::uwvm::cmdline::params::details;
+            bool const debugger_selected{options::debug_jit_control_fd >= 0 || options::debug_jit_control_handle != 0u ||
+                (options::update_control_fd < 0 && ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit)};
+# if defined(UWVM_RUNTIME_LLVM_JIT)
+            // The private WASI Threads driver has already prepared its source.
+            // A full debugger may import a checkpoint at any dump export ceiling.
+            reserve_restore_peer = debugger_selected && ::uwvm2::utils::control::debug_permissions::full_allowed();
+#  if defined(UWVM_SUPPORT_PRELOAD_DL)
+            reserve_restore_peer = reserve_restore_peer && ::uwvm2::uwvm::wasm::storage::preloaded_dl.empty();
+#  endif
+# endif
             // Debug/reserved execution and explicit portable audit retain an
             // immutable preparse image for authenticated caller source facts.
             // Auditing a denied call never selects a deployment or permission;
@@ -2361,9 +2373,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 ::uwvm2::uwvm::cmdline::params::details::diagnostic_control_fd_exists ||
                 ::uwvm2::uwvm::cmdline::params::details::release_diagnostic_requested ||
                 ::uwvm2::uwvm::cmdline::params::details::update_control_fd >= 0 ||
-                ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit ||
-                ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_fd >= 0 ||
-                ::uwvm2::uwvm::cmdline::params::details::debug_jit_control_handle != 0u
+                debugger_selected
 #if defined(UWVM_IMPORT_ROS2)
                 || static_cast<bool>(::uwvm2::imported::ros::portable::deployment_selection::current())
                 || ::uwvm2::imported::ros::portable::runtime_audit::runtime.enabled()
@@ -2372,7 +2382,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 || ::uwvm2::imported::ros::buffer_audit::journal.enabled()
 #endif
             };
-            auto const prepared{prepare_owned_full_cli_source(retain_debug_image)};
+            auto const prepared{prepare_owned_full_cli_generation(retain_debug_image, false, nullptr, reserve_restore_peer)};
             if(prepared != static_cast<int>(::uwvm2::uwvm::run::retval::ok)) { return prepared; }
             owned_full_prepared = true;
         }
@@ -2775,7 +2785,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                     // producer and guest OS retirement in the previous scope.
                     // The normal source factory reparses the original configured
                     // inputs and recreates memories/globals/tables/WASI state.
-                    auto const prepared{prepare_owned_full_cli_source(true, true)};
+                    auto const prepared{prepare_owned_full_cli_generation(true, true, nullptr, reserve_restore_peer)};
                     if(prepared != static_cast<int>(retval::ok)) { return prepared; }
                     runtime_entry = resolve_runtime_entry_invocation(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name);
                     restart.pending = false;
@@ -3116,7 +3126,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         // physically joined guest owner and GC execution wrapper.
                         // Only fixed input DATA and the original channel survive.
                         dev_rebuild_input input{::std::move(rebuild.path), ::std::move(rebuild.image), rebuild.module_index};
-                        auto const prepared{prepare_owned_full_cli_source(true, true, ::std::addressof(input))};
+                        auto const prepared{prepare_owned_full_cli_generation(true, true, ::std::addressof(input), reserve_restore_peer)};
                         if(prepared != static_cast<int>(retval::ok))
                         {
                             static_cast<void>(debug_channel->notify_rebuild_result(false));

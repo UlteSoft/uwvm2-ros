@@ -1185,7 +1185,7 @@ extern "C++"
                 for(auto const& file:result->prepared_source_->preload_files_)
                 { if(!result->charge_native(file.source_size(),1u)) { return {}; } }
                 result->context_.reset(::uwvm2::utils::allocator::fast_io_strict::object<context_type>([&](context_type* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) context_type{result->prepared_source_,result->staged_gc_}; }));
-                if(result->context_->build_resource_skeleton(result->includes_memtag_directories_)!=context_type::skeleton_result::built ||
+                if(result->context_->build_resource_skeleton(*original,result->includes_memtag_directories_)!=context_type::skeleton_result::built ||
                    !result->bind_actual_modules(original,actual_epoch) || !result->bind_all_native_resources(original,actual_epoch) ||
                    !result->reserve_all_gc_shells() || !result->build_pending_bridges() || !result->build_all_exceptions() ||
                    !result->fill_all_gc_shells() || !result->fill_all_instance_resources()) { return {}; }

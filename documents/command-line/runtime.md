@@ -57,6 +57,17 @@ reservation. A stable participant count allows for future owners when
 calculating the common power-of-two share. The `memory` selector uses the
 defining module name and a zero-based index among its local memory definitions.
 
+With a full-permission LLVM debugger and automatic participant sizing, the
+initial graph can use up to half the free pool. The paused graph keeps its
+mappings while `dump restore` prepares its replacement. On i686 with the
+default 2 GiB pool and one debugger session, each graph has a 1 GiB budget
+across all its owners and guards, including on subsequent restores. Other
+live mappings reduce the budget available to the pair. Initialization fails
+if the required data quotas and minimum guard windows exceed a graph's budget.
+An explicit `participants` count selects the participant-based plan. The private
+WASI Threads driver and sessions with preloaded native drivers use the ordinary
+plan.
+
 On a 64-bit host an ordinary memory32 owner keeps a fixed full guard window.
 A manual reservation for that owner is an initialization error. A memory32
 owner with ignored address bits can use a manual quota. For memory64, request a

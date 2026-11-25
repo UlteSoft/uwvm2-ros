@@ -9,7 +9,32 @@ struct mmap_reservation_plan
     ::std::size_t os_page{};
     reservation::bytes_type share{};
     bool defer_owner_mapping{};
+    bool reserve_restore_peer{};
+    ::uwvm2::uwvm::runtime::storage::runtime_registry_type const* live_predecessor{};
 };
+
+// F bytes are free and L bytes belong to the pinned graph that this restore
+// will retire. Give the candidate min(F, floor((F + L) / 2)). On first launch
+// L is zero. Other pinned graphs are already excluded from F. Subtraction
+// avoids summing mapping lengths or overflowing at the inclusive 2^64 limit.
+[[nodiscard]] inline constexpr reservation::byte_budget restore_generation_budget(reservation::byte_budget free,
+    ::uwvm2::uwvm::runtime::storage::runtime_registry_type const* predecessor) noexcept
+{
+    auto unmatched{free};
+    if(predecessor)
+    {
+        for(auto const& entry : *predecessor)
+        {
+            for(auto const& owner : entry.second.local_defined_memory_vec_storage)
+            {
+                if(!unmatched.take(owner.memory.get_acquire_reserved_space_ceil())) { return free; }
+            }
+        }
+    }
+    auto const keep{unmatched.full_address64 ? (reservation::bytes_type{1} << 63u) : unmatched.bytes / 2u + unmatched.bytes % 2u};
+    if(!free.take(keep)) { return {}; } // ceil(unmatched / 2) <= unmatched <= free.
+    return free;
+}
 
 [[nodiscard]] inline constexpr reservation::bytes_type const* local_mmap_data_cap(
     configured_runtime_memory_limits_t const* config, ::std::size_t index) noexcept
@@ -92,7 +117,9 @@ template <typename Visit>
         ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] initializer: current mmap owners already exceed the configured process pool.");
         return false;
     }
-    reservation::census census{state.remaining};
+    auto const budget{!mmap_reservation_participants && (result.reserve_restore_peer || result.live_predecessor) ?
+        restore_generation_budget(state.remaining, result.live_predecessor) : state.remaining};
+    reservation::census census{budget};
     auto const collect = [&](auto const& name, auto const& memories, configured_runtime_memory_limits_t const* config)
     {
         if(config)
@@ -159,6 +186,7 @@ template <typename Visit>
             u8"uwvm: [error] initializer: mmap reservation pool cannot cover all minimum data and guard windows (pool_bytes=", pool,
             u8", full_address64_pool=", full, u8", available_bytes=", state.remaining.bytes,
             u8", available_full_address64=", state.remaining.full_address64, u8", already_live_participants=", state.participants,
+            u8", planning_bytes=", budget.bytes, u8", planning_full_address64=", budget.full_address64,
             u8", participants=", census.participants, u8", default_page_outer_guard_bytes=",
             reservation::outer_guard(default_linear_memory_page_size_bytes(), result.os_page), u8").");
         return false;

@@ -4,6 +4,8 @@ A memory with address width `W` and `N` ignored high bits has a dynamic address 
 
 The initializer accounts for three different byte counts. The committed logical length changes with `memory.grow`. The data quota limits how far the memory can grow. The reservation includes the data capacity and inaccessible guard space. Only committed data is made accessible. The pool is shared across memory owners, including live replacement generations.
 
+An LLVM debugger with full permission can prepare a snapshot replacement while the paused module graph keeps its mappings. With automatic participant sizing, the initial graph can use half the free pool. At each restore the planner counts the free bytes and the paused graph's actual mapping sizes. The replacement can use up to half that total, rounded down to a byte, within the remaining free space. This leaves room for another restore after publication. Each generation counts each local definition once, including its guard and any manual data quota. With the default i686 pool and a single session, each graph has 1 GiB. Initialization fails when its required data and minimum guards exceed that budget. An explicit `--runtime-memory-reservation participants` count selects the participant-based plan. The private WASI Threads driver and sessions with preloaded native drivers use the ordinary plan.
+
 | Decision | Inputs | Consequence |
 | --- | --- | --- |
 | Automatic data quota | Process budget, declared minima and maxima, existing owners, fixed quotas | The common power-of-two share must fund every owner's minimum and guard. |

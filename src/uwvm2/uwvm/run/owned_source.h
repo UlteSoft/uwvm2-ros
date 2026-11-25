@@ -74,7 +74,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
     // existing drained maintenance callback. Numeric eligibility is decided
     // later by the actual full validator/publisher, with native fallback.
     // Native administration/flags/preload mutations are externally serialized.
-    [[nodiscard]] inline int prepare_owned_full_cli_source(bool retain_immutable_image = false, bool restart_after_retirement = false, dev_rebuild_input* rebuild = nullptr) noexcept
+    [[nodiscard]] inline int prepare_owned_full_cli_generation(bool retain_immutable_image, bool restart_after_retirement,
+        dev_rebuild_input* rebuild, bool reserve_restore_peer) noexcept
     {
 #if (defined(UWVM_RUNTIME_UWVM_INTERPRETER) || defined(UWVM_RUNTIME_LLVM_JIT)) && \
     defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
@@ -120,11 +121,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 # if defined(UWVM_RUNTIME_LLVM_JIT)
             mode::runtime_llvm_jit_exception_dispatch_t dispatch{mode::global_runtime_llvm_jit_exception_dispatch};
 # endif
-            bool restart{}, preserve_host_state{}, private_thread_replay{};
+            bool restart{}, preserve_host_state{}, private_thread_replay{}, reserve_restore_peer{};
             bool ordinary_cache_input{}; // Derived below from actual CLI setup, never supplied as a certificate.
             int result{static_cast<int>(retval::parameter_error)};
         } state{};
         state.restart = restart_after_retirement;
+        state.reserve_restore_peer = reserve_restore_peer;
 # if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // Sample the authenticated native configuration before entering Source
         // management locks. No Guest state or archive bit can set this mode.
@@ -293,7 +295,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                        ::uwvm2::uwvm::wasm::loader::check_import_exist_and_detect_cycles() !=
                        ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)
                     { ctx.result = static_cast<int>(retval::check_module_error); return false; }
-                    if(!::uwvm2::uwvm::runtime::initializer::initialize_runtime(true))
+                    if(!::uwvm2::uwvm::runtime::initializer::details::initialize_runtime_storage(true, ctx.reserve_restore_peer))
                     { ctx.result = static_cast<int>(retval::check_module_error); return false; }
                     if(!candidate->seal_actual_initializer()) { return false; }
                     auto const* main{candidate->initialized_main_module()};
@@ -329,9 +331,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         static_cast<void>(retain_immutable_image);
         static_cast<void>(restart_after_retirement);
         static_cast<void>(rebuild);
+        static_cast<void>(reserve_restore_peer);
         return static_cast<int>(retval::parameter_error);
 #endif
     }
+
+    [[nodiscard]] inline int prepare_owned_full_cli_source(bool retain_immutable_image = false,
+        bool restart_after_retirement = false, dev_rebuild_input* rebuild = nullptr) noexcept
+    { return prepare_owned_full_cli_generation(retain_immutable_image, restart_after_retirement, rebuild, false); }
 }
 #ifndef UWVM_MODULE
 # include <uwvm2/uwvm/runtime/macro/pop_macros.h>
