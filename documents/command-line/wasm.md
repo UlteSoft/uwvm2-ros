@@ -181,6 +181,7 @@ Optional rename rules:
 
 - If present, the rename is used as the module name override for that preloaded module.
 - If omitted, the loader derives or preserves the module name according to the Wasm loader/custom-name path.
+- Names beginning with `app.` identify Wasm guest providers. For example, `--wasm-preload-library buffer.wasm app.buffer` publishes that guest's exports. An import originally declared in this namespace must resolve to a Wasm provider after any import-name rewrite.
 - Because the rename is optional and consumed when the next token is a plain argument, place the next host option immediately after the path if no rename is intended.
 
 Examples:

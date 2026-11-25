@@ -122,6 +122,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         // preloaded dl
         for(auto const& ldc: ::uwvm2::uwvm::wasm::storage::preloaded_dl)
         {
+            if(ldc.module_name.starts_with(u8"app."))
+            {
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] app.* names require a Wasm guest provider");
+                return load_and_check_modules_rtl::module_dependency_error;
+            }
             if(!::uwvm2::uwvm::wasm::storage::all_module
                     .try_emplace(ldc.module_name,
                                  ::uwvm2::uwvm::wasm::type::all_module_t{.module_storage_ptr = {.wd = ::std::addressof(ldc)},
@@ -151,6 +156,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             for(auto& lim: ::uwvm2::uwvm::wasm::storage::preload_local_imported)
             {
                 auto const module_name{lim.get_module_name()};
+                if(module_name.starts_with(u8"app."))
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] app.* names require a Wasm guest provider");
+                    return load_and_check_modules_rtl::module_dependency_error;
+                }
 
                 // initialize local imported module
                 if(initialize_local_imports && !lim.init_local_imported_module()) [[unlikely]]
@@ -594,6 +604,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                                 // export -> import
                                 auto const& imported_module{*import_module};
+                                using module_kind = ::uwvm2::uwvm::wasm::type::module_type_t;
+                                if((imports.module_name.starts_with(u8"app.") || import_module_name.starts_with(u8"app.")) &&
+                                   imported_module.second.type != module_kind::preloaded_wasm &&
+                                   imported_module.second.type != module_kind::exec_wasm)
+                                {
+                                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] app.* imports require a Wasm guest provider");
+                                    return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
+                                }
 
                                 using exported_iterator = typename ::std::remove_reference_t<decltype(world.exports())>::iterator;
 
