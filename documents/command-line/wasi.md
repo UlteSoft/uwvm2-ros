@@ -408,7 +408,9 @@ Explicit Linux CLI SIGINT/SIGTERM delivery to the Source-owned WASI pipe; separa
 [--wasi-threads] <max-active:count|unlimited> <max-spawns:count|unlimited> <native-stack-bytes> <per-child-storage> <per-child-code[:llvm-ir-instructions[:llvm-basic-blocks]][,relocations=N]> <shared-memory-bytes>
 ```
 
-Select WASI Threads quotas. The stack value bounds each Guest and compiler mapping, including guards. A plain code byte count allows up to 1,048,576 LLVM instructions and 262,144 basic blocks per module. A second field sets the instruction limit from 1 through 4,194,304. An optional third field sets the block limit from 1 through 1,048,576. For example, `536870912:4194304` retains the default block limit, while `536870912:4194304:1048576` grants 1,048,576 blocks. Both grant 512 MiB of code storage per child.
+This option runs the initial entry and every spawned child in the WASI Threads execution profile. For ordinary AOT execution of a module that only needs shared linear memory or Wasm atomic instructions, use `--wasm-policy-global parser.threads on` and provide any imported memory owner. To spawn native Guest threads, select `--wasi-threads` and authorize the caller's `wasi.thread-spawn` interface.
+
+The stack value bounds each Guest and compiler mapping, including guards. A plain code byte count allows up to 1,048,576 LLVM instructions and 262,144 basic blocks per module. A second field sets the instruction limit from 1 through 4,194,304. An optional third field sets the block limit from 1 through 1,048,576. For example, `536870912:4194304` retains the default block limit, while `536870912:4194304:1048576` grants 1,048,576 blocks. Both grant 512 MiB of code storage per child.
 
 The default per-object relocation limit is 65,536. Append `,relocations=N` to any code budget to grant a positive decimal count. For a count above 65,536 the code budget must cover at least 512 bytes per granted relocation. The loader also charges section bytes, alignment and arena rounding. For example, `536870912:4194304:1048576,relocations=104113` grants the count measured for the x86_64 wasm32 threaded, no-exceptions MemTag `find.pass.cpp` object.
 

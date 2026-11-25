@@ -84,7 +84,8 @@ namespace uwvm2::runtime::wasm_threads
             friend class ::uwvm2::runtime::lib::ThreadedLlvmChild;
             ThreadedGroup* group_{};
             slot* slot_{};
-            ChildLease(ThreadedGroup& group, slot& actual) noexcept : group_{&group}, slot_{&actual} {}
+            world_owner const world_;
+            ChildLease(ThreadedGroup& group, slot& actual) noexcept;
             [[nodiscard]] wait_pause_policy* debug_wait_attachment() const noexcept;
             [[nodiscard]] bool debug_safepoint(debug_stop_site site, ::std::size_t module,
                 ::std::size_t function, ::std::uint64_t offset=UINT64_MAX, ::std::size_t instruction=SIZE_MAX) noexcept;
@@ -92,6 +93,7 @@ namespace uwvm2::runtime::wasm_threads
             ChildLease(ChildLease const&) = delete;
             ChildLease& operator=(ChildLease const&) = delete;
             [[nodiscard]] ::uwvm2::utils::thread::stop_token cancellation() const noexcept { return group_->cancellation_.get_token(); }
+            [[nodiscard]] bool stop_requested() const noexcept { return group_->cancellation_.stop_requested(); }
             [[nodiscard]] wait_domain& waits() const noexcept { return group_->waits_; }
             // A borrowed level-triggered fd. Host pollers MUST NOT consume it or
             // retain it past this actual native call. It closes only after join.
@@ -940,8 +942,12 @@ namespace uwvm2::runtime::wasm_threads
     }
     inline void ThreadedGroup::SpawnReservation::cancel() noexcept
     { if(group_ != nullptr) { group_->cancel_reservation(position_, tid_); clear(); } retained_group_.reset(); }
+    // The slot retains its published work until pthread join. Pin its world once
+    // at native entry so each provenance check can borrow it from the lease.
+    inline ThreadedGroup::ChildLease::ChildLease(ThreadedGroup& group, slot& actual) noexcept
+        : group_{&group}, slot_{&actual}, world_{actual.work->retained_world()} {}
     inline ::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld const& ThreadedGroup::ChildLease::world() const noexcept
-    { return *slot_->work->retained_world(); }
+    { return *world_; }
     inline bool ThreadedGroup::ChildLease::owns_current_native_thread() const noexcept
     { return ::pthread_equal(slot_->thread, ::pthread_self()) != 0; }
     inline ::std::size_t ThreadedGroup::ChildLease::native_stack_usable_bytes() const noexcept

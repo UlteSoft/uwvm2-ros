@@ -131,7 +131,7 @@ extern "C++"
             e->lease->request_trap(kind,e->child->module_index_,e->function,UINT64_MAX,recorded_fault);
         }
         [[nodiscard]] static bool stopped() noexcept
-        {return active_==nullptr||active_->rejected||active_->lease->cancellation().stop_requested();}
+        {return active_==nullptr||active_->rejected||active_->lease->stop_requested();}
         [[nodiscard]] static ::std::uintptr_t poll(::std::size_t function) noexcept
         {
             if(active_!=nullptr)
