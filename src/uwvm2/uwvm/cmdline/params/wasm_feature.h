@@ -116,7 +116,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 #endif
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_feature_disable_memtag_extension{
         .name{u8"--wasm-feature-disable-memtag-extension"},
-        .describe{u8"Reject the nonstandard WasmMTE extension (enabled by default); also disable its execution."},
+        .describe{u8"Reject WasmMTE instructions and metadata during validation."},
         .handle{::std::addressof(details::wasm_feature_disable_memtag_extension_callback)},
         .is_exist{::std::addressof(details::wasm_feature_disable_memtag_extension_is_exist)},
         .cate{::uwvm2::utils::cmdline::categorization::wasm}};

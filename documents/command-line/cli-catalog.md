@@ -1999,7 +1999,7 @@ Disable the WebAssembly memory64 feature.
 [--wasm-feature-disable-memtag-extension]
 ```
 
-Reject the nonstandard WasmMTE extension (enabled by default); also disable its execution.
+Reject WasmMTE instructions and metadata during validation.
 
 ## `--wasm-feature-disable-multi-memory`
 

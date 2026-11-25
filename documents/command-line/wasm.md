@@ -49,9 +49,8 @@ uwvm2-ros -WFD-threads --run app.wasm          # Disable the threads extension
 ```
 
 WasmMTE parsing remains enabled for every baseline unless
-`--wasm-feature-disable-memtag-extension` is supplied; that switch also disables
-MTE execution. `--runtime-disable-memtag` disables execution only and leaves
-parsing enabled. Neither setting grants host permissions. Turning on the
+`--wasm-feature-disable-memtag-extension` is supplied. This option controls
+admission. `--runtime-disable-memtag` controls execution and leaves parsing enabled. Neither setting grants host permissions. Turning on the
 threads instruction extension does not grant `wasi.thread-spawn` or its
 separate runtime resources.
 

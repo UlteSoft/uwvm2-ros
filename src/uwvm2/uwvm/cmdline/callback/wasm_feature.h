@@ -28,7 +28,6 @@
 # include <uwvm2/uwvm/cmdline/params/wasm_feature.h>
 # include <uwvm2/uwvm/wasm/storage/mode.h>
 # include <uwvm2/uwvm/wasm/feature/impl.h>
-# include <uwvm2/uwvm/runtime/runtime_mode/impl.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -227,7 +226,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // Extension acceptance is independent of the selected official Core
         // version. Neither a later preset nor a guest can turn it back on.
         wasm_feature_details::wasm1p1_parameter().disable_memtag_extension = true;
-        ::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag = true;
         return wasm_feature_details::parameter_return_type::def;
     }
 
