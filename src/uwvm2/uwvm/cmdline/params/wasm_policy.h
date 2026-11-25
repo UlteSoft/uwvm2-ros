@@ -24,7 +24,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
             using result = ::uwvm2::utils::cmdline::parameter_return_type;
             using kind = ::uwvm2::utils::cmdline::parameter_parsing_results_type;
-            constexpr unsigned count{Action == policy_action::global || Action == policy_action::add_module ? 2u : 3u};
+            constexpr int count{Action == policy_action::global || Action == policy_action::add_module ? 2 : 3};
             auto error = [&]() noexcept
             {
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Invalid or duplicate Wasm policy setting for ",
@@ -32,7 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
                 return result::return_m1_imme;
             };
             if(end - current <= count) { return error(); }
-            for(unsigned i{1}; i <= count; ++i)
+            for(int i{1}; i <= count; ++i)
             { if(current[i].type != kind::arg || current[i].str.empty()) { return error(); } }
             auto name = [&](unsigned i) { return policy::name_view{current[i].str}; };
             auto option = [&](unsigned i) { return policy::option_view{current[i].str.data(), current[i].str.size()}; };
@@ -58,7 +58,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
                 auto const target{targets.try_emplace(policy::owned_name{name(1)}).first};
                 if(!policy::set(target->second, option(2), option(3))) { return error(); }
             }
-            for(unsigned i{1}; i <= count; ++i) { current[i].type = kind::occupied_arg; }
+            for(int i{1}; i <= count; ++i) { current[i].type = kind::occupied_arg; }
             return result::def;
         }
     }
