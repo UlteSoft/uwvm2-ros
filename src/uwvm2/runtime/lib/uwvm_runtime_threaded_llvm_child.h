@@ -308,18 +308,15 @@ extern "C++"
         // Geometry comes from an authenticated native owner, never a journal or
         // guest integer. Both full-width arithmetic and the complete span are
         // checked while its allocation is pinned, before the callback can write.
-        template<bool CheckTags=true,typename Function>
+        template<typename Function>
         [[nodiscard]] static auto memory_access(memory_type const& memory,::std::uint64_t pointer,
             ::std::uint64_t offset,::std::uint64_t bytes,Function&& function) noexcept
         {
             using result=::uwvm2::extension::memtag::access_result;
             if(!memory64(memory)&&pointer>UINT32_MAX)
                 return result{.error=::uwvm2::extension::memtag::access_error::out_of_bounds};
-            if constexpr(CheckTags)
-            {
-                if(memory.memtag_shadow.enabled())return memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
-                {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,function);});
-            }
+            if(memory.memtag_shadow.ignored_bits())return memory_geometry(memory,[&]<typename Address,bool Shared>() noexcept
+            {return ::uwvm2::runtime::memtag::with_guest_access<Address,Shared>(memory,static_cast<Address>(pointer),offset,bytes,function);});
             return ::uwvm2::runtime::memtag::details::with_snapshot(memory,[&](::std::span<::std::byte> data) noexcept
             {
                 if(offset>data.size()||pointer>data.size()-offset||bytes>data.size()-offset-pointer)

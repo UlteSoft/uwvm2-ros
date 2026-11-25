@@ -305,7 +305,7 @@
                     auto const info=emit::resolve_runtime_memory_access_info(module,static_cast<::std::uint32_t>(i));
                     if(info.memory_p==nullptr||info.memory_p!=data->world_->native_memory(module_index,i)||
                        info.local_imported_module_ptr!=nullptr||info.stable_memory_begin==nullptr||
-                       info.stable_memory_length_p==nullptr||info.custom_page_size_log2!=16u)return {{},status::unsupported_shape};
+                       info.stable_memory_length_p==nullptr||(info.custom_page_size_log2!=0u && info.custom_page_size_log2!=16u))return {{},status::unsupported_shape};
                     data->memories_.push_back(info.memory_p);
                     auto const& tags=info.memory_p->memtag_shadow;
                     if(tags.enabled()&&tags.shared())

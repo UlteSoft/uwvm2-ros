@@ -63,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::memory
             length = memory.memory_length_p->load(::std::memory_order_acquire);
         }
         else { length = memory.memory_length; }
-        if(memory.memtag_shadow.enabled())
+        if(memory.memtag_shadow.ignored_bits())
         {
             auto check{[&]<typename Address>() noexcept -> mt::access_result
             {

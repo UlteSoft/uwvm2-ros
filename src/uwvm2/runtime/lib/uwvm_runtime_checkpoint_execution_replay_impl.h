@@ -511,10 +511,10 @@ extern "C++"
                 bool const tagged=memory.memtag_shadow.enabled();
                 auto address=actual.address;
                 if(actual.bits==32u && address>UINT32_MAX)return false;
-                if(tagged)
+                if(memory.memtag_shadow.ignored_bits())
                 {
                     if((memory.memtag_shadow.width()==mt::address_width::i64?64u:32u)!=actual.bits)return false;
-                    address&=actual.bits==32u?mt::shadow_view<::std::uint32_t>::address_mask:mt::shadow_view<::std::uint64_t>::address_mask;
+                    address=memory.memtag_shadow.canonical_address(address);
                 }
                 if(actual.offset>UINT64_MAX-address)return false;
                 address+=actual.offset;

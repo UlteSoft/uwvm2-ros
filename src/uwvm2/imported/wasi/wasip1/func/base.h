@@ -98,6 +98,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
         return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
 #else
+        if(memory.memtag_shadow.ignored_bits())
+        {
+            [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+            return wasip1_guest_range_valid_unlocked(memory,offset,bytes);
+        }
         ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, offset, bytes);
         return true;
 #endif
@@ -109,6 +114,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
 #else
+        if(memory.memtag_shadow.ignored_bits())
+        {
+            return wasip1_guest_range_valid_unlocked(memory,offset,bytes);
+        }
         ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32_unlocked(memory, offset, bytes);
         return true;
 #endif
@@ -121,6 +130,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
         [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
         return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
 #else
+        if(memory.memtag_shadow.ignored_bits())
+        {
+            [[maybe_unused]] auto const guard{::uwvm2::imported::wasi::wasip1::memory::lock_memory(memory)};
+            return wasip1_guest_range_valid_unlocked(memory,offset,bytes);
+        }
         ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64(memory, offset, bytes);
         return true;
 #endif
@@ -132,6 +146,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         return wasip1_guest_range_valid_unlocked(memory, offset, bytes);
 #else
+        if(memory.memtag_shadow.ignored_bits())
+        {
+            return wasip1_guest_range_valid_unlocked(memory,offset,bytes);
+        }
         ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm64_unlocked(memory, offset, bytes);
         return true;
 #endif

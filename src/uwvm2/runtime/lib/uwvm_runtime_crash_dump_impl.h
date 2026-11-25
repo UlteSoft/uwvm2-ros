@@ -506,7 +506,7 @@ extern "C++"
                             auto const& shadow{actual.memory.memtag_shadow};
                             if(shadow.enabled())
                             {
-                                memory.tags.enabled=true;memory.tags.bits=shadow.width()==::uwvm2::extension::memtag::address_width::i32 ? 4u:8u;
+                                memory.tags.enabled=true;memory.tags.bits=4u;
                                 memory.tags.context=::std::addressof(context);memory.tags.read=read_tags;
                                 if(readable)
                                 {memory.tags.state=core::capture::complete;context.tags={0u,context.bytes/16u};memory.tags.regions={::std::addressof(context.tags),1u};}

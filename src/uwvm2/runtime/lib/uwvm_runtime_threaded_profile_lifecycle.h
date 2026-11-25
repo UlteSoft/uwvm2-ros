@@ -686,7 +686,7 @@
                     namespace mt=::uwvm2::extension::memtag;
                     for(auto const& plan:tag_owners)
                     {
-                        unsigned const maximum=plan.memory->memtag_shadow.width()==mt::address_width::i32?15u:255u;
+                        unsigned const maximum=15u;
                         for(::std::size_t n{};n<plan.count;++n)
                             if(::std::to_integer<unsigned>(initial_tags[plan.begin+n])>maximum)return false;
                     }
@@ -697,7 +697,7 @@
                         {
                             auto view=tags.template view<Address,Shared>(plan.length);
                             for(::std::size_t n{};n<plan.count;++n)
-                                if(!view.store(view.insert(static_cast<Address>(n*16u),::std::to_integer<unsigned>(initial_tags[plan.begin+n])),
+                                if(!view.store(view.with_tag(static_cast<Address>(n*16u),::std::to_integer<unsigned>(initial_tags[plan.begin+n])),
                                     (::std::min)(::std::size_t{16u},plan.length-n*16u)))return false;
                             return true;
                         };

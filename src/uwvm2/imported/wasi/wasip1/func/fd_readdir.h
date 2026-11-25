@@ -374,7 +374,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::imported::wasi::wasip1::func
             if(write_size == 0u) { return; }
             ::uwvm2::runtime::checkpoint::host_memory_phase::scope replay_output_phase{true};
 #if !defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
-            ::uwvm2::imported::wasi::wasip1::memory::check_memory_bounds_wasm32(memory, buf_ptrsz, byte_write_all_size + write_size);
+            if(!check_wasip1_memory_bounds_wasm32(memory, buf_ptrsz, byte_write_all_size + write_size)) { return; }
 #endif
             // The complete buf_len range was validated before directory I/O;
             // this prefix is bounded by the remaining capacity in that range.

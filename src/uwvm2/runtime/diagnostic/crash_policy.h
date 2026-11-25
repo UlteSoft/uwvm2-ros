@@ -82,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::diagnostic::crash
         // signals may only retain low tag bits and an owned granule; a native
         // tagged address must never masquerade as a Guest tagged pointer.
         bool pointer_available{true},pointer_tag_available{true},allocation_tag_available{true};
-        unsigned tag_mask{0xffu};
+        unsigned tag_mask{15u};
         bool allocation_tag_is_snapshot{};
     };
     struct event

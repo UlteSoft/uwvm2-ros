@@ -8,7 +8,7 @@
             bool owned{};
             for(auto* memory:active_->child->memories_)
                 owned|=memory!=nullptr&&memory->diagnostic_owner_memory_index==memory_index;
-            if(!owned||pointer_tag>255u||allocation_tag>255u)
+            if(!owned||pointer_tag>15u||allocation_tag>15u)
             {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
             print_memtag_fault(memory_index,pointer,granule,pointer_tag,allocation_tag);
 #if defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -108,7 +108,7 @@
         {
             auto* memory=actual_memory(owner);
             if(memory==nullptr||stopped())return;
-            auto const checked=memory_access<CheckTags>(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
+            auto const checked=memory_access(*memory,destination,0u,bytes,[&](::std::span<::std::byte> data) noexcept
                 {
                     ::std::size_t at{};
                     while(at<data.size()&&!stopped())
@@ -129,8 +129,8 @@
                 {
                     // Use canonical Guest offsets for overlap, never differently
                     // tagged native integer pointers into the same owner.
-                    auto const da=dst->memtag_shadow.enabled()?destination&(memory64(*dst)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff)):destination;
-                    auto const sa=src->memtag_shadow.enabled()?source&(memory64(*src)?UINT64_C(0x00ffffffffffffff):UINT64_C(0x0fffffff)):source;
+                    auto const da=dst->memtag_shadow.canonical_address(destination);
+                    auto const sa=src->memtag_shadow.canonical_address(source);
                     bool const backward=dst==src&&da>sa&&da-sa<bytes;
                     ::std::size_t remaining=d.size();
                     while(remaining!=0u&&!stopped())
@@ -192,7 +192,7 @@
             namespace wt=::uwvm2::runtime::wasm_threads;
             auto const result=[&]() noexcept
             {
-                if(memory->memtag_shadow.enabled())return memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
+                if(memory->memtag_shadow.ignored_bits())return memory_geometry(*memory,[&]<typename Address,bool Shared>() noexcept
                 {return ::uwvm2::runtime::memtag::wait_notify<Operation,Address,Shared>(*memory,static_cast<Address>(pointer),offset,expected,timeout);});
                 ::uwvm2::runtime::memtag::wait_execution_result r{};
                 r.wait=wt::memory_wait_notify64<Operation>(*memory,offset,pointer,expected,timeout);return r;
@@ -246,20 +246,7 @@
                 }
                 else value=emit::llvm_jit_simd_details::eval_memory_load<Op>(detached.data(),value,static_cast<emit::llvm_jit_simd_details::u8>(lane));
             };
-            ::uwvm2::extension::memtag::access_result checked{};
-            if constexpr(Tagged)checked=memory_access(*memory,pointer,offset,width,access);
-            else
-            {
-                if(memory->memtag_shadow.enabled())
-                {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return;}
-                checked=::uwvm2::runtime::memtag::details::with_snapshot(*memory,[&](::std::span<::std::byte> data) noexcept
-                {
-                    using result_type=::uwvm2::extension::memtag::access_result;
-                    if(offset>data.size()||pointer>data.size()-offset||width>data.size()-offset-pointer)
-                        return result_type{.error=::uwvm2::extension::memtag::access_error::out_of_bounds};
-                    access(data.subspan(static_cast<::std::size_t>(offset+pointer),width));return result_type{};
-                });
-            }
+            auto const checked{memory_access(*memory,pointer,offset,width,access)};
             if(!checked){memtag_access_failure(*memory,pointer,checked);return;}
             if constexpr(!store)emit::llvm_jit_simd_write_bridge_value(result_address,value);
         }

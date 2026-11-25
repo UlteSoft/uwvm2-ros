@@ -529,15 +529,17 @@ extern "C++"
                 { return candidate.memory_length_p != nullptr; }
                 else { return false; }
             }(memory)};
-            if(!live_owner || memory.custom_page_size_log2 != 16u) { return false; }
-            auto const length{memory.get_page_size() << 16u};
+            auto const shift{memory.custom_page_size_log2};
+            if(!live_owner || (shift != 0u && shift != 16u)) { return false; }
+            auto const pages{memory.get_page_size()};
+            auto const length{pages << shift};
             if(length > call->instance->memory_growth_limit(memory,SIZE_MAX)) { return false; }
             *out = preload_memory_descriptor_t{
                 .memory_index = ordinal,
                 .delivery_state = ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_delivery_copy,
                 .backend_kind = ::uwvm2::uwvm::wasm::type::uwvm_preload_memory_backend_native_defined,
-                .reserved0 = 0u, .reserved1 = 0u, .page_count = length >> 16u,
-                .page_size_bytes = 65536u, .byte_length = length,
+                .reserved0 = 0u, .reserved1 = 0u, .page_count = pages,
+                .page_size_bytes = ::std::size_t{1} << shift, .byte_length = length,
                 .partial_protection_limit_bytes = 0u, .mmap_view_begin = nullptr, .dynamic_length_atomic_object = nullptr};
             return true;
         }
@@ -549,7 +551,7 @@ extern "C++"
             if(!call || !memory_descriptor(index,&descriptor)) { return false; }
             auto const* actual=call->instance->native_memory(call->module,index);
             if(!actual) { return false; }
-            if(actual->memtag_shadow.enabled())
+            if(actual->memtag_shadow.ignored_bits())
             {
                 auto const checked{::uwvm2::runtime::memtag::check_host_access(*actual,offset,bytes)};
                 ::uwvm2::runtime::memtag::record_host_fault(index,offset,checked);
@@ -568,7 +570,7 @@ extern "C++"
             { return false; }
             auto const* actual=call->instance->native_memory(call->module,index);
             if(!actual) { return false; }
-            if(actual->memtag_shadow.enabled())
+            if(actual->memtag_shadow.ignored_bits())
             {
                 bool completed{true};
                 auto const checked{::uwvm2::runtime::memtag::with_host_access(

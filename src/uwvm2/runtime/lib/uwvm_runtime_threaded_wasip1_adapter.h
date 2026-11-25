@@ -434,7 +434,7 @@ extern "C++"
 #endif
             auto const* unit=instance.module(caller_module);
             if(!unit||caller<unit->imported_function_vec_storage.size()||caller-unit->imported_function_vec_storage.size()>=unit->local_defined_function_vec_storage.size())return dispatch_status::rejected;
-            auto* receiver_memory=instance.native_memory(module,0u);if(!receiver_memory||receiver_memory->custom_page_size_log2!=16u)return dispatch_status::rejected;
+            auto* receiver_memory=instance.native_memory(module,0u);if(!receiver_memory||(receiver_memory->custom_page_size_log2!=0u && receiver_memory->custom_page_size_log2!=16u))return dispatch_status::rejected;
             context call{actual,instance,*found.env,*receiver_memory,caller_module,caller,found.memory64};
             ::std::array<::std::uint64_t,9> a{};::std::size_t offset{};
             for(::std::size_t i{};offset<params.size();++i)
