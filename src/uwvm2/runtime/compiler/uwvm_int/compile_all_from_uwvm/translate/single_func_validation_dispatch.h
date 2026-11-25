@@ -1300,17 +1300,10 @@ auto const resolve_memory_storage{
         resolved_memory = {};
         resolved_memory.memory_index = current_memory_index;
 
-        // Convert Wasm memory max pages into a byte-length bound for `native_memory_t::grow_*`.
         auto const max_limit_from_limits{[&](auto const& limits) constexpr noexcept -> ::std::size_t
                                          {
-                                             if(!limits.present_max) { return ::std::numeric_limits<::std::size_t>::max(); }
-                                             ::std::size_t const max_pages{static_cast<::std::size_t>(limits.max)};
-                                             constexpr ::std::size_t wasm_page_bytes{65536uz};
-                                             if(max_pages > (::std::numeric_limits<::std::size_t>::max() / wasm_page_bytes))
-                                             {
-                                                 return ::std::numeric_limits<::std::size_t>::max();
-                                             }
-                                             return max_pages * wasm_page_bytes;
+                                             auto const address64{::uwvm2::uwvm::runtime::storage::runtime_memory_is_address64(curr_module, current_memory_index)};
+                                             return ::uwvm2::runtime::compiler::shared::wasm_memory64::growth_limit_bytes(address64, limits);
                                          }};
 
         auto const backend_max_limit_from_memory{
@@ -1389,8 +1382,6 @@ auto const resolve_memory_storage{
 #endif
                 ::fast_io::fast_terminate();
             }
-
-            resolved_memory.max_limit_memory_length = max_limit_from_limits(imported_mem0.effective_limits);
 
             // Follow import -> import -> ... chains until we reach a defined memory storage.
             imported_memory_storage_t const* curr{::std::addressof(imported_mem0)};

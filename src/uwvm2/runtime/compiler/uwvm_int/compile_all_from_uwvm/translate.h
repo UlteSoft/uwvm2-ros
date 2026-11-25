@@ -59,6 +59,7 @@
 # include <uwvm2/validation/standard/wasm3/impl.h>
 # include <uwvm2/object/impl.h>
 # include <uwvm2/runtime/compiler/shared/wasm1p1_simd.h>
+# include <uwvm2/runtime/compiler/shared/wasm_memory64.h>
 # include <uwvm2/runtime/compiler/shared/wasm_threads.h>
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/uwvm/wasm/feature/impl.h>

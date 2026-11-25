@@ -64,6 +64,7 @@ import uwvm2.parser.wasm.standard.wasm1p1.features;
 import uwvm2.parser.wasm.standard.wasm2.features;
 import uwvm2.parser.wasm.standard.wasm3.type;
 import uwvm2.validation.standard.wasm3.constant_expression;
+import uwvm2.validation.standard.wasm3.address_limits;
 import uwvm2.validation.standard.wasm3.reference_policy;
 import uwvm2.validation.standard.wasm3.value_immediate;
 import uwvm2.validation.standard.wasm3.declaration_policy;

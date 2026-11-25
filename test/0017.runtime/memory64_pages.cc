@@ -104,6 +104,13 @@ static_assert(wide::maximum_bytes_from_pages<std::uint32_t>(0x100000001ull,16)==
 static_assert(wide::maximum_bytes_from_pages<std::uint64_t>(0x100000001ull,16)==0x1000000010000ull);
 static_assert(wide::maximum_bytes_from_pages<std::uint64_t>(1ull<<48,16)==~0ull);
 static_assert(wide::maximum_bytes_from_pages<std::uint32_t>(1,32)==0xffffffffu);
+using page_limits=uwvm2::validation::standard::wasm3::address_limits;
+static_assert(wide::growth_limit_bytes<std::uint64_t>(false,page_limits{})==1ull<<32);
+static_assert(wide::growth_limit_bytes<std::uint64_t>(false,page_limits{.max=65537,.present_max=true})==1ull<<32);
+static_assert(wide::growth_limit_bytes<std::uint64_t>(false,page_limits{.max=4097,.present_max=true})==4097ull<<16);
+static_assert(wide::growth_limit_bytes<std::uint64_t>(true,page_limits{.max=65537,.present_max=true})==65537ull<<16);
+static_assert(wide::growth_limit_bytes<std::uint64_t>(true,page_limits{})==UINT64_MAX);
+static_assert(wide::growth_limit_bytes<std::uint32_t>(false,page_limits{})==UINT32_MAX);
 int main()
 {
  for(bool strict:{false,true})

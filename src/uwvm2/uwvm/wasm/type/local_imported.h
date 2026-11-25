@@ -1388,14 +1388,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
                     auto const old_pages{memory_size(memory)};
                     if(old_page_size_out != nullptr) [[likely]] { *old_page_size_out = old_pages; }
 
-                    if(max_limit_memory_length != ::std::numeric_limits<::std::size_t>::max())
-                    {
-                        constexpr auto page_size_bytes{memory_page_size_bytes<memory_type>()};
-                        if(page_size_bytes == 0u) [[unlikely]] { return false; }
-
-                        auto const limit_pages{static_cast<::std::uint_least64_t>(max_limit_memory_length) / page_size_bytes};
-                        if(old_pages > limit_pages || grow_page_size > (limit_pages - old_pages)) [[unlikely]] { return false; }
-                    }
+                    constexpr auto page_size_bytes{memory_page_size_bytes<memory_type>()};
+                    if(page_size_bytes == 0u) [[unlikely]] { return false; }
+                    auto const limit_pages{static_cast<::std::uint_least64_t>(max_limit_memory_length) / page_size_bytes};
+                    if(old_pages > limit_pages || grow_page_size > (limit_pages - old_pages)) [[unlikely]] { return false; }
 
                     return grow_page_size == 0u || memory_grow(memory, grow_page_size);
                 }

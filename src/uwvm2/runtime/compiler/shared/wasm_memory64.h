@@ -12,6 +12,7 @@
 # include <limits>
 # include <memory>
 # include <uwvm2/utils/macro/push_macros.h>
+# include <uwvm2/validation/standard/wasm3/address_limits.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -86,6 +87,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_memory64
         if(shift >= ::std::numeric_limits<Native>::digits || pages > static_cast<::std::uint_least64_t>(maximum >> shift))
         { return maximum; }
         return static_cast<Native>(static_cast<Native>(pages) << shift);
+    }
+
+    // All supported Wasm memories use 64 KiB pages. An absent or widened
+    // module limit still leaves the Wasm address domain in force on allocators.
+    template<::std::unsigned_integral Native = ::std::size_t>
+    [[nodiscard]] inline constexpr Native growth_limit_bytes(bool address64, auto const& limits) noexcept
+    {
+        namespace wasm3 = ::uwvm2::validation::standard::wasm3;
+        auto const address_type{address64 ? wasm3::storage_address_type::i64 : wasm3::storage_address_type::i32};
+        auto const domain_pages{wasm3::address_limit_maximum(wasm3::address_limits_kind::memory, address_type)};
+        auto const pages{limits.present_max && limits.max < domain_pages ? limits.max : domain_pages};
+        return maximum_bytes_from_pages<Native>(pages, 16u);
     }
 
     // Core 3 execution/memory.grow: interpret delta as an unsigned i64 bit

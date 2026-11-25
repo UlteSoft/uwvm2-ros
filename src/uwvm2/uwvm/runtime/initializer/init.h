@@ -66,6 +66,7 @@
 # include <uwvm2/parser/wasm/standard/wasm1p1/features/impl.h>
 # include <uwvm2/parser/wasm/standard/wasm2/features/impl.h>
 # include <uwvm2/parser/wasm/standard/wasm3/type/impl.h>
+# include <uwvm2/validation/standard/wasm3/address_limits.h>
 # include <uwvm2/validation/standard/wasm3/constant_expression.h>
 # include <uwvm2/validation/standard/wasm3/reference_policy.h>
 # include <uwvm2/validation/standard/wasm3/value_immediate.h>
@@ -5084,13 +5085,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         }
 
                         auto const page_count_u64{resolved_memory.local_imported_ptr->memory_size_from_index(resolved_memory.local_imported_index)};
-                        constexpr auto max_u32{::std::numeric_limits<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>::max()};
-                        if(page_count_u64 > max_u32) [[unlikely]]
+                        namespace wasm3 = ::uwvm2::validation::standard::wasm3;
+                        constexpr auto wasm32_max_pages{wasm3::address_limit_maximum(wasm3::address_limits_kind::memory, wasm3::storage_address_type::i32)};
+                        if(page_count_u64 > wasm32_max_pages || page_count_u64 > SIZE_MAX / page_size_bytes) [[unlikely]]
                         {
-#if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                            ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-#endif
-                            ::fast_io::fast_terminate();
+                            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                                u8"uwvm: [error] initializer: host memory \"", import_ptr->module_name, u8".", import_ptr->extern_name,
+                                u8"\" exceeds the addressable byte length (page_count=", page_count_u64, u8").");
+                            return false;
                         }
 
                         ::uwvm2::parser::wasm::standard::wasm1::type::memory_type actual_memory{};

@@ -124,6 +124,10 @@ namespace
         if(!mod.memory_read_from_index(0uz, 0u, ::std::addressof(out), 1uz)) { return 14; }
         if(out != in) { return 15; }
 
+        ::std::uint_least64_t old_pages{};
+        if(mod.memory_try_grow_from_index(0uz, SIZE_MAX / all.begin[0].page_size, SIZE_MAX, &old_pages)) { return 16; }
+        if(old_pages != 3u || mod.memory_size_from_index(0uz) != old_pages) { return 17; }
+
         return 0;
     }
 }  // namespace
