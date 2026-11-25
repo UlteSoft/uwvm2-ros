@@ -513,7 +513,7 @@ def main():
                 discovery_rows.append(active_gate.row)
                 runner.case(name, str(fixture_dir/(name+'.wasm')), {version: ['publish']},
                             [(version, '--observe', '/uwvm_ros_test/output')],
-                            extra=('--wasm-feature-enable-multi-memory',),
+                            extra=('--wasm-policy-global', 'parser.multi-memory', 'on',),
                             pre_resume=active_gate.before_resume)
                 active_gate.finish()
                 active_gate = None

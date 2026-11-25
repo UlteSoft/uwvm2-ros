@@ -102,13 +102,13 @@ int main(int argc, char** argv)
     // [safe ] this stable reference is borrowed before any guest starts.
     auto& fixture_features{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(
         ::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
-    // --wasm-feature-enable-tail-call
+    // --wasm-policy-global parser.tail-call on
     fixture_features.disable_tail_call = false;
     fixture_features.explicit_enable_tail_call = true;
     if(gc_roots)
     {
-        // --wasm-feature-enable-gc --wasm-feature-enable-function-references
-        // --wasm-feature-enable-reference-types
+        // --wasm-policy-global parser.gc on --wasm-policy-global parser.function-references on
+        // --wasm-policy-global parser.reference-types on
         fixture_features.disable_gc = false;
         fixture_features.explicit_enable_gc = true;
         fixture_features.disable_function_references = false;

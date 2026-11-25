@@ -77,7 +77,7 @@ def main():
                     module.write_bytes(wasm.module(imports, body, memory64=wide))
                     flags = ["--runtime-" + engine, "--wasm-set-main-module-name", "main"]
                     if engine == "aot": flags += ["--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable"]
-                    if wide: flags += ["--wasm-feature-enable-memory64"]
+                    if wide: flags += ["--wasm-policy-global", "parser.memory64", "on"]
                     if ros != "none": flags += ["--" + ros + "-single-create", "main", "--" + ros + "-single-enable", "main"]
                     flags += ["--wasip1-single-create", "driver", "--wasip1-single-enable", "driver",
                               "--wasip1-single-expose-host-api", "driver", "--wasip1-single-interface", "driver",

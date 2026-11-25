@@ -65,7 +65,7 @@ def main():
         clock_flags = [*wasi_flags, "--wasip1-global-grant", "monotonic-clock"]
 
         def cache_command(guest, cache_dir, flags=(), policy="max"):
-            return [*base, "-Rllvm-policy", policy, "--runtime-llvm-jit-cache-seal-process",
+            return [*base, "--wasm-policy-global", "runtime.llvm.policy", policy, "--runtime-llvm-jit-cache-seal-process",
                     "-Rllvm-cache-path", "path", cache_dir, *flags, "--run", guest]
 
         def verify_hit(name, command, expected_output):

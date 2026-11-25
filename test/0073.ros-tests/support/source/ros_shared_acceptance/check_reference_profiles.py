@@ -151,9 +151,9 @@ def main():
                     row['wasm_validated'].append(dict(language=language,status='PASS'if code==0 else'FAILED_RETAINED',sha256=sha(artifact),bytes=artifact.stat().st_size))
                     if not code and a.runtime and (a.probe_optional_runtime or not threads and not exceptions):
                         feature_flags=[]
-                        if bits==64:feature_flags+=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64']
-                        if exceptions:feature_flags+=['--wasm-feature-enable-exceptions']
-                        if threads:feature_flags+=['--wasm-feature-enable-threads']
+                        if bits==64:feature_flags+=['--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on']
+                        if exceptions:feature_flags+=['--wasm-policy-global', 'parser.exceptions', 'on']
+                        if threads:feature_flags+=['--wasm-policy-global', 'parser.threads', 'on']
                         code,output=run(label+'-'+language+'-guest',[a.runtime,'-Rint',*feature_flags,'--wasip1-global-noinherit-system-environment','--run',artifact])
                         row['actual_guest'].append(dict(language=language,status='PASS'if code==0 and output==b'ref=6\n'else'FAILED_RETAINED',
                             stdout_hex=output.hex(),ros_authority=[],explicit_feature_flags=feature_flags,

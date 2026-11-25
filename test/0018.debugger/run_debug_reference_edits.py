@@ -46,7 +46,7 @@ def step(t):
 try:
  server=m.BrokerSession(vm,S/'tools/debug/secure_server.py',S/'tools/debug/dap_adapter.py',
   ['-Raot','-Rct','1','-Rllvm-cache-path','disable','--wasm-set-main-module-name','main',
-   '--wasip1-single-create','main','--wasip1-single-enable','main','-WFE-function-references','--run',str(module)],out)
+   '--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-policy-global', 'parser.function-references', 'on','--run',str(module)],out)
  c=server.connect('wasm');send('pause');p=ident(send('bw 0 3 0'));send('continue');v=wait()
  t=int(re.search(r'thread (\d+) module=0 function=3',v)[1]);send(f'delete {p}')
  step(t);step(t)

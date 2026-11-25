@@ -136,7 +136,7 @@ def main():
                 '--ros-scene-grant','benchmark','exchange','module.call','echo','registered-message',','.join(CALLS)]
             flags+=['--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-interface','main','clock_time_get','allow',
                 '--wasip1-single-interface','main','fd_write','allow','--wasip1-single-grant','main','monotonic-clock','--wasip1-single-grant','main','stdout.write']
-            command=['taskset','-c',str(args.cpu),str(runtime),'--wasm-set-main-module-name','main','--runtime-aot','--runtime-llvm-jit-policy','max',
+            command=['taskset','-c',str(args.cpu),str(runtime),'--wasm-set-main-module-name','main','--runtime-aot','--wasm-policy-global', 'runtime.llvm.policy','max',
                 '--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,
                 '--wasm-preload-library',str(out/(label+'-worker.wasm')),'worker','--run',str(out/(label+'.wasm'))]
             def observation(proc,profile=None):

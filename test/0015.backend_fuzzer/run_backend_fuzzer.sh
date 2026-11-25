@@ -46,7 +46,7 @@ Options:
   --seed <n>           Random seed accepted by Python int(..., 0). Default: random.
   --combine <mode>     uwvm-int combine macros: none|soft|heavy|extra.
   --delay <mode>       uwvm-int delay-local macros: none|soft|heavy.
-  --memory-model <m>   default|mmap|single-thread-alloc|multi-thread-alloc.
+  --memory-model <m>   default|mmap.
   --use-thread-local   Build runner with UWVM_USE_THREAD_LOCAL.
   --no-use-thread-local
                        Build runner without UWVM_USE_THREAD_LOCAL.
@@ -60,7 +60,7 @@ Environment:
   UWVM_BACKEND_FUZZER_MODES="mode1 mode2"
   UWVM_BACKEND_FUZZER_INCLUDE_TRAPS=0|1
   UWVM_BACKEND_FUZZER_INCLUDE_STRATEGY=0|1
-  UWVM_BACKEND_FUZZER_MEMORY_MODEL=default|mmap|single-thread-alloc|multi-thread-alloc
+  UWVM_BACKEND_FUZZER_MEMORY_MODEL=default|mmap
   UWVM_BACKEND_FUZZER_USE_THREAD_LOCAL=0|1
   UWVM_BACKEND_FUZZER_EXTRA_DEFINES="UWVM_FOO -DUWVM_BAR=1"
   UWVM_BACKEND_FUZZER_EXTRA_CXXFLAGS="-Wall"
@@ -174,7 +174,7 @@ case "${DELAY}" in
 esac
 
 case "${MEMORY_MODEL}" in
-  default|mmap|single-thread-alloc|multi-thread-alloc) ;;
+  default|mmap) ;;
   *) echo "ERR: unsupported memory model: ${MEMORY_MODEL}" >&2; exit 2 ;;
 esac
 

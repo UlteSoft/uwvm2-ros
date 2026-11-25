@@ -244,13 +244,6 @@ def add_memory_model_defines(defines: list[str], memory_model: str) -> None:
     if memory_model == "mmap":
         defines.append("-DUWVM_FORCE_USE_MMAP")
         return
-    if memory_model == "single-thread-alloc":
-        defines.append("-DUWVM_FORCE_DISABLE_MMAP")
-        return
-    if memory_model == "multi-thread-alloc":
-        defines.append("-DUWVM_FORCE_DISABLE_MMAP")
-        defines.append("-DUWVM_USE_MULTITHREAD_ALLOCATOR")
-        return
     raise SystemExit(f"unsupported --memory-model: {memory_model}")
 
 

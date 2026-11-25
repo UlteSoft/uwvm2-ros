@@ -29,7 +29,7 @@ def main():
     result={'passed':False,'dap':[]};vm=None
     try:
         vm=VM([str(args.binary.resolve()),'-Raot','-Rdbg','-Rct','0','-Rllvm-cache-path','disable',
-            '--runtime-disable-memtag','--wasip1-global-enable','--wasip1-global-interface','fd_write','allow',
+            '--wasm-policy-global', 'runtime.memtag-checks', 'off','--wasip1-global-enable','--wasip1-global-interface','fd_write','allow',
             '--wasip1-global-grant','stdout.write','--run',str(wasm)],args.out,prefix)
         vm.request('breakwasm 0 1 2');vm.request('continue')
         def stopped():

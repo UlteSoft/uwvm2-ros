@@ -16,8 +16,8 @@ for threaded in [False,True]:
    for engine in ['int','aot']:
     name=prefix+'-'+engine+('-disabled' if disabled else '-enabled');function='fd_fdstat_get'
     cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-interface','main',function,'deny' if case==3 else 'allow','--wasip1-single-mount-dir','main','/sandbox',str(mount),'--wasip1-single-mount-dir-rights','main','/sandbox','9216','66']
-    if disabled:cmd+=['--runtime-disable-memtag']
-    if threaded:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-preload-library',str(owner.with_suffix('.wasm')),'env']
+    if disabled:cmd+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
+    if threaded:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-preload-library',str(owner.with_suffix('.wasm')),'env']
     cmd+=['--run',str(wasm)]
     try:r=subprocess.run(cmd,capture_output=True,timeout=60);code=r.returncode;stdout=r.stdout;stderr=r.stderr
     except subprocess.TimeoutExpired as e:code=None;stdout=e.stdout or b'';stderr=e.stderr or b''

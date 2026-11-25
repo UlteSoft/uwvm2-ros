@@ -167,7 +167,7 @@ def main():
         wasm = encode(route, fixture(route))
         run(f"{route}-oracle", [args.wasmtime, "run", "-W", "exceptions=y", "-W", "gc=y", wasm], 0)
         for engine, options in engines:
-            flags = ["-WF3", *options, "--debug-fault-action", "exit",
+            flags = ["--wasm-policy-global", "parser.baseline", "wasm3", *options, "--debug-fault-action", "exit",
                      "--wasm-set-resource-limit", "runtime", "auxiliary-live-bytes"]
             stem = f"{route}-{engine}"
             run(stem + "-within-budget", [args.runtime, *flags, HIGH, "--run", wasm], 0)
@@ -181,7 +181,7 @@ def main():
         run(f"transfer-{name}-oracle",
             [args.wasmtime, "run", "-W", "exceptions=y", "-W", "gc=y", "--preload", f"source={source}", wasm], 0)
     for engine, options in engines:
-        flags = ["-WF3", *options, "--debug-fault-action", "exit", "--wasm-preload-library", source, "source",
+        flags = ["--wasm-policy-global", "parser.baseline", "wasm3", *options, "--debug-fault-action", "exit", "--wasm-preload-library", source, "source",
                  "--wasm-set-resource-limit", "runtime", "auxiliary-live-bytes"]
         stem = f"transfer-{engine}"
         run(stem + "-discard", [args.runtime, *flags, TRANSFER_LOW, "--run", discard], 0)

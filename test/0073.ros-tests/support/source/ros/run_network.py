@@ -356,7 +356,7 @@ def main():
         versions=[1] if args.mode=='ros1' else [2] if args.mode=='ros2' else [1,2]
         runner.prepare(versions)
         if args.mode in ('multimodule','all'):
-            for name,module,provider,flags in [('cross-module-proxy','proxy_caller.wasm','proxy_provider.wasm',()),('cross-module-tail-proxy','proxy_tail.wasm','proxy_provider.wasm',('--wasm-feature-enable-tail-call',)),('cross-module-handle','handle_attack.wasm','handle_provider.wasm',())]:
+            for name,module,provider,flags in [('cross-module-proxy','proxy_caller.wasm','proxy_provider.wasm',()),('cross-module-tail-proxy','proxy_tail.wasm','proxy_provider.wasm',('--wasm-policy-global', 'parser.tail-call', 'on')),('cross-module-handle','handle_attack.wasm','handle_provider.wasm',())]:
                 runner.case(name,'examples/ros_dual/'+module,{1:['publish']},[(1,'--absent','/uwvm_ros_test/output')],group='sensors',preload='examples/ros_dual/'+provider,extra=flags)
         if args.mode in ('ros1','all'):
             runner.case('ros1-wasm-publish','examples/ros1/talker.wasm',{1:['publish']},[(1,'--observe','/uwvm_ros_test/output')])
@@ -385,7 +385,7 @@ def main():
         if args.mode in ('security','all'):
             for version in (1,2):
                 for fixture,role,mode,resource in [('topic_denied','subscribe','--absent','/uwvm_ros_test/input'),('service_denied','service-denied','--deny-service','/uwvm_ros_test/service_trigger'),('graph_denied','graph-list','--absent','/uwvm_ros_test/forbidden'),('action_denied','action-result','--deny-native','/uwvm_ros_test/action_native'),('handle_security','publish','--absent','/uwvm_ros_test/output'),('memory64_bounds','publish','--absent','/uwvm_ros_test/output'),('memory64_growth','publish','--observe','/uwvm_ros_test/output')]:
-                    runner.case(f'ros{version}-'+fixture,f'examples/ros{version}/{fixture}.wasm',{version:[role]},[(version,mode,resource)],extra=('--wasm-feature-enable-memory64',) if fixture.startswith('memory64') else ())
+                    runner.case(f'ros{version}-'+fixture,f'examples/ros{version}/{fixture}.wasm',{version:[role]},[(version,mode,resource)],extra=('--wasm-policy-global', 'parser.memory64', 'on',) if fixture.startswith('memory64') else ())
             runner.case('cross-backend-handle','examples/ros_dual/cross_backend_handle.wasm',{1:['publish'],2:['publish']},[(1,'--absent','/uwvm_ros_test/output'),(2,'--absent','/uwvm_ros_test/output')])
             runner.case('gateway-disconnect-independent','examples/ros_dual/disconnect_survive.wasm',{1:['subscribe'],2:['publish']},[(1,'--absent','/uwvm_ros_test/input'),(2,'--observe','/uwvm_ros_test/output')],fault='disconnect')
             runner.case('gateway-disconnect-recovery','examples/ros_dual/disconnect_recover.wasm',{1:['subscribe'],2:['publish']},[(1,'--publish','/uwvm_ros_test/input'),(2,'--observe','/uwvm_ros_test/output')],fault='recover')

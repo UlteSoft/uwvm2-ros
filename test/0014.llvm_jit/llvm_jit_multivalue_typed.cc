@@ -404,7 +404,7 @@ namespace
         auto const uwvm_path{find_uwvm_binary(executable.parent_path())};
         LLVM_MV_REQUIRE(!uwvm_path.empty(), "failed to locate uwvm next to the test executable");
         auto const command{quote_argument(uwvm_path) +
-                           " -Raot -Rct 0 -Rllvm-cache-path disable --wasm-feature-wasm2 --run " + quote_argument(wasm_path)};
+                           " -Raot -Rct 0 -Rllvm-cache-path disable --wasm-policy-global parser.baseline wasm2 --run " + quote_argument(wasm_path)};
         ::std::cout << "[llvm_jit_multivalue_typed] " << command << '\n';
 #ifdef _WIN32
         auto const wrapped{::std::string{"cmd.exe /S /C \""} + command + "\""};

@@ -139,7 +139,7 @@ for shared in (False,True):
      for key in imports:cmd+=['--wasip1-single-interface','main',names[key],state if key=='get' else 'allow']
      cmd+=extra
      if case=='renumber':cmd+=['--wasip1-single-grant','main','stdout.write','--wasip1-single-grant','main','stdio.metadata']
-     if shared:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
+     if shared:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
      cmd+=['--run',str(target)]
      code,stdout,stderr,elapsed,payload,errors,lifecycle=run_guest(server,kind,cmd,expected,case!='hidden')
     if a.exercise_peer_lifecycle:

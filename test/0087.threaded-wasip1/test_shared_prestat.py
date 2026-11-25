@@ -51,7 +51,7 @@ for threaded in [False,True]:
     if case!='absent':
      cmd+=['--wasip1-single-mount-dir','main',guest_name,str(mount),'--wasip1-single-mount-dir-rights','main',guest_name,'0','0']
     if case=='stdio-nondir':cmd+=['--wasip1-single-grant','main','stdout.write']
-    if threaded:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
+    if threaded:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
     cmd+=['--run',str(wasm)]
     begin=time.monotonic()
     try:r=subprocess.run(cmd,capture_output=True,timeout=60);code=r.returncode;stdout=r.stdout;stderr=r.stderr

@@ -84,10 +84,10 @@ Run the selected artifact with the interpreter and the feature switches used
 by the frozen qualification products:
 
 ```sh
-uwvm2-ros -Rint -WFE-gc -WFE-exceptions -WFE-tail-call \
-  -WFE-function-references -WFE-reference-types -WFE-simd \
-  -WFE-relaxed-simd -WFE-extended-const -WFE-multi-memory \
-  -WFE-memory64 -WFE-table64 --wasm-set-main-module-name codec \
+uwvm2-ros -Rint --wasm-policy-global parser.gc on --wasm-policy-global parser.exceptions on --wasm-policy-global parser.tail-call on \
+  --wasm-policy-global parser.function-references on --wasm-policy-global parser.reference-types on --wasm-policy-global parser.simd on \
+  --wasm-policy-global parser.relaxed-simd on --wasm-policy-global parser.extended-const on --wasm-policy-global parser.multi-memory on \
+  --wasm-policy-global parser.memory64 on --wasm-policy-global parser.table64 on --wasm-set-main-module-name codec \
   --run /absolute/path/to/selected/guest/guest.wasm
 ```
 

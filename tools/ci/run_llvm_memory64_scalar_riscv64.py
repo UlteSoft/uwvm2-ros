@@ -19,7 +19,7 @@ deps=Path('/work/deps');triple='riscv64-linux-gnu';sysroot=deps/'usr'/triple
 flags=['/toolchain/bin/clang++',f'--target={triple}',f'--sysroot={deps}',f'--gcc-install-dir={deps}/usr/lib/gcc-cross/{triple}/15',
  '-idirafter',str(sysroot/'include'),'-stdlib=libstdc++','-std=c++26','-O2','-g0','-fno-rtti','-ffp-model=precise',
  '-Wno-undefined-inline','-DUWVM=2','-DUWVM_TEST=2','-DUWVM_USE_UWVM_INT','-DUWVM_USE_LLVM_JIT','-DUWVM_USE_THREAD_LOCAL',
- '-DUWVM_FORCE_DISABLE_MMAP','-DUWVM_USE_MULTITHREAD_ALLOCATOR','-include','uwvm2/uwvm/io/impl.h']
+ '-DUWVM_FORCE_USE_MMAP','-include','uwvm2/uwvm/io/impl.h']
 for path in [llvm/'include',llvm_source/'include',root/'src',root/'third-parties/fast_io/include',root/'third-parties/bizwen/include',root/'third-parties/boost_unordered/include']:
  flags+=['-I',str(path)]
 rows=[]

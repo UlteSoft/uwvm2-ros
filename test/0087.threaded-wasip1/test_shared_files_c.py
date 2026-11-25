@@ -24,12 +24,12 @@ for group,source,count in [('parallel','shared_files_parallel.c',2),('memtag','s
     if group=='parallel' and case==1:
      for n in ('first','other'):(mount/n).write_bytes(b'preserve')
     if group=='memtag':target.write_bytes(b'abcdef')
-    cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main']
+    cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main']
     interfaces=['path_open','fd_seek','fd_tell','fd_close']
     if group=='parallel':interfaces+=['fd_read','fd_write','thread-spawn'];cmd+=['--wasip1-single-grant','main','thread-spawn']
     for interface in interfaces:cmd+=['--wasip1-single-interface','main',interface,'deny' if group=='memtag' and case==9 and interface=='path_open' else 'allow']
     cmd+=['--wasip1-single-mount-dir','main','/sandbox',str(mount),'--wasip1-single-mount-dir-rights','main','/sandbox','533504','102','--wasip1-single-set-fd-limit','main','5','--wasm-preload-library',str(owner.with_suffix('.wasm')),'env']
-    if disabled:cmd+=['--runtime-disable-memtag']
+    if disabled:cmd+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
     cmd+=['--run',str(wasm)];trace=work/'native.trace';expected=0;expected_seeks=[];opened=None
     if group=='memtag':
      expected=121 if case in (4,7,8) else 122 if not disabled and case in (1,2,3,5,6) else 0

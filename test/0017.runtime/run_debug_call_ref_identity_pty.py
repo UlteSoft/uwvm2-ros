@@ -27,7 +27,7 @@ for name,text in texts.items():
  subprocess.run([str(a.wasm_tools.resolve()),'parse',str(wat),'-o',str(files[name])],check=True)
 points,_=markers(a.wasm_tools.resolve(),files['main']);assert len(points[2])==1,points
 replacement=a.out.resolve()/'provider-body.bin';replacement.write_bytes(bytes.fromhex('01 01 7f 20 00 41 09 6a 22 01 0b'))
-c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-WFE-function-references','-WFE-reference-types','-Wpre',str(files['provider']),'identity-provider','--run',str(files['main'])]);actions=[];runs=[]
+c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.reference-types', 'on','-Wpre',str(files['provider']),'identity-provider','--run',str(files['main'])]);actions=[];runs=[]
 def ask(text,error=False):
  at=len(c.log);os.write(c.fd,(text+'\n').encode());reply=c.wait(lambda b:re.search(rb'(?:^|\n)\(uwvm-debug\) $',b),at,120)
  reply=re.sub(rb'\x1b\[[0-?]*[ -/]*[@-~]',b'',reply).replace(b'\r',b'')

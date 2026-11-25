@@ -82,8 +82,8 @@ for profile in profiles:
    for key in imports:cmd+=['--wasip1-single-interface','main',names[key],exposure.get(names[key].removesuffix('_wasm64'),'allow')]
    cmd+=['--wasip1-single-mount-dir','main','/sandbox',str(mount),'--wasip1-single-mount-dir-rights','main','/sandbox',str(base),str(inherit)]+extra
    if limit is not None:cmd+=['--wasip1-single-set-fd-limit','main',str(limit)]
-   if wide:cmd+=['--wasm-feature-enable-memory64']
-   if shared:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-preload-library',str(owner),'env']
+   if wide:cmd+=['--wasm-policy-global', 'parser.memory64', 'on']
+   if shared:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','262144','--wasm-preload-library',str(owner),'env']
    cmd+=['--run',str(target)];traced=['/usr/bin/strace','-f','-yy','-e','trace=lseek,read,write,readv,writev,pread64,pwrite64,openat,close','-o',str(trace)]+cmd;code,stdout,stderr,timeout,leader,remaining,cleanup=run_owned(traced,60)
    selected=[line for line in trace.read_text().splitlines() if '<'+str(trace_file)+'>' in line];seeks=[]
    for line in selected:

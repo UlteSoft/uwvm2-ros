@@ -33,7 +33,7 @@ def main():
         vm = None
         try:
             vm = VM([str(args.binary.resolve()), '-Raot', '-Rdbg', '-Rct', '0',
-                     '-Rllvm-cache-path', 'disable', '--runtime-disable-memtag', '--run', str(wasm)], folder, prefix)
+                     '-Rllvm-cache-path', 'disable', '--wasm-policy-global', 'runtime.memtag-checks', 'off', '--run', str(wasm)], folder, prefix)
 
             def stopped():
                 deadline = time.monotonic() + 120

@@ -29,8 +29,8 @@ for kind in ['i32','i64','f32','f64','v128']:
   if a.prepare_only:continue
   for engine in ['int','aot']:
    for disabled in [False,True]:
-    label=name+'-'+engine+('-disabled' if disabled else '-enabled');command=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--runtime-llvm-jit-policy','debug','-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-interface','main','thread-spawn','allow','--wasip1-single-grant','main','thread-spawn','--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit','--wasm-preload-library',str(owner),'env']
-    if disabled:command+=['--runtime-disable-memtag']
+    label=name+'-'+engine+('-disabled' if disabled else '-enabled');command=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'runtime.llvm.policy','debug','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-interface','main','thread-spawn','allow','--wasip1-single-grant','main','thread-spawn','--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit','--wasm-preload-library',str(owner),'env']
+    if disabled:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
     command+=['--run',str(wasm)];begin=time.monotonic()
     try:r=subprocess.run(command,capture_output=True,timeout=120);code=r.returncode;stdout=r.stdout;stderr=r.stderr
     except subprocess.TimeoutExpired as error:code=None;stdout=error.stdout or b'';stderr=error.stderr or b''

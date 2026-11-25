@@ -50,7 +50,7 @@ def main():
     if not expected or records["kind"] != "complete-lua-record-sources-v1":
         raise ValueError("actual nonempty generated record receipt required")
     args.out.mkdir(parents=True, exist_ok=False)
-    argv = [str(args.runtime), "--runtime-int", "-Rct", "0", "--wasm-feature-enable-exceptions",
+    argv = [str(args.runtime), "--runtime-int", "-Rct", "0", "--wasm-policy-global", "parser.exceptions", "on",
             "--wasm-set-main-module-name", "main", "--wasip1-global-disable",
             "--wasip1-global-noinherit-system-environment", "--wasip1-single-create", "main",
             "--wasip1-single-enable", "main", "--wasip1-single-hide-host-api", "main",

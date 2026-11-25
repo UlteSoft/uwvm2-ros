@@ -227,8 +227,8 @@ def main():
     subprocess.run([str(args.wasm_tools), 'parse', str(wat), '-o', str(wasm)], check=True)
     subprocess.run([str(args.wasm_tools), 'validate', '--features', 'all', str(wasm)], check=True)
     command = [str(args.uwvm), '-Rdbg', '-Rct', '0', *([] if args.repository == 'uwvm2-ros' else ['-Rllvm-call-stack', args.strategy]),
-               '-Rllvm-cache-path', 'disable', '-WFE-gc', '-WFE-multi-memory', '-WFE-memory64',
-               '-WFE-threads', '--run', str(wasm)]
+               '-Rllvm-cache-path', 'disable', '--wasm-policy-global', 'parser.gc', 'on', '--wasm-policy-global', 'parser.multi-memory', 'on', '--wasm-policy-global', 'parser.memory64', 'on',
+               '--wasm-policy-global', 'parser.threads', 'on', '--run', str(wasm)]
     console, checks = Console(command, args.out), []
     try:
         console.prompt()

@@ -36,7 +36,7 @@ usage: run_backend_fuzzer_matrix.sh
 Environment:
   UWVM_BACKEND_MATRIX_COMBINE_MODES="none soft heavy extra"
   UWVM_BACKEND_MATRIX_DELAY_MODES="none soft heavy"
-  UWVM_BACKEND_MATRIX_MEMORY_MODELS="default mmap single-thread-alloc multi-thread-alloc"
+  UWVM_BACKEND_MATRIX_MEMORY_MODELS="mmap"
   UWVM_BACKEND_MATRIX_THREAD_LOCAL_MODES="0 1"
   UWVM_BACKEND_FUZZ_CASES=32
   UWVM_BACKEND_FUZZ_SEED=0xC0DEF00D   # unset to generate a random seed

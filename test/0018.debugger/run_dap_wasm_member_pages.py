@@ -64,7 +64,7 @@ def main():
     live.require(loop > cursor and body.find(b'\x03\x40\x23\x01',loop+1) == -1, 'unique recurring GC fixture safepoint')
     target = loop+2-cursor
     mode = ['-Raot'] if args.ros else ['-Rcc','jit','-Rcm','full']
-    vm = ['--wasm-feature-enable-gc','--wasm-feature-enable-function-references','--wasm-feature-enable-reference-types',
+    vm = ['--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.reference-types', 'on',
           '-m','run',*mode,'-Rct','0','-Rllvm-call-stack',args.policy,'-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(args.wasm)]
     server = live.BrokerSession(args.uwvm,root/'tools/debug/secure_server.py',root/'tools/debug/dap_adapter.py',vm,args.out)
     broker = None; record = {'passed':False,'pins':pins,'pages':[]}

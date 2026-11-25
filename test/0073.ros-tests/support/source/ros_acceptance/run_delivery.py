@@ -82,7 +82,7 @@ def worker_argv(lane, versions, wasm, sdk_wasm=None, rights=(), absent=False, mu
         # artifact manifest, never inferred because a language happens to fail.
         if name == module:
             for right in rights: argv += ["--wasip1-single-grant", name, right]
-    if multi: argv += ["--wasm-feature-enable-multi-memory"]
+    if multi: argv += ["--wasm-policy-global", "parser.multi-memory", "on"]
     argv += ["--wasm-set-main-module-name", "main"]
     if sdk_wasm is not None: argv += ["--wasm-preload-library", str(sdk_wasm), "sdk_guest"]
     return [*argv, "--run", str(wasm)]

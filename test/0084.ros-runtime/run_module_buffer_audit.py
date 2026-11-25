@@ -102,7 +102,7 @@ def main():
                     applied[-1] = ",".join(op for op in CALLS if op != "module.call.submit")
                 command = [str(runtime), "--wasm-set-main-module-name", "main", "--runtime-" + engine,
                            "--runtime-compile-threads", "0", "--runtime-llvm-jit-cache-path", "disable",
-                           "--runtime-memtag-backend", "software", *applied, *options, "--wasm-preload-library",
+                           "--wasm-policy-global", "runtime.memtag-backend", "software", *applied, *options, "--wasm-preload-library",
                            str(images[1]), "worker", "--run", str(images[0])]
                 try:
                     run = subprocess.run(command, pass_fds=(fd,), capture_output=True, timeout=60)

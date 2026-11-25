@@ -39,7 +39,7 @@ def main():
     wasm = args.out / "identity.wasm"
     wasm.write_bytes(guest)
     cache = args.out / "cache"
-    flags = ["-Raot", "-Rct", "0", "-Rllvm-policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
+    flags = ["-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
              "--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", str(cache),
              "--wasip1-global-noinherit-system-environment",
              "--wasm-set-main-module-name", "cache-identity-fixture"]

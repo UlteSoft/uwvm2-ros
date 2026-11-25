@@ -17,11 +17,11 @@ def main():
     args=p.parse_args();args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=False)
     require('/docker-' in Path('/proc/self/cgroup').read_text(),'resource cgroup required')
     prefix=json.loads(args.runner_json.read_text()) if args.runner_json else []
-    cases=[('read-only',['--debug-permissions','read-only','--runtime-disable-memtag'],False),
-           ('limited',['--debug-permissions','limited','--runtime-disable-memtag'],False),
-           ('disabled',['--debug-dump-force','none','--runtime-disable-memtag'],False),
-           ('ceiling',['--debug-dump-max','diagnostic','--runtime-disable-memtag'],False),
-           ('forced',['--debug-dump-force','diagnostic','--runtime-disable-memtag'],False)]
+    cases=[('read-only',['--debug-permissions','read-only','--wasm-policy-global', 'runtime.memtag-checks', 'off'],False),
+           ('limited',['--debug-permissions','limited','--wasm-policy-global', 'runtime.memtag-checks', 'off'],False),
+           ('disabled',['--debug-dump-force','none','--wasm-policy-global', 'runtime.memtag-checks', 'off'],False),
+           ('ceiling',['--debug-dump-max','diagnostic','--wasm-policy-global', 'runtime.memtag-checks', 'off'],False),
+           ('forced',['--debug-dump-force','diagnostic','--wasm-policy-global', 'runtime.memtag-checks', 'off'],False)]
     rows=[]
     for name,flags,shared in cases:
         folder=args.out/name;folder.mkdir();wat=folder/'program.wat';wasm=wat.with_suffix('.wasm')

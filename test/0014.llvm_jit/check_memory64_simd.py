@@ -10,7 +10,7 @@ from check_wasm3_tail_codegen import success_path_calls
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__);p.add_argument('output',type=Path)
 p.add_argument('--objdump',type=Path,default=Path('/toolchain/bin/llvm-objdump'))
-p.add_argument('--backend',choices=['mmap','threaded-allocator'],default='mmap')
+p.add_argument('--backend',choices=['mmap'],default='mmap')
 a=p.parse_args();root=Path(__file__).resolve().parents[2]
 subprocess.run(['bash',str(root/'tools/ci/require_wasm3_test_cgroup.sh')],check=True)
 resource.setrlimit(resource.RLIMIT_CORE,(0,0));a.output.mkdir(parents=True,exist_ok=False)
@@ -18,10 +18,9 @@ fingerprint=['python3',str(root/'tools/ci/wasm3_source_fingerprint.py'),str(root
 before=subprocess.check_output(fingerprint+[str(a.output/'source-before.json')],text=True).strip()
 build=Path('/work/artifacts/uwvm2-ros-jit/llvm');source=Path('/work/uwvm2-ros/third-parties/llvm/llvm')
 compile=['/toolchain/bin/clang++','-std=c++26','-O2','-fno-rtti','-ffp-model=precise','-Wno-deprecated-declarations',
- '-Wno-undefined-inline','-DUWVM=2','-DUWVM_TEST=2','-DUWVM_USE_UWVM_INT','-DUWVM_USE_LLVM_JIT','-DUWVM_USE_THREAD_LOCAL',
+ '-Wno-undefined-inline','-DUWVM=2','-DUWVM_FORCE_USE_MMAP','-DUWVM_TEST=2','-DUWVM_USE_UWVM_INT','-DUWVM_USE_LLVM_JIT','-DUWVM_USE_THREAD_LOCAL',
  '-include','uwvm2/uwvm/io/impl.h','-Isrc','-Ithird-parties/fast_io/include','-Ithird-parties/bizwen/include',
  '-Ithird-parties/boost_unordered/include','-I'+str(build/'include'),'-I'+str(source/'include'),'-stdlib=libc++']
-if a.backend=='threaded-allocator':compile+=['-DUWVM_FORCE_DISABLE_MMAP','-DUWVM_USE_MULTITHREAD_ALLOCATOR']
 rows=[]
 def run(label,cmd,timeout=300):
  rows.append(dict(label=label,command=[str(x) for x in cmd]));(a.output/'commands.json').write_text(json.dumps(rows,indent=2)+'\n')

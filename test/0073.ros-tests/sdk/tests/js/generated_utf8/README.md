@@ -31,8 +31,8 @@ checked native unwind and explicit standard-stream authority:
   --wasip1-single-grant main stdio-full-rights --run "$WASM_FILE"
 ```
 
-For wasm64, add `--wasm-feature-enable-memory64` and
-`--wasm-feature-enable-table64` before `--run`. The caller selects `WASM_FILE`
+For wasm64, add `--wasm-policy-global parser.memory64 on` and
+`--wasm-policy-global parser.table64 on` before `--run`. The caller selects `WASM_FILE`
 from the project's sole application output and records its complete hash.
 No gateway, native ROS peer or implicit permission grant is used.
 

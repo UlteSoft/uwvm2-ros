@@ -318,7 +318,7 @@ def validate_and_run(guest, label, mode, cc, validator, runtime, run, row, extra
         for right in ('realtime-clock', 'monotonic-clock', 'process-clock', 'thread-clock',
                       'random', 'proc-raise', 'sched-yield', 'stdio-full-rights'):
             command += ['--wasip1-single-deny', 'main', right]
-        if '--wasm-feature-enable-memory64' in extra:
+        if any(extra[i:i+3] == ['--wasm-policy-global', 'parser.memory64', 'on'] for i in range(len(extra))):
             names = ['main']
             for index, argument in enumerate(extra):
                 if argument == '--wasm-preload-library':

@@ -146,8 +146,8 @@ def main():
     hashed = hashlib.sha256()
     routes = Counter()
     engines = {
-        "uwvm": [str(config.uwvm.resolve()), "-WF3", "-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable",
-                 "--runtime-llvm-jit-policy", "max", "-Rllvm-exception-dispatch", "native-unwind", "--run", str(wasm)],
+        "uwvm": [str(config.uwvm.resolve()), "--wasm-policy-global", "parser.baseline", "wasm3", "-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable",
+                 "--wasm-policy-global", "runtime.llvm.policy", "max", "-Rllvm-exception-dispatch", "native-unwind", "--run", str(wasm)],
         "wasmtime": [str(config.wasmtime.resolve()), "run", "-C", "cache=n", "-W", "all-proposals=y",
                      "-W", "component-model=n", str(wasm)],
     }

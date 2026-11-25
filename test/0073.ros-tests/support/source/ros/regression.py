@@ -64,7 +64,7 @@ def main():
         source = out/(name+'.wat'); binary = out/(name+'.wasm')
         source.write_text(wat)
         if run(name+'_compile',[args.wat2wasm,'--enable-all',str(source),'-o',str(binary)]):
-            features = ['--wasm-feature-enable-memory64'] if name == 'wasi_memory64' else ['--wasm-feature-enable-tail-call'] if name == 'runtime_tail' else []
+            features = ['--wasm-policy-global', 'parser.memory64', 'on'] if name == 'wasi_memory64' else ['--wasm-policy-global', 'parser.tail-call', 'on'] if name == 'runtime_tail' else []
             run(name,[str(args.uwvm.resolve()),*features,'--run',str(binary),'hello','world'],expected)
     plugin = out/'libregdl.so'
     if run('trusted_dl_compile',[*shlex.split(args.cc),'-std=c17','-shared','-fPIC',str(root/'examples/0002.dl/regdl.c'),'-o',str(plugin)]):

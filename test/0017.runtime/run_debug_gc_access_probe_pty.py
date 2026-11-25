@@ -44,7 +44,7 @@ assert len(sites[0]) == 7, sites
 offsets = [value + 1 for value in sites[0][1:6]]
 os.environ.update(TERM='dumb', NO_COLOR='1')
 c = Console([str(a.uwvm.resolve()), '-Rdbg', '-Rct', '0', '-Rllvm-cache-path', 'disable',
-             '-Rclog', 'err', '-WFE-reference-types', '-WFE-function-references', '-WFE-gc',
+             '-Rclog', 'err', '--wasm-policy-global', 'parser.reference-types', 'on', '--wasm-policy-global', 'parser.function-references', 'on', '--wasm-policy-global', 'parser.gc', 'on',
              '--run', str(wasm)])
 actions = []
 

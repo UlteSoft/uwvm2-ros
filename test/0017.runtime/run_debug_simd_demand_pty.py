@@ -58,7 +58,7 @@ def main():
         for command in ([str(a.wasm_tools),'parse',str(wat),'-o',str(wasm)],[str(a.wasm_tools),'validate',str(wasm)]):subprocess.run(command,check=True)
         sites,_=markers(a.wasm_tools,wasm);assert len(sites[0])==3,sites
         target=sites[0][1]+1;final=sites[0][2];actions=[]
-        c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','-WFE-simd','-WFE-relaxed-simd',*(['-WFE-reference-types','-WFE-function-references','-WFE-gc'] if gc else []),'--run',str(wasm)])
+        c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','--wasm-policy-global', 'parser.simd', 'on','--wasm-policy-global', 'parser.relaxed-simd', 'on',*(['--wasm-policy-global', 'parser.reference-types', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.gc', 'on'] if gc else []),'--run',str(wasm)])
         def ask(text):
             at=len(c.log);os.write(c.fd,(text+'\n').encode());reply=c.wait(lambda b:re.search(rb'(?:^|\n)\(uwvm-debug\) $',b),at,90)
             assert b'error:' not in reply,reply[-4000:];actions.append({'command':text,'reply':reply.decode(errors='replace')});return reply

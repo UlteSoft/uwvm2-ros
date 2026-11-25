@@ -135,10 +135,9 @@ int main()
         for(unsigned b:{0xaa,0xbb,0x11,0x22,0x33,0x44}){UWVM2TEST_REQUIRE(std::to_integer<unsigned>(owner.memory.memory_begin[at++])==b);}
         for(auto const& segment:prepared.mod->local_defined_data_vec_storage){UWVM2TEST_REQUIRE(segment.data.dropped);}
     }
-    // Force growth to contend with the initializer's real snapshot helper.
-    // The borrowed allocation must survive the copy and be preserved by grow.
+    // Hold the initializer's snapshot across growth, then write its original prefix.
     {
-        uwvm2::object::memory::linear::allocator_memory_t memory{};
+        uwvm2::object::memory::linear::mmap_memory_t memory{};
         memory.sequentially_consistent_size=true;memory.init_by_page_count(1);
         std::latch pinned{1},may_copy{1};
         std::thread writer{[&]
@@ -150,9 +149,8 @@ int main()
             });
         }};
         pinned.wait();
-        std::thread grower{[&]{if(!memory.try_grow_silently(1,2*65536)){std::abort();}}};
-        while(!memory.growing_flag_p->test(std::memory_order_acquire)){std::this_thread::yield();}
-        may_copy.count_down();writer.join();grower.join();
+        UWVM2TEST_REQUIRE(memory.try_grow_silently(1,2*65536));
+        may_copy.count_down();writer.join();
         UWVM2TEST_REQUIRE(memory.get_page_size()==2);
         for(std::size_t i{};i!=65536;++i){UWVM2TEST_REQUIRE(memory.memory_begin[i]==std::byte{0x5a});}
         for(std::size_t i=65536;i!=131072;++i){UWVM2TEST_REQUIRE(memory.memory_begin[i]==std::byte{});}

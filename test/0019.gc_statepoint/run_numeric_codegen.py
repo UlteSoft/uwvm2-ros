@@ -45,8 +45,8 @@ def main():
     rows = []
     for case in cases:
         for engine in ("int", "aot"):
-            flags = ["--wasm-feature-enable-gc", "--wasm-feature-enable-function-references",
-                     "--runtime-disable-memtag", "--wasm-set-start-func", str(case["entry"])]
+            flags = ["--wasm-policy-global", "parser.gc", "on", "--wasm-policy-global", "parser.function-references", "on",
+                     "--wasm-policy-global", "runtime.memtag-checks", "off", "--wasm-set-start-func", str(case["entry"])]
             if case.get("preload"):
                 flags += ["--wasm-preload-library", str(wasm[case["preload"]]), "provider"]
             cmd = prefix + [str(args.vm), "-R" + engine, "-Rct", "0", "-Rllvm-cache-path", "disable",

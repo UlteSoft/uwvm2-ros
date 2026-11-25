@@ -156,7 +156,7 @@ subprocess.run([str(root/'fp-control')],check=True,timeout=30)
                         flags=configured_policy(operations) if mode=='success' else base.policy(operations,'deny' if mode=='denied' else 'allow')
                         for engine in ['int','aot']:
                             engine_flags=['--runtime-'+engine]
-                            if engine=='aot': engine_flags+=['--runtime-llvm-jit-policy','max','--runtime-llvm-jit-cache-path','disable']
+                            if engine=='aot': engine_flags+=['--wasm-policy-global', 'runtime.llvm.policy','max','--runtime-llvm-jit-cache-path','disable']
                             run(name+'-'+engine,[str(args.runtime.resolve()),'--wasm-set-main-module-name','main',
                                 *engine_flags,*flags,'--run',str(wasm)])
         finally: base.Guest=original

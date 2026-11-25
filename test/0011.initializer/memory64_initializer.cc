@@ -25,12 +25,7 @@ using data_t=f11::wasm1p1_data_t<f::wasm1,f11::wasm1p1>;
 #define CHECK(x) do {if(!(x)){std::fprintf(stderr,"FAIL %u: %s\n",__LINE__,#x);std::abort();}}while(false)
 std::size_t checks{};
 using fixture_memory=decltype(storage::local_defined_memory_storage_t{}.memory);
-#if defined(UWVM_TEST_EXPECT_MMAP)
-static_assert(fixture_memory::can_mmap, "mmap qualification must not silently select an allocator");
-#endif
-#if defined(UWVM_FORCE_DISABLE_MMAP)
-static_assert(!fixture_memory::can_mmap, "allocator qualification must not select mmap");
-#endif
+static_assert(fixture_memory::can_mmap);
 bytes to_bytes(std::initializer_list<unsigned> values){bytes r{};for(auto b:values)r.push_back(std::byte(b));return r;}
 void section(bytes& output,unsigned id,std::initializer_list<unsigned> values)
 {CHECK(values.size()<128);output.push_back(std::byte(id));output.push_back(std::byte(values.size()));for(auto b:values)output.push_back(std::byte(b));}
@@ -168,5 +163,5 @@ int main(int argc,char**)
    storage::wasm_module_storage_t rt{};init::initialize_from_binfmt_ver1_module_storage(m,options,rt);
   })==0);++checks;
  }
- std::printf("PASS memory64 initializer (%s): %zu allocation, address64 alias, full-width offset, extended/global expression and bounds checks\n",fixture_memory::can_mmap?"mmap":"allocator",checks);
+ std::printf("PASS memory64 initializer (mmap): %zu allocation, address64 alias, full-width offset, extended/global expression and bounds checks\n",checks);
 }

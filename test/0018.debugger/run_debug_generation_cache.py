@@ -67,7 +67,7 @@ def main():
     subprocess.run([args.wat2wasm, source, "-o", image], check=True, timeout=20)
     body = out / "choice-b.bin"
     body.write_bytes(bytes.fromhex("00 41 16 0b"))  # No locals, i32.const 22, end.
-    flags = ["-Raot", "-Rct", "0", "-Rllvm-policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
+    flags = ["-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
              "--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", str(cache),
              "--wasip1-global-enable", "--wasip1-global-interface", "fd_write", "allow",
              "--wasip1-global-grant", "stdout.write", "--run", str(image)]

@@ -17,7 +17,7 @@ def main():
     args = parser.parse_args(); args.out.mkdir(parents=True, exist_ok=False)
     subprocess.run(['bash', str(args.source_root / 'tools/ci/require_wasm3_test_cgroup.sh')], check=True)
     console = Console([str(args.binary), '-Rdbg', '-Rct', '0', '-Rllvm-cache-path', 'disable',
-        '-WFE-reference-types', '-WFE-function-references', '-WFE-bulk-memory', '--run', str(args.fixture)],
+        '--wasm-policy-global', 'parser.reference-types', 'on', '--wasm-policy-global', 'parser.function-references', 'on', '--wasm-policy-global', 'parser.bulk-memory', 'on', '--run', str(args.fixture)],
         args.out / 'managed-timeout.log')
     try:
         console.prompt()

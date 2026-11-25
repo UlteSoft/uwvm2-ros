@@ -50,8 +50,8 @@ def main():
         base += ["--wasip1-single-deny", "main", right]
     attempts = [
         ("declarations", ["/usr/bin/wasm-objdump", "-x", str(artifact)]),
-        ("features-and-bounded-pages", base + ["--wasm-feature-enable-memory64",
-            "--wasm-feature-enable-table64", "--wasm-set-memory-limit", "main", "all", "2", "256",
+        ("features-and-bounded-pages", base + ["--wasm-policy-global", "parser.memory64", "on",
+            "--wasm-policy-global", "parser.table64", "on", "--wasm-set-memory-limit", "main", "all", "2", "256",
             "--run", str(artifact)]),
     ]
     for label, command in attempts:

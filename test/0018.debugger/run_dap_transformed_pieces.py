@@ -10,7 +10,7 @@ DWARF_TOOL=Path('/home/macromodel/Documents/tool-chain/x86_64-linux-gnu-llvm/bin
 def session(a,folder,root,profile):
  folder.mkdir(mode=0o700);dap=base.load(root/'tools/debug/dap_adapter.py','transformed_piece_dap')
  mode=[] if a.ros else ['-Rcc','jit','-Rcm','full']
- features=['--wasm-feature-enable-memory64'] if profile['address_width']==64 else []
+ features=['--wasm-policy-global', 'parser.memory64', 'on'] if profile['address_width']==64 else []
  vm=['-Rdbg',*mode,'-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-cache-path','disable',*features,'--run',profile['path']]
  server=live.BrokerSession(a.uwvm,Path(__file__).resolve(),root/'tools/debug/dap_adapter.py',vm,folder)
  r=dict(passed=False,profile=profile['profile'],language=profile['language'],optimization=profile['optimization'],policy=a.policy,evaluations=[],fields=[],trees=[])

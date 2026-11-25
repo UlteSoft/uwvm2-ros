@@ -12,7 +12,7 @@ p=argparse.ArgumentParser(description=__doc__)
 for n in ['uwvm','wasm','out']:p.add_argument('--'+n,type=Path,required=True)
 p.add_argument('--baseline',action='store_true',help='Record old per-instruction stops without requiring batching')
 a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False);os.environ.update(TERM='dumb',NO_COLOR='1')
-c=Console([str(a.uwvm.resolve()),'-Rdbg','-WFE-simd','-Rct','0','-Rllvm-call-stack','instruction','-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm.resolve())]);actions=[];checks=[]
+c=Console([str(a.uwvm.resolve()),'-Rdbg','--wasm-policy-global', 'parser.simd', 'on','-Rct','0','-Rllvm-call-stack','instruction','-Rllvm-exception-dispatch','native-unwind','-Rllvm-cache-path','disable','--run',str(a.wasm.resolve())]);actions=[];checks=[]
 def ask(text,fail=False):
  b=c.command(text);b=re.sub(rb'\x1b\[[0-?]*[ -/]*[@-~]',b'',b).replace(b'\r',b'');actions.append({'command':text,'reply':b.decode(errors='replace')})
  (a.out/'actions.json').write_text(json.dumps(actions,indent=2));assert fail or b'error:' not in b,b[-2000:];return b

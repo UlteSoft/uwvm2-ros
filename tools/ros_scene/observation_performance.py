@@ -125,7 +125,7 @@ def main():
             operation=QUERY.index(name);wat=out/(name+'.wat');wat.write_text(guest(operation,a.iterations,a.batches).render())
             wasm=out/(name+'.wasm');run('compile-'+name,['wat2wasm','--enable-multi-memory','--debug-names',wat,'-o',wasm])
             commands={'native':['taskset','-c',a.cpu,out/'native',operation,a.iterations,a.batches],
-                'wasm':['taskset','-c',a.cpu,runtime,'--wasm-set-main-module-name','main','--runtime-aot','--runtime-llvm-jit-policy','max',
+                'wasm':['taskset','-c',a.cpu,runtime,'--wasm-set-main-module-name','main','--runtime-aot','--wasm-policy-global', 'runtime.llvm.policy','max',
                     '--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable',*flags,'--wasm-preload-library',out/'worker.wasm','worker','--run',wasm]}
             report.setdefault('workloads',{})[name]={k:list(map(str,v)) for k,v in commands.items()};save()
             if a.mode=='baseline':

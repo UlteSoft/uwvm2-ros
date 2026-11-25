@@ -24,7 +24,6 @@ flags=(-std=c++26 -stdlib=libc++ -fno-rtti -fasynchronous-unwind-tables -O1 -g0 
     -I src -I third-parties/bizwen/include -I third-parties/fast_io/include -I third-parties/boost_unordered/include)
 case ${UWVM_TEST_MEMORY_BACKEND:-mmap} in
     mmap) ;;
-    allocator) flags+=(-DUWVM_FORCE_DISABLE_MMAP -DUWVM_USE_MULTITHREAD_ALLOCATOR) ;;
     *) echo 'invalid memory backend' >&2; exit 2 ;;
 esac
 libs=(-ldl -pthread)

@@ -201,7 +201,7 @@ else:
         if digest(wasm) != fixture['sha256']:
             raise SystemExit('Guest binary changed: '+str(wasm))
         return ['taskset', '-c', str(args.cpu), str(runtime), '--wasm-set-main-module-name', 'main', '--mode', 'run',
-                '--runtime-aot', '--runtime-llvm-jit-policy', 'max', '--runtime-llvm-jit-cache-path', 'disable',
+                '--runtime-aot', '--wasm-policy-global', 'runtime.llvm.policy', 'max', '--runtime-llvm-jit-cache-path', 'disable',
                 '--runtime-compile-threads', '1', *fixture['policy_argv'], '--run', str(wasm)]
 
     def observation(provider, workload, data, wall, round_number):

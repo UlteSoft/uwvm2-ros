@@ -37,16 +37,15 @@
 
 int main()
 {
-#if __cpp_lib_atomic_wait >= 201907L
     using namespace ::uwvm2::imported::wasi::wasip1::memory;
-    using ::uwvm2::object::memory::linear::allocator_memory_t;
+    using ::uwvm2::object::memory::linear::mmap_memory_t;
 
-    allocator_memory_t mem{};
+    mmap_memory_t mem{};
     // 2 wasm pages
     mem.init_by_page_count(2u);
 
     if(mem.memory_begin == nullptr) { ::fast_io::fast_terminate(); }
-    if(mem.memory_length < (1u << 16)) { ::fast_io::fast_terminate(); }
+    if(mem.memory_length_p->load(std::memory_order_acquire) < (1u << 16)) { ::fast_io::fast_terminate(); }
 
     constexpr std::size_t static_offset{128u};
     constexpr std::size_t stride{16u};
@@ -57,7 +56,7 @@ int main()
     {
         std::size_t dynamic_offset{static_cast<std::size_t>(i) * stride};
         std::size_t off{static_offset + dynamic_offset};
-        if(off + sizeof(std::uint32_t) > mem.memory_length) { ::fast_io::fast_terminate(); }
+        if(off + sizeof(std::uint32_t) > mem.memory_length_p->load(std::memory_order_acquire)) { ::fast_io::fast_terminate(); }
         auto* p = reinterpret_cast<std::uint32_t*>(reinterpret_cast<std::byte*>(mem.memory_begin) + off);
         *p = 0xA5A50000u + i;
     }
@@ -103,9 +102,8 @@ int main()
 
     if(mismatch_count_value != 0u)
     {
-        ::fast_io::io::perr(::fast_io::u8err(), u8"allocator memory test errror\n");
+        ::fast_io::io::perr(::fast_io::u8err(), u8"mmap memory access mismatch\n");
         ::fast_io::fast_terminate();
     }
-#endif
 }
 

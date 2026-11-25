@@ -25,8 +25,8 @@ for bits,shared in [(32,False),(64,False),(32,True)]:
    cmd=[str(a.vm.resolve()),'-R'+engine,'-Rct','0','-Rllvm-cache-path','disable','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-grant','main','stdout.write','--wasip1-single-grant','main','proc-exit']
    for interface in [function+suffix,'fd_write'+suffix,'proc_exit']:cmd+=['--wasip1-single-interface','main',interface,'allow']
    cmd+=['--wasip1-single-mount-dir','main','/sandbox',str(directory),'--wasip1-single-mount-dir-rights','main','/sandbox',str(base),'66']
-   if bits==64:cmd+=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64']
-   if shared:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
+   if bits==64:cmd+=['--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on']
+   if shared:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
    cmd+=['--run',str(file)]
    run=subprocess.run(cmd,capture_output=True,timeout=60);raw=run.stdout
    padding=[1,4,5,6,7] if size==24 else list(range(17,24))

@@ -38,15 +38,15 @@
 
 int main()
 {
-#if __cpp_lib_atomic_wait >= 201907L
-    using memory_t = ::uwvm2::object::memory::linear::allocator_memory_t;
+    namespace linear = ::uwvm2::object::memory::linear;
 
-    memory_t memory{1uz};
+    linear::mmap_memory_t memory{1uz, linear::mmap_memory_status_t::wasm32};
 
     constexpr ::std::size_t initial_pages{64uz};
     constexpr ::std::size_t max_pages{4096uz};
 
-    memory.init_by_page_count(initial_pages);
+    memory.init_by_page_count(initial_pages, max_pages);
+    auto* const stable_base{memory.memory_begin};
 
     ::std::atomic_bool start{};
     ::std::atomic_bool done{};
@@ -75,7 +75,7 @@ int main()
                              done.store(true, ::std::memory_order_release);
                          }};
 
-    auto const snapshot_worker{[&]() noexcept
+    auto const snapshot_worker{[&](::std::size_t slot) noexcept
                                {
                                    wait_for_start();
 
@@ -88,7 +88,7 @@ int main()
                                                                                                        [&](::std::byte* begin,
                                                                                                            ::std::size_t byte_length) noexcept
                                                                                                        {
-                                                                                                           if(begin == nullptr || byte_length == 0uz)
+                                                                                                           if(begin != stable_base || byte_length < initial_pages)
                                                                                                                [[unlikely]]
                                                                                                            {
                                                                                                                return false;
@@ -100,7 +100,7 @@ int main()
                                                                                                                          sizeof(byte));
 
                                                                                                            byte ^= static_cast<::std::uint_least8_t>(tail);
-                                                                                                           ::std::memcpy(begin, ::std::addressof(byte), sizeof(byte));
+                                                                                                           ::std::memcpy(begin + slot, ::std::addressof(byte), sizeof(byte));
                                                                                                            return true;
                                                                                                        })};
 
@@ -114,8 +114,8 @@ int main()
                                    }
                                }};
 
-    ::std::thread reader0{snapshot_worker};
-    ::std::thread reader1{snapshot_worker};
+    ::std::thread reader0{snapshot_worker, 0uz};
+    ::std::thread reader1{snapshot_worker, 1uz};
 
     start.store(true, ::std::memory_order_release);
 
@@ -125,7 +125,6 @@ int main()
 
     if(failed.load(::std::memory_order_acquire)) [[unlikely]] { return 1; }
     if(memory.get_page_size() != max_pages) [[unlikely]] { return 2; }
-#endif
 
     return 0;
 }

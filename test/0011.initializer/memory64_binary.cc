@@ -1,7 +1,7 @@
 // Core 3 binary memory types, policy isolation and initializer gates.
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
-#include <uwvm2/uwvm/cmdline/callback/wasm_feature.h>
+#include <uwvm2/uwvm/wasm/storage/module_policy.h>
 #include <uwvm2/validation/standard/wasm3/impl.h>
 #include <sys/mman.h>
 #include <string_view>
@@ -62,13 +62,13 @@ int main()
   for(unsigned flags:{4u,5u,7u})
   {
    UWVM2TEST_REQUIRE(parse(module(type(flags,1ull<<48,1ull<<48),imported),true,true));
-   UWVM2TEST_REQUIRE(!parse(module(type(flags,0),imported),false,true,error_code::wasm1p1_feature_required,u8"--wasm-feature-enable-memory64"));
+   UWVM2TEST_REQUIRE(!parse(module(type(flags,0),imported),false,true,error_code::wasm1p1_feature_required,u8"parser.memory64 on"));
    auto full=type(flags,1ull<<48,1ull<<48);
    for(std::size_t n=0;n<full.size();++n){auto truncated=full;truncated.resize(n);UWVM2TEST_REQUIRE(!parse(module(truncated,imported),true,true));}
    UWVM2TEST_REQUIRE(!parse(module(type(flags,(1ull<<48)+1,(1ull<<48)+1),imported),true,true,error_code::wasm3_memory_limit_out_of_range,u8"281474976710657"));
   }
   UWVM2TEST_REQUIRE(!parse(module(type(5,1ull<<40,(1ull<<40)-1),imported),true,true,error_code::wasm3_limit_type_max_lt_min,u8"1099511627775"));
-  UWVM2TEST_REQUIRE(!parse(module(type(7),imported),true,false,error_code::wasm1p1_feature_required,u8"--wasm-feature-enable-threads"));
+  UWVM2TEST_REQUIRE(!parse(module(type(7),imported),true,false,error_code::wasm1p1_feature_required,u8"parser.threads on"));
   UWVM2TEST_REQUIRE(!parse(module(type(0,1ull<<32),imported),true,false,error_code::wasm3_memory_limit_out_of_range,u8"4294967296"));
   for(unsigned flags:{0u,4u})
   {
@@ -78,7 +78,7 @@ int main()
    padded.back()=std::byte{2};UWVM2TEST_REQUIRE(!parse(module(padded,imported),true,false,error_code::limit_type_invalid_min));
   }
   auto raw=module(type(5,1,2),imported);auto enabled=policy(true,false);
-  UWVM2TEST_REQUIRE(run_in_child_expect_trap_message("--wasm-feature-enable-memory64",[&]
+  UWVM2TEST_REQUIRE(run_in_child_expect_trap_message("parser.memory64 on",[&]
   {
    uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());parser::base::error_impl error{};
    auto parsed=feature::binfmt_ver1_handler(raw.data(),raw.data()+raw.size(),error,enabled);
@@ -112,16 +112,18 @@ int main()
  rejected=false;error={};try{uwvm2::validation::standard::wasm3::validate_code_with_runtime_policy(parsed,0,code,code+1,error,make_wasm1p1_feature_parameter());}
  catch(fast_io::error const&){rejected=true;}
  UWVM2TEST_REQUIRE(rejected&&error.err_selectable.wasm1p1_feature_required.feature==parser::base::wasm1p1_feature_kind::memory64);
- // Independent CLI switches must neither enable threads nor table64.
- namespace cli=uwvm2::uwvm::cmdline::params::details;auto& f=cli::wasm_feature_details::wasm1p1_parameter();f={};
- uwvm2::utils::cmdline::parameter_parsing_results argument{};argument.str=u8"--wasm-feature-enable-memory64";
- UWVM2TEST_REQUIRE(cli::wasm_feature_enable_memory64_callback(&argument,&argument,&argument+1)==uwvm2::utils::cmdline::parameter_return_type::def);
+ namespace module_policy=uwvm2::uwvm::wasm::storage::module_policy;
+ module_policy::layer settings{};
+ UWVM2TEST_REQUIRE(module_policy::set(settings,u8"parser.baseline",u8"wasm2"));
+ UWVM2TEST_REQUIRE(module_policy::set(settings,u8"parser.memory64",u8"on"));
+ UWVM2TEST_REQUIRE(!module_policy::set(settings,u8"parser.memory64",u8"off"));
+ module_policy::parameters parameters{};
+ module_policy::apply(settings,parameters);
+ auto const& f=module_policy::features::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para);
  UWVM2TEST_REQUIRE(!f.disable_memory64&&f.disable_table64&&f.disable_threads&&f.disable_multi_memory&&f.disable_tail_call);
- auto saved=f;cli::wasm_feature_details::apply_wasm2_feature_set(f);UWVM2TEST_REQUIRE(f.disable_memory64);f=saved;
- argument.str=u8"--wasm-feature-disable-memory64";
- UWVM2TEST_REQUIRE(cli::wasm_feature_disable_memory64_callback(&argument,&argument,&argument+1)==uwvm2::utils::cmdline::parameter_return_type::return_m1_imme);
- UWVM2TEST_REQUIRE(!f.disable_memory64);f={};
- UWVM2TEST_REQUIRE(cli::wasm_feature_disable_memory64_callback(&argument,&argument,&argument+1)==uwvm2::utils::cmdline::parameter_return_type::def);
+ module_policy::layer narrower{};
+ UWVM2TEST_REQUIRE(module_policy::set(narrower,u8"parser.memory64",u8"off"));
+ module_policy::apply(narrower,parameters);
  UWVM2TEST_REQUIRE(f.disable_memory64&&f.explicit_disable_memory64);
  std::printf("PASS binary memory64: %u guarded parser cases, u64 diagnostics, two initializer policy gates, validator gate, isolated CLI ownership\n",checks);
 }

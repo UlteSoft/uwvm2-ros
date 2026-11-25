@@ -185,7 +185,7 @@ def main():
     run('imports',[sys.executable,'-I','-B',sdk/'tools/check_wasm_imports.py',artifact,'--backend',args.backend,
         '--allow-module','wasi_snapshot_preview1','--require-all','--report',args.out/'imports.json'])
     report['artifact']=fact(artifact);report['status']='BUILT_VALIDATED_NOT_EXECUTED';save()
-    argv = [args.runtime, '--runtime-int', '-Rct', '0', '--wasm-feature-enable-exceptions',
+    argv = [args.runtime, '--runtime-int', '-Rct', '0', '--wasm-policy-global', 'parser.exceptions', 'on',
         '--wasm-set-main-module-name', 'main', '--wasip1-global-disable',
         '--wasip1-global-noinherit-system-environment', '--wasip1-single-create', 'main',
         '--wasip1-single-enable', 'main', '--wasip1-single-hide-host-api', 'main',

@@ -72,7 +72,7 @@ def main():
         commands={x['name']:x['argv'] for x in previous['commands']}
         def xml_command(name):
             argv=commands[name].copy();argv[0]=str(vm)
-            argv[1:1]=['--runtime-llvm-jit-policy','max','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable']
+            argv[1:1]=['--wasm-policy-global', 'runtime.llvm.policy','max','--runtime-compile-threads','0','--runtime-llvm-jit-cache-path','disable']
             return argv
         good=xml_command('vm-aot');denied=xml_command('vm-denied-aot');baseline=(xml/'native.stdout').read_bytes()
         assert run('xml-without-collector',good).stdout==baseline
@@ -81,7 +81,7 @@ def main():
         # boundary. Terminal retained-code behavior uses the embedding below.
         events('xml-live-collector',True)
         assert run('xml-zero-authority',denied).stdout==b'checks:56\n'
-        for label,key,value in [('worker','--runtime-compile-threads','1'),('policy','--runtime-llvm-jit-policy','balanced'),
+        for label,key,value in [('worker','--runtime-compile-threads','1'),('policy','runtime.llvm.policy','balanced'),
                                ('cache','--runtime-llvm-jit-cache-path','default')]:
             argv=good.copy();argv[argv.index(key)+1]=value
             r=run('reject-'+label,argv,78);assert b'unsupported runtime' in r.stderr

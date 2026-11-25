@@ -79,9 +79,7 @@ template<class Run>int trap(Run&& run,unsigned index,std::uint64_t address)
   uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());
 #else
   optable::trap_memory_out_of_bounds_func=bounds_trap;
-#if !defined(UWVM_FORCE_DISABLE_MMAP)
   uwvm2::object::memory::signal::set_mmap_memory_out_of_bounds_handler(bounds_signal);
-#endif
 #endif
   (void)run(index,arguments(0x12,true,address,0,0));::_exit(99);
  }

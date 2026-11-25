@@ -197,7 +197,7 @@ def main():
                 for engine in args.engines:
                     verify_gate(); name = stem+'-'+engine
                     command = [str(runtime), '--wasm-set-main-module-name', 'main', '--runtime-'+engine,
-                               '--runtime-compile-threads', '1', '--runtime-memtag-backend', 'software',
+                               '--runtime-compile-threads', '1', '--wasm-policy-global', 'runtime.memtag-backend', 'software',
                                '--runtime-memtag-mode', 'sync', '--log-color', 'disable', *flags]
                     if engine == 'aot':
                         command += ['--runtime-llvm-jit-cache-path', 'disable']

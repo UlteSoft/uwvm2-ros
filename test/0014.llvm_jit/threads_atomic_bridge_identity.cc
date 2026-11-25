@@ -1,7 +1,6 @@
 // Every atomic specialization coexists in one native module. Per-opcode modules
 // cannot catch MCJIT symbols that collide and overwrite another specialization.
-// Compile with UWVM_USE_MULTITHREAD_ALLOCATOR to exercise host bridge fallbacks;
-// also run mmap to compare the directly lowered operations against the same oracle.
+// Exercise the directly lowered mmap operations against the same oracle.
 #include "../0013.uwvm_int/wasm3/component_frame_policy.h"
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
 #include <uwvm2/runtime/compiler/llvm_jit/compile_all_from_uwvm/impl.h>

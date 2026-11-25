@@ -53,7 +53,7 @@ def report_matches(text, expected, category, pause, mode, memtag):
 
 
 def flags(mode):
-    return ['--runtime-memtag-backend', 'hardware' if mode.startswith('hardware-') else 'software', '--runtime-memtag-mode', 'async' if mode.endswith('async') else 'sync']
+    return ['--wasm-policy-global', 'runtime.memtag-backend', 'arm-mte' if mode.startswith('hardware-') else 'software', '--runtime-memtag-mode', 'async' if mode.endswith('async') else 'sync']
 
 
 def ordinary(h, modes):

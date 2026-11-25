@@ -153,7 +153,7 @@ def main():
                 descriptors=tuple(rd for rd,wr in pipes)
                 selected=configured(descriptors)if native else policy(OPERATIONS,'deny'if scenario=='denied'else'allow')
                 flags=['--runtime-'+engine,*selected]
-                if guest['tagged']:flags+=['--runtime-memtag-backend','software','--runtime-memtag-mode','sync']
+                if guest['tagged']:flags+=['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync']
                 if scenario=='tag-aliases':flags+=['--runtime-memtag-action','silent-log','err']
                 crash=(guest['width'],guest['memory'],scenario.split('-')[2])if scenario.startswith('mismatch-')else None
                 queues=[0,len(PACKET),len(PACKET)]if scenario in ['success','fp']else [len(PACKET)]*3 if native else None

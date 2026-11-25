@@ -3,7 +3,7 @@
 
 Usage: python3 check_simd_memory_boundaries.py /absolute/path/to/uwvm2-ros [--out /tmp/directory]
 All generated Wasm, logs, and result metadata stay in the temporary output directory.
-Run again with mmap, single-thread-alloc, and multi-thread-alloc builds.
+Run against the product mmap build.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -73,7 +73,7 @@ def fixtures():
         for dynamic, offset in ((address + 1, 0), (65536, 0), (0xffffffff, 1), (0xffffffff, 0xffffffff)):
             yield f"{op}-trap-{dynamic:x}-{offset:x}", module(
                 f"i32.const {dynamic} {vector(old)} {op} offset={offset} align=1 {suffix}"), True
-    # memory.grow must not leave a frozen allocator base or stale byte length in generated code.
+    # memory.grow must publish the new byte length in generated code.
     yield "grow-reload-base", module(
         f"i32.const 1 memory.grow i32.const 1 i32.ne if unreachable end "
         f"i32.const 131056 {vector(old)} v128.store i32.const 131056 v128.load "

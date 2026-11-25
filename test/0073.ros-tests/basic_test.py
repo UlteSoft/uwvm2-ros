@@ -143,7 +143,7 @@ def main():
         debugger_wasm = output / "debug.wasm"
         debugger_wasm.write_bytes(debug)
         cache = output / "cache"
-        base = ["-Raot", "-Rct", "0", "-Rllvm-policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
+        base = ["-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max", "--log-verbose", "--runtime-compiler-log", "err",
                 "--wasip1-global-noinherit-system-environment",
                 "--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", cache]
         granted = [*base, "--wasip1-global-grant", "monotonic-clock", "-Wstart", "2", "0", "--run", wasm]

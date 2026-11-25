@@ -19,7 +19,7 @@ class Console:
  def __init__(self,policy,extra=(),name='cli',fixture='cli.wasm'):
   self.name=name+'-'+policy;self.log=bytearray();self.pending=bytearray();self.commands=[]
   self.argv=[str(PRODUCT),'-Rdbg','-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable',
-   '-WFE-gc','-WFE-function-references','--wasip1-global-noinherit-system-environment','--wasip1-global-force-args','2','argv0','before',
+   '--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasip1-global-noinherit-system-environment','--wasip1-global-force-args','2','argv0','before',
    '--wasip1-global-add-or-replace-environment','UWVM_DEBUG_KEY','old',*map(str,extra),'--run',str(TD/fixture)]
   self.child=subprocess.Popen([sys.executable,'-c','import os,sys,time;time.sleep(.15);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)',*self.argv],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
   self.sel=selectors.DefaultSelector();self.sel.register(self.child.stdout,selectors.EVENT_READ)
@@ -216,7 +216,7 @@ def dap_round(policy):
  server=None;broker=None
  try:
   logfile=(TD/('dap-server-'+policy+'.log')).open('wb')
-  argv=[sys.executable,S/'tools/debug/secure_server.py','serve','--uwvm',PRODUCT,'--socket-dir',private,'--','-Rdbg','-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable','-WFE-gc','-WFE-function-references','--wasip1-global-noinherit-system-environment','--wasip1-global-force-args','2','argv0','before','--wasip1-global-add-or-replace-environment','UWVM_DEBUG_KEY','old','--run',TD/'cli.wasm']
+  argv=[sys.executable,S/'tools/debug/secure_server.py','serve','--uwvm',PRODUCT,'--socket-dir',private,'--','-Rdbg','-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on','--wasip1-global-noinherit-system-environment','--wasip1-global-force-args','2','argv0','before','--wasip1-global-add-or-replace-environment','UWVM_DEBUG_KEY','old','--run',TD/'cli.wasm']
   server=subprocess.Popen([sys.executable,'-c','import os,sys,time;time.sleep(.25);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)',*map(str,argv)],stdout=logfile,stderr=subprocess.STDOUT)
   deadline=time.monotonic()+30
   while not (private/'control.sock').exists():
@@ -438,7 +438,7 @@ def dap_group_round(policy):
  try:
   logfile=(TD/('dap-group-server-'+policy+'.log')).open('wb')
   argv=[sys.executable,S/'tools/debug/secure_server.py','serve','--uwvm',PRODUCT,'--socket-dir',private,'--',
-   '-Rdbg','-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable','-WFE-gc','-WFE-function-references',
+   '-Rdbg','-Rct','0','-Rllvm-call-stack',policy,'-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.gc', 'on','--wasm-policy-global', 'parser.function-references', 'on',
    '--wasip1-global-noinherit-system-environment','--wasip1-global-force-args','2','argv0','before',
    '--wasip1-global-add-or-replace-environment','UWVM_DEBUG_KEY','old',*group_extra,'--run',TD/'cli.wasm']
   server=subprocess.Popen([sys.executable,'-c','import os,sys,time;time.sleep(.25);os.execvpe(sys.argv[1],sys.argv[1:],os.environ)',*map(str,argv)],stdout=logfile,stderr=subprocess.STDOUT)

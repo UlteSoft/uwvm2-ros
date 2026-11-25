@@ -79,8 +79,8 @@ def main():
     vm = ["-m", "run", *mode, "-Rct", "0", "-Rllvm-call-stack", args.policy,
           "-Rllvm-exception-dispatch", "native-unwind", "-Rllvm-cache-path", "disable", "--run", str(args.wasm)]
     if args.wasm_query_refresh:
-        vm[:0] = ["--wasm-feature-enable-gc", "--wasm-feature-enable-function-references",
-                  "--wasm-feature-enable-reference-types"]
+        vm[:0] = ["--wasm-policy-global", "parser.gc", "on", "--wasm-policy-global", "parser.function-references", "on",
+                  "--wasm-policy-global", "parser.reference-types", "on"]
     server = live.BrokerSession(args.uwvm, root / "tools/debug/secure_server.py",
         root / "tools/debug/dap_adapter.py", vm, args.out)
     record = {"passed": False, "pins": pins,

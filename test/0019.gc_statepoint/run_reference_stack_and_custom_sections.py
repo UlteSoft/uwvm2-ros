@@ -94,7 +94,7 @@ def main():
     wasm.write_bytes(magic + section(0, b"\x04name") + b"".join(core) + section(0, b"\x04name"))
     cases.append(dict(name=wasm.stem, path=wasm, entry=0, expected=0, modes=("validation", "int", "aot")))
 
-    flags = ["-WFE-gc", "-WFE-function-references", "-WFE-exceptions", "-WFE-tail-call"]
+    flags = ["--wasm-policy-global", "parser.gc", "on", "--wasm-policy-global", "parser.function-references", "on", "--wasm-policy-global", "parser.exceptions", "on", "--wasm-policy-global", "parser.tail-call", "on"]
     rows = []
     digest = hashlib.file_digest(args.vm.open("rb"), "sha256").hexdigest()
     def save(complete):

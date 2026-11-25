@@ -78,7 +78,7 @@ for shared in (False,True):
    if spec.get('mount',True):cmd+=['--wasip1-single-mount-dir','main','/sandbox',str(mount),'--wasip1-single-mount-dir-rights','main','/sandbox',str(spec.get('base',9216)),str(spec.get('inherit',66))]
    for grant in spec.get('grants',[]):cmd+=['--wasip1-single-grant','main',grant]
    cmd+=spec.get('limits',[])
-   if shared:cmd+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
+   if shared:cmd+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','65536','--wasm-preload-library',str(owner),'env']
    cmd+=['--run',str(target)];begin=time.monotonic()
    source_input=None
    if spec.get('stdin_file'):

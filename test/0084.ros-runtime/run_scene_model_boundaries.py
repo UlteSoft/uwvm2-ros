@@ -80,7 +80,7 @@ def main():
                 for engine in ['int','aot']:
                     verify_gate();run_name=name+'-'+engine;cmd=[str(runtime),'--wasm-set-main-module-name','main','--runtime-'+engine,'--runtime-compile-threads','1',
                         '--runtime-llvm-jit-cache-path','disable','--log-color','disable',*flags]
-                    if scenario!='fp':cmd+=['--runtime-memtag-backend','software','--runtime-memtag-mode','sync']
+                    if scenario!='fp':cmd+=['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync']
                     if scenario=='aliases':cmd+=['--runtime-memtag-action','silent-log','err']
                     cmd+=['--run',str(wasm)];start=time.monotonic();r=subprocess.run(cmd,capture_output=True,timeout=120)
                     (out/(run_name+'.stdout')).write_bytes(r.stdout);(out/(run_name+'.stderr')).write_bytes(r.stderr)

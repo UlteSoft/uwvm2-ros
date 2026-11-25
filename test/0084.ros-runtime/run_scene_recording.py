@@ -191,7 +191,7 @@ def main():
         scenario=guest['scenario'];selected=flags if scenario in ['success','fp'] or guest['tagged'] else policy(OPERATIONS,'deny' if scenario=='denied' else 'allow')
         for engine in ['int','aot']:
             selected_flags=['--runtime-'+engine,*selected]
-            if guest['tagged']:selected_flags+=['--runtime-memtag-backend','software','--runtime-memtag-mode','sync']
+            if guest['tagged']:selected_flags+=['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync']
             if scenario=='tag-aliases':selected_flags+=['--runtime-memtag-action','silent-log','err']
             crash=(guest['width'],guest['memory'],scenario.split('-')[2]) if scenario.startswith('mismatch-') else None
             run(guest['name']+'-'+engine,selected_flags,wasm,crash=crash,aliases=scenario=='tag-aliases')

@@ -48,7 +48,7 @@ def main():
         for api in ('path_open', 'fd_write', 'fd_close'):
             flags += ['--wasip1-global-interface', api, 'allow']
         vm = VM([str(args.binary.resolve()), '-Raot', '-Rdbg', '-Rct', '0', '-Rllvm-cache-path', 'disable',
-                 '--runtime-disable-memtag', *flags, '--run', str(wasm)], args.out, prefix)
+                 '--wasm-policy-global', 'runtime.memtag-checks', 'off', *flags, '--run', str(wasm)], args.out, prefix)
 
         def stopped():
             deadline = time.monotonic() + 120

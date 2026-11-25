@@ -155,7 +155,7 @@ def main():
                 '--wasip1-single-interface', 'main', 'fd_write', 'allow', '--wasip1-single-grant', 'main', 'monotonic-clock', '--wasip1-single-grant', 'main', 'stdout.write']
             if a.clear_input!='default':grants+=['--ros-scene-call-clear-input','benchmark','echo',a.clear_input]
             commands = {'native': [out/'native', payload, a.iterations, a.batches, *([] if a.clear_input=='default' else [a.clear_input])],
-                'wasm': [runtime, '--wasm-set-main-module-name', 'main', '--runtime-aot', '--runtime-llvm-jit-policy', 'max',
+                'wasm': [runtime, '--wasm-set-main-module-name', 'main', '--runtime-aot', '--wasm-policy-global', 'runtime.llvm.policy', 'max',
                     '--runtime-compile-threads', '0', '--runtime-llvm-jit-cache-path', 'disable', *grants,
                     '--wasm-preload-library', out/(name+'-worker.wasm'), 'worker', '--run', out/(name+'.wasm')]}
             report['workloads'][name] = {key: list(map(str, command)) for key, command in commands.items()}

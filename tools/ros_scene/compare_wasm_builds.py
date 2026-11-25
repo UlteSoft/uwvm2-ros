@@ -93,7 +93,7 @@ def main():
                     env.update(LD_LIBRARY_PATH=str(native_dir/'native-libs'),RMW_IMPLEMENTATION='rmw_fastrtps_cpp')
                 else:
                     command=['taskset','-c',str(args.cpu),str(binaries[provider]),'--wasm-set-main-module-name','main','--mode','run',
-                             '--runtime-aot','--runtime-llvm-jit-policy','max','--runtime-llvm-jit-cache-path','disable',
+                             '--runtime-aot','--wasm-policy-global', 'runtime.llvm.policy','max','--runtime-llvm-jit-cache-path','disable',
                              '--runtime-compile-threads','1',*fixture['policy_argv'],'--run',str(wasm)]
                 start=time.monotonic();load=Path('/proc/loadavg').read_text()
                 result=subprocess.run(command,cwd=ROOT,env=env,capture_output=True,timeout=120);wall=time.monotonic()-start

@@ -242,7 +242,7 @@ def main():
                         if probe.connect_ex(("127.0.0.1",11393))==0:break
                     require(master.poll() is None and time.monotonic()<until,"master startup");time.sleep(.01)
             vm = VM([str(args.binary), "-Raot", "-Rdbg", "-Rct", "0", "-Wname", "robot",
-                     "--debug-fault-action", "exit", "--runtime-disable-memtag", "-Rllvm-cache-path", "disable", *preload_flags, *flags, "--run", str(wasm)], folder,
+                     "--debug-fault-action", "exit", "--wasm-policy-global", "runtime.memtag-checks", "off", "-Rllvm-cache-path", "disable", *preload_flags, *flags, "--run", str(wasm)], folder,
                     ["/bin/bash","-c",'kill -STOP $$; exec "$@"',"snapshot-worker",*prefix])
             until=time.monotonic()+20
             while "\nState:\tT" not in Path(f"/proc/{vm.process.pid}/status").read_text():

@@ -181,7 +181,7 @@ namespace
                 for(auto const& base: {base_modes[0], base_modes[1]})
                 {
                     result.push_back({"all_" + ::std::string{base.name} + "_" + policy_label(policy),
-                                      ::std::string{base.args} + " -Rllvm-full-policy " + ::std::string{policy}});
+                                      ::std::string{base.args} + " --wasm-policy-global runtime.llvm.full-policy " + ::std::string{policy}});
                 }
             }
             for(auto const policy: lazy_policies)
@@ -195,7 +195,7 @@ namespace
                 for(auto const policy: tiered_policies)
                 {
                     result.push_back({"all_tiered_" + ::std::to_string(index) + "_" + policy_label(policy),
-                                      ::std::string{tiered_modes[index]} + " -Rllvm-policy " + ::std::string{policy}});
+                                      ::std::string{tiered_modes[index]} + " --wasm-policy-global runtime.llvm.policy " + ::std::string{policy}});
                 }
             }
             return result;
@@ -212,13 +212,13 @@ namespace
                 {
                     auto const selected{full_policies[random_value % full_policies.size()]};
                     result.push_back({prefix + "full_" + policy_label(selected),
-                                      "-Rcm full -Rcc jit -Rllvm-full-policy " + ::std::string{selected}});
+                                      "-Rcm full -Rcc jit --wasm-policy-global runtime.llvm.full-policy " + ::std::string{selected}});
                     break;
                 }
                 case 1uz:
                 {
                     auto const selected{full_policies[random_value % full_policies.size()]};
-                    result.push_back({prefix + "aot_" + policy_label(selected), "-Raot -Rllvm-full-policy " + ::std::string{selected}});
+                    result.push_back({prefix + "aot_" + policy_label(selected), "-Raot --wasm-policy-global runtime.llvm.full-policy " + ::std::string{selected}});
                     break;
                 }
                 case 2uz:
@@ -239,7 +239,7 @@ namespace
                     auto const selected{tiered_policies[random_value % tiered_policies.size()]};
                     auto const tiered_mode{tiered_modes[next_policy_random(random_state) % tiered_modes.size()]};
                     result.push_back({prefix + "tiered_" + policy_label(selected),
-                                      ::std::string{tiered_mode} + " -Rllvm-policy " + ::std::string{selected}});
+                                      ::std::string{tiered_mode} + " --wasm-policy-global runtime.llvm.policy " + ::std::string{selected}});
                     break;
                 }
             }
@@ -540,7 +540,7 @@ namespace
         auto const log_path{artifact_dir / (stem + ".log")};
         auto command{quote_argument(uwvm_path) + " " + mode.args + " -Rllvm-cache-path disable -Rllvm-call-stack " + policy +
                      " -Rclog file " + quote_argument(log_path)};
-        if(::std::string_view{fixture.name}.starts_with("wasm2_")) { command += " --wasm-feature-wasm2"; }
+        if(::std::string_view{fixture.name}.starts_with("wasm2_")) { command += " --wasm-policy-global parser.baseline wasm2"; }
         if(auto const extra_args{env_string("UWVM_LLVM_JIT_TEST_EXTRA_RUNTIME_ARGS")}; !extra_args.empty()) { command += " " + extra_args; }
         command += " --run " + quote_argument(wasm_path);
         auto const full_command{command + " > " + quote_argument(output_path) + " 2>&1"};

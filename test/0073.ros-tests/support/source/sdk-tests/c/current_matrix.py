@@ -145,8 +145,8 @@ def main():
                 argv += ["--skip-native", "--wasm-sysroot", reference64,
                          "--wasm-libc", reference64 / "lib/wasm64-wasip1/libc.a",
                          "--wasm-crt", reference64 / "lib/wasm64-wasip1/crt1-command.o",
-                         "--runtime-extra=--wasm-feature-enable-memory64",
-                         "--runtime-extra=--wasm-feature-enable-table64"]
+                         "--runtime-extra=--wasm-policy-global", "--runtime-extra=parser.memory64", "--runtime-extra=on",
+                         "--runtime-extra=--wasm-policy-global", "--runtime-extra=parser.table64", "--runtime-extra=on"]
             result = subprocess.run([str(item) for item in argv], stdin=subprocess.DEVNULL,
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     timeout=240, check=False)

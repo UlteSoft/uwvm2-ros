@@ -140,7 +140,7 @@ def main():
         def command(provider):
             if provider=='native':return ['taskset','-c',str(args.cpu),str(out/('native-'+mode))]
             return ['taskset','-c',str(args.cpu),str(runtime),'--wasm-set-main-module-name','main','--runtime-aot',
-                '--runtime-llvm-jit-policy','max','--runtime-compile-threads','1','--runtime-llvm-jit-cache-path','disable',*policy(),'--run',str(out/(mode+'.wasm'))]
+                '--wasm-policy-global', 'runtime.llvm.policy','max','--runtime-compile-threads','1','--runtime-llvm-jit-cache-path','disable',*policy(),'--run',str(out/(mode+'.wasm'))]
         expected=None
         def observe(provider,data,label):
             nonlocal expected

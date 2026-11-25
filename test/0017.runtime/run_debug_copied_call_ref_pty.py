@@ -32,7 +32,7 @@ for argv in [[str(a.wasm_tools.resolve()),'parse',str(wat),'-o',str(wasm)],
  subprocess.run(argv,check=True)
 sites,_=markers(a.wasm_tools.resolve(),wasm);assert len(sites)==4 and len(sites[3])==2,sites
 body=a.out.resolve()/'replacement.bin';body.write_bytes(bytes.fromhex('01 01 7f 20 00 41 09 6a 22 01 0b'))
-c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-WFE-function-references','-WFE-reference-types','-WFE-tail-call','--run',str(wasm)])
+c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','--wasm-policy-global', 'parser.function-references', 'on','--wasm-policy-global', 'parser.reference-types', 'on','--wasm-policy-global', 'parser.tail-call', 'on','--run',str(wasm)])
 actions=[];runs=[]
 def ask(text,error=False):
  at=len(c.log);os.write(c.fd,(text+'\n').encode());reply=c.wait(lambda b:re.search(rb'(?:^|\n)\(uwvm-debug\) $',b),at,120)

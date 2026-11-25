@@ -65,7 +65,7 @@ def main():
     for right in ("realtime-clock", "monotonic-clock", "process-clock", "thread-clock", "random",
                   "proc-raise", "sched-yield", "stdio-full-rights"):
         common += ["--wasip1-single-deny", "main", right]
-    features = ["--wasm-feature-enable-table64", "--wasm-feature-enable-memory64"]
+    features = ["--wasm-policy-global", "parser.table64", "on", "--wasm-policy-global", "parser.memory64", "on"]
     rows, artifacts = [], {}
     rebuilt = []
     blocker = None

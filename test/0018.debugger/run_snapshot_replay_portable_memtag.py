@@ -17,7 +17,7 @@ def main():
                         help='successful run_snapshot_replay_memtag output directory')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--runner-json', type=Path)
-    parser.add_argument('--backend', choices=('software', 'hardware'), default='software')
+    parser.add_argument('--backend', choices=('software', 'arm-mte'), default='software')
     parser.add_argument('--mode', choices=('sync', 'async'), default='sync')
     parser.add_argument('--memory64', action='store_true')
     parser.add_argument('--shared', action='store_true')
@@ -41,7 +41,7 @@ def main():
     result = {'passed': False, 'journalSha256': digest, 'recorded': str(recorded), 'rounds': []}
     vm = None
     try:
-        flags = ['--runtime-memtag-backend', args.backend, '--runtime-memtag-mode', args.mode]
+        flags = ['--wasm-policy-global', 'runtime.memtag-backend', args.backend, '--runtime-memtag-mode', args.mode]
         if args.log:
             flags += ['--runtime-memtag-action', 'silent-log', 'path', str(out / 'violations.log')]
         suffix = '_wasm64' if args.memory64 else ''

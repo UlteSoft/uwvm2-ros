@@ -192,7 +192,7 @@ def main():
         text = execute(tag + "-inspect", ["/usr/bin/wasm-objdump", "-x", artifact]).decode()
         if not re.search(r"memory\[0\].*max=256.*shared", text) or '-> "wasi_thread_start"' not in text:
             raise RuntimeError("bounded shared memory and real WASI thread entry required")
-        guest = [runtime, "--wasm-feature-enable-threads", "--wasi-threads", "1", "1", "1048576", "16777216", "8388608", "16777216",
+        guest = [runtime, "--wasm-policy-global", "parser.threads", "on", "--wasi-threads", "1", "1", "1048576", "16777216", "8388608", "16777216",
                  "--wasip1-global-noinherit-system-environment", "--run", artifact]
         execute(tag + "-actual-pthread-guest", guest, b"c-pthread=42\n")
         report["modes"].append({"selector": selector, "actual_mode": mode, "actual_library": pin(archive),

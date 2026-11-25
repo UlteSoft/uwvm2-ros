@@ -95,10 +95,10 @@ namespace
         0x47u, 0x04u, 0x40u, 0x00u, 0x0bu, 0x0bu};
 
     inline constexpr ::std::string_view wasm1p1_scalar_runtime_args{
-        "--runtime-llvm-jit-cache-path disable --wasm-feature-wasm1.1"};
+        "--runtime-llvm-jit-cache-path disable --wasm-policy-global parser.baseline wasm1p1"};
 
     inline constexpr ::std::string_view wasm1p1_all_runtime_args{
-        "--runtime-llvm-jit-cache-path disable --wasm-feature-wasm1.1"};
+        "--runtime-llvm-jit-cache-path disable --wasm-policy-global parser.baseline wasm1p1"};
 
     // WebAssembly 1.1 scalar edge fixture.  This covers every sign-extension
     // opcode and every saturating float-to-int opcode at clamp/NaN boundaries.
@@ -228,7 +228,7 @@ namespace
         0x10u, 0x00u, 0x6au, 0x41u, 0x2au, 0x47u, 0x04u, 0x40u, 0x00u, 0x0bu, 0x0bu};
 
     inline constexpr ::std::string_view wasm1p1_multivalue_runtime_args{
-        "--runtime-llvm-jit-cache-path disable --wasm-feature-wasm1.1"};
+        "--runtime-llvm-jit-cache-path disable --wasm-policy-global parser.baseline wasm1p1"};
 
     // The function itself has the MVP `() -> ()` type, but its block uses the
     // valid Wasm 1.1 s33 type-index form `(type 0)`.  ROS does not yet lower
@@ -614,7 +614,7 @@ namespace
         auto const output_path{artifact_dir / "native_unwind_aot.out"};
         auto const log_path{artifact_dir / "native_unwind_aot.log"};
         auto const command{quote_argument(uwvm_path) +
-                           " -Raot -Rllvm-policy max -Rllvm-cache-path disable -Rllvm-call-stack unwind -Rclog file " +
+                           " -Raot --wasm-policy-global runtime.llvm.policy max -Rllvm-cache-path disable -Rllvm-call-stack unwind -Rclog file " +
                            quote_argument(log_path) + " --run " + quote_argument(wasm_path)};
         if(!run_trap_command(command, output_path, "aot native unwind")) [[unlikely]] { return false; }
         ::std::string log{};
@@ -708,7 +708,7 @@ namespace
     {
         auto command{quote_argument(uwvm_path)};
         append_extra_args(command, runtime_args);
-        command += " --wasm-feature-mvp --run " + quote_argument(wasm_path);
+        command += " --wasm-policy-global parser.baseline mvp --run " + quote_argument(wasm_path);
 
         auto output_path{wasm_path};
         output_path += output_suffix;
@@ -888,9 +888,9 @@ int main(int argc, char** argv)
     if(!run_native_unwind_trap_fixture(uwvm_path, executable_dir)) [[unlikely]] { return 1; }
 
     if(!run_fixture(uwvm_path, executable_dir, "simd_vector_abi.wasm",
-                    ::uwvm2test::llvm_full_fixture::vector_abi, "--wasm-feature-wasm2")) { return 1; }
+                    ::uwvm2test::llvm_full_fixture::vector_abi, "--wasm-policy-global parser.baseline wasm2")) { return 1; }
     if(!run_fixture(uwvm_path, executable_dir, "simd_table_mutation.wasm",
-                    ::uwvm2test::llvm_full_fixture::table_mutation, "--wasm-feature-wasm2")) { return 1; }
+                    ::uwvm2test::llvm_full_fixture::table_mutation, "--wasm-policy-global parser.baseline wasm2")) { return 1; }
 
     return 0;
 }

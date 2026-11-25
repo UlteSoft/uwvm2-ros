@@ -30,7 +30,7 @@ def main():
     read,write=os.pipe();vm=None;result={"passed":False}
     try:
         vm=VM([str(args.binary.resolve()),"-Raot","-Rdbg","-Rct","0","-Rllvm-cache-path","disable",
-            "--runtime-disable-memtag","--wasip1-global-enable","--wasip1-global-interface","fd_read","allow",
+            "--wasm-policy-global", "runtime.memtag-checks", "off","--wasip1-global-enable","--wasip1-global-interface","fd_read","allow",
             "--wasip1-global-grant","stdin.read","--run",str(wasm)],out,runner,stdin=read)
         os.close(read);read=-1
         def stopped():

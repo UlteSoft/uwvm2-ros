@@ -1043,7 +1043,7 @@ exec(compile(source, str(path), 'exec', dont_inherit=True, optimize=0), scope, s
 
         auto const scalar_cache_dir{artifact_dir / "cache-wasm1p1-feature-smoke"};
         constexpr ::std::string_view wasm1p1_feature_args{
-            "-Raot --wasm-feature-wasm1.1"};
+            "-Raot --wasm-policy-global parser.baseline wasm1p1"};
         if(!run_cached_mode_twice(uwvm_path,
                                   artifact_dir,
                                   scalar_wasm_path,
@@ -1059,12 +1059,12 @@ exec(compile(source, str(path), 'exec', dont_inherit=True, optimize=0), scope, s
         auto const& vector_bytes{::uwvm2test::llvm_full_fixture::vector_abi};
         if(!write_fixture(vector_path, vector_bytes.data(), vector_bytes.size()) ||
            !run_cached_mode_twice(uwvm_path, artifact_dir, vector_path, artifact_dir / "cache-simd-vector-abi",
-                                 "-Raot --wasm-feature-wasm2", "simd_vector_abi")) { return false; }
+                                 "-Raot --wasm-policy-global parser.baseline wasm2", "simd_vector_abi")) { return false; }
         auto const table_path{artifact_dir / "simd_table_mutation.wasm"};
         auto const& table_bytes{::uwvm2test::llvm_full_fixture::table_mutation};
         if(!write_fixture(table_path, table_bytes.data(), table_bytes.size()) ||
            !run_cached_mode_twice(uwvm_path, artifact_dir, table_path, artifact_dir / "cache-simd-table-mutation",
-                                 "-Raot --wasm-feature-wasm2", "simd_table_mutation")) { return false; }
+                                 "-Raot --wasm-policy-global parser.baseline wasm2", "simd_table_mutation")) { return false; }
         return true;
     }
 

@@ -78,7 +78,7 @@ The matrix defaults to only `memory=default` and `thread-local=0`. Add those
 dimensions explicitly when needed:
 
 ```bash
-UWVM_BACKEND_MATRIX_MEMORY_MODELS="default mmap single-thread-alloc multi-thread-alloc" \
+UWVM_BACKEND_MATRIX_MEMORY_MODELS="mmap" \
 UWVM_BACKEND_MATRIX_THREAD_LOCAL_MODES="0 1" \
 test/0015.backend_fuzzer/run_backend_fuzzer_matrix.sh
 ```
@@ -94,7 +94,7 @@ CXX="$(command -v clang++)" \
 SYSROOT="$(xcrun --sdk macosx --show-sdk-path)" \
 UWVM_BACKEND_LIBFUZZER_MODES="uwvm-int-ring-matrix uwvm-int-full llvm-aot" \
 test/0015.backend_fuzzer/run_backend_libfuzzer.sh \
-  --memory-model single-thread-alloc \
+  --memory-model mmap \
   --no-use-thread-local \
   -- \
   -max_total_time=300
@@ -119,8 +119,7 @@ Useful environment variables:
 - `UWVM_BACKEND_FUZZER_WABT_PULL=1`: update an existing WABT checkout.
 - `UWVM_BACKEND_FUZZER_COMBINE`: `none`, `soft`, `heavy`, or `extra`.
 - `UWVM_BACKEND_FUZZER_DELAY`: `none`, `soft`, or `heavy`.
-- `UWVM_BACKEND_FUZZER_MEMORY_MODEL`: `default`, `mmap`,
-  `single-thread-alloc`, or `multi-thread-alloc`.
+- `UWVM_BACKEND_FUZZER_MEMORY_MODEL`: `default` or `mmap`. Both use OS-backed linear memory.
 - `UWVM_BACKEND_FUZZER_USE_THREAD_LOCAL=1`: define `UWVM_USE_THREAD_LOCAL`.
 - `UWVM_BACKEND_FUZZER_EXTRA_DEFINES`: extra build macros, space- or
   comma-separated. Entries may include or omit `-D`.

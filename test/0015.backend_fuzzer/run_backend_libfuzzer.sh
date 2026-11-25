@@ -12,7 +12,7 @@ CORPUS_EXPLICIT=0
 ARTIFACT_EXPLICIT=0
 COMBINE="${UWVM_BACKEND_FUZZER_COMBINE:-none}"
 DELAY="${UWVM_BACKEND_FUZZER_DELAY:-none}"
-MEMORY_MODEL="${UWVM_BACKEND_FUZZER_MEMORY_MODEL:-single-thread-alloc}"
+MEMORY_MODEL="${UWVM_BACKEND_FUZZER_MEMORY_MODEL:-mmap}"
 USE_THREAD_LOCAL="${UWVM_BACKEND_FUZZER_USE_THREAD_LOCAL:-0}"
 SANITIZERS="${UWVM_BACKEND_LIBFUZZER_SANITIZERS:-fuzzer,address,undefined}"
 SYSROOT_ARG="${UWVM_BACKEND_LIBFUZZER_SYSROOT:-${SYSROOT:-${SDKROOT:-}}}"
@@ -29,7 +29,7 @@ Options:
   --artifact-dir <path>   Crash artifact output directory.
   --combine <mode>        uwvm-int combine macros: none|soft|heavy|extra.
   --delay <mode>          uwvm-int delay-local macros: none|soft|heavy.
-  --memory-model <mode>   default|mmap|single-thread-alloc|multi-thread-alloc.
+  --memory-model <mode>   default|mmap.
   --use-thread-local      Build target with UWVM_USE_THREAD_LOCAL.
   --no-use-thread-local   Build target without UWVM_USE_THREAD_LOCAL.
   --sanitizers <list>     clang -fsanitize list. Default: fuzzer,address,undefined.
@@ -144,7 +144,7 @@ case "${DELAY}" in
   *) echo "ERR: unsupported delay mode: ${DELAY}" >&2; exit 2 ;;
 esac
 case "${MEMORY_MODEL}" in
-  default|mmap|single-thread-alloc|multi-thread-alloc) ;;
+  default|mmap) ;;
   *) echo "ERR: unsupported memory model: ${MEMORY_MODEL}" >&2; exit 2 ;;
 esac
 case "${USE_THREAD_LOCAL}" in

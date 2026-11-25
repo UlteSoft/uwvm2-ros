@@ -167,8 +167,8 @@ def main():
             console = None; row = {"stack": stack, "operation": operation, "actual_VM": True}
             try:
                 argv = [str(a.binary), "-Rdbg", "-Rct", "0", "-Rllvm-cache-path", "disable",
-                        "-Rllvm-call-stack", stack, "-WFE-tail-call", "-WFE-function-references",
-                        "-WFE-reference-types", "-WFE-exceptions", "--run", str(wasm)]
+                        "-Rllvm-call-stack", stack, "--wasm-policy-global", "parser.tail-call", "on", "--wasm-policy-global", "parser.function-references", "on",
+                        "--wasm-policy-global", "parser.reference-types", "on", "--wasm-policy-global", "parser.exceptions", "on", "--run", str(wasm)]
                 console = Console(argv, a.out / (stack + "-" + operation + ".log")); console.prompt()
                 assert b"prepared; no Wasm instruction executed" in console.send("status")
                 assert b"registered" in console.send(f"breakwasm 0 {exports['_start']} 0")

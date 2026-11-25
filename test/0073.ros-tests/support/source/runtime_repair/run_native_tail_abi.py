@@ -67,7 +67,7 @@ def main():
             (args.out / (name + '.assemble.log')).write_bytes(assembled.stdout + assembled.stderr)
             assert assembled.returncode == 0, name
             command = [str(runtime), '-Raot', '-Rllvm-cache-path', 'disable',
-                       '-WFE-tail-call', '-WFE-function-references', '--run', str(wasm)]
+                       '--wasm-policy-global', 'parser.tail-call', 'on', '--wasm-policy-global', 'parser.function-references', 'on', '--run', str(wasm)]
             child = subprocess.run(command, capture_output=True, timeout=120)
             text = ansi.sub('', (child.stdout + child.stderr).decode(errors='replace'))
             (args.out / (name + '.log')).write_text(text)

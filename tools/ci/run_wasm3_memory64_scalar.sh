@@ -10,12 +10,11 @@ test_source=${UWVM_TEST_SOURCE:-test/0013.uwvm_int/wasm3/memory64_scalar.cc}
 extra=()
 case ${UWVM_TEST_MEMORY_BACKEND:-mmap} in
     mmap) extra+=(-DUWVM_FORCE_USE_MMAP) ;;
-    allocator) extra+=(-DUWVM_FORCE_DISABLE_MMAP -DUWVM_USE_MULTITHREAD_ALLOCATOR) ;;
     *) echo 'invalid memory backend' >&2; exit 2 ;;
 esac
 combinations=(none);delays=(none)
 if [[ ${2:-} == sanitizers ]]; then
-    if [[ ${UWVM_TEST_MEMORY_BACKEND:-mmap} == mmap ]]; then extra+=(-fsanitize=undefined); else extra+=(-fsanitize=address,undefined); fi
+    extra+=(-fsanitize=undefined)
     extra+=(-fno-sanitize-recover=all -fno-omit-frame-pointer)
 fi
 if [[ ${2:-} == matrix ]]; then combinations=(none soft heavy extra); delays=(none soft heavy); fi

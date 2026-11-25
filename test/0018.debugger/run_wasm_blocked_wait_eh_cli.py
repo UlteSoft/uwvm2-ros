@@ -123,7 +123,7 @@ def main():
                            before_wait_offset=before, after_wait_offset=after)
                 try:
                     argv = prefix + [str(args.binary), "-Rdbg", "-Rct", "0", "-Rllvm-cache-path", "disable",
-                                     "-Rllvm-call-stack", policy, "-WFE-threads", "-WFE-memory64", "-WFE-exceptions", "--run", str(wasm)]
+                                     "-Rllvm-call-stack", policy, "--wasm-policy-global", "parser.threads", "on", "--wasm-policy-global", "parser.memory64", "on", "--wasm-policy-global", "parser.exceptions", "on", "--run", str(wasm)]
                     console = WaitConsole(argv, args.out / f"wait-{address}-{compare}-{policy}.log")
                     console.prompt()
                     assert b"prepared; no Wasm instruction executed" in console.send("status")

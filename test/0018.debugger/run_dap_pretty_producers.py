@@ -505,7 +505,7 @@ def session(args, folder, root):
     folder.mkdir(mode=0o700)
     dap = base.load(root / 'tools/debug/dap_adapter.py', 'actual_pretty_producer_dap')
     mode = [] if args.ros or args.fixed_llvm_full else ['-Rcc', 'jit', '-Rcm', 'full']
-    vm = ['-m', 'debug' if args.case in ('coroutine','rust','rust-deque','rust-rc') else 'run', *mode, *(['--wasm-feature-enable-exceptions'] if args.wasm_exceptions else []), '-Rct', '0', '-Rllvm-call-stack', args.policy, '-Rllvm-cache-path', 'disable', '--run', str(args.wasm)]
+    vm = ['-m', 'debug' if args.case in ('coroutine','rust','rust-deque','rust-rc') else 'run', *mode, *(['--wasm-policy-global', 'parser.exceptions', 'on'] if args.wasm_exceptions else []), '-Rct', '0', '-Rllvm-call-stack', args.policy, '-Rllvm-cache-path', 'disable', '--run', str(args.wasm)]
     server = live.BrokerSession(args.uwvm, Path(__file__).resolve(), root / 'tools/debug/dap_adapter.py', vm, folder)
     record = dict(passed=False, case=args.case, compiler_id=args.compiler_id, policy=args.policy, values=[], markers=[], actual_dap_stdio=True)
     try:

@@ -61,7 +61,7 @@ def main():
     for name, data in fixtures.items():
         (args.out / (name + ".wasm")).write_bytes(data)
     base = shlex.split(args.runner) + [str(args.vm), "--runtime-" + args.engine,
-        "--wasm-feature-enable-multi-memory", "--wasm-feature-enable-memory64",
+        "--wasm-policy-global", "parser.multi-memory", "on", "--wasm-policy-global", "parser.memory64", "on",
         "--wasip1-single-create", "main", "--wasip1-single-enable", "main"]
     if args.engine == "aot":
         base += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-compile-threads", "0"]
@@ -96,8 +96,8 @@ def main():
         run("max-is-cap-" + suffix, flags=[option, "main", "all", "1", "4294967295"])
     run("renamed-module", flags=["-Wname", "renamed", "-Wmemlim", "main", "all", "1", "1"], expected=126, diagnostic="unknown or non-runtime module")
     for quota in ("runtime_modules", "local_defined_memories", "local_defined_functions", "local_defined_codes"):
-        run("quota-" + quota, flags=["-Wilim", quota, "0"], expected=126, diagnostic="reserve limit exceeded")
-    run("zero-unused-quota", fixture="none", flags=["-Wilim", "local_defined_memories", "0"])
+        run("quota-" + quota, flags=["--wasm-process-initializer-limit", quota, "0"], expected=126, diagnostic="reserve limit exceeded")
+    run("zero-unused-quota", fixture="none", flags=["--wasm-policy-single", "main", "init.local-defined-memories", "0"])
     run("zero-memory-min", flags=["-Wmemlim", "main", "all", "0", "0"])
     # Read the target ELF class, not the Python launcher's native word size.
     image = args.vm.read_bytes()

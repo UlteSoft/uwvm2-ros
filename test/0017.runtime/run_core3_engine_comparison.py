@@ -101,10 +101,10 @@ def main():
         row = {"case": case[0], "iterations": values, "expected": goal, "sha256": digest(wasm), "trials": []}
         check = subprocess.run([args.wabt_validator, "--enable-all", wasm], capture_output=True, timeout=30)
         row["wabt_validator_exit"] = check.returncode
-        strict = ["--wasm-feature-disable-memtag-extension", "--debug-fault-action", "exit", "--run", wasm]
-        aot = ["-WF3", "-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable", *strict]
+        strict = ["--wasm-policy-global", "parser.memtag", "off", "--debug-fault-action", "exit", "--run", wasm]
+        aot = ["--wasm-policy-global", "parser.baseline", "wasm3", "-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable", *strict]
         engines = [
-            ("uwvm-int", [args.runtime, "-WF3", "-Rint", *strict]),
+            ("uwvm-int", [args.runtime, "--wasm-policy-global", "parser.baseline", "wasm3", "-Rint", *strict]),
             ("uwvm-aot", [args.runtime, *aot]),
             ("wasmtime", [args.wasmtime, "run", "-C", "cache=n", "-O", "opt-level=2",
                           "-W", "all-proposals=y", "-W", "component-model=n", wasm]),

@@ -102,8 +102,8 @@ def main():
             scenario=entry['scenario'];flags=policy(OPERATIONS,'deny' if scenario=='deny' else 'allow') if scenario in ('deny','absent') else configured()
             for engine in ('int','aot'):
                 selected=['--runtime-'+engine,'--runtime-compile-threads','1',*flags]
-                if engine=='aot':selected+=['--runtime-llvm-jit-policy','max','--runtime-llvm-jit-cache-path','disable']
-                if scenario.startswith('mte-'):selected+=['--runtime-memtag-backend','software','--runtime-memtag-mode','sync']
+                if engine=='aot':selected+=['--wasm-policy-global', 'runtime.llvm.policy','max','--runtime-llvm-jit-cache-path','disable']
+                if scenario.startswith('mte-'):selected+=['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync']
                 fault=scenario.startswith('mte-') and scenario!='mte-valid';diagnostics=()
                 if fault:diagnostics=('[crash] memory-protection','Exit status: 122',f'Memory index: {entry["memory"]}','Pointer tag: 5','Allocation tag: 3')
                 run(entry['name']+'-'+engine,selected,wasm,-signal.SIGILL if fault else 0,diagnostics)

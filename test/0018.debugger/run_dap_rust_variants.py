@@ -14,7 +14,7 @@ def session(a,folder,root,profile):
  folder.mkdir(mode=0o700)
  dap=base.load(root/'tools/debug/dap_adapter.py','actual_variant_dap')
  mode=[] if a.ros else ['-Rcc','jit','-Rcm','full']
- features=['--wasm-feature-enable-memory64','--wasm-feature-enable-table64'] if profile['address_width']==64 else []
+ features=['--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on'] if profile['address_width']==64 else []
  vm=['-m','run',*mode,*features,'-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-cache-path','disable','--run',profile['path']]
  server=live.BrokerSession(a.uwvm,Path(__file__).resolve(),root/'tools/debug/dap_adapter.py',vm,folder)
  record=dict(passed=False,policy=a.policy,profile=profile['profile'],trees=[],array_selectors=[],array_rejections=[])

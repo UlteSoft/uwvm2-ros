@@ -40,7 +40,7 @@ triple=a.target;deps=Path('/work/deps');sysroot=deps/'usr'/triple
 flags=['/toolchain/bin/clang++',f'--target={triple}',f'--sysroot={deps}',f'--gcc-install-dir={deps}/usr/lib/gcc-cross/{triple}/15',
  '-idirafter',str(sysroot/'include'),'-stdlib=libstdc++','-std=c++26','-O1','-g0','-fno-rtti','-fasynchronous-unwind-tables','-Wno-undefined-inline',
  '-DUWVM=2','-DUWVM_USE_LLVM_JIT','-DUWVM_DISABLE_INT','-DUWVM_DISABLE_LOCAL_IMPORTED_WASIP1',
- '-DUWVM_FORCE_DISABLE_MMAP','-DUWVM_USE_MULTITHREAD_ALLOCATOR','-DUWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519',
+ '-DUWVM_FORCE_USE_MMAP','-DUWVM_RUNTIME_LLVM_JIT_CACHE_USE_OPENSSL_ED25519',
  '-DUWVM2_BUILD_SOURCE_ID=u8"'+source_id+'"']
 for path in [a.llvm_root/'include',a.llvm_source_root/'llvm/include',deps/'usr/include'/triple,deps/'usr/include',
  Path('src'),Path('third-parties/bizwen/include'),Path('third-parties/fast_io/include'),Path('third-parties/boost_unordered/include')]:

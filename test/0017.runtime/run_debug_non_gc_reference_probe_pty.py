@@ -19,7 +19,7 @@ wat.write_text('''(module (type $f (func (param i32) (result i32)))
 subprocess.run([str(a.wasm_tools.resolve()),'parse',str(wat),'-o',str(wasm)],check=True)
 sites,_=markers(a.wasm_tools.resolve(),wasm);assert len(sites[1])==3,sites
 os.environ.update(TERM='dumb',NO_COLOR='1')
-c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','-WFE-reference-types','-WFE-function-references','--run',str(wasm)])
+c=Console([str(a.uwvm.resolve()),'-Rdbg','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','--wasm-policy-global', 'parser.reference-types', 'on','--wasm-policy-global', 'parser.function-references', 'on','--run',str(wasm)])
 actions=[]
 def cmd(text):
     at=len(c.log);os.write(c.fd,text.encode()+b'\n')

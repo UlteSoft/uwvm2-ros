@@ -216,7 +216,7 @@ def main():
                         verify_gate()
                         command = [str(runtime), '--wasm-set-main-module-name', 'main', '--runtime-'+engine,
                                    '--runtime-compile-threads', '0', '--runtime-llvm-jit-cache-path', 'disable',
-                                   '--runtime-memtag-backend', 'software', *flags,
+                                   '--wasm-policy-global', 'runtime.memtag-backend', 'software', *flags,
                                    '--wasm-preload-library', str(images[1]), 'worker', '--run', str(images[0])]
                         start = time.monotonic()
                         result = subprocess.run(command, capture_output=True, timeout=60)

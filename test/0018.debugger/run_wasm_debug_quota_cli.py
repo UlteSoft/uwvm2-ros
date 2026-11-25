@@ -200,8 +200,8 @@ def main():
             row = dict(case=case['name'], policy=policy, actual_VM=True, observations=[], passed=False)
             try:
                 argv = [*runner, str(args.binary), '-Rdbg', '-Rct', '0', '-Rllvm-cache-path', 'disable',
-                    '-Rllvm-call-stack', policy, '-Rllvm-policy', args.jit_policy,
-                    '-WFE-gc', '-WFE-reference-types', '-WFE-function-references', '--run', str(wasm)]
+                    '-Rllvm-call-stack', policy, '--wasm-policy-global', 'runtime.llvm.policy', args.jit_policy,
+                    '--wasm-policy-global', 'parser.gc', 'on', '--wasm-policy-global', 'parser.reference-types', 'on', '--wasm-policy-global', 'parser.function-references', 'on', '--run', str(wasm)]
                 row['argv'] = argv
                 console = preview.OperandConsole(argv, args.out/(case['name']+'-'+policy+'.log'))
                 console.prompt_timeout = 600 if case['kind']=='reply' and runner else 120

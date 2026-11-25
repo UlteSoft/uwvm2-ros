@@ -7,7 +7,7 @@ compiler=${CXX:-clang++}
 before=$(python3 tools/ci/wasm3_source_fingerprint.py . "$out/source-before.json")
 command=("$compiler" -std=c++26 -stdlib=libc++ -fuse-ld=lld -rtlib=compiler-rt -unwindlib=libunwind
     -O1 -g0 -Wno-undefined-inline -DUWVM=2 -DUWVM_DISABLE_INT -DUWVM_DISABLE_JIT
-    -DUWVM_DISABLE_LOCAL_IMPORTED_WASIP1 -DUWVM_USE_MULTITHREAD_ALLOCATOR -fsanitize=address,undefined -fno-sanitize-recover=all -pthread
+    -DUWVM_DISABLE_LOCAL_IMPORTED_WASIP1 -DUWVM_FORCE_USE_MMAP -fsanitize=address,undefined -fno-sanitize-recover=all -pthread
     -I src -I third-parties/bizwen/include -I third-parties/fast_io/include -I third-parties/boost_unordered/include
     test/0011.initializer/threads_shared_memory.cc -o "$out/shared-memory")
 printf '%q ' "${command[@]}" >"$out/build.command"

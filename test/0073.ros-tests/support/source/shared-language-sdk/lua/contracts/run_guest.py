@@ -48,7 +48,7 @@ def _main():
     if any(_pin(Path(row["path"])) != row for row in build["source_inputs"]):
         raise ValueError("retained actual Lua build inputs changed")
     args.out.mkdir(parents=True, exist_ok=False)
-    argv = [str(args.runtime), "--runtime-int", "-Rct", "0", "--wasm-feature-enable-exceptions",
+    argv = [str(args.runtime), "--runtime-int", "-Rct", "0", "--wasm-policy-global", "parser.exceptions", "on",
             "--wasm-set-main-module-name", "main", "--wasip1-global-disable",
             "--wasip1-global-noinherit-system-environment", "--wasip1-single-create", "main",
             "--wasip1-single-enable", "main", "--wasip1-single-hide-host-api", "main",

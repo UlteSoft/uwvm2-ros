@@ -22,7 +22,7 @@ void check(bytes const& binary,bool restricted,unsigned restriction=0){
  int pipes[2];CHECK(pipe(pipes)==0);auto pid=fork();CHECK(pid>=0);
  if(pid==0){close(pipes[0]);if(dup2(pipes[1],2)!=2)std::_Exit(55);close(pipes[1]);uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());init::enforce_wasm1p1_initializer_feature_parameters(m,p);std::_Exit(0);}
  close(pipes[1]);char buffer[2048];ssize_t n;std::string log;while((n=read(pipes[0],buffer,sizeof(buffer)))>0)log.append(buffer,n);close(pipes[0]);int status;CHECK(waitpid(pid,&status,0)==pid);CHECK((WIFEXITED(status)&&WEXITSTATUS(status)==0)==!restricted);
- if(restricted){CHECK(log.find("[fatal]")!=std::string::npos);if(restriction==0||restriction==3)CHECK(log.find("WebAssembly 3.0")!=std::string::npos);CHECK(log.find(restriction==0?"--wasm-feature-enable-function-references":restriction==1?"reference-types":restriction==2?"simd":"--wasm-feature-enable-exceptions")!=std::string::npos);}
+ if(restricted){CHECK(log.find("[fatal]")!=std::string::npos);if(restriction==0||restriction==3)CHECK(log.find("WebAssembly 3.0")!=std::string::npos);CHECK(log.find(restriction==0?"parser.function-references on":restriction==1?"reference-types":restriction==2?"simd":"parser.exceptions on")!=std::string::npos);}
 }
 int main(){rlimit lim{0,0};CHECK(setrlimit(RLIMIT_CORE,&lim)==0);
  check(module(raw({1,0x60,1,0x63,0x70,0})),true);check(module(raw({1,0x60,1,0x70,0})),false);check(module(raw({1,0x60,0,0})),false);

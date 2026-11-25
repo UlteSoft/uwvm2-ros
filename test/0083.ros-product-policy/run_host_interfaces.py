@@ -156,7 +156,7 @@ def main():
                 worker_policy[-1]="allow"
                 run("wasip1-resource-not-inherited",engine,own+preload+worker_policy,caller,True,("--wasip1-single-grant 'worker' random",))
     thread_memory=compile("thread-memory",'(module (memory (export "memory") 4 256 shared))')
-    thread_flags=["--wasm-feature-enable-threads", "--wasi-threads", "1", "1", "1048576", "16777216", "8388608", "16777216",
+    thread_flags=["--wasm-policy-global", "parser.threads", "on", "--wasi-threads", "1", "1", "1048576", "16777216", "8388608", "16777216",
                   "--wasm-preload-library",str(thread_memory),"env"]
     for row in (r for r in rows if not r["results"] or r["ns"]=="wasi"):
         body=invoke(row,0)+(" i32.const -1 i32.ne if unreachable end" if row["results"] else "")

@@ -130,7 +130,7 @@ def main() -> None:
         for stem in FIXTURES:
             expected[f"{stem}-{policy}"] = (True, "")
             expected[f"{stem}-{policy}-exceptions-off"] = (
-                False, "--wasm-feature-enable-exceptions")
+                False, "--wasm-policy-global", "parser.exceptions", "on")
         expected[f"{FIXTURES[0]}-{policy}-function-references-off"] = (
             False, "function-references")
         if schema == 2:

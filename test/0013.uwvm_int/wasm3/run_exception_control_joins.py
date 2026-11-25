@@ -90,8 +90,8 @@ def main():
             arch, executable = selected.split("=", 1)
             for engine in ("int", "aot"):
                 ok &= run(arch + "-" + engine + "-" + source.stem,
-                          [executable, "--wasm-feature-enable-exceptions", "-R" + engine,
-                           "--runtime-compile-threads", "0", "--runtime-llvm-jit-policy", "debug",
+                          [executable, "--wasm-policy-global", "parser.exceptions", "on", "-R" + engine,
+                           "--runtime-compile-threads", "0", "--wasm-policy-global", "runtime.llvm.policy", "debug",
                            "--run", wasm], expected)
     if report["inputs"] != {str(p): sha(p) for p in inputs}:
         raise RuntimeError("A test input changed")

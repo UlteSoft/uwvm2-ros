@@ -64,18 +64,18 @@ int main()
 )cpp"};
 
     inline constexpr ::std::string_view wasm1p1_feature_args{
-        "--runtime-llvm-jit-cache-path disable --wasm-feature-wasm2"};
+        "--runtime-llvm-jit-cache-path disable --wasm-policy-global parser.baseline wasm2"};
 
     inline constexpr ::std::string_view wasm1p1_explicit_feature_args{
         "--runtime-llvm-jit-cache-path disable "
-        "--wasm-feature-enable-multi-value "
-        "--wasm-feature-enable-reference-types "
-        "--wasm-feature-enable-table-instructions "
-        "--wasm-feature-enable-multiple-tables "
-        "--wasm-feature-enable-bulk-memory "
-        "--wasm-feature-enable-sign-extension "
-        "--wasm-feature-enable-nontrapping-float-to-int "
-        "--wasm-feature-enable-simd"};
+        "--wasm-policy-global parser.multi-value on "
+        "--wasm-policy-global parser.reference-types on "
+        "--wasm-policy-global parser.table-instructions on "
+        "--wasm-policy-global parser.multiple-tables on "
+        "--wasm-policy-global parser.bulk-memory on "
+        "--wasm-policy-global parser.sign-extension on "
+        "--wasm-policy-global parser.nontrapping-float-to-int on "
+        "--wasm-policy-global parser.simd on"};
 
     [[nodiscard]] ::std::string quote_argument(::std::filesystem::path const& path)
     {
@@ -381,7 +381,7 @@ int main()
     {
         auto const command{make_uwvm_command(uwvm_path,
                                              "-Raot",
-                                             "--runtime-llvm-jit-cache-path disable --wasm-feature-disable-sign-extension",
+                                             "--runtime-llvm-jit-cache-path disable --wasm-policy-global parser.sign-extension off",
                                              wasm_path)};
         return run_expect_failure(command, "disabled wasm2 sign-extension feature");
     }
@@ -391,7 +391,7 @@ int main()
         for(::std::string_view policy:
             {::std::string_view{"debug"}, ::std::string_view{"legacy-light"}, ::std::string_view{"pb-o1"}, ::std::string_view{"pb-o2"}, ::std::string_view{"pb-o3"}})
         {
-            auto extra_args{::std::string{wasm1p1_feature_args} + " --runtime-llvm-jit-full-policy " + ::std::string{policy}};
+            auto extra_args{::std::string{wasm1p1_feature_args} + " --wasm-policy-global runtime.llvm.full-policy " + ::std::string{policy}};
             auto const command{make_uwvm_command(uwvm_path, "-Raot", extra_args, wasm_path)};
             if(!run_command(command, (::std::string{"full-policy-"} + ::std::string{policy}).c_str())) [[unlikely]] { return false; }
         }
@@ -399,7 +399,7 @@ int main()
         for(::std::string_view policy:
             {::std::string_view{"debug"}, ::std::string_view{"default"}, ::std::string_view{"fast-compile"}, ::std::string_view{"balanced"}, ::std::string_view{"max"}})
         {
-            auto extra_args{::std::string{wasm1p1_feature_args} + " --runtime-llvm-jit-policy " + ::std::string{policy}};
+            auto extra_args{::std::string{wasm1p1_feature_args} + " --wasm-policy-global runtime.llvm.policy " + ::std::string{policy}};
             auto const command{make_uwvm_command(uwvm_path, "-Raot", extra_args, wasm_path)};
             if(!run_command(command, (::std::string{"aot-policy-"} + ::std::string{policy}).c_str())) [[unlikely]] { return false; }
         }
@@ -453,7 +453,7 @@ int main()
             return false;
         }
 
-        auto const cache_args{::std::string{"--runtime-llvm-jit-cache-path path "} + quote_argument(cache_dir) + " --wasm-feature-wasm1.1"};
+        auto const cache_args{::std::string{"--runtime-llvm-jit-cache-path path "} + quote_argument(cache_dir) + " --wasm-policy-global parser.baseline wasm1p1"};
         for(auto const& mode: {::std::pair{::std::string_view{"cached-aot"}, ::std::string_view{"-Raot"}}})
         {
             auto const command{make_uwvm_command(uwvm_path, mode.second, cache_args, wasm_path)};

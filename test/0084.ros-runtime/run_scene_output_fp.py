@@ -82,7 +82,7 @@ def main():
                     for engine in ('int', 'aot'):
                         argv = [str(args.runtime.resolve()), '--wasm-set-main-module-name', 'main', '--runtime-'+engine,
                                 '--runtime-compile-threads', '1', '--log-color', 'disable', *flags]
-                        if engine == 'aot': argv += ['--runtime-llvm-jit-policy', 'max', '--runtime-llvm-jit-cache-path', 'disable']
+                        if engine == 'aot': argv += ['--wasm-policy-global', 'runtime.llvm.policy', 'max', '--runtime-llvm-jit-cache-path', 'disable']
                         run(stem+'-'+engine, [*argv, '--run', str(wasm)])
         report['inputs_after'] = pins()
         assert report['inputs'] == report['inputs_after'], 'FP qualification sources changed'

@@ -104,7 +104,7 @@ def main():
                 expected = [1, 2, 2, 2, 2, 3] if recursive else [1, 2, 3]
                 for policy in POLICIES:
                     prefix = f"ros{version}-{shape}-{policy}"
-                    argv = [args.uwvm, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
+                    argv = [args.uwvm, "-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max",
                             "--log-verbose", "--runtime-compiler-log", "err",
                             "--wasip1-global-noinherit-system-environment"]
                     if args.cache_root:

@@ -110,7 +110,7 @@ def cases(benign, compiled):
     add('wasi-noinherit-inherit-conflict', ['--wasip1-global-noinherit-system-environment', '--wasip1-global-inherit-system-environment', '--run', str(benign)], False)
     add('wasi-unknown-permission-refused', ['--wasip1-global-grant', '*', '--run', str(benign)], False)
     for width in (32, 64):
-        feature = [] if width == 32 else ['--wasm-feature-enable-memory64']
+        feature = [] if width == 32 else ['--wasm-policy-global', 'parser.memory64', 'on']
         for name, artifact in sorted((name, path) for (bits, name), path in compiled.items() if bits == width):
             authority = []
             if name.endswith('-granted'):

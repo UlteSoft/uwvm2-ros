@@ -88,7 +88,7 @@ int main()
    uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());
    auto failed=imported?prepare_runtime_from_wasm(high,u8"high-table64",{{&provider,u8"m",&wide}},wide):prepare_runtime_from_wasm(high,u8"high-table64",{},wide);
   })==0);
-  UWVM2TEST_REQUIRE(run_in_child_expect_trap_message("--wasm-feature-enable-table64",[&]{
+  UWVM2TEST_REQUIRE(run_in_child_expect_trap_message("parser.table64 on",[&]{
    uwvm2::uwvm::io::u8log_output.reopen(fast_io::io_dup,fast_io::u8err());parser::base::error_impl error{};
    auto parsed=feature::binfmt_ver1_handler(raw.data(),raw.data()+raw.size(),error,wide);
    uwvm2::uwvm::runtime::initializer::details::enforce_wasm1p1_initializer_feature_parameters(parsed,policy(false));

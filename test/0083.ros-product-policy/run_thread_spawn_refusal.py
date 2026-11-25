@@ -54,8 +54,8 @@ def main():
     }
     for mode, workers in (("sync", 1), ("software-async", 1)):
         command = [*args.runtime_prefix, str(runtime), "--runtime-" + args.engine,
-                   "--runtime-compile-threads", "0", "-WFE-threads",
-                   "--wasm-feature-enable-memory64", "--wasm-feature-enable-multi-memory",
+                   "--runtime-compile-threads", "0", "--wasm-policy-global", "parser.threads", "on",
+                   "--wasm-policy-global", "parser.memory64", "on", "--wasm-policy-global", "parser.multi-memory", "on",
                    *m.mode_flags(mode), 
                    "--wasi-threads", "3", "3", "1048576", "16777216", "67108864", "131072",
                    "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main",
@@ -66,7 +66,7 @@ def main():
                    "--wasithread-single-interface", "main", "thread-spawn", "deny",
                    "--wasm-preload-library", str(owner), "env"]
         if args.engine == "aot":
-            command += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-llvm-jit-policy", "debug"]
+            command += ["--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "runtime.llvm.policy", "debug"]
         command += ["--run", str(guest)]
         label = mode + "-" + str(workers)
         stdout_path, stderr_path = out / (label + ".stdout"), out / (label + ".stderr")

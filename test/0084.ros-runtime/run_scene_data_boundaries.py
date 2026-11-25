@@ -141,9 +141,9 @@ def main():
                     argv = [str(runtime), '--wasm-set-main-module-name', 'main', '--runtime-'+engine,
                             '--runtime-compile-threads', '1', '--log-color', 'disable', *flags]
                     if engine == 'aot':
-                        argv += ['--runtime-llvm-jit-policy', 'max', '--runtime-llvm-jit-cache-path', 'disable']
+                        argv += ['--wasm-policy-global', 'runtime.llvm.policy', 'max', '--runtime-llvm-jit-cache-path', 'disable']
                     if tagged:
-                        argv += ['--runtime-memtag-backend', 'software', '--runtime-memtag-mode', 'sync']
+                        argv += ['--wasm-policy-global', 'runtime.memtag-backend', 'software', '--runtime-memtag-mode', 'sync']
                         if scenario == 'aliases': argv += ['--runtime-memtag-action', 'silent-log', 'err']
                     argv += ['--run', str(wasm)]
                     start = time.monotonic(); result = subprocess.run(argv, capture_output=True, timeout=120)

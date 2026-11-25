@@ -969,7 +969,7 @@ def main():
                 vm_args = ["-m", "run", *mode, "-Rct", "0", "-Rllvm-call-stack", policy,
                            "-Rllvm-exception-dispatch", "native-unwind", "-Rllvm-cache-path", "disable", "--run", str(module)]
                 if kind in gc_fixtures:
-                    vm_args[2:2] = ["-WFE-reference-types", "-WFE-function-references", "-WFE-gc", "-WFE-exceptions"]
+                    vm_args[2:2] = ["--wasm-policy-global", "parser.reference-types", "on", "--wasm-policy-global", "parser.function-references", "on", "--wasm-policy-global", "parser.gc", "on", "--wasm-policy-global", "parser.exceptions", "on"]
                 server = BrokerSession(binary, broker, adapter, vm_args, folder)
                 row = {"case": kind, "policy": policy, "passed": False, "fixture_sha256": sha(module)}
                 summary["cases"].append(row)

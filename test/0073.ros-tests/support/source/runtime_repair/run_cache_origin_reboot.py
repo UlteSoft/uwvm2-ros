@@ -55,7 +55,7 @@ def main():
                 for p in sorted((user / "cache").rglob("*")) if p.is_file()}
 
     def execute(label, expect_hit):
-        command = [str(args.uwvm), "-Raot", "-Rct", "0", "-Rllvm-policy", "max", "--log-verbose",
+        command = [str(args.uwvm), "-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max", "--log-verbose",
                    "--runtime-compiler-log", "err", "--wasip1-global-noinherit-system-environment",
                    "--runtime-llvm-jit-cache-seal-process", "-Rllvm-cache-path", "path", str(user / "cache"),
                    "--wasip1-global-grant", "monotonic-clock", "-Wstart", "2", "0", "--run", str(user / "basic.wasm")]

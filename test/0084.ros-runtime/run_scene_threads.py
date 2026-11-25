@@ -142,7 +142,7 @@ def main():
         subprocess.run(['wat2wasm','--enable-threads','--debug-names',str(wat),'-o',str(wasm)],check=True)
         return wasm
     owner=compile_wat('memory','(module (memory (export "memory") 1 2 shared))')
-    common=['--runtime-compile-threads','0','--wasm-feature-enable-threads','--wasi-threads','3','3','1048576','16777216','67108864','131072',
+    common=['--runtime-compile-threads','0','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','67108864','131072',
             '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main',
             '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
             '--wasithread-single-create','main','--wasithread-single-enable','main',

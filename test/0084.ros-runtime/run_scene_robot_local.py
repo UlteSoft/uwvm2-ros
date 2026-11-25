@@ -256,7 +256,7 @@ def main():
                     receiver=Receiver();sensor_fds=tuple(rd for rd,wr in pipes);device_fds=tuple(master for master,slave in receiver.pairs)
                     fds=sensor_fds+device_fds;flags=device_flags(sensor_fds,device_fds)
                 else:flags=policy(OPERATIONS,'deny'if scenario=='denied'else'allow')
-                if guest['tagged']:flags+=['--runtime-memtag-backend','software','--runtime-memtag-mode','sync']
+                if guest['tagged']:flags+=['--wasm-policy-global', 'runtime.memtag-backend','software','--runtime-memtag-mode','sync']
                 if scenario=='tag-aliases':flags+=['--runtime-memtag-action','silent-log','err']
                 crash=(guest['width'],guest['memory'],scenario.split('-')[2])if scenario.startswith('mismatch-')else None
                 run(guest['name']+'-'+engine,['--runtime-'+engine,*flags],wasm,fds=fds,crash=crash,aliases=scenario=='tag-aliases')

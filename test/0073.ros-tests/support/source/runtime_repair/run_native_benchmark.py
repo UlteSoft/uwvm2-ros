@@ -109,7 +109,7 @@ def main():
             # Rotate order to avoid making one variant always follow warmup.
             ordered = cases[repetition % len(cases):] + cases[:repetition % len(cases)]
             for name, iterations, wasm, label, policy in ordered:
-                command = [str(getattr(args, label)), '-Raot', '-Rct', '0', '-Rllvm-policy', 'max',
+                command = [str(getattr(args, label)), '-Raot', '-Rct', '0', '--wasm-policy-global', 'runtime.llvm.policy', 'max',
                            *(['-Rllvm-call-stack', policy] if label == 'baseline' else []),
                            '-Rllvm-cache-path', 'disable', '--log-verbose',
                            '--wasip1-global-noinherit-system-environment', '--run', str(wasm)]

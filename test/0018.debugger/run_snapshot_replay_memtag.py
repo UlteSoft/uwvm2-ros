@@ -43,7 +43,7 @@ def fixture(log=False,wide=False,shared=False,tag_value=3):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary',required=True,type=Path);parser.add_argument('--out',required=True,type=Path)
-    parser.add_argument('--runner-json',type=Path);parser.add_argument('--backend',choices=('software','hardware'),default='software')
+    parser.add_argument('--runner-json',type=Path);parser.add_argument('--backend',choices=('software','arm-mte'),default='software')
     parser.add_argument('--mode',choices=('sync','async'),default='sync');parser.add_argument('--log',action='store_true')
     parser.add_argument('--memory64',action='store_true');parser.add_argument('--shared',action='store_true')
     parser.add_argument('--tag',type=lambda x:int(x,0),default=3)
@@ -51,7 +51,7 @@ def main():
     require('/docker-' in Path('/proc/self/cgroup').read_text(),'resource cgroup required')
     wasm=args.out/'tagged.wasm';wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag));vm=None;result={'passed':False}
     try:
-        flags=['--runtime-memtag-backend',args.backend,'--runtime-memtag-mode',args.mode]
+        flags=['--wasm-policy-global', 'runtime.memtag-backend',args.backend,'--runtime-memtag-mode',args.mode]
         if args.log:flags+=['--runtime-memtag-action','silent-log','path',str(args.out/'violations.log')]
         prefix=json.loads(args.runner_json.read_text()) if args.runner_json else []
         vm=VM([str(args.binary.resolve()),'-Raot','-Rdbg','-Rct','0','-Rllvm-cache-path','disable',*flags,

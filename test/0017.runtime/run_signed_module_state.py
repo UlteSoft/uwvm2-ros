@@ -321,7 +321,7 @@ def fault_default(h):
 
 def fault_uncaught(h):
     default_terminal_fault(h, 'fault-uncaught', state_module(uncaught=True), 121, 'execution', 'tag: uncatched wasm exception',
-                           features=('--wasm-feature-enable-exceptions',))
+                           features=('--wasm-policy-global', 'parser.exceptions', 'on',))
 
 
 def fault_pause(h):

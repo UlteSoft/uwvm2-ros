@@ -66,7 +66,7 @@ provenance = {
 
 def check_case(name, mode, policy, script, expected_exit=0, input_error=False):
     command = [str(binary), *mode, '-Rct', '0', '-Rllvm-call-stack', policy,
-               '-Rllvm-cache-path', 'disable', '-WFE-exceptions',
+               '-Rllvm-cache-path', 'disable', '--wasm-policy-global', 'parser.exceptions', 'on',
                '--run', str(wasm)]
     start = time.monotonic()
     read_fd = write_fd = None

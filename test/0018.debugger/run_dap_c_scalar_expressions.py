@@ -55,7 +55,7 @@ def spelling(path,alias):
 def session(a,folder,root,profile):
  folder.mkdir(mode=0o700);dap=base.load(root/'tools/debug/dap_adapter.py','tuple_dap')
  mode=[] if a.ros else ['-Rcc','jit','-Rcm','full']
- feature=['--wasm-feature-enable-memory64'] if profile['address_width']==64 else []
+ feature=['--wasm-policy-global', 'parser.memory64', 'on'] if profile['address_width']==64 else []
  vm=['-m','run',*mode,'-Rct','0','-Rllvm-call-stack',a.policy,'-Rllvm-cache-path','disable',*feature,'--run',profile['path']]
  server=live.BrokerSession(a.uwvm,Path(__file__).resolve(),root/'tools/debug/dap_adapter.py',vm,folder)
  rust=profile['language']=='rust'

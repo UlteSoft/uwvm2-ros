@@ -30,8 +30,8 @@ def main():
 
     def run(name, budget, status):
         command = [args.vm.resolve(), "-Raot", "-Rct", "0", "-Rllvm-cache-path", "disable",
-                   "--runtime-llvm-jit-policy", "fast-compile", "--debug-fault-action", "exit",
-                   "--wasm-feature-wasm3", "-WFE-threads", "--runtime-disable-memtag",
+                   "--wasm-policy-global", "runtime.llvm.policy", "fast-compile", "--debug-fault-action", "exit",
+                   "--wasm-policy-global", "parser.baseline", "wasm3", "--wasm-policy-global", "parser.threads", "on", "--wasm-policy-global", "runtime.memtag-checks", "off",
                    "--wasi-threads", "1", "1", "1048576", "16777216", budget, "65536",
                    "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main",
                    "--wasip1-single-enable", "main", "--wasithread-single-create", "main",

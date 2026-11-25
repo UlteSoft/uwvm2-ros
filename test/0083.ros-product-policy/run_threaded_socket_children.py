@@ -166,7 +166,7 @@ def main():
     parser.add_argument("--runtime", required=True, type=Path)
     parser.add_argument("--runtime-prefix", type=json.loads, default=[])
     parser.add_argument("--engine", choices=("int", "aot"), required=True)
-    parser.add_argument("--memtag-backend", choices=("software", "hardware"), default="software")
+    parser.add_argument("--memtag-backend", choices=("software", "arm-mte"), default="software")
     parser.add_argument("--memtag-mode", choices=("sync", "async"), default="sync")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--states", nargs="+", choices=STATES, default=list(STATES))
@@ -191,8 +191,8 @@ def main():
         raw = guest(state)
         wasm = out / (state + ".wasm")
         wasm.write_bytes(raw)
-        flags = ["--runtime-" + args.engine, "--runtime-compile-threads", "0", "-WFE-threads",
-                 "--runtime-memtag-backend", args.memtag_backend, "--runtime-memtag-mode", args.memtag_mode, 
+        flags = ["--runtime-" + args.engine, "--runtime-compile-threads", "0", "--wasm-policy-global", "parser.threads", "on",
+                 "--wasm-policy-global", "runtime.memtag-backend", args.memtag_backend, "--runtime-memtag-mode", args.memtag_mode,
                  "--wasi-threads", "3", "3", "1048576", "16777216", "67108864", "131072",
                  "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main", "--wasip1-single-enable", "main",
                  "--wasip1-single-interface", "main", "proc_exit", "allow", "--wasip1-single-grant", "main", "proc-exit",
@@ -200,7 +200,7 @@ def main():
                  "--wasithread-single-interface", "main", "thread-spawn", "allow",
                  "--wasm-preload-library", str(owner), "env"]
         if args.engine == "aot":
-            flags += ["--runtime-llvm-jit-cache-path", "disable", "--runtime-llvm-jit-policy", "debug"]
+            flags += ["--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "runtime.llvm.policy", "debug"]
         if state != "hidden":
             flags += ["--wasip1-single-interface", "main", "sock_send", "deny" if state == "deny" else "allow"]
         if state == "quota-reject":

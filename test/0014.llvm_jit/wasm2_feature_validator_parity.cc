@@ -407,7 +407,7 @@ namespace
 
         auto command{quote(uwvm_path) + (backend == "jit" ? " -Raot" : " -Rint")};
         if(backend == "jit") { command += " -Rllvm-cache-path disable"; }
-        command += " --wasm-feature-disable-" + ::std::string{test_case.cli_suffix} + " --run " + quote(wasm_path) + " > " + quote(log_path) + " 2>&1";
+        command += " --wasm-policy-global parser." + ::std::string{test_case.cli_suffix} + " off --run " + quote(wasm_path) + " > " + quote(log_path) + " 2>&1";
         auto const status{::std::system(command.c_str())};
         if(status == 0) { return false; }
 

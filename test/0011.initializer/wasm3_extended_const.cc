@@ -9,7 +9,7 @@
 #endif
 #define UWVM2TEST_STRICT_NO_INTERPRETER 1
 #include "../0013.uwvm_int/strict/uwvm_int_translate_strict_common.h"
-#include <uwvm2/uwvm/cmdline/callback/wasm_feature.h>
+#include <uwvm2/uwvm/wasm/storage/module_policy.h>
 #include <fstream>
 
 namespace
@@ -74,36 +74,21 @@ int main(int argc, char** argv)
         if(!file.eof()) { return 2; }
         return valid(wasm, true, true) ? 0 : 1;
     }
-    // CLI ownership and independence: one switch cannot silently enable another feature group.
-    namespace cli = uwvm2::uwvm::cmdline::params::details;
-    using result = uwvm2::utils::cmdline::parameter_return_type;
-    auto& cli_features = cli::wasm_feature_details::wasm1p1_parameter();
-    cli_features = {};
-    uwvm2::utils::cmdline::parameter_parsing_results argument{};
-    argument.str = u8"--wasm-feature-enable-extended-const";
-    require(cli::wasm_feature_enable_extended_const_callback(nullptr, &argument, nullptr) == result::def);
-    require(!cli_features.disable_extended_const);
-    require(!cli_features.disable_simd && !cli_features.disable_multi_value);
-    argument.str = u8"--wasm-feature-disable-simd";
-    require(cli::wasm_feature_disable_simd_callback(nullptr, &argument, nullptr) == result::def);
-    require(cli_features.disable_simd && !cli_features.disable_extended_const);
-    argument.str = u8"--wasm-feature-disable-extended-const";
-    require(cli::wasm_feature_disable_extended_const_callback(nullptr, &argument, nullptr) == result::return_m1_imme);
-    argument.str = u8"--wasm-feature-wasm2";
-    require(cli::wasm_feature_wasm2_callback(nullptr, &argument, nullptr) == result::return_m1_imme);
-    cli_features = {};
-    require(cli::wasm_feature_wasm2_callback(nullptr, &argument, nullptr) == result::def);
-    require(cli_features.disable_extended_const);
-    argument.str = u8"--wasm-feature-enable-extended-const";
-    require(cli::wasm_feature_enable_extended_const_callback(nullptr, &argument, nullptr) == result::return_m1_imme);
-    cli_features = {};
-    require(cli_features.disable_table_initializer && cli_features.disable_extended_const);
-    argument.str = u8"--wasm-feature-enable-table-initializer";
-    require(cli::wasm_feature_enable_table_initializer_callback(nullptr, &argument, nullptr) == result::def);
-    require(!cli_features.disable_table_initializer && cli_features.disable_extended_const);
-    argument.str = u8"--wasm-feature-disable-table-initializer";
-    require(cli::wasm_feature_disable_table_initializer_callback(nullptr, &argument, nullptr) == result::return_m1_imme);
-    cli_features = {};
+    namespace policy = uwvm2::uwvm::wasm::storage::module_policy;
+    policy::layer settings{};
+    require(policy::set(settings, u8"parser.extended-const", u8"on"));
+    require(policy::set(settings, u8"parser.simd", u8"off"));
+    require(policy::set(settings, u8"parser.baseline", u8"wasm2"));
+    require(!policy::set(settings, u8"parser.extended-const", u8"off"));
+    policy::parameters parameters{};
+    policy::apply(settings, parameters);
+    auto const& parser = policy::features::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para);
+    require(!parser.disable_extended_const && parser.disable_simd && !parser.disable_multi_value);
+    require(parser.disable_table_initializer);
+    require(policy::set(settings, u8"parser.table-initializer", u8"on"));
+    require(!policy::set(settings, u8"parser.table-initializer", u8"off"));
+    policy::apply(settings, parameters);
+    require(!parser.disable_table_initializer);
 
     // Independent gates, nesting, modulo arithmetic, order of subtraction, and prior local globals.
     auto wasm = module({3,
@@ -114,7 +99,7 @@ int main(int argc, char** argv)
     require(!valid(wasm, false));
 #if defined(__unix__) || defined(__APPLE__)
     // Receiving an already parsed module must not bypass the initializer's independent feature policy.
-    require(strict::run_in_child_expect_trap_message("requires --wasm-feature-enable-extended-const", [&]
+    require(strict::run_in_child_expect_trap_message("requires parser.extended-const on", [&]
     {
         uwvm2::uwvm::io::u8log_output.reopen(::fast_io::io_dup, ::fast_io::u8err());
         uwvm2::parser::wasm::base::error_impl error{};
@@ -194,7 +179,7 @@ int main(int argc, char** argv)
     require(valid(table_module, false, true));
     require(!valid(table_module, true, false));
 #if defined(__unix__) || defined(__APPLE__)
-    require(strict::run_in_child_expect_trap_message("requires --wasm-feature-enable-table-initializer", [&]
+    require(strict::run_in_child_expect_trap_message("requires parser.table-initializer on", [&]
     {
         uwvm2::uwvm::io::u8log_output.reopen(::fast_io::io_dup, ::fast_io::u8err());
         uwvm2::parser::wasm::base::error_impl error{};

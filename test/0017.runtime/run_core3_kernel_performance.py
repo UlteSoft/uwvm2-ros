@@ -68,8 +68,8 @@ def main():
     pins = {str(path.resolve()): digest(path) for path in inputs}
     rows = author(fixtures, a.iterations, a.kernel_repeats)
     selected = set(a.case or cases)
-    flags = ["-WF3", "-Raot", "--runtime-llvm-jit-policy", "max", "-Rct", "0",
-             "-Rllvm-cache-path", "disable", "--wasm-feature-disable-memtag-extension", *CLOCK_AND_OUTPUT]
+    flags = ["--wasm-policy-global", "parser.baseline", "wasm3", "-Raot", "--wasm-policy-global", "runtime.llvm.policy", "max", "-Rct", "0",
+             "-Rllvm-cache-path", "disable", "--wasm-policy-global", "parser.memtag", "off", *CLOCK_AND_OUTPUT]
     engines = {
         "uwvm-llvm": [a.runtime, *flags, "--run"],
         "uwvm-baseline-llvm": [a.baseline, *flags, "--run"],

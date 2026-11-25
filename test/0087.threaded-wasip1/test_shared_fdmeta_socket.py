@@ -52,12 +52,12 @@ def run(name,engine,imports,body,rights='none',state='allow',extra=(),peer=None,
    except BaseException as e:errors.append(repr(e))
   thread=threading.Thread(target=remote,daemon=True) if kind=='tcp-connect' else None
   if thread:thread.start()
-  args=[str(vm),'-R'+engine,'--runtime-compile-threads','0','--runtime-llvm-jit-policy','debug','--wasm-set-main-module-name','main',
+  args=[str(vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'runtime.llvm.policy','debug','--wasm-set-main-module-name','main',
     '--wasip1-single-create','main','--wasip1-single-enable','main','--wasip1-single-interface','main','proc_exit','allow',
     '--wasip1-single-grant','main','proc-exit','--wasip1-single-socket-'+kind,'main','3','127.0.0.1:'+str(port),
     '--wasip1-single-socket-rights','main','3',rights,'none']
   for n in imports:args+=['--wasip1-single-interface','main',n,state]
-  if threaded:args+=['-WFE-threads','--wasi-threads','3','3','1048576','16777216','8388608','65536','--wasm-preload-library',str(memory.with_suffix('.wasm')),'env']
+  if threaded:args+=['--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216','8388608','65536','--wasm-preload-library',str(memory.with_suffix('.wasm')),'env']
   args+=[str(x).replace('{port}',str(port)) for x in extra]+['--run',str(target)]
   begin=time.monotonic();p=subprocess.run(args,capture_output=True,timeout=45);elapsed=time.monotonic()-begin
   if thread:

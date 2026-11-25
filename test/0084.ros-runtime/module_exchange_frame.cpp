@@ -124,7 +124,6 @@ static void exercise(Memory& memory)
         go.store(true,std::memory_order_release);
         for(unsigned i{};i!=4;++i)assert(memory.grow_strictly(1));
         writer.join();assert(okay.load());verify(32);
-        if constexpr(!Memory::can_mmap)assert(memory.active_ops_p->load()==0);
     }
     else assert(memory.grow_strictly(1));
     assert(write_frame(memory,65536,prefix.data(),prefix.size(),payload.data(),payload.size()));verify(65536);
@@ -132,9 +131,6 @@ static void exercise(Memory& memory)
 }
 int main()
 {
-    {linear::single_thread_allocator_memory_t memory;exercise<std::uint32_t>(memory);}
-    {linear::allocator_memory_t memory;exercise<std::uint32_t>(memory);}
-    {linear::allocator_memory_t memory;exercise<std::uint64_t>(memory);}
 #if defined(UWVM_SUPPORT_MMAP)
     {linear::mmap_memory_t memory;exercise<std::uint32_t>(memory);}
     {linear::mmap_memory_t memory(65536,linear::mmap_memory_status_t::wasm64);exercise<std::uint64_t>(memory);}

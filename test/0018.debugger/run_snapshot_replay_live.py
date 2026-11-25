@@ -74,7 +74,7 @@ def main():
     result={'passed':False};vm=None
     try:
         vm=VM([str(args.binary.resolve()),'-Raot','-Rdbg','-Rct','0','-Rllvm-cache-path','disable',
-            '--runtime-disable-memtag','--wasip1-global-enable',
+            '--wasm-policy-global', 'runtime.memtag-checks', 'off','--wasip1-global-enable',
             '--wasip1-global-interface','random_get','allow','--wasip1-global-grant','random',
             '--wasip1-global-interface','fd_write','allow','--wasip1-global-grant','stdout.write',
             '--run',str(wasm)],args.out,prefix)
@@ -134,7 +134,7 @@ def main():
         folder=args.out/'divergence';folder.mkdir();other=None
         try:
             other=VM([str(args.binary.resolve()),'-Raot','-Rdbg','-Rct','0','-Rllvm-cache-path','disable',
-                '--runtime-disable-memtag','--wasip1-global-enable',
+                '--wasm-policy-global', 'runtime.memtag-checks', 'off','--wasip1-global-enable',
                 '--wasip1-global-interface','random_get','allow','--wasip1-global-grant','random',
                 '--wasip1-global-interface','fd_write','allow','--wasip1-global-grant','stdout.write',
                 '--run',str(wasm)],folder,prefix)

@@ -32,7 +32,8 @@ def main():
         assert child.returncode == expected, (label, child.returncode)
 
     try:
-        features = ['-WFE-' + feature for feature in ('reference-types', 'function-references', 'tail-call', 'exceptions')]
+        features = [arg for feature in ('reference-types', 'function-references', 'tail-call', 'exceptions')
+                    for arg in ('--wasm-policy-global', 'parser.' + feature, 'on')]
         for version in (1, 2):
             folder = args.out / f'ros{version}'
             folder.mkdir()

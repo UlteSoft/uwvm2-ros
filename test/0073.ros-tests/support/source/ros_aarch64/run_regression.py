@@ -34,8 +34,8 @@ def expected_commands(snapshot, output, source, wat2wasm, compile_prefix):
     snapshot, output, source = map(Path, (snapshot, output, source))
     commands = []
     for name in ('wasi_preview1', 'wasi_memory64', 'runtime_tail'):
-        features = (['--wasm-feature-enable-memory64'] if name == 'wasi_memory64' else
-                    ['--wasm-feature-enable-tail-call'] if name == 'runtime_tail' else [])
+        features = (['--wasm-policy-global', 'parser.memory64', 'on'] if name == 'wasi_memory64' else
+                    ['--wasm-policy-global', 'parser.tail-call', 'on'] if name == 'runtime_tail' else [])
         commands += [[str(wat2wasm), '--enable-all', str(output/(name+'.wat')), '-o', str(output/(name+'.wasm'))],
                      [str(snapshot), *features, '--run', str(output/(name+'.wasm')), 'hello', 'world']]
     plugin = output/'libregdl.so'

@@ -46,8 +46,7 @@ void check()
         }};
     }
     admitted.wait();
-    // A blocking wait must release allocator pins before suspension. Repeated
-    // relocation preserves both the wait key and zeroed contents at offset 0.
+    // Growth preserves the wait key and zeroed contents at offset 0.
     for(unsigned i{};i!=8;++i) {CHECK(memory.try_grow_silently(1));}
     {
         auto lease=owner.try_enter();wasm::execution_scope scope{waits,lease.cancellation_token()};
@@ -80,10 +79,6 @@ void check()
 }
 int main()
 {
-#if defined(UWVM_SUPPORT_MMAP)
     check<uwvm2::object::memory::linear::mmap_memory_t>();
-    std::puts("mmap wait checks PASS");
-#endif
-    check<uwvm2::object::memory::linear::allocator_memory_t>();
-    std::puts("PASS Wasm wait layer: allocator, wait32/64, bounds/alignment, grow, notify identity/count, VM reset cancellation");
+    std::puts("PASS Wasm wait layer: mmap, wait32/64, bounds/alignment, grow, notify identity/count, VM reset cancellation");
 }

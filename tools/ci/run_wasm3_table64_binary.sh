@@ -6,7 +6,7 @@ out=${1:?output directory};mkdir -p "$out"
 ulimit -c 0
 before=$(python3 tools/ci/wasm3_source_fingerprint.py . "$out/source-before.json")
 "${CXX:-clang++}" -std=c++26 -stdlib=libc++ -fuse-ld=lld -rtlib=compiler-rt -unwindlib=libunwind \
- -DUWVM_FORCE_DISABLE_MMAP -DUWVM_USE_MULTITHREAD_ALLOCATOR -DUWVM=2 -DUWVM_DISABLE_INT -DUWVM_DISABLE_JIT -O1 -g0 -fsanitize=address,undefined -fno-sanitize-recover=all \
+ -DUWVM_FORCE_USE_MMAP -DUWVM=2 -DUWVM_DISABLE_INT -DUWVM_DISABLE_JIT -O1 -g0 -fsanitize=address,undefined -fno-sanitize-recover=all \
  -I src -I third-parties/fast_io/include -I third-parties/bizwen/include -I third-parties/boost_unordered/include \
  test/0011.initializer/table64_binary.cc -o "$out/test" >"$out/build.log" 2>&1
 "$out/test" >"$out/run.log" 2>&1

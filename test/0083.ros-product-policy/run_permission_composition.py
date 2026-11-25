@@ -201,7 +201,7 @@ def main():
                 ros_flags = [] if ros == "none" else ["--" + ros + "-single-create", "main", "--" + ros + "-single-enable", "main"]
                 for profile in args.socket_profiles:
                     threaded = profile == "threaded"
-                    thread_flags = (["-WFE-threads", "--wasi-threads", "3", "3", "1048576", "16777216", "8388608", "65536",
+                    thread_flags = (["--wasm-policy-global", "parser.threads", "on", "--wasi-threads", "3", "3", "1048576", "16777216", "8388608", "65536",
                                      "--wasm-preload-library", shared, "env"] if threaded else [])
                     for transport, call_name in [("preopen", "sock_send"), ("inherited-stdio", "fd_write")]:
                         for state in ["hidden", "deny", "resource-denied", "unlimited", "limited", "wait", "renumber-limited"]:

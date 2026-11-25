@@ -21,7 +21,7 @@ wat.write_text('''(module
   end nop))''')
 subprocess.run([str(a.wasm_tools.resolve()),'parse',str(wat),'-o',str(wasm)],check=True)
 sites,_=markers(a.wasm_tools.resolve(),wasm);assert len(sites[0])==1 and len(sites[1])==2,sites
-c=Console([str(a.uwvm.resolve()),'-Rdbg','-WFE-simd','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','--run',str(wasm)]);actions=[]
+c=Console([str(a.uwvm.resolve()),'-Rdbg','--wasm-policy-global', 'parser.simd', 'on','-Rct','0','-Rllvm-cache-path','disable','-Rclog','err','--run',str(wasm)]);actions=[]
 def command(text):
  reply=c.command(text);assert b'error:' not in reply,reply[-3000:]
  actions.append({'command':text,'reply':reply.decode(errors='replace')});return reply

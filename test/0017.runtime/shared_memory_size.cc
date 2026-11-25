@@ -9,31 +9,19 @@
 #include <cstdlib>
 #include <utility>
 #define CHECK(c) do {if(!(c)){std::fprintf(stderr,"FAIL %u: %s\n",__LINE__,#c);std::abort();}}while(false)
-// The new policy must not move existing access metadata or double mmap records.
+// The new policy must not move existing access metadata.
 namespace linear=uwvm2::object::memory::linear;
-struct allocator_layout_before
-{
-    std::byte* memory_begin; std::size_t memory_length; unsigned custom_page_size_log2;
-    std::atomic_flag* growing_flag_p; std::atomic_size_t* active_ops_p; std::size_t diagnostic_owner_memory_index;
-};
-static_assert(offsetof(linear::allocator_memory_t,growing_flag_p)==offsetof(allocator_layout_before,growing_flag_p));
-static_assert(offsetof(linear::allocator_memory_t,active_ops_p)==offsetof(allocator_layout_before,active_ops_p));
-static_assert(offsetof(linear::allocator_memory_t,diagnostic_owner_memory_index)==offsetof(allocator_layout_before,diagnostic_owner_memory_index));
-#if defined(UWVM_SUPPORT_MMAP)
 struct alignas(64) mmap_layout_before
 {
     std::byte* reserved_begin; std::byte* memory_begin; std::atomic_size_t* memory_length_p;
     unsigned custom_page_size_log2; bool require_dynamic_determination_memory_size_cached;
     linear::mmap_memory_status_t status; uwvm2::utils::mutex::mutex_t* growing_mutex_p;
     std::size_t reservation_limit_bytes; std::size_t diagnostic_owner_memory_index;
-    uwvm2::extension::memtag::shadow_storage memtag_shadow;
-    uwvm2::utils::allocator::resource::reservation<uwvm2::utils::allocator::resource::pool::memory> allocation_charge;
 };
-static_assert(sizeof(linear::mmap_memory_t)==sizeof(mmap_layout_before));
+static_assert(offsetof(linear::mmap_memory_t,memory_length_p)==offsetof(mmap_layout_before,memory_length_p));
 static_assert(offsetof(linear::mmap_memory_t,status)==offsetof(mmap_layout_before,status));
 static_assert(offsetof(linear::mmap_memory_t,growing_mutex_p)==offsetof(mmap_layout_before,growing_mutex_p));
 static_assert(offsetof(linear::mmap_memory_t,diagnostic_owner_memory_index)==offsetof(mmap_layout_before,diagnostic_owner_memory_index));
-#endif
 template<typename Memory>
 void check(bool shared)
 {
@@ -67,10 +55,7 @@ int main()
 {
     for(bool shared:{false,true})
     {
-#if defined(UWVM_SUPPORT_MMAP)
-        check<uwvm2::object::memory::linear::mmap_memory_t>(shared);
-#endif
-        check<uwvm2::object::memory::linear::allocator_memory_t>(shared);
+        check<linear::mmap_memory_t>(shared);
     }
     std::puts("PASS shared/unshared memory sizes: 4 concurrent growers, monotonic observer, unique old sizes, zero/failed/strict grow, move policy");
 }

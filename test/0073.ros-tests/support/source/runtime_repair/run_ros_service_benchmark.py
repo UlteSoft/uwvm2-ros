@@ -213,7 +213,7 @@ def main():
                     if args.operation in RESOURCE_CASES:
                         command.append(str(RESOURCE_CASES[args.operation][0]))
                 else:
-                    command = [runtime_binary, "-Raot", "-Rct", "0", "-Rllvm-policy", "max",
+                    command = [runtime_binary, "-Raot", "-Rct", "0", "--wasm-policy-global", "runtime.llvm.policy", "max",
                                "--log-verbose",
                                "--runtime-compiler-log", "err",
                                "--wasm-set-main-module-name", "main",
