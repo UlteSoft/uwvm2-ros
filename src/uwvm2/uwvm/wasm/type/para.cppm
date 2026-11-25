@@ -35,6 +35,7 @@ module;
 export module uwvm2.uwvm.wasm.type:para;
 
 import fast_io;
+import uwvm2.uwvm.runtime.runtime_mode;
 import uwvm2.extension.memtag.execution_policy;
 import uwvm2.parser.wasm.concepts;
 import uwvm2.parser.wasm.standard.wasm1.type;

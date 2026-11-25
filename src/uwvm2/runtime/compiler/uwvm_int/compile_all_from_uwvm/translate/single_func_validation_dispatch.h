@@ -4941,7 +4941,7 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
             if constexpr(integer)
             {
                 namespace mt=::uwvm2::extension::memtag;
-                if(!mt::asynchronous_requested() && !mt::hardware_requested() && !mt::logging_requested())
+                if(!mt::asynchronous_requested() && !memory.memtag_shadow.hardware_selected() && !mt::logging_requested())
                 { return static_cast<mtopt::memtag_details::action_t>(
                     mtopt::memtag_details::scalar_enforcing<Address,Value,Bytes,Signed,Store>); }
             }

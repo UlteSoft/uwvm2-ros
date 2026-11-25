@@ -23,7 +23,7 @@
 }()};
 using runtime_uwvm_int_opcode_conbination_level_t = ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_opcode_conbination_level_t;
 #if defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS)
-[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{module_has_memtag_memory ? runtime_uwvm_int_opcode_conbination_level_t::disable : ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level};
+[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{module_has_memtag_memory ? runtime_uwvm_int_opcode_conbination_level_t::disable : curr_module.translation.opcode_combine.value_or(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level)};
 #else
 [[maybe_unused]] constexpr auto runtime_uwvm_int_opcode_conbination_level{runtime_uwvm_int_opcode_conbination_level_t::disable};
 #endif
@@ -38,17 +38,17 @@ bool const runtime_uwvm_int_opcode_conbination_enabled{
 [[maybe_unused]] bool const runtime_uwvm_int_opcode_conbination_extra_enabled{
     runtime_uwvm_int_opcode_conbination_level_at_least(runtime_uwvm_int_opcode_conbination_level, runtime_uwvm_int_opcode_conbination_level_t::extra)};
 [[maybe_unused]] bool const runtime_uwvm_int_delay_local_enabled{runtime_uwvm_int_opcode_conbination_enabled &&
-                                                                 !::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_delay_local};
+                                                                 curr_module.translation.delay_local.value_or(!::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_delay_local)};
 [[maybe_unused]] bool const runtime_uwvm_int_instruction_reorder_enabled{
 #if defined(UWVM_ENABLE_UWVM_INT_INSTRUCTION_REORDER)
-    !module_has_memtag_memory && ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_enable_instruction_reorder
+    !module_has_memtag_memory && curr_module.translation.instruction_reorder.value_or(::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_enable_instruction_reorder)
 #else
     false
 #endif
 };
 [[maybe_unused]] bool const runtime_uwvm_int_loop_unwind_enabled{
 #if defined(UWVM_ENABLE_UWVM_INT_LOOP_UNWIND)
-    !module_has_memtag_memory && !::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_loop_unwind
+    !module_has_memtag_memory && curr_module.translation.loop_unwind.value_or(!::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_loop_unwind)
 #else
     false
 #endif

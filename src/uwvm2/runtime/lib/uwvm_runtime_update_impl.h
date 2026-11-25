@@ -16,18 +16,18 @@ namespace production_update_detail
     // from debugger permissions. Diagnostic continuation must never
     // masquerade as an enforcing crash policy in a signed update.
     namespace mt=::uwvm2::extension::memtag;
-    update::append_u64(material,3u);
+    update::append_u64(material,4u);
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     auto const& parameters{file.wasm_parameter};
     auto const& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para)};
     for(auto value: ::uwvm2::runtime::checkpoint::module_feature_policy::from_actual_parameter(parser).cache_identity())
     { update::append_u64(material,value); }
     update::append_u64(material,::uwvm2::runtime::checkpoint::memory_layout::module_policy(parameters.memory_policy));
-    auto const& limits{parameters.initializer_limits};
-    update::append_u64(material,limits.imported_memories);
-    update::append_u64(material,limits.local_defined_memories);
-    update::append_u64(material,limits.imported_globals);
-    update::append_u64(material,limits.local_defined_globals);
+    namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
+    auto parser_snapshot{parameters};
+    for(auto const& count : policy::parser_counts) { update::append_u64(material, count.get(parser_snapshot)); }
+    for(auto const& count : policy::initializer_settings)
+    { update::append_u64(material, parameters.initializer_limits.*count.member); }
     if(!g_runtime.modules.empty() && g_runtime.modules.front_unchecked().runtime_module)
     {
         auto const& memories{g_runtime.modules.front_unchecked().runtime_module->local_defined_memory_vec_storage};

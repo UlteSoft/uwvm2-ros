@@ -24,6 +24,7 @@
 #ifndef UWVM_MODULE
 // std
 # include <cstddef>
+# include <optional>
 # include <type_traits>
 // macro
 # include <uwvm2/uwvm/runtime/macro/push_macros.h>
@@ -101,9 +102,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
     /// @details full_compile + llvm_jit_only
     inline bool is_runtime_mode_code_aot_existed{};  // [global]
 #endif
-
-    // Host startup policy; guest code cannot modify tag execution.
-    inline bool runtime_disable_memtag{};
 
     /// @brief Whether the runtime compile thread count was explicitly configured.
     /// @details When this is false, the runtime will use its default thread selection policy.
@@ -216,6 +214,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::runtime_mode
     /// @brief LLVM AOT custom cache directory path.
     inline ::uwvm2::utils::container::u8string global_runtime_llvm_jit_cache_path{};  // [global]
 #endif
+
+    // These choices belong to the module being translated. An unset choice
+    // inherits the backend's configured default when used by an embedding.
+    struct module_translation_policy
+    {
+#if defined(UWVM_RUNTIME_UWVM_INTERPRETER)
+        ::std::optional<bool> loop_unwind{}, delay_local{}, instruction_reorder{};
+        ::std::optional<::std::size_t> loop_unwind_max_size{};
+        ::std::optional<runtime_uwvm_int_opcode_conbination_level_t> opcode_combine{};
+#endif
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+        ::std::optional<runtime_llvm_jit_policy_t> llvm_policy{};
+        ::std::optional<runtime_llvm_jit_full_policy_t> llvm_full_policy{};
+#endif
+    };
 
     /// @brief   The global runtime mode.
     /// @details Every backend prepares the complete module before execution.

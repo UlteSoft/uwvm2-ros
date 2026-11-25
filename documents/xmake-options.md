@@ -260,7 +260,7 @@ Controls delay-local variantization for `uwvm-int`.
 Controls whether the experimental register-ring-aware instruction reorder recompiler is compiled into `uwvm-int`.
 
 - **Default:** `n`
-- **Impact:** Defines `UWVM_ENABLE_UWVM_INT_INSTRUCTION_REORDER` when enabled. The runtime still defaults to off; use `--runtime-uwvm-int-enable-instruction-reorder` or `-Rint-reorder` to enable the pass for a run. Keep this disabled for tiny builds or non-experimental releases.
+- **Impact:** Defines `UWVM_ENABLE_UWVM_INT_INSTRUCTION_REORDER` when enabled. The runtime still defaults to off; use `--wasm-policy-global runtime.interpreter.instruction-reorder on` to enable the pass for a run. Keep this disabled for tiny builds or non-experimental releases.
 - **Example:**
   - `xmake f --execution-int=uwvm-int --enable-uwvm-int-instruction-reorder=y`
 

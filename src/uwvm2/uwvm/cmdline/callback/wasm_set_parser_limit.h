@@ -191,7 +191,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         auto& wasm1p1_parser_limit{wasm1p1_feapara_r.parser_limit};
 
         // custom name
-        auto& name_parser_para{::uwvm2::uwvm::wasm::custom::customs::name_parser_param};
+        auto& name_parser_para{::uwvm2::uwvm::wasm::storage::wasm_parameter.name_parser};
         auto& name_parser_limit{name_parser_para.name_parser_limit};
 
         if(set_type_name == u8"codesec_codes") { wasm1_parser_limit.max_code_sec_codes = limit; }

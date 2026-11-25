@@ -509,7 +509,7 @@
                 ::llvm::SmallVector<::llvm::StringRef,16> refs;append_llvm_jit_host_target_attribute_refs(attrs,refs);
                 // Threaded control is an explicit new profile. No reuse of an
                 // ordinary/debug cache object, no inherited publication/epoch.
-                auto const policy=resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Default);
+                auto const policy=resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Default, module.translation);
                 ::llvm::EngineBuilder builder;builder.setEngineKind(::llvm::EngineKind::JIT).setOptLevel(policy.codegen_opt_level)
                     .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(refs);
                 auto target=select_runtime_llvm_jit_target(builder,cpu,attrs);if(!target)return {{},status::native_failure};

@@ -94,7 +94,7 @@ concurrent faults cannot replace it.
   Invalid numeric conversion is a Guest trap, not evidence of a JIT defect.
 - **122 — memory protection:** MTE detected a tag mismatch. The default
   synchronous mode rejects the access before permitting it. Explicit
-  `--runtime-memtag-mode async` with `--runtime-memtag-backend software|hardware` delays fault delivery;
+  `--runtime-memtag-mode async` with `runtime.memtag-backend software|arm-mte` delays fault delivery;
   an offending access may already have executed. This status does not imply
   that corrupted state can be resumed or that the attempted access was harmless.
 - **123 — runtime internal record:** a detected runtime invariant or internal

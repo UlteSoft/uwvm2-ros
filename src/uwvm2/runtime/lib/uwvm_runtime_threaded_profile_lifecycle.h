@@ -537,8 +537,7 @@
                     if(!parent)return false;
                     auto const* file=instance.source_owner()->actual_validated_file(id,state.admitted->source_validation_epoch(),parent);
                     if(!file||!file->has_owned_source_image() ||
-                       (!::uwvm2::uwvm::runtime::runtime_mode::runtime_disable_memtag &&
-                        !::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(*file)))return false;
+                       !::uwvm2::uwvm::runtime::validator::admits_tag_only_checkpoint(*file))return false;
                     auto name=g_runtime.modules.index_unchecked(id).module_name;
                     number(m);number(name.size());auto* text=reinterpret_cast<::std::byte const*>(name.data());
                     if(name.size())hash.update(text,text+name.size());number(file->source_size());
@@ -797,9 +796,8 @@
                             for(auto& record:module.local_defined_memory_vec_storage)
                             {
                                 auto& memory=record.memory;
-                                if(!memory.memtag_shadow.enabled())continue;
-                                if(!memory.memtag_shadow.hardware_selected() ||
-                                   !::uwvm2::runtime::memtag::activate_owner_hardware(memory) ||
+                                if(!memory.memtag_shadow.hardware_selected())continue;
+                                if(!::uwvm2::runtime::memtag::activate_owner_hardware(memory) ||
                                    !memory.memtag_shadow.hardware_active())
                                 {
                                     ::fast_io::perrln("uwvm: [error] WASI Threads cannot activate the selected hardware MTE mapping; no Guest was launched.");

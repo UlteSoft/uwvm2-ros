@@ -23,6 +23,7 @@ module;
 
 // std
 #include <cstddef>
+#include <optional>
 #include <type_traits>
 // macro
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>

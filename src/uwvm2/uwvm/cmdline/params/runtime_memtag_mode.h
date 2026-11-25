@@ -1,5 +1,3 @@
-// WasmMTE exposes exactly five CLI controls: parser/runtime off, timing,
-// fault action (including its independent report destination), and backend.
 #pragma once
 #ifndef UWVM_MODULE
 # include <memory>
@@ -14,8 +12,6 @@
 # include <uwvm2/utils/cmdline/impl.h>
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/extension/memtag/execution_policy.h>
-# include <uwvm2/uwvm/wasm/storage/module_policy.h>
-# include <uwvm2/uwvm/wasm/storage/mode.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -24,7 +20,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 {
     namespace details
     {
-        inline bool runtime_memtag_backend_exists{},runtime_memtag_mode_exists{},runtime_memtag_action_exists{};
+        inline bool runtime_memtag_mode_exists{},runtime_memtag_action_exists{};
 #if defined(__linux__)
         // This handle belongs exclusively to MTE reporting. Never duplicate or
         // reopen the general logger; later --log-output changes cannot move it.
@@ -44,27 +40,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
                 return result::return_m1_imme;
             }
             bool valid{};
-            if(current->str==u8"--runtime-memtag-backend")
-            {
-                namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
-                auto requested{policy::parse_backend({value->str.data(), value->str.size()})};
-                if(value->str == u8"hardware")
-                {
-#if defined(__x86_64__) || defined(_M_X64)
-                    requested = mt::owner_backend::x86_mtt;
-#else
-                    requested = mt::owner_backend::arm_mte;
-#endif
-                }
-                valid = requested.has_value();
-                if(valid)
-                {
-                    ::uwvm2::uwvm::wasm::storage::wasm_parameter.memory_policy.backend = *requested;
-                    mt::select_backend(*requested == mt::owner_backend::arm_mte || *requested == mt::owner_backend::x86_mtt);
-                }
-                else { ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,u8"uwvm: [error] Unknown memory tag backend."); }
-            }
-            else if(current->str==u8"--runtime-memtag-mode")
+            if(current->str==u8"--runtime-memtag-mode")
             {
                 valid=value->str==u8"sync" || value->str==u8"async";
                 if(valid) { mt::select_delivery(value->str==u8"async"); }
@@ -156,13 +132,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             return result::def;
         }
     }
-    inline constexpr ::uwvm2::utils::cmdline::parameter runtime_memtag_backend{
-        .name{u8"--runtime-memtag-backend"},
-        .describe{u8"Default owner tag backend. Required hardware needs OS-enabled checked mappings. The hardware alias requests this host architecture."},
-        .usage{u8"<software|auto|arm-mte|x86-mtt|hardware>"},
-        .handle=::std::addressof(details::runtime_memtag_mode_callback),
-        .is_exist=::std::addressof(details::runtime_memtag_backend_exists),
-        .cate=::uwvm2::utils::cmdline::categorization::runtime};
     inline constexpr ::uwvm2::utils::cmdline::parameter runtime_memtag_mode{
         .name{u8"--runtime-memtag-mode"},
         .describe{u8"MTE timing: sync (default), or async. Independent of backend and fault action; ordinary sandbox bounds remain immediate."},

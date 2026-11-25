@@ -8093,7 +8093,8 @@ namespace uwvm2::runtime::lib
 
             details::runtime_state_signature signature{};
             signature.kind = details::runtime_state_kind::full;
-            signature.memtag_execution_disabled = runtime_mode::runtime_disable_memtag;
+            signature.memtag_execution_disabled = !::uwvm2::uwvm::wasm::storage::module_policy::global.check_tags.value_or(
+                ::uwvm2::uwvm::wasm::storage::wasm_parameter.memory_policy.check_tags);
             signature.runtime_compiler = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_compiler);
             signature.runtime_mode = static_cast<::std::uint_least32_t>(runtime_mode::global_runtime_mode);
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
@@ -8725,15 +8726,17 @@ namespace uwvm2::runtime::lib
         }
 
         [[nodiscard]] inline constexpr runtime_llvm_jit_full_materialize_strategy
-            resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel default_level, [[maybe_unused]] ::llvm::Module const* debug_module = nullptr) noexcept
+            resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel default_level,
+                ::uwvm2::uwvm::runtime::runtime_mode::module_translation_policy const& translation,
+                [[maybe_unused]] ::llvm::Module const* debug_module = nullptr) noexcept
         {
             // Resolve the final full-JIT materialization policy. Full-specific options win, then general JIT policy, then default.
             namespace runtime_mode = ::uwvm2::uwvm::runtime::runtime_mode;
 
             using runtime_llvm_jit_full_policy_t = runtime_mode::runtime_llvm_jit_full_policy_t;
-            if(runtime_mode::runtime_llvm_jit_full_policy_existed)
+            if(translation.llvm_full_policy || runtime_mode::runtime_llvm_jit_full_policy_existed)
             {
-                switch(runtime_mode::global_runtime_llvm_jit_full_policy)
+                switch(translation.llvm_full_policy.value_or(runtime_mode::global_runtime_llvm_jit_full_policy))
                 {
                     case runtime_llvm_jit_full_policy_t::auto_policy: break;
                     case runtime_llvm_jit_full_policy_t::debug:
@@ -8760,9 +8763,9 @@ namespace uwvm2::runtime::lib
             }
 
             using runtime_llvm_jit_policy_t = runtime_mode::runtime_llvm_jit_policy_t;
-            if(runtime_mode::runtime_llvm_jit_policy_existed)
+            if(translation.llvm_policy || runtime_mode::runtime_llvm_jit_policy_existed)
             {
-                switch(runtime_mode::global_runtime_llvm_jit_policy)
+                switch(translation.llvm_policy.value_or(runtime_mode::global_runtime_llvm_jit_policy))
                 {
                     case runtime_llvm_jit_policy_t::debug:
                         return make_runtime_llvm_jit_full_materialize_strategy(runtime_llvm_jit_full_pipeline_kind::none,
@@ -9856,7 +9859,7 @@ namespace uwvm2::runtime::lib
             ::llvm::SmallVector<::llvm::StringRef, 16> host_target_attributes{};
             append_llvm_jit_host_target_attribute_refs(host_target_attribute_storage, host_target_attributes);
 
-            auto const full_materialize_strategy{resolve_runtime_llvm_jit_full_materialize_strategy(default_codegen_opt_level, merged_module.get())};
+            auto const full_materialize_strategy{resolve_runtime_llvm_jit_full_materialize_strategy(default_codegen_opt_level, runtime_module->translation, merged_module.get())};
             auto const codegen_opt_level{full_materialize_strategy.codegen_opt_level};
             // Eligibility comes from the final resolved policy. Explicit full/general
             // overrides remain authoritative even inside an enabled debug session.
@@ -9901,7 +9904,8 @@ namespace uwvm2::runtime::lib
             // Bound bridge-only objects to the same calling policy and ordered native
             // memory layouts as inline accesses. Aliases are resolved before hashing.
             auto cache_identity{::uwvm2::utils::container::u8string_ref_uwvm{::std::addressof(llvm_jit_cache_context.cache_key)}};
-            ::fast_io::io::print(cache_identity,u8"|adm-mte-v1|",runtime_module->memory_policy.check_tags);
+            ::fast_io::io::print(cache_identity, u8"|translation|", full_materialize_strategy.policy_name,
+                u8"|adm-mte-v1|", runtime_module->memory_policy.check_tags);
             auto const memory_count{runtime_module->imported_memory_vec_storage.size()+runtime_module->local_defined_memory_vec_storage.size()};
             for(::std::size_t index{}; index != memory_count; ++index)
             {
@@ -12176,7 +12180,7 @@ namespace uwvm2::runtime::lib
                         bool legacy_light_task_preopt_enabled{};
                         if(effective_module_extra_compile_threads != 0uz)
                         {
-                            auto const full_translation_strategy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive)};
+                            auto const full_translation_strategy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive, rec.runtime_module->translation)};
                             if(full_translation_strategy.pipeline == runtime_llvm_jit_full_pipeline_kind::legacy_light &&
                                ensure_llvm_jit_native_target_initialized())
                             {
@@ -14843,7 +14847,7 @@ namespace uwvm2::runtime::lib
             auto const attributes{get_llvm_jit_host_target_attribute_storage()};
             ::llvm::SmallVector<::llvm::StringRef, 16> attribute_refs{};
             append_llvm_jit_host_target_attribute_refs(attributes, attribute_refs);
-            auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive, ir.llvm_module.get())};
+            auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive, runtime_module->translation, ir.llvm_module.get())};
             ::llvm::EngineBuilder target_builder{};
             target_builder.setEngineKind(::llvm::EngineKind::JIT)
                 .setOptLevel(policy.codegen_opt_level)

@@ -28,6 +28,7 @@ module;
 
 // std
 #include <cstddef>
+#include <span>
 #include <cstdint>
 #include <climits>
 #include <type_traits>
@@ -39,6 +40,9 @@ module;
 export module uwvm2.uwvm.wasm.loader:wasm_file;
 
 import fast_io;
+import uwvm2.extension.memtag.globals;
+import uwvm2.extension.memtag.instruction;
+import uwvm2.parser.wasm.binfmt.binfmt_ver1;
 import uwvm2.utils.container;
 import uwvm2.utils.control;
 import uwvm2.utils.ansies;

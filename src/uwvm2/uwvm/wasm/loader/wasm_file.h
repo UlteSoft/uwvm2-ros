@@ -38,6 +38,8 @@
 # include <uwvm2/uwvm/utils/ansies/uwvm_color_push_macro.h>
 // import
 # include <fast_io.h>
+# include <span>
+# include <uwvm2/extension/memtag/globals.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/ansies/impl.h>
 # include <uwvm2/utils/debug/impl.h>
@@ -112,6 +114,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                 break;
             }
             return fallback;
+        }
+
+        // Check guest metadata as soon as the declaration types are available.
+        // The initializer later checks ranges against the actual linked owner.
+        template<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+        [[nodiscard]] inline constexpr bool admit_memtag_globals(
+            ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module,
+            ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm_binfmt1p1_feature_parameter const& policy) noexcept
+        {
+            namespace mt = ::uwvm2::extension::memtag;
+            namespace ops = ::uwvm2::parser::wasm::concepts::operation;
+            namespace features = ::uwvm2::parser::wasm::standard::wasm1::features;
+            auto const& customs{ops::get_first_type_in_tuple<features::custom_section_storage_t>(module.sections)};
+            bool seen{};
+            for(auto const& section : customs.customs)
+            {
+                if(section.custom_name == mt::obsolete_globals_section_name) { return false; }
+                if(section.custom_name != mt::linear_globals_section_name) { continue; }
+                if(seen || policy.disable_memtag_extension || policy.disable_adm_extension) { return false; }
+                seen = true;
+                auto const& imported{ops::get_first_type_in_tuple<features::import_section_storage_t<Fs...>>(module.sections).importdesc.index_unchecked(2uz)};
+                auto const& local{ops::get_first_type_in_tuple<features::memory_section_storage_t<Fs...>>(module.sections).memories};
+                auto const payload{::std::span<::std::byte const>{reinterpret_cast<::std::byte const*>(section.custom_begin),
+                                                                  reinterpret_cast<::std::byte const*>(section.sec_span.sec_end)}};
+                auto const result{mt::validate_linear_globals(payload, [&](::std::uint32_t index, ::std::uint64_t& extent) noexcept
+                {
+                    // Linked imports and the owner's configured initial size can
+                    // exceed the declared minimum. Check the actual extent at link.
+                    extent = UINT64_MAX;
+                    if(index < imported.size()) { return mt::is_tagged_memory(imported.index_unchecked(index)->imports.storage.memory); }
+                    auto const local_index{index - imported.size()};
+                    return local_index < local.size() && mt::is_tagged_memory(local.index_unchecked(local_index));
+                })};
+                if(!result) { return false; }
+            }
+            return true;
         }
 
         template<typename Color>
@@ -687,6 +725,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     }
 
                     // handle custom section
+                    if(!details::admit_memtag_globals(wf.wasm_module_storage.wasm_binfmt_ver1_storage,
+                        ::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(wf.wasm_parameter.binfmt1_para)))
+                    {
+                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: [error] Invalid or disabled WasmMTE global metadata in ", load_file_name,
+                            u8". Use uwvm.memtag.linear.globals version 2 with admitted ADM-tagged memory indices.");
+                        return load_wasm_file_rtl::wasm_parser_error;
+                    }
                     ::uwvm2::uwvm::wasm::custom::handle_binfmtver1_custom_section(wf, ::uwvm2::uwvm::wasm::custom::custom_handle_funcs);
 
                     ::fast_io::unix_timestamp custom_section_end_time{};

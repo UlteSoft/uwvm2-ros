@@ -14,51 +14,14 @@ Source focus:
 
 ## Feature baseline and overrides
 
-The default enables **WebAssembly Core 3.0, threads, WasmADM and WasmMTE**. Custom page sizes require explicit enablement.
-Selecting `--wasm-feature-wasm3` explicitly has the same effective policy as
-omitting a baseline. Core 3.0 additions include GC, typed function references,
-tail calls, exceptions, extended constant expressions, table initializers,
-multiple memories, memory64/table64 and relaxed SIMD. Threads, WasmADM and
-WasmMTE are separate extensions. See the
-[official Core change history](https://webassembly.github.io/spec/core/appendix/changes.html).
+The default enables WebAssembly Core 3.0, threads, WasmADM and WasmMTE. Custom page sizes require explicit enablement. Select a Core baseline with `parser.baseline` and set individual features with `parser.FEATURE on|off`. All module policy options take effect before any Wasm preload parses.
 
-| Baseline | Short forms | Defaults before explicit overrides |
-| --- | --- | --- |
-| `--wasm-feature-wasmmvp` | `-WFmvp`, `-WF1` | MVP; later Core features and threads disabled |
-| `--wasm-feature-wasm1p1` | `-WF1.1`, `-WF1p1` | Existing 1.1 feature collection; 3.0 additions and threads disabled |
-| `--wasm-feature-wasm2` | `-WF2`, `-WFwasm2` | Core 2.0; 3.0 additions and threads disabled |
-| `--wasm-feature-wasm3` | `-WF3`, `-WFwasm3` | Core 3.0 plus threads; the product default |
-
-Use `--wasm-feature-enable-<feature>` / `-WFE-<feature>` and
-`--wasm-feature-disable-<feature>` / `-WFD-<feature>` to override individual
-features. One baseline may be combined with these switches in either order.
-The full policy is resolved before any preloaded module is parsed. Duplicate
-baselines, duplicate feature switches and enabling and disabling the same
-feature are command-line errors (exit 126). Feature dependencies are still
-validated; enabling one feature does not silently grant unrelated features or
-any WASI/ROS host interfaces.
-
-```bash
-uwvm2-ros --run app.wasm                       # Core 3.0 + threads + WasmADM + WasmMTE
-uwvm2-ros -WF3 --run app.wasm                  # Same effective policy
-uwvm2-ros -WF2 -WFE-gc --run gc.wasm           # Core 2.0 with GC enabled
-uwvm2-ros -WFE-gc -WF2 --run gc.wasm           # Same policy, reversed order
-uwvm2-ros -WFD-gc --run app.wasm               # Default baseline without GC
-uwvm2-ros -WF3 -WFD-gc --run app.wasm          # Same policy, explicit baseline
-uwvm2-ros -WFD-threads --run app.wasm          # Disable the threads extension
+```sh
+uwvm2-ros --wasm-policy-global parser.baseline wasm2 --wasm-policy-global parser.gc on --run app.wasm
+uwvm2-ros --wasm-policy-group devices parser.custom-page-sizes on --wasm-policy-group-add-module devices camera --wasm-preload-library camera.wasm camera --run app.wasm
 ```
 
-WasmMTE and WasmADM parsing are enabled for every baseline.
-`--wasm-feature-disable-memtag-extension` and `--wasm-feature-disable-adm-extension`
-can reject their respective declarations. Use `--wasm-feature-enable-custom-page-sizes`
-to admit custom page sizes. `--runtime-disable-memtag` defaults ordinary access
-comparisons to off while retaining explicit tag operations. Turning on the
-threads instruction extension does not grant `wasi.thread-spawn` or its
-separate runtime resources.
-
-## Module policies
-
-Use `--wasm-policy-global`, `--wasm-policy-group` and `--wasm-policy-single` to set parser features, initializer limits and runtime tag policy by module. `--wasm-policy-memory-backend` selects the backend of an individual local memory definition. [Keys, precedence and example / 中文说明](wasm-module-policy.md)
+WasmMTE memory declarations need both extensions and at least four ADM bits. The parser, initializer and runtime take independent settings for each module. WASI permissions have their own bindings. [Module policy keys and precedence](wasm-module-policy.md) · [中文命令行手册](wasm-module-policy.zh.md)
 
 ## Command Table
 
@@ -72,8 +35,7 @@ Use `--wasm-policy-global`, `--wasm-policy-group` and `--wasm-policy-single` to 
 | `--wasm-set-preload-module-attribute` | `-Wpreattr` | `<module:str> <memory-access:none|copy|mmap> (<memory_index:list>)` | Repeatable | Core Wasm; `mmap` needs `UWVM_SUPPORT_MMAP` | Configure memory access behavior for preloaded modules. |
 | `--wasm-depend-recursion-limit` | `-Wdeplim` | `<depth:size_t>` | Once | Core Wasm | Set dependency-check recursion depth. `0` means unlimited. |
 | `--wasm-set-memory-limit` | `-Wmemlim` | `<module:str> [<index:size_t>|all] <min:size_t> (<max:size_t>)` | Repeatable | Core Wasm | Override runtime page limits for selected local-defined memories. |
-| `--wasm-set-parser-limit` | `-Wplim` | `<type:str> <limit:size_t>` | Repeatable | Core Wasm | Override one parser or custom-name parser limit. |
-| `--wasm-set-initializer-limit` | `-Wilim` | `<type:str> <limit:size_t>` | Repeatable | Core Wasm | Override one runtime initializer reserve/check limit. |
+| `--wasm-process-initializer-limit` | — | `<type:str> <limit:size_t>` | Repeatable | Core Wasm | Set a hard ceiling for the process initializer. |
 | `--wasm-memory-grow-strict` | `-Wmemstrict` | None | Once | Core Wasm | Enable strict runtime memory-growth behavior. |
 
 ## Module Names
@@ -381,51 +343,16 @@ uwvm2-ros --wasm-set-preload-module-attribute lib copy --wasm-preload-library li
 
 The attribute is stored first and picked up when `lib` is loaded.
 
-## `--wasm-set-parser-limit`
+## Parser limits
+
+Use `--wasm-policy-global parser.limit.TYPE COUNT` for a default, or apply the same key to a group or an individual module. Each key may occur once per scope. [Limits by section](wasm-module-policy.md#parser-keys)
+
+## `--wasm-process-initializer-limit`
 
 Syntax:
 
 ```bash
-uwvm2-ros --wasm-set-parser-limit <type> <limit:size_t>
-```
-
-Behavior:
-
-- The option is repeatable.
-- `<type>` selects one parser/custom-name parser limit.
-- `<limit>` must parse completely as `size_t`.
-- Unknown type names are rejected and the binary prints the available names and defaults.
-- Repeating the same type overwrites that limit for later Wasm parsing.
-
-Accepted type names:
-
-| Type | Affected limit |
-| --- | --- |
-| `codesec_codes` | Maximum code-section function bodies. |
-| `code_locals` | Maximum local declarations per code body. |
-| `datacountsec_count` | Maximum count accepted in the WebAssembly 1.1 data-count section. |
-| `datasec_entries` | Maximum data-section entries. |
-| `elemsec_expr` | Maximum WebAssembly 1.1 reference expressions in element-section expression vectors. |
-| `elemsec_funcidx` | Maximum function indexes in element-section parsing. |
-| `elemsec_elems` | Maximum element entries. |
-| `exportsec_exports` | Maximum exports. |
-| `globalsec_globals` | Maximum globals. |
-| `importsec_imports` | Maximum imports. |
-| `memorysec_memories` | Maximum memories. |
-| `tablesec_tables` | Maximum tables. |
-| `typesec_types` | Maximum type-section entries. |
-| `custom_name_funcnames` | Maximum names in the custom name function subsection. |
-| `custom_name_codelocal_funcs` | Maximum functions in the custom name code-local subsection. |
-| `custom_name_codelocal_name_per_funcs` | Maximum local names per function in the custom name code-local subsection. |
-
-Place parser-limit overrides before any command that loads a Wasm module if you want them to affect that module. `--wasm-preload-library` loads immediately, so limits after it do not affect that already loaded preloaded module.
-
-## `--wasm-set-initializer-limit`
-
-Syntax:
-
-```bash
-uwvm2-ros --wasm-set-initializer-limit <type> <limit:size_t>
+uwvm2-ros --wasm-process-initializer-limit <type> <limit:size_t>
 ```
 
 Behavior:
@@ -445,11 +372,13 @@ Accepted type names:
 | `imported_tables` | Maximum imported tables. |
 | `imported_memories` | Maximum imported memories. |
 | `imported_globals` | Maximum imported globals. |
+| `imported_tags` | Maximum imported exception tags. |
 | `local_defined_functions` | Maximum local-defined functions. |
 | `local_defined_codes` | Maximum local-defined code entries. |
 | `local_defined_tables` | Maximum local-defined tables. |
 | `local_defined_memories` | Maximum local-defined memories. |
 | `local_defined_globals` | Maximum local-defined globals. |
+| `local_defined_tags` | Maximum local-defined exception tags. |
 | `local_defined_elements` | Maximum local-defined elements. |
 | `local_defined_datas` | Maximum local-defined data entries. |
 
@@ -468,16 +397,10 @@ Behavior:
 
 ## Ordering Examples
 
-Parser limit before preload:
+Module policy options on either side of a preload apply before parsing. This command limits the library to 100,000 function bodies.
 
-```bash
-uwvm2-ros --wasm-set-parser-limit codesec_codes 100000 --wasm-preload-library lib.wasm lib --run app.wasm
-```
-
-Parser limit after preload affects later loads only:
-
-```bash
-uwvm2-ros --wasm-preload-library lib.wasm lib --wasm-set-parser-limit codesec_codes 100000 --run app.wasm
+```sh
+uwvm2-ros --wasm-preload-library lib.wasm lib --wasm-policy-single lib parser.limit.codesec_codes 100000 --run app.wasm
 ```
 
 Preload with module-specific WASI configuration:

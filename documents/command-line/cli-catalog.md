@@ -14,7 +14,7 @@ Regenerate with `tools/documentation/generate_cli_reference.py --vm
 An existing exact help capture can instead be supplied with `--help-file`.
 The generator does not run a Guest or confer any permissions.
 
-This catalog lists **303 primary commands**.
+This catalog lists **247 primary commands**.
 
 ## `--debug-dump-force`
 
@@ -904,14 +904,6 @@ Write runtime compiler logs to stdout, stderr, or a dedicated file.
 
 Start the LLVM JIT debugger; default to full debug permissions unless --debug-permissions is explicit.
 
-## `--runtime-disable-memtag`
-
-```text
-[--runtime-disable-memtag]
-```
-
-Default WasmMTE access comparisons to off. Address masking, tag operations and sandbox bounds stay active.
-
 ## `--runtime-int`
 
 ```text
@@ -944,22 +936,6 @@ Explicit Linux-only process seal (PR_SET_DUMPABLE=0) before execution for authen
 
 Use native LLVM exception dispatch; auto resolves to native-unwind. No instruction-based EH fallback.
 
-## `--runtime-llvm-jit-full-policy`
-
-```text
-[--runtime-llvm-jit-full-policy|-Rllvm-full-policy] [auto|debug|legacy-light|pb-o1|pb-o2|pb-o3]
-```
-
-Select the full-module LLVM AOT strategy policy.
-
-## `--runtime-llvm-jit-policy`
-
-```text
-[--runtime-llvm-jit-policy|-Rllvm-policy] [debug|default|fast-compile|balanced|max]
-```
-
-Select the high-level full-module LLVM AOT strategy policy.
-
 ## `--runtime-memory-reservation`
 
 ```text
@@ -976,14 +952,6 @@ Set the process-wide reservation pool, its participant count or the data quota o
 
 MTE action: crash (default), or silent-log with an explicit independent out, err, or path destination. Record every violation and continue; path appends JSON records. --log-output never redirects MTE reports. Bounds and host permissions remain enforced; report I/O failure terminates.
 
-## `--runtime-memtag-backend`
-
-```text
-[--runtime-memtag-backend] <software|auto|arm-mte|x86-mtt|hardware>
-```
-
-Default owner tag backend. Required hardware needs OS-enabled checked mappings. The hardware alias requests this host architecture.
-
 ## `--runtime-memtag-mode`
 
 ```text
@@ -999,46 +967,6 @@ MTE timing: sync (default), or async. Independent of backend and fault action; o
 ```
 
 Set the scheduling policy for extra runtime compile threads.
-
-## `--runtime-uwvm-int-disable-delay-local`
-
-```text
-[--runtime-uwvm-int-disable-delay-local|-Rint-no-delay-local]
-```
-
-Disable uwvm-int delay-local peepholes.
-
-## `--runtime-uwvm-int-disable-loop-unwind`
-
-```text
-[--runtime-uwvm-int-disable-loop-unwind|-Rint-no-loop-unwind]
-```
-
-Disable uwvm-int loop-unwind translation.
-
-## `--runtime-uwvm-int-enable-instruction-reorder`
-
-```text
-[--runtime-uwvm-int-enable-instruction-reorder|-Rint-reorder]
-```
-
-Enable experimental uwvm-int register-ring-aware instruction reorder.
-
-## `--runtime-uwvm-int-loop-unwind-max-size`
-
-```text
-[--runtime-uwvm-int-loop-unwind-max-size|-Rint-loop-unwind-size] <bytes:size_t>
-```
-
-Set the uwvm-int loop-unwind Wasm body byte-size budget.
-
-## `--runtime-uwvm-int-set-opcode-conbination-level`
-
-```text
-[--runtime-uwvm-int-set-opcode-conbination-level|-Rint-op-conbine-level] [disable|soft]
-```
-
-Set the uwvm-int opcode conbination peephole level.
 
 ## `--secure`
 
@@ -1952,374 +1880,6 @@ Floor a finite f32 ratio in [0,1] of the observable system thread ceiling. No au
 
 Set the dependency-check recursion limit (0 = unlimited).
 
-## `--wasm-feature-disable-adm-extension`
-
-```text
-[--wasm-feature-disable-adm-extension]
-```
-
-Reject ADM memory declarations during validation.
-
-## `--wasm-feature-disable-bulk-memory`
-
-```text
-[--wasm-feature-disable-bulk-memory|-WFD-bulk-memory]
-```
-
-Disable the WebAssembly bulk-memory feature.
-
-## `--wasm-feature-disable-custom-page-sizes`
-
-```text
-[--wasm-feature-disable-custom-page-sizes|-WFD-custom-page-sizes]
-```
-
-Disable custom WebAssembly page sizes.
-
-## `--wasm-feature-disable-exceptions`
-
-```text
-[--wasm-feature-disable-exceptions|-WFD-exceptions]
-```
-
-Disable the WebAssembly exceptions feature.
-
-## `--wasm-feature-disable-extended-const`
-
-```text
-[--wasm-feature-disable-extended-const|-WFD-extended-const]
-```
-
-Disable the WebAssembly extended-const feature.
-
-## `--wasm-feature-disable-function-references`
-
-```text
-[--wasm-feature-disable-function-references|-WFD-function-references]
-```
-
-Disable the WebAssembly function-references feature.
-
-## `--wasm-feature-disable-gc`
-
-```text
-[--wasm-feature-disable-gc|-WFD-gc]
-```
-
-Disable the WebAssembly gc feature.
-
-## `--wasm-feature-disable-memory64`
-
-```text
-[--wasm-feature-disable-memory64|-WFD-memory64]
-```
-
-Disable the WebAssembly memory64 feature.
-
-## `--wasm-feature-disable-memtag-extension`
-
-```text
-[--wasm-feature-disable-memtag-extension]
-```
-
-Reject WasmMTE instructions and metadata during validation.
-
-## `--wasm-feature-disable-multi-memory`
-
-```text
-[--wasm-feature-disable-multi-memory|-WFD-multi-memory]
-```
-
-Disable the WebAssembly multi-memory feature.
-
-## `--wasm-feature-disable-multi-value`
-
-```text
-[--wasm-feature-disable-multi-value|-WFD-multi-value]
-```
-
-Disable the WebAssembly multi-value feature.
-
-## `--wasm-feature-disable-multiple-tables`
-
-```text
-[--wasm-feature-disable-multiple-tables|-WFD-multiple-tables]
-```
-
-Disable the WebAssembly multiple-tables feature.
-
-## `--wasm-feature-disable-nontrapping-float-to-int`
-
-```text
-[--wasm-feature-disable-nontrapping-float-to-int|-WFD-nontrapping-float-to-int]
-```
-
-Disable the WebAssembly nontrapping-float-to-int feature.
-
-## `--wasm-feature-disable-reference-types`
-
-```text
-[--wasm-feature-disable-reference-types|-WFD-reference-types]
-```
-
-Disable the WebAssembly reference-types feature.
-
-## `--wasm-feature-disable-relaxed-simd`
-
-```text
-[--wasm-feature-disable-relaxed-simd|-WFD-relaxed-simd]
-```
-
-Disable the WebAssembly relaxed-simd feature.
-
-## `--wasm-feature-disable-sign-extension`
-
-```text
-[--wasm-feature-disable-sign-extension|-WFD-sign-extension]
-```
-
-Disable the WebAssembly sign-extension feature.
-
-## `--wasm-feature-disable-simd`
-
-```text
-[--wasm-feature-disable-simd|-WFD-simd]
-```
-
-Disable the WebAssembly simd feature.
-
-## `--wasm-feature-disable-table-initializer`
-
-```text
-[--wasm-feature-disable-table-initializer|-WFD-table-initializer]
-```
-
-Disable the WebAssembly table-initializer feature.
-
-## `--wasm-feature-disable-table-instructions`
-
-```text
-[--wasm-feature-disable-table-instructions|-WFD-table-instructions]
-```
-
-Disable the WebAssembly table-instructions feature.
-
-## `--wasm-feature-disable-table64`
-
-```text
-[--wasm-feature-disable-table64|-WFD-table64]
-```
-
-Disable the WebAssembly table64 feature.
-
-## `--wasm-feature-disable-tail-call`
-
-```text
-[--wasm-feature-disable-tail-call|-WFD-tail-call]
-```
-
-Disable the WebAssembly tail-call feature.
-
-## `--wasm-feature-disable-threads`
-
-```text
-[--wasm-feature-disable-threads|-WFD-threads]
-```
-
-Disable the WebAssembly threads feature.
-
-## `--wasm-feature-enable-bulk-memory`
-
-```text
-[--wasm-feature-enable-bulk-memory|-WFE-bulk-memory]
-```
-
-Enable the WebAssembly bulk-memory feature.
-
-## `--wasm-feature-enable-custom-page-sizes`
-
-```text
-[--wasm-feature-enable-custom-page-sizes|-WFE-custom-page-sizes]
-```
-
-Enable custom WebAssembly page sizes.
-
-## `--wasm-feature-enable-exceptions`
-
-```text
-[--wasm-feature-enable-exceptions|-WFE-exceptions]
-```
-
-Enable the WebAssembly exceptions feature.
-
-## `--wasm-feature-enable-extended-const`
-
-```text
-[--wasm-feature-enable-extended-const|-WFE-extended-const]
-```
-
-Enable the WebAssembly extended-const feature.
-
-## `--wasm-feature-enable-function-references`
-
-```text
-[--wasm-feature-enable-function-references|-WFE-function-references]
-```
-
-Enable the WebAssembly function-references feature.
-
-## `--wasm-feature-enable-gc`
-
-```text
-[--wasm-feature-enable-gc|-WFE-gc]
-```
-
-Enable the WebAssembly gc feature.
-
-## `--wasm-feature-enable-memory64`
-
-```text
-[--wasm-feature-enable-memory64|-WFE-memory64]
-```
-
-Enable the WebAssembly memory64 feature.
-
-## `--wasm-feature-enable-multi-memory`
-
-```text
-[--wasm-feature-enable-multi-memory|-WFE-multi-memory]
-```
-
-Enable the WebAssembly multi-memory feature.
-
-## `--wasm-feature-enable-multi-value`
-
-```text
-[--wasm-feature-enable-multi-value|-WFE-multi-value]
-```
-
-Enable the WebAssembly multi-value feature.
-
-## `--wasm-feature-enable-multiple-tables`
-
-```text
-[--wasm-feature-enable-multiple-tables|-WFE-multiple-tables]
-```
-
-Enable the WebAssembly multiple-tables feature.
-
-## `--wasm-feature-enable-nontrapping-float-to-int`
-
-```text
-[--wasm-feature-enable-nontrapping-float-to-int|-WFE-nontrapping-float-to-int]
-```
-
-Enable the WebAssembly nontrapping-float-to-int feature.
-
-## `--wasm-feature-enable-reference-types`
-
-```text
-[--wasm-feature-enable-reference-types|-WFE-reference-types]
-```
-
-Enable the WebAssembly reference-types feature.
-
-## `--wasm-feature-enable-relaxed-simd`
-
-```text
-[--wasm-feature-enable-relaxed-simd|-WFE-relaxed-simd]
-```
-
-Enable the WebAssembly relaxed-simd feature.
-
-## `--wasm-feature-enable-sign-extension`
-
-```text
-[--wasm-feature-enable-sign-extension|-WFE-sign-extension]
-```
-
-Enable the WebAssembly sign-extension feature.
-
-## `--wasm-feature-enable-simd`
-
-```text
-[--wasm-feature-enable-simd|-WFE-simd]
-```
-
-Enable the WebAssembly simd feature.
-
-## `--wasm-feature-enable-table-initializer`
-
-```text
-[--wasm-feature-enable-table-initializer|-WFE-table-initializer]
-```
-
-Enable the WebAssembly table-initializer feature.
-
-## `--wasm-feature-enable-table-instructions`
-
-```text
-[--wasm-feature-enable-table-instructions|-WFE-table-instructions]
-```
-
-Enable the WebAssembly table-instructions feature.
-
-## `--wasm-feature-enable-table64`
-
-```text
-[--wasm-feature-enable-table64|-WFE-table64]
-```
-
-Enable the WebAssembly table64 feature.
-
-## `--wasm-feature-enable-tail-call`
-
-```text
-[--wasm-feature-enable-tail-call|-WFE-tail-call]
-```
-
-Enable the WebAssembly tail-call feature.
-
-## `--wasm-feature-enable-threads`
-
-```text
-[--wasm-feature-enable-threads|-WFE-threads]
-```
-
-Enable the WebAssembly threads feature.
-
-## `--wasm-feature-wasm1p1`
-
-```text
-[--wasm-feature-wasm1p1|--wasm-feature-wasm1.1|-WF1.1|-WF1p1|-WFwasm1.1|-WFwasm1p1]
-```
-
-Select the WebAssembly 1.1 baseline; explicit feature enable/disable switches override it.
-
-## `--wasm-feature-wasm2`
-
-```text
-[--wasm-feature-wasm2|-WF2|-WFwasm2]
-```
-
-Select the WebAssembly 2.0 baseline; explicit feature enable/disable switches override it.
-
-## `--wasm-feature-wasm3`
-
-```text
-[--wasm-feature-wasm3|-WF3|-WFwasm3]
-```
-
-Select the default WebAssembly 3.0 baseline plus threads; WasmMTE remains enabled unless explicitly disabled. Explicit feature enable/disable switches override the baseline.
-
-## `--wasm-feature-wasmmvp`
-
-```text
-[--wasm-feature-wasmmvp|--wasm-feature-mvp|-WFmvp|-WFwasmmvp|-WFwasm1|-WF1]
-```
-
-Select the MVP baseline; explicit feature enable/disable switches override it.
-
 ## `--wasm-memory-grow-strict`
 
 ```text
@@ -2334,7 +1894,7 @@ Report recoverable host allocation/commit failures from `memory.grow` as -1; Was
 [--wasm-policy-global] <key> <value>
 ```
 
-Set a default Wasm parser feature, initializer limit, runtime check, or memory tag backend.
+Set a default Wasm parser, initializer or runtime policy before loading any module.
 
 ## `--wasm-policy-group`
 
@@ -2384,13 +1944,13 @@ Preload a Wasm module as a dynamic library; an optional rename sets its module n
 
 Rewrite a Wasm file module's import binding during runtime initialization; original exports are not renamed.
 
-## `--wasm-set-initializer-limit`
+## `--wasm-process-initializer-limit`
 
 ```text
-[--wasm-set-initializer-limit|-Wilim] <type:str> <limit:size_t>
+[--wasm-process-initializer-limit] <type:str> <limit:size_t>
 ```
 
-Override a runtime initializer reserve limit.
+Set an initializer hard ceiling for this process. runtime_modules limits the whole linked graph.
 
 ## `--wasm-set-main-module-name`
 
@@ -2407,14 +1967,6 @@ Override the main Wasm module name used by uwvm.
 ```
 
 Override runtime page limits for selected local-defined Wasm memories.
-
-## `--wasm-set-parser-limit`
-
-```text
-[--wasm-set-parser-limit|-Wplim] <type:str> <limit:size_t>
-```
-
-Override a parser limit for Wasm modules.
 
 ## `--wasm-set-preload-module-attribute`
 

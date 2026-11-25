@@ -42,7 +42,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 {
     namespace details
     {
-        inline constexpr ::uwvm2::utils::container::u8string_view wasm_set_initializer_limit_alias{u8"-Wilim"};
 #if defined(UWVM_MODULE)
         extern "C++"
 #else
@@ -58,10 +57,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
 # pragma clang diagnostic ignored "-Wbraced-scalar-init"
 #endif
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_set_initializer_limit{
-        .name{u8"--wasm-set-initializer-limit"},
-        .describe{u8"Override a runtime initializer reserve limit."},
+        .name{u8"--wasm-process-initializer-limit"},
+        .describe{u8"Set an initializer hard ceiling for this process. runtime_modules limits the whole linked graph."},
         .usage{u8"<type:str> <limit:size_t>"},
-        .alias{::uwvm2::utils::cmdline::kns_u8_str_scatter_t{::std::addressof(details::wasm_set_initializer_limit_alias), 1uz}},
         .handle{::std::addressof(details::wasm_set_initializer_limit_callback)},
         .cate{::uwvm2::utils::cmdline::categorization::wasm}};
 #if defined(__clang__)

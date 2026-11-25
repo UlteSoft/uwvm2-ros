@@ -5780,7 +5780,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             auto const& tagsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                 ::uwvm2::parser::wasm::standard::wasm1p1::features::tag_section_storage_t<Fs...>>(module_storage.sections)};
             out.tag_section_present = tagsec.present;
-            details::check_reserve_limit_in_context(world, u8"local_defined_tags", tagsec.type_indices.size(), world.limits().max_local_defined_tags);
+            details::check_reserve_limit_in_context(world, u8"local_defined_tags", tagsec.type_indices.size(),
+                    (::std::min)(world.limits().max_local_defined_tags, module_limits.local_defined_tags));
             out.local_defined_tag_vec_storage.reserve(tagsec.type_indices.size());
             for(auto index : tagsec.type_indices)
             {
@@ -6207,7 +6208,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     }
                 }
 
-                details::check_reserve_limit_in_context(world, u8"imported_functions", imported_funcs.size(), world.limits().max_imported_functions);
+                details::check_reserve_limit_in_context(world, u8"imported_functions", imported_funcs.size(),
+                    (::std::min)(world.limits().max_imported_functions, module_limits.imported_functions));
                 out.imported_function_vec_storage.reserve(imported_funcs.size());
                 for(auto const import_ptr: imported_funcs)
                 {
@@ -6217,7 +6219,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
 
                 auto const& imported_tables{importsec.importdesc.index_unchecked(importdesc_table_index)};
-                details::check_reserve_limit_in_context(world, u8"imported_tables", imported_tables.size(), world.limits().max_imported_tables);
+                details::check_reserve_limit_in_context(world, u8"imported_tables", imported_tables.size(),
+                    (::std::min)(world.limits().max_imported_tables, module_limits.imported_tables));
                 out.imported_table_vec_storage.reserve(imported_tables.size());
                 for(auto const import_ptr: imported_tables)
                 {
@@ -6249,7 +6252,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     out.imported_global_vec_storage.push_back_unchecked(::std::move(rec));
                 }
                 auto const& imported_tags{importsec.importdesc.index_unchecked(importdesc_tag_index)};
-                details::check_reserve_limit_in_context(world, u8"imported_tags", imported_tags.size(), world.limits().max_imported_tags);
+                details::check_reserve_limit_in_context(world, u8"imported_tags", imported_tags.size(),
+                    (::std::min)(world.limits().max_imported_tags, module_limits.imported_tags));
                 out.imported_tag_vec_storage.reserve(imported_tags.size());
                 for(auto const original : imported_tags)
                 {
@@ -6321,8 +6325,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                         u8"). ");
                 }
 
-                details::check_reserve_limit_in_context(world, u8"local_defined_functions", defined_func_count, world.limits().max_local_defined_functions);
-                details::check_reserve_limit_in_context(world, u8"local_defined_codes", defined_func_count, world.limits().max_local_defined_codes);
+                details::check_reserve_limit_in_context(world, u8"local_defined_functions", defined_func_count,
+                    (::std::min)(world.limits().max_local_defined_functions, module_limits.local_defined_functions));
+                details::check_reserve_limit_in_context(world, u8"local_defined_codes", defined_func_count,
+                    (::std::min)(world.limits().max_local_defined_codes, module_limits.local_defined_codes));
                 out.local_defined_function_vec_storage.reserve(defined_func_count);
                 out.local_defined_code_vec_storage.reserve(defined_func_count);
 
@@ -6492,7 +6498,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                         u8"). ");
                 }
 
-                details::check_reserve_limit_in_context(world, u8"local_defined_tables", local_table_count, world.limits().max_local_defined_tables);
+                details::check_reserve_limit_in_context(world, u8"local_defined_tables", local_table_count,
+                    (::std::min)(world.limits().max_local_defined_tables, module_limits.local_defined_tables));
                 out.local_defined_table_vec_storage.reserve(local_table_count);
 
                 if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
@@ -6916,7 +6923,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { verbose_module_info_in_context(world, u8"Init: element segments. "); }
             // element (wasm1: active segments)
             {
-                details::check_reserve_limit_in_context(world, u8"local_defined_elements", elemsec.elems.size(), world.limits().max_local_defined_elements);
+                details::check_reserve_limit_in_context(world, u8"local_defined_elements", elemsec.elems.size(),
+                    (::std::min)(world.limits().max_local_defined_elements, module_limits.local_defined_elements));
                 out.local_defined_element_vec_storage.reserve(elemsec.elems.size());
                 for(auto const& elem: elemsec.elems)
                 {
@@ -6953,7 +6961,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(::uwvm2::uwvm::io::show_verbose) [[unlikely]] { verbose_module_info_in_context(world, u8"Init: data segments. "); }
             // data (wasm1: active segments)
             {
-                details::check_reserve_limit_in_context(world, u8"local_defined_datas", datasec.datas.size(), world.limits().max_local_defined_datas);
+                details::check_reserve_limit_in_context(world, u8"local_defined_datas", datasec.datas.size(),
+                    (::std::min)(world.limits().max_local_defined_datas, module_limits.local_defined_datas));
                 out.local_defined_data_vec_storage.reserve(datasec.datas.size());
                 for(auto const& data: datasec.datas)
                 {
@@ -8297,6 +8306,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     if(wf.requires_verified_execution_authorization())
                     { wsea_require_import_capabilities(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage, wf.authorized_capabilities()); }
                     out.memory_policy = wf.wasm_parameter.memory_policy;
+                    out.translation = wf.wasm_parameter.translation;
                     initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage,
                         wf.wasm_parameter.binfmt1_para, out, reservation_plan, wf.wasm_parameter.initializer_limits);
                     break;

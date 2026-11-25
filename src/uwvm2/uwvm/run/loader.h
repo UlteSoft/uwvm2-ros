@@ -214,29 +214,56 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Unknown Wasm policy module: ", name);
                 return nullptr;
             };
+            for(auto const& [name, group] : policy::groups)
+            {
+                if(!group.has_settings)
+                {
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Wasm policy group has no settings: ", name);
+                    return false;
+                }
+                if(group.has_members) { continue; }
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Wasm policy group has no members: ", name);
+                return false;
+            }
             for(auto const& entry : policy::singles) { if(!find(entry.first)) { return false; } }
             for(auto const& entry : policy::membership) { if(!find(entry.first)) { return false; } }
+            auto local_memories = []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(file_type const& file,
+                ::uwvm2::utils::container::tuple<Fs...>) noexcept -> auto const&
+            {
+                using memory_section = ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>;
+                return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<memory_section>(
+                    file.wasm_module_storage.wasm_binfmt_ver1_storage.sections).memories;
+            };
             for(auto const& [name, owners] : policy::owner_backends)
             {
                 auto const* file{find(name)};
                 if(file == nullptr || file->binfmt_ver != 1u) { return false; }
-                auto const& sections{file->wasm_module_storage.wasm_binfmt_ver1_storage.sections};
-                auto validate = [&]<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>(::uwvm2::utils::container::tuple<Fs...>) noexcept
+                auto const& memories{local_memories(*file, ::uwvm2::uwvm::wasm::feature::all_features)};
+                for(auto const& [index, backend] : owners)
                 {
-                    using memory_section = ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>;
-                    auto const& memories{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<memory_section>(sections).memories};
-                    for(auto const& request : owners)
+                    if(index < memories.size() && ::uwvm2::extension::memtag::is_tagged_memory(memories.index_unchecked(index))) { continue; }
+                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [error] Tag backend requires a local WasmMTE memory: ", name, u8" [", index, u8"]");
+                    return false;
+                }
+            }
+            for(auto const& [name, limits] : files::configured_module_memory_limit)
+            {
+                auto const* file{find(name)};
+                if(file == nullptr || file->binfmt_ver != 1u) { return false; }
+                auto const count{local_memories(*file, ::uwvm2::uwvm::wasm::feature::all_features).size()};
+                auto valid_indices = [&](auto const& settings) noexcept
+                {
+                    for(auto const& entry : settings)
                     {
-                        if(request.first >= memories.size() || !::uwvm2::extension::memtag::is_tagged_memory(memories.index_unchecked(request.first)))
-                        {
-                            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                u8"uwvm: [error] Tag backend requires a local WasmMTE memory: ", name, u8" [", request.first, u8"]");
-                            return false;
-                        }
+                        if(entry.first < count) { continue; }
+                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: [error] Unknown local memory definition: ", name, u8" [", entry.first, u8"]");
+                        return false;
                     }
                     return true;
                 };
-                if(!validate(::uwvm2::uwvm::wasm::feature::all_features)) { return false; }
+                if(!valid_indices(limits.local_defined_memory_limits) || !valid_indices(limits.local_defined_mmap_reservations)) { return false; }
             }
             return true;
         }

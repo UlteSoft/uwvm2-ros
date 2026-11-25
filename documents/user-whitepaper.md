@@ -224,20 +224,9 @@ architectures. Instruction-based exception dispatch is unavailable. A compile
 success alone is insufficient: nested exceptions, host transitions, traps and
 replacement generations need execution tests with the matching unwind provider.
 
-WasmMTE is a nonstandard extension. Parsing is enabled by default;
-`--wasm-feature-disable-memtag-extension` rejects it. Execution is independently
-disabled with `--runtime-disable-memtag`, which retains required zeroing/data
-effects while omitting tag checks. These choices remain immutable across
-replacement and checkpoint compilation.
+WasmMTE stores one allocation tag per 16-byte granule of an ADM memory with at least four ignored address bits. The owner fixes the four tag bits when initialized. `parser.memtag` controls admission for a module. `runtime.memtag-checks` controls the accessing module's ordinary tag comparisons. Explicit tag operations and zeroing retain their effects. A software owner can serve both checked and unchecked callers. [Wasm module policies](command-line/wasm-module-policy.md)
 
-The reference-compatible implementation uses tagged linear-memory pointers.
-It does not prove protection for every language allocator, GC object,
-continuation or concurrent allocation lifetime. Finite tags can collide and
-same-granule errors can retain a matching tag. Software check followed by a
-data access is not an atomic lifetime transaction: concurrent retagging needs
-an explicit retirement/access protocol. The successor design and its semantic
-model are not yet a production compiler/SDK ABI. Mandatory instrumentation of
-every SDK language remains contingent on that qualification.
+Finite tags can collide, and accesses within one granule can retain a matching tag. Concurrent retagging needs an allocation lifetime protocol. The SDK's instrumented guest ABI is `wasm64_adm16`.
 
 Where usable, hardware MTE requires the actual OS/thread policy, tagged mappings
 and strict synchronous checking. CPU feature detection alone is insufficient.
@@ -444,11 +433,7 @@ outstanding execution, lifecycle and performance evidence.
 
 ### WasmMTE launch policy
 
-Use `--wasm-feature-disable-memtag-extension` to reject the extension in parsing,
-or `--runtime-disable-memtag` to disable execution while retaining required
-zeroing. Backend and timing are independent: `--runtime-memtag-backend
-software|hardware` and `--runtime-memtag-mode sync|async`. Defaults are software,
-sync and crash; an unsupported hardware request is a launch error.
+Use `--wasm-policy-global parser.memtag off` to reject the extension in parsing. `--wasm-policy-single MODULE runtime.memtag-checks off` skips ordinary comparisons by that module. `runtime.memtag-backend` on the owner and the per-memory override select the backend. Process-wide `--runtime-memtag-mode sync|async` selects delivery. Defaults are software, synchronous delivery and crash. A required hardware owner needs a supported checked mapping.
 
 The action is `--runtime-memtag-action crash`, or explicitly
 `--runtime-memtag-action silent-log out`, `silent-log err`, or

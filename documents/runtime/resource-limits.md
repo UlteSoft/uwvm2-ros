@@ -27,7 +27,7 @@ the tighter applicable limit wins.
 | `validation` | `single-bytes` | 256 MiB | Maximum backing allocation for bounded validation/compiler stacks |
 | `validation` | `live-bytes` | 512 MiB | Process-wide live backing storage for these stacks |
 
-Existing `--wasm-set-parser-limit` / `-Wplim` count limits still apply. In
+Module parser count limits from `parser.limit.TYPE` also apply. In
 particular `code_locals` checks both the declaration run count and the expanded
 local variable count. A single compressed local declaration cannot evade it.
 Type counts are checked before recursive type vectors are reserved.

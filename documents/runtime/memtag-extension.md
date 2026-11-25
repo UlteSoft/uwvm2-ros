@@ -38,7 +38,7 @@ The extension is not part of WebAssembly Core 3.0. The pinned references are:
 
 A WasmMTE memory declares WasmADM and at least four ignored address bits.
 The parser accepts both extensions by default. The host can disable each one
-through its parser feature switch or a Wasm module policy.
+through a Wasm module policy.
 
 In a memory import or definition, the ADM flag `0x10` adds one raw byte
 immediately after the flags. It gives the number of ignored high bits, before
@@ -46,7 +46,7 @@ the encoded page limits. The MTE flag `0x20` requests tag storage. Custom page
 sizes use flag `0x08` and append a u32 LEB page-size exponent after the limits.
 [Address masking and linear memory reservations](adm-memory-reservation.md)
 
-`--runtime-disable-memtag` changes the default for ordinary access comparisons.
+`--wasm-policy-global runtime.memtag-checks off` changes the default for ordinary access comparisons.
 The accessing module can override it with `runtime.memtag-checks on|off`.
 Both settings retain address masking, bounds, explicit tag operations, zeroing
 and global tag initialization. The defining module selects the backend when
@@ -604,7 +604,7 @@ All unimplemented encoding domains, including domain 2, fail validation.
 
 ## Violation reporting and delivery
 
-`--runtime-memtag-backend software|auto|arm-mte|x86-mtt` and
+`--wasm-policy-global runtime.memtag-backend software|auto|arm-mte|x86-mtt` and
 `--runtime-memtag-mode sync|async` select backend and timing independently.
 Software and sync are the defaults. The action defaults to `crash`:
 
@@ -660,8 +660,7 @@ The selected timing and action apply across enabled callers.
 The default is **software, sync, crash**. `auto` selects a usable physical
 backend for compatible owners and software otherwise. Explicit `arm-mte`
 and `x86-mtt` require their corresponding checked mapping implementation.
-The legacy global spelling `hardware` requests the host architecture's hardware
-backend. A module configured to skip comparisons can share a software owner
+A module configured to skip comparisons can share a software owner
 with modules that check its tags. An explicit physical owner reachable by an
 unchecked caller is a launch error.
 
@@ -695,12 +694,12 @@ cannot substitute for native measurements of this implementation.
 
 | Control | Accepted values / effect | Default |
 | --- | --- | --- |
-| `--wasm-feature-disable-adm-extension` | Reject ADM memory declarations. | Extension accepted |
-| `--wasm-feature-disable-memtag-extension` | Reject WasmMTE declarations, instructions and global metadata. | Extension accepted |
-| `--runtime-disable-memtag` | Default ordinary access comparisons to off. | Comparisons enabled |
+| `--wasm-policy-global parser.adm off` | Reject ADM memory declarations. | Extension accepted |
+| `--wasm-policy-global parser.memtag off` | Reject WasmMTE declarations, instructions and global metadata. | Extension accepted |
+| `--wasm-policy-global runtime.memtag-checks off` | Default ordinary access comparisons to off. | Comparisons enabled |
 | `--runtime-memtag-mode` | `sync`, `async` | `sync` |
 | `--runtime-memtag-action` | `crash`, or `silent-log` with mandatory `out`, `err`, or `path <PATH>` | `crash` |
-| `--runtime-memtag-backend` | `software`, `auto`, `arm-mte`, `x86-mtt`, `hardware` | `software` |
+| `--wasm-policy-global runtime.memtag-backend` | `software`, `auto`, `arm-mte`, `x86-mtt` | `software` |
 
 Violation records carry `"action":"silent-log"`. The report stream is configured
 inside the action, independently of the ordinary `--log-output` stream. No

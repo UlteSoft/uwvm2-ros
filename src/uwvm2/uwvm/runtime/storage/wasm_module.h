@@ -51,6 +51,7 @@
 # include <uwvm2/object/impl.h>
 # include "tag_instance_identity.h"
 # include <uwvm2/uwvm/wasm/impl.h>
+# include <uwvm2/uwvm/runtime/runtime_mode/storage.h>
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -918,6 +919,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
     struct wasm_module_storage_t
     {
         ::uwvm2::extension::memtag::module_memory_policy memory_policy{};
+        ::uwvm2::uwvm::runtime::runtime_mode::module_translation_policy translation{};
         // Native initializer and actual segment installation publish this cold
         // state. It is never read by ordinary memory/field guest instructions.
         ::uwvm2::runtime::gc::instance_collection_phase gc_collection_phase{};
@@ -1257,6 +1259,7 @@ UWVM_MODULE_EXPORT namespace fast_io::freestanding
     struct is_zero_default_constructible<::uwvm2::uwvm::runtime::storage::wasm_module_storage_t>
     {
         inline static constexpr bool value = ::fast_io::freestanding::is_zero_default_constructible_v<::uwvm2::extension::memtag::module_memory_policy> &&
+                                             ::fast_io::freestanding::is_zero_default_constructible_v<::uwvm2::uwvm::runtime::runtime_mode::module_translation_policy> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
                                                  ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<

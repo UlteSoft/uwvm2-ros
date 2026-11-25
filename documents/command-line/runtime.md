@@ -31,8 +31,6 @@ Source focus:
 | `--runtime-compiler-log` | `-Rclog` | `[out\|err\|file <path>]` | Runtime backend support | Route compiler diagnostics. |
 | `--runtime-compile-threads` | `-Rct` | `[default\|aggressive\|<count>]` | Runtime backend support | Configure full-module translation workers. |
 | `--runtime-scheduling-policy` | `-Rsp` | `[func_count <count>\|code_size <bytes>]` | Runtime backend support | Split full-module translation work. |
-| `--runtime-llvm-jit-policy` | `-Rllvm-policy` | `[debug\|default\|fast-compile\|balanced\|max]` | LLVM backend | Select an AOT optimization preset. |
-| `--runtime-llvm-jit-full-policy` | `-Rllvm-full-policy` | `[auto\|debug\|legacy-light\|pb-o1\|pb-o2\|pb-o3]` | LLVM backend | Select the concrete full-module optimizer pipeline. |
 | `--runtime-llvm-jit-cache-path` | `-Rllvm-cache-path` | `[disable\|default\|path <path>]` | LLVM backend | Configure the AOT object cache. |
 
 The independent WASI Threads execution profile has its own backend admission.
@@ -75,8 +73,7 @@ each owner's data quota and mapping size.
 An instrumented producer can pass an object pointer to a separately compiled
 ordinary consumer. Both modules must address the same memory instance with the
 same pointer width. The call, return, or pointer-sized slot used to transfer
-the pointer carries all its bits. When the consumer dereferences the pointer,
-the VM checks its tag against the owning memory. The consumer can use its
+the pointer carries all its bits. A consumer with comparisons enabled checks its tag against the owning memory when it dereferences the pointer. The consumer can use its
 ordinary load and store instructions for this purpose.
 
 A protocol that transmits a linear byte offset discards any pointer tag. For
@@ -88,9 +85,7 @@ kept at tag zero for the entire exposure period, including every granule of the
 buffer. A pointer-passing interface can instead carry the complete pointer
 produced for the current lifetime of the object.
 
-With process-wide MTE execution disabled, the producer's tagging instructions
-produce ordinary addresses and zeroing operations still clear the indicated
-bytes. The parser must accept the instruction extension to load this binary.
+Use `runtime.memtag-checks off` on a module to skip its ordinary tag comparisons. Tag queries, allocation operations, zeroing, address masking and bounds checks still run. Other modules can use checked accesses to the same software owner. [Module policies](wasm-module-policy.md)
 
 ## Runtime Selection
 
@@ -130,11 +125,11 @@ The retained high-level presets are:
 - `balanced`: use the tuned PassBuilder O1 path.
 - `max`: use the tuned PassBuilder O3 path and aggressive code generation.
 
-The scoped full-module policies map directly to `auto`, `debug`, `legacy-light`, `pb-o1`, `pb-o2`, and `pb-o3`. The high-level and scoped policy commands are mutually exclusive.
+The scoped full-module policies map directly to `auto`, `debug`, `legacy-light`, `pb-o1`, `pb-o2`, and `pb-o3`. A concrete full policy takes precedence over the high-level preset.
 
 ```bash
-uwvm2-ros --runtime-aot --runtime-llvm-jit-policy max --run app.wasm
-uwvm2-ros --runtime-aot --runtime-llvm-jit-full-policy pb-o2 --run app.wasm
+uwvm2-ros --runtime-aot --wasm-policy-global runtime.llvm.policy max --run app.wasm
+uwvm2-ros --runtime-aot --wasm-policy-global runtime.llvm.full-policy pb-o2 --run app.wasm
 ```
 
 All generated Wasm functions carry LLVM `NoInline`, including under `max`/`pb-o3`. Optimizers may still transform code inside each function, but they do not merge one Wasm function body into another. This keeps patchable AOT boundaries and native stack identities stable.
@@ -204,10 +199,7 @@ uwvm \
 
 ## MTE execution and independent violation reports
 
-Use `--runtime-memtag-backend software|auto|arm-mte|x86-mtt` to select the
-default tag backend for defined memories. `hardware` is also accepted for the
-host architecture's required hardware backend. Delivery is selected through
-`--runtime-memtag-mode sync|async`. The defaults are **software + sync + crash**.
+Use `runtime.memtag-backend` on the defining module or `--wasm-policy-memory-backend` on one local memory. Available values are `software`, `auto`, `arm-mte` and `x86-mtt`. Explicit hardware selection requires a supported checked mapping. Set process delivery with `--runtime-memtag-mode sync|async`. The defaults are **software, sync and crash**.
 [Module and individual owner overrides](wasm-module-policy.md)
 
 The action grammar is:
@@ -233,8 +225,8 @@ write failure is a controlled runtime error (exit123), never silent record loss.
 The report descriptor is not inserted into a guest FD table or granted as a
 WASI/ROS capability. Crash mode opens no report stream.
 
-Use `--wasm-feature-disable-memtag-extension` to reject WasmMTE during validation.
-`--runtime-disable-memtag` sets the global default for ordinary access comparisons
+Use `--wasm-policy-global parser.memtag off` to reject WasmMTE during validation.
+`--wasm-policy-global runtime.memtag-checks off` sets the global default for ordinary access comparisons
 to off. The owner still supports tag operations, address masking, bounds checks
 and required zeroing. Explicit hardware selection requires a real checked
 mapping. Select software or auto for precise, continuing silent-log reports.

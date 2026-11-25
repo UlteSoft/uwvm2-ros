@@ -26,6 +26,7 @@
 # include <cstdint>
 # include <limits>
 # include <uwvm2/extension/memtag/execution_policy.h>
+# include <uwvm2/uwvm/runtime/runtime_mode/storage.h>
 # include <cstddef>
 # include <cstring>
 # include <new>
@@ -51,16 +52,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
     struct module_initializer_limits
     {
         static constexpr ::std::size_t inherited{(::std::numeric_limits<::std::size_t>::max)()};
+        ::std::size_t imported_functions{inherited};
+        ::std::size_t imported_tables{inherited};
         ::std::size_t imported_memories{inherited};
-        ::std::size_t local_defined_memories{inherited};
         ::std::size_t imported_globals{inherited};
+        ::std::size_t imported_tags{inherited};
+        ::std::size_t local_defined_functions{inherited};
+        ::std::size_t local_defined_codes{inherited};
+        ::std::size_t local_defined_tables{inherited};
+        ::std::size_t local_defined_memories{inherited};
         ::std::size_t local_defined_globals{inherited};
+        ::std::size_t local_defined_tags{inherited};
+        ::std::size_t local_defined_elements{inherited};
+        ::std::size_t local_defined_datas{inherited};
     };
 
     struct wasm_parameter_t
     {
         ::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_feature_parameter_storage_t binfmt1_para{};
+        ::uwvm2::parser::wasm_custom::customs::name_parser_param_t name_parser{};
         module_initializer_limits initializer_limits{};
+        ::uwvm2::uwvm::runtime::runtime_mode::module_translation_policy translation{};
         ::uwvm2::extension::memtag::module_memory_policy memory_policy{};
         // Only a fresh CLI load resolves host policy. Owned-source replay and
         // embedding APIs consume the caller's already-resolved snapshot.

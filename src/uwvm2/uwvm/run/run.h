@@ -2212,26 +2212,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         }
 #endif
 
-        // These are launch-policy/capability errors, not malformed Wasm.
-        // Check before either owned or mapped runtime initialization. Offline
-        // validation still works on hosts lacking the requested execution ISA.
-        if((::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::run ||
-            ::uwvm2::uwvm::wasm::storage::execute_wasm_mode == ::uwvm2::uwvm::wasm::base::mode::debug_jit)
-#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2)
-           && !::uwvm2::uwvm::imported::ros::diagnostic_only()
-#endif
-          )
-        {
-            namespace mt = ::uwvm2::extension::memtag;
-            auto const requested{::uwvm2::uwvm::wasm::storage::wasm_parameter.memory_policy.backend};
-            if(!mt::hardware_mte::backend_available(requested))
-            {
-                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                    u8"uwvm: [error] The requested memory tag backend has no supported checked mapping on this host.");
-                return static_cast<int>(retval::parameter_error);
-            }
-        }
-
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // Declared after ROS cleanup: an unexpected live exit contains the
         // process BEFORE any ROS-session destructor could retire live owners.

@@ -13,7 +13,6 @@ import fast_io;
 import uwvm2.utils.container;
 import uwvm2.utils.cmdline;
 import uwvm2.uwvm.io;
-import uwvm2.uwvm.wasm.storage;
 import uwvm2.extension.memtag.execution_policy;
 #define UWVM_MODULE
 #define UWVM_MODULE_EXPORT export

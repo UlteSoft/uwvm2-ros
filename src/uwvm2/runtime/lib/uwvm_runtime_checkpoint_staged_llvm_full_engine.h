@@ -224,7 +224,7 @@ extern "C++"
                 auto const attributes{get_llvm_jit_host_target_attribute_storage()};
                 ::llvm::SmallVector<::llvm::StringRef, 16> attribute_refs{};
                 append_llvm_jit_host_target_attribute_refs(attributes, attribute_refs);
-                auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive)};
+                auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive, runtime_module.translation)};
                 ::llvm::EngineBuilder target_builder{};
                 target_builder.setEngineKind(::llvm::EngineKind::JIT).setOptLevel(policy.codegen_opt_level)
                     .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs);

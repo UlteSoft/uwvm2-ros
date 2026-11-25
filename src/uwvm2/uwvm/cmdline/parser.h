@@ -401,8 +401,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
         // a late disable must not leave an earlier preload admitted more broadly.
         for(auto current{pr.begin() + 1u}; current != end_pos; ++current)
         {
-            if(!params::is_wasm_feature_parameter(current->para) && !params::is_wasm_module_policy_parameter(current->para) &&
-               current->para != &params::runtime_memtag_backend && current->para != &params::runtime_disable_memtag) { continue; }
+            if(!params::is_wasm_module_policy_parameter(current->para)) { continue; }
             if(current->para->handle(pr.begin(), current, end_pos) != ::uwvm2::utils::cmdline::parameter_return_type::def)
             { return parsing_return_val::returnm1; }
         }
@@ -527,7 +526,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             {
                 auto const cp{curr_pr->para};
 
-                if(cp == nullptr || params::is_wasm_feature_parameter(cp) || params::is_wasm_module_policy_parameter(cp) || cp == &params::runtime_memtag_backend || cp == &params::runtime_disable_memtag)
+                if(cp == nullptr || params::is_wasm_module_policy_parameter(cp))
                 {
                     // nonparametric
                     continue;

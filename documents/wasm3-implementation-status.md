@@ -28,11 +28,12 @@ by themselves establish full standard conformance or full-platform acceptance.
 
 ## Current launch baseline
 
-The ROS product defaults to Core 3.0 plus threads and WasmMTE. Explicit
-`--wasm-feature-wasm3` / `-WF3` is equivalent. One version baseline may be
-combined with per-feature enable/disable switches in either order, including
-`-WF2 -WFE-gc` and `-WF3 -WFD-gc`. Explicit conflicting or repeated switches
-remain errors. See [feature baseline and overrides](command-line/wasm.md#feature-baseline-and-overrides).
+The ROS product defaults to Core 3.0 with threads, WasmADM and WasmMTE.
+`--wasm-policy-global parser.baseline wasm3` selects that baseline explicitly.
+Per-feature settings can override the baseline. For example, combine
+`--wasm-policy-global parser.baseline wasm2` with `--wasm-policy-global parser.gc on`.
+Duplicate keys in the same scope are errors. [Feature baseline and overrides](command-line/wasm-module-policy.md#parser-keys)
+
 The historical slices below describe earlier implementation stages, not the
 current default. Selecting parser features never authorizes host imports.
 
@@ -136,7 +137,7 @@ selected relaxed projection is exactly an already-implemented strict operation.
 
 ## Threads development slice (r20–r36)
 
-The separate opt-in `--wasm-feature-enable-threads` / disable switch currently
+The `parser.threads` policy setting
 implements `atomic.fence`, seven atomic loads and seven atomic stores;
 49 RMW variants now have focused validation/execution evidence; it is
 **not the complete threads extension**. Core 3's
@@ -953,7 +954,7 @@ and diagnostic logs remain separate from passing results.
 
 ## Tail-call development (r65–r75)
 
-`-WFE-tail-call` / `-WFD-tail-call` (and their long forms) independently gate
+The `parser.tail-call` setting independently gates
 `return_call` and `return_call_indirect`. Old complete-version selectors keep
 this addition disabled. This is **not yet complete tail-call support** across
 all requested JIT signatures, modes, platforms, or the Core 3 reference type system.
@@ -1429,7 +1430,7 @@ final acceptance are still unqualified.
 ## Binary memory64 integration and segment lifetime (r144–r151)
 
 Both products now parse memory64 declarations behind independent
-`--wasm-feature-enable-memory64` / `--wasm-feature-disable-memory64` switches.
+`parser.memory64 on|off` settings.
 The flag also selects the Core 3 u64 limits/offset grammar for memory32, while
 memory32 semantic ranges remain bounded. Shared memory64 additionally requires
 `threads`. Wide limit diagnostics retain full u64 values; legacy diagnostics keep
@@ -2192,7 +2193,7 @@ The parser registers section 13 in the normative position between memory and
 global sections. Local tags and kind-4 imports/exports check the literal zero
 attribute, bounded u32 type indices, empty function results, index-space bounds,
 section duplication/order and resource limits. Owned indices survive parser
-copies. `--wasm-feature-enable-exceptions` / `--wasm-feature-disable-exceptions`
+copies. `parser.exceptions on|off`
 control the declarations independently, including an empty tag section. Parser,
 initializer and pure/integrated/lazy compiler policy barriers enforce the gate.
 Pure validator edits remain confined to wasm3.

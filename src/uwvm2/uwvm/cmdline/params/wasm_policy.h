@@ -39,11 +39,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             if constexpr(Action == policy_action::add_module)
             {
                 if(!policy::membership.try_emplace(policy::owned_name{name(2)}, policy::owned_name{name(1)}).second) { return error(); }
-                policy::groups.try_emplace(policy::owned_name{name(1)});
+                policy::groups.try_emplace(policy::owned_name{name(1)}).first->second.has_members = true;
             }
             else if constexpr(Action == policy_action::memory_backend)
             {
                 auto const requested{policy::parse_backend(option(3))};
+                for(auto ch : option(2)) { if(ch < u8'0' || ch > u8'9') { return error(); } }
                 ::std::size_t index{};
                 auto const parsed{::fast_io::parse_by_scan(current[2].str.cbegin(), current[2].str.cend(), index)};
                 if(!requested || parsed.code != ::fast_io::parse_code::ok || parsed.iter != current[2].str.cend()) { return error(); }
@@ -52,10 +53,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
             }
             else if constexpr(Action == policy_action::global)
             { if(!policy::set(policy::global, option(1), option(2))) { return error(); } }
+            else if constexpr(Action == policy_action::group)
+            {
+                auto const target{policy::groups.try_emplace(policy::owned_name{name(1)}).first};
+                if(!policy::set(target->second.settings, option(2), option(3))) { return error(); }
+                target->second.has_settings = true;
+            }
             else
             {
-                auto& targets{Action == policy_action::group ? policy::groups : policy::singles};
-                auto const target{targets.try_emplace(policy::owned_name{name(1)}).first};
+                auto const target{policy::singles.try_emplace(policy::owned_name{name(1)}).first};
                 if(!policy::set(target->second, option(2), option(3))) { return error(); }
             }
             for(int i{1}; i <= count; ++i) { current[i].type = kind::occupied_arg; }
@@ -64,7 +70,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
     }
 
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_policy_global{
-        .name{u8"--wasm-policy-global"}, .describe{u8"Set a default Wasm parser feature, initializer limit, runtime check, or memory tag backend."},
+        .name{u8"--wasm-policy-global"}, .describe{u8"Set a default Wasm parser, initializer or runtime policy before loading any module."},
         .usage{u8"<key> <value>"}, .handle = &details::wasm_policy_callback<details::policy_action::global>,
         .cate = ::uwvm2::utils::cmdline::categorization::wasm};
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_policy_group{

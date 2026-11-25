@@ -1081,7 +1081,7 @@ case wasm1_code::br:
                                                      u8" unroll=",
                                                      unroll_count,
                                                      u8" max_size=",
-                                                     ::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_loop_unwind_max_size,
+                                                     curr_module.translation.loop_unwind_max_size.value_or(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_loop_unwind_max_size),
                                                      u8" stacktop{mem=",
                                                      stacktop_memory_count,
                                                      u8",cache=",
@@ -1115,7 +1115,7 @@ case wasm1_code::br:
                         else
                         {
                             constexpr ::std::size_t max_loop_unwind_unroll_count{9uz};
-                            auto const max_size{::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_loop_unwind_max_size};
+                            auto const max_size{curr_module.translation.loop_unwind_max_size.value_or(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_loop_unwind_max_size)};
                             auto size_limited_count{max_size / body_wasm_bytes};
                             if(size_limited_count > max_loop_unwind_unroll_count) { size_limited_count = max_loop_unwind_unroll_count; }
 
