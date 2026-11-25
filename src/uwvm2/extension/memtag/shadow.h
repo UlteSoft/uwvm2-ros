@@ -497,7 +497,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 
         // Borrowed for the owner's pinned private operation. Both endpoints
         // must map to actual data and shadow granules before forming the span.
-        [[nodiscard]] ::std::span<::std::uint8_t const> private_tag_window(
+        [[nodiscard,gnu::always_inline]] ::std::span<::std::uint8_t const> private_tag_window(
             ::std::uint64_t first, ::std::uint64_t last) const noexcept requires (!Shared)
         {
             if(first > last || !tags_ || last >= count_ || !memory_bytes_ ||

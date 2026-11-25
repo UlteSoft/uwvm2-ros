@@ -94,8 +94,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         constexpr void forbid_tags(::std::span<::std::uint8_t const,Left> left,
                                    ::std::span<::std::uint8_t const,Right> right={}) noexcept
         {
-            for(auto tag : left) { forbid(tag); }
-            for(auto tag : right) { forbid(tag); }
+            unsigned excluded{};
+            for(auto tag : left) { excluded |= 1u << tag_class(tag); }
+            for(auto tag : right) { excluded |= 1u << tag_class(tag); }
+            available_ &= static_cast<::std::uint16_t>(~excluded);
         }
 
         [[nodiscard]] static constexpr unsigned tag_class(unsigned tag) noexcept { return tag & 15u; }

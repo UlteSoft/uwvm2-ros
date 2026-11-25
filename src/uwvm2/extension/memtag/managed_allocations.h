@@ -302,15 +302,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         public:
             [[nodiscard]] explicit operator bool() const noexcept { return entry_ != nullptr; }
         };
-        // Return a page only if it accounts for EVERY extent in this window.
-        // A tree interval can include cross-page objects and permanent globals.
-        template<typename Visitor>
+        // The extent must fit one indexed page. Its exclusion radius can reach
+        // either adjacent page. A tree interval can contain cross-page objects
+        // or permanent globals, so it disqualifies the whole expanded window.
+        template<unsigned Neighbors = 0u, typename Visitor>
         [[gnu::always_inline]] insertion_page visit_indexed_window(::std::uint64_t first, ::std::uint64_t last, Visitor&& visitor) const noexcept
         {
+            static_assert(Neighbors < page_granules);
             auto const number{first/page_granules};
-            if(number != last/page_granules || tree_may_intersect(first,last)) { return insertion_page{nullptr}; }
+            auto const lo{first-Neighbors}, hi{last+Neighbors};
+            if(number != last/page_granules || lo > first || hi < last || tree_may_intersect(lo,hi)) { return insertion_page{nullptr}; }
             auto* entry{lookup_page(number)};
-            visit_page(entry,first,last,visitor);
+            if(!entry) { return insertion_page{nullptr}; }
+            if(lo/page_granules != number) { visit_page(lookup_page(lo/page_granules),lo,hi,visitor); }
+            visit_page(entry,lo,hi,visitor);
+            if(hi/page_granules != number) { visit_page(lookup_page(hi/page_granules),lo,hi,visitor); }
             return insertion_page{entry};
         }
         template<typename Visitor>

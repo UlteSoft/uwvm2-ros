@@ -146,7 +146,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 if(neighbors.empty()) { return false; }
                 allocation_neighborhood colors{sizeof(Address) == 4u ? address_width::i32 : address_width::i64};
                 bool overlaps{};
-                auto const page{directory.visit_indexed_window(lo,hi,[&](managed_allocations::extent const& item) noexcept
+                auto const page{directory.visit_indexed_window<reach>(first,last,[&](managed_allocations::extent const& item) noexcept
                 { overlaps |= forbid_extent(colors,item,first,last); })};
                 if(!page || overlaps) { return false; }
                 colors.forbid_tags(neighbors.template first<reach>(),neighbors.template last<reach>());
