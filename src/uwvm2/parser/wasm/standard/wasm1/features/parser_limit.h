@@ -118,6 +118,48 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t max_input_bytes{inherit_resource_limit};
     };
 
+    struct code_body_limits
+    {
+        ::std::size_t function_bytes;
+        ::std::size_t module_bytes;
+
+        // Encoded body length includes local declarations and the final end opcode.
+        // The surrounding code count and body-length LEB belong to the section.
+        [[nodiscard]] constexpr bool append(::std::size_t& total, ::std::size_t bytes) const noexcept
+        {
+            if(bytes > function_bytes || total > module_bytes || bytes > module_bytes - total) { return false; }
+            total += bytes;
+            return true;
+        }
+
+        template<typename SizeAt>
+        [[nodiscard]] constexpr bool admits(::std::size_t functions, SizeAt size_at) const noexcept
+        {
+            ::std::size_t total{};
+            for(::std::size_t i{}; i != functions; ++i)
+            { if(!append(total, size_at(i))) { return false; } }
+            return true;
+        }
+    };
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    [[nodiscard]] inline constexpr code_body_limits effective_code_body_limits(
+        ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters) noexcept
+    {
+        code_body_limits result{saturating_cast_size_t(8ull << 20u), saturating_cast_size_t(64ull << 20u)};
+        if !consteval
+        {
+            result = {::uwvm2::utils::allocator::resource::function_body_bytes, ::uwvm2::utils::allocator::resource::module_code_bytes};
+        }
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        {
+            auto const& limits{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit};
+            result.function_bytes = (::std::min)(result.function_bytes, limits.max_function_body_bytes);
+            result.module_bytes = (::std::min)(result.module_bytes, limits.max_module_code_bytes);
+        }
+        return result;
+    }
+
     inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t count, ::std::size_t limit,
                                                         ::fast_io::u8string_view name, ::std::byte const* at,
                                                         ::uwvm2::parser::wasm::base::error_impl& err, ::std::size_t width = 1uz) UWVM_THROWS

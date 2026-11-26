@@ -37,6 +37,16 @@ excluding imported functions. Each body passes the real feature-aware Wasm
 validator and LLVM compiler. Non-code changes cannot be hidden in a function
 permit. Custom sections are included in this comparison.
 
+`parser.limit.module-code-bytes` counts one encoded body per local function,
+from the local declarations through the final `end`. PREPARE checks every
+body in the complete target. Publication checks the selected bodies together
+with the functions that keep their current generations. A batch can grow one
+body and shrink another up to the same total. DEV replacement and checkpoint
+restoration use the same accounting per module. The process parser pool charges
+retained replacement section bytes until their owners retire. The
+`section_storage_bytes` limit counts native records per parse, including the
+one-body section used to parse a replacement.
+
 An immutable update requires every local function explicitly selected. Each
 new generated engine maps its immutable loads to a new independently owned
 numeric object. Old immutable objects are never written, and a guest still
@@ -190,11 +200,14 @@ lease is acknowledged before processing subsequent management requests.
 The effective contract is SHA-256 of the approved external reference followed by
 the VM's canonical effective-policy fingerprint. The latter includes the actual
 module binding, exact interfaces, operations, limits, approved args/env and native
-resource incarnations. Version 6 of the execution-safety measurement includes
-the active main module's effective `parser.limit.input-bytes` as a little-endian
-64-bit parser limit. It binds the module setting after the process per-file
-ceiling and host addressable extent have been applied. The live and projected
-contracts use this encoding. The supervisor signs the effective contract returned
+resource incarnations. Version 7 of the execution-safety measurement records the
+active main module's effective parser and initializer limits as little-endian
+64-bit values. The four inherited parser byte limits and all 15 initializer
+limits use the smaller of the module setting and its process ceiling.
+`input-bytes` and `section_storage_bytes` also respect `PTRDIFF_MAX`. Each
+local memory definition contributes its owner's resolved tag backend alongside
+its guest tag layout and logical page limits. Live and projected contracts use
+the same encoding. The supervisor signs the effective contract returned
 by this VM generation. Dynamic consumption, offsets and normal close operations
 do not replenish the contract. Prepare, READY and publication recheck the actual
 base policy. For a policy transaction the target reference and exact policy bytes

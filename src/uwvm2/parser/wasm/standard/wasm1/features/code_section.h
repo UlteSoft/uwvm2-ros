@@ -211,19 +211,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         }
 
         ::std::size_t total_body_bytes{};
-        ::std::size_t maximum_body_bytes{8uz << 20u}, maximum_code_bytes{64uz << 20u};
-        if !consteval
-        {
-            maximum_body_bytes=::uwvm2::utils::allocator::resource::function_body_bytes;
-            maximum_code_bytes=::uwvm2::utils::allocator::resource::module_code_bytes;
-        }
-
-        if constexpr((::std::same_as<wasm1, Fs> || ...))
-        {
-            auto const& limits{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(fs_para).parser_limit};
-            maximum_body_bytes = ::std::min(maximum_body_bytes, limits.max_function_body_bytes);
-            maximum_code_bytes = ::std::min(maximum_code_bytes, limits.max_module_code_bytes);
-        }
+        auto const body_limits{effective_code_body_limits(fs_para)};
 
         // There is no need to check code_count > sz max here, as it automatically satisfies the condition since it matches the function size.
         check_encoded_count(code_count, 2uz, code_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_code_count, err);
@@ -316,20 +304,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
             }
 
-            if(static_cast<::std::size_t>(body_size)>maximum_body_bytes ||
-               static_cast<::std::size_t>(body_size)>maximum_code_bytes-total_body_bytes)
+            if(!body_limits.append(total_body_bytes, static_cast<::std::size_t>(body_size)))
             {
                 err.err_curr=section_curr;
-                auto const single{static_cast<::std::size_t>(body_size)>maximum_body_bytes};
+                auto const single{static_cast<::std::size_t>(body_size) > body_limits.function_bytes};
                 auto& exceeded{err.err_selectable.exceed_the_max_parser_limit};
                 exceeded.name=single ? ::fast_io::u8string_view{u8"function-body-bytes"} : ::fast_io::u8string_view{u8"module-code-bytes"};
                 exceeded.value=single ? static_cast<::std::size_t>(body_size) :
                     (body_size>SIZE_MAX-total_body_bytes ? SIZE_MAX : total_body_bytes+body_size);
-                exceeded.maxval=single ? maximum_body_bytes : maximum_code_bytes;
+                exceeded.maxval=single ? body_limits.function_bytes : body_limits.module_bytes;
                 err.err_code=::uwvm2::parser::wasm::base::wasm_parse_error_code::exceed_the_max_parser_limit;
                 ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
             }
-            total_body_bytes+=body_size;
 
             // [ ... body_size ...] local_count(code_body_begin) ... ...] (code_body_end)
             // [        safe      ]        .....                        ] unsafe (could be the section_end)

@@ -424,7 +424,8 @@ namespace uwvm2::runtime::lib
         // Actual same-engine loaded text identities, obtained only after the
         // real defined Function returned its callable. Never wire/PC inputs.
         ::std::array<::std::uintptr_t,4u> native_entry_code_addresses{};
-        ::uwvm2::utils::container::std_vector<::std::byte> section_bytes{};
+        // Parsed declarations borrow this synthetic section until its generation retires.
+        ::uwvm2::utils::container::parser_vector<::std::byte> section_bytes{};
         ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_code_t code{};
         ::uwvm2::utils::container::vector<::std::uint_least8_t> debug_safe_point_bits{};
         ::std::size_t debug_expression_size{};
@@ -448,6 +449,7 @@ namespace uwvm2::runtime::lib
         ::uwvm2::utils::container::vector<llvm_jit_unwind_entry> prepared_unwind_entries{};
         ::uwvm2::utils::container::vector<llvm_jit_code_range> prepared_code_ranges{};
         ::uwvm2::utils::container::vector<llvm_jit_code_range> prepared_native_function_ranges{};
+        ::std::uint_least64_t metadata_revision{};
         bool metadata_ready{};
         bool committed{};
     };
@@ -1026,6 +1028,17 @@ namespace uwvm2::runtime::lib
             }
         };
 #endif
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+        struct debug_full_function : llvm_jit_debug_safe_point_view
+        {
+            ::std::size_t encoded_body_bytes{};
+        };
+
+        [[nodiscard]] inline ::std::size_t encoded_body_size(::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_code_t const& code) noexcept
+        { return static_cast<::std::size_t>(code.body.code_end - code.body.code_begin); }
+
+        using ::uwvm2::parser::wasm::standard::wasm1::features::effective_code_body_limits;
+#endif
         struct compiled_module_record
         {
             // module_name borrows the selected registry key. Owned-full publications retain its source;
@@ -1062,7 +1075,7 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::container::std_vector<::std::uint_least64_t> llvm_jit_debug_full_entry_generations{};
             // Debug-full only: published expression offsets from actual LLVM
             // safe-point calls. Guest execution never reads this host table.
-            ::uwvm2::utils::container::std_vector<llvm_jit_debug_safe_point_view> llvm_jit_debug_full_safe_points{};
+            ::uwvm2::utils::container::std_vector<debug_full_function> llvm_jit_debug_full_safe_points{};
             ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> llvm_jit_debug_full_retained_generations{};
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -1205,6 +1218,7 @@ namespace uwvm2::runtime::lib
             // alive by the execution domain. This gate is used only during reset.
             details::native_unwind_execution_gate llvm_jit_native_unwind_execution_gate{};
             ::uwvm2::utils::container::vector<llvm_jit_unwind_entry> llvm_jit_unwind_entries{};
+            ::std::uint_least64_t llvm_jit_replacement_metadata_revision{};
             ::uwvm2::utils::container::vector<llvm_jit_code_range> llvm_jit_code_ranges{};
             // Unmerged physical function extents include private adapters; only cold builders consult this table.
             ::uwvm2::utils::container::vector<llvm_jit_code_range> llvm_jit_native_function_ranges{};
@@ -2044,7 +2058,7 @@ namespace uwvm2::runtime::lib
                 entered = true;
             }
 
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+#if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
             // Cold nonwaiting admission. A manager already inside publication
             // uses its separate genuine-under-publication issuer and never
             // recursively acquires this nonrecursive atomic lock.
@@ -11846,6 +11860,7 @@ namespace uwvm2::runtime::lib
             g_runtime.defined_func_cache.clear();
             g_runtime.defined_func_ptr_ranges.clear();
 # if defined(UWVM_RUNTIME_LLVM_JIT)
+            g_runtime.llvm_jit_replacement_metadata_revision = 0u;
             g_runtime.llvm_jit_unwind_entries.clear();
             g_runtime.llvm_jit_code_ranges.clear();
             g_runtime.llvm_jit_native_function_ranges.clear();
@@ -12373,14 +12388,15 @@ namespace uwvm2::runtime::lib
                                 //  ^^ code_begin; borrow only integer bounds here.
                                 auto const begin{reinterpret_cast<::std::uintptr_t>(local.code_begin)};
                                 auto const end{reinterpret_cast<::std::uintptr_t>(local.code_end)};
-                                if(begin == 0u || end <= begin ||
+                                if(local.wasm_code_ptr == nullptr || begin == 0u || end <= begin ||
                                    local.debug_safe_point_bits.size() != (end - begin) / 8u + ((end - begin) % 8u != 0u))
                                     [[unlikely]] { ::fast_io::fast_terminate(); }
                                 // [complete debug-only bitmap] bitmap_end
                                 // [safe                     ] unsafe (one-past)
                                 //  ^^ data borrows pinned local metadata; no pointer advances.
                                 rec.llvm_jit_debug_full_safe_points[index] = {
-                                    local.debug_safe_point_bits.data(), local.debug_safe_point_bits.size(), end - begin, 1u};
+                                    {local.debug_safe_point_bits.data(), local.debug_safe_point_bits.size(), end - begin, 1u},
+                                    encoded_body_size(*local.wasm_code_ptr)};
                             }
                         }
 # endif
@@ -14486,15 +14502,18 @@ namespace uwvm2::runtime::lib
     namespace
     {
         // Build a complete replacement diagnostic map while the new engine is
-        // still private. Full debug execution leaves the existing maps immutable
-        // between controller transactions, so concurrent guest readers may copy
-        // them safely; only the stopped-set commit swaps in these prepared maps.
+        // still private. Snapshot the published maps and revision together.
+        // Only a stopped-set commit against that revision can swap the result.
         inline void prepare_llvm_jit_replacement_metadata(
             llvm_jit_debug_replace_transaction& transaction) noexcept
         {
-            transaction.prepared_unwind_entries = g_runtime.llvm_jit_unwind_entries;
-            transaction.prepared_code_ranges = g_runtime.llvm_jit_code_ranges;
-            transaction.prepared_native_function_ranges = g_runtime.llvm_jit_native_function_ranges;
+            {
+                runtime_state_publication_guard publication{};
+                transaction.metadata_revision = g_runtime.llvm_jit_replacement_metadata_revision;
+                transaction.prepared_unwind_entries = g_runtime.llvm_jit_unwind_entries;
+                transaction.prepared_code_ranges = g_runtime.llvm_jit_code_ranges;
+                transaction.prepared_native_function_ranges = g_runtime.llvm_jit_native_function_ranges;
+            }
             auto& code_ranges{transaction.prepared_code_ranges};
             auto& native_ranges{transaction.prepared_native_function_ranges};
             transaction.pending_ranges->commit(
@@ -14569,6 +14588,14 @@ namespace uwvm2::runtime::lib
                     ? found->end : entry.address;
             }
             transaction.metadata_ready = true;
+        }
+
+        [[nodiscard]] inline bool admits_function_replacement(compiled_module_record const& record,
+            parser_feature_parameter_t const& features, ::std::size_t local_index, ::std::size_t body_size) noexcept
+        {
+            auto const& functions{record.llvm_jit_debug_full_safe_points};
+            return effective_code_body_limits(features).admits(functions.size(), [&](::std::size_t index) noexcept
+            { return index == local_index ? body_size : functions[index].encoded_body_bytes; });
         }
 
         // Parse the complete function-body encoding with the same feature-aware
@@ -14706,21 +14733,29 @@ namespace uwvm2::runtime::lib
         { return {llvm_jit_debug_replace_status::invalid_target, 0u, nullptr}; }
         auto const local_index{static_cast<::std::size_t>(function_index - import_count)};
         auto const local_count{runtime_module->local_defined_function_vec_storage.size()};
-        if(rec.llvm_jit_debug_full_typed_entry_targets.size() != local_count ||
-           rec.llvm_jit_debug_full_entry_generations.size() != local_count ||
-           rec.llvm_jit_local_entry_addresses.size() != local_count ||
-           rec.llvm_jit_local_raw_entry_addresses.size() != local_count ||
-           rec.llvm_jit_debug_full_typed_entry_targets.index_unchecked(local_index) == 0u)
-        { return {llvm_jit_debug_replace_status::abi_mismatch, 0u, nullptr}; }
-        auto const generation{rec.llvm_jit_debug_full_entry_generations[local_index]};
-        if(expected_generation != generation)
-        { return {llvm_jit_debug_replace_status::stale_generation, generation, nullptr}; }
-        if(generation == (::std::numeric_limits<::std::uint_least64_t>::max)())
-        { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
         auto const* parser_module{find_validator_module_storage(rec.module_name)};
         auto const* feature_parameter{find_validator_feature_parameter_storage(rec.module_name)};
-        if(parser_module == nullptr || feature_parameter == nullptr)
-        { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
+        ::std::uint_least64_t generation{};
+        {
+            runtime_state_publication_guard publication{::std::try_to_lock};
+            if(!publication) { return {llvm_jit_debug_replace_status::invalid_state, 0u, nullptr}; }
+            if(rec.llvm_jit_debug_full_typed_entry_targets.size() != local_count ||
+               rec.llvm_jit_debug_full_entry_generations.size() != local_count ||
+               rec.llvm_jit_debug_full_safe_points.size() != local_count ||
+               rec.llvm_jit_local_entry_addresses.size() != local_count ||
+               rec.llvm_jit_local_raw_entry_addresses.size() != local_count ||
+               rec.llvm_jit_debug_full_typed_entry_targets.index_unchecked(local_index) == 0u)
+            { return {llvm_jit_debug_replace_status::abi_mismatch, 0u, nullptr}; }
+            generation = rec.llvm_jit_debug_full_entry_generations[local_index];
+            if(generation != expected_generation) { return {llvm_jit_debug_replace_status::stale_generation, generation, nullptr}; }
+            if(generation == (::std::numeric_limits<::std::uint_least64_t>::max)())
+            { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
+            if(parser_module == nullptr || feature_parameter == nullptr)
+            { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
+            // A signed batch has already admitted the complete target, including its shrinking bodies.
+            if(!production_update && !admits_function_replacement(rec, *feature_parameter, local_index, body_size))
+            { return {llvm_jit_debug_replace_status::invalid_body, generation, nullptr}; }
+        }
         // No live module field is changed by compilation. The copy owns every
         // body byte and its parsed local declarations until execution drains.
         return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate([&]() -> llvm_jit_debug_replace_prepare_result
@@ -15079,34 +15114,19 @@ namespace uwvm2::runtime::lib
                     *transaction,*actual_native_declarations,*transaction->actual_native_endpoints))
                 { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
             }
-#endif            // Reserve all owner storage before the controller enters while_stopped.
-            // A stale or aborted token is destroyed privately; no live address
-            // or diagnostic range has been published at this point.
-#if UWVM2_HAS_THREADED_PROFILE_HOST_API
-            {
-                // This is the actual live owner-array reserve. Recheck the
-                // genuine Source exclusion under real publication before it.
-                runtime_state_publication_guard threaded_publication{::std::try_to_lock};
-                if(!threaded_publication || (!production_update && !runtime_threaded_profile_recheck_management_host_api(
-                    threaded_cold_exclusion, threaded_management_kind::incremental_mutation)))
-                { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
-                rec.llvm_jit_debug_full_retained_generations.reserve(
-                    rec.llvm_jit_debug_full_retained_generations.size() + 1u);
-            }
-#elif defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
-    defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-            {
-                // New endpoint DATA readers select actual retained indices under
-                // publication. Reserve may move unique_ptr ARRAY storage; keep
-                // that existing prepare-side mutation under the same cold guard.
-                runtime_state_publication_guard native_publication{};
-                rec.llvm_jit_debug_full_retained_generations.reserve(
-                    rec.llvm_jit_debug_full_retained_generations.size() + 1u);
-            }
-#else
-            rec.llvm_jit_debug_full_retained_generations.reserve(
-                rec.llvm_jit_debug_full_retained_generations.size() + 1u);
 #endif
+            {
+                runtime_state_publication_guard publication{::std::try_to_lock};
+                if(!publication) { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
+#if UWVM2_HAS_THREADED_PROFILE_HOST_API
+                if(!production_update && !runtime_threaded_profile_recheck_management_host_api(
+                    threaded_cold_exclusion, threaded_management_kind::incremental_mutation))
+                { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
+#endif
+                // Reserve while private. A competing commit may consume the slot or advance the diagnostic map.
+                rec.llvm_jit_debug_full_retained_generations.reserve(
+                    rec.llvm_jit_debug_full_retained_generations.size() + 1u);
+            }
             if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
             { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
             return {llvm_jit_debug_replace_status::replaced, generation, transaction.release()};
@@ -15144,12 +15164,12 @@ namespace uwvm2::runtime::lib
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||
            mode::global_runtime_compiler != mode::runtime_compiler_t::llvm_jit_only)
         { return {llvm_jit_debug_replace_status::unsupported_mode, 0u}; }
-# if UWVM2_HAS_THREADED_PROFILE_HOST_API
         // The controller can already own its pause/domain mutex. Never wait,
         // reacquire maintenance, or retain a prepare-thread mutex here. Every
         // original Source/control-block/epoch/function-version proof stays below.
-        runtime_state_publication_guard threaded_publication{::std::try_to_lock};
-        if(!threaded_publication) { return {llvm_jit_debug_replace_status::invalid_state, 0u}; }
+        runtime_state_publication_guard publication{::std::try_to_lock};
+        if(!publication) { return {llvm_jit_debug_replace_status::invalid_state, 0u}; }
+# if UWVM2_HAS_THREADED_PROFILE_HOST_API
         auto threaded_cold_exclusion{runtime_threaded_profile_try_management_under_publication_host_api(
             threaded_management_kind::incremental_mutation)};
         if(!threaded_cold_exclusion || !runtime_threaded_profile_recheck_management_host_api(
@@ -15162,10 +15182,6 @@ namespace uwvm2::runtime::lib
         { return {llvm_jit_debug_replace_status::unsupported_mode, 0u}; }
 # if defined(UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF) && UWVM_EXPERIMENTAL_NATIVE_EH_PRIVATE_LEAF == 1
         {
-# if !UWVM2_HAS_THREADED_PROFILE_HOST_API
-            if(!details::runtime_state_publication_access_allowed(get_runtime_state_publication_depth())) { return {llvm_jit_debug_replace_status::unsupported_mode, 0u}; }
-            runtime_state_publication_guard private_management_guard{};
-# endif
             if(runtime_native_eh_private_leaf_management_blocked()) { return {llvm_jit_debug_replace_status::unsupported_mode, 0u}; }
         }
 # endif
@@ -15213,6 +15229,17 @@ namespace uwvm2::runtime::lib
         { return {llvm_jit_debug_replace_status::stale_generation, generation}; }
         if(generation == (::std::numeric_limits<::std::uint_least64_t>::max)())
         { return {llvm_jit_debug_replace_status::exhausted, generation}; }
+        auto const* features{find_validator_feature_parameter_storage(rec.module_name)};
+        if(!features) { return {llvm_jit_debug_replace_status::invalid_state, generation}; }
+        auto const body_size{encoded_body_size(transaction->code)};
+        if(!admits_function_replacement(rec, *features, transaction->local_index, body_size))
+        { return {llvm_jit_debug_replace_status::invalid_body, generation}; }
+        // A distinct function can publish between prepare and commit. Never replace its
+        // diagnostic maps with an older copy. A fresh prepare includes all published ranges.
+        if(transaction->metadata_revision != g_runtime.llvm_jit_replacement_metadata_revision)
+        { return {llvm_jit_debug_replace_status::stale_generation, generation}; }
+        if(transaction->metadata_revision == (::std::numeric_limits<::std::uint_least64_t>::max)())
+        { return {llvm_jit_debug_replace_status::exhausted, generation}; }
         if(rec.llvm_jit_full_publication && rec.llvm_jit_full_publication->checkpoint_profile)
         {
             auto const profile{rec.llvm_jit_full_publication->checkpoint_profile};
@@ -15239,11 +15266,6 @@ namespace uwvm2::runtime::lib
         // while_stopped already owns the real ALL-park domain. Hold publication
         // through ownership adoption + all generation/entry/metadata writes.
         // No recursive domain or native release/retirement wait happens here.
-# if !UWVM2_HAS_THREADED_PROFILE_HOST_API
-        if(!details::runtime_state_publication_access_allowed(get_runtime_state_publication_depth()))
-        { return {llvm_jit_debug_replace_status::invalid_state, generation}; }
-        runtime_state_publication_guard native_publication{};
-# endif
         if(!details::native_owner_publication_bridge::qualifies_actual_replacement_for_commit(rec,*transaction))
         { return {llvm_jit_debug_replace_status::invalid_state, generation}; }
 #endif
@@ -15316,12 +15338,13 @@ namespace uwvm2::runtime::lib
         ::std::atomic_ref<::std::uintptr_t>{typed_cell}.store(transaction->typed_entry, ::std::memory_order_release);
         ::std::atomic_ref<::std::uintptr_t>{typed_slot}.store(transaction->typed_entry, ::std::memory_order_release);
         ++generation;
+        ++g_runtime.llvm_jit_replacement_metadata_revision;
         // [retained replacement bitmap] bitmap_end
         // [safe                      ] unsafe (one-past)
         //  ^^ data is owned by the committed token until runtime reset; no pointer advances.
         rec.llvm_jit_debug_full_safe_points[transaction->local_index] = {
-            transaction->debug_safe_point_bits.data(), transaction->debug_safe_point_bits.size(),
-            transaction->debug_expression_size, generation};
+            {transaction->debug_safe_point_bits.data(), transaction->debug_safe_point_bits.size(),
+             transaction->debug_expression_size, generation}, body_size};
         return {llvm_jit_debug_replace_status::replaced, generation};
 # else
         (void)transaction;

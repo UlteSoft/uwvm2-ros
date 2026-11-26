@@ -3,6 +3,7 @@
 #pragma once
 #include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
+# include <algorithm>
 # include <array>
 # include <cstddef>
 # include <limits>
@@ -13,6 +14,7 @@
 # include <string_view>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/extension/memtag/execution_policy.h>
+# include <uwvm2/uwvm/runtime/initializer/init_limit.h>
 # include <uwvm2/uwvm/wasm/type/para.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
@@ -120,28 +122,43 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
     // Use the resolved module policy for both live and projected update contracts.
     template<typename Append> inline void visit_measured_parser_limits(parameters snapshot, Append append)
     {
-        auto& input_limit{parser_counts[parser_input_index].get(snapshot)};
-        input_limit = ::uwvm2::utils::allocator::resource::parser_input_limit(input_limit);
+        namespace parser_limits = ::uwvm2::parser::wasm::standard::wasm1::features;
+        auto& limits{features::wasm_binfmt_ver1_wasm1_parameter(snapshot.binfmt1_para).parser_limit};
+        auto const bodies{parser_limits::effective_code_body_limits(snapshot.binfmt1_para)};
+        limits.max_input_bytes = ::uwvm2::utils::allocator::resource::parser_input_limit(limits.max_input_bytes);
+        limits.max_type_metadata_bytes = parser_limits::type_storage_limit(snapshot.binfmt1_para);
+        limits.max_section_storage_bytes = parser_limits::section_storage_limit(snapshot.binfmt1_para);
+        limits.max_function_body_bytes = bodies.function_bytes;
+        limits.max_module_code_bytes = bodies.module_bytes;
         for(auto const& setting : parser_counts) { append(setting.get(snapshot)); }
     }
 
-    struct initializer_setting { option_view name; ::std::size_t init_limits::* member; };
+    struct initializer_setting
+    {
+        option_view name;
+        ::std::size_t init_limits::* member;
+        ::std::size_t const* process_limit;
+        [[nodiscard]] ::std::size_t effective(init_limits const& limits) const noexcept
+        { return (::std::min)(limits.*member, *process_limit); }
+    };
     inline constexpr initializer_setting initializer_settings[]{
-        {u8"init.imported-functions", &init_limits::imported_functions},
-        {u8"init.imported-tables", &init_limits::imported_tables},
-        {u8"init.imported-memories", &init_limits::imported_memories},
-        {u8"init.imported-globals", &init_limits::imported_globals},
-        {u8"init.imported-tags", &init_limits::imported_tags},
-        {u8"init.local-defined-functions", &init_limits::local_defined_functions},
-        {u8"init.local-defined-codes", &init_limits::local_defined_codes},
-        {u8"init.local-defined-tables", &init_limits::local_defined_tables},
-        {u8"init.local-defined-memories", &init_limits::local_defined_memories},
-        {u8"init.local-defined-globals", &init_limits::local_defined_globals},
-        {u8"init.local-defined-tags", &init_limits::local_defined_tags},
-        {u8"init.local-defined-elements", &init_limits::local_defined_elements},
-        {u8"init.local-defined-datas", &init_limits::local_defined_datas},
-        {u8"init.element-expressions", &init_limits::element_expressions},
-        {u8"init.allocation-bytes", &init_limits::allocation_bytes},
+#define UWVM_INITIALIZER_COUNT(name, field) {u8"init." name, &init_limits::field, &::uwvm2::uwvm::runtime::initializer::initializer_limit.max_##field}
+        UWVM_INITIALIZER_COUNT("imported-functions", imported_functions),
+        UWVM_INITIALIZER_COUNT("imported-tables", imported_tables),
+        UWVM_INITIALIZER_COUNT("imported-memories", imported_memories),
+        UWVM_INITIALIZER_COUNT("imported-globals", imported_globals),
+        UWVM_INITIALIZER_COUNT("imported-tags", imported_tags),
+        UWVM_INITIALIZER_COUNT("local-defined-functions", local_defined_functions),
+        UWVM_INITIALIZER_COUNT("local-defined-codes", local_defined_codes),
+        UWVM_INITIALIZER_COUNT("local-defined-tables", local_defined_tables),
+        UWVM_INITIALIZER_COUNT("local-defined-memories", local_defined_memories),
+        UWVM_INITIALIZER_COUNT("local-defined-globals", local_defined_globals),
+        UWVM_INITIALIZER_COUNT("local-defined-tags", local_defined_tags),
+        UWVM_INITIALIZER_COUNT("local-defined-elements", local_defined_elements),
+        UWVM_INITIALIZER_COUNT("local-defined-datas", local_defined_datas),
+        UWVM_INITIALIZER_COUNT("element-expressions", element_expressions),
+#undef UWVM_INITIALIZER_COUNT
+        {u8"init.allocation-bytes", &init_limits::allocation_bytes, &::uwvm2::utils::allocator::resource::initializer_allocation_bytes},
     };
 
     struct layer

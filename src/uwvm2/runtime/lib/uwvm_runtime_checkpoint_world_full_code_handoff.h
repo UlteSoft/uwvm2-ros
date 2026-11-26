@@ -52,6 +52,8 @@ bool full_code_handoff_complete_{};
            !private_native_endpoint_owner_matches(staged,record,publication)) { return false; }
 #endif
         ::std::size_t body_index{};
+        auto const limits{effective_code_body_limits(bound.file->wasm_parameter.binfmt1_para)};
+        ::std::size_t total_body_bytes{};
         for(::std::size_t local{};local<count;++local)
         {
             auto const& metadata=record.llvm_jit_compiled.local_funcs.index_unchecked(local);
@@ -98,6 +100,8 @@ bool full_code_handoff_complete_{};
                        reinterpret_cast<::std::byte const*>(body->code.body.code_begin),metadata.code_begin,metadata.code_end))
                 { return false; }
             }
+            if(!metadata.wasm_code_ptr || view.encoded_body_bytes != encoded_body_size(*metadata.wasm_code_ptr) ||
+               !limits.append(total_body_bytes, view.encoded_body_bytes)) { return false; }
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
             if(record.actual_native_generation_positions[local]!=SIZE_MAX) { return false; }
 #endif

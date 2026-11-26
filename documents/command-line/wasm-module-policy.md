@@ -43,6 +43,13 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 
 The loader checks an explicit rename against its scope before reading or mapping the file. With an implicit identity, it reserves the file length against the process input budget and inspects section frames and the module name through the same open handle. It checks the name again on the bytes supplied to the parser. Process `parser input-live-bytes` defaults to 1 GiB across simultaneous input mappings and immutable copies, including source generations retained during replacement or restoration. Signed updates measure the effective per-module input limit after applying the process ceiling. An update can reuse identical installed bytes. A changed target reserves its full length, and reset data segments can share that target.
 
+DEV replacement, signed update and checkpoint restoration apply `module-code-bytes`
+to the resulting set of local functions. Each encoded body includes the local
+declarations and final `end`. Retained generations keep their own parser backing.
+`section_storage_bytes` counts native records for each parse of a full module or
+a replacement section. The live and projected signed contracts measure the
+effective limits and each defined memory's resolved tag backend. [Production updates](../runtime/production-update.md)
+
 ## Initializer and runtime keys
 
 | Key | Accepted values and effect |
