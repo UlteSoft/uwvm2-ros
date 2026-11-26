@@ -80,11 +80,12 @@ llvm_jit_debug_shutdown_start runtime_debug_shutdown_bridge::begin(
                 { return {result::unavailable_cleanup, {}}; }
                 if(rec.runtime_module->local_defined_function_vec_storage.empty())
                 {
-                    // A declarations-only Wasm provider has no native body to
-                    // unwind. Retain its actual validated source/storage owner;
-                    // never manufacture an engine or a cleanup-ABI receipt.
+                    // Initial compilation retains only the declarations. Full
+                    // restoration also publishes a sealed, empty native engine.
+                    // Authenticate that exact publication before pinning it.
                     auto const id{find_runtime_module_id_from_storage_ptr(rec.runtime_module)};
-                    if(!rec.llvm_jit_ready || code->engine || code->context ||
+                    if(!rec.llvm_jit_ready ||
+                       ((code->engine || code->context) && !checkpoint_root_generation_publication_bridge::has_current_root(rec)) ||
                        code->debug_source_runtime_epoch!=prepared->epoch_ ||
                        !::uwvm2::uwvm::runtime::full::full_source_instance::has_canonical_owner(code->source) ||
                        code->source->bound_initialized_file(id,rec.runtime_module)==nullptr)
@@ -164,6 +165,14 @@ runtime_debug_shutdown_bridge::result runtime_debug_shutdown_bridge::poll(owner 
     // ROS has no lazy/tiered compiler scheduler; full materialization already joined its task workers.
     if(!::uwvm2::runtime::llvm_jit_cache::shutdown_async_store_objects_until(deadline))
     { return result::pending_producers; }
+#if !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
+    // A full restore joined the original CLI worker before publishing its
+    // replacement. The maintenance owner pins the current world while we join
+    // its actual OS workers and retire their continuation roots after drain.
+    auto const joined{checkpoint_join_published_workers_until(g_runtime.checkpoint_world, deadline)};
+    if(joined == ::fast_io::thread_join_status::pending) { return result::pending_producers; }
+    if(joined != ::fast_io::thread_join_status::joined) { return result::unavailable_cleanup; }
+#endif
     return result::resources_quiescent;
 }
 bool runtime_debug_shutdown_bridge::release(owner const& supplied) noexcept

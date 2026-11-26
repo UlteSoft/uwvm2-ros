@@ -54,6 +54,8 @@ private:
 public:
     // Internal exact DATA lookup; caller still needs its real execution or
     // stopped/publication scope. No native read/step grant is issued here.
+    [[nodiscard]] static bool has_current_root(compiled_module_record const& record) noexcept
+    { return current_root(record) != nullptr; }
     [[nodiscard]] static bool matches_current_root(compiled_module_record const&,::std::size_t,::std::uint64_t) noexcept;
     [[nodiscard]] static llvm_jit_debug_replace_transaction const* current_restored_body(
         compiled_module_record const&,::std::size_t,::std::uint64_t) noexcept;

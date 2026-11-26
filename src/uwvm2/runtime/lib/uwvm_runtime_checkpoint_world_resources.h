@@ -26,8 +26,8 @@ extern "C++"
         friend class runtime_checkpoint_guest_worker_bridge;
         friend class runtime_checkpoint_continuation_dispatcher;
         friend class runtime_wasip1_debug_environment;
-        friend void checkpoint_join_published_workers_after_drain(
-            ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
+        friend ::fast_io::thread_join_status checkpoint_join_published_workers_until(
+            ::std::shared_ptr<runtime_checkpoint_world_transaction> const&, ::std::chrono::steady_clock::time_point) noexcept;
         using source_type = ::uwvm2::uwvm::runtime::full::full_source_instance;
         using source_owner = source_type::owner;
         using module_type = checkpoint_world_data::st::wasm_module_storage_t;

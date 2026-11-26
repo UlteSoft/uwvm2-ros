@@ -382,6 +382,8 @@ namespace uwvm2::runtime::lib
 #include "uwvm_runtime_managed_fault.h"
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     extern "C++" { class runtime_checkpoint_continuation_dispatcher; }
+    extern "C++" ::fast_io::thread_join_status checkpoint_join_published_workers_until(
+        ::std::shared_ptr<runtime_checkpoint_world_transaction> const&, ::std::chrono::steady_clock::time_point) noexcept;
     extern "C++" void checkpoint_join_published_workers_after_drain(
         ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
 #endif

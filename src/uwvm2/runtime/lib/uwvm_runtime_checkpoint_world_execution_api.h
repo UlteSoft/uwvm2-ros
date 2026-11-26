@@ -2,17 +2,24 @@
 // pointer or caller-created capture can enter this path.
 #pragma once
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
-extern "C++" void checkpoint_join_published_workers_after_drain(
-    ::std::shared_ptr<runtime_checkpoint_world_transaction> const& world) noexcept
+extern "C++" ::fast_io::thread_join_status checkpoint_join_published_workers_until(
+    ::std::shared_ptr<runtime_checkpoint_world_transaction> const& world, ::std::chrono::steady_clock::time_point deadline) noexcept
 {
-    if(!world) { return; }
+    if(!world) { return ::fast_io::thread_join_status::joined; }
     for(auto const& thread:world->restored_threads_)
     {
         auto result=runtime_checkpoint_guest_worker_bridge::join_until(thread->worker,
-            ::std::chrono::steady_clock::now()+::std::chrono::seconds{30});
-        if(result.actual.status!=::fast_io::thread_join_status::joined) { ::fast_io::fast_terminate(); }
+            (::std::min)(deadline, ::std::chrono::steady_clock::now()+::std::chrono::seconds{30}));
+        if(result.actual.status!=::fast_io::thread_join_status::joined) { return result.actual.status; }
     }
     world->release_finished_root_carriers();
+    return ::fast_io::thread_join_status::joined;
+}
+extern "C++" void checkpoint_join_published_workers_after_drain(
+    ::std::shared_ptr<runtime_checkpoint_world_transaction> const& world) noexcept
+{
+    if(checkpoint_join_published_workers_until(world, ::std::chrono::steady_clock::time_point::max()) != ::fast_io::thread_join_status::joined)
+    { ::fast_io::fast_terminate(); }
 }
 extern "C++" llvm_jit_checkpoint_continuation_status runtime_checkpoint_continuation_dispatcher::execute_restored_world(
     runtime_checkpoint_world_transaction& world, ::std::size_t index) noexcept
