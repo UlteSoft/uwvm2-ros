@@ -246,7 +246,7 @@
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             [[maybe_unused]] ::std::size_t backend_storage_budget, [[maybe_unused]] ::std::size_t code_budget, ::std::size_t module_index,
             [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
-            [[maybe_unused]] bool* native_fast_path_attempted) noexcept
+            [[maybe_unused]] native_lowering_attempt* lowering) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -510,7 +510,7 @@
                 if(gc_inputs>data->storage_limit_/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
                 data->gc_scratch_.resize(gc_inputs);
                 if(!data->bind_emitted_bridges())return {{},status::unsupported_bridge};
-                if(native_fast_path_attempted && data->inline_shared_scalars(llvm_module,ir_room,*native_fast_path_attempted) &&
+                if(lowering && lowering->allow_shared_scalars && data->inline_shared_scalars(llvm_module,ir_room,lowering->shared_scalars) &&
                    !ir_fits("after native shared scalars"))return {{},status::budget};
                 if(!ensure_llvm_jit_native_target_initialized())return {{},status::native_failure};
                 auto const cpu=get_llvm_jit_host_cpu_name_storage();auto const attrs=get_llvm_jit_host_target_attribute_storage();
@@ -530,8 +530,7 @@
                 data->reuse_control_targets(llvm_module);
                 if(!ir_fits("after control target loads"))return {{},status::budget};
                 native_poll_witnesses native_polls;
-                if(native_fast_path_attempted)
-                    data->inline_cancellation_loops(llvm_module,ir_room,native_polls,*native_fast_path_attempted);
+                if(lowering)data->inline_cancellation_loops(llvm_module,ir_room,native_polls,lowering->polls);
                 if(!native_polls.empty()&&!ir_fits("after native cancellation polls"))return {{},status::budget};
                 if(!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module,native_polls)||::llvm::verifyModule(llvm_module))
                     return {{},status::native_failure};
