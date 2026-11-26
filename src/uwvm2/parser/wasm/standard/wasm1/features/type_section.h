@@ -541,7 +541,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     {
         auto& typesec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<type_section_storage_t<Fs...>>(module_storage.sections)};
 
-        ::uwvm2::utils::container::parser_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
+        ::uwvm2::utils::container::validation_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
                                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>
             duplicate_type_function_checker{};
 

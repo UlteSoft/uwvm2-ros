@@ -114,7 +114,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
         // get import section
         constexpr auto get_importsec_from_features_tuple{
             []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs> UWVM_ALWAYS_INLINE(auto const& section,
-                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept
+                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept -> decltype(auto)
             {
                 return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                     ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>(section);
@@ -131,7 +131,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
 
         // If the parser does not check, a warning is issued here.
         ::std::conditional_t<!check_duplicate_imports,
-                             ::uwvm2::utils::container::unordered_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
+                             ::uwvm2::utils::container::validation_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
                              ::uwvm2::parser::wasm::concepts::empty_t>
             duplicate_name_checker{};  // use for check duplicate name
 

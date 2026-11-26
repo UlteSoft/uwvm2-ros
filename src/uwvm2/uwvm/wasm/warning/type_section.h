@@ -62,9 +62,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     /// @details Depends on adl, adl type is ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_type_type_t<Fs...>>
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
     inline constexpr void define_type_show_warning(
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_function_type<Fs...> /*[adl]*/> const& types) noexcept
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_function_type<Fs...> /*[adl]*/> const& types) noexcept
     {
-        ::uwvm2::utils::container::unordered_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
+        ::uwvm2::utils::container::validation_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
                                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>
             duplicate_type_function_checker{};
 
@@ -138,7 +138,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
 
             constexpr auto get_typesec_from_features_tuple{
                 []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs> UWVM_ALWAYS_INLINE(auto const& section,
-                                                                                           ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept
+                                                                                           ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept -> decltype(auto)
                 {
                     return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                         ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>>(section);

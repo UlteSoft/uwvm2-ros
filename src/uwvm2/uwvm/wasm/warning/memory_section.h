@@ -140,7 +140,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
         // get memory section
         constexpr auto get_memorysec_from_features_tuple{
             []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs> UWVM_ALWAYS_INLINE(auto const& section,
-                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept
+                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept -> decltype(auto)
             {
                 return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                     ::uwvm2::parser::wasm::standard::wasm1::features::memory_section_storage_t<Fs...>>(section);

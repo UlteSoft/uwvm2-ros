@@ -41,7 +41,7 @@ local variable count. A single compressed local declaration cannot evade it.
 Type counts are checked before recursive type vectors are reserved.
 
 Validation stack budgets cover the independent validators and the fused
-interpreter and LLVM translation paths, including control/operand snapshots.
+interpreter and LLVM translation paths, including control/operand snapshots. Optional parser warnings borrow the parsed sections. Their duplicate-name, duplicate-type and unused-type tables share the validation scratch budget.
 They are not a replacement for the encoded input limits, and do not account
 for LLVM's internal IR, optimizer, object code or allocator overhead.
 Input rejection and validation storage refusal exit with status 127.
