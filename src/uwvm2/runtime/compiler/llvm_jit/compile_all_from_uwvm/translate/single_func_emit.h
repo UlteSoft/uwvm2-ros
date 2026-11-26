@@ -3530,9 +3530,17 @@ struct runtime_memory_access_info_t
 
     // Exclusive start limit for scalar/SIMD accesses in the partial guard.
     ::std::size_t mmap_partial_guard_limit{};
+    // Physical growth ceiling of this mapping, independent of import and page policies.
+    ::std::size_t mmap_data_capacity{};
 
     // True only after resolving a concrete full wasm32 reservation with the unsigned 8-GiB address domain.
     bool mmap_covers_wasm32_effective_domain{};
+
+    [[nodiscard]] constexpr bool mmap_guard_covers_base_offset(::std::uint64_t offset) const noexcept
+    {
+        return mmap_data_capacity != 0uz && mmap_data_capacity <= mmap_partial_guard_limit &&
+            offset <= mmap_partial_guard_limit - mmap_data_capacity;
+    }
 };
 
 [[nodiscard]] inline constexpr bool runtime_local_imported_page_size_is_representable(::std::uint_least64_t page_size_bytes) noexcept
@@ -3582,7 +3590,10 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
     result.mmap_covers_adm_domain = memory.memtag_shadow.ignored_bits() && memory.is_full_page_protection() &&
         !result.mmap_requires_dynamic_bounds && result.stable_memory_reserved_span_bytes != 0u;
     if(!result.mmap_requires_dynamic_bounds && !memory.is_full_page_protection())
-    { result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes(); }
+    {
+        result.mmap_partial_guard_limit = memory.partial_guard_limit_bytes();
+        if(memory.memory_begin == memory.reserved_begin) { result.mmap_data_capacity = memory.reservation_limit_bytes; }
+    }
 }
 
 // Resolve memory index to either directly addressable native memory or a local-imported bridge provider.  The returned
