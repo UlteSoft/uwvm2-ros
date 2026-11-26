@@ -127,6 +127,7 @@
                     if(bridge.declaration->getName()!=name)continue;
                     recognized=target==linear_memory_bridge_replacement(bridge.original) ||
                         target==address(&trap) || target==address(&memory_trap) || target==address(&import_call) ||
+                        (bridge.original==address(&threaded_exception_bridge_api::pending) && target==bridge.original) ||
                         target==address(&indirect_target) || target==address(&resolve_reference) ||
                         target==address(&resolve_tail_reference) || target==address(&bulk_copy) || target==address(&bulk_fill) ||
                         target==address(&memory_grow) || target==address(&memory_size) || target==address(&memory_init) ||
@@ -139,7 +140,13 @@
 #endif
                     break;
                 }
-                if(!recognized)return false;
+                if(!recognized)
+                {
+                    if(::uwvm2::uwvm::io::show_verbose)
+                        ::fast_io::perrln("uwvm: [verbose] WASI Threads LLVM instance template skipped for external ",
+                            ::fast_io::mnp::strvw(name.begin(),name.end()));
+                    return false;
+                }
             }
             return true;
         }
