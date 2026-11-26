@@ -2569,12 +2569,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
             using start_section = ::uwvm2::parser::wasm::standard::wasm1::features::start_section_storage_t;
             auto const& start{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<start_section>(file.wasm_module_storage.wasm_binfmt_ver1_storage.sections)};
-            // Active segments are initialized once before opening the manager.
-            // A start-section handoff has a different execution contract; reject.
-            if(start.sec_span.sec_begin != nullptr || !owned_full_prepared ||
-               !::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty())
+            bool const has_start{start.sec_span.sec_begin != nullptr};
+            if(!owned_full_prepared || !::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty())
             {
-                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update profile requires a single owned module without a start section");
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update profile requires a single owned module");
                 return static_cast<int>(retval::parameter_error);
             }
             update::configuration config{options::update_public_key, options::update_contract, options::update_scope};
@@ -2611,7 +2609,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update configuration refused: ", static_cast<unsigned>(configured));
                 return static_cast<int>(retval::parameter_error);
             }
-            if(!apply_active_segments_or_report(file.module_name)) [[unlikely]]
+            // A supported Start was consumed under the manager's cold fence,
+            // after applying its active segments. Other modules initialize here.
+            if(!has_start && !apply_active_segments_or_report(file.module_name)) [[unlikely]]
             {
                 ::uwvm2::runtime::diagnostic::crash::crash_unless_stable_exit();
                 return static_cast<int>(::uwvm2::runtime::diagnostic::crash::exit_status());
@@ -2639,7 +2639,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                         {
                             auto const index{static_cast<::std::size_t>(ex->storage.func_idx)};
                             auto const imports{found->second.imported_function_vec_storage.size()};
-                            if(index <= UINT32_MAX && index >= imports && index - imports < found->second.local_defined_function_vec_storage.size())
+                            if(index <= UINT32_MAX && index >= imports && index - imports < found->second.local_defined_function_vec_storage.size() &&
+                               !(has_start && index == start.start_idx))
                             {
                                 auto const* type{found->second.local_defined_function_vec_storage.index_unchecked(index - imports).function_type_ptr};
                                 auto bytes{[](auto const& values, ::std::uint32_t& size) noexcept
@@ -2681,8 +2682,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             entry_config.entry_admitted = ::std::addressof(admitted);
             auto execute_entry{[&]() noexcept
             {
-                runtime::full_compile_and_run_main_module(file.module_name, entry_config);
-                if(runtime::guest_exit::last.requested) { entry_code = static_cast<int>(runtime::guest_exit::last.code & 255u); }
+                // A pure reactor can select its already-consumed initializer as
+                // the default entry. A distinct exported command runs once.
+                if(!(has_start && entry_config.entry_function_index == start.start_idx))
+                {
+                    runtime::full_compile_and_run_main_module(file.module_name, entry_config);
+                    if(runtime::guest_exit::last.requested) { entry_code = static_cast<int>(runtime::guest_exit::last.code & 255u); }
+                }
                 finished.store(true, ::std::memory_order_release);
             }};
             ::fast_io::native_thread worker{}, debugger_worker{};

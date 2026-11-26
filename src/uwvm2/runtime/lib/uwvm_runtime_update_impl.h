@@ -10,6 +10,7 @@ namespace production_update_detail
     namespace update = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace immutable_globals = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
+#include "uwvm_runtime_update_relocations.h"
     [[nodiscard]] inline ::std::size_t update_input_limit(::uwvm2::uwvm::wasm::type::wasm_file_t const& file) noexcept
     {
         auto const& limits{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1_parameter(file.wasm_parameter.binfmt1_para).parser_limit};
@@ -142,6 +143,7 @@ namespace production_update_detail
         ::std::thread::id management_thread{::std::this_thread::get_id()};
         using image = ::uwvm2::utils::control::owned_file_image;
         image::shared_owner installed{}, target{};
+        ::std::optional<::std::size_t> relocation_start{}; // Local function index consumed only by cold initialization.
         ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> functions{};
         ::uwvm2::utils::container::std_vector<update::scalar_reset_record> scalar_resets{};
         // A transition accepts at most 16 private memories. Directory nodes are allocated
@@ -393,6 +395,15 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
 #endif
             )) { return u::status::invalid_state; }
         if(!production_update_detail::supported_world() || !state->policy_matches()) { return u::status::unsupported; }
+        auto const* module{source->initialized_main_module()};
+        if(!module || module != g_runtime.modules.front_unchecked().runtime_module) { return u::status::invalid_state; }
+        if(auto result{production_update_detail::cold_relocations::initialize(file, *module, state->relocation_start)};
+           result != u::status::ok)
+        {
+            if(result == u::status::unsupported)
+            { ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] production update profile refuses an executable start section"); }
+            return result;
+        }
         runtime_managed_fault::enable(state->runtime_generation);
         production_update_detail::current = ::std::move(state);
         update_debug_coordination::configured.store(true, ::std::memory_order_release);
@@ -474,6 +485,10 @@ static ::uwvm2::utils::update::status prepare_update_internal(
         ::uwvm2::utils::container::std_vector<unsigned char> indices; indices.reserve(functions.size() * 8);
         for(auto index : functions) { u::append_u64(indices, index); }
         if(!u::hash(target_bytes, actual) || actual != permit.target || !u::hash(declaration.empty() ? ::std::span<unsigned char const>{indices} : declaration, scope) || scope != permit.functions) { return fail(u::status::unauthorized); }
+        // Live updates retain the initialized pointer words and their owner.
+        // The immutable Start section and its unselected body remain byte-exact.
+        if(s.relocation_start && ::std::find(functions.begin(), functions.end(), *s.relocation_start) != functions.end())
+        { return fail(u::status::scope_mismatch); }
         ::uwvm2::utils::container::std_vector<u::function_body> bodies;
         if(transition && (transition->module_reset || transition->module_preserve || transition->module_migrate))
         {
