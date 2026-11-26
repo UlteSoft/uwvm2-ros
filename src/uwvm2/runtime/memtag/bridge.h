@@ -389,6 +389,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         Memory const& memory, Address input, Address length, Address& value) noexcept
     {
         namespace mt=::uwvm2::extension::memtag;
+        // Large or unaligned operands go to the full transition before borrowing a snapshot.
+        using tags=typename mt::shadow_view<Address,false>::short_allocation_tags;
+        if(!tags::supports(input,length)) { return false; }
         auto const make_view{memory.memtag_shadow.template private_view_factory<Address>()};
         if(!make_view || memory.memtag_shadow.hardware_selected()) { return false; }
         return details::with_snapshot(memory,[&] [[gnu::always_inline]] (::std::span<::std::byte> data) noexcept

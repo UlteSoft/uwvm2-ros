@@ -203,45 +203,52 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
     public:
-        // A complete, pinned interval of one to four software allocation tags.
-        // The overlap of the two halfword operations also covers three tags.
+        // A complete, pinned interval of up to two words of software tags.
+        // First and last words may overlap, but never reach outside the interval.
         class short_allocation_tags
         {
             friend class shadow_view;
             ::std::uint8_t* tags_;
             ::std::size_t count_;
+            static constexpr unsigned halfword_pair_count{2u * sizeof(::std::uint16_t)};
 
             short_allocation_tags(::std::uint8_t* tags, ::std::size_t count) noexcept : tags_{tags},count_{count} {}
-            [[nodiscard]] ::std::size_t matching_prefix(::std::uint8_t expected) const noexcept
+            template<typename Word>
+            [[nodiscard]] bool matches_pair(::std::uint8_t expected) const noexcept
             {
-                return count_ == 1u ? static_cast<::std::size_t>(*tags_ == expected) :
-                                      matching_pair<::std::uint16_t>(tags_,count_,expected);
+                auto const [first,last]{compare_pair<Word>(tags_,count_,expected)};
+                return (first | last) == 0u;
+            }
+            template<typename Word>
+            void store_pair(::std::uint8_t tag) const noexcept
+            {
+                auto const repeated{static_cast<Word>((::std::numeric_limits<Word>::max()/255u)*tag)};
+                ::std::memcpy(tags_,&repeated,sizeof repeated);
+                ::std::memcpy(tags_+count_-sizeof repeated,&repeated,sizeof repeated);
             }
 
         public:
-            static constexpr unsigned maximum_count{4u};
+            static constexpr unsigned maximum_count{2u * sizeof(::std::uint32_t)};
+            [[nodiscard]] static constexpr bool supports(Address input, Address bytes) noexcept
+            { return bytes && bytes <= granule_size*maximum_count && !((input | bytes) & (granule_size-1u)); }
             [[nodiscard]] explicit operator bool() const noexcept { return tags_ != nullptr; }
             [[nodiscard]] bool matches(::std::uint8_t expected) const noexcept
             {
                 if(count_ == 1u) { return *tags_ == expected; }
-                auto const [first,last]{compare_pair<::std::uint16_t>(tags_,count_,expected)};
-                return (first | last) == 0u;
+                if(count_ <= halfword_pair_count) { return matches_pair<::std::uint16_t>(expected); }
+                return matches_pair<::std::uint32_t>(expected);
             }
             void store(::std::uint8_t tag) const noexcept
             {
                 if(count_ == 1u) { *tags_=tag; }
-                else
-                {
-                    auto const pair{static_cast<::std::uint16_t>(0x101u*tag)};
-                    ::std::memcpy(tags_,&pair,sizeof pair);
-                    ::std::memcpy(tags_+count_-sizeof pair,&pair,sizeof pair);
-                }
+                else if(count_ <= halfword_pair_count) { store_pair<::std::uint16_t>(tag); }
+                else { store_pair<::std::uint32_t>(tag); }
             }
         };
 
         [[nodiscard]] short_allocation_tags short_software_allocation(Address input, Address bytes) const noexcept requires (!Shared)
         {
-            if(!bytes || bytes > 16u*short_allocation_tags::maximum_count || ((input | bytes) & 15u)) { return {nullptr,0u}; }
+            if(!short_allocation_tags::supports(input,bytes)) { return {nullptr,0u}; }
 #if defined(__linux__) && defined(__aarch64__)
             if(hardware_base_) { return {nullptr,0u}; }
 #endif
@@ -283,9 +290,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             auto const* tags{tags_+first};
             auto const expected{result.pointer_tag};
             ::std::size_t matched{};
-            if(count <= short_allocation_tags::maximum_count)
+            if(count <= short_allocation_tags::halfword_pair_count)
             {
-                matched = short_allocation_tags{tags_+first,count}.matching_prefix(expected);
+                matched = count == 1u ? static_cast<::std::size_t>(*tags == expected) :
+                                       matching_pair<::std::uint16_t>(tags,count,expected);
                 if(matched != count) [[unlikely]] { return mismatch(result,first+matched,tags[matched]); }
                 return result;
             }
@@ -442,7 +450,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 auto const count{end-first};
                 if constexpr(Allocation)
                 {
-                    if(count <= short_allocation_tags::maximum_count)
+                    if(count <= short_allocation_tags::halfword_pair_count)
                     {
                         short_allocation_tags{tags_+first,count}.store(result.pointer_tag);
                         return;

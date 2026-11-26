@@ -75,11 +75,9 @@ template<::uwvm2::extension::memtag::opcode Operation,typename Address>
     namespace mt=::uwvm2::extension::memtag;
     auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
     if(memory==nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
-    if constexpr(Operation == mt::opcode::claim || Operation == mt::opcode::claimz || Operation == mt::opcode::release)
-    {
-        Address value;
-        if(::uwvm2::runtime::memtag::try_short_private_allocation<Operation>(*memory,input,length,value)) { return value; }
-    }
+    static_assert(mt::is_allocation_operation(Operation));
+    Address value;
+    if(::uwvm2::runtime::memtag::try_short_private_allocation<Operation>(*memory,input,length,value)) { return value; }
     return llvm_jit_private_allocation_full<Operation>(*memory,input,length);
 }
 

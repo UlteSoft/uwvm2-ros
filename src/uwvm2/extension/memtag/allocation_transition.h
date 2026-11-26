@@ -123,19 +123,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             Address input, Address length, ::std::span<::std::byte> data, shadow_view<Address,false> const& view,
             TryEntropy&& try_entropy, Address& value) noexcept
         {
-            static_assert(Operation == opcode::claim || Operation == opcode::claimz || Operation == opcode::release);
+            static_assert(is_allocation_operation(Operation));
             auto const tags{view.short_software_allocation(input,length)};
             auto const address{static_cast<::std::uint64_t>(view.canonical_address(input))};
             if(!tags || address+length > data.size()) { return false; }
             auto const first{address / granule_size}, last{first + length / granule_size - 1u};
-            if constexpr(Operation == opcode::release)
+            if constexpr(Operation == opcode::activate || Operation == opcode::release)
             {
                 auto const found{directory.locate_indexed(first,last)};
-                auto const* item{found.get()};
-                if(!matches_issued(item,view.pointer_tag(input)) || !item->active || !tags.matches(item->tag)) { return false; }
-                value=view.with_tag(input,item->parent);
-                tags.store(item->parent);
-                directory.remove(found);
+                auto* item{found.get()};
+                if(!matches_issued(item,view.pointer_tag(input))) { return false; }
+                if constexpr(Operation == opcode::activate)
+                {
+                    if(item->active || !tags.matches(item->parent)) { return false; }
+                    tags.store(item->tag);
+                    item->active=true;
+                    value=input;
+                }
+                else
+                {
+                    if(!item->active || !tags.matches(item->tag)) { return false; }
+                    value=view.with_tag(input,item->parent);
+                    tags.store(item->parent);
+                    directory.remove(found);
+                }
             }
             else
             {
@@ -155,8 +166,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 { return false; }
                 // The proven page already owns this slot. Nothing below can
                 // allocate, fail, call outside the snapshot or request entropy.
-                directory.add_to_page(page,{first,last,tag,0u,true,false});
-                tags.store(tag);
+                directory.add_to_page(page,{first,last,tag,0u,Operation != opcode::reserve,false});
+                if constexpr(Operation != opcode::reserve) { tags.store(tag); }
                 if constexpr(Operation == opcode::claimz)
                 { operation_details::zero_memory<false>(data.data()+static_cast<::std::size_t>(address),static_cast<::std::size_t>(length)); }
                 value=view.with_tag(input,tag);
