@@ -567,11 +567,18 @@
                 if(data->native_bytes_>data->code_limit_)return {{},status::budget};
                 auto memory=::uwvm2::utils::container::make_unique<loader_memory_adapter>(*memory_observer);
                 if(!memory)return {{},status::native_failure};
+                auto* const loader_module=empty.get();
                 auto* engine=::llvm::EngineBuilder(llvm_module_owner_t{empty.release()}).setEngineKind(::llvm::EngineKind::JIT)
                     .setOptLevel(policy.codegen_opt_level).setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(refs)
                     .setMCJITMemoryManager(llvm_jit_memory_manager_owner_t{memory.release()}).create(target.release());
                 if(engine==nullptr)return {{},status::native_failure};
                 data->context_=::std::move(ir.llvm_context_holder);data->engine_.reset(engine);engine->DisableSymbolSearching();
+                // EngineBuilder needs an initial module. Once the target and data layout
+                // are installed, remove that empty bootstrap module so finalizeObject
+                // only finalizes the native object we explicitly admitted and loaded.
+                if(!engine->removeModule(loader_module))return {{},status::native_failure};
+                empty.reset(loader_module);
+                empty.reset();
                 for(auto const& mapping:data->externals_)engine->addGlobalMapping(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(mapping.name),mapping.address);
                 data->ranges_=::uwvm2::utils::container::make_unique<details::pending_llvm_jit_code_ranges>(*engine,true);
                 if(!data->ranges_)return {{},status::native_failure};data->ranges_->configure_debug_full_capture(false); // Stage A has only its explicitly charged bounded maps.
