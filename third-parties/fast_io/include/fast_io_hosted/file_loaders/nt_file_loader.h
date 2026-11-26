@@ -236,7 +236,7 @@ struct nt_file_loader_composite_guard
 
 template <::fast_io::nt_family family>
 inline nt_file_loader_return_value_t nt_load_address_options_impl(::fast_io::nt_mmap_options const &options,
-																  void *handle, ::std::size_t fsz, bool exact_extent = true)
+																  void *handle, ::std::size_t fsz)
 {
 	using secattr_ptr
 #if __has_cpp_attribute(__gnu__::__may_alias__)
@@ -385,7 +385,7 @@ inline nt_file_loader_return_value_t nt_load_address_options_impl(::fast_io::nt_
 
 	void *h_section{};
 	::std::uint_least64_t capacity64{static_cast<::std::uint_least64_t>(capacity)};
-	::std::uint_least64_t *maximum_size{!exact_extent && capacity == fsz ? nullptr : __builtin_addressof(capacity64)};
+	::std::uint_least64_t *maximum_size{capacity == fsz ? nullptr : __builtin_addressof(capacity64)};
 	::fast_io::win32::nt::object_attributes objAttr;
 	secattr_ptr pobjattr{reinterpret_cast<secattr_ptr>(options.objAttr)};
 	if (pobjattr == nullptr)
@@ -416,7 +416,7 @@ inline nt_file_loader_return_value_t nt_load_address_options_impl(::fast_io::nt_
 template <::fast_io::nt_family family>
 inline nt_file_loader_return_value_t nt_load_address_options_impl(::fast_io::nt_mmap_options const &options, void *handle)
 {
-	return nt_load_address_options_impl<family>(options, handle, ::fast_io::win32::nt::details::nt_load_file_get_file_size<(family == ::fast_io::nt_family::zw)>(handle), false);
+	return nt_load_address_options_impl<family>(options, handle, ::fast_io::win32::nt::details::nt_load_file_get_file_size<(family == ::fast_io::nt_family::zw)>(handle));
 }
 
 inline constexpr auto create_nt_default_load_address_option() noexcept
@@ -553,6 +553,10 @@ public:
 	// Use the admitted extent on this open handle even if its file later grows.
 	inline explicit nt_family_file_loader(nt_mmap_options const &options, ::fast_io::nt_at_entry ent, ::std::size_t extent)
 	{
+		if (!::fast_io::details::valid_file_loader_extent(::fast_io::win32::nt::details::nt_load_file_get_file_size<family == nt_family::zw>(ent.handle), extent, options.extra_bytes))
+		{
+			throw_nt_error(0xc000000du);
+		}
 		auto ret{::fast_io::win32::nt::details::nt_load_address_options_impl<family>(options, ent.handle, extent)};
 		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity, ret.file_mapping_size,
 									  ret.anonymous_mapping_size};

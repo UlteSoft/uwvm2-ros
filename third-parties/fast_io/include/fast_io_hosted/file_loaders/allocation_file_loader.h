@@ -294,6 +294,10 @@ public:
 	// Exact-length private input from an already open file.
 	inline explicit allocation_file_loader(allocation_mmap_options options, posix_at_entry pate, ::std::size_t extent)
 	{
+		if (!::fast_io::details::valid_file_loader_extent(::fast_io::details::posix_loader_get_file_size(pate.fd), extent, options.extra_bytes))
+		{
+			throw_posix_error(EINVAL);
+		}
 		if (options.write_back) { throw_posix_error(EINVAL); }
 		::fast_io::details::rewind_allocation_file_loader(pate.fd);
 		auto ret{::fast_io::details::allocation_load_address_options_impl(pate.fd, options, extent)};

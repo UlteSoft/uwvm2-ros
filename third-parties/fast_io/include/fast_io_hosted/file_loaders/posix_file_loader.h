@@ -311,6 +311,10 @@ public:
 	// Use the admitted extent on this open handle even if its file later grows.
 	inline explicit posix_file_loader(posix_mmap_options const &options, posix_at_entry pate, ::std::size_t extent)
 	{
+		if (!::fast_io::details::valid_file_loader_extent(::fast_io::details::posix_loader_get_file_size(pate.fd), extent, options.extra_bytes))
+		{
+			throw_posix_error(EINVAL);
+		}
 		auto ret{::fast_io::details::posix_load_address_options(pate.fd, extent, options)};
 		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity};
 	}
