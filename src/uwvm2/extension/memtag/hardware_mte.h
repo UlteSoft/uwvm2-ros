@@ -9,6 +9,8 @@
 # include <cstdint>
 # include <limits>
 # include "execution_policy.h"
+# include "hardware_mtt.h"
+# include "instruction.h"
 # if defined(__linux__) && defined(__aarch64__)
 #  include <cerrno>
 #  include <csignal>
@@ -21,13 +23,6 @@
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
 #endif
-UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mtt
-{
-    /// x86-64 hardware admission. A future implementation needs a qualified
-    /// CPU/OS backend for checked mappings, allocation tags and fault delivery.
-    [[nodiscard]] inline constexpr bool supported() noexcept { return false; }
-}
-
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
 {
     enum class setup_error : unsigned
@@ -79,23 +74,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     }
     [[nodiscard]] inline bool supported() noexcept
     {
-#if defined(__linux__) && defined(__aarch64__)
         return query_capabilities().checked_mappings;
-#elif defined(__x86_64__)
-        return hardware_mtt::supported();
-#else
-        return false;
-#endif
     }
     [[nodiscard]] inline bool backend_available(owner_backend requested) noexcept
     {
         if(requested == owner_backend::x86_mtt) { return hardware_mtt::supported(); }
-        if(requested != owner_backend::arm_mte) { return true; }
-#if defined(__linux__) && defined(__aarch64__)
-        return query_capabilities().checked_mappings;
-#else
-        return false;
-#endif
+        return requested != owner_backend::arm_mte || supported();
     }
 
     // Request exactly one mode, then verify the kernel's accepted control.
@@ -178,7 +162,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
     // must fit below that byte; this is architectural representability, not a
     // guest quota or an alignment hint supplied by a module.
     [[nodiscard]] constexpr bool canonical_native_span(::std::uint64_t base,::std::uint64_t bytes) noexcept
-    { constexpr ::std::uint64_t end{::std::uint64_t{1u}<<56u};return base<end && bytes<=end-base; }
+    { constexpr ::std::uint64_t end{::std::uint64_t{1u}<<arm_mte_layout.host_start};return base<end && bytes<=end-base; }
     [[nodiscard]] inline setup_result protect_mapping(void* base, ::std::size_t bytes,
                                                        ::std::size_t page_size) noexcept
     {
@@ -204,7 +188,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
 #if defined(__linux__) && defined(__aarch64__)
         auto const raw{reinterpret_cast<::std::uintptr_t>(address)};
         return reinterpret_cast<::std::byte*>((raw & 0x00ffffffffffffffull) |
-            (static_cast<::std::uintptr_t>(tag & 15u) << 56u));
+            (static_cast<::std::uintptr_t>(tag & 15u) << arm_mte_layout.host_start));
 #else
         static_cast<void>(tag); return address;
 #endif
@@ -224,7 +208,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag::hardware_mte
 #if defined(__linux__) && defined(__aarch64__)
         ::std::uintptr_t result{};
         asm volatile(".arch_extension memtag\nldg %0, [%1]" : "=r"(result) : "r"(granule) : "memory");
-        return static_cast<::std::uint8_t>((result >> 56u) & 15u);
+        return static_cast<::std::uint8_t>((result >> arm_mte_layout.host_start) & 15u);
 #else
         static_cast<void>(granule); return 0u;
 #endif

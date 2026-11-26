@@ -369,33 +369,31 @@ the number k of ignored high bits. An access clears those bits before computing
 the effective range. An MTE owner uses exactly four of the ignored bits as its
 tag, with one allocation tag per 16-byte granule.
 
-| Owner | Wasm pointer tag bits | Required geometry |
-| --- | --- | --- |
-| New software memory32 | [31:28] | k ≥ 4 |
-| New software memory64 | [63:60] | k ≥ 4 |
-| Restored software memory | [s+3:s] | W−k ≤ s ≤ W−4 |
-| Arm MTE memory32 | [27:24] | k ≥ 8 |
-| Arm MTE memory64 | [59:56] | k ≥ 8 |
-| Reserved Intel MTT memory32 layout | [28:25] | k ≥ 7 |
-| Reserved Intel MTT memory64 layout | [60:57] | k ≥ 7 |
+| New owner | Declared ADM bits | memory32 guest field | memory64 guest field | Native tag field |
+| --- | --- | --- | --- | --- |
+| Software | k ≥ 4 | [31:28] | [63:60] | Software shadow |
+| Arm MTE | 4 ≤ k ≤ 7 | [31:28] | [63:60] | [59:56] |
+| Arm MTE | k ≥ 8 | [27:24] | [59:56] | [59:56] |
+| Reserved Intel MTT | 4 ≤ k ≤ 6 | [31:28] | [63:60] | [60:57] |
+| Reserved Intel MTT | k ≥ 7 | [28:25] | [60:57] | [60:57] |
 
-Bit 0 is the least significant bit. A new owner starts its tag at W−4 for
-software, W−8 for Arm MTE, or W−7 in the reserved Intel MTT layout. The Arm
-backend extracts the four guest bits into bits [59:56] of the native AArch64
-pointer for both guest widths. The VM rejects an explicit Intel MTT request
-until a checked mapping implementation is available. These memory32 layouts
-are VM declaration options. The SDK's instrumented release ABI is `wasm64_adm16`.
+Bit 0 is the least significant bit. The interpreter and LLVM extract the
+owner’s four guest tag bits into the native tag field after address checking.
+The direct memory64 field already occupies the native bit positions.
+Memory32 always places its tag in a 64-bit native pointer. An Intel MTT request
+requires a future CPU/OS backend with checked mappings, allocation tags and
+fault delivery. These guest declarations are independent of the SDK instrumented
+release ABI, `wasm64_adm16`.
 
-For example, memory32 with k = 4 has a 256 MiB address domain. Additional ignored
-bits reduce the domain to 2^(W−k) bytes. `memtag.tagbits` and `memtag.startbit`
-report the active layout. The tag field stays fixed across memory growth,
-imports, child memory copies and same-owner hot updates. Software can reproduce
-any saved four-bit field wholly inside the ADM bits, including the Arm and Intel
-positions. For example, memory64 with k = 16 accepts any saved start from 48
-through 60. An explicit Arm request requires the saved field to match W−8.
-For example, a memory32 snapshot with its tag at bit 28 keeps bit 28 on
-software under `auto`, including on an MTE-capable host. Finite tags
-can collide, and two objects can share an addressable granule.
+The declared ADM count k sets the address domain to 2^(W−k) bytes. Memory32
+ADM4 has a 256 MiB domain and ADM8 has a 16 MiB domain. Tagged memory64 keeps
+its existing native mapping limits. `memtag.tagbits` and `memtag.startbit` report
+the owner’s guest field. Imports, child memory copies, growth and same-owner
+updates preserve it. A full snapshot stores the original start s, with
+W−k ≤ s ≤ W−4. Either software or Arm MTE can restore any such field while
+preserving the guest pointer values. For example, memory64 ADM16 can restore
+bit 49 as its guest start and move those four bits to native [59:56] on Arm.
+Finite tags can collide, and two objects can share an addressable granule.
 
 ## Whole-range software checks
 
@@ -624,7 +622,7 @@ All unimplemented encoding domains, including domain 2, fail validation.
 
 `--wasm-policy-global runtime.memtag-backend software|auto|arm-mte|x86-mtt` and
 `--runtime-memtag-mode sync|async` select backend and timing independently.
-Software and sync are the defaults. The action defaults to `crash`:
+The defaults are `auto` and `sync`. The action defaults to `crash`.
 
 ```text
 --runtime-memtag-action crash
@@ -675,7 +673,7 @@ The selected timing and action apply across enabled callers.
 | Arm MTE | Sync | Crash | The OS verifies synchronous physical four-bit tag checking. |
 | Arm MTE | Async | Crash | The OS verifies asynchronous physical tag checking. A fault can arrive after the data access. |
 
-The default is **software, sync, crash**. `auto` selects a usable physical
+The default is **auto, sync, crash**. `auto` selects a usable physical
 backend for compatible owners and software otherwise. Explicit `arm-mte`
 and `x86-mtt` require their corresponding checked mapping implementation.
 A module configured to skip comparisons can share a software owner
@@ -717,7 +715,7 @@ cannot substitute for native measurements of this implementation.
 | `--wasm-policy-global runtime.memtag-checks off` | Default ordinary access comparisons to off. | Comparisons enabled |
 | `--runtime-memtag-mode` | `sync`, `async` | `sync` |
 | `--runtime-memtag-action` | `crash`, or `silent-log` with mandatory `out`, `err`, or `path <PATH>` | `crash` |
-| `--wasm-policy-global runtime.memtag-backend` | `software`, `auto`, `arm-mte`, `x86-mtt` | `software` |
+| `--wasm-policy-global runtime.memtag-backend` | `auto`, `software`, `arm-mte`, `x86-mtt` | `auto` |
 
 Violation records carry `"action":"silent-log"`. The report stream is configured
 inside the action, independently of the ordinary `--log-output` stream. No

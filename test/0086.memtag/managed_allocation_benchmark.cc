@@ -18,7 +18,7 @@ int main(int argc,char** argv)
     if(parsed.ec!=std::errc{} || parsed.ptr!=end || iterations==0 || iterations>(1u<<26)) { return 2; }
     uwvm2::object::memory::linear::native_memory_t memory;
     memory.init_by_page_count(1);
-    if(memory.enable_memtag(mt::address_width::i32,false)!=mt::storage_error::none) { return 1; }
+    if(memory.enable_memtag(mt::address_width::i32,false,4u,mt::owner_backend::software)!=mt::storage_error::none) { return 1; }
     auto run=[&](mt::opcode operation,Addr pointer)
     {
         const Addr args[]{pointer,16};

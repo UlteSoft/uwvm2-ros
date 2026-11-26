@@ -58,7 +58,7 @@ def main():
  for name,data,expected,preload,disabled in cases:
   wasm=a.out/(name+".wasm");wasm.write_bytes(data)
   for engine in ["int","aot"]:
-   cmd=[str(a.vm),"-R"+engine,"--runtime-compile-threads","0","--wasm-policy-global", "parser.multi-memory", "on"]
+   cmd=[str(a.vm),"-R"+engine,"--runtime-compile-threads","0","--wasm-policy-global", "parser.multi-memory", "on", "--wasm-policy-global", "runtime.memtag-backend", "software"]
    if preload:cmd+=["--wasm-preload-library",str(a.out/"owner.wasm"),"owner","--wasm-preload-library",str(a.out/"alias.wasm"),"alias"]
    if disabled:cmd+=["--wasm-policy-global", "runtime.memtag-checks", "off"]
    cmd+=["--run",str(wasm)]

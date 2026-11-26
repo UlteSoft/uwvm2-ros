@@ -3,6 +3,10 @@
 #include <uwvm2/extension/memtag/allocation_transition.h>
 #include <uwvm2/extension/memtag/debug_view.h>
 #include <uwvm2/uwvm/debugger/checkpoint_codec.h>
+#if defined(__linux__) && defined(__aarch64__) && defined(UWVM_SUPPORT_MMAP)
+#include <uwvm2/object/memory/linear/mmap.h>
+#include <uwvm2/runtime/memtag/native_pointer.h>
+#endif
 #include <cstdio>
 #include <cstdlib>
 namespace mt=uwvm2::extension::memtag;
@@ -90,6 +94,12 @@ static void restore_ownership(unsigned start)
     record.bytes.resize(length/16u+count*mt::checkpoint_extent_bytes);
     CHECK(mt::copy_debug_tags(source,length,0,length,{reinterpret_cast<std::uint8_t*>(record.bytes.data()),length/16u}).count==length/16u);
     CHECK(mt::copy_checkpoint_extents(source.allocation_directory(),std::span{record.bytes}.subspan(length/16u)));
+    // Save an observable guest pointer in a normal little-endian memory chunk.
+    auto const raw{source_view.with_tag(static_cast<Address>(~source.address_mask()) | Address{3200},global_tag)};
+    auto& chunk{saved.objects.emplace_back()};
+    chunk.kind=cp::object_kind::memory_chunk;
+    chunk.links={3u};
+    for(unsigned i{};i<sizeof(Address);++i) { chunk.bytes.push_back(static_cast<std::byte>(raw >> (8u*i))); }
     std::vector<unsigned char> buffer(10000);
     fast_io::basic_obuffer_view<unsigned char> output{buffer.data(),buffer.data()+buffer.size()};
     CHECK(cp::encode_database(output,saved)==cp::error::none);
@@ -103,6 +113,34 @@ static void restore_ownership(unsigned start)
     CHECK(layout::encode(restored)==row.words[7] && restored.resolved_backend()==mt::owner_backend::software);
     mt::checkpoint_tag_image decoded_image{};
     CHECK(mt::split_checkpoint_tag_image(tag_bits,row.words[5],row.words[6],row.bytes,decoded_image));
+    Address saved_pointer{};
+    for(unsigned i{};i<sizeof(Address);++i)
+    { saved_pointer |= std::to_integer<Address>(decoded.objects[3].bytes[i]) << (8u*i); }
+    CHECK(saved_pointer==raw);
+#if defined(__linux__) && defined(__aarch64__) && defined(UWVM_SUPPORT_MMAP)
+    if(mt::hardware_mte::supported())
+    {
+        namespace linear=uwvm2::object::memory::linear;
+        constexpr auto status{bits==32u ? linear::mmap_memory_status_t::wasm32 : linear::mmap_memory_status_t::wasm64};
+        linear::mmap_memory_t physical{length,status};
+        physical.init_by_page_count(1,1);
+        auto& tags{physical.memtag_shadow};
+        CHECK(physical.enable_memtag(width,Shared,layout::ignored_bits(row.words[7]),mt::owner_backend::automatic,
+                                     layout::tag_start(row.words[7]))==mt::storage_error::none);
+        CHECK(tags.hardware_selected() && layout::encode(tags)==row.words[7]);
+        CHECK(mt::restore_checkpoint_tag_image(tags,length,decoded_image));
+        CHECK(uwvm2::runtime::memtag::activate_owner_hardware(physical));
+        auto const view{tags.template view<Address,Shared>(length)};
+        CHECK(view.status()==mt::runtime_status::arm_mte && view.tag_start_bit()==start);
+        CHECK(mt::hardware_mte::load_tag(physical.memory_begin+3200)==global_tag);
+        auto const proof{view.check(saved_pointer,0,1)};
+        CHECK(proof && proof.pointer_tag==global_tag && proof.address==3200u);
+        volatile std::byte* checked{view.native_pointer(physical.memory_begin,proof)};
+        CHECK((reinterpret_cast<std::uintptr_t>(checked)>>56u)==global_tag);
+        *checked=std::byte{0x5a};
+        CHECK(*checked==std::byte{0x5a});
+    }
+#endif
     CHECK(mt::matches_checkpoint_permanent_extents(source,decoded_image));
     CHECK(!mt::matches_checkpoint_permanent_extents(restored,decoded_image));
 
@@ -139,7 +177,7 @@ int main() {
  static_assert(cp::database_format_version==10);
  for(bool shared:{false,true}) {codec(32,0,shared);codec(64,0,shared);codec(32,4,shared);codec(64,4,shared);}
  restore<std::uint32_t,false>();restore<std::uint32_t,true>();restore<std::uint64_t,false>();restore<std::uint64_t,true>();
- for(unsigned depth:{4u,7u,8u,16u}) {
+ for(unsigned depth:{4u,7u,8u,15u,16u}) {
   restore_ownership<std::uint32_t,false>(32u-depth);restore_ownership<std::uint32_t,true>(32u-depth);
   restore_ownership<std::uint64_t,false>(64u-depth);restore_ownership<std::uint64_t,true>(64u-depth);
  }

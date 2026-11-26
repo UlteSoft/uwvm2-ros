@@ -98,7 +98,7 @@ def main():
     rows=[]
     for case in manifest:
         for engine in args.engines.split(","):
-            command=shlex.split(args.runner)+[str(args.vm.resolve()),f"--runtime-{engine}","--wasm-policy-global", "parser.memory64", "on","--wasm-set-start-func","0"]
+            command=shlex.split(args.runner)+[str(args.vm.resolve()),f"--runtime-{engine}","--wasm-policy-global", "parser.memory64", "on", "--wasm-policy-global", "runtime.memtag-backend", "software","--wasm-set-start-func","0"]
             if engine=="aot":command += ["--runtime-llvm-jit-cache-path","disable","--runtime-compile-threads","0"]
             if case["disabled"]:command += ["--wasm-policy-global", "runtime.memtag-checks", "off"]
             command += case["options"]+["--",case["file"]]

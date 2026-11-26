@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <thread>
 #include <stop_token>
 #include <utility>
@@ -44,17 +45,22 @@ static void mismatch_rejected(std::byte* pointer,bool store) {
  int result{};CHECK(waitpid(child,&result,0)==child);CHECK(WIFEXITED(result)&&WEXITSTATUS(result)==0);
 }
 template<typename Address,bool Shared>
-void exercise() {
+void exercise(unsigned k,std::optional<unsigned> saved={}) {
  constexpr auto width=sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64;
  constexpr auto status=sizeof(Address)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64;
  linear::mmap_memory_t owner(65536,status);owner.init_by_page_count(1,4);
- CHECK(owner.enable_memtag(width,Shared,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
+ CHECK(owner.enable_memtag(width,Shared,k,mt::owner_backend::arm_mte,saved)==mt::storage_error::none);
  CHECK(!owner.memtag_shadow.hardware_active());
  CHECK(owner.memtag_shadow.hardware_selected());
  owner.memory_begin[0]=std::byte{42};
  auto view=owner.memtag_shadow.template view<Address,Shared>(65536);
- CHECK(view.tag_start_bit()==sizeof(Address)*8u-8u);
- auto tag=view.with_tag(Address{0xb} << (sizeof(Address)*8u-4u),9);
+ unsigned const bits{static_cast<unsigned>(width)};
+ unsigned const start{saved.value_or(bits-(k >= 8u ? 8u : 4u))};
+ CHECK(view.tag_start_bit()==start);
+ auto const ignored{static_cast<Address>(~Address{} << (bits-k))};
+ auto const metadata{ignored & ~(Address{15} << start)};
+ auto const tag{metadata | (Address{9} << start)};
+ CHECK(view.with_tag(metadata,9)==tag && view.clear_tag(tag)==metadata);
  CHECK(view.store(tag,32));
  CHECK(rt::activate_owner_hardware(owner));CHECK(owner.memtag_shadow.hardware_active());
  CHECK(rt::activate_owner_hardware(owner));
@@ -150,8 +156,13 @@ int main() {
  CHECK(hw::supported());CHECK(hw::enable_current_thread_sync());
  CHECK((prctl(56,0ul,0ul,0ul,0ul)&6)==2);
  std::thread worker([]{CHECK(hw::enable_current_thread_sync());CHECK((prctl(56,0ul,0ul,0ul,0ul)&6)==2);});worker.join();
- exercise<std::uint32_t,false>();exercise<std::uint32_t,true>();
- exercise<std::uint64_t,false>();exercise<std::uint64_t,true>();partial_granule();threaded_growth();
+ for(unsigned k : {4u,7u,8u})
+ {
+  exercise<std::uint32_t,false>(k); exercise<std::uint32_t,true>(k);
+  exercise<std::uint64_t,false>(k); exercise<std::uint64_t,true>(k);
+ }
+ exercise<std::uint32_t,false>(12,22); exercise<std::uint64_t,true>(16,49);
+ partial_granule();threaded_growth();
  std::puts("hardware mmap owner/checked spans/tagstorez/grow/move/synchronous fault: PASS");
 #else
  CHECK(!hw::supported());CHECK(!hw::enable_current_thread_sync());

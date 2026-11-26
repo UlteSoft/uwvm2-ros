@@ -169,18 +169,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         return {4u, static_cast<::std::uint_least8_t>(start), adm_address_mask(width,ignored_bits), UINT64_C(15) << start, 15u};
     }
 
-    // At a backend's minimum ADM width its tag starts at the bottom of the
-    // ignored field. Additional ADM bits extend below that fixed position.
+    // For a new software owner the guest tag occupies the highest four bits.
     [[nodiscard]] inline constexpr tag_geometry minimum_tag_geometry(address_width width, unsigned minimum_adm_bits) noexcept
     {
         return make_tag_geometry(width,minimum_adm_bits,static_cast<unsigned>(width)-minimum_adm_bits);
     }
     inline constexpr auto memory32_geometry = minimum_tag_geometry(address_width::i32,4u);
     inline constexpr auto memory64_software_geometry = minimum_tag_geometry(address_width::i64,4u);
-    inline constexpr auto memory32_arm_mte_geometry = minimum_tag_geometry(address_width::i32,8u);
-    inline constexpr auto memory64_arm_mte_geometry = minimum_tag_geometry(address_width::i64,8u);
-    inline constexpr auto memory32_intel_mtt_geometry = minimum_tag_geometry(address_width::i32,7u);
-    inline constexpr auto memory64_intel_mtt_geometry = minimum_tag_geometry(address_width::i64,7u);
+    // Host tag positions are numbered in a 64-bit native pointer. A memory32
+    // guest uses the corresponding positions relative to its own pointer width.
+    struct hardware_tag_layout
+    {
+        unsigned host_start;
+        [[nodiscard]] constexpr unsigned guest_start(address_width width, unsigned ignored_bits) const noexcept
+        {
+            unsigned const direct_depth{64u - host_start};
+            return static_cast<unsigned>(width) - (ignored_bits >= direct_depth ? direct_depth : 4u);
+        }
+        [[nodiscard]] constexpr tag_geometry geometry(address_width width, unsigned ignored_bits) const noexcept
+        { return make_tag_geometry(width, ignored_bits, guest_start(width, ignored_bits)); }
+    };
+    inline constexpr hardware_tag_layout arm_mte_layout{56u}, intel_mtt_layout{57u};
+
+    // Fixed examples at the direct-layout threshold. Owner configuration uses
+    // the declaration's actual ADM width to choose its field and address mask.
+    inline constexpr auto memory32_arm_mte_geometry = arm_mte_layout.geometry(address_width::i32,8u);
+    inline constexpr auto memory64_arm_mte_geometry = arm_mte_layout.geometry(address_width::i64,8u);
+    inline constexpr auto memory32_intel_mtt_geometry = intel_mtt_layout.geometry(address_width::i32,7u);
+    inline constexpr auto memory64_intel_mtt_geometry = intel_mtt_layout.geometry(address_width::i64,7u);
 
     // Reference status values are ABI-observable. "full" must not be used as
     // permission to omit interior granules in this implementation.

@@ -27,10 +27,10 @@ def main():
     if args.engine == "aot":
         base += ["--runtime-llvm-jit-cache-path", "disable"]
     cases = [
-        ("default-software-sync-crash", [], 0),
+        ("default-auto-sync-crash", [], 0),
         ("explicit-software-sync-crash", ["--wasm-policy-global", "runtime.memtag-backend","software","--runtime-memtag-mode","sync","--runtime-memtag-action","crash"],0),
         ("software-sync-silent", ["--runtime-memtag-action","silent-log","err"],0),
-        ("software-async-crash", ["--runtime-memtag-mode","async"],0),
+        ("software-async-crash", ["--wasm-policy-global","runtime.memtag-backend","software","--runtime-memtag-mode","async"],0),
         ("software-async-silent", ["--runtime-memtag-mode","async","--runtime-memtag-action","silent-log","err"],0),
         ("removed-silent",["--runtime-memtag-action","silent"],126),
         ("removed-client-typo",["--runtime-memtag-action","client"],126),
@@ -69,16 +69,18 @@ def main():
             cases.append(("hardware-"+mode+"-"+action,["--wasm-policy-global", "runtime.memtag-backend","arm-mte","--runtime-memtag-mode",mode,"--runtime-memtag-action",action]+(["err"] if action=="silent-log" else []),expected))
             cases.append(("hardware-order-"+mode+"-"+action,["--runtime-memtag-action",action]+(["err"] if action=="silent-log" else [])+["--runtime-memtag-mode",mode,"--wasm-policy-global", "runtime.memtag-backend","arm-mte"],expected))
     launches = [(name, flags, expected, fixture) for name, flags, expected in cases]
-    for ignored in (4, 7):
-        software = m.Program()
-        software.eq(m.op(0x20), 2)
-        software.eq(m.op(0x23), 4)
-        software.eq(m.op(0x24), 28)
-        narrow = args.out / f"memory32-adm{ignored}.wasm"
-        narrow.write_bytes(m.module(software.code, memory32_adm=ignored))
-        for backend, expected in (("auto", 0), ("arm-mte", 127), ("x86-mtt", 127)):
-            launches.append((f"memory32-adm{ignored}-{backend}",
-                             ["--wasm-policy-global", "runtime.memtag-backend", backend], expected, narrow))
+    for ignored in (4, 7, 8):
+        for backend in ("default", "auto", "software", "arm-mte", "x86-mtt"):
+            physical = args.hardware_supported and backend in ("default", "auto", "arm-mte")
+            guest = m.Program()
+            guest.eq(m.op(0x20), 3 if physical else 2)
+            guest.eq(m.op(0x23), 4)
+            guest.eq(m.op(0x24), 24 if physical and ignored >= 8 else 28)
+            narrow = args.out / f"memory32-adm{ignored}-{backend}.wasm"
+            narrow.write_bytes(m.module(guest.code, memory32_adm=ignored))
+            flags = [] if backend == "default" else ["--wasm-policy-global", "runtime.memtag-backend", backend]
+            expected = 127 if backend == "x86-mtt" or (backend == "arm-mte" and not physical) else 0
+            launches.append((f"memory32-adm{ignored}-{backend}", flags, expected, narrow))
     rows = []
     for name, flags, expected, guest in launches:
         command = base + flags + ["--", str(guest.resolve())]

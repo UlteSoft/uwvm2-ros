@@ -12,13 +12,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '0086.memtag'))
 import vm_matrix as mte
 
 
-def fixture(log=False,wide=False,shared=False,tag_value=3,*,memory32_adm=4):
+def fixture(log=False,wide=False,shared=False,tag_value=3,*,memory32_adm=4,memory64_adm=16,layout_probe=False):
     bits=64 if wide else 32;word=bits//8;kind=bytes([0x7e if wide else 0x7f])
     n=lambda value:mte.c(value,bits)
     op=mte.op;sec=mte.sec;u=mte.u
     code=b'\x03\x40'+n(256)+n(32)+op(0x2f)+b'\x21\x00'
     code+=b'\x20\x00'+mte.c(0x12345678)+mte.mem(0x36)
     code+=n(512)+n(tag_value)+op(0x22)+n(32)+op(0x2b)
+    if layout_probe:
+        load=mte.mem(0x29 if wide else 0x28);store=mte.mem(0x37 if wide else 0x36)
+        # The first loop writes the guest field and a tagged pointer into linear
+        # memory. Every later loop uses those saved bytes, including after replay.
+        code+=n(16)+mte.mem(0x2d)+b'\x45\x04\x40'
+        code+=n(16)+op(0x24)+store
+        code+=n(24)+n(512)+n(tag_value)+op(0x22)+store+b'\x0b'
+        code+=n(16)+load+op(0x24)+bytes([0x52 if wide else 0x47])+b'\x04\x40\x00\x0b'
+        pointer=n(24)+load
+        code+=mte.assertion(pointer+op(0x21),tag_value,bits)
+        code+=pointer+mte.c(0x5a)+mte.mem(0x3a)
+        code+=mte.assertion(pointer+mte.mem(0x2d),0x5a)
     if log:code+=n(512)+n(0 if tag_value else 1)+op(0x22)+mte.mem(0x28)+b'\x1a'
     code+=n(0)+n(16)+b'\x10\x00\x1a'
     code+=mte.c(1)+n(64)+n(1)+n(80)+b'\x10\x01\x1a'
@@ -29,7 +41,8 @@ def fixture(log=False,wide=False,shared=False,tag_value=3,*,memory32_adm=4):
     for name,index in [('random_get',0),('fd_write',1)]:
         if wide:name+='_wasm64'
         imports+=u(22)+b'wasi_snapshot_preview1'+u(len(name))+name.encode()+b'\x00'+u(index)
-    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+mte.memory_limits(wide,shared,memory32_adm=memory32_adm))
+    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+mte.memory_limits(wide,shared,maximum=1 if not wide and memory32_adm==16 else 2,
+        memory32_adm=memory32_adm,memory64_adm=memory64_adm))
     module+=sec(7,b'\x01\x06_start\x00\x02')+sec(10,b'\x01'+u(len(body))+body)
     payload=b'MTE-REPLAY-EFFECT\n'
     data=b'\x02\x00'+n(64)+b'\x0b'+u(word*2)+(128).to_bytes(word,'little')+len(payload).to_bytes(word,'little')
@@ -43,14 +56,18 @@ def main():
     parser.add_argument('--runner-json',type=Path);parser.add_argument('--backend',choices=('software','arm-mte'),default='software')
     parser.add_argument('--mode',choices=('sync','async'),default='sync');parser.add_argument('--log',action='store_true')
     parser.add_argument('--memory64',action='store_true');parser.add_argument('--shared',action='store_true')
+    parser.add_argument('--adm-bits',type=int,choices=range(4,17))
     parser.add_argument('--tag',type=lambda x:int(x,0),default=3)
     args=parser.parse_args();require(0<=args.tag<=15,'tag width');args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=False)
     require('/docker-' in Path('/proc/self/cgroup').read_text(),'resource cgroup required')
     wasm=args.out/'tagged.wasm'
-    wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag,memory32_adm=8 if args.backend=='arm-mte' else 4))
-    vm=None;result={'passed':False}
+    k=args.adm_bits if args.adm_bits is not None else (16 if args.memory64 else 4)
+    wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag,memory32_adm=k,memory64_adm=k,layout_probe=True))
+    vm=None;result={'passed':False,'admBits':k,'layoutProbe':True}
     try:
         flags=['--wasm-policy-global', 'runtime.memtag-backend',args.backend,'--runtime-memtag-mode',args.mode]
+        if args.memory64:flags+=['--wasm-policy-global','parser.memory64','on']
+        if args.shared:flags+=['--wasm-policy-global','parser.threads','on']
         if args.log:flags+=['--runtime-memtag-action','silent-log','path',str(args.out/'violations.log')]
         prefix=json.loads(args.runner_json.read_text()) if args.runner_json else []
         vm=VM([str(args.binary.resolve()),'-Raot','-Rdbg','-Rct','0','-Rllvm-cache-path','disable',*flags,
@@ -66,10 +83,10 @@ def main():
         vm.request('continue');stop,_=stopped()
         started=vm.request(f'dump record start {stop}');require('mode=1 ' in started,started)
         vm.request('continue');stop,_=stopped()
-        requests=['memory 0 0 0 16','memory 0 0 256 32','memtags 0 0 256 32','memtags 0 0 512 32']
+        requests=['memory 0 0 0 16','memory 0 0 256 32','memtags 0 0 256 32','memtags 0 0 512 32','memory 0 0 16 16']
         expected=[vm.request(command) for command in requests]
         require(all(not value.startswith('error:') for value in expected),expected)
-        require(f'value=0x{args.tag:02x}' in expected[-1], 'full allocation tag was not retained')
+        require(f'value=0x{args.tag:02x}' in expected[3], 'full allocation tag was not retained')
         archive=args.out/'interval.uwsnap';saved=vm.request(f'dump record save {stop} {archive}')
         require('saved=1' in saved,saved)
         rounds=[]

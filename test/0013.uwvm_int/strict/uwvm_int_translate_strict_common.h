@@ -1139,7 +1139,8 @@ namespace uwvm2test::uwvm_int_strict
         ::std::initializer_list<preloaded_wasm_module> preloaded = {},
         wasm_feature_parameter_t wasm_feature_parameter = {},
         ::std::initializer_list<::uwvm2::uwvm::wasm::type::local_imported_t> local_imported = {},
-        bool check_tags = true)
+        bool check_tags = true,
+        ::uwvm2::extension::memtag::owner_backend tag_backend = ::uwvm2::extension::memtag::default_owner_backend)
     {
         ::uwvm2::uwvm::io::show_verbose = ::std::getenv("UWVM2TEST_VERBOSE") != nullptr;
         ::uwvm2::uwvm::io::show_depend_warning = false;
@@ -1215,7 +1216,7 @@ namespace uwvm2test::uwvm_int_strict
         ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name = module_name;
         ::uwvm2::uwvm::wasm::storage::execute_wasm.binfmt_ver = 1u;
         ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_parameter.binfmt1_para = wasm_feature_parameter;
-        ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_parameter.memory_policy.check_tags = check_tags;
+        ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_parameter.memory_policy = {tag_backend,check_tags};
         ::uwvm2::uwvm::wasm::storage::execute_wasm.wasm_module_storage.wasm_binfmt_ver1_storage = ::std::move(module_storage);
 
         if(::uwvm2::uwvm::wasm::loader::construct_all_module_and_check_duplicate_module() != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)

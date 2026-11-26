@@ -37,7 +37,7 @@ static void cases()
     for(auto* owner : {&candidate,&reference})
     {
         owner->init_by_page_count(1,1);
-        CHECK(owner->enable_memtag(width,false) == mt::storage_error::none);
+        CHECK(owner->enable_memtag(width,false,4u,mt::owner_backend::software) == mt::storage_error::none);
         auto& directory{owner->memtag_shadow.allocation_directory()};
         auto const shadow{owner->memtag_shadow.template view<Address>(65536u)};
         // The left window begins in a reservation that started earlier. The

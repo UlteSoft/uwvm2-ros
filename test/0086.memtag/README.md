@@ -76,19 +76,25 @@ The executable VM suites are separate from those component claims:
   tags, rejected mismatches and tag zero, wait/notify completion, and growth.
   This suite currently targets shared memory32; it does not claim shared
   memory64 support or a race-free retire/check/access transaction.
-- `hardware_initialization.py` exercises ordered preload starts followed by
-  deferred active data segments. It checks imported aliases and independent
-  owners with globals descriptors, memory32/memory64, and enabled/disabled MTE.
-  Use `--backend arm-mte` on a capable Linux/AArch64 host to require physical
-  checking. The fixture checks the owner's status, tag width, field position and
-  successful reads carrying other ADM metadata. An unchecked caller must be
-  refused for a required hardware owner. The default backend is software.
-- `hardware_plan.cc` checks Arm admission at eight ignored bits for both
-  widths, automatic software fallback below that threshold, saved tag fields
-  and explicit Intel MTT refusals. The selection is stable before activation
-  and through growth and moves. Compiler and cache
-  policy must use that selection; a later activation failure must prevent
-  guest publication. The component test does not replace actual CLI execution.
+- `hardware_initialization.py` runs actual INT and AOT guest accesses after
+  preload starts and deferred active data initialization. At both guest widths
+  it checks the guest start bit, literal tagged stores and loads, other ADM
+  metadata, imported aliases and independent owners. `--adm-bits 4 7 8 16`
+  covers the Arm layout transition. Use `--backend default --hardware-supported`
+  on MTE-enabled AArch64 Linux to verify automatic admission and software
+  fallback when only the importing module disables checks. Use `--backend arm-mte`
+  to require hardware and verify that an unchecked caller is refused. On a
+  QEMU **system** guest use `-machine virt,mte=on -cpu max` and an MTE-enabled
+  Linux kernel. A native `strace -f -e prctl,mprotect` around the VM records the
+  accepted synchronous per-thread mode and successful `PROT_MTE` mapping.
+- `hardware_plan.cc` checks both widths across the Arm and Intel layout
+  thresholds, automatic hardware preference, explicit Intel refusals and all
+  valid ADM16 snapshot fields. `hardware_owner.cc` exercises physical allocation
+  tags and matching native accesses for both new layouts and saved fields.
+  `checkpoint_tags.cc` round-trips a saved raw guest pointer through the public
+  checkpoint codec and uses it on an actual checked Arm mapping when available.
+  The debugger recording runner accepts `--adm-bits`; its portable replay
+  checks the guest's saved start and dereferences its original pointer bytes.
 - `hardware_signal_mask.cc` checks real Linux/AArch64 per-thread admission in
   both synchronous and asynchronous hardware modes. A main thread, a worker
   that independently blocks `SIGSEGV`, and a worker inheriting that mask must

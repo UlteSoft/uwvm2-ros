@@ -430,7 +430,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // Failed configuration leaves the storage disabled and unallocated.
         [[nodiscard]] storage_error enable(address_width width, bool shared, storage_backend backend,
                                              ::std::uint64_t current_bytes, ::std::uint64_t maximum_bytes,
-                                             unsigned ignored_bits = 4u, owner_backend requested = owner_backend::software,
+                                             unsigned ignored_bits = 4u, owner_backend requested = default_owner_backend,
                                              ::std::optional<unsigned> saved_tag_start = {}) noexcept
         {
             if(enabled()) { return storage_error::already_enabled; }
@@ -457,15 +457,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             candidate.backend_ = backend;
             candidate.maximum_memory_bytes_ = maximum_bytes;
             if(requested == owner_backend::x86_mtt) { return storage_error::unsupported_backend; }
-            unsigned const arm_start{(address64 ? memory64_arm_mte_geometry : memory32_arm_mte_geometry).start_bit};
+            // A restored pointer keeps its saved field. Native checked accesses
+            // can move any already-validated four-bit field to the host position.
 #if defined(__linux__) && defined(__aarch64__)
             candidate.hardware_selected_ = (requested == owner_backend::arm_mte || requested == owner_backend::automatic) &&
-                backend == storage_backend::reserved && ::uwvm2::extension::adm::valid_tag_field(address64, ignored_bits, arm_start) &&
-                saved_tag_start.value_or(arm_start) == arm_start &&
-                !logging_requested() && hardware_mte::supported();
+                backend == storage_backend::reserved && !logging_requested() && hardware_mte::supported();
 #endif
             if(requested == owner_backend::arm_mte && !candidate.hardware_selected()) { return storage_error::unsupported_backend; }
-            candidate.tag_start_ = static_cast<::std::uint8_t>(saved_tag_start.value_or(candidate.hardware_selected() ? arm_start : software_start));
+            candidate.tag_start_ = static_cast<::std::uint8_t>(saved_tag_start.value_or(
+                candidate.hardware_selected() ? arm_mte_layout.guest_start(width,ignored_bits) : software_start));
             if(backend == storage_backend::reserved)
             {
 #if !defined(UWVM_SUPPORT_MMAP)

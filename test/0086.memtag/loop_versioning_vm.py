@@ -322,7 +322,7 @@ def main():
             if args.require_ir:
                 ir_dir.mkdir()
                 env[OBSERVER] = str(ir_dir)
-            command = [str(candidate), "--runtime-aot", "--runtime-compile-threads", "0",
+            command = [str(candidate), "--runtime-aot", "--runtime-compile-threads", "0", "--wasm-policy-global", "runtime.memtag-backend", "software",
                        "--runtime-llvm-jit-cache-path", "disable", "--wasm-policy-global", "parser.memory64", "on",
                        "--wasm-policy-global", "parser.threads", "on", *m.mode_flags(case["delivery"]),
                        "--wasm-set-main-module-name", "main", "--wasip1-single-create", "main",

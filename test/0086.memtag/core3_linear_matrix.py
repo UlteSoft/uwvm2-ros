@@ -337,7 +337,7 @@ def main():
     rows = []
     for case, entry in cases:
         for engine in args.engines.split(","):
-            command = shlex.split(args.runner) + [str(args.vm), "-R"+engine, "--runtime-compile-threads", "0",
+            command = shlex.split(args.runner) + [str(args.vm), "-R"+engine, "--runtime-compile-threads", "0", "--wasm-policy-global", "runtime.memtag-backend", "software",
                        "--debug-fault-action", "exit",
                        "--wasm-policy-global", "parser.memory64", "on",
                        "--wasm-policy-global", "parser.multi-memory", "on"]

@@ -16,27 +16,28 @@ static void check(bool v,unsigned l){if(!v){std::fprintf(stderr,"tag IR failure 
 #define CHECK(x) check(static_cast<bool>(x),__LINE__)
 std::string name(unsigned bits,unsigned bytes,bool shared)
 {return "tag_"+std::to_string(bits)+"_"+std::to_string(bytes)+"_"+std::to_string(shared);}
-void emit_arm_pointer(llvm::Module& m,unsigned bits)
+void emit_arm_pointer(llvm::Module& m,unsigned bits,unsigned start)
 {
  llvm::IRBuilder<> b(m.getContext());
  auto type=llvm::FunctionType::get(b.getInt64Ty(),{b.getIntNTy(bits),b.getInt64Ty()},false);
- auto f=llvm::Function::Create(type,llvm::Function::ExternalLinkage,"arm_pointer_"+std::to_string(bits),m);
+ auto f=llvm::Function::Create(type,llvm::Function::ExternalLinkage,"arm_pointer_"+std::to_string(bits)+"_"+std::to_string(start),m);
  b.SetInsertPoint(llvm::BasicBlock::Create(m.getContext(),"entry",f));
  auto checked=b.CreateIntToPtr(f->getArg(1),b.getPtrTy());
- auto const geometry{bits==32u ? mt::memory32_arm_mte_geometry : mt::memory64_arm_mte_geometry};
- auto result=jit::emit_memtag_hardware_pointer(b,checked,f->getArg(0),checked,geometry.start_bit,true);
+ auto result=jit::emit_memtag_hardware_pointer(b,checked,f->getArg(0),checked,start,true);
  CHECK(result);
  b.CreateRet(b.CreatePtrToInt(result,b.getInt64Ty()));
 }
 template<class Address>
-void check_arm_pointer(llvm::ExecutionEngine& engine,Address raw)
+void check_arm_pointer(llvm::ExecutionEngine& engine,Address raw,unsigned depth)
 {
  using entry=std::uint64_t(*)(Address,std::uint64_t);
- auto fn=reinterpret_cast<entry>(engine.getFunctionAddress("arm_pointer_"+std::to_string(sizeof(Address)*8u)));
+ auto const bits{sizeof(Address)*8u}, start{bits-depth};
+ auto fn=reinterpret_cast<entry>(engine.getFunctionAddress("arm_pointer_"+std::to_string(bits)+"_"+std::to_string(start)));
  CHECK(fn);
  // Exercise native pointer construction as integer arithmetic, without a memory access.
- CHECK(fn(raw,UINT64_C(0x00123456789abcde))==UINT64_C(0x0d123456789abcde));
- auto const zero_tag{raw & ~(Address{15u} << (sizeof(Address)*8u-8u))};
+ auto const tag{static_cast<std::uint64_t>((raw >> start) & 15u)};
+ CHECK(fn(raw,UINT64_C(0x00123456789abcde))==((tag << 56u) | UINT64_C(0x00123456789abcde)));
+ auto const zero_tag{raw & ~(Address{15u} << start)};
  CHECK(fn(zero_tag,UINT64_C(0x00123456789abcde))==UINT64_C(0x00123456789abcde));
 }
 void emit(llvm::Module& m,unsigned bits,unsigned bytes,bool shared)
@@ -73,12 +74,14 @@ int main()
 {
  CHECK(!llvm::InitializeNativeTarget()&&!llvm::InitializeNativeTargetAsmPrinter());
  llvm::LLVMContext c;auto m=std::make_unique<llvm::Module>("memtag-scalar-proof",c);std::unique_ptr<llvm::TargetMachine> target{llvm::EngineBuilder{}.selectTarget()};CHECK(target);m->setDataLayout(target->createDataLayout());
- if(sizeof(void*)==8u) { emit_arm_pointer(*m,32u);emit_arm_pointer(*m,64u); }
+ if(sizeof(void*)==8u) for(unsigned bits : {32u,64u}) for(unsigned depth : {4u,8u,11u})
+ { emit_arm_pointer(*m,bits,bits-depth); }
  for(unsigned bits:{32u,64u})for(unsigned bytes=1;bytes<=16;++bytes)for(bool shared:{false,true})emit(*m,bits,bytes,shared);
  CHECK(!llvm::verifyModule(*m,&llvm::errs()));std::string error;
  std::unique_ptr<llvm::ExecutionEngine> engine{llvm::EngineBuilder(std::move(m)).setErrorStr(&error).setEngineKind(llvm::EngineKind::JIT).setOptLevel(llvm::CodeGenOptLevel::Aggressive).create()};
  if(!engine){std::fprintf(stderr,"%s\n",error.c_str());return 2;}engine->finalizeObject();unsigned cases{};
- if(sizeof(void*)==8u) { check_arm_pointer(*engine,UINT32_C(0xbda51234));check_arm_pointer(*engine,UINT64_C(0xbda5000000001234)); }
+ if(sizeof(void*)==8u) for(unsigned depth : {4u,8u,11u})
+ { check_arm_pointer(*engine,UINT32_C(0xbda51234),depth);check_arm_pointer(*engine,UINT64_C(0xbda5000000001234),depth); }
  for(unsigned bytes=1;bytes<=16;++bytes)for(bool shared:{false,true}){exercise<std::uint32_t>(*engine,bytes,shared,cases);exercise<std::uint64_t>(*engine,bytes,shared,cases);}
  std::printf("PASS native LLVM scalar tag proof: %u cases; width1..16, all alignments, no partial store\n",cases);
 }

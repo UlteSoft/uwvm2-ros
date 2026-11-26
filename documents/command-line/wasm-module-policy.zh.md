@@ -39,7 +39,7 @@
 | `init.imported-字段` | 非负十进制计数，字段为 `functions`、`tables`、`memories`、`globals`、`tags`。 |
 | `init.local-defined-字段` | 非负十进制计数，字段为 `functions`、`codes`、`tables`、`memories`、`globals`、`tags`、`elements`、`datas`。 |
 | `runtime.memtag-checks` | `on`（默认）或 `off`。由发起访问的模块决定是否比较指针和分配标签，导入内存也遵循调用方策略。 |
-| `runtime.memtag-backend` | `software`（默认）、`auto`、`arm-mte`、`x86-mtt`，用于该模块定义的带标签内存。 |
+| `runtime.memtag-backend` | `auto`（默认）、`software`、`arm-mte`、`x86-mtt`，用于该模块定义的带标签内存。 |
 | `runtime.interpreter.loop-unwind`、`runtime.interpreter.delay-local`、`runtime.interpreter.instruction-reorder` | 用 `on` 或 `off` 控制已编入解释器的对应优化。 |
 | `runtime.interpreter.loop-unwind-max-size` | 允许展开的循环体最大 Wasm 字节数，非负十进制整数。 |
 | `runtime.interpreter.opcode-combine` | `disable`、`soft`、`heavy`、`extra`，上限取决于编入的级别。 |
@@ -62,9 +62,9 @@ uwvm2-ros \
 
 上例要求 `camera` 在本地定义索引零处声明 MTE 内存。索引排除所有导入内存。单内存后端优先于所有者模块默认值，所有导入别名共用该所有者的后端、标签位域与分配状态。`camera` 跳过普通访问的标签比较，仍执行地址掩码、边界检查、显式标签操作和清零。其他模块访问同一内存时可以开启比较。
 
-新建软件内存至少需要四位 ADM，标签默认占指针最高四位。从完整快照重建时，软件后端会保留原有的四位标签字段，可位于 ADM 忽略区内的任何连续四位。例如，memory64 忽略 16 位时，最低标签位可为第 48 至 60 位。
+WasmMTE 至少需要四位 ADM。新建软件内存的标签占指针最高四位。完整快照记录客体标签位置，恢复时，软件和 Arm 硬件均保留 ADM 忽略区内原有的连续四位。例如，memory64 忽略 16 位时，保存的标签起点可以是第 48 至 60 位。
 
-Arm MTE 至少需要八位 ADM。按最低位为第 0 位计，memory32 标签占 [27:24]，memory64 占 [59:56]，两者构造的 AArch64 宿主指针都将标签放在 [59:56]。几何或宿主条件不满足时，`auto` 选择软件。显式指定 Arm 硬件要求宿主支持受检查的映射，使用崩溃处理，且所有访问者都开启比较。Intel MTT 预留 memory32 的 [28:25] 和 memory64 的 [60:57]，至少需要七位 ADM。当前 VM 会拒绝显式 Intel MTT 请求。VM 的窄位宽内存声明独立于 SDK 发布矩阵，带 MTE 的发布 ABI 仍为 `wasm64_adm16`。[所有者布局与故障交付](../runtime/memtag-extension.md)
+新建 Arm MTE 内存按 ADM 位数选择标签。ADM 为 4 至 7 时，memory32 使用 [31:28]，memory64 使用 [63:60]。ADM 达到 8 时，两者分别使用 [27:24] 和 [59:56]。这些字段均映入 AArch64 宿主指针 [59:56]。默认的 `auto` 优先选择可用硬件。宿主不支持、有调用者关闭检查、分配可移动或配置为记录故障后继续时，自动选择软件。显式 Arm 要求映射能接受硬件检查、使用崩溃处理且所有调用者开启比较。Intel MTT 预留布局在 ADM 为 4 至 6 时使用客体最高四位，ADM 达到 7 时，memory32 使用 [28:25]，memory64 使用 [60:57]。当前 VM 拒绝显式 Intel MTT 请求。SDK 带 MTE 的发布 ABI 仍为 `wasm64_adm16`。[所有者布局与故障交付](../runtime/memtag-extension.md)
 
 ### 跨模块传递指针
 

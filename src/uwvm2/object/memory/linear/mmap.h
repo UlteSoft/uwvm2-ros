@@ -290,7 +290,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::linear
         // Configure only after native initialization and before guest publication.
         [[nodiscard]] inline ::uwvm2::extension::memtag::storage_error enable_memtag(
             ::uwvm2::extension::memtag::address_width width, bool shared, unsigned ignored_bits = 4u,
-            ::uwvm2::extension::memtag::owner_backend backend = ::uwvm2::extension::memtag::owner_backend::software,
+            ::uwvm2::extension::memtag::owner_backend backend = ::uwvm2::extension::memtag::default_owner_backend,
             ::std::optional<unsigned> saved_tag_start = {}) noexcept
         {
             namespace mt = ::uwvm2::extension::memtag;

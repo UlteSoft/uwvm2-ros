@@ -510,7 +510,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
         wasm_binfmt1_final_memory_type_t const* memory_type_ptr{};
         ::uwvm2::uwvm::wasm::type::module_memory_limit_t effective_limits{};
-        ::uwvm2::extension::memtag::owner_backend backend{};
+        ::uwvm2::extension::memtag::owner_backend backend{::uwvm2::extension::memtag::default_owner_backend};
     };
 
     struct imported_memory_storage_t

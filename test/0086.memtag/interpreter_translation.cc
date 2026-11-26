@@ -37,7 +37,7 @@ int check(bool wide,bool enabled,bool placeholder=false,bool padded=false) {
  auto& p=uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(features);
  p.disable_memtag_extension=false;p.disable_memory64=false;
  p.cli_mode=uwvm2::parser::wasm::standard::wasm1p1::features::wasm_feature_cli_mode::scoped;
- auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter",{},features,{},enabled);
+ auto prepared=prepare_runtime_from_wasm(wasm,u8"memtag-interpreter",{},features,{},enabled,mt::owner_backend::software);
  auto& memory=const_cast<uwvm2::object::memory::linear::native_memory_t&>(prepared.mod->local_defined_memory_vec_storage.index_unchecked(0).memory);
  UWVM2TEST_REQUIRE(memory.memtag_shadow.enabled());
  if constexpr(uwvm2::object::memory::linear::native_memory_t::can_mmap) {

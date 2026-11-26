@@ -86,7 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params
         .usage{u8"<module> <key> <value>"}, .handle = &details::wasm_policy_callback<details::policy_action::single>,
         .cate = ::uwvm2::utils::cmdline::categorization::wasm};
     inline constexpr ::uwvm2::utils::cmdline::parameter wasm_policy_memory_backend{
-        .name{u8"--wasm-policy-memory-backend"}, .describe{u8"Select the tag backend for one local memory definition of its owner module."},
+        .name{u8"--wasm-policy-memory-backend"}, .describe{u8"Override the tag backend for one local memory definition. The default auto policy prefers a usable checked hardware mapping."},
         .usage{u8"<module> <local-definition-index> <software|auto|arm-mte|x86-mtt>"},
         .handle = &details::wasm_policy_callback<details::policy_action::memory_backend>,
         .cate = ::uwvm2::utils::cmdline::categorization::wasm};

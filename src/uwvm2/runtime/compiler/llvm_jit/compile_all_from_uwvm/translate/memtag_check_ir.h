@@ -3,6 +3,7 @@
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <cstdint>
+# include <uwvm2/extension/memtag/instruction.h>
 # include <llvm/IR/IRBuilder.h>
 # include <llvm/IR/Module.h>
 # include <llvm/IR/MDBuilder.h>
@@ -26,11 +27,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
            guest_tag_start > raw->getType()->getIntegerBitWidth()-4u ||
            b.GetInsertBlock()->getModule()->getDataLayout().getPointerSizeInBits()!=64u) { return nullptr; }
         auto* const i64{b.getInt64Ty()};
-        // Only the owner's four guest tag bits enter the native Arm top byte.
-        auto* const tag{b.CreateZExtOrTrunc(b.CreateAnd(b.CreateLShr(raw,guest_tag_start),15u),i64)};
+        // Select four raw guest bits. The direct memory64 layout needs only a mask.
+        constexpr auto host_start{::uwvm2::extension::memtag::arm_mte_layout.host_start};
+        auto* tag{b.CreateAnd(b.CreateZExtOrTrunc(raw,i64),UINT64_C(15) << guest_tag_start)};
+        if(guest_tag_start < host_start) { tag=b.CreateShl(tag,host_start-guest_tag_start); }
+        else if(guest_tag_start > host_start) { tag=b.CreateLShr(tag,guest_tag_start-host_start); }
         auto* address{b.CreatePtrToInt(checked_pointer,i64)};
         if(!canonical_owner) { address=b.CreateAnd(address,b.getInt64(0x00ffffffffffffffull)); }
-        return b.CreateIntToPtr(b.CreateOr(address,b.CreateShl(tag,b.getInt64(56u))),
+        return b.CreateIntToPtr(b.CreateOr(address,tag),
             checked_pointer->getType(),"memory.hardware.tagged");
     }
 

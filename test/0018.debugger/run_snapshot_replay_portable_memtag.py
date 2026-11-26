@@ -35,15 +35,26 @@ def main():
     require(digest == evidence['journalSha256'], 'recorded journal changed')
     wasm = out / 'tagged.wasm'
     source = (recorded / 'tagged.wasm').read_bytes()
-    require(any(source == fixture(args.log, args.memory64, args.shared, args.tag, memory32_adm=k)
-                for k in (4, 8)), 'identical original module required')
+    if evidence.get('layoutProbe'):
+        k = evidence['admBits']
+        require(4 <= k <= 16 and source == fixture(args.log, args.memory64, args.shared, args.tag,
+                memory32_adm=k, memory64_adm=k, layout_probe=True), 'identical original module required')
+    else:
+        require(any(source == fixture(args.log, args.memory64, args.shared, args.tag, memory32_adm=k)
+                    for k in (4, 8)), 'identical original module required')
     wasm.write_bytes(source)
     expected = evidence['rounds'][0]['observations']
     requests = ['memory 0 0 0 16', 'memory 0 0 256 32', 'memtags 0 0 256 32', 'memtags 0 0 512 32']
+    if evidence.get('layoutProbe'):
+        requests.append('memory 0 0 16 16')
     result = {'passed': False, 'journalSha256': digest, 'recorded': str(recorded), 'rounds': []}
     vm = None
     try:
         flags = ['--wasm-policy-global', 'runtime.memtag-backend', args.backend, '--runtime-memtag-mode', args.mode]
+        if args.memory64:
+            flags += ['--wasm-policy-global', 'parser.memory64', 'on']
+        if args.shared:
+            flags += ['--wasm-policy-global', 'parser.threads', 'on']
         if args.log:
             flags += ['--runtime-memtag-action', 'silent-log', 'path', str(out / 'violations.log')]
         suffix = '_wasm64' if args.memory64 else ''

@@ -42,7 +42,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `init.imported-FIELD` | Nonnegative decimal count. Fields are `functions`, `tables`, `memories`, `globals`, `tags`. |
 | `init.local-defined-FIELD` | Nonnegative decimal count. Fields are `functions`, `codes`, `tables`, `memories`, `globals`, `tags`, `elements`, `datas`. |
 | `runtime.memtag-checks` | `on` (default) or `off`. The accessing module controls ordinary pointer/allocation-tag comparisons, including access through imports. |
-| `runtime.memtag-backend` | `software` (default), `auto`, `arm-mte`, `x86-mtt`. Supplies the backend for tagged memories defined by this module. |
+| `runtime.memtag-backend` | `auto` (default), `software`, `arm-mte`, `x86-mtt`. Supplies the backend for tagged memories defined by this module. |
 | `runtime.interpreter.loop-unwind`, `runtime.interpreter.delay-local`, `runtime.interpreter.instruction-reorder` | `on` or `off` for the corresponding compiled interpreter optimization. |
 | `runtime.interpreter.loop-unwind-max-size` | Nonnegative decimal maximum loop body size in Wasm bytes. |
 | `runtime.interpreter.opcode-combine` | `disable`, `soft`, `heavy`, `extra`, up to the level compiled into the interpreter. |
@@ -65,9 +65,9 @@ uwvm2-ros \
 
 Here `camera` must define an MTE memory at local definition index zero. The index excludes imports. The per-memory choice overrides the owner's module default. All aliases share the owner's backend, tag field and allocation state. The calling module still masks addresses, checks bounds and executes explicit tag and zeroing operations when ordinary comparisons are off. Another module can check tags on the same memory.
 
-A new software memory uses the highest four pointer bits by default and requires at least four ignored bits. A software owner rebuilt from a full snapshot preserves the saved four-bit field anywhere inside the ADM bits. For a memory64 owner with 16 ignored bits, its first bit can be 48 through 60.
+WasmMTE needs at least four ADM bits. New software owners use the highest four guest pointer bits. A full snapshot records the field. A restored owner keeps any saved four-bit field inside its ADM bits, including when the receiving VM selects Arm hardware. For memory64 with 16 ADM bits, the saved start can be 48 through 60.
 
-Arm MTE requires at least eight ignored bits. Its guest field is [27:24] in memory32 and [59:56] in memory64. Both map to [59:56] on the AArch64 host. `auto` selects software when the geometry or host is ineligible. An explicit Arm request requires a compatible checked mapping, crash delivery and checked callers. Intel MTT reserves [28:25] in memory32 and [60:57] in memory64, with at least seven ignored bits. The current VM rejects an explicit Intel MTT request. The VM accepts these narrow guest declarations independently of the SDK's instrumented release ABI, `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
+For a new Arm MTE owner with 4–7 ADM bits, the tag occupies [31:28] in memory32 or [63:60] in memory64. With 8 or more ADM bits it occupies [27:24] or [59:56], respectively. All these fields map to [59:56] in the native AArch64 pointer. The default `auto` prefers an eligible physical owner. It selects software for an unsupported host, an unchecked caller, a moving allocation or continuing diagnostics. Explicit Arm requires checked callers, crash delivery and a usable checked mapping. The reserved Intel MTT layout uses the guest’s highest four bits for ADM 4–6 and [28:25] or [60:57] for ADM 7 and above. The VM rejects explicit Intel MTT requests until a checked backend is available. The SDK’s instrumented release ABI remains `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
 
 ### Pointers shared between modules
 

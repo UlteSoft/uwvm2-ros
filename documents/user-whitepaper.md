@@ -433,7 +433,7 @@ outstanding execution, lifecycle and performance evidence.
 
 ### WasmMTE launch policy
 
-Use `--wasm-policy-global parser.memtag off` to reject the extension in parsing. `--wasm-policy-single MODULE runtime.memtag-checks off` skips ordinary comparisons by that module. `runtime.memtag-backend` on the owner and the per-memory override select the backend. Process-wide `--runtime-memtag-mode sync|async` selects delivery. Defaults are software, synchronous delivery and crash. A required hardware owner needs a supported checked mapping.
+Use `--wasm-policy-global parser.memtag off` to reject the extension in parsing. `--wasm-policy-single MODULE runtime.memtag-checks off` skips ordinary comparisons by that module. `runtime.memtag-backend` on the owner and the per-memory override select the backend. Process-wide `--runtime-memtag-mode sync|async` selects delivery. Defaults are automatic backend selection, synchronous delivery and crash. A required hardware owner needs a supported checked mapping.
 
 The action is `--runtime-memtag-action crash`, or explicitly
 `--runtime-memtag-action silent-log out`, `silent-log err`, or

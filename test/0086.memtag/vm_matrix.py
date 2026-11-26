@@ -27,9 +27,9 @@ def simd(n,offset=0,lane=None):
  return b'\xfd'+u(n)+u(0)+u(offset)+(u(lane) if lane is not None else b'')
 def assertion(expression,expected,bits=32):
  return expression+c(expected,bits)+bytes([0x47 if bits==32 else 0x52,0x04,0x40,0x00,0x0b])
-def memory_limits(wide=False,shared=False,*,tagged=True,minimum=1,maximum=2,memory32_adm=4):
+def memory_limits(wide=False,shared=False,*,tagged=True,minimum=1,maximum=2,memory32_adm=4,memory64_adm=16):
  flags=1 | (4 if wide else 0) | (2 if shared else 0) | (0x30 if tagged else 0)
- geometry=bytes([16 if wide else memory32_adm]) if tagged else b''
+ geometry=bytes([memory64_adm if wide else memory32_adm]) if tagged else b''
  return u(flags)+geometry+u(minimum)+u(maximum)
 def module(code,wide=False,passive=None,shared=False,memories=1,*,memory32_adm=4):
  body=b'\x01\x01'+bytes([0x7e if wide else 0x7f])+code+b'\x0b'
@@ -178,7 +178,7 @@ def main():
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),f'--runtime-{engine}','--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on','--wasm-policy-global', 'parser.threads', 'on','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
+   command=[str(args.vm),f'--runtime-{engine}','--wasm-policy-global', 'parser.memory64', 'on','--wasm-policy-global', 'parser.table64', 'on', "--wasm-policy-global", "runtime.memtag-backend", "software",'--wasm-policy-global', 'parser.threads', 'on','--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main','--wasm-set-start-func','0']
    if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--runtime-compile-threads','0']
    if not case['enabled']:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
    command+=['--',case['file']]

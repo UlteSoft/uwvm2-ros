@@ -12,9 +12,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
     enum class owner_backend : unsigned char { software, automatic, arm_mte, x86_mtt };
 
+    inline constexpr owner_backend default_owner_backend{owner_backend::automatic};
+
     struct module_memory_policy
     {
-        owner_backend backend{owner_backend::software};
+        owner_backend backend{default_owner_backend};
         bool check_tags{true};
     };
 

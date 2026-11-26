@@ -115,7 +115,7 @@ def main():
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'parser.threads', 'on','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),'131072',
+   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'parser.threads', 'on','--wasm-policy-global','runtime.memtag-backend','software','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),'131072',
     '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main',
     '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
     '--wasm-preload-library',str(owner),'env']

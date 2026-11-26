@@ -213,7 +213,7 @@ uwvm \
 
 ## MTE execution and independent violation reports
 
-Use `runtime.memtag-backend` on the defining module or `--wasm-policy-memory-backend` on one local memory. Available values are `software`, `auto`, `arm-mte` and `x86-mtt`. Arm MTE requires at least eight ignored bits at either guest width and a supported checked mapping. The Intel MTT geometry reserves seven or more ignored bits, and the runtime currently rejects an explicit Intel request. Set process delivery with `--runtime-memtag-mode sync|async`. The defaults are **software, sync and crash**. [Per-owner tag fields](../runtime/memtag-extension.md)
+Use `runtime.memtag-backend` on the defining module or `--wasm-policy-memory-backend` on one local memory. The values are `auto`, `software`, `arm-mte` and `x86-mtt`. The default is `auto` with synchronous crash delivery. For both guest widths, Arm MTE supports ADM 4 and above on an eligible checked mapping. Its new-owner tag moves from the guest’s top four bits to the direct guest layout at ADM 8. Intel MTT reserves an analogous transition at ADM 7. The VM rejects explicit Intel requests until checked mappings are implemented. Set process delivery with `--runtime-memtag-mode sync|async`. [Per-owner tag fields](../runtime/memtag-extension.md)
 [Module and individual owner overrides](wasm-module-policy.md)
 
 The action grammar is:
