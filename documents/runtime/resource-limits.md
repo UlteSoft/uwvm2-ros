@@ -1,5 +1,7 @@
 # Host allocation budgets
 
+[简体中文](resource-limits.zh.md)
+
 uwvm2-ros applies host-owned resource limits before allocating storage derived
 from a Wasm module. These limits are independent of WASI and ROS permissions:
 an allowed import does not change the resource policy, and no guest interface
