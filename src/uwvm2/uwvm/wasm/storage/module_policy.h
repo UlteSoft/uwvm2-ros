@@ -1,6 +1,7 @@
 // Cold, host-supplied Wasm module policies. These keys are independent of
 // host-import permissions and of process-wide address-space reservations.
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 #ifndef UWVM_MODULE
 # include <array>
 # include <cstddef>
@@ -103,8 +104,26 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         UWVM_PARSER_COUNT("custom_name_codelocal_name_per_funcs", p.name_parser.name_parser_limit, max_name_sec_code_local_names_per_function),
         UWVM_PARSER_COUNT("custom_name_local_names", p.name_parser.name_parser_limit, max_local_names),
         UWVM_PARSER_COUNT("custom_name_diagnostics", p.name_parser.name_parser_limit, max_diagnostics),
+        UWVM_PARSER_COUNT("input-bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_input_bytes, true),
 #undef UWVM_PARSER_COUNT
     };
+
+    [[nodiscard]] inline constexpr ::std::size_t parser_limit_index(option_view name) noexcept
+    {
+        for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
+        { if(name == parser_counts[i].name) { return i; } }
+        return ::std::size(parser_counts);
+    }
+    inline constexpr auto parser_input_index{parser_limit_index(u8"input-bytes")};
+    static_assert(parser_input_index < ::std::size(parser_counts));
+
+    // Use the resolved module policy for both live and projected update contracts.
+    template<typename Append> inline void visit_measured_parser_limits(parameters snapshot, Append append)
+    {
+        auto& input_limit{parser_counts[parser_input_index].get(snapshot)};
+        input_limit = ::uwvm2::utils::allocator::resource::parser_input_limit(input_limit);
+        for(auto const& setting : parser_counts) { append(setting.get(snapshot)); }
+    }
 
     struct initializer_setting { option_view name; ::std::size_t init_limits::* member; };
     inline constexpr initializer_setting initializer_settings[]{
@@ -130,7 +149,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         ::std::array<::std::optional<bool>, ::std::size(feature_settings)> features{};
         ::std::array<::std::optional<::std::size_t>, ::std::size(parser_counts)> counts{};
         ::std::array<::std::optional<::std::size_t>, ::std::size(initializer_settings)> limits{};
-        ::std::optional<::std::size_t> input_bytes{};
         ::std::optional<baseline> preset{};
         ::std::optional<::uwvm2::uwvm::wasm::type::module_memory_limit_t> memory_pages{};
         runtime_mode::module_translation_policy translation{};
@@ -187,11 +205,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         constexpr option_view parser_prefix{u8"parser.limit."};
         if(key.starts_with(parser_prefix))
         {
-            auto const name{key.substr(parser_prefix.size())};
-            if(name == u8"input-bytes") { return set_count(target.input_bytes, value); }
-            for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
-            { if(name == parser_counts[i].name) { return set_count(target.counts[i], value); } }
-            return false;
+            auto const i{parser_limit_index(key.substr(parser_prefix.size()))};
+            return i != ::std::size(parser_counts) && set_count(target.counts[i], value);
         }
         for(::std::size_t i{}; i != ::std::size(initializer_settings); ++i)
         {
@@ -292,7 +307,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
 
     inline constexpr void apply(layer const& from, ::uwvm2::uwvm::wasm::type::wasm_parameter_t& to) noexcept
     {
-        if(from.input_bytes) { features::wasm_binfmt_ver1_wasm1_parameter(to.binfmt1_para).parser_limit.max_input_bytes = *from.input_bytes; }
         auto& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(to.binfmt1_para)};
         if(from.preset)
         {

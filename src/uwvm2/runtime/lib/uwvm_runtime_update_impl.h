@@ -16,7 +16,7 @@ namespace production_update_detail
     // from debugger permissions. Diagnostic continuation must never
     // masquerade as an enforcing crash policy in a signed update.
     namespace mt=::uwvm2::extension::memtag;
-    update::append_u64(material,5u);
+    update::append_u64(material,6u);
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     auto const& parameters{file.wasm_parameter};
     auto const& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para)};
@@ -24,8 +24,7 @@ namespace production_update_detail
     { update::append_u64(material,value); }
     update::append_u64(material,::uwvm2::runtime::checkpoint::memory_layout::module_policy(parameters.memory_policy));
     namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
-    auto parser_snapshot{parameters};
-    for(auto const& count : policy::parser_counts) { update::append_u64(material, count.get(parser_snapshot)); }
+    policy::visit_measured_parser_limits(parameters, [&](::std::size_t value) { update::append_u64(material, value); });
     for(auto const& count : policy::initializer_settings)
     { update::append_u64(material, parameters.initializer_limits.*count.member); }
     // The initializer owns the actual memory layouts before LLVM builds its module records.

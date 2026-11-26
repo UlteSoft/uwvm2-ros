@@ -49,6 +49,18 @@ int main(int argc, char** argv)
     auto& single{policy::singles.try_emplace(policy::owned_name{u8"m"}).first->second};
     if(!policy::set(single, u8"parser.limit.input-bytes", u8"20") ||
        wasm::loader::load_wasm_file(loaded, filename, {}, config) != result::ok || live.load() != data.size()) { return 4; }
+    auto measured_input = [&]
+    {
+        ::std::array<::std::size_t, ::std::size(policy::parser_counts)> words{};
+        ::std::size_t i{};
+        policy::visit_measured_parser_limits(loaded.wasm_parameter, [&](::std::size_t value) { words[i++] = value; });
+        return words[policy::parser_input_index];
+    };
+    if(measured_input() != data.size() || policy::set(single, u8"parser.limit.input-bytes", u8"18") ||
+       policy::set(single, u8"parser.limit.input_bytes", u8"18")) { return 20; }
+    budget.single = data.size() + 3uz;
+    if(measured_input() != data.size() + 1uz) { return 21; }
+    budget.single = data.size();
     if(image::copy_wasm_bytes(data, data.size()) || live.load() != data.size()) { return 5; }
     auto checkpoint{image::copy_owned_bytes(data, data.size())};
     if(!checkpoint || live.load() != data.size()) { return 6; }
