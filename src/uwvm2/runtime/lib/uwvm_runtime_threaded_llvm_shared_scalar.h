@@ -4,14 +4,17 @@
         {
             namespace mt=::uwvm2::extension::memtag;
             auto* e=active_;
-            if(e && e->child && e->stop_byte && !e->child->module_->memory_policy.check_tags &&
+            if(e && e->child && e->stop_byte &&
+               (!e->child->module_->memory_policy.check_tags ||
+                (e->child->world_->admission().initial_worker_only() && mt::access_checks_enabled && !mt::logging_requested())) &&
                !mt::asynchronous_requested() && !mt::hardware_checked_access_requested() &&
                owns_gc_module(module))return e;
-            static constexpr native_poll_state unavailable{.rejected=1u};
+            alignas(::std::atomic_ref<unsigned char>::required_alignment) static constexpr unsigned char stopped_byte{1u};
+            static constexpr native_poll_state unavailable{.stop_byte=&stopped_byte,.rejected=1u};
             return &unavailable;
         }
 
-        [[nodiscard]] shared_scalar_layout shared_scalar_owner(::llvm::CallInst const& call,shared_scalar_shape shape) const noexcept
+        [[nodiscard]] shared_scalar_layout shared_scalar_owner(::llvm::CallInst const& call,shared_scalar_shape shape,bool serial_checked) const noexcept
         {
             auto const* offset=::llvm::dyn_cast<::llvm::ConstantInt>(call.getArgOperand(1u));
             if(!offset)return {};
@@ -29,8 +32,17 @@
                 // even for memory64. All other immediates stay at the full bridge.
                 if(mask>UINT64_MAX/2u||shape.bytes-1u>mask||offset->getZExtValue()>mask-(shape.bytes-1u))return {};
                 auto field=[&](auto const& value){return address(::std::addressof(value))-address(memory);};
-                return {::std::addressof(memory),mask,field(memory->memory_begin),field(memory->memory_length_p),
+                shared_scalar_layout layout{::std::addressof(memory),mask,field(memory->memory_begin),field(memory->memory_length_p),
                     field(shadow.prepared_memory_bytes_),field(shadow.shared_tag_gate_)};
+                if(serial_checked)
+                {
+                    auto const maximum=shadow.maximum_memory_bytes();
+                    auto const committed=memory->memory_length_p->load(::std::memory_order_acquire);
+                    if(maximum>mask+1u || committed>maximum || committed>shadow.prepared_memory_bytes())return {};
+                    layout.serial={address(memory->memory_begin),address(shadow.tag_data()),address(memory->memory_length_p),
+                        committed,shadow.tag_start_bit()};
+                }
+                return layout;
             }
             return {};
         }
@@ -41,7 +53,11 @@
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             namespace mt=::uwvm2::extension::memtag;
             auto const& admission=world_->admission();
-            if(module_->memory_policy.check_tags||mt::asynchronous_requested()||mt::hardware_checked_access_requested()||
+            bool const serial_checked=module_->memory_policy.check_tags;
+            if(serial_checked && (!admission.initial_worker_only() || world_->kind_!=world_type::storage_kind::actual_parent ||
+                mt::logging_requested() || ::std::endian::native!=::std::endian::little ||
+                !::std::atomic<::std::uint8_t>::is_always_lock_free || sizeof(::std::atomic<::std::uint8_t>)!=1u))return false;
+            if(mt::asynchronous_requested()||mt::hardware_checked_access_requested()||
                admission.debug_observation()!=::uwvm2::runtime::wasm_threads::threaded_debug_observation::none||
                admission.instruction_control()||CHAR_BIT!=8||sizeof(bool)!=1u||
                !::std::atomic_ref<::std::byte>::is_always_lock_free||!::std::atomic_ref<unsigned char>::is_always_lock_free||
@@ -71,7 +87,7 @@
                 for(auto* call:sites)
                 {
                     auto const shape=declarations.find(call->getCalledFunction())->second;
-                    auto const layout=shared_scalar_owner(*call,shape);
+                    auto const layout=shared_scalar_owner(*call,shape,serial_checked);
                     if(!layout.owner_slot)continue;
                     // Six blocks and at most 64 fixed instructions plus six per
                     // byte, including the state call. The factory recounts exact
@@ -94,7 +110,8 @@
                         state=emit::apply_llvm_jit_calling_conv(b.CreateCall(state_fn,{::llvm::ConstantInt::get(word,address(module_))}),emit::get_llvm_jit_host_calling_conv());
                     }
                     attempted=true;
-                    emit_shared_scalar(*call,state,address(this),layout,shape);
+                    if(serial_checked)emit_serial_checked_scalar(*call,state,address(this),layout,shape);
+                    else emit_shared_scalar(*call,state,address(this),layout,shape);
                     room.instructions-=cost;room.blocks-=6u;
                 }
             }
