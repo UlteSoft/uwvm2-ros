@@ -497,6 +497,7 @@
                     }
                     if(!owner.valid()||!emit::finalize_runtime_llvm_jit_module_storage(ir,true))return {{},status::invalid_body};
                     if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
+                    if(relocatable)hoist_object_bindings(llvm_module);
                     if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                        !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
                     // Bound the original translation before promoting private

@@ -3,15 +3,13 @@
         struct object_emission
         {
             ThreadedLlvmChild& child;
-            ::llvm::DenseMap<::std::pair<::llvm::Function*,::llvm::GlobalVariable*>,::llvm::Value*> loads{};
             explicit object_emission(ThreadedLlvmChild& owner):child{owner}{}
             static ::llvm::Value* bind(void* context,::llvm::IRBuilder<>& at,::std::uintptr_t address,
                 ::uwvm2::utils::container::u8string_view semantic) try
             {
                 namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
                 auto& self=*static_cast<object_emission*>(context);
-                auto* function=at.GetInsertBlock()->getParent();
-                auto* module=function->getParent();
+                auto* module=at.GetInsertBlock()->getModule();
                 auto name=::uwvm2::utils::container::u8concat_uwvm(u8"uwvm.threaded.object.",semantic);
                 auto const ref=emit::get_llvm_string_ref(name);
                 if(!address)return nullptr;
@@ -34,19 +32,46 @@
                         if(native.name==ref){bound=native.address==address;break;}
                     if(!bound)return literal();
                 }
-                auto [it,fresh]=self.loads.try_emplace({function,symbol},nullptr);
-                if(fresh)
-                {
-                    // This private carrier is fixed by the loader for the life of
-                    // this image. Load once per activation, outside guest loops.
-                    auto& entry=function->getEntryBlock();
-                    ::llvm::IRBuilder<> builder(&entry,entry.getFirstInsertionPt());
-                    it->second=emit::get_llvm_relocatable_host_symbol_pointer(builder,symbol);
-                }
-                return it->second;
+                // EH/GC lowering can later insert a new use *before* an
+                // existing entry instruction. Each use initially dominates at
+                // its actual insertion point. Hoist only in the completed IR.
+                return emit::get_llvm_relocatable_host_symbol_pointer(at,symbol);
             }
             catch(::std::bad_alloc const&){return nullptr;}
         };
+
+        static void hoist_object_bindings(::llvm::Module& module)
+        {
+            for(auto& carrier:module.globals())
+            {
+                if(!carrier.hasPrivateLinkage() || !carrier.hasInitializer() ||
+                   !carrier.getName().starts_with("uwvm.host.binding.uwvm.threaded.object."))continue;
+                auto const* symbol=::llvm::dyn_cast<::llvm::GlobalVariable>(carrier.getInitializer());
+                if(!symbol || !symbol->isDeclaration() || !symbol->getName().starts_with("uwvm.threaded.object."))continue;
+                ::llvm::DenseMap<::llvm::Function*,::llvm::LoadInst*> entries;
+                for(auto it=carrier.user_begin();it!=carrier.user_end();)
+                {
+                    auto* load=::llvm::dyn_cast<::llvm::LoadInst>(*it++);
+                    if(!load || !load->isVolatile() || load->isAtomic() || load->getPointerOperand()!=&carrier)continue;
+                    auto* function=load->getFunction();
+                    auto [first,fresh]=entries.try_emplace(function,load);
+                    if(fresh)
+                    {
+                        // Only the loader-written pointer is immutable. Guest
+                        // data, owner, bounds, TLS and stop reads stay at their
+                        // original locations and retain their original ordering.
+                        auto& entry=function->getEntryBlock();
+                        auto where=entry.getFirstInsertionPt();
+                        if(&*where!=load)load->moveBefore(entry,where);
+                    }
+                    else
+                    {
+                        load->replaceAllUsesWith(first->second);
+                        load->eraseFromParent();
+                    }
+                }
+            }
+        }
 
         struct object_scope
         {
