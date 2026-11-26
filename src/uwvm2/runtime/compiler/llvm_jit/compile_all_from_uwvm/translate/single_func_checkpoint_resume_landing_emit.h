@@ -149,7 +149,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
     // scan when recording a large straight-line function.
     if(!resume.installed_sites.empty() && resume.installed_sites.back() >= site.identifier) { return {}; }
     auto& builder{*state.ir_builder};
-#if defined(__linux__) && defined(__arm__)
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
     bool share_numeric_locals{site.local_count >= 2u};
 #endif
     for(::std::size_t i{}; i != site.slots.size(); ++i)
@@ -164,7 +164,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
             if(local == nullptr || local->getFunction() != state.llvm_function || local->getAllocatedType() != native ||
                get_llvm_type_from_wasm_value_type(builder.getContext(), state.local_types.index_unchecked(i)) != native ||
                plan->sites.front().slots[i].type != site.slots[i].type) { return {}; }
-#if defined(__linux__) && defined(__arm__)
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
             if(!site.slots[i].initialized || site.slots[i].type.kind == checkpoint::types::value_kind::reference)
             { share_numeric_locals = false; }
 #endif
@@ -226,7 +226,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
         resume.installed_sites.push_back(site.identifier);
         return out;
     };
-#if defined(__linux__) && defined(__arm__)
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
     // All numeric locals have the same declared types, entry allocas and
     // required initialization markers at every eligible site in this function.
     // Sites with the same packet extent can share that entire restoration.
@@ -306,7 +306,7 @@ struct llvm_jit_checkpoint_resume_landing_emit_result
         restore.CreateStore(value, state.local_pointers.index_unchecked(i));
         if(next != nullptr) { restore.CreateBr(next); restore.SetInsertPoint(next); }
     }
-#if defined(__linux__) && defined(__arm__)
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
     if(shared != nullptr)
     {
         shared->extent = landing;
