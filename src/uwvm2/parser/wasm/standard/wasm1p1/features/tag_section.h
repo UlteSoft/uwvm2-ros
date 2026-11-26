@@ -27,7 +27,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         inline static constexpr ::uwvm2::utils::container::u8string_view section_name{u8"Tag"};
         inline static constexpr ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte section_id{13u};
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> type_indices{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> type_indices{};
         bool present{};
     };
 

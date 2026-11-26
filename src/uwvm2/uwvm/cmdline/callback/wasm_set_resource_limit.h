@@ -44,7 +44,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         ::std::size_t* setting{};
         if(stage==u8"parser")
         {
-            if(name==u8"input-bytes") { setting=&resource::module_file_bytes; }
+            auto& policy{resource::policies[static_cast<unsigned>(resource::pool::parser)]};
+            if(name==u8"single-bytes") { setting=&policy.single; }
+            else if(name==u8"live-bytes") { setting=&policy.live; }
+            else if(name==u8"input-bytes") { setting=&resource::module_file_bytes; }
             else if(name==u8"type-metadata-bytes") { setting=&resource::parser_metadata_bytes; }
             else if(name==u8"function-body-bytes") { setting=&resource::function_body_bytes; }
             else if(name==u8"module-code-bytes") { setting=&resource::module_code_bytes; }

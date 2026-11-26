@@ -27,7 +27,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     enum class exception_immediate_error : unsigned { ok, binary, invalid_catch_kind };
     struct exception_catch_vector
     {
-        ::uwvm2::utils::container::vector<exception_catch_clause> clauses{};
+        ::uwvm2::utils::container::validation_vector<exception_catch_clause> clauses{};
         exception_immediate_error error{};
         recursive_type_binary_result binary{};
     };

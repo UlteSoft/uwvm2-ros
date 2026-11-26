@@ -78,11 +78,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         unsigned reference_types_diagnostic_value{};
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_table_type<Fs...>> tables{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_table_type<Fs...>> tables{};
 
         // Definition-only expressions, parallel to tables when the extended handler is selected.
         // An empty expression selects the legacy implicit ref.null initializer. Imports never populate this vector.
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...>> initializers{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...>> initializers{};
     };
 
     /// @brief define handler for ::uwvm2::parser::wasm::standard::wasm1::type::table_type

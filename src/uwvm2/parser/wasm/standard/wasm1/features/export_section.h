@@ -70,12 +70,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_export_type<Fs...>> exports{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_export_type<Fs...>> exports{};
 
         inline static constexpr ::std::size_t exportdesc_count{
             static_cast<::std::size_t>(decltype(::uwvm2::parser::wasm::standard::wasm1::features::final_export_type_t<Fs...>{}.type)::external_type_end) + 1uz};
         ::uwvm2::utils::container::
-            array<::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_export_type<Fs...> const*>, exportdesc_count>
+            array<::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_export_type<Fs...> const*>, exportdesc_count>
                 exportdesc{};
     };
 
@@ -378,7 +378,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // Each export is labeled by a unique name. Exportable definitions are functions, tables, memories, and globals, which are referenced through a
         // respective descriptor.
         // @see: WebAssembly Release 1.0 (2019-07-20) § 2.5.10
-        ::uwvm2::utils::container::unordered_flat_set<::uwvm2::utils::container::u8string_view> duplicate_name_checker{};  // use for check duplicate name
+        ::uwvm2::utils::container::parser_flat_set<::uwvm2::utils::container::u8string_view> duplicate_name_checker{};  // use for check duplicate name
         duplicate_name_checker.reserve(export_count);
 
         // Each type is of unknown size, so it cannot be reserved.

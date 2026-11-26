@@ -147,6 +147,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         using vector = ::uwvm2::utils::container::vector<T, Alloc>;
     }
 
+    template <::std::movable T>
+    using parser_vector = vector<T, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::parser>>>;
+
     // Compiler/validator scratch, charged only when backing storage grows.
     template <::std::movable T>
     using validation_vector = vector<T, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>>;
@@ -328,6 +331,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
               typename Pred = ::std::equal_to<Key>,
               typename Alloc = ::uwvm2::utils::container::fast_io_global_std_allocator<::std::pair<Key const, Val>>>
     using unordered_flat_map = ::boost::unordered::unordered_flat_map<Key, Val, Hash, Pred, Alloc>;
+
+    template <typename Key, typename Val>
+    using parser_flat_map = unordered_flat_map<Key, Val, ::std::hash<Key>, ::std::equal_to<Key>,
+        ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::parser>>;
+    template <typename Key>
+    using parser_flat_set = unordered_flat_set<Key, ::std::hash<Key>, ::std::equal_to<Key>,
+        ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::parser>>;
+    template <typename Key>
+    using validation_set = set<Key, ::std::less<Key>, ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation>>;
+    template <typename Key, typename Val, typename Compare>
+    using parser_map = map<Key, Val, Compare, ::uwvm2::utils::allocator::resource::std_allocator<
+        ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::parser>>;
+    template <typename Key, typename Val, typename Compare>
+    using validation_map = map<Key, Val, Compare, ::uwvm2::utils::allocator::resource::std_allocator<
+        ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation>>;
 
     template <typename Key,
               typename Hash = ::std::hash<Key>,

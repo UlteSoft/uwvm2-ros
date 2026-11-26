@@ -77,7 +77,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         unsigned reference_types_diagnostic_value{};
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_element_type_t<Fs...>> elems{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_element_type_t<Fs...>> elems{};
     };
 
     /// @brief This function only performs type stack matching, not computation.

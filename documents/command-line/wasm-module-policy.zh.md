@@ -35,6 +35,8 @@
 | `elemsec_elems`、`elemsec_funcidx`、`elemsec_expr` | 元素段条目、函数索引、初始化表达式 |
 | `custom_name_funcnames`、`custom_name_codelocal_funcs`、`custom_name_codelocal_name_per_funcs` | 可选名称节中的函数名、带局部名的函数数量、每个函数的局部名数量 |
 
+宿主 `--wasm-set-resource-limit parser single-bytes`（默认 256 MiB）限制每次元数据分配，`live-bytes`（默认 1 GiB）限制全进程同时存活的解析元数据，包括扩容时同时存活的新旧缓冲区。模块释放后归还其独占分配。全局递归类型注册表仅为新增规范类型保留键和编号，直至注册表销毁。
+
 ## 初始化与运行时
 
 | 键 | 值及行为 |

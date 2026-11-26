@@ -79,7 +79,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
             ::std::size_t first, ::std::size_t second, Signatures const& signatures) noexcept
         {
             using pair = ::std::pair<::std::size_t, ::std::size_t>;
-            ::uwvm2::utils::container::vector<pair> pending{}, seen{};
+            ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
             pending.push_back({first, second});
             while(!pending.empty())
             {
@@ -1583,7 +1583,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         using core_type = ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type;
         using core_kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
         using core_heap = ::uwvm2::parser::wasm::standard::wasm3::type::abstract_heap_type;
-        ::uwvm2::utils::container::vector<core_type> constant_types{};
+        ::uwvm2::utils::container::validation_vector<core_type> constant_types{};
         auto const& const_para{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para)};
         auto const& declared_globals{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
             global_section_storage_t<Fs...>>(module_storage.sections).local_globals};

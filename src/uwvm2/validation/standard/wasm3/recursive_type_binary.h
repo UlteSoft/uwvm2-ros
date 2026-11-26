@@ -212,8 +212,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 result.mutable_ = mutability != 0u;
                 return true;
             }
-            template<typename T, typename Read>
-            inline constexpr bool list(::uwvm2::utils::container::vector<T>& values, ::std::size_t minimum_bytes, Read&& read) noexcept
+            template<typename T, typename Allocator, typename Read>
+            inline constexpr bool list(::uwvm2::utils::container::vector<T, Allocator>& values, ::std::size_t minimum_bytes, Read&& read) noexcept
             {
                 ::std::uint_least32_t count{};
                 if(!u32(count)) { return false; }

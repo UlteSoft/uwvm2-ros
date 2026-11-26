@@ -456,7 +456,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         ::std::byte const* begin{};
         ::std::byte const* end{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_const_expr_opcode_t> opcodes{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_const_expr_opcode_t> opcodes{};
     };
 }
 
@@ -879,8 +879,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type core_type{};
         bool has_core_type{};
         ::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...> expr{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> vec_funcidx{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...>> vec_expr{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> vec_funcidx{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...>> vec_expr{};
     };
 
     /// @brief Section-details wrapper for a parsed wasm1.1 element segment payload.

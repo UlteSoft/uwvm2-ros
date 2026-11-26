@@ -91,7 +91,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         unsigned reference_types_diagnostic_value{};
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_local_global_type<Fs...>> local_globals{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_local_global_type<Fs...>> local_globals{};
     };
 
     /// @brief define handler for ::uwvm2::parser::wasm::standard::wasm1::type::global_type
