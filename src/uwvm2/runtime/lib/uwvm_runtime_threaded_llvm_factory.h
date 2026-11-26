@@ -87,162 +87,7 @@
         }
         [[nodiscard]] bool refresh_table_targets_noalloc() noexcept
         {bound_tables_=validate_table_targets_noalloc();return bound_tables_;}
-        using native_elf_layout=::std::conditional_t<sizeof(void*)==8u,::llvm::object::ELF64LE,::llvm::object::ELF32LE>;
-        [[nodiscard]] static ::llvm::Expected<::std::uint64_t> native_relocation_count(
-            ::llvm::object::ELFFile<native_elf_layout> const& file,native_elf_layout::Shdr const& section)
-        {
-            auto const type=section.sh_type;
-            if(type!=::llvm::ELF::SHT_REL && type!=::llvm::ELF::SHT_RELA && type!=::llvm::ELF::SHT_CREL)return 0u;
-            auto linked=file.getSection(section.sh_link);
-            if(!linked)return linked.takeError();
-            if(type==::llvm::ELF::SHT_REL)
-            {
-                auto entries=file.rels(section);
-                if(!entries)return entries.takeError();
-                return entries->size();
-            }
-            if(type==::llvm::ELF::SHT_RELA)
-            {
-                auto entries=file.relas(section);
-                if(!entries)return entries.takeError();
-                return entries->size();
-            }
-            auto contents=file.getSectionContents(section);
-            if(!contents)return contents.takeError();
-            auto header=file.getCrelHeader(*contents);
-            if(!header)return header.takeError();
-            // The CREL header encodes the count above its three flag/shift bits.
-            return *header >> 3u;
-        }
-        [[nodiscard]] preparation_status check_object(::llvm::object::ObjectFile const& object,::std::size_t relocation_limit,
-            ::std::size_t& reservation,
-            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions,bool diagnose)
-        {
-            // A finite, deliberately conservative native ELF loader charge:
-            // real section bytes, max alignment per section, relocation stub/GOT
-            // allowance and three native page groups. No null allocator is used
-            // to pretend RuntimeDyld's fatal allocation path is recoverable.
-            using status=preparation_status;
-            ::std::uint64_t sections{},relocations{},symbols{},charge{3u*native_arena_granule},arena_bytes{};
-            bool totals_complete{};
-            auto reject=[&](char const* reason,status why=status::native_failure)
-            {
-                if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
-                    " (",::fast_io::mnp::os_c_str(reason),") totals-complete=",static_cast<unsigned>(totals_complete),
-                    " sections=",sections," relocations=",relocations," symbols=",symbols," relocation-limit=",relocation_limit,
-                    " charged-bytes=",charge," arena-bytes=",arena_bytes," code-limit=",code_limit_);
-                return why;
-            };
-            if(!object.isELF()||object.getArch()!=native_object_arch||!object.isLittleEndian()||object.getBytesInAddress()!=native_address_bytes)
-                return reject("native ELF target");
-            auto const& elf=::llvm::cast<::llvm::object::ELFObjectFile<native_elf_layout>>(object).getELFFile();
-            auto headers=elf.sections();
-            if(!headers){::llvm::consumeError(headers.takeError());return reject("section headers");}
-            sections=headers->size();
-            if(sections>maximum_object_sections)return reject("section count exceeds 4096",status::budget);
-            charge+=sections*2u*native_arena_granule;
-            bool saw_symtab{},saw_crel{};
-            for(auto const& section:*headers)
-            {
-                if(section.sh_addralign>native_arena_granule)return reject("section alignment exceeds 65536",status::budget);
-                auto name=elf.getSectionName(section);
-                if(!name){::llvm::consumeError(name.takeError());return reject("section name");}
-                if(section.sh_size>UINT64_MAX-charge)return reject("section byte charge overflow",status::budget);
-                charge+=section.sh_size;
-                auto count=native_relocation_count(elf,section);
-                if(!count){::llvm::consumeError(count.takeError());return reject("relocation table");}
-                if(*count>UINT32_MAX)return reject("relocation table index range",status::budget);
-                if(*count>UINT64_MAX-relocations)return reject("relocation count overflow",status::budget);
-                relocations+=*count;
-                saw_crel|=section.sh_type==::llvm::ELF::SHT_CREL;
-                if(section.sh_type==::llvm::ELF::SHT_SYMTAB && !saw_symtab)
-                {
-                    auto entries=elf.symbols(&section);
-                    if(!entries){::llvm::consumeError(entries.takeError());return reject("symbol table");}
-                    // LLVM ObjectFile::symbols() skips ELF's reserved null symbol.
-                    symbols=entries->empty()?0u:entries->size()-1u;
-                    saw_symtab=true;
-                }
-            }
-            constexpr auto bytes_per_relocation=::uwvm2::runtime::wasm_threads::threaded_llvm_limits::bytes_per_relocation;
-            if(relocations>(UINT64_MAX-charge)/bytes_per_relocation)return reject("relocation byte charge overflow",status::budget);
-            charge+=relocations*bytes_per_relocation;
-            if(charge>UINT64_MAX-(native_arena_granule-1u))return reject("arena rounding overflow",status::budget);
-            arena_bytes=(charge+native_arena_granule-1u)&~::std::uint64_t{native_arena_granule-1u};
-            totals_complete=true;
-            if(relocations>relocation_limit)return reject("relocation count exceeds host limit",status::budget);
-            if(symbols>maximum_object_symbols)return reject("symbol count exceeds 262144",status::budget);
-            if(arena_bytes>code_limit_)return reject("native arena byte charge",status::budget);
-            if(saw_crel)
-            {
-                auto const& native=::llvm::cast<::llvm::object::ELFObjectFileBase>(object);
-                for(auto const& section:object.sections())
-                    if(::llvm::object::ELFSectionRef{section}.getType()==::llvm::ELF::SHT_CREL)
-                    {
-                        // LLVM materializes CREL entries on first use. Decode only after
-                        // the declared count and its full byte charge have been admitted.
-                        static_cast<void>(section.relocation_begin());
-                        if(!native.getCrelDecodeProblem(section).empty())return reject("compressed relocation table");
-                    }
-            }
-            for(auto const& symbol:object.symbols())
-            {
-                auto flags=symbol.getFlags();auto name=symbol.getName();
-                if(!flags){::llvm::consumeError(flags.takeError());return reject("symbol flags");}
-                if(!name){::llvm::consumeError(name.takeError());return reject("symbol name");}
-                if((*flags&::llvm::object::SymbolRef::SF_Common)||::llvm::object::ELFSymbolRef{symbol}.getELFType()==::llvm::ELF::STT_TLS)
-                    return reject("common or TLS symbol");
-                if(*flags&::llvm::object::SymbolRef::SF_Undefined)
-                {
-                    if(name->empty())continue;
-                    bool mapped{};for(auto const& binding:externals_)if(binding.name==*name)mapped=true;
-                    // Resolve only the native memory, arithmetic and unwind
-                    // helpers emitted by the backend, through this object's
-                    // finite registry. Guest imports use the world dispatcher.
-                    if(!mapped)
-                    {
-                        ::std::uintptr_t pointer{};
-                        if(*name=="memcpy")pointer=address(static_cast<void*(*)(void*,void const*,::std::size_t)>(&::std::memcpy));
-                        else if(*name=="memmove")pointer=address(static_cast<void*(*)(void*,void const*,::std::size_t)>(&::std::memmove));
-                        else if(*name=="memset")pointer=address(static_cast<void*(*)(void*,int,::std::size_t)>(&::std::memset));
-#if defined(__linux__) && (defined(__i386__) || defined(__arm__))
-                        // Includes scalar rounding and square root on ARM EABI.
-                        else pointer=::uwvm2::runtime::compiler::llvm_jit::details::native_compiler_builtins::find(::uwvm2::utils::container::copy_string(*name));
-#endif
-#if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && \
-    defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)
-                        // Native backend-generated compact unwind relocations,
-                        // paired with the same static libunwind as this process.
-                        if(*name=="__aeabi_unwind_cpp_pr0")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr0);
-                        else if(*name=="__aeabi_unwind_cpp_pr1")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr1);
-                        else if(*name=="__aeabi_unwind_cpp_pr2")pointer=reinterpret_cast<::std::uintptr_t>(&::__aeabi_unwind_cpp_pr2);
-#endif
-                        if(pointer==0u)
-                        {
-                            auto const spelling=name->take_front(128u);
-                            if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM unbound native symbol ",
-                                ::fast_io::mnp::strvw(spelling.begin(),spelling.end()));
-                            return reject("unbound native symbol");
-                        }
-                        if(externals_.size()>=256u)return reject("external binding count exceeds 256",status::budget);
-                        externals_.push_back({::uwvm2::utils::container::copy_string(*name),pointer});
-                    }
-                }
-                else if(!name->empty())
-                {
-                    definitions.push_back(::uwvm2::utils::container::copy_string(*name));
-                    auto type=symbol.getType();if(!type){::llvm::consumeError(type.takeError());return reject("symbol type");}
-                }
-            }
-            if(!check_static_stack_object(object))return reject("native stack witness");
-            if(guest_fixed_stack_charge_>guest_native_stack_usable_bytes_)
-            {
-                if(diagnose)report_native_stack_budget("object");
-                return reject("native stack budget",status::budget);
-            }
-            reservation=static_cast<::std::size_t>(arena_bytes);
-            return status::ok;
-        }
+#include "uwvm_runtime_threaded_llvm_object_admission.h"
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             [[maybe_unused]] ::std::size_t backend_storage_budget, [[maybe_unused]] ::std::size_t code_budget, ::std::size_t module_index,
@@ -266,6 +111,9 @@
             {
             try
             {
+                // Declared before the child so its borrowed ELF bytes outlive even
+                // an engine destroyed by the child's failure-path destructor.
+                object_load_pin pinned;
                 auto data=::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>{::uwvm2::utils::allocator::fast_io_strict::object<ThreadedLlvmChild>([&](ThreadedLlvmChild* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ThreadedLlvmChild{::std::move(world)}; })};
                 data->module_index_=module_index;data->module_=data->world_->module(module_index);auto const& module=*data->module_;
                 auto const& limits=data->world_->admission().limits();
@@ -658,25 +506,26 @@
                 }
                 if(hit)
                 {
+                    pinned.take(*cache);
                     if(!data->restore_object_witness(*hit))return {{},status::unsupported_bridge};
                     lowering->polls|=hit->polls;
                 }
                 if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
                 auto object_bytes=hit?::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(hit->object):output.bytes();
                 if(object_bytes.size()>data->code_limit_)return {{},status::budget};
-                auto buffer=::llvm::MemoryBuffer::getMemBufferCopy(object_bytes,"uwvm.threaded.child.object");
+                auto buffer=hit && (reinterpret_cast<::std::uintptr_t>(object_bytes.data())%native_address_bytes==0u) ?
+                    ::llvm::MemoryBuffer::getMemBuffer(object_bytes,"uwvm.threaded.child.object",false) :
+                    ::llvm::MemoryBuffer::getMemBufferCopy(object_bytes,"uwvm.threaded.child.object");
                 if(!buffer)return {{},status::native_failure};
                 auto parsed=::llvm::object::ObjectFile::createObjectFile(buffer->getMemBufferRef());
                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
-                ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> definitions;
-                ::std::size_t reservation{};
-                auto const checked=data->check_object(**parsed,llvm_limits.relocations,reservation,definitions,diagnose);
+                object_evidence evidence{};
+                object_import_mask required{};
+                native_frame_index frame_names;
+                auto const checked=hit?data->check_cached_object(**parsed,*hit,llvm_limits.relocations,diagnose):
+                    data->check_object(**parsed,llvm_limits.relocations,evidence,required,frame_names,diagnose);
                 if(checked!=status::ok)return {{},checked};
-                for(auto const& entry:data->entries_)
-                {
-                    bool raw{},typed{};for(auto const& name:definitions){raw|=name==entry.raw_name;typed|=name==entry.typed_name;}
-                    if(!raw||!typed)return {{},status::native_failure};
-                }
+                auto const reservation=static_cast<::std::size_t>(hit?hit->evidence.arena_bytes:evidence.arena_bytes);
                 // Native object is complete and checked BEFORE an empty loader
                 // engine is created. The original IR never gets compiled twice.
                 if(!hit && key.valid())
@@ -686,7 +535,7 @@
                     using recoverable=::uwvm2::utils::allocator::resource::recoverable_parser_allocations;
                     cache->object.reset();
                     try { fresh=recoverable::prepare_candidate(
-                        [&]{return data->remember_object(scope,key.bytes(),object_bytes,cache_limit,cached_polls,cached_fp);},
+                        [&]{return data->remember_object(scope,key.bytes(),object_bytes,cache_limit,cached_polls,cached_fp,evidence,frame_names,required);},
                         []{return ::uwvm2::utils::container::std_unique_ptr<prepared_object>{};}); }
                     catch(::std::bad_alloc const&){}
                     if(fresh && instance_shape)

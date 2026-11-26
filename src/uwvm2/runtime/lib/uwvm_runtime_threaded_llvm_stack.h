@@ -245,10 +245,19 @@
             }
             return true;
         }
-        [[nodiscard]] bool check_static_stack_object(::llvm::object::ObjectFile const& object)
+        using native_frame_index=::llvm::SmallDenseMap<::llvm::StringRef,::std::size_t,8>;
+        struct object_stack_shape
+        {
+            ::std::size_t maximum_frame{},acyclic_bytes{SIZE_MAX};
+        };
+        [[nodiscard]] bool check_static_stack_object(::llvm::object::ObjectFile const& object,
+            native_frame_index& by_name,object_stack_shape& shape)
         {
             if(!machine_stack_valid_||native_frames_.empty())return false;
             auto cap=entries_.size()*2u+256u;
+            by_name.reserve(native_frames_.size());
+            for(::std::size_t i{};i<native_frames_.size();++i)
+                if(!by_name.try_emplace(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(native_frames_[i].name),i).second)return false;
             ::std::size_t actual_functions{};
             for(auto const& symbol:object.symbols())
             {
@@ -261,11 +270,11 @@
                 if(!section){::llvm::consumeError(section.takeError());return false;}
                 if(!value){::llvm::consumeError(value.takeError());return false;}
                 if(name->empty()||name->size()>256u||*section==object.section_end()||!(*section)->isText()||++actual_functions>cap)return false;
-                native_frame_record* found{};
-                for(auto& frame:native_frames_)if(frame.name==*name)
-                {if(found!=nullptr||frame.section!=UINT64_MAX)return false;found=::std::addressof(frame);}
-                if(found==nullptr)return false; // Every actual body must have a final MFI witness.
-                found->section=(*section)->getIndex();found->offset=*value;
+                auto const found=by_name.find(*name);
+                if(found==by_name.end())return false; // Every actual body must have a final MFI witness.
+                auto& frame=native_frames_[found->second];
+                if(frame.section!=UINT64_MAX)return false;
+                frame.section=(*section)->getIndex();frame.offset=*value;
             }
             if(actual_functions!=native_frames_.size())return false;
             for(auto const& frame:native_frames_)if(frame.section==UINT64_MAX)return false;
@@ -309,10 +318,11 @@
                     for(auto const& relocation:relocation_section.relocations())
                     {
                         if(relocation.getType()!=native_stack_relocation)return false;
-                        raw_record* record{};
-                        for(auto& candidate:parsed)if(candidate.offset==relocation.getOffset())
-                        {if(record!=nullptr)return false;record=&candidate;}
-                        if(record==nullptr||record->relocated)return false;
+                        // Decoding advances by one full record, so offsets are strictly increasing.
+                        auto const slot=relocation.getOffset();
+                        auto record=::std::lower_bound(parsed.begin(),parsed.end(),slot,
+                            [](raw_record const& row,::std::uint64_t wanted){return row.offset<wanted;});
+                        if(record==parsed.end()||record->offset!=slot||record->relocated)return false;
                         auto symbol=relocation.getSymbol();if(symbol==object.symbol_end())return false;
                         auto symbol_section=symbol->getSection();auto value=symbol->getValue();
                         if(!symbol_section){::llvm::consumeError(symbol_section.takeError());return false;}
@@ -330,7 +340,8 @@
                         auto offset=*value+addend;
                         if(offset>=(*symbol_section)->getSize())return false;
                         bool found{};
-                        for(auto& frame:native_frames_)if(frame.section==(*symbol_section)->getIndex()&&frame.offset==offset)
+                        auto const section_index=(*symbol_section)->getIndex();
+                        for(auto& frame:native_frames_)if(frame.section==section_index&&frame.offset==offset)
                         {
                             if(frame.object_bytes!=UINT64_MAX||frame.bytes!=record->bytes)return false;
                             frame.object_bytes=record->bytes;found=true;
@@ -341,12 +352,11 @@
                 if(relocation_sections!=1u)return false;
                 for(auto const& record:parsed)if(!record.relocated)return false;
             }
-            maximum_fixed_frame_=0u;
             for(auto const& frame:native_frames_)
             {
                 if(frame.object_bytes==UINT64_MAX||frame.bytes!=frame.object_bytes||frame.bytes>SIZE_MAX)return false;
                 if(frame.alignment_slack>SIZE_MAX-frame.bytes)return false;
-                maximum_fixed_frame_=(::std::max)(maximum_fixed_frame_,static_cast<::std::size_t>(frame.bytes+frame.alignment_slack));
+                shape.maximum_frame=(::std::max)(shape.maximum_frame,static_cast<::std::size_t>(frame.bytes+frame.alignment_slack));
             }
             // SysV x86 CALL pushes one native pointer (4/8 bytes). Arm BL
             // pushes nothing; saved LR bytes are already in the final MFI.
@@ -358,10 +368,7 @@
             // charge limit+1, including its unsuccessful entry. Native Host/
             // run_entry/compiler stacks remain SEPARATE, unproven boundaries.
             constexpr ::std::size_t return_address=native_call_push;
-            if(maximum_fixed_frame_>SIZE_MAX-return_address||call_limit_==SIZE_MAX)return false;
-            auto const frame_charge=maximum_fixed_frame_+return_address;
-            guest_fixed_stack_charge_=frame_charge>SIZE_MAX/(call_limit_+1u)?
-                SIZE_MAX:frame_charge*(call_limit_+1u);
+            if(shape.maximum_frame>SIZE_MAX-return_address)return false;
             if(native_call_graph_known_&&native_call_names_.size()==native_frames_.size())
             {
                 ::uwvm2::utils::container::std_vector<::std::size_t> costs(native_call_names_.size());
@@ -380,8 +387,18 @@
                 }
                 auto const bound=prove_acyclic_stack(costs,native_call_edges_);
                 if(!bound.valid)return false;
-                if(bound.acyclic)guest_fixed_stack_charge_=(::std::min)(guest_fixed_stack_charge_,bound.bytes);
+                if(bound.acyclic)shape.acyclic_bytes=bound.bytes;
             }
+            return true;
+        }
+        [[nodiscard]] bool apply_object_stack_shape(object_stack_shape const& shape) noexcept
+        {
+            maximum_fixed_frame_=shape.maximum_frame;
+            if(maximum_fixed_frame_>SIZE_MAX-native_call_push||call_limit_==SIZE_MAX)return false;
+            auto const frame_charge=maximum_fixed_frame_+native_call_push;
+            auto const depth=call_limit_+1u;
+            auto const depth_bound=frame_charge>SIZE_MAX/depth?SIZE_MAX:frame_charge*depth;
+            guest_fixed_stack_charge_=(::std::min)(depth_bound,shape.acyclic_bytes);
             return guest_fixed_stack_charge_!=SIZE_MAX;
         }
 #pragma pop_macro("R_ARM_ABS32")
