@@ -14,9 +14,10 @@ credentials, regardless of its debugger permission.
 
 Linux and the product's bundled LLVM full compiler are supported, with the real
 native owner table, CFI and unwind ownership checks retained. One privately owned
-immutable main Wasm image is admitted. No Wasm start section, preloaded module,
-shared memory, imported memory/global/table, resumable checkpoint profile or unknown
-native provider is admitted. A debugger may use the private observation-only profile;
+immutable main Wasm image is admitted. A private reactor may have the static
+WasmMTE data-pointer initializer described below. Other Start functions, preloaded
+modules, shared memory, imported memory/global/table, resumable checkpoint profiles
+and unknown native providers are refused. A debugger may use the private observation-only profile;
 it has no resumable continuation or checkpoint restore authority. An exported `_start` command executes once after authorized launch; an
 update does not rerun it. Synchronous builtin WASIp1 imports may retain their
 explicit contract for function and policy transactions. Other providers are
@@ -36,6 +37,41 @@ from a complete target image at most 64 MiB. Function indices are local indices,
 excluding imported functions. Each body passes the real feature-aware Wasm
 validator and LLVM compiler. Non-code changes cannot be hidden in a function
 permit. Custom sections are included in this comparison.
+
+### Private WasmMTE reactors
+
+An installed `wroc` or `wrocxx` can link a private reactor with ordinary
+Objective-C or Objective-C++ globals. Compile the application with each release's
+business change and link each generation using the same profile and exports.
+The following commands build one generation with the installed Objective-C SDK.
+
+```sh
+wroc --target wasm64_adm16 --core 3.0 --std c17 -O0 -g --mte --eh --no-threads -c sensor.m -o sensor.o
+wroc --target wasm64_adm16 --core 3.0 --std c17 -O0 -g --mte --eh --no-threads --reactor --export _start --export value sensor.o -o sensor.wasm
+```
+
+For an Objective-C++ `.mm` input use `wrocxx --std c++20` with the same profile.
+Use the signed launch options below with the selected memory64, WasmADM and
+WasmMTE module policy. For a function update, authorize the changed **local**
+function index and the entire target file. Keep the same process and launch nonce
+through PREPARE, READY and COMMIT. Business calls use the approved export index.
+
+After full validation, the manager decodes a local, argument-free Start whose
+entire body consists of same-width 32- or 64-bit static pointer relocations.
+There is one private tagged memory. Each store addresses a distinct initialized
+word in its active data. Each source base lies in a declared static allocation.
+An optional signed addend may select another byte or the one-past address of that
+allocation. The actual slot must contain that raw address. The VM proves all
+destination tags and preimages before applying any relocation. It uses the
+owner's runtime tag geometry and allocation tags, including at one-past addresses.
+The linker function name has no role in admission.
+
+Cold initialization precedes the signed launch. The manager fixes the Start
+body for the lifetime of the instance. An independently selected command runs
+once after LAUNCH. Function updates preserve live pointer words, pointees and
+tags. To change the initializer or its data layout, use a fresh authorized
+deployment. Run `python3 test/0017.runtime/run_signed_memtag_relocations.py --vm PATH --out DIR`
+to exercise signed publication, live state and refusal cases. [中文用法](production-update.zh.md)
 
 `parser.limit.module-code-bytes` counts one encoded body per local function,
 from the local declarations through the final `end`. PREPARE checks every
