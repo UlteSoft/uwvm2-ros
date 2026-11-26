@@ -117,7 +117,7 @@
                 for(auto const& block:function)for(auto const& instruction:block)
                     if(auto const* call=::llvm::dyn_cast<::llvm::CallBase>(&instruction))
                     {
-                        if(call->isInlineAsm())continue; // Already restricted to the empty memory-clobber barrier.
+                        if(call->isInlineAsm())continue; // Control admission only allows the memory barrier and fixed scalar MOVs.
                         auto const* callee=fixed_call_target(*call);
                         if(callee==nullptr){native_call_graph_known_=false;continue;}
                         if(callee->isDeclaration())continue; // Audited native host bridges have a separate stack boundary.

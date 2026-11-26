@@ -12003,6 +12003,7 @@ struct llvm_jit_simd_scalar_traits<::uwvm2::runtime::compiler::shared::wasm1p1_s
 };
 
 #include "memory_emit.h"
+#include "threaded_scalar_move.h"
 #include "simd_emit.h"
 
 // SIMD arithmetic is lowered to target-independent vector IR. Buffers are reserved for provider/pinned-allocation
@@ -13456,35 +13457,32 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
             auto type{get_llvm_type_from_wasm_value_type(llvm_context, result_type)};
             if(type == nullptr || load_bytes * 8uz > type->getScalarSizeInBits()) { return nullptr; }
             auto integer_type{ir_builder.getIntNTy(static_cast<unsigned>(load_bytes * 8uz))};
+            ::llvm::Value* value{};
             if(threaded_host_emission_scope::selected())
             {
-                // Threaded profile plain shared accesses may tear, but cannot
-                // be LLVM non-atomic races with another guest/Host byte copy.
-                // Actual atomic Wasm opcodes retain their separate SC lowering.
-                auto i8{ir_builder.getInt8Ty()};
-                auto bytes{ir_builder.CreatePointerCast(pointer,get_llvm_pointer_type(i8))};
-                ::llvm::Value* assembled{::llvm::ConstantInt::get(integer_type,0u)};
-                for(::std::size_t i{};i<load_bytes;++i)
+                value = emit_threaded_scalar_move(ir_builder, pointer, integer_type);
+                if(value == nullptr)
                 {
-                    auto cell{ir_builder.CreateGEP(i8,bytes,ir_builder.getInt64(i))};
-                    auto byte{ir_builder.CreateLoad(i8,cell,"threaded.plain.load.byte")};
-                    byte->setAtomic(::llvm::AtomicOrdering::Monotonic);
-                    byte->setAlignment(::llvm::Align{1u});byte->setVolatile(true);
-                    auto widened{ir_builder.CreateZExtOrTrunc(byte,integer_type)};
-                    if(i!=0u)widened=ir_builder.CreateShl(widened,i*8u);
-                    assembled=ir_builder.CreateOr(assembled,widened);
+                    auto i8{ir_builder.getInt8Ty()};
+                    auto bytes{ir_builder.CreatePointerCast(pointer, get_llvm_pointer_type(i8))};
+                    value = ::llvm::ConstantInt::get(integer_type, 0u);
+                    for(::std::size_t i{}; i < load_bytes; ++i)
+                    {
+                        auto cell{ir_builder.CreateGEP(i8, bytes, ir_builder.getInt64(i))};
+                        auto byte{ir_builder.CreateAlignedLoad(i8, cell, ::llvm::Align{1u}, true, "threaded.plain.load.byte")};
+                        byte->setAtomic(::llvm::AtomicOrdering::Monotonic);
+                        auto widened{ir_builder.CreateZExtOrTrunc(byte, integer_type)};
+                        if(i != 0u) { widened = ir_builder.CreateShl(widened, i * 8u); }
+                        value = ir_builder.CreateOr(value, widened);
+                    }
                 }
-                if(type->isFloatingPointTy())
-                {
-                    if(load_bytes*8uz!=type->getScalarSizeInBits())return nullptr;
-                    return ir_builder.CreateBitCast(assembled,type);
-                }
-                return ir_builder.CreateIntCast(assembled,type,signed_load);
             }
-            auto load{ir_builder.CreateLoad(integer_type, ir_builder.CreatePointerCast(pointer, get_llvm_pointer_type(integer_type)), "memory.load")};
-            load->setAlignment(alignment);
-            load->setVolatile(true);
-            auto value{simd_ir::emitter{ir_builder}.endian(load)};
+            else
+            {
+                auto load{ir_builder.CreateAlignedLoad(integer_type, ir_builder.CreatePointerCast(pointer, get_llvm_pointer_type(integer_type)),
+                    alignment, true, "memory.load")};
+                value = simd_ir::emitter{ir_builder}.endian(load);
+            }
             if(type->isFloatingPointTy())
             {
                 if(load_bytes * 8uz != type->getScalarSizeInBits()) { return nullptr; }
@@ -13494,7 +13492,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
         }};
     auto const emit_direct_memory_store_value{
         [&](::llvm::Value* pointer, runtime_operand_stack_value_type value_type, ::llvm::Value* value,
-            ::std::size_t store_bytes, ::llvm::Align alignment) noexcept -> ::llvm::StoreInst*
+            ::std::size_t store_bytes, ::llvm::Align alignment) noexcept -> ::llvm::Instruction*
         {
             static_cast<void>(value_type);
             if(pointer == nullptr || value == nullptr ||
@@ -13506,6 +13504,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
             if(threaded_host_emission_scope::selected())
             {
                 auto integer{ir_builder.CreateIntCast(value_bits,integer_type,false)};
+                if(auto* move{emit_threaded_scalar_move(ir_builder, pointer, integer_type, integer)}) { return move; }
                 auto i8{ir_builder.getInt8Ty()};
                 auto bytes{ir_builder.CreatePointerCast(pointer,get_llvm_pointer_type(i8))};
                 ::llvm::StoreInst* last{};

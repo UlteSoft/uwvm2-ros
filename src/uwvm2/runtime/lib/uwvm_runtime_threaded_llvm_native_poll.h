@@ -114,7 +114,9 @@
                     auto& summary=blocks[&block];
                     for(auto& inst:block)
                     {
-                        if(!::llvm::isa<::llvm::CallBase>(inst))continue;
+                        auto const* effect=::llvm::dyn_cast<::llvm::CallBase>(&inst);
+                        // This exact MOV touches only guest data and cannot change the active child or poll scope.
+                        if(!effect || emit::is_threaded_scalar_move(*effect))continue;
                         bool const first=!summary.has_call;
                         summary.has_call=true;
                         auto* call=::llvm::dyn_cast<::llvm::CallInst>(&inst);
