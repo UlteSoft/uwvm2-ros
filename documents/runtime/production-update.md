@@ -190,7 +190,12 @@ lease is acknowledged before processing subsequent management requests.
 The effective contract is SHA-256 of the approved external reference followed by
 the VM's canonical effective-policy fingerprint. The latter includes the actual
 module binding, exact interfaces, operations, limits, approved args/env and native
-resource incarnations. Dynamic consumption, offsets and normal close operations
+resource incarnations. Version 6 of the execution-safety measurement includes
+the active main module's effective `parser.limit.input-bytes` as a little-endian
+64-bit parser limit. It binds the module setting after the process per-file
+ceiling and host addressable extent have been applied. The live and projected
+contracts use this encoding. The supervisor signs the effective contract returned
+by this VM generation. Dynamic consumption, offsets and normal close operations
 do not replenish the contract. Prepare, READY and publication recheck the actual
 base policy. For a policy transaction the target reference and exact policy bytes
 are signed; the VM computes the target effective contract and seals it into the

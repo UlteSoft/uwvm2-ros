@@ -188,7 +188,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::input
             if(parameters.resolve_module_policy)
             {
                 input_options::visit_layers(name, [&](input_options::layer const& layer)
-                { if(layer.input_bytes) { limit = *layer.input_bytes; } });
+                { limit = layer.counts[input_options::parser_input_index].value_or(limit); });
             }
             return input_resource::parser_input_limit(limit);
         }
