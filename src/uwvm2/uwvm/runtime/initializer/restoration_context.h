@@ -974,7 +974,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 details::check_reserve_limit_in_context(world_, u8"declaration_modules", declared_count, limits_.max_runtime_modules);
                 details::check_reserve_limit_in_context(world_, u8"runtime_modules", wasm_count, limits_.max_runtime_modules);
                 auto& declared{source_->checkpoint_declarations_};
-                auto insert = [&](auto const& file, ::uwvm2::uwvm::wasm::type::module_type_t kind) noexcept
+                declared.reserve(declared_count);
+                auto insert = [&](auto const& file, ::uwvm2::uwvm::wasm::type::module_type_t kind)
                 {
                     if(file.binfmt_ver != 1u || !file.has_owned_source_image()) { return false; }
                     return declared.try_emplace(file.module_name, ::uwvm2::uwvm::wasm::type::all_module_t{
@@ -1003,10 +1004,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 details::check_reserve_limit_in_context(world_, u8"import_reset_modules",
                     ::uwvm2::uwvm::wasm::storage::configured_module_import_reset.size(), limits_.max_runtime_modules);
                 copy_native_policy();
-                auto const dependencies{::uwvm2::uwvm::wasm::loader::
-                    build_dependency_graph_and_check_import_exist_and_construct_all_module_export_in_context(world_)};
-                if(dependencies.ok != ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl::ok)
-                { return state_ = skeleton_result::dependency_error; }
+                using graph_status = ::uwvm2::uwvm::wasm::loader::load_and_check_modules_rtl;
+                auto const graph{::uwvm2::uwvm::wasm::loader::
+                    build_dependency_graph_and_check_import_exist_and_construct_all_module_export_in_context(world_).ok};
+                if(graph == graph_status::resource_limit) { details::initializer_metadata_failure<purpose>(); }
+                if(graph != graph_status::ok) { return state_ = skeleton_result::dependency_error; }
                 details::mmap_reservation_plan reservation_plan{};
                 reservation_plan.defer_owner_mapping = true;
                 reservation_plan.live_predecessor = ::std::addressof(predecessor.registry());

@@ -102,7 +102,7 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 {
-    extern "C++" { class restoration_context; class ThreadedChildWorld; }
+    extern "C++" { class restoration_context; class ThreadedChildWorld; class ThreadedMainActiveSegments; }
 }
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
@@ -1101,9 +1101,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        inline constexpr void check_reserve_limit_in_context(initialization_context<Purpose>& world, ::uwvm2::utils::container::u8string_view reserve_name, ::std::size_t requested, ::std::size_t limit) noexcept
+        inline constexpr void check_reserve_limit_in_context(initialization_context<Purpose>& world, ::uwvm2::utils::container::u8string_view reserve_name, ::std::size_t requested, ::std::size_t limit) noexcept(Purpose == initialization_purpose::ordinary)
         {
-            if(requested > limit) [[unlikely]] { fatal_reserve_limit_exceeded_in_context(world, reserve_name, requested, limit); }
+            if(requested > limit) [[unlikely]]
+            {
+                if constexpr(Purpose == initialization_purpose::ordinary) { fatal_reserve_limit_exceeded_in_context(world, reserve_name, requested, limit); }
+                else { initializer_metadata_failure<Purpose>(); }
+            }
         }
 
         inline constexpr void check_reserve_limit(::uwvm2::utils::container::u8string_view reserve_name, ::std::size_t requested, ::std::size_t limit) noexcept
@@ -2561,6 +2565,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         }
                         if(status != gc_status::ok) [[unlikely]]
                         {
+                            if constexpr(Purpose != initialization_purpose::ordinary)
+                            {
+                                if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
+                                { initializer_metadata_failure<Purpose>(); }
+                            }
                             // A validated Guest can request an array that does not fit in native
                             // address space or available memory. This is an instantiation resource
                             // failure, not a broken evaluator/store invariant. Keep all other GC
@@ -7722,13 +7731,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         enum class active_segment_result { ok, data_out_of_bounds, table_out_of_bounds, memtag_initialization_failed };
+        enum class active_segment_pass { all, child_private_storage, child_imported_data };
 
-        template <initialization_purpose Purpose>
+        template <active_segment_pass Pass = active_segment_pass::all, initialization_purpose Purpose>
         [[nodiscard]] inline constexpr active_segment_result apply_wasm1_active_element_and_data_segments_for_module_in_context(initialization_context<Purpose>& world,
             ::uwvm2::utils::container::u8string_view curr_module_name,
-            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt,
-            bool defer_imported_data = false) noexcept(Purpose == initialization_purpose::ordinary)
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary || Pass == active_segment_pass::child_imported_data)
         {
+            static_assert(Pass == active_segment_pass::all || Purpose == initialization_purpose::threaded_child);
             ::uwvm2::runtime::gc::scoped_gc_root_graph_administration gc_administration{};
             curr_rt.gc_collection_phase.publish_active_segments(false);
             using table_elem_type = ::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_type_t;
@@ -7748,13 +7758,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::std::size_t elem_active_applied{};
                 ::std::size_t data_active_applied{};
 
-                materialize_wasm1p1_element_expr_payloads_in_context(world, curr_rt);
+                if constexpr(Pass != active_segment_pass::child_imported_data)
+                { materialize_wasm1p1_element_expr_payloads_in_context(world, curr_rt); }
 
                 // element (wasm1: active segments)
                 for(auto& elem_seg: curr_rt.local_defined_element_vec_storage)
                 {
                     auto& elem{elem_seg.element};
-                    if(elem.kind != ::uwvm2::uwvm::runtime::storage::wasm_element_segment_kind::active || ::uwvm2::uwvm::runtime::storage::wasm_element_segment_is_dropped(elem)) { continue; }
+                    if(Pass == active_segment_pass::child_imported_data || elem.kind != ::uwvm2::uwvm::runtime::storage::wasm_element_segment_kind::active ||
+                       ::uwvm2::uwvm::runtime::storage::wasm_element_segment_is_dropped(elem)) { continue; }
                     ++elem_active_applied;
 
                     if(elem_seg.element_type_ptr != nullptr)
@@ -8076,10 +8088,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     // A private child is compiled before its native worker is
                     // admitted. Shared writes belong to that worker's actual
                     // instantiation turn, not to the cold compiler job.
-                    if(defer_imported_data && data.memory_idx < curr_rt.imported_memory_vec_storage.size()) { continue; }
+                    if(Pass == active_segment_pass::child_private_storage && data.memory_idx < curr_rt.imported_memory_vec_storage.size()) { continue; }
                     ++data_active_applied;
 
-                    if(data_seg.data_type_ptr != nullptr)
+                    // The private child already finalized every offset against its linked immutable globals.
+                    // Its worker still resolves the live memory, checks its current extent, writes and drops in order.
+                    if(Pass != active_segment_pass::child_imported_data && data_seg.data_type_ptr != nullptr)
                     {
                         auto const& expr{data_seg.data_type_ptr->storage.segment.expr};
                         if(expr.opcodes.size() > 1uz ||

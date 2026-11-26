@@ -84,7 +84,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         ok,
         module_dependency_error,
         duplicate_module_name,
-        local_imported_module_init_error
+        local_imported_module_init_error,
+        resource_limit
     };
 
     [[nodiscard]] inline constexpr bool permits_registered_modules(::std::size_t additional = 0uz, ::std::size_t* count = nullptr) noexcept
@@ -355,7 +356,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         if(all_module_size > limits.max_runtime_modules)
         {
             ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: runtime_modules limit exceeded before graph allocation.");
-            return {load_and_check_modules_rtl::module_dependency_error, {}};
+            return {load_and_check_modules_rtl::resource_limit, {}};
         }
         ::std::size_t remaining_edges{limits.max_dependency_edges};
         adjacency_list_t adjacency_list{};
@@ -523,7 +524,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                         if(remaining_edges == 0uz)
                                         {
                                             ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: dependency_edges limit exceeded.");
-                                            return {load_and_check_modules_rtl::module_dependency_error, {}};
+                                            return {load_and_check_modules_rtl::resource_limit, {}};
                                         }
                                         --remaining_edges;
                                         seen_import_modules.insert(import_module_name);
@@ -1053,7 +1054,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
     catch(::std::bad_alloc const&)
     {
         ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: dependency/export graph exceeds the initializer metadata budget.");
-        return {load_and_check_modules_rtl::module_dependency_error, {}};
+        return {load_and_check_modules_rtl::resource_limit, {}};
     }
 #endif
 

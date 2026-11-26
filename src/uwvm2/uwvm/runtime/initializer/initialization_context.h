@@ -5,7 +5,7 @@
 extern ::uwvm2::utils::container::u8string_view current_initializing_module_name;
 extern bool import_alias_sanity_checked;
 
-enum class initialization_purpose : unsigned char { ordinary, unpublished_restore, threaded_child };
+enum class initialization_purpose : unsigned char { ordinary, unpublished_restore, threaded_child, threaded_main };
 
 template <initialization_purpose Purpose>
 class initialization_context final
@@ -220,13 +220,11 @@ public:
         ::uwvm2::uwvm::runtime::storage::gc_function_type_match_callback callback) const ;
 };
 
-// The ordinary specialization is EMPTY: no staged pointers, member zeroing,
-// source pins or runtime purpose branch can enter existing initialization/GC callbacks.
-template<>
-class initialization_context<initialization_purpose::ordinary> final
+// Both entry points borrow the selected registry. Threaded main can reject
+// allocation during its exclusive startup turn before publishing a worker.
+class selected_initialization_world
 {
 public:
-    constexpr initialization_context() noexcept = default;
     [[nodiscard]] static constexpr auto& modules() noexcept
     { return ::uwvm2::uwvm::runtime::storage::active_runtime_registry(); }
     [[nodiscard]] static constexpr auto& declarations() noexcept
@@ -252,6 +250,19 @@ public:
     { return ::uwvm2::uwvm::wasm::storage::find_configured_import_reset_const(name, imported_module, imported_name); }
     [[nodiscard]] static constexpr auto const* find_memory_limit(::uwvm2::utils::container::u8string_view name) noexcept
     { return ::uwvm2::uwvm::wasm::storage::find_configured_module_memory_limit_const(name); }
+};
+
+template<>
+class initialization_context<initialization_purpose::threaded_main> final : public selected_initialization_world
+{
+    friend class ::uwvm2::uwvm::runtime::initializer::ThreadedMainActiveSegments;
+    constexpr initialization_context() noexcept = default;
+};
+
+template<>
+class initialization_context<initialization_purpose::ordinary> final : public selected_initialization_world
+{
+public:
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store> make_store(
         ::uwvm2::uwvm::runtime::storage::gc_type::recursive_type_section const& section,
         ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner> const& leases,

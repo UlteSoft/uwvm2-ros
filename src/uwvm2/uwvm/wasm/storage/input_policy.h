@@ -105,7 +105,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::input
         ReadAt& read_at;
         ::std::size_t extent;
         ::std::size_t base{}, length{};
-        char8_t buffer[capacity];
+        char8_t buffer[capacity]{};
         bool failed{};
 
         input_name window(::std::size_t at, ::std::size_t count)

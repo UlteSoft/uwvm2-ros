@@ -48,7 +48,7 @@ namespace mt_init
 // The type of each local definition selects its shadow. Imported globals
 // descriptors are bound to that same definition after type-checked linking.
 template<initialization_purpose Purpose>
-[[nodiscard]] inline bool plan_linked_memtag(initialization_context<Purpose>& world, mt_init::linked_plan& linked) noexcept
+[[nodiscard]] inline bool plan_linked_memtag(initialization_context<Purpose>& world, mt_init::linked_plan& linked) noexcept(Purpose == initialization_purpose::ordinary)
 #ifdef UWVM_CPP_EXCEPTIONS
 try
 #endif
@@ -177,7 +177,11 @@ try
 }
 
 #ifdef UWVM_CPP_EXCEPTIONS
-catch(::std::bad_alloc const&) { return mt_init::error({},u8"linked memory metadata exceeds the initializer byte budget"); }
+catch(::std::bad_alloc const&)
+{
+    if constexpr(Purpose == initialization_purpose::ordinary) { return mt_init::error({},u8"linked memory metadata exceeds the initializer byte budget"); }
+    else { throw; }
+}
 #endif
 
 [[nodiscard]] inline bool configure_owner_addressing(mt_init::owner& record, ::uwvm2::utils::container::u8string_view module_name,

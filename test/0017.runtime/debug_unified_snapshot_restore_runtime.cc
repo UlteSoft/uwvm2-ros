@@ -6,6 +6,7 @@
 #include <uwvm2/uwvm/cmdline/callback/impl.h>
 #include <uwvm2/utils/control/debug_permissions.h>
 #include <uwvm2/utils/control/owned_file_image.h>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/runtime/checkpoint/materialization.h>
 #include <uwvm2/runtime/gc/entry_admission.h>
 #include <uwvm2/uwvm/debugger/checkpoint_codec.h>
@@ -158,6 +159,10 @@ int main(int argc, char** argv)
     if(!::uwvm2test::mandatory_native::arguments(argc, argv)) { return 64; }
     if(argc != 2) { return 64; }
 
+    namespace budget = ::uwvm2::utils::allocator::resource;
+    constexpr auto initializer_pool{static_cast<unsigned>(budget::pool::initializer)};
+    constexpr auto initializer_bytes{1uz << 20u};
+    budget::policies[initializer_pool] = {initializer_bytes, initializer_bytes};
     REQUIRE(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
         ::uwvm2::utils::control::debug_permissions::permission_level::full));
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
@@ -292,6 +297,19 @@ int main(int argc, char** argv)
         refused.preparation.data_error==cp::error::non_replayable_import);
     REQUIRE(lib::observe_compiler_runtime_generation_host_api()==epoch &&
         state->control->wait_until_paused(ticket,deadline())==threads::cooperative_pause_result::paused);
+    auto const predecessor_bytes{budget::live_bytes[initializer_pool].load()};
+    {
+        auto const predecessor{full::selected_full_source_owner_pin()};
+        REQUIRE(predecessor && predecessor_bytes < initializer_bytes);
+        budget::reservation<budget::pool::initializer> concurrent{};
+        REQUIRE(concurrent.resize(initializer_bytes - predecessor_bytes));
+        auto const limited{lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,prepare_request,deadline())};
+        REQUIRE(limited.status == outcome::preparation_declined && !limited.operation &&
+            limited.preparation.status == lib::llvm_jit_checkpoint_prepare_status::resource_preparation_declined);
+        REQUIRE(full::selected_full_source_owner_pin() == predecessor && lib::observe_compiler_runtime_generation_host_api() == epoch);
+        REQUIRE(budget::live_bytes[initializer_pool].load() == initializer_bytes);
+    }
+    REQUIRE(budget::live_bytes[initializer_pool].load() == predecessor_bytes);
     { ::std::lock_guard lock{state->mutex};state->collecting=false; }
     auto ready=lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,prepare_request,deadline());
     ::fast_io::io::perrln("PREPARE status=",unsigned(ready.status)," prepare=",unsigned(ready.preparation.status),

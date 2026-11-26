@@ -10,7 +10,7 @@
 namespace uwvm2::uwvm::runtime::initializer
 {
     enum class threaded_main_active_status : unsigned char
-    { applied, invalid_identity, invalid_reservation, already_effectful, unsupported_shape, bounds, stopped };
+    { applied, invalid_identity, invalid_reservation, already_effectful, unsupported_shape, bounds, stopped, allocation_failure };
 
     class ThreadedMainActiveSegments final
     {
@@ -139,16 +139,23 @@ namespace uwvm2::uwvm::runtime::initializer
             }
             if(stopped())return threaded_main_active_status::stopped;
             native.shared_effects_started_.store(true,::std::memory_order_release);
-            for(::std::size_t position{};position<parent_world->module_count();++position)
+            using recovery = ::uwvm2::utils::allocator::resource::recoverable_parser_allocations;
+            recovery allocations{};
+            try
             {
-                auto const m=parent_world->initialization_module_at(position);
-                if(m>=parent_world->module_count())return threaded_main_active_status::invalid_identity;
-                auto& member=registry.find(parent_world->file(m)->module_name)->second;
-                details::initialization_context<details::initialization_purpose::ordinary> context{};
-                if(details::apply_wasm1_active_element_and_data_segments_for_module_in_context(
-                    context,parent_world->file(m)->module_name,member)!=details::active_segment_result::ok)
-                    return threaded_main_active_status::bounds;
+                for(::std::size_t position{};position<parent_world->module_count();++position)
+                {
+                    auto const m=parent_world->initialization_module_at(position);
+                    if(m>=parent_world->module_count())return threaded_main_active_status::invalid_identity;
+                    auto& member=registry.find(parent_world->file(m)->module_name)->second;
+                    details::initialization_context<details::initialization_purpose::threaded_main> context{};
+                    auto const applied{details::apply_wasm1_active_element_and_data_segments_for_module_in_context(
+                        context,parent_world->file(m)->module_name,member)};
+                    if(recovery::comparison_refused()) { return threaded_main_active_status::allocation_failure; }
+                    if(applied != details::active_segment_result::ok) { return threaded_main_active_status::bounds; }
+                }
             }
+            catch(::std::bad_alloc const&) { return threaded_main_active_status::allocation_failure; }
             // Pure preload has no data/table/start effects to execute. Publish
             // actual instance phases only after all main writes/drop complete.
             // The same source registry remained exclusive under Root's retained

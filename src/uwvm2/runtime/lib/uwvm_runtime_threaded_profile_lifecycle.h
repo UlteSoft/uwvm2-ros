@@ -792,6 +792,8 @@
                                 static_cast<::std::uint32_t>(::uwvm2::runtime::diagnostic::crash::category::execution),0u,entry_,0u});
                             return {completion::rejected,{},EINVAL};
                         }
+                        if(initialized==active_status::allocation_failure)
+                            return fail(completion::rejected,ENOMEM,termination::preparation_rejected);
                         if(initialized==active_status::unsupported_shape || initialized==active_status::stopped)
                             return fail(completion::rejected,EINVAL,termination::preparation_rejected);
                         return fail(completion::rejected,EINVAL);

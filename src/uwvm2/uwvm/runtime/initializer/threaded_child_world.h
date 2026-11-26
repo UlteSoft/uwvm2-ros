@@ -118,6 +118,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         using owner = ::std::shared_ptr<ThreadedChildWorld const>;
         struct result { threaded_child_error error; owner world; };
     private:
+        template<typename Create>
+        [[nodiscard]] static result prepare_world(Create&& create)
+        {
+            auto refused = [] { return result{threaded_child_error::allocation_failure, {}}; };
+            try { return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate(create, refused); }
+            catch(::std::bad_alloc const&) { return refused(); }
+        }
         using store_type = ::uwvm2::uwvm::runtime::storage::gc_object_store;
         using reference = ::uwvm2::uwvm::runtime::storage::gc_reference;
         using memory_type = ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t;
@@ -291,7 +298,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 auto* member = m == 0u ? self : self->peers_[m - 1u].get();
                 auto context = member->context();
-                auto result = details::apply_wasm1_active_element_and_data_segments_for_module_in_context(
+                auto result = details::apply_wasm1_active_element_and_data_segments_for_module_in_context<details::active_segment_pass::child_imported_data>(
                     context, member->file_->module_name, *member->module_);
                 if(result != details::active_segment_result::ok) { return result; }
             }
@@ -406,31 +413,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { return {threaded_child_error::invalid_admission, {}}; }
             auto account{threaded_allocation_pin::create(admission.limits().max_child_storage_bytes)};
             if(!account) { return {threaded_child_error::allocation_failure, {}}; }
-            try
+            return prepare_world([&]() -> result
             {
-            auto child{::std::allocate_shared<ThreadedChildWorld>(threaded_std_allocator<ThreadedChildWorld>{account}, ::std::move(retained), account)};
-            child->self_ = child;
-            module_type const* selected{};
-            for(auto const& [name,module]:child->source_->registry())
-            {
-                static_cast<void>(name);
-                if(child->source_->bound_initialized_module_id(::std::addressof(module))==source_id)
-                { selected=::std::addressof(module);break; }
-            }
-            if(!selected || !child->source_->actual_validated_file(source_id,
-                admission.source_validation_epoch(),selected))
-            { return {threaded_child_error::invalid_source,{}}; }
-            child->parent_=selected;child->source_id_=source_id;
-            auto const error{child->preflight()};
-            if(error != threaded_child_error::ok) { return {error, {}}; }
-            auto const initialized{child->build()};
-            if(initialized != threaded_child_error::ok) { return {initialized, {}}; }
-            auto const linked{child->build_graph()};
-            if(linked != threaded_child_error::ok) { return {linked, {}}; }
-            if(!child->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
-            return {threaded_child_error::ok, ::std::move(child)};
-            }
-            catch(::std::bad_alloc const&) { return {threaded_child_error::allocation_failure, {}}; }
+                auto child{::std::allocate_shared<ThreadedChildWorld>(threaded_std_allocator<ThreadedChildWorld>{account}, ::std::move(retained), account)};
+                child->self_ = child;
+                module_type const* selected{};
+                for(auto const& [name,module]:child->source_->registry())
+                {
+                    static_cast<void>(name);
+                    if(child->source_->bound_initialized_module_id(::std::addressof(module))==source_id)
+                    { selected=::std::addressof(module);break; }
+                }
+                if(!selected || !child->source_->actual_validated_file(source_id,
+                    admission.source_validation_epoch(),selected))
+                { return {threaded_child_error::invalid_source,{}}; }
+                child->parent_=selected;child->source_id_=source_id;
+                auto const error{child->preflight()};
+                if(error != threaded_child_error::ok) { return {error, {}}; }
+                auto const initialized{child->build()};
+                if(initialized != threaded_child_error::ok) { return {initialized, {}}; }
+                auto const linked{child->build_graph()};
+                if(linked != threaded_child_error::ok) { return {linked, {}}; }
+                if(!child->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
+                return {threaded_child_error::ok, ::std::move(child)};
+            });
         }
         // The main thread must also use a cancellation-aware profile engine.
         // Its storage is the actual already-initialized parent, not a second
@@ -444,22 +450,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { return {threaded_child_error::invalid_admission, {}}; }
             auto account{threaded_allocation_pin::create(admission.limits().max_child_storage_bytes)};
             if(!account) { return {threaded_child_error::allocation_failure, {}}; }
-            try
+            return prepare_world([&]() -> result
             {
-            auto parent{::std::allocate_shared<ThreadedChildWorld>(threaded_std_allocator<ThreadedChildWorld>{account}, ::std::move(retained), account)};
-            parent->kind_ = storage_kind::actual_parent;
-            parent->self_ = parent;
-            auto const error{parent->preflight()};
-            if(error != threaded_child_error::ok) { return {error, {}}; }
-            parent->module_view_ = parent->parent_;
-            parent->public_modules_.bind(parent->file_->module_name, *parent->parent_);
-            if(!parent->verify_thread_entry()) { return {threaded_child_error::invalid_thread_entry, {}}; }
-            auto const linked{parent->build_graph()};
-            if(linked != threaded_child_error::ok) { return {linked, {}}; }
-            if(!parent->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
-            return {threaded_child_error::ok, ::std::move(parent)};
-            }
-            catch(::std::bad_alloc const&) { return {threaded_child_error::allocation_failure, {}}; }
+                auto parent{::std::allocate_shared<ThreadedChildWorld>(threaded_std_allocator<ThreadedChildWorld>{account}, ::std::move(retained), account)};
+                parent->kind_ = storage_kind::actual_parent;
+                parent->self_ = parent;
+                auto const error{parent->preflight()};
+                if(error != threaded_child_error::ok) { return {error, {}}; }
+                parent->module_view_ = parent->parent_;
+                parent->public_modules_.bind(parent->file_->module_name, *parent->parent_);
+                if(!parent->verify_thread_entry()) { return {threaded_child_error::invalid_thread_entry, {}}; }
+                auto const linked{parent->build_graph()};
+                if(linked != threaded_child_error::ok) { return {linked, {}}; }
+                if(!parent->issue_validated_code()) { return {threaded_child_error::declaration_mismatch, {}}; }
+                return {threaded_child_error::ok, ::std::move(parent)};
+            });
         }
         [[nodiscard]] registry_type const& registry() const noexcept
         { return public_modules_; }
@@ -1447,7 +1452,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         // Prepare child-local state now, retaining imported active data until
         // this instance's real native execution turn. Every new instance must
         // apply those segments, including their implicit data.drop.
-        if(details::apply_wasm1_active_element_and_data_segments_for_module_in_context(world, file_->module_name, *module_, true) !=
+        if(details::apply_wasm1_active_element_and_data_segments_for_module_in_context<details::active_segment_pass::child_private_storage>(
+               world, file_->module_name, *module_) !=
            details::active_segment_result::ok)
         { return threaded_child_error::unsupported_initialization_shape; }
         // Independent LLVM engines cold-bind their OWN compact table views;

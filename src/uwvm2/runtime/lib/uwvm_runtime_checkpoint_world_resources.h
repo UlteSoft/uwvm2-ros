@@ -1148,7 +1148,13 @@ extern "C++"
         {
             namespace cp=checkpoint_world_data::cp;
             if(!source_type::has_canonical_owner(original) || actual_epoch==0u || maximum_native_bytes==0u || !current_profile) { return {}; }
-            try
+            using transaction_owner = ::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_world_transaction>;
+            auto allocation_failed = [&]() -> transaction_owner
+            {
+                diagnostic.resource_diagnostic = static_cast<unsigned>(preparation_status::allocation_failed);
+                return {};
+            };
+            auto prepare = [&]() -> transaction_owner
             {
                 // Validation/semantic comparison allocate bounded cold scratch.
                 // Keep them inside the real rollback exception boundary; a
@@ -1179,7 +1185,12 @@ extern "C++"
                 auto const remaining{maximum_native_bytes-result->native_bytes_};
                 auto const source_cap{static_cast<::std::size_t>((::std::min)(remaining,static_cast<::std::uint64_t>(maximum_original_source_bytes)))};
                 auto copied{context_type::prepare_owned_original_source(original,actual_epoch,source_cap)};
-                if(copied.status!=context_type::source_copy_status::prepared_unpublished || !copied.source) { return {}; }
+                if(copied.status!=context_type::source_copy_status::prepared_unpublished || !copied.source)
+                {
+                    if(copied.status == context_type::source_copy_status::copy_failed) { result->phase_ = preparation_status::allocation_failed; }
+                    if(copied.status == context_type::source_copy_status::source_limit) { result->phase_ = preparation_status::quota_exceeded; }
+                    return {};
+                }
                 result->prepared_source_=::std::move(copied.source);result->phase_=preparation_status::source_prepared;
                 if(!result->charge_native(result->prepared_source_->file_.source_size(),1u)) { return {}; }
                 for(auto const& file:result->prepared_source_->preload_files_)
@@ -1190,7 +1201,9 @@ extern "C++"
                    !result->reserve_all_gc_shells() || !result->build_pending_bridges() || !result->build_all_exceptions() ||
                    !result->fill_all_gc_shells() || !result->fill_all_instance_resources()) { return {}; }
                 return result; // DATA only; no old native frame/store owner escapes.
-            }
+            };
+            try { return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate(prepare, allocation_failed); }
+            catch(::std::bad_alloc const&) { return allocation_failed(); }
             catch(...) { return {}; } // private RAII rollback, original world not mutated.
         }
         [[nodiscard]] bool prepare_all_native_engines(
