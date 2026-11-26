@@ -218,6 +218,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             maximum_code_bytes=::uwvm2::utils::allocator::resource::module_code_bytes;
         }
 
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        {
+            auto const& limits{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(fs_para).parser_limit};
+            maximum_body_bytes = ::std::min(maximum_body_bytes, limits.max_function_body_bytes);
+            maximum_code_bytes = ::std::min(maximum_code_bytes, limits.max_module_code_bytes);
+        }
+
         // There is no need to check code_count > sz max here, as it automatically satisfies the condition since it matches the function size.
         check_encoded_count(code_count, 2uz, code_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_code_count, err);
         count_section_storage(module_storage, fs_para, code_count, sizeof(typename decltype(codesec.codes)::value_type), section_curr, err);

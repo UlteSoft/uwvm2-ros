@@ -31,6 +31,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         ::std::size_t error_offset{};
         ::std::size_t requested{}, limit{};
         bool type_count_limit{};
+        ::std::size_t metadata_bytes{};
     };
     namespace recursive_binary_details
     {
@@ -45,13 +46,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             ::std::size_t maximum_metadata_bytes{512uz << 20u};
             ::std::size_t allocated_metadata_bytes{};
             ::std::size_t allocated_types{};
-            template<typename T> inline constexpr bool admit(::std::size_t count) noexcept
+            template<typename T> inline constexpr bool admit(::std::size_t count, ::std::size_t width = sizeof(T)) noexcept
             {
-                if(count > (maximum_metadata_bytes-allocated_metadata_bytes)/sizeof(T))
+                if(count > (maximum_metadata_bytes-allocated_metadata_bytes)/width)
                 {
                     fail(recursive_type_binary_error::resource_limit);
                     status.limit=maximum_metadata_bytes;
-                    status.requested=count > (SIZE_MAX-allocated_metadata_bytes)/sizeof(T) ? SIZE_MAX : allocated_metadata_bytes+count*sizeof(T);
+                    status.requested=count > (SIZE_MAX-allocated_metadata_bytes)/width ? SIZE_MAX : allocated_metadata_bytes+count*width;
                     return false;
                 }
                 if constexpr(::std::is_same_v<T, types::sub_type>)
@@ -64,7 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 if constexpr(::std::is_same_v<T, types::recursive_group>)
                 { if(count > maximum_types) { fail(recursive_type_binary_error::resource_limit);
                     status.type_count_limit=true; status.limit=maximum_types; status.requested=count; return false; } }
-                allocated_metadata_bytes += count*sizeof(T);
+                allocated_metadata_bytes += count*width;
                 return true;
             }
             inline constexpr bool fail(recursive_type_binary_error error) noexcept
@@ -213,7 +214,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 return true;
             }
             template<typename T, typename Allocator, typename Read>
-            inline constexpr bool list(::uwvm2::utils::container::vector<T, Allocator>& values, ::std::size_t minimum_bytes, Read&& read) noexcept
+            inline constexpr bool list(::uwvm2::utils::container::vector<T, Allocator>& values, ::std::size_t minimum_bytes, Read&& read, ::std::size_t width = sizeof(T)) noexcept
             {
                 ::std::uint_least32_t count{};
                 if(!u32(count)) { return false; }
@@ -221,7 +222,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 if(count > (input.size() - position) / minimum_bytes ||
                    count > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(T))
                 { return fail(recursive_type_binary_error::impossible_count); }
-                if(!admit<T>(static_cast<::std::size_t>(count))) { return false; }
+                if(!admit<T>(static_cast<::std::size_t>(count), width)) { return false; }
                 values.reserve(static_cast<::std::size_t>(count));
                 for(::std::uint_least32_t index{}; index != count; ++index)
                 {
@@ -256,6 +257,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                         result.kind = types::composite_kind::array;
                         types::field_type item{};
                         if(!field(item)) { return false; }
+                        if(!admit<types::field_type>(1uz)) { return false; }
                         result.fields.push_back(::std::move(item));
                         return true;
                     }
@@ -313,7 +315,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         // [complete type-section payload] end
         // [safe                         ] unsafe (one-past)
         //                                 ^^ cursor: committed end is never dereferenced here.
-        return {};
+        return {.metadata_bytes = input.allocated_metadata_bytes};
     }
 }
 

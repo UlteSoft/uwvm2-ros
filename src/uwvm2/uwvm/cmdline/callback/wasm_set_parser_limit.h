@@ -211,8 +211,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         for(auto const& setting : policy::parser_counts)
         {
             ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"              - ",
-                                ::fast_io::u8string_view{setting.name.data(), setting.name.size()},
-                                u8" (default=", setting.get(defaults), u8")\n");
+                                ::fast_io::u8string_view{setting.name.data(), setting.name.size()});
+            if(setting.inherits_process_limit)
+            { ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8" (inherits parser resource limit)\n"); }
+            else
+            { ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8" (default=", setting.get(defaults), u8")\n"); }
         }
         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"\n", ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;

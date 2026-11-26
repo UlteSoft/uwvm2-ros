@@ -45,6 +45,7 @@
 # include <uwvm2/utils/macro/push_macros.h>
 // import
 # include "feature_def.h"
+# include <uwvm2/utils/allocator/resource_limit.h>
 # include <fast_io.h>
 # include <uwvm2/parser/wasm/base/impl.h>
 # include <uwvm2/utils/container/impl.h>
@@ -109,6 +110,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t max_const_expr_opcodes{default_max_const_expr_opcodes};
         ::std::size_t max_section_storage_bytes{default_max_section_storage_bytes};
         ::std::size_t max_custom_sections{default_max_custom_sections};
+        // The host resource thresholds apply when a module has no tighter override.
+        inline static constexpr auto inherit_resource_limit{::std::numeric_limits<::std::size_t>::max()};
+        ::std::size_t max_type_metadata_bytes{inherit_resource_limit};
+        ::std::size_t max_function_body_bytes{inherit_resource_limit};
+        ::std::size_t max_module_code_bytes{inherit_resource_limit};
     };
 
     inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t count, ::std::size_t limit,
@@ -144,6 +150,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     {
         module.section_storage_bytes = checked_parser_total(module.section_storage_bytes, count, section_storage_limit(parameters),
                                                            u8"section_storage_bytes", at, err, width);
+    }
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    inline constexpr ::std::size_t type_storage_limit(::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters) noexcept
+    {
+        auto limit{saturating_cast_size_t(512ull << 20u)};
+        if !consteval { limit = ::uwvm2::utils::allocator::resource::parser_metadata_bytes; }
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        { limit = ::std::min(limit, ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit.max_type_metadata_bytes); }
+        return limit;
+    }
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    inline constexpr ::std::size_t remaining_type_storage(::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module,
+                                                         ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters) noexcept
+    {
+        auto const& types{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<type_section_storage_t<Fs...>>(module.sections)};
+        auto const type_limit{type_storage_limit(parameters)};
+        auto const section_limit{section_storage_limit(parameters)};
+        if(types.type_storage_bytes >= type_limit || module.section_storage_bytes >= section_limit) { return 0uz; }
+        return ::std::min(type_limit - types.type_storage_bytes, section_limit - module.section_storage_bytes);
+    }
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    inline constexpr void count_type_storage(::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...>& module,
+                                             ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters,
+                                             ::std::size_t count, ::std::size_t width, ::std::byte const* at,
+                                             ::uwvm2::parser::wasm::base::error_impl& err) UWVM_THROWS
+    {
+        auto& types{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<type_section_storage_t<Fs...>>(module.sections)};
+        auto const total{checked_parser_total(types.type_storage_bytes, count, type_storage_limit(parameters), u8"type-metadata-bytes", at, err, width)};
+        count_section_storage(module, parameters, count, width, at, err);
+        types.type_storage_bytes = total;
     }
 
     template <typename Char>

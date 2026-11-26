@@ -71,13 +71,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
     {
         option_view name;
         ::std::size_t& (*get)(parameters&) noexcept;
+        bool inherits_process_limit{};
     };
 
     inline constexpr parser_count_setting parser_counts[]{
-#define UWVM_PARSER_COUNT(name, limits, member) {u8"" name, [](parameters& p) noexcept -> ::std::size_t& { return (limits).member; }}
+#define UWVM_PARSER_COUNT(name, limits, member, ...) {u8"" name, [](parameters& p) noexcept -> ::std::size_t& { return (limits).member; } __VA_OPT__(,) __VA_ARGS__}
         UWVM_PARSER_COUNT("codesec_codes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_sec_codes),
         UWVM_PARSER_COUNT("const_expr_opcodes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_const_expr_opcodes),
         UWVM_PARSER_COUNT("section_storage_bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_section_storage_bytes),
+        UWVM_PARSER_COUNT("type-metadata-bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_type_metadata_bytes, true),
+        UWVM_PARSER_COUNT("function-body-bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_function_body_bytes, true),
+        UWVM_PARSER_COUNT("module-code-bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_module_code_bytes, true),
         UWVM_PARSER_COUNT("custom_sections", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_custom_sections),
         UWVM_PARSER_COUNT("code_locals", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_locals),
         UWVM_PARSER_COUNT("datacountsec_count", features::wasm_binfmt_ver1_wasm1p1_parameter(p.binfmt1_para).parser_limit, max_data_count_sec_count),
