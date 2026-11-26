@@ -116,6 +116,29 @@ The existing ceilings are 4,096 sections, 262,144 symbols and 64-KiB section
 alignment. Stack admission uses the verified machine-frame and ELF witnesses
 after relocation and executable byte admission.
 
+### LLVM object reuse across pthreads
+
+Native Linux x86-64 CLI AOT groups can retain one relocatable ELF for their
+named root module when its memories are untagged. Both memory-check settings
+qualify. Debug observation, replay journals, the signal adapter, sealed
+single-worker groups and explicit embedding storage grants use the existing
+compiler path. A relocation ceiling below 65,536 also selects the original
+object layout. Other backends, hosts and side modules keep their usual preparation.
+
+The initial worker can populate the group cache. Each new pthread still
+acquires its permissions and stack, constructs its instance, translates Wasm
+to LLVM and binds that instance's host objects. An exact match on compiler
+input, source admission, target and policy skips optimization and machine-code
+generation. The loader rechecks ELF and stack limits and relocates into a fresh
+native arena for each worker. The CLI reserves up to one quarter of the
+per-child storage grant, capped at 16 MiB, as separate group storage for the
+input, object and stack evidence. The group releases this cache at retirement.
+
+`--log-verbose` reports `WASI Threads LLVM group object hit` or `miss` with
+the module index and serialized compiler-input size in bytes. `fallback status=N`
+records a discarded attempt followed by compilation with the original bindings.
+Default output reports the final preparation failure if both paths fail.
+
 ### Measured threaded MemTag find objects
 
 The Linux x86_64 VM at `348f5716c0089fc6508ae6cc681b7ced4e8b0bf9`
