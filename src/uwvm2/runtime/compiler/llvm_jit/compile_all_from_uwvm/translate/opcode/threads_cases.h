@@ -17,6 +17,7 @@ case static_cast<wasm1_code>(wasm1p1_code::atomic_prefix):
     auto const decoded{atomic::read_atomic_instruction64(code_curr, code_end, op_begin,
         !wasm1p1_para.disable_threads, !wasm1p1_para.disable_multi_memory, ::uwvm2::validation::standard::wasm3::uses_core3_validation_policy(wasm1p1_para), all_memory_count, memory_address_type_at, err)};
     auto const& instruction{decoded.immediate};
+    threaded_host_emission_scope::observe_template_atomic(instruction.opcode);
     bool const address64{decoded.address_type == atomic::storage_address_type::i64};
     auto const address_type{address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
     // [FE subopcode immediate] ... (code_end)
