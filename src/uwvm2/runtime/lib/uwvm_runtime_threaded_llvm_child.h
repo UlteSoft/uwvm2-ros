@@ -57,10 +57,14 @@ extern "C++"
         struct execution final
         {
             ThreadedLlvmChild* child{};lease_type* const lease{};
+            // The lease pins this group's exact stop state throughout run_entry,
+            // including synchronous imports into another module of its world.
+            ::uwvm2::utils::thread::stop_token const cancellation;
             ::std::size_t function{SIZE_MAX},depth{};
             bool rejected{},fp_active{},cross_module{};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             ThreadedLlvmChild const* authenticated_ros_child{};
+            ::std::uintptr_t authenticated_ros_owner{};
 #endif
         };
         inline static thread_local execution* active_{};
@@ -133,8 +137,10 @@ extern "C++"
             e->rejected=true;
             e->lease->request_trap(kind,e->child->module_index_,e->function,UINT64_MAX,recorded_fault);
         }
+        [[nodiscard]] static bool stopped(execution const& e) noexcept
+        {return e.rejected||e.cancellation.stop_requested();}
         [[nodiscard]] static bool stopped() noexcept
-        {return active_==nullptr||active_->rejected||active_->lease->stop_requested();}
+        {auto const* e=active_;return e==nullptr||stopped(*e);}
         [[nodiscard]] static ::std::uintptr_t poll(::std::size_t function) noexcept
         {
             if(active_!=nullptr)
@@ -227,30 +233,48 @@ extern "C++"
         // run_entry installs this stack execution only in the authenticated
         // worker's TLS. Its lease and the private module graph live through
         // return. A different active child must authenticate its own identity.
-        [[nodiscard]] static bool authenticate_ros_child(execution& e) noexcept
+        [[nodiscard,gnu::noinline]] static bool check_ros_owner(execution& e,::std::uintptr_t owner) noexcept
         {
+            if(e.child==nullptr||e.lease==nullptr)return false;
             auto const& child{*e.child};
-            if(!e.lease->owns_current_native_thread() ||
+            if(owner != (child.module_index_+1u)*2u ||
+               !e.lease->owns_current_native_thread() ||
                ::std::addressof(e.lease->world()) != child.world_.get() ||
                child.module_index_ >= child.world_->module_count() ||
                ::std::addressof(e.lease->admission()) != ::std::addressof(child.world_->admission()))
-            { return false; }
+            {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return false;}
             e.authenticated_ros_child = e.child;
+            e.authenticated_ros_owner = owner;
             return true;
+        }
+        [[nodiscard]] static bool valid_ros_provenance(execution& e,::std::uintptr_t token) noexcept
+        {
+            auto const owner=token & ~::std::uintptr_t{1u};
+            // The worker lease is immutable. The module pointer can change at
+            // an import or reference call, so match BOTH parts of the last
+            // authenticated identity on every use. Zero is never a valid owner.
+            if(owner!=0u && owner==e.authenticated_ros_owner && e.child==e.authenticated_ros_child)return true;
+            return check_ros_owner(e,owner);
         }
         [[nodiscard]] static bool accepts_ros_provenance(::std::uintptr_t token) noexcept
         {
             auto* const e=active_;
-            if(e==nullptr||e->child==nullptr||e->lease==nullptr)return false;
-            if((token & ~::std::uintptr_t{1u}) != (e->child->module_index_ + 1u) * 2u ||
-               (e->authenticated_ros_child != e->child && !authenticate_ros_child(*e)))
-            {fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return false;}
-            return !stopped();
+            return e!=nullptr&&valid_ros_provenance(*e,token)&&!stopped(*e);
         }
         [[nodiscard]] static ::std::uintptr_t seed_ros_provenance(::std::uintptr_t own_module) noexcept
         {return accepts_ros_provenance(own_module)?((active_->child->module_index_+1u)*2u | static_cast<::std::uintptr_t>(active_->cross_module)):0u;}
         static void publish_ros_provenance(::std::uintptr_t token) noexcept
         {(void)accepts_ros_provenance(token);}
+        [[nodiscard]] static ::std::uintptr_t ros_cancellation_poll(::std::size_t function,::std::uintptr_t token) noexcept
+        {
+            auto* const e=active_;
+            if(e==nullptr)return 1u;
+            bool const valid=valid_ros_provenance(*e,token);
+            // Preserve the prior fault location if authentication rejects the
+            // token, then publish this boundary and observe live cancellation.
+            e->function=function;
+            return !valid||stopped(*e);
+        }
         template<auto Control>
         [[nodiscard]] static ::std::uintptr_t ros_control_probe(::std::size_t function,::std::uintptr_t token) noexcept
         {
@@ -530,11 +554,12 @@ extern "C++"
             ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
             if(!memtag_delivery.enter()) { return run_status::rejected; }
             ever_entered_=true;
-            if(lease.cancellation().stop_requested())return run_status::group_stopped;
+            execution e{this,::std::addressof(lease),lease.cancellation()};
+            if(e.cancellation.stop_requested())return run_status::group_stopped;
             ::uwvm2::extension::memtag::scoped_access_checks tag_checks{module_->memory_policy.check_tags};
-            execution e{this,::std::addressof(lease)};active_=::std::addressof(e);
+            active_=::std::addressof(e);
             struct reset_active{~reset_active(){active_=nullptr;}} reset_scope;
-            ::uwvm2::runtime::wasm_threads::execution_scope waits{lease.waits(),lease.cancellation(),lease.debug_wait_attachment()};
+            ::uwvm2::runtime::wasm_threads::execution_scope waits{lease.waits(),e.cancellation,lease.debug_wait_attachment()};
             details::scoped_llvm_wasm_fp_environment guest_fp{e.fp_active};
             if(!guest_fp.ready()){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return run_status::rejected;}
             using entry=void(UWVM2_RUNTIME_LLVM_JIT_RAW_ENTRY_PTR_ABI*)(::std::uintptr_t,::std::uintptr_t,::std::size_t,::std::uintptr_t,::std::size_t);
@@ -543,10 +568,10 @@ extern "C++"
                 reinterpret_cast<::std::uintptr_t>(params.data()),params.size());
             memtag_delivery.finish();
             if(e.depth!=0u){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return run_status::rejected;}
-            if(!e.rejected&&!lease.cancellation().stop_requested()&&eh_pending_!=0u)
+            if(!e.rejected&&!e.cancellation.stop_requested()&&eh_pending_!=0u)
             {exception_failure(eh_failure::uncaught);return run_status::rejected;}
             if(e.rejected)return run_status::rejected;
-            return lease.cancellation().stop_requested()?run_status::group_stopped:run_status::completed;
+            return e.cancellation.stop_requested()?run_status::group_stopped:run_status::completed;
         }
         [[nodiscard]] run_status run(lease_type& lease,::std::uint32_t tid,::std::uint32_t argument) noexcept
         {
