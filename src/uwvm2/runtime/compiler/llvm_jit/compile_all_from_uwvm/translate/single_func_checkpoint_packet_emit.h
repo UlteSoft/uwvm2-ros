@@ -253,12 +253,16 @@ struct llvm_jit_checkpoint_native_packet_emit_result
         }
         packet = native_packet;
     }
-    // The shared observer copier overwrites EVERY local slot and saved flag,
-    // including absent values and padding. Clear only the nonlocal suffix here;
-    // clearing its local prefix again bloats every opcode's generated stores.
-    // Legacy/resumable packets still clear the complete payload before their
-    // conditional local loads. Neither path reads an unset local to clear it.
-    bool const shared_locals{observing && site.local_count != 0u};
+    bool shared_locals{observing && site.local_count != 0u};
+#if defined(__linux__) && defined(__i386__)
+    // A numeric function's public debugger copier also owns the full raw copy
+    // when their extents match. Reuse it in the normal and resume bodies on
+    // i686. Both bodies already initialize its local-address table at entry.
+    shared_locals = shared_locals || (state.checkpoint_local_snapshot_copy != nullptr &&
+        state.checkpoint_local_snapshot_copy_count == site.local_count);
+#endif
+    // The copier writes every byte of the local prefix and every saved flag.
+    // Only the site-specific operand/control suffix needs a separate clear.
     auto const first_clear_byte{shared_locals ? site.local_count * checkpoint::native_slot_bytes : 0u};
     auto const clear_bytes{bytes - first_clear_byte};
     if(clear_bytes != 0u && !incremental_nonlocals)
@@ -291,18 +295,15 @@ struct llvm_jit_checkpoint_native_packet_emit_result
         out.flags_address = builder.CreatePtrToInt(captured_flags, integer);
     }
     out.slots_address = builder.CreatePtrToInt(packet, integer);
-    // Snapshot the original-index local prefix once through this function's
-    // private copier. Canonical scalar cells follow real executed assignments,
-    // with a full refresh whenever debugger policy changes. References/vectors
-    // always refresh; the nonlocal SSA packet remains site-specific.
-    // Complete declarations share a body too; their private address table
-    // lives in the already budgeted observation heap, not on the native stack.
+    // Observation can refresh canonical scalar cells against its policy stamp.
+    // A resumable capture always copies the current locals and executed flags.
     static_assert(checkpoint::native_slot_bytes == ::uwvm2::runtime::lib::details::llvm_jit_debug_local_slot_bytes);
     ::llvm::Value* current_full_token{};
     if(shared_locals && !emit_runtime_local_func_llvm_jit_canonical_local_refresh(state,current_full_token,
         [&](bool retain_scalars) noexcept
         { return emit_runtime_local_func_llvm_jit_snapshot_copy(
-            state,site.local_count,packet,captured_flags,state.checkpoint_observer_workspace,false,retain_scalars); })) { return {}; }
+            state,site.local_count,packet,captured_flags,observing ? state.checkpoint_observer_workspace : executed_flags,
+            false,retain_scalars); })) { return {}; }
 #if defined(__linux__) && defined(__x86_64__)
     if(incremental_nonlocals && !actual_nonlocals.empty())
     {
