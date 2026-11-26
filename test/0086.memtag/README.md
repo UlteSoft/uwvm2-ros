@@ -74,8 +74,29 @@ The executable VM suites are separate from those component claims:
   `--code-budget` controls that test grant without changing VM policy.
   Child-thread cases check accepted
   tags, rejected mismatches and tag zero, wait/notify completion, and growth.
-  This suite currently targets shared memory32; it does not claim shared
-  memory64 support or a race-free retire/check/access transaction.
+  Plain memory32 and memory64 cases exchange unaligned i64 values with a
+  spawned worker, observe its published growth, and check crossing stores
+  and overflowing memargs through a weaker import of the shared owner.
+  Repeat `--case NAME` to select individual cases.
+- `threaded_poll_scope_ir.cc` compiles the production LLVM cancellation pass
+  against five small control-flow graphs. It checks the call-free loop,
+  an incoming callback, changed function and owner, and a loop-varying token.
+  MCJIT executes the loop with a rejecting callback and a peer sending a stop.
+  Build the standalone main with the VM's ROS and LLVM compiler flags, LLVM
+  AsmParser, MCJIT and the native target.
+- `check_threaded_plain_store.py` inspects the actual mmap at the Linux
+  threaded LLVM bounds callback. It verifies the seven in-bounds bytes of the
+  failed eight-byte store and its neighbors. On x86-64 and AArch64 it also
+  reads the memory index, immediate, effective address, carry, length and
+  access width from the native ABI. Use a symbolized VM and a new output
+  directory for each run.
+
+```sh
+python3 test/0086.memtag/threaded_matrix.py --vm "$VM" --out "$PWD/.tmp/plain-cross" --engines aot \
+  --case spawn-plain-32-cross --case spawn-plain-64-cross
+python3 test/0086.memtag/check_threaded_plain_store.py \
+  --report "$PWD/.tmp/plain-cross/report.json" --out "$PWD/.tmp/plain-cross-bytes"
+```
 - `hardware_initialization.py` runs actual INT and AOT guest accesses after
   preload starts and deferred active data initialization. At both guest widths
   it checks the guest start bit, literal tagged stores and loads, other ADM

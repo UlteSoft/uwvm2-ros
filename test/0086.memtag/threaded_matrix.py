@@ -136,6 +136,7 @@ def shared_reader_pair():
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--vm',type=Path);parser.add_argument('--out',type=Path,required=True)
  parser.add_argument('--engines',default='int,aot');parser.add_argument('--code-budget',type=int,default=67108864)
+ parser.add_argument('--case',action='append',default=[],help='execute only the named case (repeatable)')
  parser.add_argument('--generate-only',action='store_true');args=parser.parse_args()
  if args.code_budget<0:parser.error('--code-budget must not be negative')
  args.out.mkdir(parents=True,exist_ok=True)
@@ -172,12 +173,17 @@ def main():
   manifest.append(dict(name='shared-reader-peer-'+str(int(checked_peer)),file=str(guest),peer=str(peer),
    enabled=False,checked_peer=checked_peer,expected='memtag' if checked_peer else 'success',sha256=hashlib.sha256(reader_guest).hexdigest()))
  (args.out/'manifest.json').write_text(json.dumps(manifest,indent=2))
+ if args.case:
+  names={case['name'] for case in manifest}
+  if missing:=set(args.case)-names:parser.error('unknown case '+', '.join(sorted(missing)))
+  manifest=[case for case in manifest if case['name'] in args.case]
  if args.generate_only:return
  if args.vm is None:parser.error('--vm is required without --generate-only')
  rows=[]
  for case in manifest:
   for engine in args.engines.split(','):
-   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--wasm-policy-global', 'parser.threads', 'on','--wasm-policy-global','runtime.memtag-backend','software','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),str(case.get('memory_bytes',131072)),
+   command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0','--debug-fault-action','exit','--log-color','disable',
+    '--wasm-policy-global', 'parser.threads', 'on','--wasm-policy-global','runtime.memtag-backend','software','--wasi-threads','3','3','1048576','16777216',str(args.code_budget),str(case.get('memory_bytes',131072)),
     '--wasm-set-main-module-name','main','--wasip1-single-create','main','--wasip1-single-enable','main',
     '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
     '--wasm-preload-library',str(case.get('owner',owner)),'env']
