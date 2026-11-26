@@ -14725,6 +14725,7 @@ namespace uwvm2::runtime::lib
         // body byte and its parsed local declarations until execution drains.
         try
         {
+            ::uwvm2::utils::allocator::resource::recoverable_parser_allocations parser_allocations{};
             namespace immutable = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
             if(global_binding && (!production_update || global_binding->module() != runtime_module))
             { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }

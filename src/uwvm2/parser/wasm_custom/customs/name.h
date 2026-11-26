@@ -85,12 +85,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm_custom::customs
     struct name_parser_param_t
     { name_parser_limit_t name_parser_limit{}; };
 
-    template<typename Allocator>
+    template<typename Diagnostics>
     inline constexpr void parse_name_storage(name_storage_t & ns,
                                              ::std::byte const* const begin,
                                              ::std::byte const* const end,
-                                             ::uwvm2::utils::container::vector<::uwvm2::parser::wasm_custom::customs::name_err_t, Allocator>& diagnostics,
-                                             name_parser_param_t const& param) noexcept
+                                             Diagnostics& diagnostics,
+                                             name_parser_param_t const& param)
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer parsing_timer{u8"parse custom section: name"};
@@ -104,7 +104,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm_custom::customs
 
         // The name section should appear only once in a module
 
-        auto report_name_error = [&](::std::byte const* at, name_err_type_t type, name_err_storage_t detail = {}) noexcept
+        auto report_name_error = [&](::std::byte const* at, name_err_type_t type, name_err_storage_t detail = {})
         {
             auto const limit{param.name_parser_limit.max_diagnostics};
             if(ns.diagnostic_count < limit)

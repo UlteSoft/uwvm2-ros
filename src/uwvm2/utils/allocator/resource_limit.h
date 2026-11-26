@@ -137,6 +137,26 @@ namespace uwvm2::utils::allocator::resource
     {
         reject_allocation("uwvm: [error] parser: native metadata allocation refused; check --wasm-set-resource-limit parser single-bytes/live-bytes and available host memory.\n");
     }
+    // Private preparation is permitted to reject a candidate without retiring its live generation.
+    // Only explicitly recoverable callers enable this mode on their current host thread.
+    class recoverable_parser_allocations
+    {
+        inline static thread_local bool active_{};
+        bool previous_{};
+    public:
+        constexpr recoverable_parser_allocations() noexcept
+        { if !consteval { previous_ = ::std::exchange(active_, true); } }
+        recoverable_parser_allocations(recoverable_parser_allocations const&) = delete;
+        constexpr ~recoverable_parser_allocations() { if !consteval { active_ = previous_; } }
+        [[nodiscard]] static bool active() noexcept { return active_; }
+    };
+    [[noreturn]] inline void refuse_parser_backing()
+    {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        if(recoverable_parser_allocations::active()) { throw ::std::bad_alloc{}; }
+#endif
+        parser_limit();
+    }
     [[noreturn]] inline void compiler_memory_limit() noexcept
     {
         reject_allocation("uwvm: [error] LLVM compilation: native allocation failed; available host memory or virtual address space is exhausted. Reduce concurrent memory instances or use a 64-bit host with sufficient memory.\n");
@@ -159,7 +179,7 @@ namespace uwvm2::utils::allocator::resource
                 ::std::size_t bytes{};
                 if(!checked_bytes(count,sizeof(T),bytes) || !acquire(Kind,bytes))
                 {
-                    if constexpr(Kind == pool::parser) { parser_limit(); }
+                    if constexpr(Kind == pool::parser) { refuse_parser_backing(); }
                     if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                     throw ::std::bad_alloc{};
@@ -170,7 +190,7 @@ namespace uwvm2::utils::allocator::resource
                 auto* pointer{::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count)};
                 if(pointer != nullptr) { return pointer; }
                 release(Kind,bytes);
-                if constexpr(Kind == pool::parser) { parser_limit(); }
+                if constexpr(Kind == pool::parser) { refuse_parser_backing(); }
                 if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                 throw ::std::bad_alloc{}; // Existing caller maps recoverable scratch failure to guest ENOMEM.

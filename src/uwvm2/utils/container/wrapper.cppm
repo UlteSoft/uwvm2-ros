@@ -33,6 +33,8 @@ module;
 #include <cstring>
 #include <climits>
 #include <concepts>
+#include <ranges>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <type_traits>

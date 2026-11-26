@@ -31,16 +31,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         using stored_key = ::uwvm2::utils::container::parser_vector<::std::uint_least64_t>;
         ::uwvm2::utils::container::parser_map<stored_key, ::std::size_t, recursive_validation_details::words_less> groups_{};
         ::uwvm2::utils::container::parser_vector<record> records_{};
-        [[nodiscard]] inline ::std::size_t ancestor(::std::size_t index, ::std::size_t depth) const noexcept
+        [[nodiscard]] static inline ::std::size_t ancestor(::std::size_t index, ::std::size_t depth, auto const& get_record) noexcept
         {
             // Internal precondition: index is a live registry ID and depth <= its stored depth.
             // Each hop strictly decreases depth. A low-bit jump skips a power-of-two suffix of the chain;
             // no recursive calls or quadratic arrays of ancestors are needed.
-            while(records_.index_unchecked(index).depth > depth)
+            while(get_record(index).depth > depth)
             {
-                auto const& current{records_.index_unchecked(index)};
+                auto const& current{get_record(index)};
                 auto const jump{current.jump};
-                index = records_.index_unchecked(jump).depth >= depth ? jump : current.parent;
+                index = get_record(jump).depth >= depth ? jump : current.parent;
             }
             return index;
         }
@@ -53,12 +53,29 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             if(from == to) { return true; }
             auto const& a{records_.index_unchecked(from)};
             auto const& b{records_.index_unchecked(to)};
-            return a.kind == b.kind && a.depth >= b.depth && ancestor(from, b.depth) == to;
+            return a.kind == b.kind && a.depth >= b.depth && ancestor(from, b.depth, [&](::std::size_t index) noexcept -> record const& { return records_.index_unchecked(index); }) == to;
         }
         template<typename Allocator>
         [[nodiscard]] inline recursive_type_validation_result validate_and_intern(
             ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
             ::uwvm2::utils::container::vector<::std::size_t, Allocator>& module_ids) noexcept
+        {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try
+            {
+                ::uwvm2::utils::allocator::resource::recoverable_parser_allocations admission{};
+                return intern(section, module_ids);
+            }
+            catch(::std::bad_alloc const&) { return {recursive_type_validation_error::resource_limit}; }
+#else
+            return intern(section, module_ids);
+#endif
+        }
+    private:
+        template<typename Allocator>
+        inline recursive_type_validation_result intern(
+            ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
+            ::uwvm2::utils::container::vector<::std::size_t, Allocator>& module_ids)
         {
             namespace d = recursive_validation_details;
             basic_recursive_type_context<::uwvm2::utils::container::validation_vector<recursive_type_record>> checked{};
@@ -67,49 +84,80 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             // A failed validation does not mutate the registry or the caller's mapping. No borrowed section
             // objects are retained: keys replace external references with stable IDs, internal ones with binders.
             auto const count{checked.records.size()};
-            auto const max_records{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(record)};
-            if(count > max_records - records_.size())
-            { return {recursive_type_validation_error::inconsistent_section, 0, section.type_count}; }
+            auto const original_size{records_.size()};
+            constexpr auto max_records{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(record)};
             ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
             ids.resize(count);
+            decltype(groups_) new_groups{};
+            ::uwvm2::utils::container::validation_vector<record> new_records{};
+            auto const lookup_record = [&](::std::size_t id) noexcept -> record const&
+            { return id < original_size ? records_.index_unchecked(id) : new_records.index_unchecked(id - original_size); };
             for(auto const& group : section.groups)
             {
                 auto const first{static_cast<::std::size_t>(group.first_type_index)};
                 auto key{d::group_key(group, ids)};
-                auto position{groups_.lower_bound(key)};
-                bool const inserted{position == groups_.end() || groups_.key_comp()(key, position->first)};
-                if(inserted)
+                auto const published{groups_.find(key)};
+                auto canonical_first{original_size + new_records.size()};
+                bool inserted{};
+                if(published != groups_.end()) { canonical_first = published->second; }
+                else
                 {
-                    // Construct the process-lifetime key only on a miss. The temporary lookup key
-                    // lives in validation scratch, even when many modules repeat this group.
-                    stored_key retained{::fast_io::freestanding::from_range_t{}, key};
-                    position = groups_.emplace_hint(position, ::std::move(retained), records_.size());
+                    auto position{new_groups.lower_bound(key)};
+                    inserted = position == new_groups.end() || new_groups.key_comp()(key,position->first);
+                    if(inserted)
+                    {
+                        if(group.types.size() > max_records - canonical_first)
+                        { return {recursive_type_validation_error::resource_limit, group.binary_offset, first}; }
+                        // Private map nodes are transferred to the registry only after all groups fit.
+                        stored_key retained{::fast_io::freestanding::from_range_t{}, key};
+                        new_groups.emplace_hint(position, ::std::move(retained), canonical_first);
+                    }
+                    else { canonical_first = position->second; }
                 }
-                auto const canonical_first{position->second};
-                for(::std::size_t local{}; local != group.types.size(); ++local)
-                {
-                    // The validated expanded count bounds first + local; group size is part of the intern key.
-                    ids.index_unchecked(first + local) = canonical_first + local;
-                }
-                if(!inserted) { continue; }
                 for(::std::size_t local{}; local != group.types.size(); ++local)
                 {
                     auto const index{canonical_first + local};
+                    ids.index_unchecked(first + local) = index;
+                    if(!inserted) { continue; }
                     auto const& type{group.types.index_unchecked(local)};
                     record item{.kind = type.kind, .jump = index};
                     if(!type.supertypes.empty())
                     {
-                        // Validation proved parent < first + local. Its global ID was inserted by an earlier
-                        // group or an earlier iteration, so every following record access is within live storage.
                         item.parent = ids.index_unchecked(type.supertypes.index_unchecked(0));
-                        item.depth = records_.index_unchecked(item.parent).depth + 1uz;
-                        item.jump = ancestor(item.parent, item.depth & (item.depth - 1uz));
+                        item.depth = lookup_record(item.parent).depth + 1uz;
+                        auto const depth{item.depth & (item.depth - 1uz)};
+                        item.jump = ancestor(item.parent, depth, lookup_record);
                     }
-                    records_.push_back(item);
+                    new_records.push_back(item);
                 }
             }
-            if constexpr(::std::is_same_v<decltype(ids), ::std::remove_reference_t<decltype(module_ids)>>) { module_ids = ::std::move(ids); }
-            else { module_ids = ::std::remove_reference_t<decltype(module_ids)>{::fast_io::freestanding::from_range_t{}, ids}; }
+            using output_type = ::std::remove_reference_t<decltype(module_ids)>;
+            output_type output{};
+            if constexpr(::std::is_same_v<decltype(ids), output_type>) { output = ::std::move(ids); }
+            else { output = output_type{::fast_io::freestanding::from_range_t{}, ids}; }
+            if(!new_records.empty())
+            {
+                auto const required{original_size + new_records.size()};
+                if(required > records_.capacity())
+                {
+                    // Preserve amortized registry growth across modules. A tightly configured budget
+                    // can still admit an exact-fit replacement if the speculative extra space is denied.
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                    auto const capacity{records_.capacity()};
+                    auto const target{::std::max(required, capacity > max_records / 2uz ? max_records : 2uz * capacity)};
+                    if(target > required)
+                    {
+                        try { records_.reserve(target); }
+                        catch(::std::bad_alloc const&) { records_.reserve(required); }
+                    }
+                    else
+#endif
+                    { records_.reserve(required); }
+                }
+                for(auto const& item : new_records) { records_.push_back_unchecked(item); }
+                groups_.merge(new_groups);
+            }
+            module_ids = ::std::move(output);
             return {};
         }
     };

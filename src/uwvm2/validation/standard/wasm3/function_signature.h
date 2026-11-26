@@ -49,7 +49,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     [[nodiscard]] inline constexpr function_signature_result scan_core3_function_signature(
         ::std::byte const*& cursor, ::std::byte const* end, function_signature_policy policy,
         ::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<Carrier>& output,
-        ::std::size_t maximum_metadata_bytes = 512uz << 20u) noexcept
+        ::std::size_t maximum_metadata_bytes = 512uz << 20u)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         using e = function_signature_error;
@@ -59,7 +59,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         input.maximum_metadata_bytes = maximum_metadata_bytes;
         t::owned_function_signature<Carrier> temporary{};
         function_signature_result result{};
-        auto read_value = [&](t::core_value_type& value) constexpr noexcept
+        auto read_value = [&](t::core_value_type& value) constexpr
         {
             auto const offset{input.position};
             if(!input.value(value)) { return false; }

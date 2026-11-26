@@ -167,10 +167,74 @@ int main(int argc, char** argv)
     if(!check<wasm>(customs, sections(2, bytes)) ||
        !check<wasm>(customs, sections(1, bytes), u8"custom_sections", 2, 1) ||
        !check<wasm, proposals>(customs, sections(2, bytes - 1), u8"section_storage_bytes", bytes, bytes - 1)) { return 5; }
+    // Private staging keeps the installed module alive while an exact physical backing request is refused.
+    {
+        auto installed{parse_customs()};
+        auto const held{resource::live_bytes[pool].load()};
+        auto const original{resource::policies[pool]};
+        resource::recoverable_parser_allocations stage{};
+        for(auto extra : {0uz, 32uz, 80uz, 128uz, 256uz, 384uz, 512uz})
+        {
+            resource::policies[pool].live = held + extra;
+            try
+            {
+                auto candidate{parse_customs()};
+                if(extra == 0uz) { return 23; }
+            }
+            catch(::std::bad_alloc const&) {}
+            if(resource::live_bytes[pool].load() != held) { return 24; }
+            try { (void)check<wasm, proposals>(array_module, gc_bytes(full_array_bytes)); }
+            catch(::std::bad_alloc const&) {}
+            if(resource::live_bytes[pool].load() != held) { return 25; }
+        }
+        resource::policies[pool] = original;
+        if(installed.section_storage_bytes != bytes) { return 26; }
+        struct alignas(64) aligned_record { unsigned value{}; };
+        ::uwvm2::utils::container::parser_vector<aligned_record> aligned{};
+        aligned.push_back({13});
+        aligned.push_back(aligned.front_unchecked());
+        if(reinterpret_cast<::std::uintptr_t>(aligned.data()) % alignof(aligned_record) != 0 || aligned.back_unchecked().value != 13) { return 27; }
+        constexpr ::std::uint8_t two_definitions[]{2, 0x5f, 0, 0x5e, 0x7f, 0};
+        t3::recursive_type_section types{};
+        auto cursor{reinterpret_cast<::std::byte const*>(two_definitions)};
+        if(v3::scan_core3_type_section(cursor, cursor + sizeof(two_definitions), types).error != v3::recursive_type_binary_error::ok) { return 28; }
+        ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
+        ids.push_back(42);
+        v3::recursive_type_registry registry{};
+        auto const before{resource::live_bytes[pool].load()};
+        for(auto extra : {0uz, 40uz, 96uz})
+        {
+            resource::policies[pool].live = before + extra;
+            if(registry.validate_and_intern(types,ids).error != v3::recursive_type_validation_error::resource_limit ||
+               registry.size() != 0u || ids.size() != 1u || ids.front_unchecked() != 42uz || resource::live_bytes[pool].load() != before) { return 29; }
+        }
+        resource::policies[pool] = original;
+        if(registry.validate_and_intern(types,ids).error != v3::recursive_type_validation_error::ok ||
+           registry.size() != 2u || ids.size() != 2u) { return 30; }
+    }
+    if(resource::live_bytes[pool].load() != baseline) { return 31; }
     namespace names = ::uwvm2::parser::wasm_custom::customs;
     // Two distinct function-local name maps each contain one local.
     constexpr ::std::uint8_t subsection[]{2, 11, 2, 0, 1, 0, 1, 'a', 1, 1, 0, 1, 'b'};
     auto const* name_begin{reinterpret_cast<::std::byte const*>(subsection)};
+    // Optional custom name hash buckets and their diagnostic vector can both refuse staging.
+    {
+        auto const previous{resource::policies[pool]};
+        auto const used{resource::live_bytes[pool].load()};
+        resource::recoverable_parser_allocations stage{};
+        resource::policies[pool].single = 0;
+        for(unsigned names_limit : {0u, 2u})
+        {
+            names::name_storage_t result{};
+            ::uwvm2::utils::container::parser_vector<names::name_err_t> diagnostics{};
+            names::name_parser_param_t params{};
+            params.name_parser_limit.max_local_names = names_limit;
+            try { names::parse_name_storage(result, name_begin, name_begin + sizeof(subsection), diagnostics, params); return 32; }
+            catch(::std::bad_alloc const&) {}
+        }
+        resource::policies[pool] = previous;
+        if(resource::live_bytes[pool].load() != used) { return 33; }
+    }
     for(unsigned limit : {1u, 2u})
     {
         names::name_storage_t names_section{};

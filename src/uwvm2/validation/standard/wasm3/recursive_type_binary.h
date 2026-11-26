@@ -213,9 +213,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 result.mutable_ = mutability != 0u;
                 return true;
             }
-            template<typename T, typename Allocator, typename Read>
-            inline constexpr bool list(::uwvm2::utils::container::vector<T, Allocator>& values, ::std::size_t minimum_bytes, Read&& read, ::std::size_t width = sizeof(T)) noexcept
+            template<typename Vector, typename Read>
+            inline constexpr bool list(Vector& values, ::std::size_t minimum_bytes, Read&& read, ::std::size_t width = sizeof(typename Vector::value_type))
             {
+                using T = typename Vector::value_type;
                 ::std::uint_least32_t count{};
                 if(!u32(count)) { return false; }
                 // Every element has a known nonzero minimum encoding size; reject hostile counts before allocating.
@@ -232,7 +233,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 }
                 return true;
             }
-            inline constexpr bool subtype(types::sub_type& result) noexcept
+            inline constexpr bool subtype(types::sub_type& result)
             {
                 result.binary_offset = position;
                 unsigned prefix{};
@@ -264,7 +265,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     default: return fail(recursive_type_binary_error::invalid_composite_type);
                 }
             }
-            inline constexpr bool group(types::recursive_group& result) noexcept
+            inline constexpr bool group(types::recursive_group& result)
             {
                 result.binary_offset = position;
                 if(position == input.size()) { return fail(recursive_type_binary_error::truncated); }
@@ -273,7 +274,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 {
                     unsigned ignored{};
                     if(!byte(ignored)) { return false; }
-                    return list(result.types, 2uz, [&](auto& type) constexpr noexcept { return subtype(type); });
+                    return list(result.types, 2uz, [&](auto& type) constexpr { return subtype(type); });
                 }
                 if(!admit<types::sub_type>(1uz)) { return false; }
                 types::sub_type item{};
@@ -288,7 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         ::std::byte const*& cursor, ::std::byte const* end,
         ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section& output,
         ::std::size_t maximum_types = 262144uz,
-        ::std::size_t maximum_metadata_bytes = 512uz << 20u) noexcept
+        ::std::size_t maximum_metadata_bytes = 512uz << 20u)
     {
         namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
         // [cursor ... end) is the caller-proven section allocation; equal endpoints may both be null.
@@ -297,7 +298,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         input.maximum_types = maximum_types;
         input.maximum_metadata_bytes = maximum_metadata_bytes;
         types::recursive_type_section temporary{};
-        if(!input.list(temporary.groups, 2uz, [&](types::recursive_group& group) constexpr noexcept
+        if(!input.list(temporary.groups, 2uz, [&](types::recursive_group& group) constexpr
         {
             group.first_type_index = temporary.type_count;
             if(!input.group(group)) { return false; }

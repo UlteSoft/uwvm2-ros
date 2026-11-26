@@ -47,7 +47,7 @@ Validation stack budgets cover the independent validators and the fused
 interpreter and LLVM translation paths, including control/operand snapshots. Optional parser warnings borrow the parsed sections. Their duplicate-name, duplicate-type and unused-type tables share the validation scratch budget.
 They are not a replacement for the encoded input limits, and do not account
 for LLVM's internal IR, optimizer, object code or allocator overhead.
-Input rejection and validation storage refusal exit with status 127.
+CLI input rejection and validation storage refusal exit with status 127. In exception-enabled builds, private function replacement and checkpoint compilation discard a candidate on parser backing refusal and report exhaustion. Staged threaded compilation reports its budget status. Canonical type interning publishes all new groups together after admitting their storage. A refusal preserves the existing registry and caller mapping.
 
 ## Initialization and execution
 

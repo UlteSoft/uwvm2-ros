@@ -409,6 +409,7 @@
                     if(charged!=status::ok)return {{},charged};
                     return {::std::move(data),status::ok};
                 }
+                ::uwvm2::utils::allocator::resource::recoverable_parser_allocations parser_allocations{};
                 auto validation=emit::build_runtime_validation_module(module);
                 compile::compile_option options{};options.curr_wasm_id=module_index;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;

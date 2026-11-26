@@ -31,6 +31,8 @@
 # include <cstring>
 # include <climits>
 # include <concepts>
+# include <ranges>
+# include <limits>
 # include <memory>
 # include <utility>
 # include <type_traits>
@@ -181,8 +183,113 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         return try_reserve_initializer_vector(current, count, [](::std::size_t) noexcept { return true; });
     }
 
+    using parser_backing_allocator = ::fast_io::generic_allocator_adapter<
+        ::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::parser>>;
+
     template <::std::movable T>
-    using parser_vector = vector<T, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::parser>>>;
+    class parser_vector : public vector<T, parser_backing_allocator>
+    {
+        using base = vector<T, parser_backing_allocator>;
+        // fast_io's native reserve is noexcept. A recoverable stage obtains the actual replacement
+        // storage first, then moves owned records. Both buffers remain charged throughout relocation.
+        void reserve_for_staging(::std::size_t count)
+        {
+            namespace r = ::uwvm2::utils::allocator::resource;
+            ::std::size_t bytes{};
+            if(!r::checked_bytes(count, sizeof(T), bytes)) { r::refuse_parser_backing(); }
+            // Use the same over-alignment layout as the base vector's generic allocator and destructor.
+            constexpr auto over_aligned{alignof(T) > parser_backing_allocator::default_alignment};
+            if constexpr(over_aligned)
+            {
+                constexpr auto extra{alignof(T) + sizeof(void*)};
+                if(bytes > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) - extra)
+                { r::refuse_parser_backing(); }
+                bytes += extra;
+            }
+            void* block{r::try_bytes<r::pool::parser>(bytes)};
+            if(block == nullptr) { r::refuse_parser_backing(); }
+            if constexpr(over_aligned) { block = ::fast_io::details::allocator_adjust_ptr_to_aligned_impl(block, alignof(T)); }
+            base next{};
+            next.imp.begin_ptr = next.imp.curr_ptr = static_cast<T*>(block);
+            next.imp.end_ptr = next.imp.begin_ptr + count;
+            if constexpr(::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<T>)
+            {
+                auto const size{this->size()};
+                if(size != 0uz) { ::std::memcpy(static_cast<void*>(next.data()), this->data(), size * sizeof(T)); }
+                next.imp.curr_ptr += size;
+                this->imp.curr_ptr = this->imp.begin_ptr;
+            }
+            else { for(auto& item : *this) { next.emplace_back_unchecked(::std::move_if_noexcept(item)); } }
+            this->swap(next);
+        }
+    public:
+        using base::base;
+        constexpr parser_vector() noexcept = default;
+        constexpr parser_vector(parser_vector&&) noexcept = default;
+        constexpr parser_vector& operator=(parser_vector&&) noexcept = default;
+        template <::std::ranges::sized_range Range>
+        constexpr parser_vector(::fast_io::freestanding::from_range_t, Range&& source)
+        {
+            reserve(::std::ranges::size(source));
+            for(auto&& item : source) { this->emplace_back_unchecked(::std::forward<decltype(item)>(item)); }
+        }
+        constexpr void resize(::std::size_t count) { reserve(count); base::resize(count); }
+        constexpr void resize(::std::size_t count, T const& value) { reserve(count); base::resize(count,value); }
+        constexpr parser_vector(parser_vector const& source)
+        {
+            if !consteval
+            {
+                if(!source.empty() && ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::active())
+                {
+                    reserve_for_staging(source.size());
+                    if constexpr(::std::is_trivially_copyable_v<T>)
+                    {
+                        ::std::memcpy(static_cast<void*>(this->data()), source.data(), source.size() * sizeof(T));
+                        this->imp.curr_ptr += source.size();
+                    }
+                    else { for(auto const& item : source) { this->emplace_back_unchecked(item); } }
+                    return;
+                }
+            }
+            base::operator=(source);
+        }
+        constexpr parser_vector& operator=(parser_vector const& source)
+        {
+            if(this != &source) { parser_vector next{source}; this->swap(next); }
+            return *this;
+        }
+        constexpr void reserve(::std::size_t count)
+        {
+            if(count <= this->capacity()) { return; }
+            if !consteval
+            {
+                if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::active())
+                { reserve_for_staging(count); return; }
+            }
+            base::reserve(count);
+        }
+        template <typename... Args> constexpr T& emplace_back(Args&&... args)
+        {
+            if(this->size() == this->capacity()) [[unlikely]]
+            {
+                if !consteval
+                {
+                    if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::active())
+                    {
+                        auto const capacity{this->capacity()};
+                        if(capacity > this->max_size() / 2uz) { ::uwvm2::utils::allocator::resource::refuse_parser_backing(); }
+                        T value(::std::forward<Args>(args)...);
+                        reserve_for_staging(capacity == 0uz ? 1uz : 2uz * capacity);
+                        return this->emplace_back_unchecked(::std::move(value));
+                    }
+                }
+                return base::emplace_back(::std::forward<Args>(args)...);
+            }
+            return this->emplace_back_unchecked(::std::forward<Args>(args)...);
+        }
+        constexpr void push_back(T const& value) { emplace_back(value); }
+        constexpr void push_back(T&& value) { emplace_back(::std::move(value)); }
+    };
 
     // Compiler/validator scratch, charged only when backing storage grows.
     template <::std::movable T>
@@ -621,4 +728,13 @@ UWVM_MODULE_EXPORT namespace std
 #endif
         }
     };
+}
+
+// The derived container adds no state to fast_io's three-pointer owning representation.
+UWVM_MODULE_EXPORT namespace fast_io::freestanding
+{
+    template <typename T> struct is_trivially_copyable_or_relocatable<::uwvm2::utils::container::parser_vector<T>>
+        : is_trivially_copyable_or_relocatable<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::parser_backing_allocator>> {};
+    template <typename T> struct is_zero_default_constructible<::uwvm2::utils::container::parser_vector<T>>
+        : is_zero_default_constructible<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::parser_backing_allocator>> {};
 }
