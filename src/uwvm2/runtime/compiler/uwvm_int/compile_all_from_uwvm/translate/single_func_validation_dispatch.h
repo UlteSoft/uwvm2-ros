@@ -4797,6 +4797,13 @@ bool finished_current_func{};
 bool const memtag_software_async{::uwvm2::extension::memtag::asynchronous_requested() &&
     !::uwvm2::extension::memtag::hardware_checked_access_requested()};
 bool const memtag_sync_log{!::uwvm2::extension::memtag::asynchronous_requested() && ::uwvm2::extension::memtag::logging_requested()};
+#if defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS) && defined(UWVM_SUPPORT_MMAP)
+// A pending i64 local may reach its immediately following integer load. The resolved
+// memory and validated memarg still decide whether that load can consume it.
+bool const allow_adm16_local_load{module_has_memtag_memory && requested_opcode_combine != runtime_uwvm_int_opcode_conbination_level_t::disable &&
+    curr_module.translation.delay_local.value_or(!::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_disable_delay_local) &&
+    !runtime_log_on && !::uwvm2::extension::memtag::asynchronous_requested() && !::uwvm2::extension::memtag::logging_requested()};
+#endif
 auto const emit_memtag_origin_boundary{[&](unsigned flags) constexpr
 {
     emit_opfunc_to(bytecode,::uwvm2::runtime::compiler::uwvm_int::optable::translate::
@@ -4842,9 +4849,6 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
 {
     if(resolved_memory.memory_p->memtag_shadow.ignored_bits())
     {
-#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
-        flush_conbine_pending();
-#endif
         namespace mtopt=::uwvm2::runtime::compiler::uwvm_int::optable;
         auto const& memory{*resolved_memory.memory_p};
         constexpr bool integer{::std::same_as<Value,::uwvm2::parser::wasm::standard::wasm1::type::wasm_i32> ||
@@ -4852,14 +4856,33 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
 #if defined(UWVM_SUPPORT_MMAP)
         using bounds=mtopt::memtag_details::adm_scalar_bounds;
         auto const adm_bounds{select_adm_scalar_bounds(offset,Bytes)};
+        bool const adm16_live{integer && adm_bounds == bounds::live_length && current_memory_address64 &&
+                              memory.memtag_shadow.address_mask() == mtopt::memtag_details::wasm64_adm16_mask};
+# if defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS)
+        if constexpr(!Store && !Signed && ((::std::same_as<Value,wasm_i64> && Bytes == 8u) || (::std::same_as<Value,wasm_i32> && Bytes == 1u)))
+        {
+            if(adm16_live && allow_adm16_local_load && conbine_pending.kind == conbine_pending_kind::local_get &&
+               conbine_pending.vt == curr_operand_stack_value_type::i64)
+            {
+                // The delayed address never occupied a ring slot. Prepare and commit only the result push.
+                stacktop_prepare_push1_if_reachable(bytecode,value_type);
+                emit_opfunc_to(bytecode,mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<::std::uint64_t,Value,Bytes,false,false,
+                    mtopt::memtag_details::scalar_policy::adm16_live_local,CompileOption>(curr_stacktop,memory,interpreter_tuple));
+                emit_imm_to(bytecode,resolved_memory.memory_p);
+                emit_imm_to(bytecode,static_cast<::std::uint64_t>(offset));
+                emit_imm_to(bytecode,conbine_pending.off1);
+                conbine_pending.kind = conbine_pending_kind::none;
+                stacktop_commit_push1_typed_if_reachable(value_type);
+                return true;
+            }
+        }
+# endif
+#endif
+#ifdef UWVM_ENABLE_UWVM_INT_COMBINE_OPS
+        flush_conbine_pending();
 #endif
         if constexpr(integer)
         {
-#if defined(UWVM_SUPPORT_MMAP)
-            // Both the mask and the policy are immutable for this translated site.
-            bool const adm16_live{adm_bounds == bounds::live_length && current_memory_address64 &&
-                                  memory.memtag_shadow.address_mask() == mtopt::memtag_details::wasm64_adm16_mask};
-#endif
             [[maybe_unused]] auto const emit_cached{[&](auto select) constexpr
             {
                 auto const address_type{current_memory_address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
@@ -5173,7 +5196,18 @@ auto const translate_one_opcode{
                 br_if_fuse.end = SIZE_MAX;
                 br_if_fuse.stacktop_currpos_at_site = {};
             }
-            if(conbine_pending.kind != conbine_pending_kind::none) { flush_conbine_pending(); }
+            if(conbine_pending.kind != conbine_pending_kind::none)
+            {
+#if defined(UWVM_SUPPORT_MMAP)
+                // The scalar emitter checks this site's resolved owner before it consumes the pending local.
+                bool const keep_local{allow_adm16_local_load && !is_polymorphic && conbine_pending.kind == conbine_pending_kind::local_get &&
+                    conbine_pending.vt == curr_operand_stack_value_type::i64 &&
+                    (curr_opbase == wasm1_code::i64_load || curr_opbase == wasm1_code::i32_load8_u)};
+#else
+                constexpr bool keep_local{false};
+#endif
+                if(!keep_local) { flush_conbine_pending(); }
+            }
         }
         else
         {

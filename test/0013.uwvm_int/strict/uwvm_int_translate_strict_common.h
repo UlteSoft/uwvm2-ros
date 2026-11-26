@@ -679,6 +679,7 @@ namespace uwvm2test::uwvm_int_strict
         bool memory_shared{};
         bool memory_address64{};
         bool memory_tagged{};
+        ::std::uint8_t memory_adm_bits{};
         bool export_memory{};
 
         ::std::vector<global_entry> globals{};
@@ -914,14 +915,17 @@ namespace uwvm2test::uwvm_int_strict
             {
                 byte_vec sec{};
                 append_u32_leb(sec, static_cast<::std::uint32_t>((has_memory ? 1u : 0u) + extra_memories.size()));
-                auto emit_memory = [&](::std::uint64_t min, ::std::uint64_t max, bool has_max, bool shared, bool address64, bool tagged)
+                auto emit_memory = [&](::std::uint64_t min, ::std::uint64_t max, bool has_max, bool shared, bool address64, bool tagged,
+                                       ::std::uint8_t adm_bits = 0u)
                 {
-                    append_u8(sec, (has_max ? 1u : 0u) | (shared ? 2u : 0u) | (address64 ? 4u : 0u) | (tagged ? 0x30u : 0u));
-                    if(tagged) { append_u8(sec, address64 ? 16u : 4u); }
+                    if(tagged && !adm_bits) { adm_bits = address64 ? 16u : 4u; }
+                    append_u8(sec, (has_max ? 1u : 0u) | (shared ? 2u : 0u) | (address64 ? 4u : 0u) |
+                                   (adm_bits ? 0x10u : 0u) | (tagged ? 0x20u : 0u));
+                    if(adm_bits) { append_u8(sec, adm_bits); }
                     append_u64_leb(sec, min);
                     if(has_max) { append_u64_leb(sec, max); }
                 };
-                if(has_memory) { emit_memory(memory_min, memory_max, memory_has_max, memory_shared, memory_address64, memory_tagged); }
+                if(has_memory) { emit_memory(memory_min, memory_max, memory_has_max, memory_shared, memory_address64, memory_tagged, memory_adm_bits); }
                 for(auto const& memory: extra_memories) { emit_memory(memory.min, memory.max, memory.has_max, memory.shared, memory.address64, memory.tagged); }
                 emit_section(5u, sec);
             }

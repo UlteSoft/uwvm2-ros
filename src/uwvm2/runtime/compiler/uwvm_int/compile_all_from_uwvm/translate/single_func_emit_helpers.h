@@ -23,7 +23,8 @@
 }()};
 using runtime_uwvm_int_opcode_conbination_level_t = ::uwvm2::uwvm::runtime::runtime_mode::runtime_uwvm_int_opcode_conbination_level_t;
 #if defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS)
-[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{module_has_memtag_memory ? runtime_uwvm_int_opcode_conbination_level_t::disable : curr_module.translation.opcode_combine.value_or(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level)};
+auto const requested_opcode_combine{curr_module.translation.opcode_combine.value_or(::uwvm2::uwvm::runtime::runtime_mode::global_runtime_uwvm_int_opcode_conbination_level)};
+[[maybe_unused]] auto const runtime_uwvm_int_opcode_conbination_level{module_has_memtag_memory ? runtime_uwvm_int_opcode_conbination_level_t::disable : requested_opcode_combine};
 #else
 [[maybe_unused]] constexpr auto runtime_uwvm_int_opcode_conbination_level{runtime_uwvm_int_opcode_conbination_level_t::disable};
 #endif
