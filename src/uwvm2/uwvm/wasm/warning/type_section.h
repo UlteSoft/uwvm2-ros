@@ -62,7 +62,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     /// @details Depends on adl, adl type is ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_type_type_t<Fs...>>
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
     inline constexpr void define_type_show_warning(
-        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_function_type<Fs...> /*[adl]*/> const& types) noexcept
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_function_type<Fs...> /*[adl]*/> const& types)
     {
         ::uwvm2::utils::container::validation_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
                                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>
@@ -123,7 +123,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     }
 
     inline constexpr void show_wasm_type_section_warning(::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm,
-                                                         [[maybe_unused]] ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage) noexcept
+                                                         [[maybe_unused]] ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage)
     {
         constexpr auto get_prohibit_duplicate_types_from_features_tuple{
             []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs> UWVM_ALWAYS_INLINE(::uwvm2::utils::container::tuple<Fs...>) consteval noexcept -> bool
@@ -155,7 +155,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     inline constexpr void show_wasm_section_warning(
         ::uwvm2::parser::wasm::concepts::feature_reserve_type_t<::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>>,
         ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm,
-        ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage) noexcept
+        ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage)
     { return show_wasm_type_section_warning(wasm, warn_storage); }
 }
 

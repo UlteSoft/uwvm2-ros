@@ -215,8 +215,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             if(!validation::uses_core3_validation_policy(policy)) { return {}; }
             ::uwvm2::utils::container::std_unique_ptr<parsed_integer_source_plan> pending{::uwvm2::utils::allocator::fast_io_strict::object<parsed_integer_source_plan>([&](parsed_integer_source_plan* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) parsed_integer_source_plan{::std::move(source), generation, limits, identity}; })};
             auto const& parsed{pending->source_->file().wasm_module_storage.wasm_binfmt_ver1_storage};
-            validation::validate_module_declarations_with_runtime_policy(parsed, error, pending->features_);
-            return finish_typed_seal(::std::move(pending), parsed, error);
+            return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate([&]() -> owner
+            {
+#if defined(UWVM_CPP_EXCEPTIONS)
+                try
+#endif
+                {
+                    validation::validate_module_declarations_with_runtime_policy(parsed, error, pending->features_);
+                    return finish_typed_seal(::std::move(pending), parsed, error);
+                }
+#if defined(UWVM_CPP_EXCEPTIONS)
+                catch(::std::bad_alloc const&) { return {}; }
+#endif
+            }, [&]() -> owner { error = {}; return {}; });
         }
         [[nodiscard]] full_source::owner source() const noexcept { return source_; }
         [[nodiscard]] auto const& features() const noexcept { return features_; }

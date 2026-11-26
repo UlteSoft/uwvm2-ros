@@ -183,31 +183,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         return try_reserve_initializer_vector(current, count, [](::std::size_t) noexcept { return true; });
     }
 
-    using parser_backing_allocator = ::fast_io::generic_allocator_adapter<
-        ::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::parser>>;
+    template<::uwvm2::utils::allocator::resource::pool Kind>
+    using metadata_backing_allocator = ::fast_io::generic_allocator_adapter<
+        ::uwvm2::utils::allocator::resource::bounded_allocator<Kind>>;
 
-    template <::std::movable T>
-    class parser_vector : public vector<T, parser_backing_allocator>
+    template <::std::movable T, ::uwvm2::utils::allocator::resource::pool Kind>
+    class metadata_vector : public vector<T, metadata_backing_allocator<Kind>>
     {
-        using base = vector<T, parser_backing_allocator>;
+        using base = vector<T, metadata_backing_allocator<Kind>>;
         // fast_io's native reserve is noexcept. A recoverable stage obtains the actual replacement
         // storage first, then moves owned records. Both buffers remain charged throughout relocation.
         void reserve_for_staging(::std::size_t count)
         {
             namespace r = ::uwvm2::utils::allocator::resource;
             ::std::size_t bytes{};
-            if(!r::checked_bytes(count, sizeof(T), bytes)) { r::refuse_parser_backing(); }
+            if(!r::checked_bytes(count, sizeof(T), bytes)) { r::refuse_metadata_backing<Kind>(); }
             // Use the same over-alignment layout as the base vector's generic allocator and destructor.
-            constexpr auto over_aligned{alignof(T) > parser_backing_allocator::default_alignment};
+            constexpr auto over_aligned{alignof(T) > metadata_backing_allocator<Kind>::default_alignment};
             if constexpr(over_aligned)
             {
                 constexpr auto extra{alignof(T) + sizeof(void*)};
                 if(bytes > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) - extra)
-                { r::refuse_parser_backing(); }
+                { r::refuse_metadata_backing<Kind>(); }
                 bytes += extra;
             }
-            void* block{r::try_bytes<r::pool::parser>(bytes)};
-            if(block == nullptr) { r::refuse_parser_backing(); }
+            void* block{r::try_bytes<Kind>(bytes)};
+            if(block == nullptr) { r::refuse_metadata_backing<Kind>(); }
             if constexpr(over_aligned) { block = ::fast_io::details::allocator_adjust_ptr_to_aligned_impl(block, alignof(T)); }
             base next{};
             next.imp.begin_ptr = next.imp.curr_ptr = static_cast<T*>(block);
@@ -224,18 +225,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         }
     public:
         using base::base;
-        constexpr parser_vector() noexcept = default;
-        constexpr parser_vector(parser_vector&&) noexcept = default;
-        constexpr parser_vector& operator=(parser_vector&&) noexcept = default;
+        constexpr metadata_vector() noexcept = default;
+        constexpr metadata_vector(metadata_vector&&) noexcept = default;
+        constexpr metadata_vector& operator=(metadata_vector&&) noexcept = default;
         template <::std::ranges::sized_range Range>
-        constexpr parser_vector(::fast_io::freestanding::from_range_t, Range&& source)
+        constexpr metadata_vector(::fast_io::freestanding::from_range_t, Range&& source)
         {
             reserve(::std::ranges::size(source));
             for(auto&& item : source) { this->emplace_back_unchecked(::std::forward<decltype(item)>(item)); }
         }
         constexpr void resize(::std::size_t count) { reserve(count); base::resize(count); }
         constexpr void resize(::std::size_t count, T const& value) { reserve(count); base::resize(count,value); }
-        constexpr parser_vector(parser_vector const& source)
+        constexpr metadata_vector(metadata_vector const& source)
         {
             if !consteval
             {
@@ -253,9 +254,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
             }
             base::operator=(source);
         }
-        constexpr parser_vector& operator=(parser_vector const& source)
+        constexpr metadata_vector& operator=(metadata_vector const& source)
         {
-            if(this != &source) { parser_vector next{source}; this->swap(next); }
+            if(this != &source) { metadata_vector next{source}; this->swap(next); }
             return *this;
         }
         constexpr void reserve(::std::size_t count)
@@ -277,7 +278,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
                     if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::active())
                     {
                         auto const capacity{this->capacity()};
-                        if(capacity > this->max_size() / 2uz) { ::uwvm2::utils::allocator::resource::refuse_parser_backing(); }
+                        if(capacity > this->max_size() / 2uz) { ::uwvm2::utils::allocator::resource::refuse_metadata_backing<Kind>(); }
                         T value(::std::forward<Args>(args)...);
                         reserve_for_staging(capacity == 0uz ? 1uz : 2uz * capacity);
                         return this->emplace_back_unchecked(::std::move(value));
@@ -290,6 +291,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         constexpr void push_back(T const& value) { emplace_back(value); }
         constexpr void push_back(T&& value) { emplace_back(::std::move(value)); }
     };
+
+    template <::std::movable T>
+    using parser_vector = metadata_vector<T, ::uwvm2::utils::allocator::resource::pool::parser>;
+    template <::std::movable T>
+    using parser_scratch_vector = metadata_vector<T, ::uwvm2::utils::allocator::resource::pool::validation>;
 
     // Compiler/validator scratch, charged only when backing storage grows.
     template <::std::movable T>
@@ -483,18 +489,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::parser>>;
     template <typename Key, typename Val>
     using validation_flat_map = unordered_flat_map<Key, Val, ::std::hash<Key>, ::std::equal_to<Key>,
-        ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation>>;
+        ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation, true>>;
     template <typename Key>
     using validation_flat_set = unordered_flat_set<Key, ::std::hash<Key>, ::std::equal_to<Key>,
-        ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation>>;
+        ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation, true>>;
     template <typename Key>
-    using validation_set = set<Key, ::std::less<Key>, ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation>>;
+    using validation_set = set<Key, ::std::less<Key>, ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation, true>>;
     template <typename Key, typename Val, typename Compare>
     using parser_map = map<Key, Val, Compare, ::uwvm2::utils::allocator::resource::std_allocator<
         ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::parser>>;
     template <typename Key, typename Val, typename Compare>
     using validation_map = map<Key, Val, Compare, ::uwvm2::utils::allocator::resource::std_allocator<
-        ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation>>;
+        ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation, true>>;
 
     template <typename Key, typename T>
     using initializer_map = unordered_flat_map<Key, T, ::std::hash<Key>, ::std::equal_to<Key>,
@@ -733,8 +739,8 @@ UWVM_MODULE_EXPORT namespace std
 // The derived container adds no state to fast_io's three-pointer owning representation.
 UWVM_MODULE_EXPORT namespace fast_io::freestanding
 {
-    template <typename T> struct is_trivially_copyable_or_relocatable<::uwvm2::utils::container::parser_vector<T>>
-        : is_trivially_copyable_or_relocatable<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::parser_backing_allocator>> {};
-    template <typename T> struct is_zero_default_constructible<::uwvm2::utils::container::parser_vector<T>>
-        : is_zero_default_constructible<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::parser_backing_allocator>> {};
+    template <typename T, ::uwvm2::utils::allocator::resource::pool Kind> struct is_trivially_copyable_or_relocatable<::uwvm2::utils::container::metadata_vector<T, Kind>>
+        : is_trivially_copyable_or_relocatable<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::metadata_backing_allocator<Kind>>> {};
+    template <typename T, ::uwvm2::utils::allocator::resource::pool Kind> struct is_zero_default_constructible<::uwvm2::utils::container::metadata_vector<T, Kind>>
+        : is_zero_default_constructible<::uwvm2::utils::container::vector<T, ::uwvm2::utils::container::metadata_backing_allocator<Kind>>> {};
 }

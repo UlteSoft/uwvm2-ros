@@ -76,10 +76,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         template<typename Signatures>
         [[nodiscard]] inline constexpr bool equivalent_function_types(
-            ::std::size_t first, ::std::size_t second, Signatures const& signatures) noexcept
+            ::std::size_t first, ::std::size_t second, Signatures const& signatures)
         {
             using pair = ::std::pair<::std::size_t, ::std::size_t>;
-            ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
+            ::uwvm2::utils::container::parser_scratch_vector<pair> pending{}, seen{};
             pending.push_back({first, second});
             while(!pending.empty())
             {
@@ -94,7 +94,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
                 auto const& left{signatures.index_unchecked(current.first)};
                 auto const& right{signatures.index_unchecked(current.second)};
                 if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
-                auto const compare_value{[&](t::core_value_type a, t::core_value_type b) noexcept
+                auto const compare_value{[&](t::core_value_type a, t::core_value_type b)
                 {
                     if(a.kind != b.kind) { return false; }
                     if(a.kind != t::value_kind::reference) { return true; }
@@ -115,7 +115,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         template<typename Signatures>
         [[nodiscard]] inline constexpr bool reference_matches(t::core_value_type actual, t::core_value_type expected,
             Signatures const& signatures,
-            ::uwvm2::validation::standard::wasm3::recursive_type_context const* context = nullptr) noexcept
+            ::uwvm2::validation::standard::wasm3::recursive_type_context const* context = nullptr)
         {
             using heap = t::abstract_heap_type;
             if(actual.kind != t::value_kind::reference || expected.kind != t::value_kind::reference) { return false; }
@@ -1602,7 +1602,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         using core_type = ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type;
         using core_kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
         using core_heap = ::uwvm2::parser::wasm::standard::wasm3::type::abstract_heap_type;
-        ::uwvm2::utils::container::validation_vector<core_type> constant_types{};
+        ::uwvm2::utils::container::parser_scratch_vector<core_type> constant_types{};
         auto const& const_para{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para)};
         auto const& declared_globals{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
             global_section_storage_t<Fs...>>(module_storage.sections).local_globals};
@@ -1610,7 +1610,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         using value_type = ::uwvm2::parser::wasm::standard::wasm1p1::type::value_type;
         using wasm_u32 = ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32;
         using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
-        auto const type_matches{[&](core_type actual, core_type expected) constexpr noexcept
+        auto const type_matches{[&](core_type actual, core_type expected) constexpr
         {
             if(actual.kind != expected.kind) { return false; }
             return actual.kind != core_kind::reference ||

@@ -244,46 +244,50 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     [[nodiscard]] inline bool core3_function_types_equivalent(
         ::std::size_t first, ::std::size_t second, Signatures const& signatures) noexcept
     {
-        using pair = ::std::pair<::std::size_t, ::std::size_t>;
-        using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-        ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
-        pending.push_back({first, second});
-        while(!pending.empty())
+        if(first == second) { return first < signatures.size(); }
+        return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::compare([&]
         {
-            auto const current{pending.back_unchecked()};
-            pending.pop_back_unchecked();
-            if(current.first >= signatures.size() || current.second >= signatures.size()) { return false; }
-            if(current.first == current.second) { continue; }
-            bool visited{};
-            for(auto const& pair_seen: seen)
+            using pair = ::std::pair<::std::size_t, ::std::size_t>;
+            using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
+            ::uwvm2::utils::container::parser_scratch_vector<pair> pending{}, seen{};
+            pending.push_back({first, second});
+            while(!pending.empty())
             {
-                if(pair_seen == current) { visited = true; break; }
+                auto const current{pending.back_unchecked()};
+                pending.pop_back_unchecked();
+                if(current.first >= signatures.size() || current.second >= signatures.size()) { return false; }
+                if(current.first == current.second) { continue; }
+                bool visited{};
+                for(auto const& pair_seen: seen)
+                {
+                    if(pair_seen == current) { visited = true; break; }
+                }
+                if(visited) { continue; }
+                seen.push_back(current);
+                auto const& left{signatures.index_unchecked(current.first)};
+                auto const& right{signatures.index_unchecked(current.second)};
+                if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
+                auto const compare_value{[&](auto a, auto b)
+                {
+                    if(a.kind != b.kind) { return false; }
+                    if(a.kind != kind::reference) { return true; }
+                    if(a.nullable != b.nullable) { return false; }
+                    if(a.heap == b.heap) { return true; }
+                    if(!a.heap.is_defined() || !b.heap.is_defined()) { return false; }
+                    pending.push_back({static_cast<::std::size_t>(a.heap.code), static_cast<::std::size_t>(b.heap.code)});
+                    return true;
+                }};
+                for(::std::size_t i{}; i != left.parameters.size(); ++i)
+                {
+                    if(!compare_value(left.parameters.index_unchecked(i), right.parameters.index_unchecked(i))) { return false; }
+                }
+                for(::std::size_t i{}; i != left.results.size(); ++i)
+                {
+                    if(!compare_value(left.results.index_unchecked(i), right.results.index_unchecked(i))) { return false; }
+                }
             }
-            if(visited) { continue; }
-            seen.push_back(current);
-            auto const& left{signatures.index_unchecked(current.first)};
-            auto const& right{signatures.index_unchecked(current.second)};
-            if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
-            auto const compare_value{[&](auto a, auto b) noexcept
-            {
-                if(a.kind != b.kind) { return false; }
-                if(a.kind != kind::reference) { return true; }
-                if(a.nullable != b.nullable) { return false; }
-                if(a.heap == b.heap) { return true; }
-                if(!a.heap.is_defined() || !b.heap.is_defined()) { return false; }
-                pending.push_back({static_cast<::std::size_t>(a.heap.code), static_cast<::std::size_t>(b.heap.code)});
-                return true;
-            }};
-            for(::std::size_t i{}; i != left.parameters.size(); ++i)
-            {
-                if(!compare_value(left.parameters.index_unchecked(i), right.parameters.index_unchecked(i))) { return false; }
-            }
-            for(::std::size_t i{}; i != left.results.size(); ++i)
-            {
-                if(!compare_value(left.results.index_unchecked(i), right.results.index_unchecked(i))) { return false; }
-            }
-        }
-        return true;
+            return true;
+        });
     }
 
     // A legacy plain function definition closes as a final singleton recursive
@@ -322,51 +326,54 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         ::std::size_t right_index, RightSignatures const& right_signatures,
         CanonicalCompare canonical_compare) noexcept
     {
-        using pair = ::std::pair<::std::size_t, ::std::size_t>;
-        using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-        ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
-        pending.push_back({left_index, right_index});
-        while(!pending.empty())
+        return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::compare([&]
         {
-            auto const current{pending.back_unchecked()};
-            pending.pop_back_unchecked();
-            if(current.first >= left_signatures.size() || current.second >= right_signatures.size()) { return false; }
-            bool visited{};
-            for(auto const& prior: seen) { if(prior == current) { visited = true; break; } }
-            if(visited) { continue; }
-            seen.push_back(current);
-            switch(canonical_compare(current.first, current.second))
+            using pair = ::std::pair<::std::size_t, ::std::size_t>;
+            using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
+            ::uwvm2::utils::container::parser_scratch_vector<pair> pending{}, seen{};
+            pending.push_back({left_index, right_index});
+            while(!pending.empty())
             {
-                case core3_defined_type_comparison::equivalent: continue;
-                case core3_defined_type_comparison::different: return false;
-                case core3_defined_type_comparison::structural: break;
+                auto const current{pending.back_unchecked()};
+                pending.pop_back_unchecked();
+                if(current.first >= left_signatures.size() || current.second >= right_signatures.size()) { return false; }
+                bool visited{};
+                for(auto const& prior: seen) { if(prior == current) { visited = true; break; } }
+                if(visited) { continue; }
+                seen.push_back(current);
+                switch(canonical_compare(current.first, current.second))
+                {
+                    case core3_defined_type_comparison::equivalent: continue;
+                    case core3_defined_type_comparison::different: return false;
+                    case core3_defined_type_comparison::structural: break;
+                }
+                // [left/right retained signature arrays] current indices were checked above.
+                // [safe                            ] index_unchecked borrows parser-owned records;
+                //                                  neither pointer nor guest cursor advances.
+                auto const& left{left_signatures.index_unchecked(current.first)};
+                auto const& right{right_signatures.index_unchecked(current.second)};
+                if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
+                auto const same_value{[&](auto a, auto b)
+                {
+                    if(a.kind != b.kind) { return false; }
+                    if(a.kind != kind::reference) { return true; }
+                    if(a.nullable != b.nullable) { return false; }
+                    if(a.heap.is_defined() != b.heap.is_defined()) { return false; }
+                    if(!a.heap.is_defined()) { return a.heap == b.heap; }
+                    pending.push_back({static_cast<::std::size_t>(a.heap.code), static_cast<::std::size_t>(b.heap.code)});
+                    return true;
+                }};
+                for(::std::size_t i{}; i != left.parameters.size(); ++i)
+                {
+                    if(!same_value(left.parameters.index_unchecked(i), right.parameters.index_unchecked(i))) { return false; }
+                }
+                for(::std::size_t i{}; i != left.results.size(); ++i)
+                {
+                    if(!same_value(left.results.index_unchecked(i), right.results.index_unchecked(i))) { return false; }
+                }
             }
-            // [left/right retained signature arrays] current indices were checked above.
-            // [safe                            ] index_unchecked borrows parser-owned records;
-            //                                  neither pointer nor guest cursor advances.
-            auto const& left{left_signatures.index_unchecked(current.first)};
-            auto const& right{right_signatures.index_unchecked(current.second)};
-            if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
-            auto const same_value{[&](auto a, auto b) noexcept
-            {
-                if(a.kind != b.kind) { return false; }
-                if(a.kind != kind::reference) { return true; }
-                if(a.nullable != b.nullable) { return false; }
-                if(a.heap.is_defined() != b.heap.is_defined()) { return false; }
-                if(!a.heap.is_defined()) { return a.heap == b.heap; }
-                pending.push_back({static_cast<::std::size_t>(a.heap.code), static_cast<::std::size_t>(b.heap.code)});
-                return true;
-            }};
-            for(::std::size_t i{}; i != left.parameters.size(); ++i)
-            {
-                if(!same_value(left.parameters.index_unchecked(i), right.parameters.index_unchecked(i))) { return false; }
-            }
-            for(::std::size_t i{}; i != left.results.size(); ++i)
-            {
-                if(!same_value(left.results.index_unchecked(i), right.results.index_unchecked(i))) { return false; }
-            }
-        }
-        return true;
+            return true;
+        });
     }
 
     template<typename Signatures>

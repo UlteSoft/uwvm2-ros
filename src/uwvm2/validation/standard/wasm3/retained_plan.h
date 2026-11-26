@@ -82,11 +82,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     class retained_integer_function_plan final
     {
         friend class details::retained_integer_plan_builder;
-        ::uwvm2::utils::container::validation_vector<retained_integer_operation> operations_{};
-        ::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type> parameter_types_{};
-        ::uwvm2::utils::container::validation_vector<retained_local_declaration_run> local_runs_{};
+        ::uwvm2::utils::container::parser_scratch_vector<retained_integer_operation> operations_{};
+        ::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type> parameter_types_{};
+        ::uwvm2::utils::container::parser_scratch_vector<retained_local_declaration_run> local_runs_{};
         ::std::size_t local_count_{};
-        ::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type> results_{};
+        ::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type> results_{};
         ::std::size_t function_index_{};
         ::std::size_t parameters_{};
         ::std::size_t expression_bytes_{};

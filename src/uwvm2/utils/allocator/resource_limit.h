@@ -141,21 +141,68 @@ namespace uwvm2::utils::allocator::resource
     // Only explicitly recoverable callers enable this mode on their current host thread.
     class recoverable_parser_allocations
     {
-        inline static thread_local bool active_{};
-        bool previous_{};
+        inline static thread_local recoverable_parser_allocations* current_{};
+        recoverable_parser_allocations* parent_{};
+        bool comparison_refused_{};
     public:
         constexpr recoverable_parser_allocations() noexcept
-        { if !consteval { previous_ = ::std::exchange(active_, true); } }
+        { if !consteval { parent_ = ::std::exchange(current_, this); } }
         recoverable_parser_allocations(recoverable_parser_allocations const&) = delete;
-        constexpr ~recoverable_parser_allocations() { if !consteval { active_ = previous_; } }
-        [[nodiscard]] static bool active() noexcept { return active_; }
+        constexpr ~recoverable_parser_allocations()
+        {
+            if !consteval
+            {
+                if(parent_ != nullptr) { parent_->comparison_refused_ |= comparison_refused_; }
+                current_ = parent_;
+            }
+        }
+        [[nodiscard]] static bool active() noexcept { return current_ != nullptr; }
+        [[nodiscard]] static bool comparison_refused() noexcept { return current_ != nullptr && current_->comparison_refused_; }
+
+        // A native type-comparison callback has a noexcept Boolean ABI. An unproved
+        // comparison refuses the candidate, including when used as an optimization hint.
+        template<typename Compare> static bool compare(Compare&& compare) noexcept
+        {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try { return compare(); }
+            catch(::std::bad_alloc const&)
+            {
+                if(current_ == nullptr) { validation_limit(); }
+                current_->comparison_refused_ = true;
+                return false;
+            }
+#else
+            return compare();
+#endif
+        }
+        template<typename Prepare, typename Refused>
+        [[nodiscard]] static auto prepare_candidate(Prepare&& prepare, Refused&& refused)
+        {
+            recoverable_parser_allocations stage{};
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            try
+#endif
+            {
+                auto result{prepare()};
+                if(stage.comparison_refused_) { return refused(); }
+                return result;
+            }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+            catch(...)
+            {
+                if(stage.comparison_refused_) { return refused(); }
+                throw;
+            }
+#endif
+        }
     };
-    [[noreturn]] inline void refuse_parser_backing()
+    template<pool Kind> [[noreturn]] inline void refuse_metadata_backing()
     {
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         if(recoverable_parser_allocations::active()) { throw ::std::bad_alloc{}; }
 #endif
-        parser_limit();
+        if constexpr(Kind == pool::parser) { parser_limit(); }
+        else { validation_limit(); }
     }
     [[noreturn]] inline void compiler_memory_limit() noexcept
     {
@@ -163,14 +210,14 @@ namespace uwvm2::utils::allocator::resource
     }
     // Standard containers return denied host scratch allocations through their
     // existing bad_alloc -> guest ENOMEM path. The guest cannot alter budgets.
-    template<typename T, pool Kind = pool::auxiliary> struct std_allocator
+    template<typename T, pool Kind = pool::auxiliary, bool Recoverable = Kind == pool::parser> struct std_allocator
     {
         using value_type=T;
         using is_always_equal=::std::true_type;
         using propagate_on_container_move_assignment=::std::true_type;
-        template<typename U> struct rebind { using other=std_allocator<U,Kind>; };
+        template<typename U> struct rebind { using other=std_allocator<U,Kind,Recoverable>; };
         constexpr std_allocator() noexcept=default;
-        template<typename U> constexpr std_allocator(std_allocator<U,Kind> const&) noexcept {}
+        template<typename U> constexpr std_allocator(std_allocator<U,Kind,Recoverable> const&) noexcept {}
         [[nodiscard]] constexpr T* allocate(::std::size_t count)
         {
             if consteval { return ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count); }
@@ -179,7 +226,7 @@ namespace uwvm2::utils::allocator::resource
                 ::std::size_t bytes{};
                 if(!checked_bytes(count,sizeof(T),bytes) || !acquire(Kind,bytes))
                 {
-                    if constexpr(Kind == pool::parser) { refuse_parser_backing(); }
+                    if constexpr(Recoverable) { refuse_metadata_backing<Kind>(); }
                     if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                     throw ::std::bad_alloc{};
@@ -190,7 +237,7 @@ namespace uwvm2::utils::allocator::resource
                 auto* pointer{::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count)};
                 if(pointer != nullptr) { return pointer; }
                 release(Kind,bytes);
-                if constexpr(Kind == pool::parser) { refuse_parser_backing(); }
+                if constexpr(Recoverable) { refuse_metadata_backing<Kind>(); }
                 if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                 throw ::std::bad_alloc{}; // Existing caller maps recoverable scratch failure to guest ENOMEM.
@@ -204,7 +251,7 @@ namespace uwvm2::utils::allocator::resource
             ::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::deallocate_n(pointer,count);
             if consteval {} else { release(Kind,count*sizeof(T)); }
         }
-        template<typename U> constexpr bool operator==(std_allocator<U,Kind> const&) const noexcept { return true; }
+        template<typename U> constexpr bool operator==(std_allocator<U,Kind,Recoverable> const&) const noexcept { return true; }
     };
     template<typename T, pool Kind> struct array_deleter
     {

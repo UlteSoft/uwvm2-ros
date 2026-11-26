@@ -35,7 +35,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         // Keep binary runs compressed. A tiny declaration of billions of locals must not allocate billions
         // of validator entries. Storage/frame resource limits are applied when a runtime layout is requested.
-        ::uwvm2::utils::container::validation_vector<core3_local_run> runs{};
+        ::uwvm2::utils::container::parser_scratch_vector<core3_local_run> runs{};
         ::std::uint_least64_t parameter_count{}, total_count{};
         [[nodiscard]] inline constexpr bool find(::std::uint_least64_t index,
             ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type& result) const noexcept
@@ -65,7 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     // Function parameters are already validated by the type section; parameter_count reserves their indices.
     [[nodiscard]] inline constexpr core3_local_result scan_core3_local_declarations(
         ::std::byte const*& cursor, ::std::byte const* body_end, ::std::uint_least64_t parameter_count,
-        recursive_type_context const& context, core3_local_declarations& output) noexcept
+        recursive_type_context const& context, core3_local_declarations& output)
     {
         constexpr ::std::uint_least64_t maximum{0xffff'ffffull};
         if(parameter_count > maximum) { return {core3_local_error::too_many_locals, 0}; }
@@ -109,16 +109,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         // Only locals without a default value need tracking. Sparse state is bounded by actual local.set/tee
         // operations, not by a hostile declared local count. The ordered set avoids chosen integer hash collisions.
         ::uwvm2::utils::container::validation_set<::std::uint_least32_t> assigned_{};
-        ::uwvm2::utils::container::validation_vector<::std::uint_least32_t> undo_{};
+        ::uwvm2::utils::container::parser_scratch_vector<::std::uint_least32_t> undo_{};
     public:
         [[nodiscard]] inline ::std::size_t checkpoint() const noexcept { return undo_.size(); }
         [[nodiscard]] inline bool is_initialized(::std::uint_least32_t index, bool initially_initialized) const noexcept
         { return initially_initialized || assigned_.contains(index); }
-        inline void initialize(::std::uint_least32_t index, bool initially_initialized) noexcept
+        inline void initialize(::std::uint_least32_t index, bool initially_initialized)
         {
             if(initially_initialized) { return; }
             auto const [position, inserted]{assigned_.insert(index)};
-            if(inserted) { undo_.push_back(index); }
+            if(inserted)
+            {
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+                try { undo_.push_back(index); }
+                catch(...) { assigned_.erase(index); throw; }
+#else
+                undo_.push_back(index);
+#endif
+            }
         }
         // Save a checkpoint on entry to each block/loop/if/try_table. Restore it at else and end.
         // Core 3 structured instructions do not export their inner local initialization sets, even when both

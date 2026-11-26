@@ -5,6 +5,7 @@
 #include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/parser/wasm_custom/customs/name.h>
 #include <uwvm2/validation/standard/wasm3/recursive_type_registry.h>
+#include <uwvm2/validation/standard/wasm3/reference_policy.h>
 #include <fast_io.h>
 #include <uwvm2/parser/wasm/standard/wasm1/features/binfmt.h>
 #include <uwvm2/parser/wasm/standard/wasm1p1/features/impl.h>
@@ -213,6 +214,33 @@ int main(int argc, char** argv)
            registry.size() != 2u || ids.size() != 2u) { return 30; }
     }
     if(resource::live_bytes[pool].load() != baseline) { return 31; }
+    {
+        constexpr auto scratch{static_cast<unsigned>(resource::pool::validation)};
+        auto const before{resource::live_bytes[scratch].load()};
+        auto const previous{resource::policies[scratch]};
+        resource::policies[scratch].single = 0uz;
+        {
+            resource::recoverable_parser_allocations stage{};
+            try { (void)check<wasm, proposals>(sum, extended(3)); return 34; }
+            catch(::std::bad_alloc const&) {}
+            try { (void)check<wasm, proposals>(array_module, gc_bytes(full_array_bytes)); return 35; }
+            catch(::std::bad_alloc const&) {}
+        }
+        ::uwvm2::utils::container::parser_vector<t3::owned_function_signature<unsigned>> signatures{};
+        signatures.resize(2uz);
+        auto const candidate = [&]
+        {
+            return resource::recoverable_parser_allocations::prepare_candidate([&]
+            {
+                // An emitter may use an unproved equivalence as a Boolean optimization hint.
+                (void)v3::core3_function_types_equivalent(0uz, 1uz, signatures);
+                return 1;
+            }, [] { return 2; });
+        };
+        if(candidate() != 2 || resource::live_bytes[scratch].load() != before) { return 36; }
+        resource::policies[scratch] = previous;
+        if(candidate() != 1 || resource::live_bytes[scratch].load() != before) { return 37; }
+    }
     namespace names = ::uwvm2::parser::wasm_custom::customs;
     // Two distinct function-local name maps each contain one local.
     constexpr ::std::uint8_t subsection[]{2, 11, 2, 0, 1, 0, 1, 'a', 1, 1, 0, 1, 'b'};
