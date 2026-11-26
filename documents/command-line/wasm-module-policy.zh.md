@@ -45,6 +45,7 @@
 | `init.imported-字段` | 非负十进制计数，字段为 `functions`、`tables`、`memories`、`globals`、`tags`。 |
 | `init.local-defined-字段` | 非负十进制计数，字段为 `functions`、`codes`、`tables`、`memories`、`globals`、`tags`、`elements`、`datas`。 |
 | `init.element-expressions` | 一个模块所有元素段中的表达式项总数。进程默认上限为 1,048,576；索引形式使用解析器已持有的存储。 |
+| `init.allocation-bytes` | 每个本地定义的内存或表允许申请的初始字节数，受进程 `initializer allocation-bytes` 上限约束。定义模块的策略也适用于恢复时重建的长度。 |
 | `runtime.memory-pages` | `MIN` 或 `MIN:MAX`，单位为该内存定义的 Wasm 页。页数为宿主 `size_t` 可表示的非负十进制整数，且 `MAX >= MIN`。 |
 | `runtime.memtag-checks` | `on`（默认）或 `off`。由发起访问的模块决定是否比较指针和分配标签，导入内存也遵循调用方策略。 |
 | `runtime.memtag-backend` | `auto`（默认）、`software`、`arm-mte`、`x86-mtt`，用于该模块定义的带标签内存。 |

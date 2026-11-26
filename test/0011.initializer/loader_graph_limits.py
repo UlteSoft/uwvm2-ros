@@ -19,12 +19,16 @@ def name(value):
     return bytes([len(value)]) + value.encode("ascii")
 
 
-def module(import_names, export_names):
+def module(import_names, export_names, *, memory_import=None, table_size=None):
     body = HEADER + section(1, b"\x01\x60\x00\x00")
-    if import_names:
-        body += section(2, bytes([len(import_names)]) +
-                        b"".join(name(owner) + name(field) + b"\0\0" for owner, field in import_names))
+    imports = [name(owner) + name(field) + b"\0\0" for owner, field in import_names]
+    if memory_import:
+        imports.append(name(memory_import) + name("m") + b"\x02\x00\x01")
+    if imports:
+        body += section(2, bytes([len(imports)]) + b"".join(imports))
     body += section(3, b"\x01\x00")
+    if table_size is not None:
+        body += section(4, b"\x01\x70\x00" + bytes([table_size]))
     body += section(7, bytes([len(export_names)]) +
                     b"".join(name(field) + bytes([0, len(import_names)]) for field in export_names))
     return body + section(10, b"\x01\x02\x00\x0b")
@@ -70,6 +74,23 @@ def main():
         paths = ["--wasm-process-initializer-limit", "cycle_path_entries"]
         check("two modules form a three-entry cycle", [*paths, "3", *preload, *main_run], 0)
         check("closing name exceeds path quota", [*paths, "2", *preload, *main_run], 127, "cycle_path_entries")
+
+        provider.write_bytes(HEADER + section(5, b"\x01\x00\x01") +
+                             section(7, b"\x01" + name("m") + b"\x02\x00"))
+        main_wasm.write_bytes(module([], ["_start"], memory_import="app.provider"))
+        global_zero = ["--wasm-policy-global", "init.allocation-bytes", "0"]
+        group = ["--wasm-policy-group", "owners", "init.allocation-bytes", "65536",
+                 "--wasm-policy-group-add-module", "owners", "app.provider"]
+        check("imported alias borrows the admitted owner", [*global_zero, *group, *preload, *main_run], 0)
+        check("single owner is one byte over",
+              [*global_zero, *group, "--wasm-policy-single", "app.provider", "init.allocation-bytes", "65535",
+               *preload, *main_run], 127, "init.allocation-bytes")
+        check("process ceiling still applies",
+              [*group, "--wasm-set-resource-limit", "initializer", "allocation-bytes", "65535",
+               *preload, *main_run], 127, "byte budget")
+        for slots in (0, 1):
+            main_wasm.write_bytes(module([], ["_start"], table_size=slots))
+            check(f"table slots at zero byte limit: {slots}", [*global_zero, *main_run], 0 if slots == 0 else 127)
 
 
 if __name__ == "__main__":

@@ -118,6 +118,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
         }
 
+        [[nodiscard]] inline constexpr ::std::size_t initializer_backing_limit(
+            ::uwvm2::uwvm::wasm::type::module_initializer_limits const& policy) noexcept
+        {
+            return (::std::min)(policy.allocation_bytes, ::uwvm2::utils::allocator::resource::initializer_allocation_bytes);
+        }
+
         template <initialization_purpose Purpose>
         [[noreturn]] inline void initializer_metadata_failure() noexcept(Purpose == initialization_purpose::ordinary)
         {
@@ -6630,13 +6636,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     if constexpr(Purpose != initialization_purpose::unpublished_restore)
                     {
                         using slot = ::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t;
-                        if(table_type.limits.min > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes / sizeof(slot) ||
+                        if(table_type.limits.min > initializer_backing_limit(module_limits) / sizeof(slot) ||
                            !::uwvm2::uwvm::runtime::storage::try_grow_table_elements(rec, static_cast<::std::size_t>(table_type.limits.min), {}))
                         {
                             if constexpr(Purpose == initialization_purpose::ordinary)
                             {
                                 ::uwvm2::utils::allocator::resource::reject_allocation(
-                                    "uwvm: [error] initializer: table allocation exceeds the configured byte budget or available host memory. Use --wasm-set-resource-limit to configure initializer/table limits.\n");
+                                    "uwvm: [error] initializer: table allocation exceeds the configured byte budget or available host memory. Check init.allocation-bytes and --wasm-set-resource-limit initializer/table limits.\n");
                             }
                             else { initializer_metadata_failure<Purpose>(); }
                         }
@@ -6760,11 +6766,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         limit_pages_to_memory_domain(memory_type, resolve_effective_runtime_memory_limits_in_context(
                             world, memory_type.limits, local_defined_memory_limit_override.limits, u8"local-defined", memory_idx))};
 
+                    auto const page_bytes{linear_memory_page_size_bytes_from_log2(::uwvm2::extension::adm::page_shift(memory_type))};
+                    if(effective_limits.min > initializer_backing_limit(module_limits) / page_bytes)
+                    {
+                        if constexpr(Purpose == initialization_purpose::ordinary)
+                        {
+                            ::uwvm2::utils::allocator::resource::reject_allocation(
+                                "uwvm: [error] initializer: linear memory exceeds the configured byte budget. Check init.allocation-bytes and --wasm-set-resource-limit initializer allocation-bytes.\n");
+                        }
+                        else { initializer_metadata_failure<Purpose>(); }
+                    }
+
                     emit_local_memory_init_verbose_in_context(world, u8"construct record begin",
                                                    memory_idx,
                                                    memory_type.limits,
                                                    effective_limits,
-                                                   linear_memory_page_size_bytes_from_log2(::uwvm2::extension::adm::page_shift(memory_type)));
+                                                   page_bytes);
 
                     if constexpr(Purpose == initialization_purpose::threaded_child)
                     { out.local_defined_memory_vec_storage.push_back({.memory=world.make_memory()}); }

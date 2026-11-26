@@ -484,6 +484,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     actual.memory.custom_page_size_log2 != 16u || chunks.size() >
                     static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/sizeof(saved_memory_chunk) ||
                     (!chunks.empty() && chunks.data() == nullptr)) { return false; }
+                auto const* file{unpublished_file_for_module(module)};
+                if(file == nullptr || pages > details::initializer_backing_limit(file->wasm_parameter.initializer_limits) / 65536u) { return false; }
                 auto const& declaration{*actual.memory_type_ptr};
                 // Actual configured overrides replace declared min/max,
                 // including accepted warned widening; cold census uses the SAME
@@ -640,13 +642,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 if(actual.table_type_ptr==nullptr || actual.owner_module_rt_ptr!=module || !actual.elems.empty() ||
                     chunks.size()>static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/sizeof(saved_table_chunk) ||
                     (!chunks.empty() && chunks.data()==nullptr)) { return false; }
+                auto const* file{unpublished_file_for_module(module)};
+                if(file == nullptr) { return false; }
                 auto const& declaration{*actual.table_type_ptr}; saved_core_type real_type{};
                 auto const real_max{(::std::min)(declaration.address64 ? (::std::numeric_limits<::std::uint64_t>::max)() :
                     ::std::uint64_t{0xffffffffu}, static_cast<::std::uint64_t>(declaration.limits.max))};
                 if(!saved_reference_declaration(declaration,real_type) || expected!=real_type ||
                     address_bits!=(declaration.address64?64u:32u) || minimum!=declaration.limits.min || maximum!=real_max ||
                     length<minimum || length>maximum ||
-                    length>::uwvm2::utils::allocator::resource::initializer_allocation_bytes/sizeof(storage::local_defined_table_elem_storage_t) ||
+                    length>details::initializer_backing_limit(file->wasm_parameter.initializer_limits)/sizeof(storage::local_defined_table_elem_storage_t) ||
                     length>maximum_native_bytes/sizeof(storage::local_defined_table_elem_storage_t) ||
                     length>static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/sizeof(storage::local_defined_table_elem_storage_t))
                 { return false; }

@@ -111,6 +111,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 #endif
 
         auto& modules{::uwvm2::uwvm::wasm::storage::all_module};
+        if(!modules.empty())
+        {
+            // A second registration of an existing name has always been a duplicate.
+            // Check before adding the two extents to avoid counting the same owner twice.
+            auto duplicate = [&](auto name)
+            {
+                if(!modules.contains(name)) { return false; }
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Duplicate module name: ", name);
+                return true;
+            };
+            for(auto const& preload : ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm())
+            { if(duplicate(preload.module_name)) { return load_and_check_modules_rtl::duplicate_module_name; } }
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+            for(auto const& driver : ::uwvm2::uwvm::wasm::storage::preloaded_dl)
+            { if(duplicate(driver.module_name)) { return load_and_check_modules_rtl::duplicate_module_name; } }
+#endif
+            for(auto& provider : ::uwvm2::uwvm::wasm::storage::preload_local_imported)
+            { if(duplicate(provider.get_module_name())) { return load_and_check_modules_rtl::duplicate_module_name; } }
+            if(duplicate(::uwvm2::uwvm::wasm::storage::active_execute_wasm().module_name))
+            { return load_and_check_modules_rtl::duplicate_module_name; }
+        }
         ::std::size_t declared_count{};
         if(!permits_registered_modules(modules.size(), ::std::addressof(declared_count)))
         {
@@ -349,8 +370,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         // Used to record the contents exported by each module. Persist globally.
         // Rebuild every run to avoid stale `u8string_view` keys and mismatched module sets.
         ::std::remove_reference_t<decltype(world.exports())> next_exports{};
-        // Drop stale borrowed names and publish only a complete new export table.
-        world.exports() = {};
+        // The previous graph stays live until every name and binding in its replacement has been admitted.
         next_exports.reserve(all_module_size);  // Reserve space for all modules to avoid reallocations
 
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
