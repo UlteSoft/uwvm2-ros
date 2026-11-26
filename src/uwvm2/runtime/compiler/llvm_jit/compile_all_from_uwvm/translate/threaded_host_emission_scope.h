@@ -43,6 +43,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         ::uwvm2::utils::container::std_vector<threaded_native_bridge>* bridges_{};
         threaded_forbidden_memory_span const* forbidden_{};
         ::std::size_t forbidden_count_{};
+        using object_emitter=::llvm::Value* (*)(void*,::llvm::IRBuilder<>&,::std::uintptr_t,
+            ::uwvm2::utils::container::u8string_view);
+        void* objects_{};
+        object_emitter emit_object_{};
         threaded_host_emission_scope* previous_{};
         bool valid_{true};
         ::std::uintptr_t instruction_target_{};
@@ -110,6 +114,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         [[nodiscard]] static ::std::uintptr_t owned_table_views() noexcept
         {return current_!=nullptr&&current_->valid_?current_->owned_views_:0u;}
         [[nodiscard]] static bool selected() noexcept{return current_!=nullptr;}
+        [[nodiscard]] static bool relocates_objects() noexcept { return current_ && current_->emit_object_; }
+        [[nodiscard]] static ::llvm::Value* emit_object(::llvm::IRBuilder<>& builder,::std::uintptr_t address,
+            ::uwvm2::utils::container::u8string_view name)
+        {
+            return address && relocates_objects() ? current_->emit_object_(current_->objects_,builder,address,name) : nullptr;
+        }
         [[nodiscard]] static bool record_scalar_bounds(::llvm::Module const* ir,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module) noexcept
         {

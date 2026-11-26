@@ -585,7 +585,12 @@ template<auto Ordinary, auto Managed>
     switch(threaded_host_emission_scope::select(insertion_module))
     {
         case threaded_host_emission_scope::selection::owned:
-            return get_llvm_host_pointer_value(ir_builder,threaded_host_emission_scope::object_address(host_address),pointer_type);
+        {
+            auto const address{threaded_host_emission_scope::object_address(host_address)};
+            if(threaded_host_emission_scope::relocates_objects())
+                return threaded_host_emission_scope::emit_object(ir_builder,address,symbol_name);
+            return get_llvm_host_pointer_value(ir_builder,address,pointer_type);
+        }
         case threaded_host_emission_scope::selection::rejected: return nullptr;
         case threaded_host_emission_scope::selection::ordinary: break;
     }

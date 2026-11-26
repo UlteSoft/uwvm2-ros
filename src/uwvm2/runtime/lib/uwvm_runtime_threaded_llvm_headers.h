@@ -17,6 +17,7 @@
 #include <llvm/CodeGen/TargetRegisterInfo.h>
 #include <llvm/CodeGen/TargetSubtargetInfo.h>
 #include <llvm/ADT/DenseMap.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/Analysis/InstructionSimplify.h>
 #include <llvm/Analysis/LoopInfo.h>

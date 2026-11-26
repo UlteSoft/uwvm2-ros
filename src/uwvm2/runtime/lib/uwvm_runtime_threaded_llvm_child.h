@@ -12,6 +12,15 @@ extern "C++"
         struct preparation_result
         {::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild> child;preparation_status status{preparation_status::invalid_world};};
     private:
+        friend class runtime_threaded_profile_bridge;
+        struct prepared_object;
+        // Only this group's compiler pthread can inspect or replace the object.
+        // Its prepaid storage is independent of every guest's execution quota.
+        struct object_cache
+        {
+            ::std::size_t limit{};
+            ::uwvm2::utils::container::std_unique_ptr<prepared_object> object;
+        };
         using world_type=::uwvm2::uwvm::runtime::initializer::ThreadedChildWorld;
         using module_type=::uwvm2::uwvm::runtime::storage::wasm_module_storage_t;
         using memory_type=::uwvm2::object::memory::linear::native_memory_t;
@@ -22,7 +31,7 @@ extern "C++"
         struct native_lowering_attempt
         {
             bool allow_shared_scalars{true};
-            bool shared_scalars{},polls{};
+            bool shared_scalars{},polls{},relocated{};
         };
         struct entries { ::uwvm2::utils::container::std_string typed_name,raw_name;::std::uintptr_t typed{},raw{}; };
         struct external { ::uwvm2::utils::container::std_string name;::std::uintptr_t address{}; };
@@ -453,14 +462,15 @@ extern "C++"
         [[nodiscard]] static preparation_result prepare_graph(world_type::owner const& world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
-            native_lowering_attempt* lowering) noexcept
+            native_lowering_attempt* lowering,object_cache* cache=nullptr) noexcept
         {
             if(!world)return {{},preparation_status::invalid_world};
             auto const& limits=world->admission().limits();
             if(!llvm_limits.valid(limits.max_child_code_bytes))return {{},preparation_status::invalid_world};
-            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,lowering);
+            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,lowering,cache);
             if(!result.child)return result;
             auto& root=*result.child;
+            bool const diagnose=!lowering || !lowering->relocated || ::uwvm2::uwvm::io::show_verbose;
             try
             {
                 root.peers_.reserve(world->module_count()-1u);
@@ -473,7 +483,7 @@ extern "C++"
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM module ",m," requires ",peer.native_bytes_,
+                        if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM module ",m," requires ",peer.native_bytes_,
                             " code bytes and ",peer.storage_bytes_," storage bytes, remaining ",limits.max_child_code_bytes-code,
                             " code bytes and ",backend_storage_budget-storage," storage bytes");
                         return {{},preparation_status::budget};
@@ -491,7 +501,7 @@ extern "C++"
                     root.guest_fixed_stack_charge_=frame*(root.call_limit_+1u);
                     if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)
                     {
-                        root.report_native_stack_budget("module graph");
+                        if(diagnose)root.report_native_stack_budget("module graph");
                         return {{},preparation_status::budget};
                     }
                     auto const registry=root.peers_.capacity()*sizeof(::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>);
@@ -527,10 +537,20 @@ extern "C++"
         // Only the group-owned compiler worker prepares this unpublished graph.
         [[nodiscard]] static preparation_result prepare(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget,::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+            ::std::size_t backend_storage_budget,::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
+            object_cache* cache=nullptr) noexcept
         {
             native_lowering_attempt lowering{};
-            auto result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&lowering);
+            auto result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&lowering,cache);
+            if(!result.child && lowering.relocated && !compiler.cancellation().stop_requested())
+            {
+                // Symbol counts, native frames and relocation charges can differ.
+                // Requalify the original absolute-address emission under the same limits.
+                if(::uwvm2::uwvm::io::show_verbose)
+                    ::fast_io::perrln("uwvm: [verbose] WASI Threads LLVM group object fallback status=",static_cast<unsigned>(result.status));
+                lowering={};
+                result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&lowering);
+            }
             auto retryable=[&]() noexcept
             {
                 return (result.status==preparation_status::budget||result.status==preparation_status::native_failure||
