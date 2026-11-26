@@ -76,4 +76,20 @@ int main(int argc, char** argv)
     budget.single = SIZE_MAX;
     if(live.load() || resource::parser_input_limit(SIZE_MAX) != static_cast<::std::size_t>(PTRDIFF_MAX) ||
        policy::set(overflow, u8"parser.limit.input-bytes", u8"340282366920938463463374607431768211456")) { return 13; }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+    // A private reparse can reject an otherwise valid module without losing
+    // the previous mapped generation or its input and parser reservations.
+    budget = {data.size(), 2 * data.size()};
+    constexpr auto parser{static_cast<unsigned>(resource::pool::parser)};
+    auto const previous_live{resource::live_bytes[parser].load()};
+    if(wasm::loader::load_wasm_file(loaded, filename, u8"m", config) != result::ok) { return 17; }
+    begin = loaded.source_cbegin();
+    auto const retained{resource::live_bytes[parser].load()};
+    resource::policies[parser].live = retained;
+    auto candidate{image::copy_wasm_bytes(data)};
+    if(!candidate || wasm::loader::load_wasm_file(loaded, filename, u8"m", config, ::std::move(candidate.image)) != result::wasm_parser_error ||
+       retained <= previous_live || loaded.source_cbegin() != begin || live.load() != data.size() || resource::live_bytes[parser].load() != retained) { return 18; }
+    loaded = {};
+    if(live.load() || resource::live_bytes[parser].load() != previous_live) { return 19; }
+#endif
 }
