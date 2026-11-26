@@ -55,6 +55,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
     inline constexpr ::std::size_t observation_fused_snapshot_tag{observation_local_snapshot_tag >> 1u};
     inline constexpr unsigned observation_local_count_bits{9u};
     inline constexpr ::std::size_t observation_local_count_mask{(::std::size_t{1u} << observation_local_count_bits)-1u};
+    // In a non-fused resumable safepoint packet the public prefix is followed
+    // by one packed native pointer to the current function's local-address table.
+    inline constexpr ::std::size_t resumable_local_addresses_tag{::std::size_t{1u} << observation_local_count_bits};
     inline constexpr ::std::uint64_t observation_fused_max_site{
         (observation_fused_snapshot_tag-1u) >> observation_local_count_bits};
     [[nodiscard]] inline constexpr bool observer_workspace_fits(::std::size_t locals, ::std::size_t slots) noexcept
@@ -186,7 +189,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
         // A global flag, a borrowed address or a mutable runtime bool cannot
         // distinguish ordinary, observation-only and restorable generated IR.
         using cache_identity_type = ::std::array<::std::uint64_t, 10u>;
-        inline static constexpr ::std::uint64_t resumable_policy_revision{18u};
+        inline static constexpr ::std::uint64_t resumable_policy_revision{19u};
         [[nodiscard]] cache_identity_type cache_identity() const noexcept
         {
             // Explicit codegen policy versions distinguish identical caps:
@@ -223,6 +226,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             // exception cleanup remains; old generated cache entries expire.
             // Resumable v18 includes the ROS hidden provenance operand in the
             // exact typed continuation ABI and seeds it through the live runtime.
+            // v19 binds the active local cells at cooperative debugger stops.
             auto const policy{purpose_ == compilation_purpose::observe_values ? 65u : resumable_policy_revision};
             return {0x554357504c4f4731u, policy, state_schema_revision, native_resume_abi_revision, native_slot_bytes, cap_.frames, cap_.slots_per_frame, cap_.controls_per_frame, cap_.handlers_per_frame, native_workspace_limit};
         }

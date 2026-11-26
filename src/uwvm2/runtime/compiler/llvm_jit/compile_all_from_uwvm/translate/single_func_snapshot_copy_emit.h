@@ -12,7 +12,7 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
        state.llvm_function->getParent() != state.llvm_module || count > state.local_pointers.size() ||
        state.local_pointers.size() != state.local_types.size()) { return false; }
     bool const heap_table{state.checkpoint_observer_workspace != nullptr};
-    auto const table_count{heap_table ? state.local_pointers.size() :
+    auto const table_count{heap_table || state.bind_resumable_local_addresses ? state.local_pointers.size() :
         (::std::min)(state.local_pointers.size(),llvm_jit_snapshot_copy_local_limit)};
     if(count > table_count || table_count > static_cast<::std::size_t>((::std::numeric_limits<unsigned>::max)()))
     { return false; }
@@ -54,8 +54,8 @@ inline constexpr ::std::size_t llvm_jit_snapshot_copy_local_limit{256u};
         return table != nullptr && table->getFunction() == state.llvm_function && table->isStaticAlloca() &&
             !table->isArrayAllocation() && table->getAllocatedType() == array;
     }
-    // Complete declarations use private storage inside the bounded observer
-    // allocation; normal legacy/public prefixes retain a <=256 entry table.
+    // Complete declarations use the observer heap or the budgeted resumable
+    // frame table. A standalone public snapshot only needs its bounded prefix.
     auto& entry{state.llvm_function->getEntryBlock()};
     ::llvm::IRBuilder<> initialize{context};
     auto const terminator{!entry.empty() && entry.back().isTerminator() ? ::std::addressof(entry.back()) : nullptr};

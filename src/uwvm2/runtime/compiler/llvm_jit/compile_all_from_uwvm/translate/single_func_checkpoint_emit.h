@@ -41,6 +41,14 @@
             if(allocated == nullptr) { return false; }
             allocated->setAlignment(::llvm::Align{checkpoint::native_slot_bytes});
             packet = allocated;
+            // The entry bridge consumes its DATA synchronously. Reuse those
+            // slots for later packets so the complete local-address table and
+            // its packed pointer fit within the existing native workspace budget.
+            if(state.bind_resumable_local_addresses)
+            {
+                if(state.checkpoint_packet_values != nullptr) { return false; }
+                state.checkpoint_packet_values = allocated;
+            }
         }
         if(packet == nullptr) { return false; }
         bool const observing{checkpoint_observer_workspace_selected(state)};

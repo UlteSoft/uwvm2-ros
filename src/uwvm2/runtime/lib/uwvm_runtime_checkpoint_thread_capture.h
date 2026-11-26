@@ -64,6 +64,7 @@ namespace
         mutable ::uwvm2::utils::container::std_vector<owned_frame> frames_{};
         // Borrowed only under this capture's genuine still-current all-stop.
         ::uwvm2::runtime::checkpoint::shadow_ledger* actual_shadow_{};
+        ::std::span<::std::byte const> resumable_local_addresses_{};
         // Comparison/borrow only. NEVER read after this actual episode ends.
         ::uwvm2::runtime::gc::managed_entry_admission::shared_lease const* actual_gc_lease_{};
         ::uwvm2::runtime::gc::root_frame const* actual_gc_frames_{};
@@ -333,6 +334,7 @@ namespace
                 ::std::shared_ptr<runtime_checkpoint_thread_capture> candidate{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<runtime_checkpoint_thread_capture>([&](runtime_checkpoint_thread_capture* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) runtime_checkpoint_thread_capture; }))};
                 candidate->actual_gc_lease_ = gc_lease;
                 candidate->actual_shadow_ = shadow;
+                candidate->resumable_local_addresses_ = g_debug_activation_park_site.resumable_local_addresses;
                 candidate->actual_gc_frames_ = ::uwvm2::runtime::gc::current_root_frames();
                 candidate->frames_.reserve(count);
                 for(::std::size_t i{}; i != count; ++i)

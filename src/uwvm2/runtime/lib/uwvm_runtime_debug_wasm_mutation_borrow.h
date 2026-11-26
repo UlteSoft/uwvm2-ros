@@ -525,6 +525,27 @@
             auto const& actual{module.local_defined_memory_vec_storage.index_unchecked(local)}; // owned local bound above.
             return mutation_memory_backend(actual,actual.memory,requested,result);
         }
+        [[nodiscard]] static bool write_parked_frame_slot(capture const& actual, capture::logical_frame const& frame,
+            ::std::size_t slot, ::uwvm2::runtime::checkpoint::native_value const& value) noexcept
+        {
+            auto const addresses{actual.resumable_local_addresses_};
+            if(addresses.empty())
+            { return actual.actual_shadow_->mutate_observer_slot(frame.identity,frame.plan,frame.site,slot,value); }
+            auto const& site{frame.plan->get().sites[static_cast<::std::size_t>(frame.site-1u)]};
+            if(addresses.size()%sizeof(void*)!=0u || addresses.size()/sizeof(void*)!=site.local_count ||
+               slot>=site.local_count) { return false; }
+            // Only this capture's current, parked native leaf owns the table.
+            // Its exact original-index alloca stores the declared carrier width.
+            ::std::byte* cell{};
+            ::std::memcpy(::std::addressof(cell),addresses.data()+slot*sizeof(cell),sizeof(cell));
+            auto const kind{value.declaration.type.kind};
+            auto const width{kind==core_kind::reference ? sizeof(reference) : kind==core_kind::v128 ? 16u :
+                kind==core_kind::i32 || kind==core_kind::f32 ? 4u : 8u};
+            if(cell==nullptr || !actual.actual_shadow_->replace_resumable_local(
+                frame.identity,frame.plan,frame.site,slot,frame.values[slot],value)) { return false; }
+            ::std::memcpy(cell,value.bits.data(),width);
+            return true;
+        }
         [[nodiscard]] ::uwvm2::uwvm::debugger::wasm_mutation::result mutate_selected(
             ::uwvm2::uwvm::debugger::wasm_mutation::request const& requested) const noexcept
         {
@@ -570,7 +591,7 @@
                     else if(value.type.kind!=declared.kind)
                     { result.status=copy_status::available;result.reason=wm::refusal::type_mismatch;return result; }
                     auto next{frame.values[slot]};next.bits=value.carrier.bits;
-                    if(!current_scope() || !actual->actual_shadow_->mutate_observer_slot(frame.identity,frame.plan,frame.site,slot,next))
+                    if(!current_scope() || !write_parked_frame_slot(*actual,frame,slot,next))
                     { result.status=copy_status::stale_stop_or_generation;return result; }
                     frame.values[slot]=next;frame.numeric_packet_pending=false;
                     result.status=copy_status::available;result.reason=wm::refusal::none;

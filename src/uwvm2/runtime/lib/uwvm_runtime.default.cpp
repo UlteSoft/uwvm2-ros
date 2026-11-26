@@ -1240,6 +1240,7 @@ namespace uwvm2::runtime::lib
             ::uwvm2::utils::thread::cooperative_pause_location location{};
             bool before_park{};
             bool suspended_wait{};
+            ::std::span<::std::byte const> resumable_local_addresses{};
         };
         inline constinit thread_local debug_activation_park_site g_debug_activation_park_site{};
         [[nodiscard]] ::std::uint64_t debug_activation_suspend_host() noexcept
@@ -16371,7 +16372,10 @@ namespace uwvm2::runtime::lib
             auto const expected_count{(::std::min)(total_count, llvm_jit_debug_max_captured_locals)};
             bool const shared_checkpoint_locals{(captured_local_count &
                 ::uwvm2::runtime::checkpoint::observation_local_snapshot_tag) != 0u};
-            captured_local_count &= ~::uwvm2::runtime::checkpoint::observation_local_snapshot_tag;
+            bool const resumable_locals{(captured_local_count &
+                ::uwvm2::runtime::checkpoint::resumable_local_addresses_tag) != 0u};
+            captured_local_count &= ~(::uwvm2::runtime::checkpoint::observation_local_snapshot_tag |
+                ::uwvm2::runtime::checkpoint::resumable_local_addresses_tag);
             if(captured_local_count != expected_count || (expected_count != 0u && local_snapshot == 0u)) [[unlikely]]
             { ::fast_io::fast_terminate(); }
             ::fast_io::array<::std::uint_least8_t, llvm_jit_debug_max_captured_locals> types{};
@@ -16394,6 +16398,24 @@ namespace uwvm2::runtime::lib
             if(expected_count != 0u && local_snapshot > UINTPTR_MAX - packet_bytes) [[unlikely]] { ::fast_io::fast_terminate(); }
             auto const* snapshot{reinterpret_cast<::std::byte const*>(local_snapshot)};
             ::std::uint_least8_t const* availability{};
+            ::std::span<::std::byte const> resumable_addresses{};
+            if(resumable_locals && !suspended_wait)
+            {
+                namespace checkpoint = ::uwvm2::runtime::checkpoint;
+                if(shared_checkpoint_locals || !expected_count || !g_runtime.checkpoint_profile ||
+                   g_runtime.checkpoint_profile->purpose()!=checkpoint::compilation_purpose::resumable ||
+                   !checkpoint::native_workspace_with_saved_fits(total_count,total_count,0u) ||
+                   local_snapshot > UINTPTR_MAX-packet_bytes-sizeof(void*)) [[unlikely]] { ::fast_io::fast_terminate(); }
+                // Only this genuine generated safepoint supplies the packed tail.
+                // The private table contains one original-index address per local.
+                // It stays in the native frame across the participant's actual park.
+                ::std::byte const* table{};
+                ::std::memcpy(::std::addressof(table),snapshot+packet_bytes,sizeof(table));
+                auto const bytes{total_count*sizeof(void*)};
+                if(table==nullptr || reinterpret_cast<::std::uintptr_t>(table)>UINTPTR_MAX-bytes) [[unlikely]]
+                { ::fast_io::fast_terminate(); }
+                resumable_addresses={table,bytes};
+            }
             if(shared_checkpoint_locals)
             {
                 // This is the SAME admitted native leaf's current LIFO buffer,
@@ -16432,7 +16454,7 @@ namespace uwvm2::runtime::lib
             g_debug_observer_active = true;
             g_debug_native_safe_point_site.before_park = !suspended_wait;
             if(g_debug_activation_park_site.before_park) [[unlikely]] { ::fast_io::fast_terminate(); }
-            g_debug_activation_park_site = {location, true, suspended_wait};
+            g_debug_activation_park_site = {location, true, suspended_wait, resumable_addresses};
             observer.on_before_park(observer.context.get(), participant->identifier(), location, locals);
             g_debug_activation_park_site = {};
             g_debug_native_safe_point_site.before_park = false;

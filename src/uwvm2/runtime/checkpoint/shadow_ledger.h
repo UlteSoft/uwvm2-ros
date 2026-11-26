@@ -445,6 +445,27 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::checkpoint
             observer_storage_[active_frame_count_-1u]={};
         }
         // The runtime calls this only inside its authenticated all-stop/N
+        // borrow, after it has resolved the actual resumable leaf's local cell.
+        // The owned shadow must reflect the edit for GC and subsequent captures.
+        [[nodiscard]] bool replace_resumable_local(activation_identity identity, sealed_function_plan::owner const& plan,
+            ::std::uint64_t site_id, ::std::size_t local, native_value const& previous, native_value const& value) noexcept
+        {
+            auto const actual{compiler_top_plan(identity)};
+            if(actual==nullptr || *actual!=plan || actual->owner_before(plan) || plan.owner_before(*actual) ||
+               profile_->purpose()!=compilation_purpose::resumable) { return false; }
+            auto& frame{active_frame()};
+            if(!frame.materialized || frame.numeric_packet_pending || frame.site!=site_id ||
+               !site_id || site_id>plan->get().sites.size()) { return false; }
+            auto const& site{plan->get().sites[static_cast<::std::size_t>(site_id-1u)]};
+            if(site.phase!=frame_phase::before_opcode || local>=site.local_count || local>=site.slots.size() ||
+               frame.values.size()!=site.slots.size() || !site.slots[local].initialized ||
+               !value.declaration.initialized || value.declaration!=frame.values[local].declaration ||
+               previous.declaration!=value.declaration || previous.bits!=frame.values[local].bits ||
+               value.declaration.type!=site.slots[local].type) { return false; }
+            frame.values[local]=value;
+            return true;
+        }
+        // The runtime calls this only inside its authenticated all-stop/N
         // borrow. No native stack address escapes. The generated cold return
         // path reloads exactly these typed slots before executing the opcode.
         [[nodiscard]] bool mutate_observer_slot(activation_identity identity,

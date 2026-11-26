@@ -7425,6 +7425,7 @@ struct runtime_local_func_llvm_jit_emit_state_t
     // identity, source value or ASM authority is stored in these lexical cells.
     ::llvm::Value* snapshot_local_pointers{}; // entry alloca or activation-owned private heap table
     ::std::size_t snapshot_local_pointers_count{};
+    bool bind_resumable_local_addresses{};
     ::llvm::GlobalVariable* debug_inline_snapshot_zero{}; // private immutable fallback; not local/root storage
     ::llvm::Function* debug_local_snapshot_copy{};
     ::std::size_t debug_local_snapshot_copy_count{};
@@ -8086,13 +8087,23 @@ struct runtime_local_func_llvm_jit_emit_state_t
     if(bridge == nullptr) [[unlikely]] { return false; }
     static_assert(noexcept(::uwvm2::runtime::lib::details::llvm_jit_debug_safe_point_abi_bridge({}, {}, {}, {}, {})));
     if(auto const declaration{::llvm::dyn_cast<::llvm::Function>(bridge)}; declaration != nullptr) { declaration->setDoesNotThrow(); }
+    namespace checkpoint = ::uwvm2::runtime::checkpoint;
+    auto encoded_count{captured_count};
+    if(shared_checkpoint_locals)
+    {
+        encoded_count |= (captured_count != 0u ? checkpoint::observation_local_snapshot_tag : 0u) |
+            checkpoint::observation_fused_snapshot_tag | (static_cast<::std::size_t>(fused_site) << checkpoint::observation_local_count_bits);
+    }
+    else if(state.bind_resumable_local_addresses && state.checkpoint_plan->producer_availability == checkpoint::status::ok &&
+            state.checkpoint_current_site != 0u && state.checkpoint_current_site <= state.checkpoint_plan->sites.size())
+    {
+        auto const& site{state.checkpoint_plan->sites[static_cast<::std::size_t>(state.checkpoint_current_site-1u)]};
+        if(site.phase == checkpoint::frame_phase::before_opcode && site.opcode_offset == wasm_expr_byte_offset)
+        { encoded_count |= checkpoint::resumable_local_addresses_tag; }
+    }
     auto const call{apply_llvm_jit_host_calling_conv(builder.CreateCall(type, bridge,
         {::llvm::ConstantInt::get(integer, local.module_id), ::llvm::ConstantInt::get(integer, local.function_index),
-         ::llvm::ConstantInt::get(integer, wasm_expr_byte_offset), snapshot_address,
-         ::llvm::ConstantInt::get(integer, captured_count | (shared_checkpoint_locals ?
-             ((captured_count != 0u ? ::uwvm2::runtime::checkpoint::observation_local_snapshot_tag : 0u) |
-              ::uwvm2::runtime::checkpoint::observation_fused_snapshot_tag |
-              (static_cast<::std::size_t>(fused_site) << ::uwvm2::runtime::checkpoint::observation_local_count_bits)) : 0u))}))};
+         ::llvm::ConstantInt::get(integer, wasm_expr_byte_offset), snapshot_address, ::llvm::ConstantInt::get(integer, encoded_count)}))};
     // The host may cooperatively block and touches synchronization state. Keep
     // its side effects; nounwind does not imply readonly, nosync or speculatable.
     call->setDoesNotThrow();
@@ -8754,18 +8765,29 @@ namespace sealed_compact_codegen {
                 ::uwvm2::runtime::lib::details::llvm_jit_debug_local_slot_bytes)};
             state.debug_local_snapshot_type = ::llvm::ArrayType::get(slot, static_cast<unsigned>(count));
             auto const availability{::llvm::ArrayType::get(state.ir_builder->getInt8Ty(), static_cast<unsigned>(count))};
-            // Both byte arrays have ABI alignment 1. LLVM struct field 0 starts
-            // at zero, and field 1 follows exactly count*16 bytes, on every ABI.
-            // Existing five-argument native/ASM bridge signature stays intact.
-            state.debug_local_snapshot_packet_type = ::llvm::StructType::get(llvm_context,
-                {state.debug_local_snapshot_type, availability}, false);
+            // The public values and flags retain their byte layout. A resumable
+            // native frame also carries one private, unaligned pointer. Both the
+            // ordinary entry and its continuation clone initialize it before dispatch.
+            namespace checkpoint = ::uwvm2::runtime::checkpoint;
+            state.bind_resumable_local_addresses = checkpoint_saved_control_selected(state) &&
+                checkpoint::native_workspace_with_saved_fits(state.local_types.size(),state.local_types.size(),0u);
+            state.debug_local_snapshot_packet_type = state.bind_resumable_local_addresses ?
+                ::llvm::StructType::get(llvm_context,{state.debug_local_snapshot_type,availability,state.ir_builder->getPtrTy()},true) :
+                ::llvm::StructType::get(llvm_context,{state.debug_local_snapshot_type,availability},false);
             state.debug_local_snapshot = create_llvm_jit_entry_block_alloca(*state.ir_builder,
                 state.debug_local_snapshot_packet_type, nullptr, get_llvm_string_ref(u8"debug.locals.snapshot.available.v2"));
             if(state.debug_local_snapshot == nullptr) [[unlikely]] { return false; }
             // Every payload and availability byte is initialized. A false flag
             // never grants permission to interpret that slot's zero padding.
-            state.ir_builder->CreateStore(::llvm::ConstantAggregateZero::get(state.debug_local_snapshot_packet_type),
-                                          state.debug_local_snapshot);
+            if(state.bind_resumable_local_addresses)
+            {
+                if(!prepare_runtime_local_func_llvm_jit_snapshot_local_pointers(state,state.local_types.size())) { return false; }
+                state.ir_builder->CreateMemSet(state.debug_local_snapshot,state.ir_builder->getInt8(0u),
+                    count*(checkpoint::native_slot_bytes+1u),::llvm::MaybeAlign{1u});
+                auto const table{state.ir_builder->CreateStructGEP(state.debug_local_snapshot_packet_type,state.debug_local_snapshot,2u)};
+                state.ir_builder->CreateStore(state.snapshot_local_pointers,table)->setAlignment(::llvm::Align{1u});
+            }
+            else { state.ir_builder->CreateStore(::llvm::ConstantAggregateZero::get(state.debug_local_snapshot_packet_type),state.debug_local_snapshot); }
         }
     }
 
