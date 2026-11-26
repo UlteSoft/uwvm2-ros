@@ -94,6 +94,80 @@ static t::recursive_type_section make_recursive_subtypes(::std::uint_least32_t f
     return section;
 }
 
+static void check_reference_budgets(t::recursive_type_section const& section)
+{
+    namespace resource = ::uwvm2::utils::allocator::resource;
+    using status = r::gc_object_status;
+    constexpr auto pool{static_cast<unsigned>(resource::pool::auxiliary)};
+    auto& limits{resource::policies[pool]};
+    auto const original{limits};
+    auto const& live{resource::live_bytes[pool]};
+    auto const before{live.load()};
+    g::wasm_global_ref_t cell{};
+    {
+        r::wasm_module_storage_t source{}, recipient{};
+        source.gc_lease_roots = ::std::make_shared<r::gc_lease_owner>();
+        recipient.gc_lease_roots = ::std::make_shared<r::gc_lease_owner>();
+        source.gc_store = ::std::make_shared<r::gc_object_store>(section, source.gc_lease_roots);
+        recipient.gc_store = ::std::make_shared<r::gc_object_store>(section, recipient.gc_lease_roots);
+        check(source.gc_store->struct_new_default(0u, cell) == status::ok, "reference budget source");
+        g::wasm_global_ref_t bridge{};
+        check(source.gc_store->extern_convert_any(cell, bridge) == status::ok, "reference budget external bridge");
+
+        auto const base{live.load()};
+        limits.live = base;
+        r::local_defined_table_storage_t table{};
+        table.owner_module_rt_ptr = &recipient;
+        check(r::retain_runtime_table_reference(&table, cell) == status::out_of_memory, "foreign aggregate lease refusal");
+        check(r::retain_runtime_table_extern_payload(&table, bridge.storage.ptr) == status::out_of_memory, "external bridge lease refusal");
+        check(source.gc_store->retain_gc_reference(cell) == status::ok, "local aggregate needs no new lease");
+        auto const input{r::gc_object_value::reference(cell)};
+        auto output{g::make_wasm_i31_reference(37)};
+        bool auxiliary{};
+        check(recipient.gc_store->array_new_fixed(2u, &input, 1u, output, &auxiliary) == status::out_of_memory && auxiliary,
+              "constructor preserves an operand lease refusal");
+        check(recipient.gc_store->extern_convert_any(cell, output) == status::out_of_memory &&
+              output.kind == g::wasm_ref_kind::wasm_i31 && live.load() == base, "failed conversion preserves its result");
+        limits = original;
+        check(r::retain_runtime_table_reference(&table, cell) == status::ok, "foreign lease admitted");
+        auto const rooted{live.load()};
+        limits.live = rooted;
+        auxiliary = false;
+        check(recipient.gc_store->array_new(2u, input, 1u, output, &auxiliary) == status::out_of_memory && auxiliary &&
+              output.kind == g::wasm_ref_kind::wasm_i31 && live.load() == rooted, "embedded object lease refuses before publication");
+        limits = original;
+
+        auto exception{::uwvm2::runtime::exception::value::make(::std::make_shared<int>(1), {})};
+        check(static_cast<bool>(exception), "exception budget source");
+        // A token and a root fit individually. A first-use membership index holds 1024 pointers.
+        limits.single = 1024u * sizeof(void*) - 1u;
+        g::wasm_global_ref_t exn{};
+        check(source.gc_store->make_exn_reference(exception, exn) == status::out_of_memory &&
+              exn.kind == g::wasm_ref_kind::wasm_null && live.load() == rooted, "first exception index uses the auxiliary pool");
+        limits = original;
+        check(source.gc_store->make_exn_reference(exception, exn) == status::ok, "issuer retries after index refusal");
+        auto const issued{live.load()};
+        limits.single = 1024u * sizeof(void*) - 1u;
+        check(r::retain_runtime_table_exn_payload(&table, exn.storage.ptr) == status::out_of_memory &&
+              live.load() == issued, "receiver rolls back a refused exception index");
+        limits = original;
+        check(r::retain_runtime_table_exn_payload(&table, exn.storage.ptr) == status::ok &&
+              live.load() >= issued + 1024u * sizeof(void*), "receiver owns its admitted exception index");
+        auto const transferred{live.load()};
+        limits.live = transferred;
+        check(r::retain_runtime_table_exn_payload(&table, exn.storage.ptr) == status::ok &&
+              live.load() == transferred, "same exception root reuses the index");
+        limits = original;
+    }
+    check(live.load() == before, "store retirement releases reference and index backing");
+    auto roots{::std::make_shared<r::gc_lease_owner>()};
+    t::recursive_type_section empty{};
+    auto receiver{::std::make_shared<r::gc_object_store>(empty, roots)};
+    limits.live = live.load();
+    check(receiver->retain_gc_reference(cell) == status::invalid_reference, "retired aggregate keeps its reference error");
+    limits = original;
+}
+
 int main()
 {
     // An abstract-only module has no aggregate type layout and must still support
@@ -114,6 +188,7 @@ int main()
     check(abstract_store.reference_type_matches(abstract_null, nonnull_i31), "abstract nullable accept");
 
     auto section{make_types()};
+    check_reference_budgets(section);
     ::std::weak_ptr<r::gc_object_store> weak;
     g::wasm_global_ref_t retired_bridge{};
     {

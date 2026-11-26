@@ -200,7 +200,14 @@
             if(!group.stop_requested_.load(::std::memory_order_acquire))
             {
                 auto const stack_error{group.prepare_compiler_guest_stack(selected->reservation)};
-                if(stack_error != 0) { result = {compiler_completion::native_failure, {}, stack_error}; }
+                if(stack_error != 0)
+                {
+                    if(initial_main && (stack_error == ENOMEM || stack_error == EAGAIN))
+                    {
+                        ::std::fputs("uwvm: [error] WASI Threads initial stack preparation refused by the memory budget or host resource availability; check --wasm-set-resource-limit runtime threads-single-bytes/threads-live-bytes.\n", stderr);
+                    }
+                    result = {compiler_completion::native_failure, {}, stack_error};
+                }
                 else if(!group.stop_requested_.load(::std::memory_order_acquire))
                 {
                     // NO Group, Runtime registry, publication or retirement
@@ -231,10 +238,6 @@
                 // such a failure must still terminate ordinary main wait.
                 bool const unavailable{!inconsistent &&
                     (result.native_error == ENOMEM || result.native_error == EAGAIN)};
-                if(unavailable)
-                {
-                    ::std::fputs("uwvm: [error] WASI Threads initial stack preparation refused by the memory budget or host resource availability; check --wasm-set-resource-limit runtime threads-single-bytes/threads-live-bytes.\n", stderr);
-                }
                 group.request_stop({unavailable ? termination_kind::preparation_rejected : termination_kind::native_failure,
                     unavailable ? static_cast<::std::uint32_t>(result.native_error) : 3u, 0u, 0u, 0u});
             }

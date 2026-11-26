@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small production CLI boundaries for preload order and unique dependency edges."""
+"""Production CLI boundaries for preload order, dependencies and instance allocations."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -32,6 +32,81 @@ def module(import_names, export_names, *, memory_import=None, table_size=None):
     body += section(7, bytes([len(export_names)]) +
                     b"".join(name(field) + bytes([0, len(import_names)]) for field in export_names))
     return body + section(10, b"\x01\x02\x00\x0b")
+
+
+def reference_budget_cases(root, runtime, check):
+    main = root / "reference-main.wasm"
+    owner = root / "reference-owner.wasm"
+    flags = ["-Rint", "--wasm-policy-global", "parser.gc", "on",
+             "--wasm-policy-global", "parser.reference-types", "on",
+             "--wasm-policy-global", "parser.function-references", "on",
+             "--wasm-policy-global", "parser.bulk-memory", "on",
+             "--wasm-policy-global", "parser.extended-const", "on",
+             "--wasm-policy-global", "parser.table-initializer", "on"]
+
+    def program(types, function_type, declarations, imports=b"", elements=b""):
+        return (HEADER + section(1, types) + imports + section(3, bytes((1, function_type))) +
+                declarations + section(7, b"\x01" + name("_start") + b"\x00\x00") + elements +
+                section(10, b"\x01\x02\x00\x0b"))
+
+    # (array i32) and (func). A constant expression creates a four-element array.
+    array = section(6, bytes((1, 0x64, 0, 0, 0x41, 4, 0xfb, 7, 0, 0x0b)))
+    main.write_bytes(program(bytes((2, 0x5e, 0x7f, 0, 0x60, 0, 0)), 1, array))
+    check("GC constant with heap space", [*flags, "--run", main], 0)
+    check("GC constant without heap space",
+          [*flags, "--wasm-set-resource-limit", "runtime", "gc-single-bytes", "0", "--run", main], 127, "runtime gc-single-bytes")
+
+    # The provider exports extern.convert_any(ref.i31(37)).
+    bridge = bytes((0x41, 37, 0xfb, 28, 0xfb, 27, 0x0b))
+    bridge_global = section(6, bytes((1, 0x6f, 0)) + bridge)
+    owner.write_bytes(HEADER + bridge_global +
+                      section(7, b"\x01" + name("bridge") + b"\x03\x00"))
+    imports = section(2, b"\x01" + name("provider") + name("bridge") + bytes((3, 0x6f, 0)))
+    signature = b"\x01\x60\x00\x00"
+    preload = ["--wasm-preload-library", owner, "provider", "--run", main]
+    limit = ["--wasm-set-resource-limit", "runtime", "auxiliary-live-bytes"]
+    null = bytes((0xd0, 0x6f, 0x0b))
+    # Measure the exact startup footprint of each control on this host ABI.
+    def minimum_auxiliary(label):
+        low, high = 0, 65536
+        check(label, [*flags, *limit, str(high), *preload], 0)
+        while low < high:
+            probe = (low + high) // 2
+            run = subprocess.run([runtime, *flags, *limit, str(probe), *preload], cwd=root, capture_output=True, timeout=20)
+            if run.returncode == 0:
+                high = probe
+            elif run.returncode == 127 and b"auxiliary-" in run.stderr:
+                low = probe + 1
+            else:
+                raise AssertionError(f"{label} at {probe}: status {run.returncode}, {run.stderr!r}")
+        return str(low)
+
+    main.write_bytes(program(signature, 0, section(6, bytes((1, 0x6f, 0)) + null), imports))
+    cap = minimum_auxiliary("null global control")
+    global_get = bytes((0x23, 0, 0x0b))
+    cases = {
+        "global": (section(6, bytes((1, 0x6f, 0)) + global_get), b""),
+        "table initializer": (section(4, bytes((1, 0x40, 0, 0x6f, 0, 1)) + global_get), b""),
+        "passive element": (b"", section(9, bytes((1, 5, 0x6f, 1)) + global_get)),
+        "active element": (section(4, bytes((1, 0x6f, 0, 1))),
+                           section(9, bytes((1, 6, 0, 0x41, 0, 0x0b, 0x6f, 1)) + global_get)),
+    }
+    for label, (declaration, elements) in cases.items():
+        main.write_bytes(program(signature, 0, declaration, imports, elements))
+        check(label + " retains a foreign bridge", [*flags, *preload], 0)
+        check(label + " refuses the extra lease", [*flags, *limit, cap, *preload], 127, "runtime auxiliary-single-bytes")
+
+    # The segment issuer owns this bridge. Only the destination table needs a
+    # foreign lease when the active segment writes through the imported table.
+    table = bytes((0x6f, 0, 1))
+    owner.write_bytes(HEADER + section(4, b"\x01" + table) + section(7, b"\x01" + name("table") + b"\x01\x00"))
+    imports = section(2, b"\x01" + name("provider") + name("table") + b"\x01" + table)
+    element = bytes((1, 6, 0, 0x41, 0, 0x0b, 0x6f, 1))
+    main.write_bytes(program(signature, 0, bridge_global, imports, section(9, element + null)))
+    cap = minimum_auxiliary("null imported table write")
+    main.write_bytes(program(signature, 0, bridge_global, imports, section(9, element + bridge)))
+    check("active write to imported table", [*flags, *preload], 0)
+    check("imported table rejects the destination lease", [*flags, *limit, cap, *preload], 127, "runtime auxiliary-single-bytes")
 
 
 def main():
@@ -91,6 +166,8 @@ def main():
         for slots in (0, 1):
             main_wasm.write_bytes(module([], ["_start"], table_size=slots))
             check(f"table slots at zero byte limit: {slots}", [*global_zero, *main_run], 0 if slots == 0 else 127)
+
+        reference_budget_cases(root, runtime, check)
 
 
 if __name__ == "__main__":

@@ -164,7 +164,15 @@ extern "C++"
             out.runtime_native_endpoint_capture_prepared=prepared->prepared_native_endpoint_capture_;
             out.status=llvm_jit_checkpoint_prepare_status::frame_preparation_declined;
             if(!prepared->prepare_all_world_frames())
-            { out.frame_diagnostic=static_cast<unsigned>(prepared->phase_);out.native_payload_bytes=prepared->native_bytes_;return; }
+            {
+                out.frame_diagnostic=static_cast<unsigned>(prepared->phase_);
+                if(prepared->phase_ == world::preparation_status::allocation_failed)
+                {
+                    out.status=llvm_jit_checkpoint_prepare_status::resource_preparation_declined;
+                    out.resource_diagnostic=out.frame_diagnostic;
+                }
+                out.native_payload_bytes=prepared->native_bytes_;return;
+            }
             out.prepared_threads=prepared->prepared_threads_.size();out.prepared_frames=prepared->prepared_frames_;
             out.status=llvm_jit_checkpoint_prepare_status::dispatch_binding_preparation_declined;
             if(!prepared->prepare_world_dispatch_bindings(source,request.maximum_private_dispatch_bindings,out))

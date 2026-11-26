@@ -78,7 +78,7 @@ class checkpoint_gc_staging final
         {
             if(!charge_private_backing(1u, sizeof(gc_object_store::exn_root_bucket_array)))
             { return gc_object_status::size_overflow; }
-            recipient->exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<gc_object_store::exn_root_bucket_array>([&](gc_object_store::exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) gc_object_store::exn_root_bucket_array{}; }));
+            recipient->exn_root_buckets_.reset(::uwvm2::utils::allocator::resource::try_charged_object<gc_object_store::exn_root_bucket_array>());
             if(!recipient->exn_root_buckets_) { return gc_object_status::out_of_memory; }
         }
         if(!charge_private_backing(1u, sizeof(gc_object_store::exn_root_node)) ||
@@ -207,33 +207,35 @@ class checkpoint_gc_staging final
     // Cold private native payload-root lookup. The real world issuer already
     // relocated and type-checked the carrier; this helper independently proves
     // pending membership and source-recipient lifetime without published indices.
-    [[nodiscard]] bool pending_reference_root(store_owner const& recipient,gc_reference reference,
+    [[nodiscard]] gc_object_status pending_reference_root(store_owner const& recipient,gc_reference reference,
         ::uwvm2::runtime::exception::instance_root& result) noexcept
     {
         result={};
-        if(published_ || !owns(recipient) || recipient->cohort_registered_) { return false; }
+        if(published_ || !owns(recipient) || recipient->cohort_registered_) { return gc_object_status::invalid_store; }
         using kind=::uwvm2::object::global::wasm_ref_kind;
-        if(reference.kind==kind::wasm_null) { return reference.storage.ptr==nullptr; }
-        if(reference.kind==kind::wasm_i31) { return true; }
+        if(reference.kind==kind::wasm_null) { return reference.storage.ptr==nullptr ? gc_object_status::ok : gc_object_status::invalid_reference; }
+        if(reference.kind==kind::wasm_i31) { return gc_object_status::ok; }
         if(reference.kind==kind::wasm_func_defined || reference.kind==kind::wasm_func_imported)
         {
             // Actual source-bound callback proves exact record membership. An
             // empty payload root is the ordinary function-carrier convention;
             // the genuine complete source/world owner supplies its lifetime.
             return reference.storage.ptr!=nullptr && recipient->function_type_match_!=nullptr &&
-                recipient->function_type_match_(reference,recipient.get(),UINT_LEAST32_MAX);
+                recipient->function_type_match_(reference,recipient.get(),UINT_LEAST32_MAX) ? gc_object_status::ok : gc_object_status::invalid_reference;
         }
         if(auto const* aggregate=find_pending(reference))
         {
-            if(retain_staged_reference(recipient,reference)!=gc_object_status::ok) { return false; }
+            auto const retained{retain_staged_reference(recipient,reference)};
+            if(retained!=gc_object_status::ok) { return retained; }
             // Local roots are empty to avoid store->exn->same-store ownership
             // cycles; actual private exn/root registrations trace their payload.
             if(aggregate->store.get()!=recipient.get()) { result=::std::static_pointer_cast<void const>(aggregate->store); }
-            return true;
+            return gc_object_status::ok;
         }
         if(auto const* pending=find_pending_exception(reference))
         {
-            if(retain_staged_reference(recipient,reference)!=gc_object_status::ok) { return false; }
+            auto const retained{retain_staged_reference(recipient,reference)};
+            if(retained!=gc_object_status::ok) { return retained; }
             if(pending->issuer.get()!=recipient.get())
             {
 #if defined(UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES) && UWVM_EXPERIMENTAL_EXTERNAL_EXCEPTION_HANDLES == 1
@@ -241,18 +243,19 @@ class checkpoint_gc_staging final
 #else
                 auto value{pending->entry->value};
 #endif
-                if(!value) { return false; }
+                if(!value) { return gc_object_status::invalid_reference; }
                 result=::std::static_pointer_cast<void const>(::std::move(value));
             }
-            return true;
+            return gc_object_status::ok;
         }
         if(auto const* pending=find_pending_bridge(reference))
         {
-            if(retain_staged_reference(recipient,reference)!=gc_object_status::ok) { return false; }
+            auto const retained{retain_staged_reference(recipient,reference)};
+            if(retained!=gc_object_status::ok) { return retained; }
             if(pending->issuer.get()!=recipient.get()) { result=::std::static_pointer_cast<void const>(pending->issuer); }
-            return true;
+            return gc_object_status::ok;
         }
-        return false; // No old token/global index/opaque host pointer shortcut.
+        return gc_object_status::invalid_reference; // No old token/global index/opaque host pointer shortcut.
     }
     // Conservative actual allocator upper bound: ordinary shell storage, or
     // one complete numeric slab chunk if this object can open a new class. This
@@ -522,8 +525,8 @@ class checkpoint_gc_staging final
                 pending.root->entry=pending.entry;
                 // [actual preallocated module root buckets][live real entry]
                 // [safe] every native link remains owned under the two guards.
-                pending.root->bucket_next=(*recipient.exn_root_buckets_)[bucket];
-                (*recipient.exn_root_buckets_)[bucket]=pending.root.get();
+                pending.root->bucket_next=recipient.exn_root_buckets_->buckets[bucket];
+                recipient.exn_root_buckets_->buckets[bucket]=pending.root.get();
                 pending.root->next=recipient.exn_roots_;recipient.exn_roots_=pending.root.release();
                 ++pending.entry->root_count; // count bounded by preflighted private root roster.
             }

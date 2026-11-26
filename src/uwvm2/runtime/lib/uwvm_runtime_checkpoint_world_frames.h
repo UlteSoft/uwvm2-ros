@@ -61,7 +61,8 @@ struct prepared_world_thread
         auto const ref{relocated.template as<reference>()};
         if(!::uwvm2::runtime::gc::frame_root_details::runtime_kind(ref)) { return fail(preparation_status::type_mismatch); }
         ::uwvm2::runtime::exception::instance_root root{};
-        if(!staged_gc_.pending_reference_root(modules_[owner].actual->gc_store,ref,root)) { return fail(preparation_status::type_mismatch); }
+        auto const retained{staged_gc_.pending_reference_root(modules_[owner].actual->gc_store,ref,root)};
+        if(retained!=gc_status::ok) { return fail_gc(retained); }
         frame.input_roots.push_back(ref); // capacity for ALL slots charged first
         frame.input_root_owners.push_back(::std::move(root));
     }
@@ -236,7 +237,8 @@ struct prepared_world_thread
         native_value relocated{};
         if(value.type.kind!=cp::value_kind::reference || !relocate_value(value,0u,relocated)) { return fail(preparation_status::type_mismatch); }
         auto const ref{relocated.template as<reference>()};::uwvm2::runtime::exception::instance_root root{};
-        if(!staged_gc_.pending_reference_root(modules_[0u].actual->gc_store,ref,root)) { return fail(preparation_status::type_mismatch); }
+        auto const retained{staged_gc_.pending_reference_root(modules_[0u].actual->gc_store,ref,root)};
+        if(retained!=gc_status::ok) { return fail_gc(retained); }
         retained_roots_.push_back(ref);retained_root_owners_.push_back(::std::move(root));
     }
     // Rebuild actual queue nodes before any new guest worker can run. The

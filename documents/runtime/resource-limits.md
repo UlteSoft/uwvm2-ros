@@ -72,8 +72,8 @@ original backing owner's charge and do not charge the same memory twice.
   element widths, allocation headers and numeric page/slab backing. The byte
   allocator's accounting header is also charged. Arrays are checked before
   allocation, zero-initialization or publication. Collection releases retired
-  backing; an allocation refused by the host budget follows the existing
-  classified execution-fault policy (121 with `--debug-fault-action exit`).
+  backing. During guest execution an allocation refused by the host budget
+  follows the execution-fault policy (121 with `--debug-fault-action exit`).
 * **Tables:** allocated backing capacity, including the overlap of old and
   replacement storage during growth. A refused `table.grow` returns the
   standard failure value and preserves the original table.
@@ -90,8 +90,10 @@ original backing owner's charge and do not charge the same memory twice.
   recoverable WASI host vectors/scatter arrays and the threaded poll/I/O/socket
   scratch arrays. Existing WASI bad-allocation
   handling returns `ENOMEM`; do not interpret it as permission refusal.
-  Exception reference registry entries and module roots also draw from this
-  budget.
+  Exception reference registry entries, per-token roots, cross-module store
+  leases and external-reference bridges also draw from this budget. Each
+  store allocates a 1,024-bucket index when it first roots an exception. The
+  store owns the index charge until it frees the index.
 * **Threads:** native Wasm-thread stacks and the existing per-child bounded
   construction account. The construction account conservatively retains all
   charged requests until its last owner dies, even if construction scratch
@@ -106,13 +108,23 @@ loads/stores or GC field access.
 If the main module and explicit preloads already exceed the graph node limit,
 CLI argument processing returns 126 before opening a preload. Once loading
 starts, initial memory, table or GC metadata budget refusal returns 127.
+A GC constant expression uses the runtime GC pool for the aggregate and the
+runtime auxiliary pool for its reference roots. Initializing a global, a table
+or an element segment from another module's GC, external or exception reference
+can also require an auxiliary allocation. Ordinary startup reports the affected
+pool and exits with status 127 on refusal.
 If the ordinary initializer finds a module entity count above its configured
 reserve limit, it rejects the runtime configuration with status 126.
 An inadmissible WASI Threads startup profile returns 126, including stack or
 construction budget refusal before the first guest entry. A refused later
 thread spawn is returned to the guest through the spawn failure result.
+A root allocation refused during private checkpoint restore discards the
+candidate and leaves the previous generation active. A fresh WASI worker
+records `ENOMEM` during preparation and returns the guest spawn failure value
+(`-1`). If the actual threaded main has begun applying shared active segments, an allocation refusal also
+requires a runtime reset before that startup can be retried.
 Guest `memory.grow`/`table.grow` use their standard recoverable failure result.
-GC allocation failure is a classified execution fault: the default action is
+Once guest code is executing, GC allocation failure is a classified execution fault. The default action is
 `crash`; `--debug-fault-action exit` returns 121, and `pause` retains the
 configured diagnostic pause behavior. No failed allocation is treated as a
 successful allocation or silently retried with reduced protection.
@@ -151,11 +163,13 @@ cache state, warmup and repetition counts separately.
 
 Follow each declaration through to its storage owner. A custom section borrows
 the input image for its payload and charges the parser pool for the capacity of
-its record vector. Each admitted local exception tag owns a fixed-size identity
-and a shared control block. Each mapped linear memory owns fixed synchronization
-state that all its imported aliases share. Each Wasm module instance owns a GC
-store and a lease owner. Graph and instance construction limits bound their
-counts. Dynamic GC storage draws on the corresponding byte pools.
+its record vector. The initializer metadata pool covers the stable length and
+growth mutex of each local linear memory and one fault-region record per
+registered mapping. Imported aliases share the memory owner's charge.
+The same pool covers the actual objects and shared control blocks for ordinary
+GC stores, their lease owners and local exception-tag identities. Setup and
+retirement account for these allocations. Guest loads and stores continue to
+use their existing addressing and bounds checks.
 
 These counters bound specified requested native allocations, not total RSS.
 They do not include every C++ library allocation, LLVM allocation, allocator

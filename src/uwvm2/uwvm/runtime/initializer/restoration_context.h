@@ -50,6 +50,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             using store_type = ::uwvm2::uwvm::runtime::storage::gc_object_store;
             using reference = ::uwvm2::uwvm::runtime::storage::gc_reference;
             using staged_gc = ::uwvm2::uwvm::runtime::storage::checkpoint_gc_staging;
+            using gc_status = ::uwvm2::uwvm::runtime::storage::gc_object_status;
             static constexpr auto purpose{details::initialization_purpose::unpublished_restore};
             enum class skeleton_result : unsigned { empty, built, invalid_source, duplicate_module, dependency_error };
             source_owner source_{};
@@ -599,9 +600,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 actual.init_state=::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized;
                 return note_completed(::std::addressof(actual));
             }
+            [[nodiscard]] bool accept_saved_reference(storage_module const& module, saved_core_type expected,
+                reference const& relocated, gc_status& status) noexcept
+            {
+                if(!staged_gc_.pending_value_matches(native_value::reference(relocated), {expected}, module.gc_store))
+                { status = gc_status::invalid_value; return false; }
+                status = staged_gc_.retain_staged_reference(module.gc_store, relocated);
+                return status == gc_status::ok;
+            }
             [[nodiscard]] bool stage_saved_reference_global(
                 ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t* candidate,
-                saved_core_type expected, bool mutable_value, reference const& relocated) noexcept
+                saved_core_type expected, bool mutable_value, reference const& relocated, gc_status& status) noexcept
             {
                 ::std::size_t local{};
                 auto* module{locate_unpublished_record(candidate, [](auto& m)->auto& { return m.local_defined_global_vec_storage; }, local)};
@@ -611,8 +620,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     actual.global.kind!=::uwvm2::object::global::global_type::wasm_ref || actual.global.is_mutable!=mutable_value ||
                     actual.global.ref_lease_store!=module->gc_store.get() || expected.kind!=saved_core_kind::reference ||
                     ::uwvm2::parser::wasm::standard::wasm1p1::features::core3_initializer_type_details::declared_value_type(*actual.global_type_ptr)!=expected ||
-                    !staged_gc_.pending_value_matches(native_value::reference(relocated), {expected}, module->gc_store) ||
-                    staged_gc_.retain_staged_reference(module->gc_store, relocated)!=::uwvm2::uwvm::runtime::storage::gc_object_status::ok)
+                    !accept_saved_reference(*module, expected, relocated, status))
                 { return false; }
                 actual.global.storage.ref=relocated;
                 actual.init_state=::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized;
@@ -635,7 +643,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t* candidate,
                 unsigned address_bits, ::std::uint64_t length, ::std::uint64_t minimum, ::std::uint64_t maximum,
                 saved_core_type expected, reference const& default_value,
-                ::std::span<saved_table_chunk const> chunks, ::std::size_t maximum_native_bytes) noexcept
+                ::std::span<saved_table_chunk const> chunks, ::std::size_t maximum_native_bytes, gc_status& status) noexcept
             {
                 namespace storage=::uwvm2::uwvm::runtime::storage;
                 ::std::size_t local{};
@@ -659,8 +667,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 { return false; }
                 auto accept_reference = [&](reference const& relocated) noexcept
                 {
-                    return staged_gc_.pending_value_matches(native_value::reference(relocated), {expected}, module->gc_store) &&
-                        staged_gc_.retain_staged_reference(module->gc_store,relocated)==storage::gc_object_status::ok;
+                    return accept_saved_reference(*module, expected, relocated, status);
                 };
                 // Empty nonnullable tables have only a declared descriptor: do
                 // not invent or validate a null DEFAULT VALUE that does not exist.
@@ -747,7 +754,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             }
             [[nodiscard]] bool stage_saved_element_segment(
                 ::uwvm2::uwvm::runtime::storage::local_defined_element_storage_t* candidate,
-                bool dropped, saved_core_type expected, ::std::span<reference const> saved_values) noexcept
+                bool dropped, saved_core_type expected, ::std::span<reference const> saved_values, gc_status& status) noexcept
             {
                 namespace storage = ::uwvm2::uwvm::runtime::storage;
                 using family = storage::runtime_table_reference_family;
@@ -784,8 +791,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 if(allocation == nullptr) { return false; }
                 auto accept = [&](reference const& relocated) noexcept
                 {
-                    return staged_gc_.pending_value_matches(native_value::reference(relocated), {expected}, module->gc_store) &&
-                        staged_gc_.retain_staged_reference(module->gc_store, relocated) == storage::gc_object_status::ok;
+                    return accept_saved_reference(*module, expected, relocated, status);
                 };
                 if(expressions == 0u)
                 {

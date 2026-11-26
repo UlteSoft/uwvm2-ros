@@ -134,6 +134,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::utils::allocator::resource::initializer_metadata_limit();
         }
 
+        template <initialization_purpose Purpose>
+        [[noreturn]] inline void initializer_gc_allocation_failure(bool auxiliary) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+#ifdef UWVM_CPP_EXCEPTIONS
+            if constexpr(Purpose != initialization_purpose::ordinary) { throw ::std::bad_alloc{}; }
+#endif
+            if(auxiliary)
+            {
+                ::uwvm2::utils::allocator::resource::reject_allocation(
+                    "uwvm: [error] initializer: GC metadata or reference root allocation refused; check --wasm-set-resource-limit runtime auxiliary-single-bytes/auxiliary-live-bytes and available host memory.\n");
+            }
+            ::uwvm2::utils::allocator::resource::reject_allocation(
+                "uwvm: [error] initializer: GC constant-expression allocation refused; check --wasm-set-resource-limit runtime gc-single-bytes/gc-live-bytes and available host memory.\n");
+        }
+
+        template <initialization_purpose Purpose>
+        [[nodiscard]] inline constexpr bool initializer_gc_succeeded(::uwvm2::uwvm::runtime::storage::gc_object_status status,
+            bool auxiliary = true) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+            using gc_status = ::uwvm2::uwvm::runtime::storage::gc_object_status;
+            if(status == gc_status::ok) [[likely]] { return true; }
+            if constexpr(Purpose != initialization_purpose::ordinary)
+            {
+                if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
+                { initializer_metadata_failure<Purpose>(); }
+            }
+            if(status == gc_status::out_of_memory || status == gc_status::size_overflow)
+            { initializer_gc_allocation_failure<Purpose>(auxiliary); }
+            return false;
+        }
+
         template <initialization_purpose Purpose, typename T>
         inline constexpr void reserve_initializer_records(initialization_context<Purpose>& world,
             ::uwvm2::utils::container::initializer_vector<T>& records, ::std::size_t count) noexcept(Purpose == initialization_purpose::ordinary)
@@ -2512,6 +2543,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         auto const type_index{immediate.typeidx};
                         reference result{};
                         gc_status status{gc_status::invalid_value};
+                        // Conversions allocate reference leases or external bridges. Constructors
+                        // report when an embedded reference needed auxiliary backing of its own.
+                        bool auxiliary_refused{immediate.subopcode == 26u || immediate.subopcode == 27u};
                         switch(immediate.subopcode)
                         {
                             case 28u:
@@ -2535,7 +2569,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                 inputs.resize(count);
                                 for(::std::size_t i{count}; i != 0uz; --i)
                                 { inputs.index_unchecked(i - 1uz) = to_slot(pop()); }
-                                status = store->struct_new(type_index, inputs.data(), count, result);
+                                status = store->struct_new(type_index, inputs.data(), count, result, &auxiliary_refused);
                                 break;
                             }
                             case 1u: status = store->struct_new_default(type_index, result); break;
@@ -2543,7 +2577,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             {
                                 auto const length{pop_i32()};
                                 auto const input{to_slot(pop())};
-                                status = store->array_new(type_index, input, length, result);
+                                status = store->array_new(type_index, input, length, result, &auxiliary_refused);
                                 break;
                             }
                             case 7u: status = store->array_new_default(type_index, pop_i32(), result); break;
@@ -2556,56 +2590,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                 inputs.resize(count);
                                 for(::std::size_t i{count}; i != 0uz; --i)
                                 { inputs.index_unchecked(i - 1uz) = to_slot(pop()); }
-                                status = store->array_new_fixed(type_index, inputs.data(), count, result);
+                                status = store->array_new_fixed(type_index, inputs.data(), count, result, &auxiliary_refused);
                                 break;
                             }
                             case 26u: status = store->any_convert_extern(pop_ref(), result); break;
                             case 27u: status = store->extern_convert_any(pop_ref(), result); break;
                             [[unlikely]] default: ::fast_io::fast_terminate();
                         }
-                        if(status != gc_status::ok) [[unlikely]]
-                        {
-                            if constexpr(Purpose != initialization_purpose::ordinary)
-                            {
-                                if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
-                                { initializer_metadata_failure<Purpose>(); }
-                            }
-                            // A validated Guest can request an array that does not fit in native
-                            // address space or available memory. This is an instantiation resource
-                            // failure, not a broken evaluator/store invariant. Keep all other GC
-                            // statuses fatal: validation has already proved types and operands.
-                            if(status != gc_status::out_of_memory && status != gc_status::size_overflow)
-                            { ::fast_io::fast_terminate(); }
-                            // Private construction is discarded by its owner before publication.
-                            if constexpr(Purpose != initialization_purpose::ordinary)
-                            { initializer_metadata_failure<Purpose>(); }
-                            else
-                            {
-                                ::std::uint64_t module_index{};
-                                bool found{};
-                                for(auto const& [name, module] : world.modules())
-                                {
-                                    if(::std::addressof(module) == ::std::addressof(curr_rt))
-                                    {
-                                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                                            u8"uwvm: [fatal] GC constant-expression allocation failed in module ", name,
-                                            u8"; GC opcode=", immediate.subopcode, u8", type=", type_index,
-                                            u8". The failed allocation published no value.");
-                                        found = true;
-                                        break;
-                                    }
-                                    ++module_index;
-                                }
-                                namespace crash = ::uwvm2::runtime::diagnostic::crash;
-                                crash::report(crash::category::execution,
-                                    status == gc_status::size_overflow ?
-                                        "GC constant-expression allocation size overflow" :
-                                        "GC constant-expression allocation failed: host resource budget or out of memory",
-                                    0u, found ? module_index : UINT64_MAX);
-                                crash::pause_process();
-                                crash::finish_unhandled_fault();
-                            }
-                        }
+                        if(!initializer_gc_succeeded<Purpose>(status, auxiliary_refused)) [[unlikely]]
+                        { ::fast_io::fast_terminate(); }
                         next = make_ref(result);
                         break;
                     }
@@ -2661,7 +2654,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::fast_io::fast_terminate();
         }
 
-        inline void retain_wasm1_local_global_reference(::uwvm2::object::global::wasm_global_storage_t const& global) noexcept;
+        template <initialization_purpose Purpose = initialization_purpose::ordinary>
+        inline void retain_wasm1_local_global_reference(::uwvm2::object::global::wasm_global_storage_t const& global) noexcept(Purpose == initialization_purpose::ordinary);
 
         template <initialization_purpose Purpose>
         [[nodiscard]] inline constexpr ::uwvm2::object::global::wasm_global_storage_t evaluate_wasm3_constant_expression_in_context(
@@ -2717,8 +2711,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 if(value.kind != global.kind ||
                    (value.kind == ::uwvm2::object::global::global_type::wasm_ref &&
                     value.storage.ref.kind == ::uwvm2::object::global::wasm_ref_kind::wasm_func)) [[unlikely]] { ::fast_io::fast_terminate(); }
+                value.ref_lease_store = global.ref_lease_store;
+                retain_wasm1_local_global_reference<Purpose>(value);
                 global.storage = value.storage;
-                retain_wasm1_local_global_reference(global);
                 top->owner->init_state = state::initialized;
                 pending.frames.pop_back_unchecked();
             }
@@ -2987,9 +2982,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         // An imported global may supply a bridge whose source module unloads independently.
                         // The receiving table must own a root before its slots publish the reference.
                         if(!table.elems.empty() &&
-                           ::uwvm2::uwvm::runtime::storage::retain_runtime_table_extern_payload(
-                               ::std::addressof(table), value.storage.extern_ptr) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                           !initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::retain_runtime_table_extern_payload(
+                               ::std::addressof(table), value.storage.extern_ptr))) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                     }
                     else if(reference_family == family::exception)
@@ -2997,9 +2991,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         value.storage.extern_ptr = eval_wasm3_ref_const_expr_as_exnref_in_context(world, *table.initializer_expr, curr_rt);
                         value.type = element_kind::exn_ref;
                         if(!table.elems.empty() &&
-                           ::uwvm2::uwvm::runtime::storage::retain_runtime_table_exn_payload(
-                               ::std::addressof(table), value.storage.extern_ptr) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                           !initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::retain_runtime_table_exn_payload(
+                               ::std::addressof(table), value.storage.extern_ptr))) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                     }
                     else if(reference_family == family::gc)
@@ -3009,9 +3002,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         { ::fast_io::fast_terminate(); }
                         value = ::uwvm2::uwvm::runtime::storage::runtime_table_slot_from_gc_reference(evaluated.storage.ref);
                         if(!table.elems.empty() &&
-                           ::uwvm2::uwvm::runtime::storage::retain_runtime_table_reference(
-                               ::std::addressof(table), evaluated.storage.ref) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                           !initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::retain_runtime_table_reference(
+                               ::std::addressof(table), evaluated.storage.ref))) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                     }
                     else [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -3098,9 +3090,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                               ::uwvm2::object::global::wasm_ref_kind::wasm_extern);
                         // A passive segment owns its reference before table.init; checked retention never
                         // dereferences a token-shaped guest payload before membership has been proven.
-                        if(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(
-                               curr_rt.gc_store.get(), ::std::addressof(reference)) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                        if(!initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(
+                               curr_rt.gc_store.get(), ::std::addressof(reference)))) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                         // [reserved vector slots ... current] end
                         // [safe                          ]
@@ -3122,9 +3113,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         if(evaluated.kind != ::uwvm2::object::global::global_type::wasm_ref) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                         auto const reference{evaluated.storage.ref};
-                        if(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(
-                               curr_rt.gc_store.get(), ::std::addressof(reference)) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                        if(!initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(
+                               curr_rt.gc_store.get(), ::std::addressof(reference)))) [[unlikely]]
                         { ::fast_io::fast_terminate(); }
                         // [reserved GC reference slots ... current] end
                         // [safe                                ]
@@ -5931,9 +5921,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 // typed funcref fields during later constexpr evaluation can use it.
                 if(out.gc_store && out.gc_store->allocation_failed())
                 {
-                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                        u8"uwvm: [error] initializer: GC metadata allocation refused; check --wasm-set-resource-limit runtime auxiliary-single-bytes/auxiliary-live-bytes and available host memory.");
-                    ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
+                    if constexpr(Purpose == initialization_purpose::ordinary)
+                    {
+                        if(out.gc_store->type_registry_allocation_failed())
+                        {
+                            ::uwvm2::utils::allocator::resource::reject_allocation(
+                                "uwvm: [error] initializer: GC type registry allocation refused; check --wasm-set-resource-limit parser single-bytes/live-bytes for canonical types and validation single-bytes/live-bytes for scratch, and available host memory.\n");
+                        }
+                    }
+                    initializer_gc_allocation_failure<Purpose>(true);
                 }
                 if(!out.gc_store || !out.gc_store->valid()) [[unlikely]] { ::fast_io::fast_terminate(); }
             }
@@ -7190,12 +7186,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             initialize_from_binfmt_ver1_module_storage_in_context(world, module_storage, fs_para, out);
         }
 
-        inline void retain_wasm1_local_global_reference(::uwvm2::object::global::wasm_global_storage_t const& global) noexcept
+        template <initialization_purpose Purpose>
+        inline void retain_wasm1_local_global_reference(::uwvm2::object::global::wasm_global_storage_t const& global) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(global.kind != ::uwvm2::object::global::global_type::wasm_ref) { return; }
             auto const* store{static_cast<::uwvm2::uwvm::runtime::storage::gc_object_store const*>(global.ref_lease_store)};
-            if(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(store,
-                    ::std::addressof(global.storage.ref)) != ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+            if(!initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::uwvm2_gc_retain_reference(store,
+                    ::std::addressof(global.storage.ref)))) [[unlikely]]
             {
                 ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
                     u8"uwvm: [fatal] initializer: Invalid or expired global reference.\n\n");
@@ -7254,10 +7251,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                  (expr.opcodes.front_unchecked().opcode == ::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::global_get &&
                   expr.opcodes.front_unchecked().storage.imported_global_idx >= g.owner_module_rt_ptr->imported_global_vec_storage.size()))))
             {
-                auto const result{evaluate_wasm3_constant_expression_in_context(world, expr, *g.owner_module_rt_ptr)};
+                auto result{evaluate_wasm3_constant_expression_in_context(world, expr, *g.owner_module_rt_ptr)};
                 if(result.kind != g.global.kind) [[unlikely]] { ::fast_io::fast_terminate(); }
-                g.global.storage = result.storage; // Preserve the declared mutability of the destination global.
-                retain_wasm1_local_global_reference(g.global);
+                result.ref_lease_store = g.global.ref_lease_store;
+                retain_wasm1_local_global_reference<Purpose>(result);
+                g.global.storage = result.storage;
                 g.init_state = ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized;
                 return;
             }
@@ -7276,31 +7274,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::fast_io::fast_terminate();
             }
 
+            auto value{g.global};
             auto const& op{expr.opcodes.front_unchecked()};
             switch(static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(op.opcode))
             {
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(
                     ::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::i32_const):
                 {
-                    g.global.storage.i32 = op.storage.i32;
+                    value.storage.i32 = op.storage.i32;
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(
                     ::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::i64_const):
                 {
-                    g.global.storage.i64 = op.storage.i64;
+                    value.storage.i64 = op.storage.i64;
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(
                     ::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::f32_const):
                 {
-                    ::std::memcpy(::std::addressof(g.global.storage.f32), ::std::addressof(op.storage.f32), sizeof(g.global.storage.f32));
+                    ::std::memcpy(::std::addressof(value.storage.f32), ::std::addressof(op.storage.f32), sizeof(value.storage.f32));
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(
                     ::uwvm2::parser::wasm::standard::wasm1::opcode::op_basic::f64_const):
                 {
-                    ::std::memcpy(::std::addressof(g.global.storage.f64), ::std::addressof(op.storage.f64), sizeof(g.global.storage.f64));
+                    ::std::memcpy(::std::addressof(value.storage.f64), ::std::addressof(op.storage.f64), sizeof(value.storage.f64));
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(0xD0u):
@@ -7308,7 +7307,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     ::uwvm2::object::global::wasm_global_ref_t ref{};
                     ref.storage.ptr = nullptr;
                     ref.kind = ::uwvm2::object::global::wasm_ref_kind::wasm_null;
-                    g.global.storage.ref = ref;
+                    value.storage.ref = ref;
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(0xD2u):
@@ -7316,12 +7315,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     ::uwvm2::object::global::wasm_global_ref_t ref{};
                     ref.storage.func_idx = op.storage.ref_func_idx;
                     ref.kind = ::uwvm2::object::global::wasm_ref_kind::wasm_func;
-                    g.global.storage.ref = ref;
+                    value.storage.ref = ref;
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(0xFDu):
                 {
-                    g.global.storage.v128 = op.storage.v128;
+                    value.storage.v128 = op.storage.v128;
                     break;
                 }
                 case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(
@@ -7433,36 +7432,36 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     {
                         case ::uwvm2::object::global::global_type::wasm_i32:
                         {
-                            g.global.storage.i32 = resolved_global->storage.i32;
+                            value.storage.i32 = resolved_global->storage.i32;
                             break;
                         }
                         case ::uwvm2::object::global::global_type::wasm_i64:
                         {
-                            g.global.storage.i64 = resolved_global->storage.i64;
+                            value.storage.i64 = resolved_global->storage.i64;
                             break;
                         }
                         case ::uwvm2::object::global::global_type::wasm_f32:
                         {
-                            ::std::memcpy(::std::addressof(g.global.storage.f32), ::std::addressof(resolved_global->storage.f32), sizeof(g.global.storage.f32));
+                            ::std::memcpy(::std::addressof(value.storage.f32), ::std::addressof(resolved_global->storage.f32), sizeof(value.storage.f32));
                             break;
                         }
                         case ::uwvm2::object::global::global_type::wasm_f64:
                         {
-                            ::std::memcpy(::std::addressof(g.global.storage.f64), ::std::addressof(resolved_global->storage.f64), sizeof(g.global.storage.f64));
+                            ::std::memcpy(::std::addressof(value.storage.f64), ::std::addressof(resolved_global->storage.f64), sizeof(value.storage.f64));
                             break;
                         }
                         case ::uwvm2::object::global::global_type::wasm_v128:
                         {
-                            g.global.storage.v128 = resolved_global->storage.v128;
+                            value.storage.v128 = resolved_global->storage.v128;
                             break;
                         }
                         case ::uwvm2::object::global::global_type::wasm_ref:
                         {
-                            g.global.storage.ref = resolved_global->storage.ref;
+                            value.storage.ref = resolved_global->storage.ref;
                             // A raw wasm_func index is meaningful only inside its defining module. All wasm-defined globals are
                             // canonicalized before dependency evaluation; an imported host value that still contains a bare index
                             // has no recoverable owner and must fail closed.
-                            if(g.global.storage.ref.kind == ::uwvm2::object::global::wasm_ref_kind::wasm_func) [[unlikely]]
+                            if(value.storage.ref.kind == ::uwvm2::object::global::wasm_ref_kind::wasm_func) [[unlikely]]
                             {
                                 ::fast_io::fast_terminate();
                             }
@@ -7495,7 +7494,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
             }
 
-            retain_wasm1_local_global_reference(g.global);
+            retain_wasm1_local_global_reference<Purpose>(value);
+            g.global.storage = value.storage;
             g.init_state = ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized;
         }
 
@@ -7527,7 +7527,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                        g.global.kind == ::uwvm2::object::global::global_type::wasm_ref)
                     {
                         canonicalize_wasm1_funcref(curr_rt, g.global.storage.ref);
-                        retain_wasm1_local_global_reference(g.global);
+                        retain_wasm1_local_global_reference<Purpose>(g.global);
                     }
                 }
             }
@@ -7983,10 +7983,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             // [safe                         ]
                             //                   ^^ i is bounded by element_count from this exact pointer pair.
                             auto const payload{externref_begin[i]};
-                            if((exnref_table ? ::uwvm2::uwvm::runtime::storage::retain_runtime_table_exn_payload(target_table, payload)
-                                             : ::uwvm2::uwvm::runtime::storage::retain_runtime_table_extern_payload(target_table, payload)) !=
-                                   ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
-                            { ::fast_io::fast_terminate(); }
+                            auto const retained{exnref_table ? ::uwvm2::uwvm::runtime::storage::retain_runtime_table_exn_payload(target_table, payload)
+                                                             : ::uwvm2::uwvm::runtime::storage::retain_runtime_table_extern_payload(target_table, payload)};
+                            if(!initializer_gc_succeeded<Purpose>(retained)) [[unlikely]] { ::fast_io::fast_terminate(); }
                             auto& slot{target_table->elems.index_unchecked(offset + i)};
                             slot.storage.extern_ptr = payload;
                             slot.type = exnref_table ? table_elem_type::exn_ref : table_elem_type::extern_ref;
@@ -8000,8 +7999,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             // [safe                        ] [safe                          ]
                             //                  ^^ i < element_count and the full table range were checked above.
                             auto const& reference{gc_ref_begin[i]};
-                            if(::uwvm2::uwvm::runtime::storage::retain_runtime_table_reference(target_table, reference) !=
-                               ::uwvm2::uwvm::runtime::storage::gc_object_status::ok) [[unlikely]]
+                            if(!initializer_gc_succeeded<Purpose>(::uwvm2::uwvm::runtime::storage::retain_runtime_table_reference(target_table, reference))) [[unlikely]]
                             { ::fast_io::fast_terminate(); }
                             target_table->elems.index_unchecked(offset + i) =
                                 ::uwvm2::uwvm::runtime::storage::runtime_table_slot_from_gc_reference(reference);

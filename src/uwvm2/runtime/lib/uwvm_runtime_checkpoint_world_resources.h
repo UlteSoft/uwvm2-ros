@@ -91,6 +91,13 @@ extern "C++"
         runtime_checkpoint_world_transaction() noexcept = default;
         [[nodiscard]] bool fail(preparation_status error) noexcept
         { phase_ = error; return false; }
+        using gc_status = checkpoint_world_data::st::gc_object_status;
+        [[nodiscard]] bool fail_gc(gc_status status, preparation_status fallback = preparation_status::type_mismatch) noexcept
+        {
+            if(status == gc_status::out_of_memory) { return fail(preparation_status::allocation_failed); }
+            if(status == gc_status::size_overflow) { return fail(preparation_status::quota_exceeded); }
+            return fail(fallback);
+        }
         [[nodiscard]] bool charge_native(::std::uint64_t count, ::std::uint64_t width) noexcept
         {
             if(width == 0u || native_bytes_ > maximum_native_bytes_ || count > (maximum_native_bytes_-native_bytes_)/width)
@@ -632,7 +639,7 @@ extern "C++"
                 { return fail(preparation_status::quota_exceeded); }
                 auto& relocated{objects_[n]};
                 auto const result{staged_gc_.reserve_shell(store,type,expected,object.values.size(),relocated.shell,relocated.value)};
-                if(result!=st::gc_object_status::ok) { return fail(preparation_status::allocation_failed); }
+                if(result!=gc_status::ok) { return fail_gc(result); }
                 relocated.owner=owner;relocated.reference_ready=true;
             }
             return true;
@@ -662,9 +669,9 @@ extern "C++"
                     owner=inner->owner;
                 }
                 native_value actual{};
-                if(!relocate_value(value,owner,actual) ||
-                   staged_gc_.stage_external_bridge(modules_[owner].actual->gc_store,actual.template as<reference>(),objects_[n].value)!=st::gc_object_status::ok)
-                { return fail(preparation_status::allocation_failed); }
+                if(!relocate_value(value,owner,actual)) { return fail(preparation_status::type_mismatch); }
+                auto const staged{staged_gc_.stage_external_bridge(modules_[owner].actual->gc_store,actual.template as<reference>(),objects_[n].value)};
+                if(staged!=gc_status::ok) { return fail_gc(staged); }
                 objects_[n].owner=owner;objects_[n].reference_ready=true;
             }
             return true;
@@ -756,7 +763,8 @@ extern "C++"
                 if(declared.kind==k::reference)
                 {
                     auto const ref{native.template as<reference>()};ex::instance_root root{};
-                    if(!staged_gc_.pending_reference_root(module.gc_store,ref,root)) { return fail(preparation_status::type_mismatch); }
+                    auto const retained{staged_gc_.pending_reference_root(module.gc_store,ref,root)};
+                    if(retained!=gc_status::ok) { return fail_gc(retained); }
                     // [fixed native carrier <=16][new immutable typed payload]
                     // [safe] real reference membership/type/root precedes byte span.
                     field=ex::payload_field::wasm_reference({native.bits.data(),sizeof(reference)},::std::move(root));
@@ -773,8 +781,9 @@ extern "C++"
             ex::diagnostic_trace_ref diagnostic{};if(!build_original_exception_diagnostic(object,diagnostic)) { return false; }
             if(!charge_native(1u, sizeof(ex::value))) { return false; }
             auto value{ex::value::make_owned(::std::static_pointer_cast<void const>(tag.exception_identity),::std::move(fields),::std::move(diagnostic))};
-            if(!value || staged_gc_.stage_exception(module.gc_store,value,objects_[index].value)!=st::gc_object_status::ok)
-            { return fail(preparation_status::allocation_failed); }
+            if(!value) { return fail(preparation_status::allocation_failed); }
+            auto const staged{staged_gc_.stage_exception(module.gc_store,value,objects_[index].value)};
+            if(staged!=gc_status::ok) { return fail_gc(staged); }
             objects_[index].owner=owner;objects_[index].reference_ready=true;return true;
         }
         [[nodiscard]] bool build_all_exceptions()
@@ -925,8 +934,8 @@ extern "C++"
                     if(declared==nullptr || !slot_type_matches(object.values[field].type,relocated.owner,declared->storage) ||
                        !relocate_value(object.values[field],relocated.owner,values[field])) { return fail(preparation_status::type_mismatch); }
                 }
-                if(staged_gc_.fill_shell(relocated.shell,{values.data(),values.size()})!=st::gc_object_status::ok)
-                { return fail(preparation_status::type_mismatch); }
+                auto const filled{staged_gc_.fill_shell(relocated.shell,{values.data(),values.size()})};
+                if(filled!=gc_status::ok) { return fail_gc(filled); }
             }
             return true;
         }
@@ -1010,12 +1019,13 @@ extern "C++"
                 chunks.push_back({object.words[0u],{values.data(),values.size()}});++cursor;
             }
             auto const remaining{maximum_native_bytes_-native_bytes_};
-            if(cursor!=owned.size() || remaining>SIZE_MAX ||
-               !charge_native(saved->words[1u],sizeof(checkpoint_world_data::st::local_defined_table_elem_storage_t)) ||
-               !context_->stage_saved_table_image(actual,static_cast<unsigned>(saved->words[0u]),
+            if(cursor!=owned.size() || remaining>SIZE_MAX) { return fail(preparation_status::allocation_failed); }
+            if(!charge_native(saved->words[1u],sizeof(checkpoint_world_data::st::local_defined_table_elem_storage_t))) { return false; }
+            auto retained{gc_status::ok};
+            if(!context_->stage_saved_table_image(actual,static_cast<unsigned>(saved->words[0u]),
                 saved->words[1u],saved->words[2u],saved->words[3u],expected,default_value,{chunks.data(),chunks.size()},
-                static_cast<::std::size_t>(remaining)))
-            { return fail(preparation_status::allocation_failed); }
+                static_cast<::std::size_t>(remaining),retained))
+            { return retained == gc_status::ok ? fail(preparation_status::allocation_failed) : fail_gc(retained); }
             return true;
         }
         [[nodiscard]] bool fill_global_object(object_id id)
@@ -1031,10 +1041,11 @@ extern "C++"
             native_value value{};
             if(!slot_type_matches(saved->values[0u].type,owner,{expected}) || !relocate_value(saved->values[0u],owner,value))
             { return fail(preparation_status::type_mismatch); }
+            auto retained{gc_status::ok};
             auto const filled{expected.kind==checkpoint_world_data::rt::value_kind::reference ?
-                context_->stage_saved_reference_global(actual,expected,saved->flags!=0u,value.template as<reference>()) :
+                context_->stage_saved_reference_global(actual,expected,saved->flags!=0u,value.template as<reference>(),retained) :
                 context_->stage_saved_numeric_global(actual,expected,saved->flags!=0u,value)};
-            return filled || fail(preparation_status::type_mismatch);
+            return filled || fail_gc(retained);
         }
         [[nodiscard]] bool fill_data_object(object_id id)
         {
@@ -1065,7 +1076,9 @@ extern "C++"
                 { return fail(preparation_status::type_mismatch); }
                 values[n]=relocated.template as<reference>();
             }
-            return context_->stage_saved_element_segment(actual,saved->flags!=0u,expected,{values.data(),values.size()}) || fail(preparation_status::source_mismatch);
+            auto retained{gc_status::ok};
+            return context_->stage_saved_element_segment(actual,saved->flags!=0u,expected,{values.data(),values.size()},retained) ||
+                fail_gc(retained, preparation_status::source_mismatch);
         }
         [[nodiscard]] bool charge_context_resource_backing(::std::size_t& element_bytes)
         {

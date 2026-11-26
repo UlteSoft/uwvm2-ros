@@ -648,7 +648,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         __declspec(noinline)
 #endif
         [[nodiscard]] aggregate_object_view checked_foreign_compact_object(
-            gc_reference reference) const noexcept
+            gc_reference reference, gc_object_status* failure) const noexcept
         {
             compact_numeric_reader reader{};
             if(compact_numeric_reader::try_foreign(reference, reader) != compact_numeric_status::ok)
@@ -658,7 +658,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(owner != this)
             {
                 auto recipient{lease_owner_.lock()};
-                if(!recipient || !recipient->hold(reader.store_)) { return {}; }
+                if(!recipient) { return {}; }
+                if(!recipient->hold(reader.store_))
+                {
+                    if(failure != nullptr) { *failure = gc_object_status::out_of_memory; }
+                    return {};
+                }
             }
             // [registered range][canonical typed source][actual recipient pin]
             // The cold reader excludes sweeping until the receiving lease is
@@ -667,7 +672,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return {nullptr, reader.descriptor_.get(), owner, reader.slot_};
         }
         [[nodiscard]] inline aggregate_object_view checked_aggregate_object(
-            gc_reference reference, gc_type::composite_kind kind) const noexcept
+            gc_reference reference, gc_type::composite_kind kind, gc_object_status* failure = nullptr) const noexcept
         {
             if(kind == gc_type::composite_kind::struct_)
             {
@@ -679,10 +684,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                reference.kind != (kind == gc_type::composite_kind::struct_ ?
                    ::uwvm2::object::global::wasm_ref_kind::wasm_struct :
                    ::uwvm2::object::global::wasm_ref_kind::wasm_array)) { return {}; }
-            if(auto* foreign{checked_foreign_object(reference, kind)}; foreign != nullptr)
+            if(auto* foreign{checked_foreign_object(reference, kind, failure)}; foreign != nullptr)
             { return {foreign, nullptr, foreign->owner, 0uz}; }
             return kind == gc_type::composite_kind::struct_ ?
-                checked_foreign_compact_object(reference) : aggregate_object_view{};
+                checked_foreign_compact_object(reference, failure) : aggregate_object_view{};
         }
         [[nodiscard]] static inline gc_object_status compact_get(
             aggregate_object_view view, ::std::size_t field_index, gc_object_value& result) noexcept
@@ -912,7 +917,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // A module can read thousands of distinct exception tokens from a table.
         // Keep membership lookup bounded by a bucket chain rather than walking
         // every root on each table.get; the teardown chain remains independent.
-        using exn_root_bucket_array = ::std::array<exn_root_node*, exn_bucket_count>;
+        struct exn_root_bucket_array
+        {
+            ::std::array<exn_root_node*, exn_bucket_count> buckets{};
+            ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::auxiliary> allocation_charge{};
+        };
         // Most modules never handle an exnref. Allocate the 8 KiB membership
         // index only on first use so ordinary module startup stays unchanged.
         mutable ::uwvm2::utils::container::std_unique_ptr<exn_root_bucket_array> exn_root_buckets_{};
@@ -921,6 +930,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
         bool valid_{};
         bool allocation_failed_{};
+        bool type_registry_allocation_failed_{};
         // Cold admission metadata, including valid stores with no aggregates.
         // An empty module can still own a global/table incoming edge; object
         // token indexes alone therefore cannot prove a closed store cohort.
@@ -1459,7 +1469,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(entry == nullptr) { return gc_object_status::invalid_reference; }
             exn_roots_guard roots_guard{*this};
             auto const bucket_index{exn_bucket(entry->token)};
-            for(auto* current{exn_root_buckets_ ? (*exn_root_buckets_)[bucket_index] : nullptr};
+            for(auto* current{exn_root_buckets_ ? exn_root_buckets_->buckets[bucket_index] : nullptr};
                 current != nullptr; current = current->bucket_next)
             {
                 if(current->entry == entry) { return gc_object_status::ok; }
@@ -1470,10 +1480,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // only for the first transfer into this module's root set.
             ::uwvm2::utils::container::std_unique_ptr<exn_root_node> fresh{::uwvm2::utils::allocator::resource::try_charged_object<exn_root_node>()};
             if(!fresh) { return gc_object_status::out_of_memory; }
+            ::uwvm2::utils::container::std_unique_ptr<exn_root_bucket_array> new_buckets{};
             if(!exn_root_buckets_)
             {
-                exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<exn_root_bucket_array>([&](exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exn_root_bucket_array{}; }));
-                if(!exn_root_buckets_) { return gc_object_status::out_of_memory; }
+                new_buckets.reset(::uwvm2::utils::allocator::resource::try_charged_object<exn_root_bucket_array>());
+                if(!new_buckets) { return gc_object_status::out_of_memory; }
             }
             auto origin{entry->owner.lock()};
             if(!origin) { return gc_object_status::invalid_reference; }
@@ -1485,11 +1496,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(!roots) { return gc_object_status::invalid_store; }
                 if(!roots->hold(::std::move(origin))) { return gc_object_status::out_of_memory; }
             }
+            if(new_buckets) { exn_root_buckets_ = ::std::move(new_buckets); }
             fresh->entry = entry;
             // [fresh root][module root head] exn_lock_ protects entry root_count.
             // ^^ publish an owning module root before the source can retire.
-            fresh->bucket_next = (*exn_root_buckets_)[bucket_index];
-            (*exn_root_buckets_)[bucket_index] = fresh.get();
+            fresh->bucket_next = exn_root_buckets_->buckets[bucket_index];
+            exn_root_buckets_->buckets[bucket_index] = fresh.get();
             fresh->next = exn_roots_;
             exn_roots_ = fresh.release();
             ++entry->root_count;
@@ -1738,7 +1750,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return expected_owner->function_type_match_(ref, expected_owner, index);
         }
         [[nodiscard]] inline bool reference_matches(gc_reference ref, gc_type::core_value_type expected,
-                                                    gc_object_store const* expected_owner = nullptr) const noexcept
+                                                    gc_object_store const* expected_owner = nullptr, gc_object_status* failure = nullptr) const noexcept
         {
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1
 
@@ -1758,7 +1770,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // Never dereference the payload until local or global membership
                 // lookup proves publication and retains a foreign owner.
                 auto const referenced{checked_aggregate_object(ref, ref.kind == ref_kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
+                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array, failure)};
                 if(!referenced) { return false; }
                 if(expected.heap.is_defined())
                 {
@@ -1782,8 +1794,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 {
                     bridge_guard guard{};
                     auto const* bridge{find_bridge_token_locked(ref.storage.ptr)};
-                    if(bridge == nullptr || retain_foreign_bridge_locked(bridge) != gc_object_status::ok)
-                    { return false; }
+                    if(bridge == nullptr) { return false; }
+                    auto const retained{retain_foreign_bridge_locked(bridge)};
+                    if(retained != gc_object_status::ok)
+                    {
+                        if(failure != nullptr && retained == gc_object_status::out_of_memory) { *failure = retained; }
+                        return false;
+                    }
                 }
                 // any.convert_extern may expose a host-owned opaque external
                 // reference as anyref. Its payload is never an eqref or a
@@ -1816,7 +1833,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 // Never dereference the payload until local or global membership
                 // lookup proves publication and retains a foreign owner.
                 auto const* referenced{checked_object(ref, ref.kind == ref_kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
+                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array, failure)};
                 if(referenced == nullptr) { return false; }
                 if(expected.heap.is_defined())
                 {
@@ -1840,8 +1857,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 {
                     bridge_guard guard{};
                     auto const* bridge{find_bridge_token_locked(ref.storage.ptr)};
-                    if(bridge == nullptr || retain_foreign_bridge_locked(bridge) != gc_object_status::ok)
-                    { return false; }
+                    if(bridge == nullptr) { return false; }
+                    auto const retained{retain_foreign_bridge_locked(bridge)};
+                    if(retained != gc_object_status::ok)
+                    {
+                        if(failure != nullptr && retained == gc_object_status::out_of_memory) { *failure = retained; }
+                        return false;
+                    }
                 }
                 // any.convert_extern may expose a host-owned opaque external
                 // reference as anyref. Its payload is never an eqref or a
@@ -1859,13 +1881,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
         }
         [[nodiscard]] inline bool value_matches(gc_object_value value, gc_type::storage_type storage,
-                                                gc_object_store const* expected_owner = nullptr) const noexcept
+                                                gc_object_store const* expected_owner = nullptr, gc_object_status* failure = nullptr) const noexcept
         {
             // Numeric kinds are statically established by the validated opcode stack.
             // Only references have a dynamic tag and nullable/heap condition to enforce.
             return storage.packed != gc_type::packed_kind::none ||
                    storage.value.kind != gc_type::value_kind::reference ||
-                   reference_matches(value.as<gc_reference>(), storage.value, expected_owner);
+                   reference_matches(value.as<gc_reference>(), storage.value, expected_owner, failure);
         }
 #if (defined(UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH) && UWVM_EXPERIMENTAL_ARRAY_SET_LOCAL_REF_AUTH == 1) || \
     (defined(UWVM_EXPERIMENTAL_STRUCT_SET_LOCAL_REF_AUTH) && UWVM_EXPERIMENTAL_STRUCT_SET_LOCAL_REF_AUTH == 1)
@@ -2693,7 +2715,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         __declspec(noinline)
 #endif
         [[nodiscard]] object* checked_foreign_object(gc_reference reference,
-                                                     gc_type::composite_kind kind) const noexcept
+            gc_type::composite_kind kind, gc_object_status* failure = nullptr) const noexcept
         {
             object* foreign{};
             ::std::shared_ptr<gc_object_store const> owner{};
@@ -2720,7 +2742,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             if(!owner || !foreign) { return nullptr; }
             if(owner.get() == this) { return foreign; }
             auto lease_owner{lease_owner_.lock()};
-            if(!lease_owner || !lease_owner->hold(::std::move(owner))) { return nullptr; }
+            if(!lease_owner) { return nullptr; }
+            if(!lease_owner->hold(::std::move(owner)))
+            {
+                if(failure != nullptr) { *failure = gc_object_status::out_of_memory; }
+                return nullptr;
+            }
             return foreign;
         }
         [[nodiscard]] inline object* checked_local_object(gc_reference reference,
@@ -2750,14 +2777,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 # include "collection_local_membership.h"
 #endif
         [[nodiscard]] inline object* checked_object(gc_reference reference,
-                                                     gc_type::composite_kind kind) const noexcept
+            gc_type::composite_kind kind, gc_object_status* failure = nullptr) const noexcept
         {
             if(auto* local{checked_local_object(reference, kind)}; local != nullptr) [[likely]] { return local; }
             if(reference.storage.ptr == nullptr ||
                reference.kind != (kind == gc_type::composite_kind::struct_ ?
                    ::uwvm2::object::global::wasm_ref_kind::wasm_struct :
                    ::uwvm2::object::global::wasm_ref_kind::wasm_array)) { return nullptr; }
-            return checked_foreign_object(reference, kind);
+            return checked_foreign_object(reference, kind, failure);
         }
         [[nodiscard]] static inline gc_object_status reference_error(gc_reference reference) noexcept
         {
@@ -2985,7 +3012,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 auto const result{canonical_registry_.validate_and_intern(section, ids)};
                 if(result.error != ::uwvm2::validation::standard::wasm3::recursive_type_validation_error::ok)
                 {
-                    allocation_failed_ = result.error == ::uwvm2::validation::standard::wasm3::recursive_type_validation_error::resource_limit;
+                    type_registry_allocation_failed_ = result.error == ::uwvm2::validation::standard::wasm3::recursive_type_validation_error::resource_limit;
                     valid_ = false; return;
                 }
             }
@@ -3244,7 +3271,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         gc_object_store(gc_object_store const&) = delete;
         gc_object_store& operator=(gc_object_store const&) = delete;
         [[nodiscard]] inline bool valid() const noexcept { return valid_; }
-        [[nodiscard]] inline bool allocation_failed() const noexcept { return allocation_failed_; }
+        [[nodiscard]] inline bool allocation_failed() const noexcept { return allocation_failed_ || type_registry_allocation_failed_; }
+        [[nodiscard]] inline bool type_registry_allocation_failed() const noexcept { return type_registry_allocation_failed_; }
         // Experimental stop-the-world aggregate collector. The caller owns
         // canonical strong pins for EVERY admitted store (including empty
         // stores), a complete precise root snapshot and an admission closure
@@ -4246,12 +4274,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
             auto owner{weak_from_this()};
             if(owner.expired()) { return gc_object_status::invalid_store; }
-#ifndef UWVM_MODULE
-            // Escaped private-thread exceptions share their actual worker's
-            // allocation account. Charge before publishing either registry node.
-            if(threaded_account_ && !threaded_account_.get().charge(sizeof(exn_token_entry)+sizeof(exn_root_node)+
-                (exn_root_buckets_?0u:sizeof(exn_root_bucket_array))))return gc_object_status::out_of_memory;
-#endif
 #if defined(UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS) && UWVM_EXPERIMENTAL_LOCAL_FULL_GC_EXCEPTIONS == 1
             // The value's real external block still pins this lifetime through
             // capture; generic internal records produce no source authority.
@@ -4273,9 +4295,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             exn_guard registry_guard{};
             if(next_exn_id_ > token_payload_mask) { return gc_object_status::size_overflow; }
             exn_roots_guard roots_guard{*this};
+#ifndef UWVM_MODULE
+            // Escaped private-thread exceptions share their actual worker's
+            // allocation account. Charge before publishing either registry node.
+            if(threaded_account_ && !threaded_account_.get().charge(sizeof(exn_token_entry)+sizeof(exn_root_node)+
+                (exn_root_buckets_?0u:sizeof(exn_root_bucket_array))))return gc_object_status::out_of_memory;
+#endif
             if(!exn_root_buckets_)
             {
-                exn_root_buckets_.reset(::uwvm2::utils::allocator::fast_io_strict::try_object<exn_root_bucket_array>([&](exn_root_bucket_array* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) exn_root_bucket_array{}; }));
+                exn_root_buckets_.reset(::uwvm2::utils::allocator::resource::try_charged_object<exn_root_bucket_array>());
                 if(!exn_root_buckets_) { return gc_object_status::out_of_memory; }
             }
             auto const identity{exn_token_prefix | next_exn_id_++};
@@ -4291,8 +4319,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             // [module root head] insertion retains this token until reset.
             // ^^ root advances to the old live head before publication.
             auto const bucket_index{exn_bucket(identity)};
-            root->bucket_next = (*exn_root_buckets_)[bucket_index];
-            (*exn_root_buckets_)[bucket_index] = root.get();
+            root->bucket_next = exn_root_buckets_->buckets[bucket_index];
+            exn_root_buckets_->buckets[bucket_index] = root.get();
             root->next = exn_roots_;
             exn_roots_ = root.release();
             result.storage.ptr = reinterpret_cast<void*>(identity);
@@ -4684,44 +4712,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         // a lease, but a later lookup cannot resurrect a retired arena.
         [[nodiscard]] inline gc_object_status retain_gc_reference(gc_reference reference) const noexcept
         {
+            using kind = ::uwvm2::object::global::wasm_ref_kind;
+            if(!valid_) { return gc_object_status::invalid_store; }
+            if(reference.kind == kind::wasm_struct || reference.kind == kind::wasm_array)
+            {
+                auto const shape{reference.kind == kind::wasm_struct ? gc_type::composite_kind::struct_ : gc_type::composite_kind::array};
+                auto failure{gc_object_status::invalid_reference};
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1
-
-            using kind = ::uwvm2::object::global::wasm_ref_kind;
-            if(!valid_) { return gc_object_status::invalid_store; }
-            if(reference.kind == kind::wasm_struct || reference.kind == kind::wasm_array)
-            {
-                auto const object{checked_aggregate_object(reference, reference.kind == kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
-                return !object ? gc_object_status::invalid_reference : gc_object_status::ok;
-            }
-            if(reference.kind == kind::wasm_extern)
-            {
-                if(reference.storage.ptr == nullptr) { return gc_object_status::invalid_reference; }
-                if(bridge_token_shape(reference.storage.ptr))
-                {
-                    bridge_guard guard{};
-                    auto const* bridge{find_bridge_token_locked(reference.storage.ptr)};
-                    if(bridge == nullptr) { return gc_object_status::invalid_reference; }
-                    return retain_foreign_bridge_locked(bridge);
-                }
-                return gc_object_status::ok; // Opaque host payload; never dereferenced.
-            }
-            if(reference.kind == kind::wasm_exn) { return retain_exn_reference(reference); }
-            if(reference.kind == kind::wasm_null || reference.kind == kind::wasm_i31 ||
-               reference.kind == kind::wasm_func || reference.kind == kind::wasm_func_imported ||
-               reference.kind == kind::wasm_func_defined)
-            { return gc_object_status::ok; }
-            return gc_object_status::invalid_reference;
-        
+                if(checked_aggregate_object(reference, shape, &failure)) { return gc_object_status::ok; }
 #else
-
-            using kind = ::uwvm2::object::global::wasm_ref_kind;
-            if(!valid_) { return gc_object_status::invalid_store; }
-            if(reference.kind == kind::wasm_struct || reference.kind == kind::wasm_array)
-            {
-                auto const* object{checked_object(reference, reference.kind == kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
-                return object == nullptr ? gc_object_status::invalid_reference : gc_object_status::ok;
+                if(checked_object(reference, shape, &failure) != nullptr) { return gc_object_status::ok; }
+#endif
+                return failure;
             }
             if(reference.kind == kind::wasm_extern)
             {
@@ -4741,8 +4743,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                reference.kind == kind::wasm_func_defined)
             { return gc_object_status::ok; }
             return gc_object_status::invalid_reference;
-        
-#endif
         }
         // Core 3 any.convert_extern. A host extern payload is opaque: only a
         // token proven to be in the live bridge index may be unwrapped.
@@ -4799,12 +4799,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 result = source; // Opaque host external values preserve pointer identity.
                 return gc_object_status::ok;
             }
+            auto failure{gc_object_status::invalid_reference};
             bool locally_published{source.kind == kind::wasm_i31};
             ::std::shared_ptr<gc_object_store const> inner_owner{};
             if(source.kind == kind::wasm_struct || source.kind == kind::wasm_array)
             {
                 auto const object{checked_aggregate_object(source, source.kind == kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
+                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array, &failure)};
                 locally_published = static_cast<bool>(object);
                 if(object && object.owner() != this)
                 {
@@ -4825,7 +4826,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     return gc_object_status::ok;
                 }
             }
-            if(!locally_published) { return gc_object_status::invalid_reference; }
+            if(!locally_published) { return failure; }
             // The candidate owns a foreign store lease. Keep its RAII owner
             // outside the guard scope so every failed/racing publication drops
             // that lease only after bridge_lock_ has been released.
@@ -4887,12 +4888,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 result = source; // Opaque host external values preserve pointer identity.
                 return gc_object_status::ok;
             }
+            auto failure{gc_object_status::invalid_reference};
             bool locally_published{source.kind == kind::wasm_i31};
             ::std::shared_ptr<gc_object_store const> inner_owner{};
             if(source.kind == kind::wasm_struct || source.kind == kind::wasm_array)
             {
                 auto const* object{checked_object(source, source.kind == kind::wasm_struct ?
-                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array)};
+                    gc_type::composite_kind::struct_ : gc_type::composite_kind::array, &failure)};
                 locally_published = object != nullptr;
                 if(object != nullptr && object->owner != this)
                 {
@@ -4913,7 +4915,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                     return gc_object_status::ok;
                 }
             }
-            if(!locally_published) { return gc_object_status::invalid_reference; }
+            if(!locally_published) { return failure; }
             // The candidate owns a foreign store lease. Keep its RAII owner
             // outside the guard scope so every failed/racing publication drops
             // that lease only after bridge_lock_ has been released.
@@ -5157,8 +5159,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
         }
 
+        [[nodiscard]] static gc_object_status constructor_reference_error(gc_object_status status, bool* auxiliary_refused) noexcept
+        {
+            if(auxiliary_refused != nullptr && status == gc_object_status::out_of_memory) { *auxiliary_refused = true; }
+            return status;
+        }
+
+        [[nodiscard]] gc_object_status check_constructor_value(gc_object_value value, gc_type::storage_type storage,
+            bool* auxiliary_refused) const noexcept
+        {
+            auto failure{gc_object_status::invalid_value};
+            if(value_matches(value, storage, nullptr, &failure)) { return gc_object_status::ok; }
+            return constructor_reference_error(failure, auxiliary_refused);
+        }
         [[nodiscard]] inline gc_object_status finish_copied_struct(object* fresh,
-            type_layout const& layout, gc_reference& result) noexcept
+            type_layout const& layout, gc_reference& result, bool* auxiliary_refused = nullptr) noexcept
         {
             // The immutable trace plan selects actual reference fields, never
             // payload addresses. Authentication and independent foreign/exn
@@ -5175,7 +5190,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 if(!visited)
                 {
                     destroy_object(fresh);
-                    return lease_status == gc_object_status::ok ? gc_object_status::invalid_type : lease_status;
+                    return lease_status == gc_object_status::ok ? gc_object_status::invalid_type : constructor_reference_error(lease_status, auxiliary_refused);
                 }
             }
             if(layout.has_packed_fields)
@@ -5223,7 +5238,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
     private:
         [[nodiscard]] inline gc_object_status struct_new_small(::std::uint_least32_t type_index,
-            gc_object_value const* inputs, ::std::size_t count, gc_reference& result) noexcept
+            gc_object_value const* inputs, ::std::size_t count, gc_reference& result, bool* auxiliary_refused) noexcept
         {
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1
 
@@ -5236,7 +5251,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 for(::std::size_t i{}; i != count; ++i)
                 {
                     // Every reference keeps its original dynamic validation.
-                    if(!value_matches(inputs[i], layout->fields[i].storage)) { return gc_object_status::invalid_value; }
+                    auto const checked{check_constructor_value(inputs[i], layout->fields[i].storage, auxiliary_refused)};
+                    if(checked != gc_object_status::ok) { return checked; }
                 }
             }
             // Private threaded worlds use the charged arena. Compact range
@@ -5266,7 +5282,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             {
                 // [0, count) fresh owns count live slots and the validated field metadata.
                 auto const lease{retain_embedded_reference(*fresh, inputs[i], layout->fields[i].storage)};
-                if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
+                if(lease != gc_object_status::ok) { destroy_object(fresh); return constructor_reference_error(lease, auxiliary_refused); }
                 fresh->values[i] = pack(inputs[i], layout->fields[i].storage.packed);
             }
             return publish(fresh, result);
@@ -5282,7 +5298,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 for(::std::size_t i{}; i != count; ++i)
                 {
                     // Every reference keeps its original dynamic validation.
-                    if(!value_matches(inputs[i], layout->fields[i].storage)) { return gc_object_status::invalid_value; }
+                    auto const checked{check_constructor_value(inputs[i], layout->fields[i].storage, auxiliary_refused)};
+                    if(checked != gc_object_status::ok) { return checked; }
                 }
             }
             object* fresh{};
@@ -5303,7 +5320,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             {
                 // [0, count) fresh owns count live slots and the validated field metadata.
                 auto const lease{retain_embedded_reference(*fresh, inputs[i], layout->fields[i].storage)};
-                if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
+                if(lease != gc_object_status::ok) { destroy_object(fresh); return constructor_reference_error(lease, auxiliary_refused); }
                 fresh->values[i] = pack(inputs[i], layout->fields[i].storage.packed);
             }
             return publish(fresh, result);
@@ -5312,20 +5329,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         }
     public:
         [[nodiscard]] inline gc_object_status struct_new(::std::uint_least32_t type_index,
-            gc_object_value const* inputs, ::std::size_t count, gc_reference& result) noexcept
+            gc_object_value const* inputs, ::std::size_t count, gc_reference& result, bool* auxiliary_refused = nullptr) noexcept
         {
             // Preserve the measured small-aggregate path, including reference leases.
-            if(count <= 8uz) { return struct_new_small(type_index, inputs, count, result); }
+            if(count <= 8uz) { return struct_new_small(type_index, inputs, count, result, auxiliary_refused); }
             auto const* layout{checked_type(type_index, gc_type::composite_kind::struct_)};
             if(layout == nullptr) { return gc_object_status::invalid_type; }
             if(count != layout->field_count || (count != 0uz && inputs == nullptr))
             { return gc_object_status::invalid_value; }
             if(layout->has_reference_fields)
             {
+                auto checked{gc_object_status::ok};
                 auto const valid_references{visit_constructor_reference_fields(*layout,
                     [&](::std::size_t field) noexcept
-                    { return value_matches(inputs[field], layout->fields[field].storage); })};
-                if(!valid_references) { return gc_object_status::invalid_value; }
+                    {
+                        checked = check_constructor_value(inputs[field], layout->fields[field].storage, auxiliary_refused);
+                        return checked == gc_object_status::ok;
+                    })};
+                if(!valid_references) { return checked == gc_object_status::ok ? gc_object_status::invalid_value : checked; }
             }
 #if defined(UWVM_EXPERIMENTAL_COMPACT_NUMERIC) && UWVM_EXPERIMENTAL_COMPACT_NUMERIC == 1
             // Private threaded worlds use the charged arena. Compact range
@@ -5338,7 +5359,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             auto const* bytes{reinterpret_cast<::std::byte const*>(inputs)};
             auto const status{allocate(type_index, gc_type::composite_kind::struct_, count, fresh, bytes)};
             if(status != gc_object_status::ok) { return status; }
-            return finish_copied_struct(fresh, *layout, result);
+            return finish_copied_struct(fresh, *layout, result, auxiliary_refused);
         }
         // Interpreter path after its register ring has been flushed. The caller proves
         // [stack_begin, stack_begin + stack_bytes) belongs to the operand stack;
@@ -5482,18 +5503,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 #endif
         }
         [[nodiscard]] inline gc_object_status array_new(::std::uint_least32_t type_index,
-            gc_object_value value, ::std::size_t length, gc_reference& result) noexcept
+            gc_object_value value, ::std::size_t length, gc_reference& result, bool* auxiliary_refused = nullptr) noexcept
         {
             auto const* layout{checked_type(type_index, gc_type::composite_kind::array)};
             if(layout == nullptr) { return gc_object_status::invalid_type; }
-            if(!value_matches(value, layout->fields[0].storage)) { return gc_object_status::invalid_value; }
+            auto const checked{check_constructor_value(value, layout->fields[0].storage, auxiliary_refused)};
+            if(checked != gc_object_status::ok) { return checked; }
             object* fresh{};
             auto const status{allocate(type_index, gc_type::composite_kind::array, length, fresh)};
             if(status != gc_object_status::ok) { return status; }
             if(length != 0uz)
             {
                 auto const lease{retain_embedded_reference(*fresh, value, layout->fields[0].storage)};
-                if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
+                if(lease != gc_object_status::ok) { destroy_object(fresh); return constructor_reference_error(lease, auxiliary_refused); }
             }
             auto const packed{pack(value, layout->fields[0].storage.packed)};
             fill_array_values(*fresh,0uz,length,packed,layout->fields[0uz].storage);
@@ -5516,7 +5538,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             return initialize_default_array_payload(type_index, length, storage, result);
         }
         [[nodiscard]] inline gc_object_status array_new_fixed(::std::uint_least32_t type_index,
-            gc_object_value const* inputs, ::std::size_t length, gc_reference& result) noexcept
+            gc_object_value const* inputs, ::std::size_t length, gc_reference& result, bool* auxiliary_refused = nullptr) noexcept
         {
             auto const* layout{checked_type(type_index, gc_type::composite_kind::array)};
             if(layout == nullptr) { return gc_object_status::invalid_type; }
@@ -5524,7 +5546,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             for(::std::size_t i{}; i != length; ++i)
             {
                 // [0, length) caller supplied exactly length initialized inputs.
-                if(!value_matches(inputs[i], layout->fields[0].storage)) { return gc_object_status::invalid_value; }
+                auto const checked{check_constructor_value(inputs[i], layout->fields[0].storage, auxiliary_refused)};
+                if(checked != gc_object_status::ok) { return checked; }
             }
             object* fresh{};
             auto const status{allocate(type_index, gc_type::composite_kind::array, length, fresh)};
@@ -5533,7 +5556,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             {
                 // [0, length) fresh owns length live slots.
                 auto const lease{retain_embedded_reference(*fresh, inputs[i], layout->fields[0].storage)};
-                if(lease != gc_object_status::ok) { destroy_object(fresh); return lease; }
+                if(lease != gc_object_status::ok) { destroy_object(fresh); return constructor_reference_error(lease, auxiliary_refused); }
                 store_array_value(*fresh, i, pack(inputs[i], layout->fields[0uz].storage.packed),
                     layout->fields[0uz].storage);
             }

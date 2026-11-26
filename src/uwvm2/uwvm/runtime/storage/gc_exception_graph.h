@@ -280,7 +280,7 @@ private:
                     {
                         for(::std::size_t bucket{}; bucket != exn_bucket_count; ++bucket)
                         {
-                            for(auto* item{(*store.exn_root_buckets_)[bucket]}; item != nullptr;)
+                            for(auto* item{store.exn_root_buckets_->buckets[bucket]}; item != nullptr;)
                             {
                                 if(indexed_count == recipient_count) { return gc_object_status::invalid_reference; }
                                 // recipient_count > 0 proves a non-null array;
@@ -424,7 +424,7 @@ private:
                         // Unlink dead bucket edges in one pass BEFORE freeing
                         // recipient nodes from the owning list. Preflight proved
                         // the complete list/bucket bijection under these locks.
-                        for(auto& bucket : *store.exn_root_buckets_)
+                        for(auto& bucket : store.exn_root_buckets_->buckets)
                         {
                             // [real bucket head slot or retained bucket_next]
                             // ^^ link names a live recipient-owned pointer slot.

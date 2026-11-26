@@ -163,6 +163,10 @@ int main(int argc, char** argv)
     constexpr auto initializer_pool{static_cast<unsigned>(budget::pool::initializer)};
     constexpr auto initializer_bytes{1uz << 20u};
     budget::policies[initializer_pool] = {initializer_bytes, initializer_bytes};
+    constexpr auto auxiliary_pool{static_cast<unsigned>(budget::pool::auxiliary)};
+    constexpr auto auxiliary_bytes{16uz << 20u};
+    budget::policies[auxiliary_pool] = {auxiliary_bytes, auxiliary_bytes};
+    auto const& auxiliary_live{budget::live_bytes[auxiliary_pool]};
     REQUIRE(::uwvm2::utils::control::debug_permissions::configure_trusted_launch(
         ::uwvm2::utils::control::debug_permissions::permission_level::full));
     mode::global_runtime_mode = mode::runtime_mode_t::full_compile;
@@ -199,8 +203,10 @@ int main(int argc, char** argv)
     auto bytes{image::owned_file_image::read(setup.path, 1048576u)}; REQUIRE(bytes);
     auto const original{bytes.image->bytes()}; REQUIRE(original.size() >= 8u && original.size() <= PTRDIFF_MAX);
     setup.immutable = ::std::move(bytes.image);
+    auto const before_schema{auxiliary_live.load()};
     REQUIRE(lib::replace_full_source_after_drain_host_api(source_setup::prepare, ::std::addressof(setup)) &&
         setup.ready && setup.source && setup.source->file().has_owned_source_image());
+    auto const schema_bytes{auxiliary_live.load() - before_schema};
     auto state{::std::make_shared<observer>()};
 
     auto profile{checkpoint::compilation_profile::create_for_trusted_observer()};
@@ -298,6 +304,7 @@ int main(int argc, char** argv)
     REQUIRE(lib::observe_compiler_runtime_generation_host_api()==epoch &&
         state->control->wait_until_paused(ticket,deadline())==threads::cooperative_pause_result::paused);
     auto const predecessor_bytes{budget::live_bytes[initializer_pool].load()};
+    unsigned allocation_diagnostic{};
     {
         auto const predecessor{full::selected_full_source_owner_pin()};
         REQUIRE(predecessor && predecessor_bytes < initializer_bytes);
@@ -308,8 +315,28 @@ int main(int argc, char** argv)
             limited.preparation.status == lib::llvm_jit_checkpoint_prepare_status::resource_preparation_declined);
         REQUIRE(full::selected_full_source_owner_pin() == predecessor && lib::observe_compiler_runtime_generation_host_api() == epoch);
         REQUIRE(budget::live_bytes[initializer_pool].load() == initializer_bytes);
+        allocation_diagnostic = limited.preparation.resource_diagnostic;
+        REQUIRE(allocation_diagnostic != 0u);
     }
     REQUIRE(budget::live_bytes[initializer_pool].load() == predecessor_bytes);
+    auto const predecessor_auxiliary{auxiliary_live.load()};
+    {
+        auto const predecessor{full::selected_full_source_owner_pin()};
+        // The same schema, bridge and token records fit. Its new 1024-pointer
+        // exception index must compete with the still-live original world.
+        auto const allowance{schema_bytes + 1024uz};
+        REQUIRE(predecessor && predecessor_auxiliary < auxiliary_bytes && allowance < auxiliary_bytes - predecessor_auxiliary);
+        budget::reservation<budget::pool::auxiliary> concurrent{};
+        REQUIRE(concurrent.resize(auxiliary_bytes - predecessor_auxiliary - allowance));
+        auto const held{auxiliary_live.load()};
+        auto const limited{lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,prepare_request,deadline())};
+        REQUIRE(limited.status == outcome::preparation_declined && !limited.operation &&
+            limited.preparation.status == lib::llvm_jit_checkpoint_prepare_status::resource_preparation_declined &&
+            limited.preparation.resource_diagnostic == allocation_diagnostic);
+        REQUIRE(auxiliary_live.load() == held && full::selected_full_source_owner_pin() == predecessor &&
+            lib::observe_compiler_runtime_generation_host_api() == epoch);
+    }
+    REQUIRE(auxiliary_live.load() == predecessor_auxiliary);
     { ::std::lock_guard lock{state->mutex};state->collecting=false; }
     auto ready=lib::llvm_jit_checkpoint_prepare_retire_instance_host_api(ticket,captures,prepare_request,deadline());
     ::fast_io::io::perrln("PREPARE status=",unsigned(ready.status)," prepare=",unsigned(ready.preparation.status),

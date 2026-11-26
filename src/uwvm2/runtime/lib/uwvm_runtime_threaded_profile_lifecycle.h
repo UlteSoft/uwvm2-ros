@@ -438,7 +438,7 @@
 
         [[nodiscard]] static ::uwvm2::utils::container::std_unique_ptr<concrete_work> prepare_work(profile_state& state,
             group::CompilerLease const& compiler, bool main, ::std::size_t origin, ::std::size_t entry, ::std::span<::std::byte const> parameters,
-            ::uwvm2::runtime::wasm_threads::termination_kind& failure,
+            ::uwvm2::runtime::wasm_threads::termination_kind& failure, int& native_error,
             ::uwvm2::utils::control::wasithread::policy::reservation& permission) noexcept
         {
             if(!compiler.owns_current_native_thread() || compiler.retained_admission() != state.admitted ||
@@ -450,6 +450,7 @@
                 if(!created.world)
                 {
                     namespace initializer = ::uwvm2::uwvm::runtime::initializer;
+                    if(created.error == initializer::threaded_child_error::allocation_failure) { native_error = ENOMEM; }
                     if(initializer::threaded_child_error_is_profile_rejection(created.error))
                     { failure = ::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected; }
                     ::fast_io::perrln("uwvm: [error] WASI Threads instance preparation rejected: ",
@@ -460,11 +461,17 @@
                 auto work{::uwvm2::utils::container::make_unique<concrete_work>(::std::move(created.world),
                     main ? state.result : nullptr, entry, parameters, ::std::move(permission))};
                 work->bind_guest_exit(state.guest_exit);
-                if(!work->prepare(state,compiler,failure) || compiler.cancellation().stop_requested()) { return {}; }
+                if(!work->prepare(state,compiler,failure))
+                {
+                    if(failure == ::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected) { native_error = ENOMEM; }
+                    return {};
+                }
+                if(compiler.cancellation().stop_requested()) { return {}; }
                 return work;
             }
             catch(::std::bad_alloc const&)
             {
+                native_error = ENOMEM;
                 ::fast_io::perrln("uwvm: [error] WASI Threads could not allocate instance preparation storage.");
                 failure=::uwvm2::runtime::wasm_threads::termination_kind::preparation_rejected;
                 return {};
@@ -774,8 +781,9 @@
                 { return fail(completion::rejected, EINVAL); }
                 if(actual.cancellation().stop_requested()) { return {completion::cancelled, {}, 0}; }
                 termination failure{termination::native_failure};
-                auto work{prepare_work(*state_, actual, main_, origin_, entry_, parameters_, failure, thread_authority_)};
-                if(!work) { return fail(actual.cancellation().stop_requested() ? completion::cancelled : completion::rejected, EINVAL, failure); }
+                int native_error{EINVAL};
+                auto work{prepare_work(*state_, actual, main_, origin_, entry_, parameters_, failure, native_error, thread_authority_)};
+                if(!work) { return fail(actual.cancellation().stop_requested() ? completion::cancelled : completion::rejected, native_error, failure); }
                 if(main_)
                 {
                     auto const initialized{::uwvm2::uwvm::runtime::initializer::ThreadedMainActiveSegments::apply(
