@@ -446,9 +446,9 @@ template <typename LoadLength>
     }
     auto const& info{state.selected_memory_access_info};
     if(info.memory_p == nullptr) { return nullptr; } // Provider-owned accesses must keep their callback/lock lifetime.
-    // A stable base is not a tag-lifetime lease. Decide BEFORE registering a
-    // host data/shadow span or emitting any GEP/check/load: the complete shared
-    // tagged scalar/atomic operation must execute in its authenticated helper.
+    // Emit the authenticated lease call before registering any data or tag
+    // span. The private threaded compiler can later specialize a shared scalar
+    // with a complete owner, bounds and tag-reader proof around its effect.
     if(info.memory_p->memtag_shadow.enabled() && info.memory_p->memtag_shadow.shared())
     { return nullptr; }
     auto& b{*state.ir_builder};
