@@ -1,5 +1,7 @@
 module;
 #include <array>
+#include <cstddef>
+#include <limits>
 #include <initializer_list>
 #include <utility>
 #include <uwvm2/uwvm/runtime/macro/push_macros.h>
