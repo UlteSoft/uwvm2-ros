@@ -26,6 +26,9 @@
             ::uwvm2::uwvm::runtime::full::full_source_destruction_completion::owner old_source_completion;
             backend selected{};
             llvm_limits_type llvm_limits{};
+#if defined(UWVM_RUNTIME_LLVM_JIT)
+            ThreadedLlvmChild::object_cache llvm_objects;
+#endif
             ::std::uint_least64_t generation{};
             bool joined{}, ordinary_reopened{}, requires_reset{};
             ::uwvm2::runtime::wasm_threads::group_outcome outcome{};
@@ -156,7 +159,7 @@
                 // worker. Ordinary/idle execution pays no additional poll.
                 ::uwvm2::runtime::memtag::deferred::poll(true);
             }
-            [[nodiscard]] bool prepare(profile_state const& state, group::CompilerLease const& compiler,
+            [[nodiscard]] bool prepare(profile_state& state, group::CompilerLease const& compiler,
                 ::uwvm2::runtime::wasm_threads::termination_kind& failure)
             {
                 if(!compiler.owns_current_native_thread() || &compiler.admission() != admission_.get() ||
@@ -231,7 +234,8 @@
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                 else
                 {
-                    auto built{ThreadedLlvmChild::prepare(world_,compiler,limits.max_child_storage_bytes-before,state.llvm_limits)};
+                    auto built{ThreadedLlvmChild::prepare(world_,compiler,limits.max_child_storage_bytes-before,state.llvm_limits,
+                        &state.llvm_objects)};
                     if(!built.child && built.status==ThreadedLlvmChild::preparation_status::budget)return reject_budget("LLVM");
                     if(!built.child || built.status!=ThreadedLlvmChild::preparation_status::ok)
                     {
@@ -1151,6 +1155,9 @@
 #endif
                 auto maintenance{g_runtime.execution_domain.try_maintenance_transition()};
                 if(!maintenance) { return threaded_main_status::rejected; }
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8
+                ::std::size_t object_cache_bytes{};
+#endif
                 if(control_owner().cli_storage_derived)
                 {
                     auto completed{control_owner().configured};
@@ -1175,6 +1182,17 @@
                         return threaded_main_status::rejected;
 #endif
                     }
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8
+                    // The CLI derives its aggregate grant from per-worker and group
+                    // costs. Preserve explicit embedding caps and all space reserved
+                    // for guest GC, exception, table and compiler-job allocations.
+                    if(runtime_compiler_requests_llvm_jit_translation() && !control_owner().journal && !signal_limits.read_fd &&
+                       control_owner().observation==::uwvm2::runtime::wasm_threads::threaded_debug_observation::none)
+                    {
+                        auto const bytes=(::std::min)(ThreadedLlvmChild::maximum_cached_object_storage,completed.max_child_storage_bytes/4u);
+                        if(add(bytes))object_cache_bytes=bytes;
+                    }
+#endif
                     if(!group::limits_admitted(completed)) { return threaded_main_status::rejected; }
                     control_owner().configured=completed;
                 }
@@ -1292,6 +1310,13 @@
                         auto const bytes{state->signal->facts_.pipe_capacity+signal_owner::bookkeeping_bytes};
                         if(bytes>SIZE_MAX-control_bytes)throw ::std::bad_alloc{};
                         control_bytes+=static_cast<::std::size_t>(bytes);
+                    }
+#endif
+#if defined(UWVM_RUNTIME_LLVM_JIT) && defined(__x86_64__) && __SIZEOF_POINTER__ == 8
+                    if(!state->admitted->initial_worker_only() && object_cache_bytes<=SIZE_MAX-control_bytes)
+                    {
+                        state->llvm_objects.limit=object_cache_bytes;
+                        control_bytes+=object_cache_bytes;
                     }
 #endif
                     if(!state->native->charge_runtime_control_storage(control_bytes)) { throw ::std::bad_alloc{}; }
