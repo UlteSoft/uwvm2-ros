@@ -31,8 +31,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm3::type
     struct recursive_type_details_t { recursive_type_section const* value{}; };
     struct function_type_details_t
     {
-        ::uwvm2::utils::container::vector<core_value_type> const* parameters{};
-        ::uwvm2::utils::container::vector<core_value_type> const* results{};
+        ::uwvm2::utils::container::parser_vector<core_value_type> const* parameters{};
+        ::uwvm2::utils::container::parser_vector<core_value_type> const* results{};
     };
 
     [[nodiscard]] inline constexpr auto section_details(heap_type value) noexcept { return heap_type_details_t{value}; }

@@ -24,8 +24,12 @@ the tighter applicable limit wins.
 | `parser` | `type-metadata-bytes` | 512 MiB | Recursive type decoder's requested native metadata bytes per section |
 | `parser` | `function-body-bytes` | 8 MiB | Maximum encoded body size of one function |
 | `parser` | `module-code-bytes` | 64 MiB | Sum of encoded function body sizes in one module |
+| `parser` | `single-bytes` | 256 MiB | Maximum backing allocation for parsed sections, names, constant expressions and Core 3 type records |
+| `parser` | `live-bytes` | 1 GiB | Process-wide live parser backing bytes, including old and new buffers during growth |
 | `validation` | `single-bytes` | 256 MiB | Maximum backing allocation for bounded validation/compiler stacks |
 | `validation` | `live-bytes` | 512 MiB | Process-wide live backing storage for these stacks |
+
+The parser charges metadata buffers and hash buckets when it allocates them and releases the charge when their owner frees them. A shared module keeps one charge while it is live. Interned recursive type keys and IDs stay charged until their registry is destroyed. Reusing an existing group uses validation scratch for lookup and retains its existing canonical ID.
 
 Module parser count limits from `parser.limit.TYPE` also apply. In
 particular `code_locals` checks both the declaration run count and the expanded

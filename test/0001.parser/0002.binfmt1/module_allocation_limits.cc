@@ -1,5 +1,9 @@
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <utility>
+#include <uwvm2/utils/allocator/resource_limit.h>
+#include <uwvm2/validation/standard/wasm3/recursive_type_registry.h>
 #include <fast_io.h>
 #include <uwvm2/parser/wasm/standard/wasm1/features/binfmt.h>
 #include <uwvm2/parser/wasm/standard/wasm1p1/features/impl.h>
@@ -34,7 +38,7 @@ namespace
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     // A global and an active data offset each retain one opcode. Both end bytes are free.
     constexpr ::std::uint8_t offsets[]{
@@ -58,6 +62,44 @@ int main()
     if(!check<wasm, proposals>(sum, extended(3)) || !check<wasm, proposals>(sum, extended(2), u8"const_expr_opcodes", 3, 2)) { return 4; }
     // Two empty custom sections with distinct names require two retained section records.
     constexpr ::std::uint8_t customs[]{0,97,115,109,1,0,0,0, 0,2,1,'a', 0,2,1,'b'};
+    namespace resource = ::uwvm2::utils::allocator::resource;
+    constexpr auto pool{static_cast<unsigned>(resource::pool::parser)};
+    ::uwvm2::parser::wasm::concepts::feature_parameter_t<wasm> defaults{};
+    auto const parse_customs = [&]
+    {
+        auto const* begin{reinterpret_cast<::std::byte const*>(customs)};
+        base::error_impl error{};
+        return ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_handle_func<wasm>(begin, begin + sizeof(customs), error, defaults);
+    };
+    auto const baseline{resource::live_bytes[pool].load()};
+    {
+        if(argc == 2 && ::std::strcmp(argv[1], "single") == 0) { resource::policies[pool].single = 0; }
+        auto first{parse_customs()};
+        auto const one{resource::live_bytes[pool].load()};
+        if(one <= baseline) { return 6; }
+        auto moved{::std::move(first)};
+        if(resource::live_bytes[pool].load() != one) { return 7; }
+        if(argc == 2 && ::std::strcmp(argv[1], "live") == 0) { resource::policies[pool].live = one; }
+        { auto second{parse_customs()}; if(resource::live_bytes[pool].load() != one + (one - baseline)) { return 8; } }
+        if(resource::live_bytes[pool].load() != one) { return 9; }
+    }
+    if(resource::live_bytes[pool].load() != baseline) { return 10; }
+    namespace v3 = ::uwvm2::validation::standard::wasm3;
+    namespace t3 = ::uwvm2::parser::wasm::standard::wasm3::type;
+    {
+        constexpr ::std::uint8_t structure[]{1, 0x5f, 0};
+        auto cursor{reinterpret_cast<::std::byte const*>(structure)};
+        t3::recursive_type_section section{};
+        if(v3::scan_core3_type_section(cursor, cursor + sizeof(structure), section).error != v3::recursive_type_binary_error::ok) { return 11; }
+        v3::recursive_type_registry registry{};
+        ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
+        if(registry.validate_and_intern(section, ids).error != v3::recursive_type_validation_error::ok) { return 12; }
+        auto const after_insert{resource::live_bytes[pool].load()};
+        if(registry.validate_and_intern(section, ids).error != v3::recursive_type_validation_error::ok ||
+           ids.size() != 1 || ids.front_unchecked() != 0 || registry.size() != 1 ||
+           resource::live_bytes[pool].load() != after_insert) { return 13; }
+    }
+    if(resource::live_bytes[pool].load() != baseline) { return 14; }
     using custom_record = ::uwvm2::parser::wasm::standard::wasm1::section::custom_section;
     constexpr auto bytes{2uz * sizeof(custom_record)};
     auto const sections = [](auto count, auto storage_bytes)

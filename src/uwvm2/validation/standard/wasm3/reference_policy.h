@@ -246,7 +246,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         using pair = ::std::pair<::std::size_t, ::std::size_t>;
         using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-        ::uwvm2::utils::container::vector<pair> pending{}, seen{};
+        ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
         pending.push_back({first, second});
         while(!pending.empty())
         {
@@ -324,7 +324,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         using pair = ::std::pair<::std::size_t, ::std::size_t>;
         using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-        ::uwvm2::utils::container::vector<pair> pending{}, seen{};
+        ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
         pending.push_back({left_index, right_index});
         while(!pending.empty())
         {

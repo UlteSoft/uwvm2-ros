@@ -71,11 +71,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...>> imports{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...>> imports{};
 
         inline static constexpr ::std::size_t importdesc_count{
             static_cast<::std::size_t>(decltype(::uwvm2::parser::wasm::standard::wasm1::features::final_extern_type_t<Fs...>{}.type)::external_type_end) + 1uz};
-        ::uwvm2::utils::container::array<::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...> const*>,
+        ::uwvm2::utils::container::array<::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...> const*>,
                                          importdesc_count>
             importdesc{};
     };
@@ -504,7 +504,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         /// to support such overloading, and a WebAssembly module itself cannot implement an overloaded name
         constexpr bool curr_wasm_check_duplicate_imports{::uwvm2::parser::wasm::standard::wasm1::features::check_duplicate_imports<Fs...>()};
         ::std::conditional_t<curr_wasm_check_duplicate_imports,
-                             ::uwvm2::utils::container::unordered_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
+                             ::uwvm2::utils::container::parser_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
                              ::uwvm2::parser::wasm::concepts::empty_t>
             duplicate_name_checker{};  // use for check duplicate name
 

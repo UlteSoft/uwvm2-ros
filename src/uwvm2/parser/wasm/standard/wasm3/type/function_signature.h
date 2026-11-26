@@ -22,9 +22,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm3::type
         bool requires_function_references{};
         bool requires_exceptions{};
         bool requires_simd{}, requires_reference_types{}, requires_multi_value{};
-        ::uwvm2::utils::container::vector<core_value_type> parameters{}, results{};
+        ::uwvm2::utils::container::parser_vector<core_value_type> parameters{}, results{};
         // One trailing sentinel keeps empty begin/end views within a live allocation. It is not a Wasm type.
-        ::uwvm2::utils::container::vector<Carrier> carriers{};
+        ::uwvm2::utils::container::parser_vector<Carrier> carriers{};
     };
 
     template<typename Carrier, typename FunctionType>

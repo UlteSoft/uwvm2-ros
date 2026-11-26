@@ -32,10 +32,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
         inline constexpr ::std::size_t no_index{(::std::numeric_limits<::std::size_t>::max)()};
-        using words = ::uwvm2::utils::container::vector<::std::uint_least64_t>;
+        using words = ::uwvm2::utils::container::validation_vector<::std::uint_least64_t>;
         struct words_less
         {
-            [[nodiscard]] inline bool operator()(words const& a, words const& b) const noexcept
+            using is_transparent = void;
+            [[nodiscard]] inline bool operator()(auto const& a, auto const& b) const noexcept
             {
                 auto const count{a.size() < b.size() ? a.size() : b.size()};
                 for(::std::size_t i{}; i != count; ++i)
@@ -68,7 +69,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         }
         // Caller has validated reference scope and supplies one canonical ID per earlier module type.
         [[nodiscard]] inline words group_key(types::recursive_group const& group,
-            ::uwvm2::utils::container::vector<::std::size_t> const& canonical) noexcept
+            auto const& canonical) noexcept
         {
             namespace t = types;
             auto const first{static_cast<::std::size_t>(group.first_type_index)};
@@ -114,9 +115,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         // Canonical indices are local to this context. Never compare indices from unrelated modules directly.
         ::std::size_t canonical{}, parent{recursive_validation_details::no_index}, preorder{}, subtree_end{};
     };
-    struct recursive_type_context
+    template<typename Records>
+    struct basic_recursive_type_context
     {
-        ::uwvm2::utils::container::vector<recursive_type_record> records{};
+        Records records{};
         [[nodiscard]] inline constexpr bool contains(::std::uint_least64_t index) const noexcept { return index < records.size(); }
         [[nodiscard]] inline constexpr bool matches(
             ::uwvm2::parser::wasm::standard::wasm3::type::heap_type from,
@@ -162,12 +164,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                 ((!from.nullable || to.nullable) && matches(from.heap, to.heap)) : from.kind <= k::v128);
         }
     };
+    using recursive_type_context = basic_recursive_type_context<::uwvm2::utils::container::parser_vector<recursive_type_record>>;
+
     // Core 3 valid/types + valid/matching + valid/conventions (closed recursive groups).
     // The binary decoder owns all vectors. This pass borrows them synchronously and publishes an independent
     // context only after every declared subtype is proved valid. No source-buffer pointers survive this pass.
+    template<typename Records>
     [[nodiscard]] inline recursive_type_validation_result validate_core3_type_section(
         ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
-        recursive_type_context& output) noexcept
+        basic_recursive_type_context<Records>& output) noexcept
     {
         namespace d = recursive_validation_details;
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
@@ -183,9 +188,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         if(total != section.type_count || total > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(recursive_type_record))
         { return {e::inconsistent_section, 0, total}; }
         auto const count{static_cast<::std::size_t>(total)};
-        recursive_type_context result{};
+        basic_recursive_type_context<Records> result{};
         result.records.resize(count);
-        ::uwvm2::utils::container::vector<t::sub_type const*> definitions{};
+        ::uwvm2::utils::container::validation_vector<t::sub_type const*> definitions{};
         definitions.reserve(count);
         for(auto const& group : section.groups) for(auto const& type : group.types)
         {
@@ -239,8 +244,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         // Ordered interning avoids attacker-chosen hash collision chains. A key preserves the whole group,
         // projection positions, finality, declared parents, and local binders; merely equal unfolded shapes
         // are insufficient. Closed references use canonical indices of PREVIOUS groups.
-        ::uwvm2::utils::container::map<d::words, ::std::size_t, d::words_less> groups{};
-        ::uwvm2::utils::container::vector<::std::size_t> canonical_indices{};
+        ::uwvm2::utils::container::validation_map<d::words, ::std::size_t, d::words_less> groups{};
+        ::uwvm2::utils::container::validation_vector<::std::size_t> canonical_indices{};
         canonical_indices.resize(count);
         for(auto const& group : section.groups)
         {
@@ -256,7 +261,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             }
         }
         // Build the single-inheritance forest in O(type_count) space, then assign DFS intervals without recursion.
-        ::uwvm2::utils::container::vector<::std::size_t> first_child{}, next_sibling{};
+        ::uwvm2::utils::container::validation_vector<::std::size_t> first_child{}, next_sibling{};
         first_child.resize(count); next_sibling.resize(count);
         for(::std::size_t i{}; i != count; ++i) { first_child.index_unchecked(i) = next_sibling.index_unchecked(i) = d::no_index; }
         for(::std::size_t i{}; i != count; ++i)
@@ -272,7 +277,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             first_child.index_unchecked(parent) = i;
         }
         struct visit { ::std::size_t index{}; bool leave{}; };
-        ::uwvm2::utils::container::vector<visit> stack{};
+        ::uwvm2::utils::container::validation_vector<visit> stack{};
         ::std::size_t clock{};
         for(::std::size_t root{}; root != count; ++root)
         {

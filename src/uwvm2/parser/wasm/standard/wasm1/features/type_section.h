@@ -83,12 +83,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_type_type_t<Fs...>> types{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<final_value_type_t<Fs...>>> owned_signatures{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_type_type_t<Fs...>> types{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<final_value_type_t<Fs...>>> owned_signatures{};
         // Exact Core 3 definitions are retained separately from the executable ABI projection.
         // Flat kind indices match `types` and `owned_signatures`, including aggregate slots.
         ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section core3_recursive_types{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm3::type::composite_kind> core3_type_kinds{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm3::type::composite_kind> core3_type_kinds{};
         ::uwvm2::validation::standard::wasm3::recursive_type_context core3_context{};
 
         // Aggregate the encoding requirement once, avoiding a complete type scan per validated function.
@@ -536,7 +536,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     {
         auto& typesec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<type_section_storage_t<Fs...>>(module_storage.sections)};
 
-        ::uwvm2::utils::container::unordered_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
+        ::uwvm2::utils::container::parser_flat_map<::uwvm2::parser::wasm::standard::wasm1::features::type_function_checker,
                                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>
             duplicate_type_function_checker{};
 

@@ -63,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         inline static constexpr ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte section_id{
             static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte>(::uwvm2::parser::wasm::standard::wasm1::section::section_id::custom_sec)};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::section::custom_section> customs{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::section::custom_section> customs{};
     };
 
     /// @brief Define the handler function for type_section

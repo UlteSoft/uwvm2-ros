@@ -35,7 +35,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         // Keep binary runs compressed. A tiny declaration of billions of locals must not allocate billions
         // of validator entries. Storage/frame resource limits are applied when a runtime layout is requested.
-        ::uwvm2::utils::container::vector<core3_local_run> runs{};
+        ::uwvm2::utils::container::validation_vector<core3_local_run> runs{};
         ::std::uint_least64_t parameter_count{}, total_count{};
         [[nodiscard]] inline constexpr bool find(::std::uint_least64_t index,
             ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type& result) const noexcept
@@ -108,8 +108,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         // Only locals without a default value need tracking. Sparse state is bounded by actual local.set/tee
         // operations, not by a hostile declared local count. The ordered set avoids chosen integer hash collisions.
-        ::uwvm2::utils::container::set<::std::uint_least32_t> assigned_{};
-        ::uwvm2::utils::container::vector<::std::uint_least32_t> undo_{};
+        ::uwvm2::utils::container::validation_set<::std::uint_least32_t> assigned_{};
+        ::uwvm2::utils::container::validation_vector<::std::uint_least32_t> undo_{};
     public:
         [[nodiscard]] inline ::std::size_t checkpoint() const noexcept { return undo_.size(); }
         [[nodiscard]] inline bool is_initialized(::std::uint_least32_t index, bool initially_initialized) const noexcept

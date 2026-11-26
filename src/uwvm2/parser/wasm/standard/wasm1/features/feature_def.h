@@ -157,7 +157,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::uwvm2::parser::wasm::concepts::feature_reserve_type_t<import_section_storage_t<Fs...>> sec_adl,
         ::uwvm2::parser::wasm::concepts::feature_reserve_type_t<::uwvm2::parser::wasm::standard::wasm1::features::final_extern_type_t<Fs...>> extern_adl,
         ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...>& module_storage,
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...> const*> const* importdesc_begin,
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_import_type<Fs...> const*> const* importdesc_begin,
         ::std::byte const* section_curr,
         ::uwvm2::parser::wasm::base::error_impl& err,
         ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para) {
@@ -839,9 +839,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     {
         inline static constexpr ::std::size_t sizeof_vectypeidx_minimize_storage_u{::uwvm2::parser::wasm::concepts::operation::get_union_size<
             typeidx_u8_view_t,
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8>,
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u16>,
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>>()};
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8>,
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u16>,
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>>()};
 
         union vectypeidx_minimize_storage_u
         {
@@ -849,17 +849,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             static_assert(::std::is_trivially_copyable_v<typeidx_u8_view_t> && ::std::is_trivially_destructible_v<typeidx_u8_view_t>);
 
             // Self-control of the life cycle
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8> typeidx_u8_vector;
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8> typeidx_u8_vector;
             static_assert(::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<decltype(typeidx_u8_vector)> &&
                           ::fast_io::freestanding::is_zero_default_constructible_v<decltype(typeidx_u8_vector)>);
 
             // Self-control of the life cycle
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u16> typeidx_u16_vector;
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u16> typeidx_u16_vector;
             static_assert(::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<decltype(typeidx_u16_vector)> &&
                           ::fast_io::freestanding::is_zero_default_constructible_v<decltype(typeidx_u16_vector)>);
 
             // Self-control of the life cycle
-            ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> typeidx_u32_vector;
+            ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> typeidx_u32_vector;
             static_assert(::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<decltype(typeidx_u32_vector)> &&
                           ::fast_io::freestanding::is_zero_default_constructible_v<decltype(typeidx_u32_vector)>);
 
@@ -1886,7 +1886,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     {
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 table_idx{};
         ::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_const_expr<Fs...> expr{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> vec_funcidx{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> vec_funcidx{};
     };
 
     /// @brief Wrapper for the final_import_type
@@ -2485,7 +2485,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
     struct final_wasm_code_t
     {
         code_body_t body{};
-        ::uwvm2::utils::container::vector<final_local_entry_t<Fs...>> locals{};
+        ::uwvm2::utils::container::parser_vector<final_local_entry_t<Fs...>> locals{};
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 all_local_count{};
     };
 

@@ -64,20 +64,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm3::type
         bool final_{true};
         // Offsets, not borrowed input pointers: records survive source-buffer relocation.
         ::std::size_t binary_offset{};
-        ::uwvm2::utils::container::vector<::std::uint_least32_t> supertypes{};
-        ::uwvm2::utils::container::vector<core_value_type> parameters{};
-        ::uwvm2::utils::container::vector<core_value_type> results{};
-        ::uwvm2::utils::container::vector<field_type> fields{};
+        ::uwvm2::utils::container::parser_vector<::std::uint_least32_t> supertypes{};
+        ::uwvm2::utils::container::parser_vector<core_value_type> parameters{};
+        ::uwvm2::utils::container::parser_vector<core_value_type> results{};
+        ::uwvm2::utils::container::parser_vector<field_type> fields{};
     };
     struct recursive_group
     {
         ::std::size_t binary_offset{};
         ::std::uint_least64_t first_type_index{};
-        ::uwvm2::utils::container::vector<sub_type> types{};
+        ::uwvm2::utils::container::parser_vector<sub_type> types{};
     };
     struct recursive_type_section
     {
         ::std::uint_least64_t type_count{};
-        ::uwvm2::utils::container::vector<recursive_group> groups{};
+        ::uwvm2::utils::container::parser_vector<recursive_group> groups{};
     };
 }

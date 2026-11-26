@@ -116,7 +116,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::const_expr
         ::std::byte const* begin{};
         ::std::byte const* end{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::const_expr::base_const_expr_opcode_t> opcodes{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::const_expr::base_const_expr_opcode_t> opcodes{};
     };
 }
 

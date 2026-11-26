@@ -70,7 +70,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         ::uwvm2::parser::wasm::standard::wasm1::section::section_span_view sec_span{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_code_t<Fs...>> codes{};
+        ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_wasm_code_t<Fs...>> codes{};
         // Preserve the binary encoding gate after an extension projects equivalent nullable local types.
         // Copying/moving a code section preserves this policy metadata without changing guest frame layout.
         bool locals_require_function_references{};

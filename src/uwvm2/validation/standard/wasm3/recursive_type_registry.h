@@ -7,6 +7,8 @@
 #ifndef UWVM_MODULE
 # include <cstddef>
 # include <limits>
+# include <type_traits>
+# include <fast_io.h>
 # include <utility>
 # include "recursive_type_validation.h"
 #endif
@@ -26,9 +28,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             ::uwvm2::parser::wasm::standard::wasm3::type::composite_kind kind{};
             ::std::size_t parent{recursive_validation_details::no_index}, depth{}, jump{};
         };
-        ::uwvm2::utils::container::map<recursive_validation_details::words, ::std::size_t,
-                                     recursive_validation_details::words_less> groups_{};
-        ::uwvm2::utils::container::vector<record> records_{};
+        using stored_key = ::uwvm2::utils::container::parser_vector<::std::uint_least64_t>;
+        ::uwvm2::utils::container::parser_map<stored_key, ::std::size_t, recursive_validation_details::words_less> groups_{};
+        ::uwvm2::utils::container::parser_vector<record> records_{};
         [[nodiscard]] inline ::std::size_t ancestor(::std::size_t index, ::std::size_t depth) const noexcept
         {
             // Internal precondition: index is a live registry ID and depth <= its stored depth.
@@ -53,12 +55,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             auto const& b{records_.index_unchecked(to)};
             return a.kind == b.kind && a.depth >= b.depth && ancestor(from, b.depth) == to;
         }
+        template<typename Allocator>
         [[nodiscard]] inline recursive_type_validation_result validate_and_intern(
             ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
-            ::uwvm2::utils::container::vector<::std::size_t>& module_ids) noexcept
+            ::uwvm2::utils::container::vector<::std::size_t, Allocator>& module_ids) noexcept
         {
             namespace d = recursive_validation_details;
-            recursive_type_context checked{};
+            basic_recursive_type_context<::uwvm2::utils::container::validation_vector<recursive_type_record>> checked{};
             auto const validation{validate_core3_type_section(section, checked)};
             if(validation.error != recursive_type_validation_error::ok) { return validation; }
             // A failed validation does not mutate the registry or the caller's mapping. No borrowed section
@@ -67,14 +70,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             auto const max_records{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(record)};
             if(count > max_records - records_.size())
             { return {recursive_type_validation_error::inconsistent_section, 0, section.type_count}; }
-            ::uwvm2::utils::container::vector<::std::size_t> ids{};
+            ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
             ids.resize(count);
             for(auto const& group : section.groups)
             {
                 auto const first{static_cast<::std::size_t>(group.first_type_index)};
                 auto key{d::group_key(group, ids)};
-                auto const [position, inserted]{groups_.try_emplace(::std::move(key), records_.size())};
-                auto const canonical_first{position->second}; // A live iterator returned by successful insertion/lookup.
+                auto position{groups_.lower_bound(key)};
+                bool const inserted{position == groups_.end() || groups_.key_comp()(key, position->first)};
+                if(inserted)
+                {
+                    // Construct the process-lifetime key only on a miss. The temporary lookup key
+                    // lives in validation scratch, even when many modules repeat this group.
+                    stored_key retained{::fast_io::freestanding::from_range_t{}, key};
+                    position = groups_.emplace_hint(position, ::std::move(retained), records_.size());
+                }
+                auto const canonical_first{position->second};
                 for(::std::size_t local{}; local != group.types.size(); ++local)
                 {
                     // The validated expanded count bounds first + local; group size is part of the intern key.
@@ -97,7 +108,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                     records_.push_back(item);
                 }
             }
-            module_ids = ::std::move(ids);
+            if constexpr(::std::is_same_v<decltype(ids), ::std::remove_reference_t<decltype(module_ids)>>) { module_ids = ::std::move(ids); }
+            else { module_ids = ::std::remove_reference_t<decltype(module_ids)>{::fast_io::freestanding::from_range_t{}, ids}; }
             return {};
         }
     };

@@ -31,7 +31,7 @@ namespace uwvm2::utils::allocator::resource
     // Host deployment policy, independent of import permissions. Configure only
     // before loading modules or starting guest threads. Imported aliases retain
     // the original backing's charge; creating another module does not reset it.
-    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, initializer, count };
+    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, initializer, parser, count };
     inline constexpr ::std::size_t host_bytes(::std::uint64_t bytes) noexcept
     {
         constexpr auto maximum{static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
@@ -50,7 +50,8 @@ namespace uwvm2::utils::allocator::resource
         {host_bytes(256ull << 20u), host_bytes(1ull << 30u)},
         {host_bytes(256ull << 20u), host_bytes(512ull << 20u)},
         {host_bytes(256ull << 20u), host_bytes(4ull << 30u)},
-        {host_bytes(256ull << 20u), host_bytes(1ull << 30u)}
+        {host_bytes(256ull << 20u), host_bytes(1ull << 30u)}, // initializer metadata
+        {host_bytes(256ull << 20u), host_bytes(1ull << 30u)}  // parser metadata
     };
     static_assert(sizeof(policies)/sizeof(policies[0]) == static_cast<unsigned>(pool::count));
     inline ::std::atomic_size_t live_bytes[static_cast<unsigned>(pool::count)]{};
@@ -123,6 +124,10 @@ namespace uwvm2::utils::allocator::resource
     {
         reject_allocation("uwvm: [error] validation: native metadata allocation refused; check --wasm-set-resource-limit validation single-bytes/live-bytes and available host memory.\n");
     }
+    [[noreturn]] inline void parser_limit() noexcept
+    {
+        reject_allocation("uwvm: [error] parser: native metadata allocation refused; check --wasm-set-resource-limit parser single-bytes/live-bytes and available host memory.\n");
+    }
     [[noreturn]] inline void compiler_memory_limit() noexcept
     {
         reject_allocation("uwvm: [error] LLVM compilation: native allocation failed; available host memory or virtual address space is exhausted. Reduce concurrent memory instances or use a 64-bit host with sufficient memory.\n");
@@ -145,6 +150,7 @@ namespace uwvm2::utils::allocator::resource
                 ::std::size_t bytes{};
                 if(!checked_bytes(count,sizeof(T),bytes) || !acquire(Kind,bytes))
                 {
+                    if constexpr(Kind == pool::parser) { parser_limit(); }
                     if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                     throw ::std::bad_alloc{};
@@ -155,6 +161,7 @@ namespace uwvm2::utils::allocator::resource
                 auto* pointer{::uwvm2::utils::allocator::fast_io_strict::native_strict_typed_global_allocator<T>::allocate(count)};
                 if(pointer != nullptr) { return pointer; }
                 release(Kind,bytes);
+                if constexpr(Kind == pool::parser) { parser_limit(); }
                 if constexpr(Kind == pool::validation) { validation_limit(); }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                 throw ::std::bad_alloc{}; // Existing caller maps recoverable scratch failure to guest ENOMEM.
@@ -340,7 +347,8 @@ namespace uwvm2::utils::allocator::resource
             auto* result{try_bytes<Kind>(bytes)};
             if(result==nullptr)
             {
-                validation_limit();
+                if constexpr(Kind == pool::parser) { parser_limit(); }
+                else { validation_limit(); }
             }
             return result;
         }
