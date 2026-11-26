@@ -162,18 +162,41 @@
             adm16_object_owner adm16{};
             bool operator==(object_scope const&) const = default;
         };
+        struct object_evidence
+        {
+            ::std::uint64_t sections{},relocations{},symbols{},charge{3u*native_arena_granule},arena_bytes{};
+            object_stack_shape stack;
+            bool complete{},crel{};
+        };
+        struct object_entries { ::std::size_t typed{},raw{}; };
+        static constexpr ::std::size_t object_binding_limit=256u;
+        using object_import_mask=::std::array<bool,object_binding_limit>;
         struct prepared_object
         {
             object_scope scope;
+            object_evidence evidence;
             ::uwvm2::utils::container::std_string input,object;
             decltype(native_frames_) frames;
-            decltype(native_call_names_) names;
-            decltype(native_call_edges_) edges;
+            ::uwvm2::utils::container::std_vector<object_entries> entries;
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> imports;
             ::uwvm2::utils::container::std_unique_ptr<instance_template> instance;
-            bool known_graph{},polls{},strict_fp{};
+            bool polls{},strict_fp{};
             ::std::size_t retained_bytes{};
         };
         static constexpr ::std::size_t maximum_cached_object_storage=16u<<20u;
+        struct object_load_pin
+        {
+            object_cache* cache{};
+            ::uwvm2::utils::container::std_unique_ptr<prepared_object> object;
+            void take(object_cache& owner) noexcept
+            {cache=&owner;object=::std::move(owner.object);}
+            ~object_load_pin()
+            {
+                // The group compiler serializes cache access. Restore its slot after
+                // loader teardown, including unwinding a failed or cancelled child.
+                if(object&&!cache->object)cache->object=::std::move(object);
+            }
+        };
 
         void write_object_input(::llvm::Module const& module,::llvm::TargetMachine const& target,bounded_object_stream& key) const
         {
@@ -198,34 +221,51 @@
             }
         }
         [[nodiscard]] ::uwvm2::utils::container::std_unique_ptr<prepared_object> remember_object(object_scope scope,
-            ::llvm::StringRef input,::llvm::StringRef object,::std::size_t limit,bool polls,bool strict_fp)
+            ::llvm::StringRef input,::llvm::StringRef object,::std::size_t limit,bool polls,bool strict_fp,
+            object_evidence const& evidence,native_frame_index const& by_name,object_import_mask const& required) const
         {
-            auto measure=[&](auto const& frames,auto const& names,auto const& edges,
-                ::std::size_t key_bytes,::std::size_t object_bytes)->::std::size_t
+            // Include the exact retained capacities, including every string terminator.
+            auto add=[&](::std::size_t& n,::std::size_t bytes)
+            {if(n>limit||bytes>limit-n)return false;n+=bytes;return true;};
+            auto base=[&](auto const& frames,::std::size_t key_bytes,::std::size_t object_bytes,
+                ::std::size_t entries,::std::size_t imports)->::std::size_t
             {
-                // Charge the complete record and each retained allocation,
-                // including string capacities and their terminators.
                 ::std::size_t n=sizeof(prepared_object);
-                auto add=[&](::std::size_t amount)
-                { if(n>limit||amount>limit-n)return false;n+=amount;return true; };
-                auto array=[&](auto const& v)
-                { return v.capacity()<=limit/sizeof(v[0]) && add(v.capacity()*sizeof(v[0])); };
-                if(!add(key_bytes)||!add(object_bytes)||!add(2u)||!array(frames)||!array(names)||!array(edges))return 0u;
-                for(auto const& frame:frames)if(!add(frame.name.capacity()+1u))return 0u;
-                for(auto const& name:names)if(!add(name.capacity()+1u))return 0u;
+                if(frames.capacity()>limit/sizeof(native_frame_record) || entries>limit/sizeof(object_entries) ||
+                   imports>limit/sizeof(::uwvm2::utils::container::std_string) ||
+                   !add(n,frames.capacity()*sizeof(native_frame_record)) || !add(n,entries*sizeof(object_entries)) ||
+                   !add(n,imports*sizeof(::uwvm2::utils::container::std_string)) ||
+                   !add(n,key_bytes)||!add(n,object_bytes)||!add(n,2u))return 0u;
+                for(auto const& frame:frames)if(!add(n,frame.name.capacity()+1u))return 0u;
                 return n;
             };
-            if(!measure(native_frames_,native_call_names_,native_call_edges_,input.size(),object.size()))return {};
+            auto const imports=static_cast<::std::size_t>(::std::count(required.begin(),required.end(),true));
+            auto estimate=base(native_frames_,input.size(),object.size(),entries_.size(),imports);
+            if(!estimate || externals_.size()>required.size())return {};
+            for(::std::size_t i{};i<externals_.size();++i)
+                if(required[i]&&!add(estimate,externals_[i].name.size()+1u))return {};
             auto saved=::uwvm2::utils::container::make_unique<prepared_object>();
-            saved->scope=scope;saved->input=::uwvm2::utils::container::copy_string(input);
+            saved->scope=scope;saved->evidence=evidence;
+            saved->input=::uwvm2::utils::container::copy_string(input);
             saved->object=::uwvm2::utils::container::copy_string(object);
-            saved->frames=native_frames_;saved->names=::std::move(native_call_names_);saved->edges=::std::move(native_call_edges_);
-            // check_object repeats the correspondence of the observed final
-            // MachineFunctions with this exact ELF's stack-size relocations.
-            for(auto& f:saved->frames){f.section=UINT64_MAX;f.offset=UINT64_MAX;f.object_bytes=UINT64_MAX;}
-            saved->known_graph=native_call_graph_known_;saved->polls=polls;saved->strict_fp=strict_fp;
-            saved->retained_bytes=measure(saved->frames,saved->names,saved->edges,saved->input.capacity(),saved->object.capacity());
-            if(!saved->retained_bytes)return {};
+            // These frames contain only object section indices, offsets, sizes and names.
+            saved->frames=native_frames_;
+            saved->entries.reserve(entries_.size());
+            for(auto const& entry:entries_)
+            {
+                auto const typed=by_name.find(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(entry.typed_name));
+                auto const raw=by_name.find(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(entry.raw_name));
+                if(typed==by_name.end()||raw==by_name.end())return {};
+                saved->entries.push_back({typed->second,raw->second});
+            }
+            saved->imports.reserve(imports);
+            for(::std::size_t i{};i<externals_.size();++i)
+                if(required[i])saved->imports.push_back(externals_[i].name);
+            saved->polls=polls;saved->strict_fp=strict_fp;
+            auto actual=base(saved->frames,saved->input.capacity(),saved->object.capacity(),saved->entries.capacity(),saved->imports.capacity());
+            if(!actual)return {};
+            for(auto const& name:saved->imports)if(!add(actual,name.capacity()+1u))return {};
+            saved->retained_bytes=actual;
             return saved;
         }
         void remember_instance_template(prepared_object& saved,::llvm::StringRef inputs,::std::size_t bindings,
@@ -247,8 +287,7 @@
         }
         [[nodiscard]] bool restore_object_witness(prepared_object const& saved)
         {
-            native_frames_=saved.frames;native_call_names_=saved.names;native_call_edges_=saved.edges;
-            native_call_graph_known_=saved.known_graph;
+            native_frames_=saved.frames;
             auto add=[&](::llvm::StringRef name,::std::uintptr_t pointer)
             {
                 if(externals_.size()>=256u)return false;
