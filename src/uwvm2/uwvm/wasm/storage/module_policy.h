@@ -3,6 +3,8 @@
 #pragma once
 #ifndef UWVM_MODULE
 # include <array>
+# include <cstddef>
+# include <limits>
 # include <uwvm2/uwvm/runtime/macro/push_macros.h>
 # include <initializer_list>
 # include <utility>
