@@ -626,8 +626,11 @@ template<typename MaskedAddress>
         if(shift<::std::numeric_limits<::std::size_t>::digits && pages<=(info.stable_memory_reserved_span_bytes>>shift))
         {
             auto const minimum=static_cast<::std::size_t>(pages)<<shift;
+            bool fits_address_width{true};
+            if constexpr(::std::numeric_limits<::std::size_t>::digits>32)
+                fits_address_width=address->getType()->isIntegerTy(64u) || (pages<<shift)<=UINT64_C(0x100000000);
             if(static_offset<minimum && access_size<=minimum-static_offset &&
-               (address->getType()->isIntegerTy(64u) || minimum<=UINT64_C(0x100000000)) &&
+               fits_address_width &&
                minimum<=info.stable_memory_length_p->load(::std::memory_order_acquire) &&
                threaded_host_emission_scope::record_scalar_bounds(b.GetInsertBlock()->getModule(),*module))
                 threaded_scalar_limit=minimum-static_offset-access_size+1u;
