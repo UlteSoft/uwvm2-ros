@@ -33,6 +33,7 @@
 # define UWVM_MODULE_EXPORT
 #endif
 
+namespace uwvm2::runtime::lib { extern "C++" { class ThreadedLlvmChild; } }
 UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
 {
     enum class storage_error : unsigned
@@ -56,6 +57,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     // quiescence; allocator growth requires the owner's existing relocation pin.
     class shadow_storage
     {
+        // The threaded compiler uses the offsets of the reader gate and prepared
+        // length to emit a complete owner-bound scalar operation.
+        friend class ::uwvm2::runtime::lib::ThreadedLlvmChild;
         mutable managed_allocations allocations_{};
         void* data_{};
         ::std::size_t allocated_bytes_{};

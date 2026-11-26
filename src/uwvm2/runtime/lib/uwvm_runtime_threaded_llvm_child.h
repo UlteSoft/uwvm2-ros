@@ -19,6 +19,11 @@ extern "C++"
         using local_type=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::local_func_storage_t;
         using target_type=::uwvm2::uwvm::runtime::storage::llvm_jit_raw_call_target_t;
         using native_bridge=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::threaded_native_bridge;
+        struct native_lowering_attempt
+        {
+            bool allow_shared_scalars{true};
+            bool shared_scalars{},polls{};
+        };
         struct entries { ::uwvm2::utils::container::std_string typed_name,raw_name;::std::uintptr_t typed{},raw{}; };
         struct external { ::uwvm2::utils::container::std_string name;::std::uintptr_t address{}; };
         static constexpr ::std::size_t native_arena_granule{65536u};
@@ -62,6 +67,7 @@ extern "C++"
             ::std::size_t function{SIZE_MAX};
             unsigned char const* stop_byte{};
             unsigned char rejected{};
+            bool const* access_checks{};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             ThreadedLlvmChild const* authenticated_ros_child{};
             ::std::uintptr_t authenticated_ros_owner{};
@@ -80,6 +86,7 @@ extern "C++"
             {
                 child=::std::addressof(owner);
                 stop_byte=cancellation.native_stop_byte();
+                access_checks=::std::addressof(::uwvm2::extension::memtag::access_checks_enabled);
             }
         };
         inline static thread_local execution* active_{};
@@ -434,21 +441,23 @@ extern "C++"
         [[nodiscard]] static ::std::int64_t memory_size64(::std::uintptr_t owner) noexcept
         {auto* memory=actual_memory(owner);return memory&&!stopped()?static_cast<::std::int64_t>(memory->get_page_size()):0;}
 #include "uwvm_runtime_threaded_llvm_exception.h"
+#include "uwvm_runtime_threaded_llvm_shared_scalar_ir.h"
 #include "uwvm_runtime_threaded_llvm_memtag.h"
 #include "uwvm_runtime_threaded_llvm_linear_memory.h"
 #include "uwvm_runtime_threaded_llvm_control.h"
+#include "uwvm_runtime_threaded_llvm_shared_scalar.h"
 #include "uwvm_runtime_threaded_llvm_memory.h"
 #include "uwvm_runtime_threaded_llvm_stack.h"
 #include "uwvm_runtime_threaded_llvm_factory.h"
         [[nodiscard]] static preparation_result prepare_graph(world_type::owner const& world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
-            bool* native_poll_attempted) noexcept
+            native_lowering_attempt* lowering) noexcept
         {
             if(!world)return {{},preparation_status::invalid_world};
             auto const& limits=world->admission().limits();
             if(!llvm_limits.valid(limits.max_child_code_bytes))return {{},preparation_status::invalid_world};
-            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,native_poll_attempted);
+            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,lowering);
             if(!result.child)return result;
             auto& root=*result.child;
             try
@@ -458,7 +467,7 @@ extern "C++"
                 for(::std::size_t m{1u};m<world->module_count();++m)
                 {
                     if(storage>=backend_storage_budget)return {{},preparation_status::budget};
-                    auto next=build(world,compiler,backend_storage_budget-storage,limits.max_child_code_bytes-code,m,llvm_limits,native_poll_attempted);
+                    auto next=build(world,compiler,backend_storage_budget-storage,limits.max_child_code_bytes-code,m,llvm_limits,lowering);
                     if(!next.child)return next;
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
@@ -519,15 +528,23 @@ extern "C++"
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             ::std::size_t backend_storage_budget,::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
         {
-            bool attempted{};
-            auto result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&attempted);
-            // An extra register/spill/relocation can exceed a caller's exact
-            // machine-stack or code budget, including the combined peer graph.
-            // Drop the private attempt and qualify the original calls under
-            // precisely the same limits before returning an admission failure.
-            if(attempted&&(result.status==preparation_status::budget||result.status==preparation_status::native_failure)&&
-               !compiler.cancellation().stop_requested())
-                return prepare_graph(world,compiler,backend_storage_budget,llvm_limits,nullptr);
+            native_lowering_attempt lowering{};
+            auto result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&lowering);
+            auto retryable=[&]() noexcept
+            {
+                return (result.status==preparation_status::budget||result.status==preparation_status::native_failure||
+                        result.status==preparation_status::unsupported_bridge)&&!compiler.cancellation().stop_requested();
+            };
+            // An optional transformation can exceed the combined graph's code,
+            // frame or binding budget. Requalify the original scalar calls with
+            // native polls first. Each unpublished graph uses the same limits
+            // and repeats the complete owner, bridge, stack and cycle proofs.
+            if(lowering.shared_scalars&&retryable())
+            {
+                lowering={.allow_shared_scalars=false};
+                result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&lowering);
+            }
+            if(lowering.polls&&retryable())return prepare_graph(world,compiler,backend_storage_budget,llvm_limits,nullptr);
             return result;
         }
         // Cold actual-active-segment rebind. No compiler/type-walk/allocation,

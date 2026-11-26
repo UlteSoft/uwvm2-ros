@@ -264,7 +264,8 @@
             return emit::validate_memtag_shared_lease_ir(module,sizeof(::std::uintptr_t)*CHAR_BIT,
                 emit::get_llvm_jit_host_calling_conv());
         }
-        [[nodiscard]] static ::std::uintptr_t memtag_bridge_replacement(::llvm::Function const& declaration,::std::uintptr_t original) noexcept
+        [[nodiscard]] static ::std::uintptr_t memtag_bridge_replacement(::llvm::Function const& declaration,::std::uintptr_t original,
+            shared_scalar_shape* shape=nullptr) noexcept
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             namespace mt=::uwvm2::extension::memtag;
@@ -276,7 +277,10 @@
                 if(original==address(&emit::llvm_jit_memtag_scalar_bridge<Address,Shared,Bits,Bytes,Signed,Store,false>)&&
                    (!Shared||emit::memtag_shared_lease_declaration(declaration,emit::memtag_shared_access_family::scalar,
                        sizeof(::std::uintptr_t)*CHAR_BIT,emit::get_llvm_jit_host_calling_conv())))
+                {
                     replacement=address(&memtag_scalar<Bits,Bytes,Signed,Store>);
+                    if constexpr(Shared)if(shape)*shape={sizeof(Address)*CHAR_BIT,Bits,Bytes,Signed,Store};
+                }
             };
             auto width=[&]<unsigned Bits,::std::size_t Bytes>() noexcept
             {
