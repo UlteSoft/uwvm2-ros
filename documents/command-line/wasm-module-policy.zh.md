@@ -38,6 +38,7 @@
 | --- | --- |
 | `init.imported-字段` | 非负十进制计数，字段为 `functions`、`tables`、`memories`、`globals`、`tags`。 |
 | `init.local-defined-字段` | 非负十进制计数，字段为 `functions`、`codes`、`tables`、`memories`、`globals`、`tags`、`elements`、`datas`。 |
+| `runtime.memory-pages` | `MIN` 或 `MIN:MAX`，单位为该内存定义的 Wasm 页。页数为宿主 `size_t` 可表示的非负十进制整数，且 `MAX >= MIN`。 |
 | `runtime.memtag-checks` | `on`（默认）或 `off`。由发起访问的模块决定是否比较指针和分配标签，导入内存也遵循调用方策略。 |
 | `runtime.memtag-backend` | `auto`（默认）、`software`、`arm-mte`、`x86-mtt`，用于该模块定义的带标签内存。 |
 | `runtime.interpreter.loop-unwind`、`runtime.interpreter.delay-local`、`runtime.interpreter.instruction-reorder` | 用 `on` 或 `off` 控制已编入解释器的对应优化。 |
@@ -46,7 +47,7 @@
 | `runtime.llvm.policy` | LLVM 整模块翻译预设，可选 `default`、`debug`、`fast-compile`、`balanced`、`max`。 |
 | `runtime.llvm.full-policy` | `auto`、`debug`、`legacy-light`、`pb-o1`、`pb-o2`、`pb-o3`。显式指定优化流水线时优先于 LLVM 预设。 |
 
-初始化模块时取模块计数和进程硬上限中的较小值。只有实际编入的翻译后端和优化才接受对应配置。优化还需满足该模块的地址和类型条件。
+初始化模块时取模块计数和进程硬上限中的较小值。只有实际编入的翻译后端和优化才接受对应配置。`delay-local` 键要求编入指令合并以及 `soft` 或 `heavy` 延迟局部变量优化，其开关控制已编入的级别。优化还需满足该模块的地址和类型条件。
 
 ```sh
 uwvm2-ros \
@@ -66,6 +67,29 @@ WasmMTE 至少需要四位 ADM。新建软件内存的标签占指针最高四�
 
 新建 Arm MTE 内存按 ADM 位数选择标签。ADM 为 4 至 7 时，memory32 使用 [31:28]，memory64 使用 [63:60]。ADM 达到 8 时，两者分别使用 [27:24] 和 [59:56]。这些字段均映入 AArch64 宿主指针 [59:56]。默认的 `auto` 优先选择可用硬件。宿主不支持、有调用者关闭检查、分配可移动或配置为记录故障后继续时，自动选择软件。显式 Arm 要求映射能接受硬件检查、使用崩溃处理且所有调用者开启比较。Intel MTT 预留布局在 ADM 为 4 至 6 时使用客体最高四位，ADM 达到 7 时，memory32 使用 [28:25]，memory64 使用 [60:57]。当前 VM 拒绝显式 Intel MTT 请求。SDK 带 MTE 的发布 ABI 仍为 `wasm64_adm16`。[所有者布局与故障交付](../runtime/memtag-extension.md)
 
+### 本地内存定义的逻辑页数
+
+页数对沿用 `--wasm-set-memory-limit` 的算法，替换内存声明的运行时上下限。最小值决定初始页数，省略最大值表示取消显式逻辑上限。放宽声明会触发现有运行时警告策略。分配、`memory.grow`、Wasm 地址域、ADM、导入兼容性和 mmap 预留各自施加约束。例如，mmap 规划取声明与配置中较大的最小值及较小的可用最大值。逻辑页数设置不会增加预留字节配额。
+
+```sh
+uwvm2-ros \
+  --wasm-policy-global runtime.memory-pages 1:4 \
+  --wasm-policy-group sensors runtime.memory-pages 2:8 \
+  --wasm-policy-group-add-module sensors camera \
+  --wasm-policy-group-add-module sensors lidar \
+  --wasm-policy-single camera runtime.memory-pages 3:6 \
+  --wasm-set-memory-limit camera 1 4 5 \
+  --wasm-preload-library camera.wasm camera \
+  --wasm-preload-library lidar.wasm lidar \
+  --run app.wasm
+```
+
+上例中，`lidar` 的每个本地内存定义使用 2–8 页。`camera` 的本地定义 1 使用 4–5 页，其余本地定义使用 3–6 页。`app` 的本地定义使用 1–4 页。导入和再次导出的内存始终使用定义者的页数。模块若只导入内存，给它设置模块默认页数不会影响这些别名。
+
+每层选择完整的页数对。旧命令 `--wasm-set-memory-limit 模块 all MIN [MAX]` 位于单模块层，与同一模块的 `--wasm-policy-single` 页数键重复时会报错。数字选择器覆盖各模块层，按本地定义从零编号并排除导入。同一模块重复设置相同选择器时，无论顺序均报错。
+
+全局**策略范围**表示向所有 Wasm 模块提供设置。每个普通 Wasm 全局变量的类型、可变性与初值由自身声明和初始化表达式决定。例如，`(global (mut i32) (i32.const 7))` 的初值为 7，类型为可变的 32 位整数。`parser.limit.globalsec_globals` 和 `init.local-defined-globals` 约束声明数量。模块策略没有逐个全局变量改值的语义。
+
 ### 跨模块传递指针
 
 一次带标签的读写会从原始指针取得两个值。WasmADM 用掩码清除忽略的高位，得到动态地址偏移。WasmMTE 从原始指针中所有者指定的四位提取逻辑标签，与访问覆盖的每个 16 字节粒度的分配标签比较。在同步检查和默认崩溃处置下，标签为零的指针访问分配标签为 `0xA` 的粒度，会在读写数据之前触发故障。
@@ -83,6 +107,7 @@ WasmMTE 至少需要四位 ADM。新建软件内存的标签占指针最高四�
 | `--wasm-set-resource-limit`、`--wasm-depend-recursion-limit`、`--wasm-memory-grow-strict` | 分别控制宿主分配记账、整个链接图的遍历深度，以及内存增长遇到可恢复宿主分配失败时的进程处理方式。 |
 | `--runtime-memtag-mode`、`--runtime-memtag-action` | 执行线程、信号交付和专用报告输出由进程管理。 |
 | 执行后端、编译线程、调度、LLVM 异常 ABI 和持久缓存目录 | 进程统一选择执行引擎，管理编译资源、异常传播和对象缓存。 |
+| `--wasm-set-preload-module-attribute` | 例如 `--wasm-set-preload-module-attribute driver copy 0` 授权名为 `driver` 的原生预加载模块通过复制接口访问调用方的内存索引 0。此授权独立于 Wasm 内存定义者的逻辑页数和策略组成员关系。 |
 | WASI、ROS 和 WASI Threads 权限 | 每个宿主接口独立绑定模块和权限，Wasm 策略组不授予宿主权限。 |
 
 [地址掩码与预留](../runtime/adm-memory-reservation.zh.md) · [宿主权限](host-permissions.md)

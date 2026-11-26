@@ -41,6 +41,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | --- | --- |
 | `init.imported-FIELD` | Nonnegative decimal count. Fields are `functions`, `tables`, `memories`, `globals`, `tags`. |
 | `init.local-defined-FIELD` | Nonnegative decimal count. Fields are `functions`, `codes`, `tables`, `memories`, `globals`, `tags`, `elements`, `datas`. |
+| `runtime.memory-pages` | `MIN` or `MIN:MAX` in the defined memory’s Wasm pages. Each count is a nonnegative decimal `size_t`, with `MAX >= MIN`. |
 | `runtime.memtag-checks` | `on` (default) or `off`. The accessing module controls ordinary pointer/allocation-tag comparisons, including access through imports. |
 | `runtime.memtag-backend` | `auto` (default), `software`, `arm-mte`, `x86-mtt`. Supplies the backend for tagged memories defined by this module. |
 | `runtime.interpreter.loop-unwind`, `runtime.interpreter.delay-local`, `runtime.interpreter.instruction-reorder` | `on` or `off` for the corresponding compiled interpreter optimization. |
@@ -49,7 +50,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `runtime.llvm.policy` | `default`, `debug`, `fast-compile`, `balanced`, `max` for LLVM full-module translation. |
 | `runtime.llvm.full-policy` | `auto`, `debug`, `legacy-light`, `pb-o1`, `pb-o2`, `pb-o3`. A choice other than `auto` selects the concrete pipeline before the high-level LLVM preset. |
 
-The initializer enforces the smaller of the module count and the process ceiling. A build accepts the translation keys for its compiled backends and passes. Translation preserves the eligibility rules for each optimization. For example, an interpreter setting cannot authorize a fusion that assumes ordinary addresses on an ADM memory.
+The initializer enforces the smaller of the module count and the process ceiling. A build accepts the translation keys for its compiled backends and passes. The delay-local key requires opcode combining and a compiled `soft` or `heavy` delay-local level. Its switch enables or disables that level. Translation preserves the eligibility rules for each optimization. For example, an interpreter setting cannot authorize a fusion that assumes ordinary addresses on an ADM memory.
 
 ```sh
 uwvm2-ros \
@@ -69,6 +70,29 @@ WasmMTE needs at least four ADM bits. New software owners use the highest four g
 
 For a new Arm MTE owner with 4–7 ADM bits, the tag occupies [31:28] in memory32 or [63:60] in memory64. With 8 or more ADM bits it occupies [27:24] or [59:56], respectively. All these fields map to [59:56] in the native AArch64 pointer. The default `auto` prefers an eligible physical owner. It selects software for an unsupported host, an unchecked caller, a moving allocation or continuing diagnostics. Explicit Arm requires checked callers, crash delivery and a usable checked mapping. The reserved Intel MTT layout uses the guest’s highest four bits for ADM 4–6 and [28:25] or [60:57] for ADM 7 and above. The VM rejects explicit Intel MTT requests until a checked backend is available. The SDK’s instrumented release ABI remains `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
 
+### Logical pages of a defined memory
+
+A page pair replaces the declared runtime limits just like `--wasm-set-memory-limit`. The minimum selects the initial page count. Omitting the maximum removes the explicit logical maximum. Widening the declaration uses the existing runtime warning policy. Allocation, `memory.grow`, the Wasm address domain, ADM, import compatibility and the mmap reservation still enforce their own bounds. For example, mmap plans against the larger declared/configured minimum and the smaller available maximum. The logical setting grants no additional reserved bytes.
+
+```sh
+uwvm2-ros \
+  --wasm-policy-global runtime.memory-pages 1:4 \
+  --wasm-policy-group sensors runtime.memory-pages 2:8 \
+  --wasm-policy-group-add-module sensors camera \
+  --wasm-policy-group-add-module sensors lidar \
+  --wasm-policy-single camera runtime.memory-pages 3:6 \
+  --wasm-set-memory-limit camera 1 4 5 \
+  --wasm-preload-library camera.wasm camera \
+  --wasm-preload-library lidar.wasm lidar \
+  --run app.wasm
+```
+
+Here each local memory in `lidar` gets 2–8 pages. In `camera`, local definition 1 gets 4–5 pages and the other definitions get 3–6. Local memories in `app` get 1–4. An import or re-export follows its defining owner through every alias. A scoped default on a module that only imports memories therefore has no effect on them.
+
+Each layer selects a whole pair. The legacy `--wasm-set-memory-limit MODULE all MIN [MAX]` occupies the single-module layer and conflicts with a single-module `runtime.memory-pages` setting on that module. A numeric selector overrides every module layer and starts at zero after excluding imports. Repeating an explicit selector for the same module is an error in either order.
+
+The global **scope** applies settings across Wasm modules. Individual Wasm globals obtain their type, mutability and initial value from their declaration and initializer expression. For example, `(global (mut i32) (i32.const 7))` starts as a mutable 32-bit value of 7. `parser.limit.globalsec_globals` and `init.local-defined-globals` bound declaration counts. A module policy provides no per-global value override.
+
 ### Pointers shared between modules
 
 A tagged load or store uses the original pointer in two ways. WasmADM masks its ignored high bits to obtain the dynamic offset. WasmMTE extracts the logical tag from the owner's four-bit field in the original pointer and compares it with the allocation tag of each 16-byte granule touched. With synchronous checking and the default crash action, a pointer tagged zero accessing a granule tagged `0xA` faults before it reads or writes the data.
@@ -86,6 +110,7 @@ For an ordinary 4 GiB memory32, `0xA0001234` is byte offset `0xA0001234`. For a 
 | `--wasm-set-resource-limit`, `--wasm-depend-recursion-limit`, `--wasm-memory-grow-strict` | The allocator accounts host bytes, the dependency checker walks the linked graph, and the host chooses the process response to recoverable allocation/commit failure during growth. |
 | `--runtime-memtag-mode`, `--runtime-memtag-action` | The execution threads, signal delivery and dedicated report stream serve the process. |
 | Backend selection, compile threads, scheduling, LLVM exception ABI and the persistent cache directory | The process owns its execution backend, compiler resources, native exception transport and cache. |
+| `--wasm-set-preload-module-attribute` | For example, `--wasm-set-preload-module-attribute driver copy 0` permits the native preload bound as `driver` to use the copy interface for caller memory index 0. This grant is independent of the defining Wasm module’s logical pages and group membership. |
 | WASI, ROS and WASI Threads permissions | Each host interface has its own module bindings and permissions. A Wasm policy group confers no host permissions. |
 
 [Address masking and reservations](../runtime/adm-memory-reservation.md) · [Host permissions](host-permissions.md)

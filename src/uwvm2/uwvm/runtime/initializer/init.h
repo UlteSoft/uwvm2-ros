@@ -1429,20 +1429,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         };
 
         [[nodiscard]] inline constexpr auto resolve_configured_local_defined_memory_limit(configured_runtime_memory_limits_t const* override_limits,
-                                                                                          ::std::size_t local_memory_index) noexcept
+                                                                                          ::std::size_t local_memory_index,
+                                                                                          ::std::optional<runtime_memory_limits_t> const& module_pages = {}) noexcept
             -> resolved_configured_local_defined_memory_limit_t
         {
-            if(override_limits == nullptr) [[likely]] { return {}; }
-
-            if(auto const it{override_limits->local_defined_memory_limits.find(local_memory_index)}; it != override_limits->local_defined_memory_limits.cend())
-                [[likely]]
+            if(override_limits)
             {
-                return {::std::addressof(it->second), false};
+                auto const* pages{::uwvm2::uwvm::wasm::storage::find_configured_local_defined_memory_limit(*override_limits, local_memory_index)};
+                if(pages) { return {pages, pages == ::std::addressof(override_limits->all_limits)}; }
             }
-
-            if(override_limits->apply_to_all_memories) [[likely]] { return {::std::addressof(override_limits->all_limits), true}; }
-
-            return {};
+            return {module_pages ? ::std::addressof(*module_pages) : nullptr, true};
         }
 
         template <initialization_purpose Purpose>
@@ -3387,6 +3383,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {
             if constexpr(requires { memory.address64; }) { return memory.address64; }
             else { return false; }
+        }
+
+        [[nodiscard]] inline constexpr runtime_memory_limits_t limit_pages_to_memory_domain(
+            auto const& type, runtime_memory_limits_t limits) noexcept
+        {
+            if(auto const ignored{::uwvm2::extension::adm::ignored_bits(type)})
+            {
+                auto const cap{::uwvm2::extension::adm::maximum_pages(wasm_memory_is_address64(type), ignored,
+                    ::uwvm2::extension::memtag::is_tagged_memory(type), ::uwvm2::extension::adm::page_shift(type))};
+                if(cap < limits.max) { limits.max = static_cast<::std::size_t>(cap); }
+                limits.present_max = true;
+            }
+            return limits;
         }
 
 #include "mmap_reservation_plan.h"
@@ -5666,7 +5675,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out,
             mmap_reservation_plan const* reservation_plan = nullptr,
-            ::uwvm2::uwvm::wasm::type::module_initializer_limits const& module_limits = {}) noexcept(Purpose == initialization_purpose::ordinary)
+            ::uwvm2::uwvm::wasm::type::module_initializer_limits const& module_limits = {},
+            ::std::optional<runtime_memory_limits_t> const& module_pages = {},
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* source_owners = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using type_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>;
             using import_section_storage_t = ::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>;
@@ -5696,8 +5707,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 if(reservation_plan == nullptr)
                 {
+                    auto const* config{world.find_memory_limit(world.current_module())};
                     auto const visit = [&](auto const& collect)
-                    { return collect(world.current_module(), memorysec.memories, world.find_memory_limit(world.current_module())); };
+                    {
+                        return collect(world.current_module(), memorysec.memories, config, [&](::std::size_t index) noexcept
+                        { return resolve_configured_local_defined_memory_limit(config, index, module_pages).limits; });
+                    };
                     if(!plan_mmap_reservations(visit, single_module_plan)) { exit_invalid_runtime_configuration(); }
                     reservation_plan = ::std::addressof(single_module_plan);
                 }
@@ -6678,9 +6693,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::std::size_t memory_idx{};
                 for(auto const& memory_type: memorysec.memories)
                 {
-                    auto const local_defined_memory_limit_override{resolve_configured_local_defined_memory_limit(module_memory_limit_override, memory_idx)};
-                    auto const effective_limits{
-                        resolve_effective_runtime_memory_limits_in_context(world, memory_type.limits, local_defined_memory_limit_override.limits, u8"local-defined", memory_idx)};
+                    auto const local_defined_memory_limit_override{resolve_configured_local_defined_memory_limit(module_memory_limit_override, memory_idx, module_pages)};
+                    // A private reconstruction inherits the accepted parent owner, including indexed overrides.
+                    auto const effective_limits{source_owners ? source_owners->local_defined_memory_vec_storage.index_unchecked(memory_idx).effective_limits :
+                        limit_pages_to_memory_domain(memory_type, resolve_effective_runtime_memory_limits_in_context(
+                            world, memory_type.limits, local_defined_memory_limit_override.limits, u8"local-defined", memory_idx))};
 
                     emit_local_memory_init_verbose_in_context(world, u8"construct record begin",
                                                    memory_idx,
@@ -6695,22 +6712,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     rec.memory_type_ptr = ::std::addressof(memory_type);
                     rec.memory.custom_page_size_log2 = ::uwvm2::extension::adm::page_shift(memory_type);
                     rec.effective_limits = effective_limits;
-                    auto const k{::uwvm2::extension::adm::ignored_bits(memory_type)};
-                    if(k)
-                    {
-                        auto const cap{::uwvm2::extension::adm::maximum_pages(wasm_memory_is_address64(memory_type), k,
-                            ::uwvm2::extension::memtag::is_tagged_memory(memory_type), rec.memory.custom_page_size_log2)};
-                        auto& limits{rec.effective_limits};
-                        if(cap < limits.max) { limits.max = static_cast<::std::size_t>(cap); }
-                        limits.present_max = true;
-                    }
                     rec.backend = ::uwvm2::uwvm::wasm::storage::module_policy::resolve_backend(
                         world.current_module(), memory_idx, out.memory_policy.backend);
 
                     auto const runtime_page_size_bytes{linear_memory_page_size_bytes_from_log2(rec.memory.custom_page_size_log2)};
                     emit_local_memory_init_verbose_in_context(world, u8"construct record done", memory_idx, memory_type.limits, rec.effective_limits, runtime_page_size_bytes);
 
-                    if(local_defined_memory_limit_override.limits != nullptr) [[unlikely]]
+                    if(!source_owners && local_defined_memory_limit_override.limits != nullptr) [[unlikely]]
                     {
                         emit_runtime_memory_limit_override_verbose_in_context(world, memory_idx,
                                                                    local_defined_memory_limit_override.from_all,
@@ -6725,7 +6733,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     { world.prepare_memory(rec,memory_idx); }
                     else if(!reservation_plan->defer_owner_mapping)
                     {
-                        configure_mmap_owner(rec.memory, memory_type, module_memory_limit_override, memory_idx, *reservation_plan);
+                        configure_mmap_owner(rec, module_memory_limit_override, memory_idx, *reservation_plan);
                         if constexpr(Purpose == initialization_purpose::ordinary)
                         {
                             initialize_native_memory(rec.memory, rec.effective_limits, out.imported_memory_vec_storage.size() + memory_idx,
@@ -8280,7 +8288,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         inline constexpr void initialize_from_wasm_file_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::wasm::type::wasm_file_t const& wf,
                                                         ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& out,
-            mmap_reservation_plan const* reservation_plan = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
+            mmap_reservation_plan const* reservation_plan = nullptr,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* source_owners = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
         {
             // Embedding, threaded worlds and restored source graphs must hold
             // the same genuine authorization as the ordinary CLI loader.
@@ -8299,7 +8308,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     out.memory_policy = wf.wasm_parameter.memory_policy;
                     out.translation = wf.wasm_parameter.translation;
                     initialize_from_binfmt_ver1_module_storage_in_context(world, wf.wasm_module_storage.wasm_binfmt_ver1_storage,
-                        wf.wasm_parameter.binfmt1_para, out, reservation_plan, wf.wasm_parameter.initializer_limits);
+                        wf.wasm_parameter.binfmt1_para, out, reservation_plan, wf.wasm_parameter.initializer_limits, wf.wasm_parameter.memory_pages, source_owners);
                     break;
                 }
 

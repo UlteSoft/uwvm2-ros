@@ -48,9 +48,9 @@ struct mmap_reservation_plan
 }
 
 [[nodiscard]] inline constexpr reservation::owner_range mmap_owner_range(
-    auto const& memory, configured_runtime_memory_limits_t const* config, ::std::size_t index, mmap_reservation_plan const& plan) noexcept
+    auto const& memory, runtime_memory_limits_t const* override_limits, reservation::bytes_type const* manual,
+    mmap_reservation_plan const& plan) noexcept
 {
-    auto const* manual{local_mmap_data_cap(config, index)};
     auto const& declaration{memory.limits};
     auto const shift{::uwvm2::extension::adm::page_shift(memory)};
     auto const page{reservation::bytes_type{1} << shift};
@@ -59,7 +59,7 @@ struct mmap_reservation_plan
     auto const wide{wasm_memory_is_address64(memory)};
     auto minimum{static_cast<reservation::bytes_type>(declaration.min)};
     auto maximum{static_cast<reservation::bytes_type>(declared_max)};
-    if(auto const* override_limits{resolve_configured_local_defined_memory_limit(config, index).limits})
+    if(override_limits)
     {
         minimum = (::std::max)(minimum, static_cast<reservation::bytes_type>(override_limits->min));
         if(override_limits->present_max)
@@ -120,7 +120,8 @@ template <typename Visit>
     auto const budget{!mmap_reservation_participants && (result.reserve_restore_peer || result.live_predecessor) ?
         restore_generation_budget(state.remaining, result.live_predecessor) : state.remaining};
     reservation::census census{budget};
-    auto const collect = [&](auto const& name, auto const& memories, configured_runtime_memory_limits_t const* config)
+    auto const collect = [&](auto const& name, auto const& memories, configured_runtime_memory_limits_t const* config,
+                             auto const& owner_pages)
     {
         if(config)
         {
@@ -140,10 +141,10 @@ template <typename Visit>
             for(::std::size_t i{}; i != memories.size(); ++i)
             {
                 auto const& type{memories.index_unchecked(i)};
-                auto const range{mmap_owner_range(type, config, i, result)};
+                auto const* manual{local_mmap_data_cap(config, i)};
+                auto const range{mmap_owner_range(type, owner_pages(i), manual, result)};
                 if(!range)
                 {
-                    auto const* manual{local_mmap_data_cap(config, i)};
                     auto const reason{[&]() -> ::uwvm2::utils::container::u8string_view
                     {
                         if(manual && reservation::host_bits >= 64u && !wasm_memory_is_address64(type) && !::uwvm2::extension::adm::ignored_bits(type))
@@ -218,20 +219,25 @@ template <initialization_purpose Purpose>
             auto const* file{definition.module_storage_ptr.wf};
             if(!file || file->binfmt_ver != 1u) { return false; }
             auto const& memories{local_mmap_declarations(file->wasm_module_storage.wasm_binfmt_ver1_storage)};
-            if(!collect(name, memories, world.find_memory_limit(name))) { return false; }
+            auto const& modules{world.modules()};
+            auto const it{modules.find(name)};
+            if(it == modules.end() || it->second.local_defined_memory_vec_storage.size() != memories.size()) { return false; }
+            if(!collect(name, memories, world.find_memory_limit(name), [&](::std::size_t i) noexcept
+                { return ::std::addressof(it->second.local_defined_memory_vec_storage.index_unchecked(i).effective_limits); })) { return false; }
         }
         return true;
     }, result);
 }
 
-template <typename Memory>
-inline constexpr void configure_mmap_owner(Memory& memory, auto const& type, configured_runtime_memory_limits_t const* config,
+inline constexpr void configure_mmap_owner(auto& owner, configured_runtime_memory_limits_t const* config,
                                            ::std::size_t index, mmap_reservation_plan const& plan) noexcept
 {
-    if constexpr(Memory::can_mmap)
+    auto& memory{owner.memory};
+    if constexpr(::std::remove_cvref_t<decltype(memory)>::can_mmap)
     {
-        auto const range{mmap_owner_range(type, config, index, plan)};
+        auto const& type{*owner.memory_type_ptr};
         auto const* manual{local_mmap_data_cap(config, index)};
+        auto const range{mmap_owner_range(type, ::std::addressof(owner.effective_limits), manual, plan)};
         if(manual && *manual > range.maximum_data)
         {
             ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,

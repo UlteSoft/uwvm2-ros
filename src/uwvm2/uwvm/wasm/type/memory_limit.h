@@ -24,7 +24,9 @@
 
 #ifndef UWVM_MODULE
 // std
+# include <array>
 # include <concepts>
+# include <cstdint>
 # include <cstddef>
 # include <limits>
 # include <utility>
@@ -50,6 +52,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::std::size_t min{};
         ::std::size_t max{default_max};
         bool present_max{};
+
+        [[nodiscard]] constexpr ::std::array<::std::uint_least64_t, 3> policy_identity() const noexcept
+        {
+            return {min, present_max, present_max ? max : 0uz};
+        }
     };
 
     struct module_memory_limit_section_details_wrapper_t

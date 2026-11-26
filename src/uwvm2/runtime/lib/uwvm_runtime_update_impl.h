@@ -16,7 +16,7 @@ namespace production_update_detail
     // from debugger permissions. Diagnostic continuation must never
     // masquerade as an enforcing crash policy in a signed update.
     namespace mt=::uwvm2::extension::memtag;
-    update::append_u64(material,4u);
+    update::append_u64(material,5u);
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     auto const& parameters{file.wasm_parameter};
     auto const& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para)};
@@ -37,7 +37,10 @@ namespace production_update_detail
     auto const& memories{module->local_defined_memory_vec_storage};
     update::append_u64(material, memories.size());
     for(auto const& memory : memories)
-    { update::append_u64(material, ::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow)); }
+    {
+        update::append_u64(material, ::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow));
+        for(auto word : memory.effective_limits.policy_identity()) { update::append_u64(material, word); }
+    }
     update::append_u64(material,static_cast<unsigned>(mt::selected_fault_delivery.load(::std::memory_order_relaxed)));
     update::append_u64(material,static_cast<unsigned>(mt::selected_report_action.load(::std::memory_order_relaxed)));
     return true;

@@ -282,17 +282,24 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                                                                                                 : ::uwvm2::uwvm::wasm::type::module_memory_limit_t::default_max,
                                                                       .present_max = parsed_max_present};
 
+        using result = ::uwvm2::utils::cmdline::parameter_return_type;
         if(apply_to_all)
         {
-            limit.apply_to_all_memories = true;
-            limit.all_limits = parsed_limit;
+            // The scoped options were collected before ordinary callbacks, in either CLI order.
+            namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
+            auto const single{policy::singles.find(module_name)};
+            if(!limit.apply_to_all_memories && (single == policy::singles.end() || !single->second.memory_pages))
+            {
+                limit.apply_to_all_memories = true;
+                limit.all_limits = parsed_limit;
+                return result::def;
+            }
         }
-        else
-        {
-            limit.local_defined_memory_limits.insert_or_assign(parsed_index, parsed_limit);
-        }
+        else if(limit.local_defined_memory_limits.try_emplace(parsed_index, parsed_limit).second) { return result::def; }
 
-        return ::uwvm2::utils::cmdline::parameter_return_type::def;
+        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [error] Duplicate memory page policy for module ",
+            module_name, u8", local definition selector ", target_text, u8".");
+        return result::return_m1_imme;
     }
 }
 

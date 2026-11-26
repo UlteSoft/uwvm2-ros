@@ -118,6 +118,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         ::std::array<::std::optional<::std::size_t>, ::std::size(parser_counts)> counts{};
         ::std::array<::std::optional<::std::size_t>, ::std::size(initializer_settings)> limits{};
         ::std::optional<baseline> preset{};
+        ::std::optional<::uwvm2::uwvm::wasm::type::module_memory_limit_t> memory_pages{};
         runtime_mode::module_translation_policy translation{};
         ::std::optional<bool> check_tags{};
         ::std::optional<backend> default_backend{};
@@ -140,15 +141,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         return {};
     }
 
-    [[nodiscard]] inline constexpr bool set_count(::std::optional<::std::size_t>& field, option_view value) noexcept
+    [[nodiscard]] inline constexpr ::std::optional<::std::size_t> parse_count(option_view value) noexcept
     {
-        if(field || value.empty()) { return false; }
-        for(auto ch : value) { if(ch < u8'0' || ch > u8'9') { return false; } }
+        if(value.empty()) { return {}; }
+        for(auto ch : value) { if(ch < u8'0' || ch > u8'9') { return {}; } }
         ::std::size_t number{};
         auto const parsed{::fast_io::parse_by_scan(value.data(), value.data() + value.size(), number)};
-        if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != value.data() + value.size()) { return false; }
-        field = number;
-        return true;
+        if(parsed.code != ::fast_io::parse_code::ok || parsed.iter != value.data() + value.size()) { return {}; }
+        return number;
+    }
+
+    [[nodiscard]] inline constexpr bool set_count(::std::optional<::std::size_t>& field, option_view value) noexcept
+    {
+        if(field) { return false; }
+        field = parse_count(value);
+        return field.has_value();
     }
 
     template<typename T>
@@ -167,6 +174,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         { if(key == parser_counts[i].name) { return set_count(target.counts[i], value); } }
         for(::std::size_t i{}; i != ::std::size(initializer_settings); ++i)
         { if(key == initializer_settings[i].name) { return set_count(target.limits[i], value); } }
+        if(key == u8"runtime.memory-pages")
+        {
+            if(target.memory_pages) { return false; }
+            auto const separator{value.find(u8':')};
+            auto const minimum{parse_count(value.substr(0, separator))};
+            if(!minimum) { return false; }
+            ::uwvm2::uwvm::wasm::type::module_memory_limit_t pages{.min = *minimum};
+            if(separator != option_view::npos)
+            {
+                auto const maximum{parse_count(value.substr(separator + 1u))};
+                if(!maximum || *maximum < *minimum) { return false; }
+                pages.max = *maximum;
+                pages.present_max = true;
+            }
+            target.memory_pages = pages;
+            return true;
+        }
         if(key == u8"parser.baseline")
         {
             return set_enum(target.preset, value, {{u8"mvp", baseline::direct_mvp}, {u8"wasm1p1", baseline::direct_wasm1p1},
@@ -222,7 +246,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
 #if defined(UWVM_RUNTIME_UWVM_INTERPRETER) && defined(UWVM_ENABLE_UWVM_INT_LOOP_UNWIND)
         if(key == u8"runtime.interpreter.loop-unwind") { return flag(target.translation.loop_unwind); }
 #endif
-#if defined(UWVM_RUNTIME_UWVM_INTERPRETER) && defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS)
+#if defined(UWVM_RUNTIME_UWVM_INTERPRETER) && defined(UWVM_ENABLE_UWVM_INT_COMBINE_OPS) && defined(UWVM_ENABLE_UWVM_INT_DELAY_LOCAL_SOFT)
         if(key == u8"runtime.interpreter.delay-local") { return flag(target.translation.delay_local); }
 #endif
 #if defined(UWVM_RUNTIME_UWVM_INTERPRETER) && defined(UWVM_ENABLE_UWVM_INT_INSTRUCTION_REORDER)
@@ -273,6 +297,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         if(from.translation.llvm_policy) { to.translation.llvm_policy = from.translation.llvm_policy; }
         if(from.translation.llvm_full_policy) { to.translation.llvm_full_policy = from.translation.llvm_full_policy; }
 #endif
+        if(from.memory_pages) { to.memory_pages = from.memory_pages; }
         if(from.check_tags) { to.memory_policy.check_tags = *from.check_tags; }
         if(from.default_backend) { to.memory_policy.backend = *from.default_backend; }
     }

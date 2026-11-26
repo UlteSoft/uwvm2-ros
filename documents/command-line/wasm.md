@@ -282,15 +282,14 @@ Behavior:
 - If `[max]` is present, `max >= min` is required.
 - The parsed limit is stored in the configured module memory-limit table.
 - `all` sets a module-wide override for all local-defined memories.
-- A numeric selector sets or replaces the override for that local-defined memory index.
+- A numeric selector sets the override for one local definition index, counting from zero after excluding imports.
 
 Combination rules:
 
 - The command is repeatable.
-- Repeating `all` for the same module replaces the module-wide all-memory limit.
-- Repeating a numeric index for the same module replaces that index's configured limit.
-- `all` and numeric index overrides can both be configured; resolution happens later when the module graph and local memories are known.
-- These overrides target local-defined memories, not imported memories.
+- Each module accepts one setting per selector. Repeating `all` or the same numeric index produces a duplicate-policy error.
+- `all` and a single-module `runtime.memory-pages` policy select the same scope. Choose one spelling per module.
+- Indexed overrides take precedence over single-module, group and global defaults in either order. Imports share the owner’s pages. [Logical pages of a defined memory](wasm-module-policy.md#logical-pages-of-a-defined-memory)
 
 Examples:
 

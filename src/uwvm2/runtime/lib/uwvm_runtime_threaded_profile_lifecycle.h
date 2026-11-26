@@ -587,6 +587,17 @@
                     for(auto const& memory:parent->local_defined_memory_vec_storage)
                     {
                         auto const& owner=memory.memory;auto length=::uwvm2::runtime::wasm_threads::threaded_memory_length(owner);
+                        // Source bytes identify default limits. Bind any owner override that changes the
+                        // initial size or growth contract, including on a peer reached only by an alias.
+                        auto const& declaration{*memory.memory_type_ptr};
+                        namespace initializer = ::uwvm2::uwvm::runtime::initializer::details;
+                        auto const declared{initializer::limit_pages_to_memory_domain(declaration,
+                            initializer::parser_memory_limits_to_runtime_limits(declaration.limits))};
+                        if(declared.policy_identity() != memory.effective_limits.policy_identity())
+                        {
+                            number(UINT64_MAX); // A guest memory length cannot occupy the complete host address space.
+                            for(auto word : memory.effective_limits.policy_identity()) { number(word); }
+                        }
                         number(length);
                         if(!::uwvm2::runtime::wasm_threads::visit_threaded_memory(owner,
                             [&](::std::byte* bytes,::std::size_t,::std::size_t count) noexcept

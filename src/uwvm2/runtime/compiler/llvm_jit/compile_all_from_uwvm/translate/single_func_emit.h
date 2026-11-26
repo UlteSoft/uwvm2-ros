@@ -3498,6 +3498,9 @@ struct runtime_memory_access_info_t
     // Page size reported by the imported provider, used for memory.size and growth-limit calculations.
     ::std::uint_least64_t local_imported_page_size_bytes{};
 
+    // Owner page policy used by this operand, including through a chain of Wasm imports.
+    ::uwvm2::uwvm::wasm::type::module_memory_limit_t const* effective_page_limits{};
+
     // Maximum byte length allowed by the Wasm limits and by backend-specific address-space constraints.
     ::std::size_t max_limit_memory_length{};
 
@@ -3632,7 +3635,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                     auto defined_memory{curr->target.defined_ptr};
                     if(defined_memory == nullptr) [[unlikely]] { return {}; }
                     result.memory_p = ::std::addressof(defined_memory->memory);
-                    result.max_limit_memory_length = max_limit_from_limits(defined_memory->effective_limits);
+                    result.effective_page_limits = ::std::addressof(defined_memory->effective_limits);
+                    result.max_limit_memory_length = max_limit_from_limits(*result.effective_page_limits);
                     result.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(defined_memory->memory, result.max_limit_memory_length);
                     result.custom_page_size_log2 = defined_memory->memory.custom_page_size_log2;
                     populate_runtime_memory_access_info_mmap_fields(result, defined_memory->memory);
@@ -3643,7 +3647,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
                     result.local_imported_module_ptr = curr->target.local_imported.module_ptr;
                     result.local_imported_memory_index = curr->target.local_imported.index;
                     if(result.local_imported_module_ptr == nullptr) [[unlikely]] { return {}; }
-                    result.max_limit_memory_length = max_limit_from_limits(imported_memory_rec.effective_limits);
+                    result.effective_page_limits = ::std::addressof(imported_memory_rec.effective_limits);
+                    result.max_limit_memory_length = max_limit_from_limits(*result.effective_page_limits);
                     // Resolving a provider's compile-time page size is still an extensible virtual call. Keep it behind
                     // the same callback boundary used by generated accesses so compilation cannot inherit a live raw-
                     // bridge capability or leak provider FP-control changes into the active Wasm entry.
@@ -3670,7 +3675,8 @@ inline constexpr void populate_runtime_memory_access_info_mmap_fields(runtime_me
     if(memory_type_ptr == nullptr) [[unlikely]] { return result; }
 
     result.memory_p = const_cast<runtime_native_memory_t*>(::std::addressof(local_memory_rec.memory));
-    result.max_limit_memory_length = max_limit_from_limits(local_memory_rec.effective_limits);
+    result.effective_page_limits = ::std::addressof(local_memory_rec.effective_limits);
+    result.max_limit_memory_length = max_limit_from_limits(*result.effective_page_limits);
     result.max_limit_memory_length = ::uwvm2::runtime::compiler::shared::wasm_memory64::owner_growth_limit_bytes(local_memory_rec.memory, result.max_limit_memory_length);
     result.custom_page_size_log2 = local_memory_rec.memory.custom_page_size_log2;
     result.direct_memory_is_shared = ::uwvm2::runtime::wasm_threads::is_shared(local_memory_rec.memory);

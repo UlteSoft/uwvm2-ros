@@ -23,7 +23,9 @@
 module;
 
 // std
+#include <array>
 #include <concepts>
+#include <cstdint>
 #include <cstddef>
 #include <limits>
 #include <utility>

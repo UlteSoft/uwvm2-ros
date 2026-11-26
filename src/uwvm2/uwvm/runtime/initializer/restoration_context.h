@@ -922,13 +922,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto& memory{source_->checkpoint_memory_limits_};
                 for(auto const& [name, actual] : ::uwvm2::uwvm::wasm::storage::configured_module_memory_limit)
                 {
-                    auto const inserted{memory.try_emplace(::uwvm2::utils::container::u8string{name})};
-                    auto& copied{inserted.first->second}; copied.all_limits = actual.all_limits;
-                    copied.apply_to_all_memories = actual.apply_to_all_memories;
+                    // Reservation bytes use current host policy. Logical page limits come from the pinned predecessor.
+                    if(actual.local_defined_mmap_reservations.empty()) { continue; }
+                    details::check_reserve_limit_in_context(world_, u8"memory_limit_modules", memory.size() + 1uz, limits_.max_runtime_modules);
+                    auto& copied{memory.try_emplace(::uwvm2::utils::container::u8string{name}).first->second};
                     for(auto const& [index, value] : actual.local_defined_mmap_reservations)
                     { copied.local_defined_mmap_reservations.try_emplace(index, value); }
-                    for(auto const& [index, limit] : actual.local_defined_memory_limits)
-                    { copied.local_defined_memory_limits.try_emplace(index, limit); }
                 }
             }
             [[nodiscard]] skeleton_result build_resource_skeleton(source_type const& predecessor, bool includes_memtag_directory)
@@ -988,8 +987,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
                 details::check_reserve_limit_in_context(world_, u8"import_reset_modules",
                     ::uwvm2::uwvm::wasm::storage::configured_module_import_reset.size(), limits_.max_runtime_modules);
-                details::check_reserve_limit_in_context(world_, u8"memory_limit_modules",
-                    ::uwvm2::uwvm::wasm::storage::configured_module_memory_limit.size(), limits_.max_runtime_modules);
                 copy_native_policy();
                 auto const dependencies{::uwvm2::uwvm::wasm::loader::
                     build_dependency_graph_and_check_import_exist_and_construct_all_module_export_in_context(world_)};
@@ -1006,7 +1003,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     if(declaration.type != kind::exec_wasm && declaration.type != kind::preloaded_wasm) { continue; }
                     current_module_ = name;
                     storage_module module{};
-                    details::initialize_from_wasm_file_in_context(world_, *declaration.module_storage_ptr.wf, module, ::std::addressof(reservation_plan));
+                    auto const& file{*declaration.module_storage_ptr.wf};
+                    auto const prior{predecessor.registry().find(name)};
+                    if(prior == predecessor.registry().end() || prior->second.local_defined_memory_vec_storage.size() !=
+                        details::local_mmap_declarations(file.wasm_module_storage.wasm_binfmt_ver1_storage).size())
+                    { return state_ = skeleton_result::invalid_source; }
+                    details::initialize_from_wasm_file_in_context(world_, file, module, ::std::addressof(reservation_plan), ::std::addressof(prior->second));
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                     module.module_name = name;
 #endif
@@ -1032,7 +1034,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     auto const* config{world_.find_memory_limit(name)};
                     ::std::size_t index{};
                     for(auto& local : module.local_defined_memory_vec_storage)
-                    { details::configure_mmap_owner(local.memory, *local.memory_type_ptr, config, index++, reservation_plan); }
+                    { details::configure_mmap_owner(local, config, index++, reservation_plan); }
                 }
                 // Actual in-map addresses are now stable. No original global/table
                 // initializer runs and no ref value is read from an uninitialized slot.

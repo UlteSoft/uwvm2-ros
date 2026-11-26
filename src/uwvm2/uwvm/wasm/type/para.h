@@ -25,6 +25,8 @@
 // std
 # include <cstdint>
 # include <limits>
+# include <optional>
+# include "memory_limit.h"
 # include <uwvm2/extension/memtag/execution_policy.h>
 # include <uwvm2/uwvm/runtime/runtime_mode/storage.h>
 # include <cstddef>
@@ -77,6 +79,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         // Only a fresh CLI load resolves host policy. Owned-source replay and
         // embedding APIs consume the caller's already-resolved snapshot.
         bool resolve_module_policy{};
+        // Resolved module default for each locally defined memory. Indexed overrides belong to the owner.
+        ::std::optional<module_memory_limit_t> memory_pages{};
         static_assert(::std::is_trivially_copyable_v<decltype(binfmt1_para)> && ::std::is_trivially_destructible_v<decltype(binfmt1_para)>);
     };
 

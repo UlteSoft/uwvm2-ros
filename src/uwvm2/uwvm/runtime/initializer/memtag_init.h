@@ -204,7 +204,7 @@ template<initialization_purpose Purpose>
         for(auto& record : module.local_defined_memory_vec_storage)
         {
             auto const& declaration{*record.memory_type_ptr};
-            configure_mmap_owner(record.memory, declaration, config, index, reservations);
+            configure_mmap_owner(record, config, index, reservations);
             if(!initialize_native_memory<true>(record.memory, record.effective_limits, imports + index,
                                                wasm_memory_is_shared(declaration), wasm_memory_is_address64(declaration)) ||
                !configure_owner_addressing(record, name))

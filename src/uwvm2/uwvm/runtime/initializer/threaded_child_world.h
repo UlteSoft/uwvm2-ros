@@ -1352,7 +1352,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         auto world{context()};
         // Final map address is already stable BEFORE declarations, local
         // identities, reference expressions or code addresses can borrow it.
-        details::initialize_from_wasm_file_in_context(world, *file_, *module_);
+        if(details::local_mmap_declarations(file_->wasm_module_storage.wasm_binfmt_ver1_storage).size() != parent_->local_defined_memory_vec_storage.size())
+        { return threaded_child_error::declaration_mismatch; }
+        details::initialize_from_wasm_file_in_context(world, *file_, *module_, nullptr, parent_);
 #if defined(UWVM_RUNTIME_LLVM_JIT)
         module_->module_name = file_->module_name;
 #endif

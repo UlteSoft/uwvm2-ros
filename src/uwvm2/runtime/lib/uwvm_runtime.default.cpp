@@ -9911,6 +9911,12 @@ namespace uwvm2::runtime::lib
             for(::std::size_t index{}; index != memory_count; ++index)
             {
                 auto const memory{llvm_jit_translate_details::resolve_runtime_memory_access_info(*runtime_module,static_cast<::std::uint_least32_t>(index))};
+                if(memory.effective_page_limits)
+                {
+                    ::fast_io::io::print(cache_identity, u8"|pages");
+                    for(auto word : memory.effective_page_limits->policy_identity()) { ::fast_io::io::print(cache_identity, u8",", word); }
+                    ::fast_io::io::print(cache_identity, u8",", memory.max_limit_memory_length);
+                }
                 if(!memory.memory_p) { ::fast_io::io::print(cache_identity,u8"|provider"); continue; }
                 auto const& shadow{memory.memory_p->memtag_shadow};
                 ::fast_io::io::print(cache_identity,u8"|",static_cast<unsigned>(shadow.width()),u8",",shadow.ignored_bits(),u8",",

@@ -24,6 +24,7 @@ module;
 // std
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <cstddef>
 #include <cstring>
 #include <new>
@@ -34,6 +35,7 @@ module;
 
 export module uwvm2.uwvm.wasm.type:para;
 
+import :memory_limit;
 import fast_io;
 import uwvm2.uwvm.runtime.runtime_mode;
 import uwvm2.extension.memtag.execution_policy;
