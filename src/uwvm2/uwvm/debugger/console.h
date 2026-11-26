@@ -256,9 +256,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
                     return ::uwvm2::utils::container::concat("snapshot-restored stop=",reply.stop_identifier," epoch=",reply.restore_epoch,
                         " source=",::fast_io::mnp::os_c_str(reply.status==::uwvm2::utils::control::error::none?"ready":"unavailable"),
                         "; guest paused; external effects are not rewound\n");
+                ::uwvm2::utils::container::std_string engine_detail{};
+                if(reply.restore_engine)
+                {
+                    auto const& failure=*reply.restore_engine;
+                    engine_detail=::uwvm2::utils::container::concat(" engine-error=",failure.engine,
+                        " resource=",failure.resource," stage=",::fast_io::mnp::os_c_str(failure.location.operation_name()),
+                        " native-bytes=",failure.native_bytes);
+                    if(failure.location.module!=SIZE_MAX)
+                    { engine_detail.append(::uwvm2::utils::container::concat(" module=",failure.location.module)); }
+                    if(failure.location.function!=SIZE_MAX)
+                    { engine_detail.append(::uwvm2::utils::container::concat(" function=",failure.location.function)); }
+                }
                 return ::uwvm2::utils::container::concat(::fast_io::mnp::os_c_str(reply.restore_pending?"snapshot-restore pending":"error: snapshot-restore rejected"),
                     " phase=",reply.restore_phase," detail=",reply.restore_detail," preparation=",reply.restore_preparation,
-                    " state-error=",reply.restore_state_error," applied=",static_cast<unsigned>(reply.restore_applied),
+                    engine_detail," state-error=",reply.restore_state_error," applied=",static_cast<unsigned>(reply.restore_applied),
                     " retained=",static_cast<unsigned>(reply.restore_original_retained),
                     ::fast_io::mnp::os_c_str(reply.restore_pending?"; use dump restore continue; guest execution remains closed\n":
                     reply.restore_original_retained?"; original stopped world retained; inspect status before further management\n":
