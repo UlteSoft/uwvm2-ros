@@ -27,14 +27,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     enum class exception_immediate_error : unsigned { ok, binary, invalid_catch_kind };
     struct exception_catch_vector
     {
-        ::uwvm2::utils::container::validation_vector<exception_catch_clause> clauses{};
+        ::uwvm2::utils::container::parser_scratch_vector<exception_catch_clause> clauses{};
         exception_immediate_error error{};
         recursive_type_binary_result binary{};
     };
     // Starts immediately AFTER the checked try_table blocktype. Catch labels are resolved against
     // the OUTER context; the caller must not push the try_table label before validating these clauses.
     [[nodiscard]] inline constexpr exception_catch_vector scan_exception_catches(
-        ::std::byte const*& code_curr, ::std::byte const* code_end) noexcept
+        ::std::byte const*& code_curr, ::std::byte const* code_end)
     {
         // [try_table blocktype] count catches ... code_end
         // [safe               ] unsafe (could be code_end)

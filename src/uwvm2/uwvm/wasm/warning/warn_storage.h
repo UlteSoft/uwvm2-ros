@@ -62,10 +62,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     {
         // This is not a bitmap, but vec(bool), because the number of types is usually not too large to require bool. Instead, access efficiency is what is most
         // needed.
-        ::uwvm2::utils::container::validation_vector<bool> unused_type_checker{};
+        ::uwvm2::utils::container::parser_scratch_vector<bool> unused_type_checker{};
     };
 
-    inline constexpr void init_binfmt_ver1_warning_storage(binfmt_ver1_warning_storage_t & storage, ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm) noexcept
+    inline constexpr void init_binfmt_ver1_warning_storage(binfmt_ver1_warning_storage_t & storage, ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm)
     {
         auto const& binfmt_ver1_storage{wasm.get_curr_binfmt_version_wasm_storage<1u>()};
 

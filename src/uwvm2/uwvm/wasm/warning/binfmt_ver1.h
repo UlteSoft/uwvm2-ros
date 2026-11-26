@@ -73,7 +73,7 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
 {
-    inline constexpr void show_wasm_binfmt_ver1_warning(::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm) noexcept
+    inline constexpr void show_wasm_binfmt_ver1_warning(::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm)
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer parsing_timer{u8"show warning for binfmt ver1"};
@@ -86,7 +86,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
 
         // for __builtin_expect_with_probability
 
-        [&]<typename... Secs> UWVM_ALWAYS_INLINE(::uwvm2::utils::container::tuple<Secs...> const&) constexpr noexcept -> void
+        [&]<typename... Secs> UWVM_ALWAYS_INLINE(::uwvm2::utils::container::tuple<Secs...> const&) constexpr -> void
         {
             (::uwvm2::uwvm::wasm::warning::show_wasm_section_warning(::uwvm2::parser::wasm::concepts::feature_reserve_type_t<Secs>{}, wasm, warn_storage), ...);
         }(wasm.get_curr_binfmt_version_wasm_storage<1u>().sections);

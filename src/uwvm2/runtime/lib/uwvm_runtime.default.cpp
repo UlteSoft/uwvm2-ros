@@ -14723,9 +14723,10 @@ namespace uwvm2::runtime::lib
         { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
         // No live module field is changed by compilation. The copy owns every
         // body byte and its parsed local declarations until execution drains.
+        return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate([&]() -> llvm_jit_debug_replace_prepare_result
+        {
         try
         {
-            ::uwvm2::utils::allocator::resource::recoverable_parser_allocations parser_allocations{};
             namespace immutable = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
             if(global_binding && (!production_update || global_binding->module() != runtime_module))
             { return {llvm_jit_debug_replace_status::invalid_state, generation, nullptr}; }
@@ -15065,6 +15066,8 @@ namespace uwvm2::runtime::lib
             }
             if(transaction->pending_ranges->has_observation_failure())
             { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
+            if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
+            { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
             prepare_llvm_jit_replacement_metadata(*transaction);
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && \
     defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
@@ -15104,12 +15107,15 @@ namespace uwvm2::runtime::lib
             rec.llvm_jit_debug_full_retained_generations.reserve(
                 rec.llvm_jit_debug_full_retained_generations.size() + 1u);
 #endif
+            if(::uwvm2::utils::allocator::resource::recoverable_parser_allocations::comparison_refused())
+            { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
             return {llvm_jit_debug_replace_status::replaced, generation, transaction.release()};
         }
         catch(::std::bad_alloc const&)
         { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; }
         catch(...)
         { return {llvm_jit_debug_replace_status::compile_failure, generation, nullptr}; }
+        }, [&]() -> llvm_jit_debug_replace_prepare_result { return {llvm_jit_debug_replace_status::exhausted, generation, nullptr}; });
 # endif
         (void)module_index; (void)function_index; (void)expected_generation; (void)body; (void)body_size;
         return {};

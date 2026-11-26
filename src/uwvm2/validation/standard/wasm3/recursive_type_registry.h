@@ -55,10 +55,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             auto const& b{records_.index_unchecked(to)};
             return a.kind == b.kind && a.depth >= b.depth && ancestor(from, b.depth, [&](::std::size_t index) noexcept -> record const& { return records_.index_unchecked(index); }) == to;
         }
-        template<typename Allocator>
+        template<typename Output>
         [[nodiscard]] inline recursive_type_validation_result validate_and_intern(
             ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
-            ::uwvm2::utils::container::vector<::std::size_t, Allocator>& module_ids) noexcept
+            Output& module_ids) noexcept
         {
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             try
@@ -72,13 +72,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
 #endif
         }
     private:
-        template<typename Allocator>
+        template<typename Output>
         inline recursive_type_validation_result intern(
             ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
-            ::uwvm2::utils::container::vector<::std::size_t, Allocator>& module_ids)
+            Output& module_ids)
         {
             namespace d = recursive_validation_details;
-            basic_recursive_type_context<::uwvm2::utils::container::validation_vector<recursive_type_record>> checked{};
+            basic_recursive_type_context<::uwvm2::utils::container::parser_scratch_vector<recursive_type_record>> checked{};
             auto const validation{validate_core3_type_section(section, checked)};
             if(validation.error != recursive_type_validation_error::ok) { return validation; }
             // A failed validation does not mutate the registry or the caller's mapping. No borrowed section
@@ -86,10 +86,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             auto const count{checked.records.size()};
             auto const original_size{records_.size()};
             constexpr auto max_records{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(record)};
-            ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
+            ::uwvm2::utils::container::parser_scratch_vector<::std::size_t> ids{};
             ids.resize(count);
             decltype(groups_) new_groups{};
-            ::uwvm2::utils::container::validation_vector<record> new_records{};
+            ::uwvm2::utils::container::parser_scratch_vector<record> new_records{};
             auto const lookup_record = [&](::std::size_t id) noexcept -> record const&
             { return id < original_size ? records_.index_unchecked(id) : new_records.index_unchecked(id - original_size); };
             for(auto const& group : section.groups)
@@ -133,7 +133,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             }
             using output_type = ::std::remove_reference_t<decltype(module_ids)>;
             output_type output{};
-            if constexpr(::std::is_same_v<decltype(ids), output_type>) { output = ::std::move(ids); }
+            if constexpr(::std::is_base_of_v<output_type, decltype(ids)>) { output = ::std::move(ids); }
             else { output = output_type{::fast_io::freestanding::from_range_t{}, ids}; }
             if(!new_records.empty())
             {

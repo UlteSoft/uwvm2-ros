@@ -260,6 +260,8 @@
 #if !(((defined(__x86_64__) || defined(__aarch64__)) && __SIZEOF_POINTER__ == 8) || ((defined(__i386__) || defined(__arm__)) && __SIZEOF_POINTER__ == 4))
             return {{},status::unsupported_shape};
 #else
+            return ::uwvm2::utils::allocator::resource::recoverable_parser_allocations::prepare_candidate([&]() -> preparation_result
+            {
             try
             {
                 auto data=::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>{::uwvm2::utils::allocator::fast_io_strict::object<ThreadedLlvmChild>([&](ThreadedLlvmChild* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) ThreadedLlvmChild{::std::move(world)}; })};
@@ -409,8 +411,7 @@
                     if(charged!=status::ok)return {{},charged};
                     return {::std::move(data),status::ok};
                 }
-                ::uwvm2::utils::allocator::resource::recoverable_parser_allocations parser_allocations{};
-                auto validation=emit::build_runtime_validation_module(module);
+                    auto validation=emit::build_runtime_validation_module(module);
                 compile::compile_option options{};options.curr_wasm_id=module_index;options.compiler_registry=nullptr; // private cold scope authenticates the exact single module
                 options.compilation_mode=compile::llvm_jit_compilation_mode::full;
                 options.execute_memtag=module.memory_policy.check_tags;
@@ -661,6 +662,7 @@
             catch(::fast_io::error const&){return {{},status::invalid_body};}
             catch(::std::bad_alloc const&){return {{},status::budget};}
             catch(...){return {{},status::native_failure};}
+            }, [&]() -> preparation_result { return {{},status::budget}; });
 #endif
         }
 #pragma pop_macro("STT_TLS")

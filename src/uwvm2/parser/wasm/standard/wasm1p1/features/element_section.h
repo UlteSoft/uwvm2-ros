@@ -251,11 +251,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         template<typename Signatures>
         [[nodiscard]] inline bool element_function_types_equivalent(
-            ::std::size_t first, ::std::size_t second, Signatures const& signatures) noexcept
+            ::std::size_t first, ::std::size_t second, Signatures const& signatures)
         {
             using pair = ::std::pair<::std::size_t, ::std::size_t>;
             using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
-            ::uwvm2::utils::container::validation_vector<pair> pending{}, seen{};
+            ::uwvm2::utils::container::parser_scratch_vector<pair> pending{}, seen{};
             pending.push_back({first, second});
             while(!pending.empty())
             {
@@ -273,7 +273,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 auto const& left{signatures.index_unchecked(current.first)};
                 auto const& right{signatures.index_unchecked(current.second)};
                 if(left.parameters.size() != right.parameters.size() || left.results.size() != right.results.size()) { return false; }
-                auto const compare_value{[&](auto a, auto b) noexcept
+                auto const compare_value{[&](auto a, auto b)
                 {
                     if(a.kind != b.kind) { return false; }
                     if(a.kind != kind::reference) { return true; }
@@ -295,7 +295,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         [[nodiscard]] inline bool element_value_type_matches(
             ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type actual,
             ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type expected,
-            Signatures const& signatures) noexcept
+            Signatures const& signatures)
         {
             using kind = ::uwvm2::parser::wasm::standard::wasm3::type::value_kind;
             using heap = ::uwvm2::parser::wasm::standard::wasm3::type::abstract_heap_type;

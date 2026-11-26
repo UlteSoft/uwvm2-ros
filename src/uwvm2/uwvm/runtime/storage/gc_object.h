@@ -2979,7 +2979,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
             {
                 return;
             }
-            ::uwvm2::utils::container::validation_vector<::std::size_t> ids{};
+            ::uwvm2::utils::container::parser_scratch_vector<::std::size_t> ids{};
             {
                 canonical_guard guard{};
                 auto const result{canonical_registry_.validate_and_intern(section, ids)};

@@ -289,7 +289,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
             return value;
         }
 
-        inline constexpr void append_unique_ref(::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs,
+        inline constexpr void append_unique_ref(::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs,
                                                 ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 const func_idx)
         {
             if(::std::find(refs.begin(), refs.end(), func_idx) == refs.end()) { refs.push_back(func_idx); }
@@ -297,7 +297,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
 
         template <typename ConstExpr>
         inline constexpr void collect_const_expr_refs(ConstExpr const& expr,
-                                                      ::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs)
+                                                      ::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs)
         {
             for(auto const& op: expr.opcodes)
             {
@@ -308,7 +308,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
         template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
         inline constexpr void
             collect_declared_refs(::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...> const& module_storage,
-                                  ::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs)
+                                  ::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>& refs)
         {
             auto const& exportsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                 ::uwvm2::parser::wasm::standard::wasm1::features::export_section_storage_t<Fs...>>(module_storage.sections)};
@@ -447,7 +447,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
 
         auto const& wasm1p1_para{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(fs_para)};
 
-        ::uwvm2::utils::container::validation_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> declared_refs{};
+        ::uwvm2::utils::container::parser_scratch_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> declared_refs{};
         details::collect_declared_refs(module_storage, declared_refs);
 
         // control-flow stack

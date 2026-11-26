@@ -63,7 +63,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
     inline constexpr void check_unused_type(::uwvm2::parser::wasm::standard::wasm1::features::wasm1_final_extern_type<Fs...> const& curr_import,  // [adl]
                                             ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm,
-                                            ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage) noexcept
+                                            ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage)
     {
         // get wasm module storage
         auto const& wasm_module_storage{wasm.get_curr_binfmt_version_wasm_storage<1u>()};
@@ -106,7 +106,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     }
 
     inline constexpr void show_wasm_import_section_warning(::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm,
-                                                           ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage) noexcept
+                                                           ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage)
     {
         // get wasm module storage
         auto const& wasm_module_storage{wasm.get_curr_binfmt_version_wasm_storage<1u>()};
@@ -451,7 +451,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     inline constexpr void show_wasm_section_warning(
         ::uwvm2::parser::wasm::concepts::feature_reserve_type_t<::uwvm2::parser::wasm::standard::wasm1::features::import_section_storage_t<Fs...>>,
         ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm,
-        ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage) noexcept
+        ::uwvm2::uwvm::wasm::warning::binfmt_ver1_warning_storage_t& warn_storage)
     { return show_wasm_import_section_warning(wasm, warn_storage); }
 }
 
