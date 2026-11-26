@@ -681,7 +681,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         // the complete source, including modules outside its dependency graph.
         // Every native function leaf must be a concrete synchronous WASIp1
         // adapter. In particular a re-export cannot hide a thread-spawn leaf.
-        [[nodiscard]] bool has_serial_unchecked_threaded_memories(::std::size_t id, ::std::uint_least64_t epoch) const noexcept
+        // Aliases and cross-module calls must agree on the access-check policy.
+        [[nodiscard]] bool has_serial_threaded_memories(::std::size_t id, ::std::uint_least64_t epoch) const noexcept
         {
             if(!has_actual_ordinary_cli_cache_origin() || !actual_builtin_provider_census(id,epoch,main_module_,true))
             { return false; }
@@ -692,7 +693,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             for(auto const& [name,module]:registry_)
             {
                 auto const member=bound_initialized_module_id(&module);
-                if(!actual_validated_file(member,epoch,&module) || module.memory_policy.check_tags)return false;
+                if(!actual_validated_file(member,epoch,&module) ||
+                   module.memory_policy.check_tags!=main_module_->memory_policy.check_tags)return false;
                 for(auto const& local:module.local_defined_memory_vec_storage)
                 {
                     auto const& shadow=local.memory.memtag_shadow;

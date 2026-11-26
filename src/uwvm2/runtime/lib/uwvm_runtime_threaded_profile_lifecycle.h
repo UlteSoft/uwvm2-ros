@@ -1249,7 +1249,7 @@
                         admitted->debug_observation()==::uwvm2::runtime::wasm_threads::threaded_debug_observation::none &&
                         !admitted->instruction_control() && !control_owner().journal && !control_owner().signal_policy.read_fd &&
                         !mt::asynchronous_requested() && !mt::logging_requested() && !mt::hardware_checked_access_requested() &&
-                        owner->has_serial_unchecked_threaded_memories(id,validation);
+                        owner->has_serial_threaded_memories(id,validation);
 #endif
                     admitted->canonical_owner_ = admitted; state->admitted = ::std::move(admitted);
                     if(control_owner().signal_policy.read_fd!=0u)

@@ -1,10 +1,17 @@
 // ThreadedLlvmChild member fragment, also used by the native scalar IR regression.
         struct shared_scalar_shape { unsigned address_bits{},result_bits{},bytes{};bool sign{},store{}; };
+        struct serial_checked_scalar_memory
+        {
+            ::std::uintptr_t data{},tags{},length{};
+            ::std::uint64_t committed{};
+            unsigned tag_start{};
+        };
         struct shared_scalar_layout
         {
             memory_type* const* owner_slot{};
             ::std::uint64_t mask{};
             ::std::size_t base{},length{},prepared{},gate{};
+            serial_checked_scalar_memory serial{};
         };
         [[nodiscard]] static bool matches_shared_scalar_owner(::llvm::Value const* operand,::std::uintptr_t owner)
         {
@@ -17,6 +24,81 @@
             if(operand==literal)return true;
             auto* pointer=::llvm::ConstantExpr::getIntToPtr(literal,::llvm::PointerType::getUnqual(context));
             return operand==::llvm::ConstantExpr::getPtrToInt(pointer,word);
+        }
+        // A sealed group has exactly one native executor for these stable
+        // reservations. Its synchronous imports restore the current child and
+        // check policy before returning. No tag writer can intervene between
+        // these reads, the data effect or the original diagnostic bridge.
+        static void emit_serial_checked_scalar(::llvm::CallInst& call,::llvm::Value* state,::std::uintptr_t child,
+            shared_scalar_layout layout,shared_scalar_shape shape)
+        {
+            auto* origin=call.getParent();
+            auto* slow=origin->splitBasicBlock(call.getIterator(),"shared.checked.bridge");
+            auto* done=slow->splitBasicBlock(call.getNextNode()->getIterator(),"shared.checked.done");
+            auto block=[&](char const* name){return ::llvm::BasicBlock::Create(call.getContext(),name,call.getFunction(),slow);};
+            auto* bounds=block("shared.checked.bounds");
+            auto* grown=block("shared.checked.grown");
+            auto* tags=block("shared.checked.tags");
+            auto* effect=block("shared.checked.effect");
+            origin->getTerminator()->eraseFromParent();
+            ::llvm::IRBuilder<> b(origin);
+            auto* word=b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT);
+            auto* byte=b.getInt8Ty();
+            auto* likely=::llvm::MDBuilder{call.getContext()}.createBranchWeights(2000u,1u);
+            auto host=[&](::std::uintptr_t p){return b.CreateIntToPtr(::llvm::ConstantInt::get(word,p),b.getPtrTy());};
+            auto field=[&](::std::size_t at){return b.CreateConstGEP1_64(byte,state,at);};
+            auto* current=b.CreateLoad(b.getPtrTy(),field(offsetof(native_poll_state,child)),true);
+            auto* rejected=b.CreateLoad(byte,field(offsetof(native_poll_state,rejected)),true);
+            auto* stop_byte=b.CreateLoad(b.getPtrTy(),field(offsetof(native_poll_state,stop_byte)));
+            auto* stop=b.CreateAlignedLoad(byte,stop_byte,::llvm::Align{1u});
+            stop->setAtomic(::llvm::AtomicOrdering::Acquire);
+            auto* active=b.CreateAnd(b.CreateICmpEQ(current,host(child)),b.CreateIsNull(b.CreateOr(rejected,stop)));
+            b.CreateCondBr(active,bounds,slow,likely);
+
+            b.SetInsertPoint(bounds);
+            auto* raw=call.getArgOperand(2u);
+            auto* offset=b.CreateAdd(b.CreateAnd(raw,b.getInt64(layout.mask)),call.getArgOperand(1u));
+            // shared_scalar_owner proved that both additions fit u64. The
+            // prefix stays committed until this group drains. A successful
+            // grow prepares shadow and data before publishing the new length.
+            auto* end=b.CreateAdd(offset,b.getInt64(shape.bytes));
+            b.CreateCondBr(b.CreateICmpULE(end,b.getInt64(layout.serial.committed)),tags,grown);
+            b.SetInsertPoint(grown);
+            auto* length=b.CreateAlignedLoad(word,host(layout.serial.length),::llvm::Align{alignof(::std::atomic_size_t)});
+            length->setAtomic(::llvm::AtomicOrdering::Acquire);
+            b.CreateCondBr(b.CreateICmpULE(end,b.CreateZExtOrTrunc(length,b.getInt64Ty())),tags,slow,likely);
+
+            b.SetInsertPoint(tags);
+            auto* expected=b.CreateAnd(b.CreateTrunc(b.CreateLShr(raw,layout.serial.tag_start),byte),b.getInt8(15u));
+            auto matches=[&](::llvm::Value* position)
+            {
+                auto* index=b.CreateLShr(b.CreateZExtOrTrunc(position,word),4u);
+                auto* stored=b.CreateAlignedLoad(byte,b.CreateGEP(byte,host(layout.serial.tags),index),::llvm::Align{1u});
+                stored->setAtomic(::llvm::AtomicOrdering::Monotonic);
+                return b.CreateICmpEQ(stored,expected);
+            };
+            auto* matched=matches(offset);
+            // Scalars are at most eight bytes. The second address names the
+            // same tag or the last touched tag, including across a page.
+            if(shape.bytes>1u)matched=b.CreateAnd(matched,matches(b.CreateAdd(offset,b.getInt64(shape.bytes-1u))));
+            b.CreateCondBr(matched,effect,slow,likely);
+            b.SetInsertPoint(effect);
+            auto* address=b.CreateGEP(byte,host(layout.serial.data),b.CreateZExtOrTrunc(offset,word));
+            auto* bits=b.getIntNTy(shape.bytes*8u);
+            ::llvm::Value* result=b.getInt64(0u);
+            if(shape.store)b.CreateAlignedStore(b.CreateTruncOrBitCast(call.getArgOperand(3u),bits),address,::llvm::Align{1u},true);
+            else
+            {
+                auto* value=b.CreateAlignedLoad(bits,address,::llvm::Align{1u},true);
+                result=b.CreateZExtOrTrunc(b.CreateIntCast(value,b.getIntNTy(shape.result_bits),shape.sign),b.getInt64Ty());
+            }
+            b.CreateBr(done);
+            if(!call.use_empty())
+            {
+                b.SetInsertPoint(done,done->begin());
+                auto* phi=b.CreatePHI(b.getInt64Ty(),2u);
+                call.replaceAllUsesWith(phi);phi->addIncoming(&call,slow);phi->addIncoming(result,effect);
+            }
         }
         static void emit_shared_scalar(::llvm::CallInst& call,::llvm::Value* state,::std::uintptr_t child,
             shared_scalar_layout layout,shared_scalar_shape shape)
