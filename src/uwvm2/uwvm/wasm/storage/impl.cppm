@@ -25,6 +25,7 @@ module;
 export module uwvm2.uwvm.wasm.storage;
 export import :mode;
 export import :module_policy;
+export import :input_policy;
 export import :execute_wasm;
 export import :preloaded_wasm;
 export import :local_preload;

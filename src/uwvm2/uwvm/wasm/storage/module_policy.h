@@ -130,6 +130,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         ::std::array<::std::optional<bool>, ::std::size(feature_settings)> features{};
         ::std::array<::std::optional<::std::size_t>, ::std::size(parser_counts)> counts{};
         ::std::array<::std::optional<::std::size_t>, ::std::size(initializer_settings)> limits{};
+        ::std::optional<::std::size_t> input_bytes{};
         ::std::optional<baseline> preset{};
         ::std::optional<::uwvm2::uwvm::wasm::type::module_memory_limit_t> memory_pages{};
         runtime_mode::module_translation_policy translation{};
@@ -187,6 +188,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         if(key.starts_with(parser_prefix))
         {
             auto const name{key.substr(parser_prefix.size())};
+            if(name == u8"input-bytes") { return set_count(target.input_bytes, value); }
             for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
             { if(name == parser_counts[i].name) { return set_count(target.counts[i], value); } }
             return false;
@@ -290,6 +292,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
 
     inline constexpr void apply(layer const& from, ::uwvm2::uwvm::wasm::type::wasm_parameter_t& to) noexcept
     {
+        if(from.input_bytes) { features::wasm_binfmt_ver1_wasm1_parameter(to.binfmt1_para).parser_limit.max_input_bytes = *from.input_bytes; }
         auto& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(to.binfmt1_para)};
         if(from.preset)
         {
@@ -330,14 +333,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         if(from.default_backend) { to.memory_policy.backend = *from.default_backend; }
     }
 
-    inline constexpr void resolve(name_view module, ::uwvm2::uwvm::wasm::type::wasm_parameter_t& parameters) noexcept
+    template<typename Visit> inline constexpr void visit_layers(name_view module, Visit visit) noexcept
     {
-        apply(global, parameters);
+        visit(global);
         if(auto member{membership.find(module)}; member != membership.end())
         {
-            if(auto group{groups.find(member->second)}; group != groups.end()) { apply(group->second.settings, parameters); }
+            if(auto group{groups.find(member->second)}; group != groups.end()) { visit(group->second.settings); }
         }
-        if(auto single{singles.find(module)}; single != singles.end()) { apply(single->second, parameters); }
+        if(auto single{singles.find(module)}; single != singles.end()) { visit(single->second); }
+    }
+
+    inline constexpr void resolve(name_view module, ::uwvm2::uwvm::wasm::type::wasm_parameter_t& parameters) noexcept
+    {
+        visit_layers(module, [&](layer const& selected) { apply(selected, parameters); });
         parameters.resolve_module_policy = false;
     }
 

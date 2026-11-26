@@ -5,6 +5,7 @@
 #pragma once
 #include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
+# include <algorithm>
 # include <cstddef>
 # include <memory>
 # include <string>
@@ -80,6 +81,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
 #if (defined(UWVM_RUNTIME_UWVM_INTERPRETER) || defined(UWVM_RUNTIME_LLVM_JIT)) && \
     defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS)
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
+        namespace source_input = ::uwvm2::uwvm::wasm::storage::input;
         bool supported_full_backend{};
 # if defined(UWVM_RUNTIME_UWVM_INTERPRETER)
         supported_full_backend = supported_full_backend ||
@@ -116,6 +118,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
         {
             // Real owned inputs captured before the old selection is retired.
             ::uwvm2::utils::container::std_u8string path, rename;
+            source_input::input_parameters main_parameters{};
             ::uwvm2::utils::control::owned_file_image::owner image{};
             ::uwvm2::utils::container::std_vector<::uwvm2::uwvm::runtime::full::full_preload_input> preloads{};
 # if defined(UWVM_RUNTIME_LLVM_JIT)
@@ -159,17 +162,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 ::uwvm2::uwvm::wasm::storage::execute_wasm.module_name};
             state.path = ::uwvm2::utils::container::u8concat(path);
             state.rename = ::uwvm2::utils::container::u8concat(rename);
+            auto remaining_bytes{source_input::input_image::maximum_bytes};
+            auto const& original_main{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+            state.main_parameters = rebuild ? original_main.wasm_parameter : ::uwvm2::uwvm::wasm::storage::wasm_parameter;
+            auto copy_original = [&](auto const& file)
+            {
+                source_input::input_policy policy{file.wasm_parameter, file.file_name, file.module_name};
+                return source_input::input_image::copy_wasm_bytes(
+                    {reinterpret_cast<::std::byte const*>(file.source_cbegin()), file.source_size()},
+                    ::std::min(remaining_bytes, policy.initial_limit()));
+            };
             if(rebuild)
             {
+                // The replacement is already live while the other original modules are copied.
+                auto const& target{rebuild->module_index == 0u ? original_main :
+                    ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().index_unchecked(rebuild->module_index - 1u)};
+                source_input::input_policy policy{target.wasm_parameter, target.file_name, target.module_name};
+                if(rebuild->image->size() > remaining_bytes || !source_input::admit_owned_input(rebuild->image, policy))
+                { return static_cast<int>(retval::load_main_module_error); }
+                remaining_bytes -= rebuild->image->size();
                 if(rebuild->module_index == 0u)
                 { state.path = ::std::move(rebuild->path); state.image = ::std::move(rebuild->image); }
                 else
                 {
-                    auto const& original{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
-                    state.path = ::uwvm2::utils::container::u8concat(original.file_name);
-                    auto input{::uwvm2::utils::control::owned_file_image::copy_owned_bytes(
-                        {reinterpret_cast<::std::byte const*>(original.source_cbegin()), original.source_size()},
-                        ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
+                    state.path = ::uwvm2::utils::container::u8concat(original_main.file_name);
+                    auto input{copy_original(original_main)};
                     if(!input) { return static_cast<int>(retval::load_main_module_error); }
                     state.image = ::std::move(input.image);
                 }
@@ -180,8 +197,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 // any parser/initializer body/type/segment pointer can escape.
                 // Never hash/copy an already parsed map and pretend its borrows
                 // were rebound. This performs no code-body validation/translation.
-                auto loaded{::uwvm2::utils::control::owned_file_image::read(state.path,
-                    ::uwvm2::utils::control::owned_file_image::maximum_bytes)};
+                auto loaded{source_input::read_wasm_image(state.path, rename, state.main_parameters, remaining_bytes)};
                 if(!loaded)
                 {
                     ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
@@ -197,12 +213,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             auto const& original_preloads{rebuild ? ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm() :
                 ::uwvm2::uwvm::wasm::storage::preloaded_wasm};
             state.preloads.reserve(original_preloads.size());
-            auto remaining_bytes{::uwvm2::utils::control::owned_file_image::maximum_bytes};
-            if(state.image)
-            {
-                if(state.image->size() > remaining_bytes) { return static_cast<int>(retval::load_main_module_error); }
-                remaining_bytes -= state.image->size(); // BEFORE any next private-image allocation.
-            }
+            if(state.image && (!rebuild || rebuild->module_index != 0u)) { remaining_bytes -= state.image->size(); }
             ::std::size_t preload_index{};
             for(auto const& original : original_preloads)
             {
@@ -213,16 +224,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 input.parameters = original.wasm_parameter; // Exact original per-module feature policy.
                 if(rebuild && rebuild->module_index == preload_index)
                 {
-                    if(!rebuild->image || rebuild->image->size() > remaining_bytes)
-                    { return static_cast<int>(retval::load_main_module_error); }
-                    remaining_bytes -= rebuild->image->size();
                     input.image = ::std::move(rebuild->image); input.file_name = ::std::move(rebuild->path);
                 }
                 else if(retain_immutable_image)
                 {
-                    auto loaded{rebuild ? ::uwvm2::utils::control::owned_file_image::copy_owned_bytes(
-                        {reinterpret_cast<::std::byte const*>(original.source_cbegin()), original.source_size()}, remaining_bytes) :
-                        ::uwvm2::utils::control::owned_file_image::read(input.file_name, remaining_bytes)};
+                    auto loaded{rebuild ? copy_original(original) :
+                        source_input::read_wasm_image(input.file_name, original.module_name, input.parameters, remaining_bytes)};
                     if(!loaded || loaded.image->size() > remaining_bytes)
                     {
                         ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
@@ -242,10 +249,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                     { return false; }
                     auto candidate{::uwvm2::uwvm::runtime::full::full_source_instance::create_unparsed(
                         ::std::move(ctx.path), ::std::move(ctx.rename), ::std::move(ctx.preloads))};
-                    if(!::uwvm2::uwvm::runtime::full::select_unparsed_full_source_after_drain(candidate)) { return false; }
+                    if(!candidate || !::uwvm2::uwvm::runtime::full::select_unparsed_full_source_after_drain(candidate)) { return false; }
                     auto const loaded{::uwvm2::uwvm::wasm::loader::load_wasm_file(
                         candidate->file_for_native_initialization(), candidate->owned_file_name(), candidate->owned_rename(),
-                        ::uwvm2::uwvm::wasm::storage::wasm_parameter, ::std::move(ctx.image))};
+                        ctx.main_parameters, ::std::move(ctx.image))};
                     if(loaded != ::uwvm2::uwvm::wasm::loader::load_wasm_file_rtl::ok)
                     { ctx.result = static_cast<int>(retval::load_main_module_error); return false; }
                     auto& preloads{candidate->preloaded_files_for_native_initialization()};

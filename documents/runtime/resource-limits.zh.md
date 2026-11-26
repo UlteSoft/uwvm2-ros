@@ -15,13 +15,14 @@
 | 阶段 | 资源 | 默认值 | 对象 |
 | --- | --- | ---: | --- |
 | `parser` | `input-bytes` | 256 MiB | 单个输入模块的文件大小 |
-| `parser` | `type-metadata-bytes` | 512 MiB | 一个类型节解码递归类型时请求的宿主元数据字节数 |
+| `parser` | `input-live-bytes` | 1 GiB | 同一进程仍在使用的 Wasm 输入映射和不可变输入副本的总长度 |
+| `parser` | `type-metadata-bytes` | 512 MiB | 模块递归类型及其平面 ABI 表示的宿主记录累计字节数 |
 | `parser` | `function-body-bytes` | 8 MiB | 一个函数体的编码长度 |
 | `parser` | `module-code-bytes` | 64 MiB | 一个模块内所有函数体的编码长度之和 |
 | `parser` | `single-bytes`、`live-bytes` | 256 MiB、1 GiB | 解析后的记录、常量表达式、名称表和递归类型元数据的单次申请及同时存活的容量 |
 | `validation` | `single-bytes`、`live-bytes` | 256 MiB、512 MiB | 验证器及翻译过程中受限操作数栈、控制栈和临时缓冲区 |
 
-模块可用 `parser.limit.type-metadata-bytes`、`parser.limit.function-body-bytes` 和 `parser.limit.module-code-bytes` 收紧相应字节上限。三者都支持全局、组、单模块覆盖，最终取模块配置和进程硬上限中的较小值。
+模块可用 `parser.limit.input-bytes`、`parser.limit.type-metadata-bytes`、`parser.limit.function-body-bytes` 和 `parser.limit.module-code-bytes` 收紧相应字节上限。这些字节键都支持全局、组、单模块覆盖，最终取模块配置和进程硬上限中的较小值。
 
 模块的 `parser.limit.*` 数量上限也同时生效。以 `code_locals` 为例，解析器既检查局部变量声明组的数量，也检查所有声明组展开后的变量总数。模块的 `section_storage_bytes` 按记录的宿主类型计算逻辑大小。进程的 `parser live-bytes` 在容器实际申请和释放空间时计费，扩容期间新旧两块内存同时占用额度。多个模块复用一个已登记的递归类型时，注册表保留一份规范类型 ID。临时查找数据由验证器计费。
 

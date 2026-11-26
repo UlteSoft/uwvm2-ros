@@ -262,6 +262,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         [[nodiscard]] static mutable_owner create_unparsed(::uwvm2::utils::container::std_u8string file_name, ::uwvm2::utils::container::std_u8string rename = {},
             ::uwvm2::utils::container::std_vector<full_preload_input> inputs = {})
         {
+            namespace source_input = ::uwvm2::uwvm::wasm::storage::input;
+            for(auto& input : inputs)
+            {
+                source_input::input_policy policy{input.parameters, source_input::input_name{input.file_name.data(), input.file_name.size()},
+                    source_input::input_name{input.module_name.data(), input.module_name.size()}};
+                if(input.image && !source_input::admit_owned_input(input.image, policy)) { return {}; }
+            }
             // Real nonconst allocation, including both file/map objects. Bind the
             // weak control-block identity before any const owner is published.
             auto completion{::std::shared_ptr<full_source_destruction_completion>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<full_source_destruction_completion>([&](full_source_destruction_completion* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) full_source_destruction_completion{}; }))}};

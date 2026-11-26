@@ -15,6 +15,7 @@ struct nt_readonly_sync_operation_result;
 inline nt_readonly_sync_open_result nt_open_readonly_sync_nothrow(char16_t const*) noexcept;
 inline nt_readonly_sync_status_result nt_readonly_sync_status_nothrow(nt_readonly_sync_file const&) noexcept;
 inline nt_readonly_sync_read_result nt_readonly_sync_read_nothrow(nt_readonly_sync_file&, void*, ::std::size_t) noexcept;
+inline nt_readonly_sync_read_result nt_readonly_sync_pread_nothrow(nt_readonly_sync_file&, void*, ::std::size_t, ::std::int_least64_t) noexcept;
 inline nt_readonly_sync_operation_result nt_readonly_sync_close_nothrow(nt_readonly_sync_file&) noexcept;
 
 class nt_readonly_sync_file
@@ -26,7 +27,7 @@ private:
 	native_file event_{};
 	friend nt_readonly_sync_open_result nt_open_readonly_sync_nothrow(char16_t const*) noexcept;
 	friend nt_readonly_sync_status_result nt_readonly_sync_status_nothrow(nt_readonly_sync_file const&) noexcept;
-	friend nt_readonly_sync_read_result nt_readonly_sync_read_nothrow(nt_readonly_sync_file&, void*, ::std::size_t) noexcept;
+	friend nt_readonly_sync_read_result nt_readonly_sync_pread_nothrow(nt_readonly_sync_file&, void*, ::std::size_t, ::std::int_least64_t) noexcept;
 	friend nt_readonly_sync_operation_result nt_readonly_sync_close_nothrow(nt_readonly_sync_file&) noexcept;
 public:
 	inline constexpr nt_readonly_sync_file() noexcept = default;
@@ -184,13 +185,18 @@ inline nt_readonly_sync_open_result nt_open_readonly_sync_nothrow(T const& path)
 
 inline nt_readonly_sync_read_result nt_readonly_sync_read_nothrow(nt_readonly_sync_file& owner, void* buffer, ::std::size_t count) noexcept
 {
+	return nt_readonly_sync_pread_nothrow(owner, buffer, count, -1);
+}
+
+inline nt_readonly_sync_read_result nt_readonly_sync_pread_nothrow(nt_readonly_sync_file& owner, void* buffer, ::std::size_t count, ::std::int_least64_t offset) noexcept
+{
 	// One exclusive host operation at a time; external synchronization is the
 	// same precondition as native_file. No arbitrary HANDLE can reach this API.
 	if (!owner.file_ || !owner.event_) [[unlikely]]
 	{
 		return {0, {::fast_io::nt_domain_value, 0xc0000008u}};
 	}
-	if (count > 0xffffffffu || (count != 0 && buffer == nullptr)) [[unlikely]]
+	if (offset < -1 || count > 0xffffffffu || (count != 0 && buffer == nullptr)) [[unlikely]]
 	{
 		return {0, {::fast_io::win32_domain_value, 87u}};
 	}
@@ -207,7 +213,7 @@ inline nt_readonly_sync_read_result nt_readonly_sync_read_nothrow(nt_readonly_sy
 	//       ^^ native write cursor
 	auto status{::fast_io::win32::nt::nt_read_file<false>(owner.file_.native_handle(), owner.event_.native_handle(),
 		static_cast<::fast_io::win32::nt::pio_apc_routine>(nullptr), nullptr, __builtin_addressof(block), buffer,
-		static_cast<::std::uint_least32_t>(count), static_cast<::std::int_least64_t*>(nullptr),
+		static_cast<::std::uint_least32_t>(count), offset < 0 ? nullptr : __builtin_addressof(offset),
 		static_cast<::std::uint_least32_t*>(nullptr))};
 	if (status == 0x103u) [[unlikely]]
 	{

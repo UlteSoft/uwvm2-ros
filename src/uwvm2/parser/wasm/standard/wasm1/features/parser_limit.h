@@ -115,6 +115,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t max_type_metadata_bytes{inherit_resource_limit};
         ::std::size_t max_function_body_bytes{inherit_resource_limit};
         ::std::size_t max_module_code_bytes{inherit_resource_limit};
+        ::std::size_t max_input_bytes{inherit_resource_limit};
     };
 
     inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t count, ::std::size_t limit,
