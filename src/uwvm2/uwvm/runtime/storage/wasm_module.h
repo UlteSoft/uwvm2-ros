@@ -163,7 +163,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         initialized
     };
 
-    using local_defined_function_vec_storage_t = ::uwvm2::utils::container::vector<local_defined_function_storage_t>;
+    using local_defined_function_vec_storage_t = ::uwvm2::utils::container::initializer_vector<local_defined_function_storage_t>;
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
     inline consteval auto get_final_import_type_from_tuple(::uwvm2::utils::container::tuple<Fs...>) noexcept
@@ -221,7 +221,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         bool is_opposite_side_imported{};
     };
 
-    using imported_function_vec_storage_t = ::uwvm2::utils::container::vector<imported_function_storage_t>;
+    using imported_function_vec_storage_t = ::uwvm2::utils::container::initializer_vector<imported_function_storage_t>;
 }
 
 UWVM_MODULE_EXPORT namespace fast_io::freestanding
@@ -962,42 +962,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
         ::uwvm2::parser::wasm::base::constant_expression_opcode_requirements constant_expression_opcode_requirements{};
         bool code_declarations_require_exceptions{};
         bool tag_section_present{};
-        ::uwvm2::utils::container::vector<imported_tag_storage_t> imported_tag_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<imported_tag_storage_t> imported_tag_vec_storage{};
         // Each entry has a distinct instance identity, even when signatures match. Freeze before guest publication.
-        ::uwvm2::utils::container::vector<local_defined_tag_storage_t> local_defined_tag_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_tag_storage_t> local_defined_tag_vec_storage{};
 
         // func
-        ::uwvm2::utils::container::vector<imported_function_storage_t> imported_function_vec_storage{};
-        ::uwvm2::utils::container::vector<local_defined_function_storage_t> local_defined_function_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<imported_function_storage_t> imported_function_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_function_storage_t> local_defined_function_vec_storage{};
 
         // Runtime-owned import descriptors for command-line import binding rewrites.
         // Parser-owned descriptors are never mutated.
-        ::uwvm2::utils::container::vector<wasm_binfmt1_final_import_type_t> rewritten_import_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<wasm_binfmt1_final_import_type_t> rewritten_import_vec_storage{};
 
         // table
-        ::uwvm2::utils::container::vector<imported_table_storage_t> imported_table_vec_storage{};
-        ::uwvm2::utils::container::vector<local_defined_table_storage_t> local_defined_table_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<imported_table_storage_t> imported_table_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_table_storage_t> local_defined_table_vec_storage{};
 
         // memory
-        ::uwvm2::utils::container::vector<imported_memory_storage_t> imported_memory_vec_storage{};
-        ::uwvm2::utils::container::vector<local_defined_memory_storage_t> local_defined_memory_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<imported_memory_storage_t> imported_memory_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_memory_storage_t> local_defined_memory_vec_storage{};
 
         // global
-        ::uwvm2::utils::container::vector<imported_global_storage_t> imported_global_vec_storage{};
-        ::uwvm2::utils::container::vector<local_defined_global_storage_t> local_defined_global_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<imported_global_storage_t> imported_global_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_global_storage_t> local_defined_global_vec_storage{};
 
         // element
-        ::uwvm2::utils::container::vector<local_defined_element_storage_t> local_defined_element_vec_storage{};
-        ::uwvm2::utils::container::vector<local_defined_table_elem_storage_t> element_expr_funcref_vec_storage{};
-        ::uwvm2::utils::container::vector<void*> element_expr_externref_vec_storage{};
-        ::uwvm2::utils::container::vector<gc_reference> element_expr_gc_ref_vec_storage{};
-        ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> declared_ref_funcidx_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_element_storage_t> local_defined_element_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_table_elem_storage_t> element_expr_funcref_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<void*> element_expr_externref_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<gc_reference> element_expr_gc_ref_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32> declared_ref_funcidx_vec_storage{};
 
         // code
-        ::uwvm2::utils::container::vector<local_defined_code_storage_t> local_defined_code_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_code_storage_t> local_defined_code_vec_storage{};
 
         // data
-        ::uwvm2::utils::container::vector<local_defined_data_storage_t> local_defined_data_vec_storage{};
+        ::uwvm2::utils::container::initializer_vector<local_defined_data_storage_t> local_defined_data_vec_storage{};
         // Preserve section presence separately from its count: absent and present-with-zero are semantically distinct
         // for bulk-memory instruction validation.
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 data_count_section_count{};
@@ -1005,7 +1005,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
 
         // LLVM JIT call_indirect uses a compact runtime table-view side structure.
 #if defined(UWVM_RUNTIME_LLVM_JIT)
-        ::uwvm2::utils::container::vector<llvm_jit_call_indirect_table_view_t> llvm_jit_call_indirect_table_views{};
+        ::uwvm2::utils::container::initializer_vector<llvm_jit_call_indirect_table_view_t> llvm_jit_call_indirect_table_views{};
 #endif
     };
     enum class runtime_table_reference_family : unsigned char { function, external, exception, gc };
@@ -1265,38 +1265,38 @@ UWVM_MODULE_EXPORT namespace fast_io::freestanding
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
                                                  ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_function_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_function_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_import_type_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_import_type_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_table_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_table_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_memory_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_memory_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_global_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_global_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_element_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_element_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<void*>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<void*>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_code_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_code_storage_t>> &&
                                              ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_data_storage_t>>
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_data_storage_t>>
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                                              && ::fast_io::freestanding::is_zero_default_constructible_v<
-                                                    ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_view_t>>
+                                                    ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_view_t>>
 #endif
             ;
     };
@@ -1309,38 +1309,38 @@ UWVM_MODULE_EXPORT namespace fast_io::freestanding
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
                                                  ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_function_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_function_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_function_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_import_type_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_import_type_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_table_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_table_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_memory_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_memory_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::imported_global_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::imported_global_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_element_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_element_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<void*>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<void*>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_code_storage_t>> &&
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_code_storage_t>> &&
                                              ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                 ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::local_defined_data_storage_t>>
+                                                 ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::local_defined_data_storage_t>>
 #if defined(UWVM_RUNTIME_LLVM_JIT)
                                              && ::fast_io::freestanding::is_trivially_copyable_or_relocatable_v<
-                                                    ::uwvm2::utils::container::vector<::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_view_t>>
+                                                    ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::runtime::storage::llvm_jit_call_indirect_table_view_t>>
 #endif
             ;
     };

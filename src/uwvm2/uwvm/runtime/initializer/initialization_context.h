@@ -208,6 +208,7 @@ public:
         auto const& policy{memory_limit_policy()}; auto const found{policy.find(name)};
         return found == policy.cend() ? nullptr : ::std::addressof(found->second);
     }
+    [[nodiscard]] bool charge_metadata(::std::size_t bytes) const noexcept;
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner> make_lease_owner() const;
     [[nodiscard]] ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::tag_instance_identity const> make_tag_identity() const;
     [[nodiscard]] ::uwvm2::object::memory::linear::native_memory_t make_memory() const;

@@ -74,6 +74,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
     inline constexpr ::std::size_t default_max_imported_tags{default_max_imported_globals};
     inline constexpr ::std::size_t default_max_local_defined_tags{default_max_local_defined_globals};
 
+    inline constexpr ::std::size_t default_max_element_expressions{saturating_cast_size_t(1048576u)};
+
     struct initializer_limit_t
     {
         ::std::size_t max_runtime_modules{default_max_runtime_modules};
@@ -92,6 +94,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         ::std::size_t max_local_defined_globals{default_max_local_defined_globals};
         ::std::size_t max_local_defined_elements{default_max_local_defined_elements};
         ::std::size_t max_local_defined_datas{default_max_local_defined_datas};
+        ::std::size_t max_element_expressions{default_max_element_expressions};
     };
 
     inline initializer_limit_t initializer_limit{};

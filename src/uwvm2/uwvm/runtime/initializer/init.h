@@ -118,6 +118,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
         }
 
+        template <initialization_purpose Purpose>
+        [[noreturn]] inline void initializer_metadata_failure() noexcept(Purpose == initialization_purpose::ordinary)
+        {
+#ifdef UWVM_CPP_EXCEPTIONS
+            if constexpr(Purpose != initialization_purpose::ordinary) { throw ::std::bad_alloc{}; }
+#endif
+            ::uwvm2::utils::allocator::resource::initializer_metadata_limit();
+        }
+
+        template <initialization_purpose Purpose, typename T>
+        inline constexpr void reserve_initializer_records(initialization_context<Purpose>& world,
+            ::uwvm2::utils::container::initializer_vector<T>& records, ::std::size_t count) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+            auto charge = [&](::std::size_t bytes) noexcept
+            {
+                if constexpr(Purpose == initialization_purpose::threaded_child) { return world.charge_metadata(bytes); }
+                else { return true; }
+            };
+            if(!::uwvm2::utils::container::try_reserve_initializer_vector(records, count, charge)) [[unlikely]]
+            { initializer_metadata_failure<Purpose>(); }
+        }
+
+        template <initialization_purpose Purpose, typename T>
+        inline constexpr void grow_initializer_records(initialization_context<Purpose>& world,
+            ::uwvm2::utils::container::initializer_vector<T>& records) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+            auto const count{records.size()};
+            if(count < records.capacity()) { return; }
+            constexpr auto maximum{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) / sizeof(T)};
+            if(count == maximum) [[unlikely]] { initializer_metadata_failure<Purpose>(); }
+            auto const next{count == 0uz ? 1uz : (count > maximum - count ? maximum : count + count)};
+            reserve_initializer_records(world, records, next);
+        }
+
         template <typename... Args>
         inline constexpr void verbose_info(Args&&... args) noexcept
         {
@@ -2051,13 +2085,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        inline void ensure_wasm1_local_defined_global_initialized_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept;
+        inline void ensure_wasm1_local_defined_global_initialized_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept(Purpose == initialization_purpose::ordinary);
         inline void ensure_wasm1_local_defined_global_initialized(::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept;
 
         template <initialization_purpose Purpose>
         inline constexpr void try_resolve_wasm1_imported_global_value_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const* imported_global_ptr,
                                                                       ::uwvm2::object::global::wasm_global_storage_t const*& out,
-                                                                      ::uwvm2::object::global::wasm_global_storage_t& local_imported_scratch) noexcept
+                                                                      ::uwvm2::object::global::wasm_global_storage_t& local_imported_scratch) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using imported_global_ptr_t = ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const*;
             using global_link_kind = ::uwvm2::uwvm::runtime::storage::imported_global_storage_t::imported_global_link_kind;
@@ -2336,7 +2370,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         [[nodiscard]] inline constexpr ::uwvm2::object::global::wasm_global_storage_t evaluate_wasm3_constant_expression_in_context(initialization_context<Purpose>& world,
             ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
-            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using value = ::uwvm2::object::global::wasm_global_storage_t;
             using kind = ::uwvm2::object::global::global_type;
@@ -2344,7 +2378,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             using slot = ::uwvm2::uwvm::runtime::storage::gc_object_value;
             using reference = ::uwvm2::uwvm::runtime::storage::gc_reference;
             using gc_status = ::uwvm2::uwvm::runtime::storage::gc_object_status;
-            ::uwvm2::utils::container::vector<value> stack{};
+            ::uwvm2::utils::container::initializer_vector<value> stack{};
             auto const pop{[&]() noexcept -> value
             {
                 if(stack.empty()) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -2468,7 +2502,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                 ::std::size_t count{};
                                 if(!store->field_count(type_index, count) || count > stack.size()) [[unlikely]]
                                 { ::fast_io::fast_terminate(); }
-                                ::uwvm2::utils::container::vector<slot> inputs{};
+                                ::uwvm2::utils::container::initializer_vector<slot> inputs{};
+                                reserve_initializer_records(world, inputs, count);
                                 inputs.resize(count);
                                 for(::std::size_t i{count}; i != 0uz; --i)
                                 { inputs.index_unchecked(i - 1uz) = to_slot(pop()); }
@@ -2488,7 +2523,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             {
                                 auto const count{static_cast<::std::size_t>(immediate.count)};
                                 if(count > stack.size()) [[unlikely]] { ::fast_io::fast_terminate(); }
-                                ::uwvm2::utils::container::vector<slot> inputs{};
+                                ::uwvm2::utils::container::initializer_vector<slot> inputs{};
+                                reserve_initializer_records(world, inputs, count);
                                 inputs.resize(count);
                                 for(::std::size_t i{count}; i != 0uz; --i)
                                 { inputs.index_unchecked(i - 1uz) = to_slot(pop()); }
@@ -2507,11 +2543,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             // statuses fatal: validation has already proved types and operands.
                             if(status != gc_status::out_of_memory && status != gc_status::size_overflow)
                             { ::fast_io::fast_terminate(); }
-                            // Restore constructs only a skeleton and installs saved values; the
-                            // threaded preflight admits no allocating constant expressions. Neither
-                            // private preparation path may publish a process-wide Guest crash here.
+                            // Private construction is discarded by its owner before publication.
                             if constexpr(Purpose != initialization_purpose::ordinary)
-                            { ::fast_io::fast_terminate(); }
+                            { initializer_metadata_failure<Purpose>(); }
                             else
                             {
                                 ::std::uint64_t module_index{};
@@ -2571,7 +2605,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     }
                     default: ::fast_io::fast_terminate();
                 }
-                stack.push_back(next);
+                grow_initializer_records(world, stack);
+                stack.push_back_unchecked(next);
             }
             if(stack.size() != 1uz) [[unlikely]] { ::fast_io::fast_terminate(); }
             return stack.front_unchecked();
@@ -2618,7 +2653,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         inline constexpr ::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t
             eval_wasm1p1_ref_const_expr_as_funcref_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
-                                                   ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+                                                   ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(expr.opcodes.size() != 1uz)
             {
@@ -2685,7 +2720,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         inline constexpr void*
             eval_wasm1p1_ref_const_expr_as_externref_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
-                                                     ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+                                                     ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(expr.opcodes.size() != 1uz)
             {
@@ -2751,7 +2786,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         inline constexpr void*
             eval_wasm3_ref_const_expr_as_exnref_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
-                                                ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+                                                ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(expr.opcodes.size() != 1uz)
             {
@@ -2815,7 +2850,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         // Imported references must be linked and canonical before filling a table. Evaluate exactly once, including
         // a zero-sized table, then broadcast the reference; active element segments overwrite this initial value later.
         template <initialization_purpose Purpose>
-        inline constexpr void initialize_wasm3_table_expressions_after_linking_in_context(initialization_context<Purpose>& world) noexcept
+        inline constexpr void initialize_wasm3_table_expressions_after_linking_in_context(initialization_context<Purpose>& world) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using family = ::uwvm2::uwvm::runtime::storage::runtime_table_reference_family;
             using element_kind = ::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_type_t;
@@ -2879,34 +2914,43 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             initialize_wasm3_table_expressions_after_linking_in_context(world);
         }
 
+        struct element_expression_counts
+        {
+            ::std::size_t functions{}, opaque{}, gc{}, total{};
+            [[nodiscard]] constexpr bool add(::uwvm2::uwvm::runtime::storage::runtime_table_reference_family kind,
+                                             ::std::size_t count, ::std::size_t limit) noexcept
+            {
+                if(total > limit || count > limit - total) { return false; }
+                using family = ::uwvm2::uwvm::runtime::storage::runtime_table_reference_family;
+                auto& owner{kind == family::function ? functions : (kind == family::gc ? gc : opaque)};
+                owner += count;
+                total += count;
+                return true;
+            }
+        };
+
         template <initialization_purpose Purpose>
-        inline constexpr void materialize_wasm1p1_element_expr_payloads_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept
+        inline constexpr void materialize_wasm1p1_element_expr_payloads_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using family = ::uwvm2::uwvm::runtime::storage::runtime_table_reference_family;
-            ::std::size_t total_funcref_expr_count{};
-            ::std::size_t total_externref_expr_count{};
-            ::std::size_t total_gc_ref_expr_count{};
-            for(auto const& elem_seg: curr_rt.local_defined_element_vec_storage)
+            element_expression_counts counts{};
+            for(auto const& elem_seg : curr_rt.local_defined_element_vec_storage)
             {
-                if(elem_seg.element_type_ptr == nullptr || ::uwvm2::uwvm::runtime::storage::wasm_element_segment_is_dropped(elem_seg.element)) [[unlikely]] { continue; }
-                auto const curr_expr_count{elem_seg.element_type_ptr->storage.segment.vec_expr.size()};
-                auto const reference_family{::uwvm2::uwvm::runtime::storage::runtime_element_family(elem_seg, curr_rt)};
-                auto& total_count{reference_family == family::function ? total_funcref_expr_count :
-                                  ((reference_family == family::external || reference_family == family::exception) ?
-                                   total_externref_expr_count : total_gc_ref_expr_count)};
-                if(curr_expr_count > ::std::numeric_limits<::std::size_t>::max() - total_count) [[unlikely]] { ::fast_io::fast_terminate(); }
-                total_count += curr_expr_count;
+                if(elem_seg.element_type_ptr == nullptr || ::uwvm2::uwvm::runtime::storage::wasm_element_segment_is_dropped(elem_seg.element)) { continue; }
+                auto const count{elem_seg.element_type_ptr->storage.segment.vec_expr.size()};
+                if(!counts.add(::uwvm2::uwvm::runtime::storage::runtime_element_family(elem_seg, curr_rt), count,
+                               world.limits().max_element_expressions)) [[unlikely]] { initializer_metadata_failure<Purpose>(); }
             }
 
             auto& owned_funcref_storage{curr_rt.element_expr_funcref_vec_storage};
-            owned_funcref_storage.clear();
-            owned_funcref_storage.reserve(total_funcref_expr_count);
             auto& owned_externref_storage{curr_rt.element_expr_externref_vec_storage};
-            owned_externref_storage.clear();
-            owned_externref_storage.reserve(total_externref_expr_count);
             auto& owned_gc_ref_storage{curr_rt.element_expr_gc_ref_vec_storage};
+            owned_funcref_storage.clear();
+            owned_externref_storage.clear();
             owned_gc_ref_storage.clear();
-            owned_gc_ref_storage.reserve(total_gc_ref_expr_count);
+            reserve_initializer_records(world, owned_funcref_storage, counts.functions);
+            reserve_initializer_records(world, owned_externref_storage, counts.opaque);
+            reserve_initializer_records(world, owned_gc_ref_storage, counts.gc);
 
             for(auto& elem_seg: curr_rt.local_defined_element_vec_storage)
             {
@@ -2948,7 +2992,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         { ::fast_io::fast_terminate(); }
                         // [reserved vector slots ... current] end
                         // [safe                          ]
-                        // ^^ reserve(total_externref_expr_count) above prevents relocation of any previously
+                        // ^^ reserve(counts.opaque) above prevents relocation of any previously
                         // published element range; total_count arithmetic was checked against size_t overflow.
                         owned_externref_storage.push_back_unchecked(payload);
                     }
@@ -2972,7 +3016,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         { ::fast_io::fast_terminate(); }
                         // [reserved GC reference slots ... current] end
                         // [safe                                ]
-                        // ^^ reserve(total_gc_ref_expr_count) above prevents relocation of published ranges.
+                        // ^^ reserve(counts.gc) above prevents relocation of published ranges.
                         owned_gc_ref_storage.push_back_unchecked(reference);
                     }
                     auto const* const base{owned_gc_ref_storage.data()};
@@ -2995,7 +3039,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
         template <initialization_purpose Purpose>
         inline constexpr void try_resolve_wasm1_imported_global_i32_value_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const* imported_global_ptr,
-                                                                          ::std::uint_least64_t& out) noexcept
+                                                                          ::std::uint_least64_t& out) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using external_types = ::uwvm2::parser::wasm::standard::wasm1::type::external_types;
 
@@ -5471,7 +5515,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         template <initialization_purpose Purpose>
         inline constexpr void try_eval_wasm1_const_expr_offset_after_linking_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
                                                                              ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt,
-                                                                             ::std::uint_least64_t& out) noexcept
+                                                                             ::std::uint_least64_t& out) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(expr.opcodes.size() > 1uz)
             {
@@ -5598,7 +5642,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         inline constexpr void try_eval_wasm3_memory_const_expr_offset_after_linking_in_context(initialization_context<Purpose>& world,
             ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& module,
-            ::std::uint_least64_t& out, bool address64) noexcept
+            ::std::uint_least64_t& out, bool address64) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(!address64) { try_eval_wasm1_const_expr_offset_after_linking_in_context(world, expr, module, out); return; }
             auto const result{evaluate_wasm3_constant_expression_in_context(world, expr, module)};
@@ -5647,7 +5691,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         inline constexpr void try_eval_wasm3_table_const_expr_offset_after_linking_in_context(initialization_context<Purpose>& world,
             ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& module,
-            ::std::uint_least64_t& out, bool address64) noexcept
+            ::std::uint_least64_t& out, bool address64) noexcept(Purpose == initialization_purpose::ordinary)
         {
             if(!address64) { try_eval_wasm1_const_expr_offset_after_linking_in_context(world, expr, module, out); return; }
             auto const result{evaluate_wasm3_constant_expression_in_context(world, expr, module)};
@@ -5703,6 +5747,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             auto const& datasec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<data_section_storage_t>(module_storage.sections)};
 
             mmap_reservation_plan single_module_plan{};
+            auto const expression_limit{(::std::min)(world.limits().max_element_expressions, module_limits.element_expressions)};
+            ::std::size_t expression_count{};
+            for(auto const& element : elemsec.elems)
+            {
+                auto const count{element.storage.segment.vec_expr.size()};
+                if(count > expression_limit - expression_count) [[unlikely]]
+                {
+                    if constexpr(Purpose == initialization_purpose::ordinary)
+                    {
+                        ::uwvm2::utils::allocator::resource::reject_allocation(
+                            "uwvm: [error] initializer: module element expressions exceed init.element-expressions.\n");
+                    }
+                    else { initializer_metadata_failure<Purpose>(); }
+                }
+                expression_count += count;
+            }
+
             if constexpr(Purpose != initialization_purpose::threaded_child)
             {
                 if(reservation_plan == nullptr)
@@ -5799,7 +5860,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             out.tag_section_present = tagsec.present;
             details::check_reserve_limit_in_context(world, u8"local_defined_tags", tagsec.type_indices.size(),
                     (::std::min)(world.limits().max_local_defined_tags, module_limits.local_defined_tags));
-            out.local_defined_tag_vec_storage.reserve(tagsec.type_indices.size());
+            reserve_initializer_records(world, out.local_defined_tag_vec_storage, tagsec.type_indices.size());
             for(auto index : tagsec.type_indices)
             {
                 if(index >= typesec.types.size()) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -6214,7 +6275,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto import_reset_rules{world.find_import_reset(world.current_module())};
                 if(import_reset_rules != nullptr) [[unlikely]]
                 {
-                    out.rewritten_import_vec_storage.reserve(importsec.imports.size());
+                    reserve_initializer_records(world, out.rewritten_import_vec_storage, importsec.imports.size());
                     if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                     {
                         verbose_module_info_in_context(world, u8"Init: found import reset rules (rules=",
@@ -6227,7 +6288,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
                 details::check_reserve_limit_in_context(world, u8"imported_functions", imported_funcs.size(),
                     (::std::min)(world.limits().max_imported_functions, module_limits.imported_functions));
-                out.imported_function_vec_storage.reserve(imported_funcs.size());
+                reserve_initializer_records(world, out.imported_function_vec_storage, imported_funcs.size());
                 for(auto const import_ptr: imported_funcs)
                 {
                     ::uwvm2::uwvm::runtime::storage::imported_function_storage_t rec{};
@@ -6238,7 +6299,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& imported_tables{importsec.importdesc.index_unchecked(importdesc_table_index)};
                 details::check_reserve_limit_in_context(world, u8"imported_tables", imported_tables.size(),
                     (::std::min)(world.limits().max_imported_tables, module_limits.imported_tables));
-                out.imported_table_vec_storage.reserve(imported_tables.size());
+                reserve_initializer_records(world, out.imported_table_vec_storage, imported_tables.size());
                 for(auto const import_ptr: imported_tables)
                 {
                     ::uwvm2::uwvm::runtime::storage::imported_table_storage_t rec{};
@@ -6249,7 +6310,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& imported_memories{importsec.importdesc.index_unchecked(importdesc_memory_index)};
                 details::check_reserve_limit_in_context(world, u8"imported_memories", imported_memories.size(),
                     (::std::min)(world.limits().max_imported_memories, module_limits.imported_memories));
-                out.imported_memory_vec_storage.reserve(imported_memories.size());
+                reserve_initializer_records(world, out.imported_memory_vec_storage, imported_memories.size());
                 for(auto const import_ptr: imported_memories)
                 {
                     ::uwvm2::uwvm::runtime::storage::imported_memory_storage_t rec{};
@@ -6261,7 +6322,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& imported_globals{importsec.importdesc.index_unchecked(importdesc_global_index)};
                 details::check_reserve_limit_in_context(world, u8"imported_globals", imported_globals.size(),
                     (::std::min)(world.limits().max_imported_globals, module_limits.imported_globals));
-                out.imported_global_vec_storage.reserve(imported_globals.size());
+                reserve_initializer_records(world, out.imported_global_vec_storage, imported_globals.size());
                 for(auto const import_ptr: imported_globals)
                 {
                     ::uwvm2::uwvm::runtime::storage::imported_global_storage_t rec{};
@@ -6271,7 +6332,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const& imported_tags{importsec.importdesc.index_unchecked(importdesc_tag_index)};
                 details::check_reserve_limit_in_context(world, u8"imported_tags", imported_tags.size(),
                     (::std::min)(world.limits().max_imported_tags, module_limits.imported_tags));
-                out.imported_tag_vec_storage.reserve(imported_tags.size());
+                reserve_initializer_records(world, out.imported_tag_vec_storage, imported_tags.size());
                 for(auto const original : imported_tags)
                 {
                     ::uwvm2::uwvm::runtime::storage::imported_tag_storage_t tag{};
@@ -6346,8 +6407,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     (::std::min)(world.limits().max_local_defined_functions, module_limits.local_defined_functions));
                 details::check_reserve_limit_in_context(world, u8"local_defined_codes", defined_func_count,
                     (::std::min)(world.limits().max_local_defined_codes, module_limits.local_defined_codes));
-                out.local_defined_function_vec_storage.reserve(defined_func_count);
-                out.local_defined_code_vec_storage.reserve(defined_func_count);
+                reserve_initializer_records(world, out.local_defined_function_vec_storage, defined_func_count);
+                reserve_initializer_records(world, out.local_defined_code_vec_storage, defined_func_count);
 
                 if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                 {
@@ -6517,7 +6578,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
                 details::check_reserve_limit_in_context(world, u8"local_defined_tables", local_table_count,
                     (::std::min)(world.limits().max_local_defined_tables, module_limits.local_defined_tables));
-                out.local_defined_table_vec_storage.reserve(local_table_count);
+                reserve_initializer_records(world, out.local_defined_table_vec_storage, local_table_count);
 
                 if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                 {
@@ -6565,25 +6626,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     rec.owner_module_rt_ptr = ::std::addressof(out);
                     // Preserve the declared u64 count until its complete byte allocation
                     // is representable on this host. No narrowing or resize precedes it.
-                    constexpr auto max_native_elements{(::std::numeric_limits<::std::size_t>::max)() /
-                        sizeof(::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t)};
-                    if(table_type.limits.min > max_native_elements) [[unlikely]]
-                    {
-                        ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                            u8"uwvm: [fatal] initializer: table minimum exceeds the host allocation limit.\n\n");
-                        exit_invalid_runtime_configuration();
-                    }
                     if constexpr(Purpose == initialization_purpose::threaded_child) { world.prepare_table(rec, table_idx); }
                     if constexpr(Purpose != initialization_purpose::unpublished_restore)
                     {
-                        auto const bytes{static_cast<::std::size_t>(table_type.limits.min) * sizeof(::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t)};
-                        if(bytes > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes || !rec.allocation_charge.resize(bytes))
+                        using slot = ::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t;
+                        if(table_type.limits.min > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes / sizeof(slot) ||
+                           !::uwvm2::uwvm::runtime::storage::try_grow_table_elements(rec, static_cast<::std::size_t>(table_type.limits.min), {}))
                         {
-                            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                u8"uwvm: [error] initializer: table allocation exceeds the configured byte budget. Use --wasm-set-resource-limit to configure initializer/table limits.\n");
-                            ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_module);
+                            if constexpr(Purpose == initialization_purpose::ordinary)
+                            {
+                                ::uwvm2::utils::allocator::resource::reject_allocation(
+                                    "uwvm: [error] initializer: table allocation exceeds the configured byte budget or available host memory. Use --wasm-set-resource-limit to configure initializer/table limits.\n");
+                            }
+                            else { initializer_metadata_failure<Purpose>(); }
                         }
-                        rec.elems.resize(static_cast<::std::size_t>(table_type.limits.min));
                     }
                     // Restored extent is installed once from the checked saved state;
                     // empty private metadata is never a published non-null table filler.
@@ -6636,7 +6692,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                     u8"). ");
             }
             if constexpr(Purpose != initialization_purpose::threaded_child)
-            { out.llvm_jit_call_indirect_table_views.resize(out.imported_table_vec_storage.size() + out.local_defined_table_vec_storage.size()); }
+            {
+                auto const imports{out.imported_table_vec_storage.size()}, locals{out.local_defined_table_vec_storage.size()};
+                if(locals > SIZE_MAX - imports) [[unlikely]] { initializer_metadata_failure<Purpose>(); }
+                reserve_initializer_records(world, out.llvm_jit_call_indirect_table_views, imports + locals);
+                out.llvm_jit_call_indirect_table_views.resize(imports + locals);
+            }
             if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
             {
                 verbose_module_info_in_context(world, u8"Init: resize LLVM AOT call_indirect table views done (views=",
@@ -6679,7 +6740,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
                 details::check_reserve_limit_in_context(world, u8"local_defined_memories", local_memory_count,
                     (::std::min)(world.limits().max_local_defined_memories, module_limits.local_defined_memories));
-                out.local_defined_memory_vec_storage.reserve(local_memory_count);
+                reserve_initializer_records(world, out.local_defined_memory_vec_storage, local_memory_count);
 
                 if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
                 {
@@ -6758,7 +6819,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     {
                         if(declared_idx == func_idx) { return; }
                     }
-                    out.declared_ref_funcidx_vec_storage.push_back(func_idx);
+                    grow_initializer_records(world, out.declared_ref_funcidx_vec_storage);
+                    out.declared_ref_funcidx_vec_storage.push_back_unchecked(func_idx);
                 }};
                 auto collect_const_expr_refs{[&](auto const& expr)
                 {
@@ -6796,7 +6858,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 details::check_reserve_limit_in_context(world, u8"local_defined_globals", globalsec.local_globals.size(),
                     (::std::min)(world.limits().max_local_defined_globals, module_limits.local_defined_globals));
-                out.local_defined_global_vec_storage.reserve(globalsec.local_globals.size());
+                reserve_initializer_records(world, out.local_defined_global_vec_storage, globalsec.local_globals.size());
                 for(auto const& local_global: globalsec.local_globals)
                 {
                     ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t rec{};
@@ -6935,7 +6997,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 details::check_reserve_limit_in_context(world, u8"local_defined_elements", elemsec.elems.size(),
                     (::std::min)(world.limits().max_local_defined_elements, module_limits.local_defined_elements));
-                out.local_defined_element_vec_storage.reserve(elemsec.elems.size());
+                reserve_initializer_records(world, out.local_defined_element_vec_storage, elemsec.elems.size());
                 for(auto const& elem: elemsec.elems)
                 {
                     auto const& elem_segment{elem.storage.segment};
@@ -6973,7 +7035,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 details::check_reserve_limit_in_context(world, u8"local_defined_datas", datasec.datas.size(),
                     (::std::min)(world.limits().max_local_defined_datas, module_limits.local_defined_datas));
-                out.local_defined_data_vec_storage.reserve(datasec.datas.size());
+                reserve_initializer_records(world, out.local_defined_data_vec_storage, datasec.datas.size());
                 for(auto const& data: datasec.datas)
                 {
                     auto const& data_segment{data.storage.segment};
@@ -7019,7 +7081,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        inline void ensure_wasm1_local_defined_global_initialized_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept
+        inline void ensure_wasm1_local_defined_global_initialized_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using external_types = ::uwvm2::parser::wasm::standard::wasm1::type::external_types;
 
@@ -7317,7 +7379,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        inline constexpr void finalize_wasm1_globals_after_linking_in_context(initialization_context<Purpose>& world) noexcept
+        inline constexpr void finalize_wasm1_globals_after_linking_in_context(initialization_context<Purpose>& world) noexcept(Purpose == initialization_purpose::ordinary)
         {
             // First: attach owner pointers after modules have been moved into the runtime storage map.
             // Local tables and globals are constructed against a temporary `wasm_module_storage_t`, so their
@@ -7388,7 +7450,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        inline constexpr void finalize_wasm1_offsets_after_linking_in_context(initialization_context<Purpose>& world) noexcept
+        inline constexpr void finalize_wasm1_offsets_after_linking_in_context(initialization_context<Purpose>& world) noexcept(Purpose == initialization_purpose::ordinary)
         {
             for([[maybe_unused]] auto& [curr_module_name, curr_rt]: world.modules())
             {
@@ -7547,7 +7609,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         [[nodiscard]] inline constexpr active_segment_result apply_wasm1_active_element_and_data_segments_for_module_in_context(initialization_context<Purpose>& world,
             ::uwvm2::utils::container::u8string_view curr_module_name,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt,
-            bool defer_imported_data = false) noexcept
+            bool defer_imported_data = false) noexcept(Purpose == initialization_purpose::ordinary)
         {
             ::uwvm2::runtime::gc::scoped_gc_root_graph_administration gc_administration{};
             curr_rt.gc_collection_phase.publish_active_segments(false);
@@ -8197,7 +8259,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         }
 
         template <initialization_purpose Purpose>
-        [[nodiscard]] inline constexpr active_segment_result apply_wasm1_active_element_and_data_segments_after_linking_in_context(initialization_context<Purpose>& world) noexcept
+        [[nodiscard]] inline constexpr active_segment_result apply_wasm1_active_element_and_data_segments_after_linking_in_context(initialization_context<Purpose>& world) noexcept(Purpose == initialization_purpose::ordinary)
         {
             for(auto& [name, rt]: world.modules())
             {

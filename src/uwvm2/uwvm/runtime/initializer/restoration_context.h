@@ -258,7 +258,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { ::std::uintptr_t address{}; bool completed{}; };
             // Fixed sorted actual native comparison keys, never authority or wire
             // pointers. Fill/final checks cost O(log R), not a growing O(R) scan.
-            ::uwvm2::utils::container::std_vector<completion_record> completed_resource_records_{};
+            ::uwvm2::utils::container::std_vector<completion_record, ::uwvm2::utils::allocator::resource::std_allocator<completion_record,
+                ::uwvm2::utils::allocator::resource::pool::initializer>> completed_resource_records_{};
             ::std::size_t expected_resource_records_{}, completed_resource_count_{}, function_import_hop_limit_{};
             bool resource_fixups_attempted_{}, resource_fixups_started_{};
             struct element_allocation
@@ -267,7 +268,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::std::size_t function_count{}, opaque_count{}, gc_count{};
                 ::std::size_t function_cursor{}, opaque_cursor{}, gc_cursor{};
             };
-            ::uwvm2::utils::container::std_vector<element_allocation> element_allocations_{};
+            ::uwvm2::utils::container::std_vector<element_allocation, ::uwvm2::utils::allocator::resource::std_allocator<element_allocation,
+                ::uwvm2::utils::allocator::resource::pool::initializer>> element_allocations_{};
             [[nodiscard]] bool begin_resource_fixups(::std::size_t max_records, ::std::size_t maximum_native_element_bytes)
             {
                 if(state_ != skeleton_result::built || resource_fixups_attempted_ || !source_ || source_->initialized_ ||
@@ -337,7 +339,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         // declarations from its owned file; no supplied pointer is read.
                         auto const& segment{record.element_type_ptr->storage.segment};
                         auto const count{segment.vec_expr.size()};
-                        if(count == 0u) { continue; }
+                        if(segment.active || segment.declarative || count == 0u) { continue; }
                         if(!segment.vec_funcidx.empty()) { return false; }
                         auto const kind{::uwvm2::uwvm::runtime::storage::runtime_element_family(record, module)};
                         auto& total{kind == family::function ? allocation.function_count :
@@ -359,6 +361,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 // installed, so later segment fill cannot relocate an earlier range.
                 for(auto const& allocation : element_allocations_)
                 {
+                    if(!::uwvm2::utils::container::try_reserve_initializer_vector(allocation.module->element_expr_funcref_vec_storage, allocation.function_count) ||
+                       !::uwvm2::utils::container::try_reserve_initializer_vector(allocation.module->element_expr_externref_vec_storage, allocation.opaque_count) ||
+                       !::uwvm2::utils::container::try_reserve_initializer_vector(allocation.module->element_expr_gc_ref_vec_storage, allocation.gc_count))
+                    { return false; }
                     allocation.module->element_expr_funcref_vec_storage.resize(allocation.function_count);
                     allocation.module->element_expr_externref_vec_storage.resize(allocation.opaque_count);
                     allocation.module->element_expr_gc_ref_vec_storage.resize(allocation.gc_count);
@@ -639,7 +645,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     ::std::uint64_t{0xffffffffu}, static_cast<::std::uint64_t>(declaration.limits.max))};
                 if(!saved_reference_declaration(declaration,real_type) || expected!=real_type ||
                     address_bits!=(declaration.address64?64u:32u) || minimum!=declaration.limits.min || maximum!=real_max ||
-                    length<minimum || length>maximum || length>maximum_native_bytes/sizeof(storage::local_defined_table_elem_storage_t) ||
+                    length<minimum || length>maximum ||
+                    length>::uwvm2::utils::allocator::resource::initializer_allocation_bytes/sizeof(storage::local_defined_table_elem_storage_t) ||
+                    length>maximum_native_bytes/sizeof(storage::local_defined_table_elem_storage_t) ||
                     length>static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())/sizeof(storage::local_defined_table_elem_storage_t))
                 { return false; }
                 auto accept_reference = [&](reference const& relocated) noexcept

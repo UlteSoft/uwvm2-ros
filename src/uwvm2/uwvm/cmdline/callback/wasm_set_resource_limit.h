@@ -56,7 +56,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             else if(name==u8"live-bytes") { setting=&policy.live; }
         }
         else if(stage==u8"initializer")
-        { if(name==u8"allocation-bytes") { setting=&resource::initializer_allocation_bytes; } }
+        {
+            auto& policy{resource::policies[static_cast<unsigned>(resource::pool::initializer)]};
+            if(name==u8"allocation-bytes") { setting=&resource::initializer_allocation_bytes; }
+            else if(name==u8"metadata-single-bytes") { setting=&policy.single; }
+            else if(name==u8"metadata-live-bytes") { setting=&policy.live; }
+        }
         else if(stage==u8"runtime")
         {
             auto select{[&](resource::pool p,bool live) noexcept
