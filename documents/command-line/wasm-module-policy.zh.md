@@ -24,6 +24,7 @@
 
 | 类型 | 计数对象 |
 | --- | --- |
+| `input-bytes` | 单模块源文件字节数，同时受进程单文件硬上限约束（默认 256 MiB）。 |
 | `codesec_codes`、`code_locals` | 函数体、局部变量 |
 | `const_expr_opcodes` | 模块内全局变量、表初值、元素条目和主动段偏移量的常量表达式指令总数（默认 1,048,576）。结尾的 `end` 不计数。 |
 | `custom_sections` | 每模块自定义节记录总数（默认 65,536），包括名称重复的未知自定义节。 |
@@ -34,6 +35,8 @@
 | `datasec_entries`、`datacountsec_count` | 数据段条目、声明的数据段数 |
 | `elemsec_elems`、`elemsec_funcidx`、`elemsec_expr` | 元素段条目、函数索引、初始化表达式 |
 | `custom_name_funcnames`、`custom_name_codelocal_funcs`、`custom_name_codelocal_name_per_funcs` | 可选名称节中的函数名、带局部名的函数数量、每个函数的局部名数量 |
+
+显式指定模块名时，加载器在读入或映射前检查该名称对应的额度。未显式命名时，加载器先按已打开文件的长度预留进程输入额度，再通过同一句柄读取节边界和模块名，并在交给解析器的字节上复核。进程的 `parser input-live-bytes` 默认为 1 GiB，包含同时存活的输入映射及不可变副本，也包含替换或恢复期间保留的源版本。
 
 ## 初始化与运行时
 

@@ -84,6 +84,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::feature
             ::uwvm2::parser::wasm::standard::wasm1::features::wasm1>(parameters);
     }
 
+    [[nodiscard]] inline constexpr auto const& wasm_binfmt_ver1_wasm1_parameter(
+        wasm_binfmt_ver1_feature_parameter_storage_t const& parameters) noexcept
+    {
+        return ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<
+            ::uwvm2::parser::wasm::standard::wasm1::features::wasm1>(parameters);
+    }
+
     /// @brief Access the concrete binfmt-v1 Wasm 1.1 parameter in the feature-pack-owning module.
     [[nodiscard]] inline constexpr auto& wasm_binfmt_ver1_wasm1p1_parameter(
         wasm_binfmt_ver1_feature_parameter_storage_t& parameters) noexcept

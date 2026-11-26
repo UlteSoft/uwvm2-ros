@@ -112,7 +112,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto valid_file = [&](file_type const& file) noexcept
                 {
                     auto const count{file.source_size()};
-                    if(file.binfmt_ver != 1u || !file.has_owned_source_image() || count < 8u ||
+                    ::uwvm2::uwvm::wasm::storage::input::input_policy policy{file.wasm_parameter, file.file_name, file.module_name};
+                    if(count > policy.initial_limit() || file.binfmt_ver != 1u || !file.has_owned_source_image() || count < 8u ||
                         count > image_type::maximum_bytes || count > maximum_total_bytes - total ||
                         count > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()) ||
                         file.source_cbegin() == nullptr || count > UINTPTR_MAX -
@@ -143,8 +144,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         // above BEFORE forming native span/copy. No address is
                         // read from serialized DATA; factory copies into fresh
                         // exclusive storage and retains no old parser pointers.
-                        return image_type::copy_owned_bytes({reinterpret_cast<::std::byte const*>(
-                            file.source_cbegin()), file.source_size()}, image_type::maximum_bytes);
+                        ::uwvm2::uwvm::wasm::storage::input::input_policy policy{file.wasm_parameter, file.file_name, file.module_name};
+                        return image_type::copy_wasm_bytes({reinterpret_cast<::std::byte const*>(
+                            file.source_cbegin()), file.source_size()}, ::std::min(image_type::maximum_bytes, policy.initial_limit()));
                     };
                     auto main_image{copy_image(actual->file_)};
                     if(!main_image) { return {{}, source_copy_status::copy_failed}; }
@@ -171,6 +173,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     // This does not reopen files or follow a new filesystem name.
                     auto prepared{source_type::create_unparsed(actual->file_name_storage_,
                         actual->rename_storage_, ::std::move(inputs))};
+                    if(!prepared) { return {{}, source_copy_status::source_limit}; }
                     using parsed = ::uwvm2::uwvm::wasm::loader::load_wasm_file_rtl;
                     if(::uwvm2::uwvm::wasm::loader::load_wasm_file(prepared->file_, prepared->owned_file_name(),
                         prepared->owned_rename(), actual->file_.wasm_parameter, ::std::move(main_image.image)) != parsed::ok ||

@@ -61,8 +61,8 @@ namespace
     auto load_checked(char const* path, error& failure)
     {
         return checked::parsed_integer_source_plan::load_validate_after_drain(
-            ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(path))),
-            ::fast_io::u8concat_std(u8"parsed-checked-before-init"), features(), failure);
+            ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(path))),
+            ::uwvm2::utils::container::u8concat(u8"parsed-checked-before-init"), features(), failure);
     }
     void owned_image_quota_before_source_selection(char const* path)
     {
@@ -70,9 +70,16 @@ namespace
         auto const serial{::uwvm2::runtime::gc::published_initializer_serial.load(::std::memory_order_acquire)};
         auto const generation{lib::observe_compiler_runtime_generation_host_api()};
         auto parsed{checked::parsed_integer_source_plan::load_validate_after_drain(
-            ::fast_io::u8concat_std(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(path))),
-            ::fast_io::u8concat_std(u8"owned-image-resource-probe"), features(), failure,
+            ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(path))),
+            ::uwvm2::utils::container::u8concat(u8"owned-image-resource-probe"), features(), failure,
             {}, ::std::addressof(resource), 1uz)};
+        REQUIRE(!parsed && failure.err_code == error_code::ok &&
+            resource.error == ::uwvm2::utils::control::owned_image_error::quota_exceeded);
+        auto limited{features()};
+        wasm::feature::wasm_binfmt_ver1_wasm1_parameter(limited).parser_limit.max_input_bytes = 1;
+        parsed = checked::parsed_integer_source_plan::load_validate_after_drain(
+            ::uwvm2::utils::container::u8concat(::fast_io::mnp::code_cvt(::fast_io::mnp::os_c_str(path))),
+            ::uwvm2::utils::container::u8concat(u8"typed-input-budget"), limited, failure, {}, ::std::addressof(resource));
         REQUIRE(!parsed && failure.err_code == error_code::ok &&
             resource.error == ::uwvm2::utils::control::owned_image_error::quota_exceeded);
         REQUIRE(!full::selected_full_source_owner_pin() && runtime::storage::active_runtime_registry().empty());

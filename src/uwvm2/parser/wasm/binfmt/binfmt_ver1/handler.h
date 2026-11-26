@@ -23,6 +23,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -184,17 +185,34 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::binfmt::ver1
         ::uwvm2::parser::wasm::base::error_impl& err,
         ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& fs_para) UWVM_THROWS
     {
+        if(module_begin > module_end) [[unlikely]]
+        {
+            err.err_curr = module_begin;
+            err.err_selectable.err_end = module_end;
+            err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::illegal_begin_pointer;
+            ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
+        }
+        // Raw parser callers lend an existing span. Apply the same per-file cap
+        // without charging another backing for a view of an already owned image.
+        auto limit{::uwvm2::utils::allocator::resource::parser_input_limit(SIZE_MAX)};
+        ([&] {
+            if constexpr(requires(typename Fs::parameter const& p) { p.parser_limit.max_input_bytes; })
+            {
+                auto const size{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<Fs>(fs_para).parser_limit.max_input_bytes};
+                if(size < limit) { limit = size; }
+            }
+        }(), ...);
+        auto const input_size{static_cast<::std::size_t>(module_end - module_begin)};
+        if(input_size > limit) [[unlikely]]
+        {
+            err.err_curr = module_begin;
+            err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::exceed_the_max_parser_limit;
+            err.err_selectable.exceed_the_max_parser_limit = {u8"input-bytes", input_size, limit};
+            ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
+        }
         if constexpr(sizeof...(Fs) == 0)
         {
             // If there is no feature then just check wasm format
-            if(module_begin > module_end) [[unlikely]]
-            {
-                err.err_curr = module_begin;
-                err.err_selectable.err_end = module_end;
-                err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::illegal_begin_pointer;
-                ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
-            }
-
             wasm_binfmt_ver1_module_extensible_storage_t<Fs...> ret{};
 
             ret.module_span.module_begin = module_begin;
@@ -222,17 +240,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::binfmt::ver1
         }
         else
         {
-            // Note that the pointer may have any two values, and since it will only subsequently check for not equal to rather than greater than, it is checked
-            // here in one go
-
-            if(module_begin > module_end) [[unlikely]]
-            {
-                err.err_curr = module_begin;
-                err.err_selectable.err_end = module_end;
-                err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::illegal_begin_pointer;
-                ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
-            }
-
             using char8_t_const_may_alias_ptr UWVM_GNU_MAY_ALIAS = char8_t const*;
 
             wasm_binfmt_ver1_module_extensible_storage_t<Fs...> ret{};

@@ -27,6 +27,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 
 | Parser limit type | Counted records |
 | --- | --- |
+| `input-bytes` | Maximum source bytes in this module. The process per-file limit also applies (256 MiB by default). |
 | `codesec_codes`, `code_locals` | Code bodies and locals |
 | `const_expr_opcodes` | Total instructions in constant expressions across globals, table initializers, element entries and active segment offsets (default 1,048,576). The final `end` consumes no entry. |
 | `custom_sections` | Custom section records per module (default 65,536), including repeated unknown names. |
@@ -37,6 +38,8 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `datasec_entries`, `datacountsec_count` | Data entries and declared data count |
 | `elemsec_elems`, `elemsec_funcidx`, `elemsec_expr` | Element entries, function indices and initializer expressions |
 | `custom_name_funcnames`, `custom_name_codelocal_funcs`, `custom_name_codelocal_name_per_funcs` | Function names, functions with local names and local names per function in the optional name section |
+
+The loader checks an explicit rename against its scope before reading or mapping the file. With an implicit identity, it reserves the file length against the process input budget and inspects section frames and the module name through the same open handle. It checks the name again on the bytes supplied to the parser. Process `parser input-live-bytes` defaults to 1 GiB across simultaneous input mappings and immutable copies, including source generations retained during replacement or restoration.
 
 ## Initializer and runtime keys
 

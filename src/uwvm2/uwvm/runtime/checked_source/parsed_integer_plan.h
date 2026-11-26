@@ -167,7 +167,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             // Native file/read/quota/allocation failure is compiler resource
             // unavailability. It never writes a Wasm validation error, mints a
             // validity seal or falls back to a mutable mapped source.
-            auto image{::uwvm2::utils::control::owned_file_image::read(file_name, source_image_limit)};
+            wasm::type::wasm_parameter_t parameters{};
+            parameters.binfmt1_para = features;
+            auto image{wasm::storage::input::read_wasm_image(file_name, wasm::storage::input::input_name{rename.data(), rename.size()},
+                parameters, source_image_limit)};
             if(!image)
             {
                 if(image_status != nullptr) { *image_status = {image.error, image.native_error}; }
@@ -188,7 +191,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             auto const generation{::uwvm2::runtime::lib::observe_compiler_runtime_generation_host_api()};
             auto source{full_source::create_unparsed(::std::move(file_name), ::std::move(rename))};
             if(!full::select_unparsed_full_source_after_drain(source)) { return {}; }
-            wasm::type::wasm_parameter_t parameters{}; parameters.binfmt1_para = features;
             if(wasm::loader::load_wasm_file(source->file_for_native_initialization(), source->owned_file_name(),
                 source->owned_rename(), parameters, ::std::move(image.image)) != wasm::loader::load_wasm_file_rtl::ok) { return {}; }
             // The real file has adopted the SAME exclusive image before parsing.

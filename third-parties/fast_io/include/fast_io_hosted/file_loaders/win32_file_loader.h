@@ -313,9 +313,8 @@ inline auto win32_load_file_impl(Args &&...args)
 }
 
 template <win32_family family>
-inline win32_file_loader_return_value_t win32_load_address_options_impl(win32_mmap_options const &options, void *handle)
+inline win32_file_loader_return_value_t win32_load_address_options_impl(win32_mmap_options const &options, void *handle, ::std::size_t file_size, bool exact_extent = true)
 {
-	::std::size_t file_size{win32_load_file_get_file_size(handle)};
 	::std::size_t const capacity{win32_file_loader_add_extra_bytes(file_size, options.extra_bytes)};
 	if (capacity == 0)
 	{
@@ -457,7 +456,7 @@ inline win32_file_loader_return_value_t win32_load_address_options_impl(win32_mm
 	}
 	::std::uint_least32_t capacity_high{};
 	::std::uint_least32_t capacity_low{};
-	if (capacity != file_size)
+	if (exact_extent || capacity != file_size)
 	{
 		auto const capacity64{static_cast<::std::uint_least64_t>(capacity)};
 		capacity_high = static_cast<::std::uint_least32_t>(capacity64 >> 32u);
@@ -489,6 +488,12 @@ inline win32_file_loader_return_value_t win32_load_address_options_impl(win32_mm
 												 reinterpret_cast<char const *>(options.lpName)),
 			file_size, capacity, options.dwDesiredAccess);
 	}
+}
+
+template <win32_family family>
+inline win32_file_loader_return_value_t win32_load_address_options_impl(win32_mmap_options const &options, void *handle)
+{
+	return win32_load_address_options_impl<family>(options, handle, win32_load_file_get_file_size(handle), false);
 }
 
 template <win32_family family, typename... Args>
@@ -579,6 +584,13 @@ public:
 	inline explicit win32_family_file_loader(win32_mmap_options const &options, nt_at_entry ent)
 	{
 		auto ret{::fast_io::win32::details::win32_load_address_options_impl<family>(options, ent.handle)};
+		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity, ret.file_mapping_size,
+									  ret.anonymous_mapping_size};
+	}
+	// Use the admitted extent on this open handle even if its file later grows.
+	inline explicit win32_family_file_loader(win32_mmap_options const &options, nt_at_entry ent, ::std::size_t extent)
+	{
+		auto ret{::fast_io::win32::details::win32_load_address_options_impl<family>(options, ent.handle, extent)};
 		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity, ret.file_mapping_size,
 									  ret.anonymous_mapping_size};
 	}

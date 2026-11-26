@@ -25,6 +25,7 @@
 #ifndef UWVM_MODULE
 # include "mode.h"
 # include "module_policy.h"
+# include "input_policy.h"
 # include "execute_wasm.h"
 # include "preloaded_wasm.h"
 # include "local_preload.h"

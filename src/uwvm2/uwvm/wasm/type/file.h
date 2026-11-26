@@ -20,6 +20,7 @@
  ****************************************/
 
 #pragma once
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 #ifndef UWVM_MODULE
 // std
@@ -63,6 +64,77 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 }
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
 {
+    class wasm_input_mapping
+    {
+        using charge = ::uwvm2::utils::allocator::resource::reservation<::uwvm2::utils::allocator::resource::pool::parser_input>;
+        charge charge_{};
+        ::fast_io::native_file_loader mapping_{};
+    public:
+        constexpr wasm_input_mapping() noexcept = default;
+        constexpr wasm_input_mapping(wasm_input_mapping&&) noexcept = default;
+        constexpr wasm_input_mapping& operator=(wasm_input_mapping&& other) noexcept
+        {
+            if(this != &other)
+            {
+                mapping_ = ::std::move(other.mapping_);
+                charge_ = ::std::move(other.charge_);
+            }
+            return *this;
+        }
+        // An embedding caller can hand over a mapping it already owns. The VM
+        // acquires the charge on adoption; the ordinary file loader reserves before mapping.
+        [[nodiscard]] bool try_adopt(::fast_io::native_file_loader&& mapping) noexcept
+        {
+            charge pending{};
+            if(mapping.capacity() > ::uwvm2::utils::allocator::resource::parser_input_limit(SIZE_MAX) || !pending.resize(mapping.capacity())) { return false; }
+            mapping_ = ::std::move(mapping);
+            charge_ = ::std::move(pending);
+            return true;
+        }
+        wasm_input_mapping& operator=(::fast_io::native_file_loader&& mapping) noexcept
+        {
+            if(!try_adopt(::std::move(mapping)))
+            { ::uwvm2::utils::allocator::resource::reject_allocation("uwvm: [error] parser: input mapping exceeds input-bytes or input-live-bytes.\n"); }
+            return *this;
+        }
+        template<typename Probe>
+        [[nodiscard]] bool load(::fast_io::native_file& file, ::std::size_t limit, Probe&& probe)
+        {
+            auto const extent{::fast_io::file_size(file)};
+            charge pending{};
+            if(extent > ::uwvm2::utils::allocator::resource::parser_input_limit(limit) || !pending.resize(extent)) { return false; }
+            auto read_at = [&](::std::size_t offset, char8_t* destination, ::std::size_t count)
+            {
+                if(offset > extent || count > extent - offset) { return false; }
+                auto out{reinterpret_cast<::std::byte*>(destination)};
+                auto end{out + count};
+                while(out != end)
+                {
+                    auto next{::fast_io::operations::pread_some_bytes(file, out, end, static_cast<::fast_io::intfpos_t>(offset))};
+                    if(next == out) { return false; }
+                    offset += static_cast<::std::size_t>(next - out);
+                    out = next;
+                }
+                return true;
+            };
+            if(!probe(extent, read_at) || ::fast_io::file_size(file) != extent) { return false; }
+            ::fast_io::native_mmap_options options{::fast_io::mmap_prot::prot_read | ::fast_io::mmap_prot::prot_write,
+                                                   ::fast_io::mmap_flags::map_private};
+            ::fast_io::native_file_loader mapping{options, ::fast_io::at(file), extent};
+            if(::fast_io::file_size(file) != extent) { return false; }
+            mapping_ = ::std::move(mapping);
+            charge_ = ::std::move(pending);
+            return true;
+        }
+        void close() noexcept { mapping_.close(); charge_.reset(); }
+        [[nodiscard]] constexpr bool empty() const noexcept { return mapping_.empty(); }
+        [[nodiscard]] constexpr ::std::size_t size() const noexcept { return mapping_.size(); }
+        [[nodiscard]] constexpr char const* cbegin() const noexcept { return mapping_.cbegin(); }
+        [[nodiscard]] constexpr char const* cend() const noexcept { return mapping_.cend(); }
+        [[nodiscard]] constexpr char* begin() noexcept { return mapping_.begin(); }
+        [[nodiscard]] constexpr char* end() noexcept { return mapping_.end(); }
+    };
+
     struct wasm_file_t
     {
         // support binfmt ver1 currently
@@ -95,7 +167,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         // Recording the binfmt version of the wasm module
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 binfmt_ver{};
         // Memory-mapped or memory-copy (for platforms that don't support memory mapping) open wasm files
-        ::fast_io::native_file_loader wasm_file{};
+        wasm_input_mapping wasm_file{};
     private:
         friend constexpr auto ::uwvm2::uwvm::wasm::loader::load_wasm_file(::uwvm2::uwvm::wasm::type::wasm_file_t&,
             ::uwvm2::utils::container::u8cstring_view, ::uwvm2::utils::container::u8string_view,
@@ -110,6 +182,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         [[nodiscard]] bool adopt_unparsed_source_image(::uwvm2::utils::control::owned_file_image::owner image) noexcept
         {
             if(!image || source_image_ || binfmt_ver != 0u || !wasm_file.empty()) { return false; }
+            auto const limit{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1_parameter(wasm_parameter.binfmt1_para).parser_limit.max_input_bytes};
+            if(!::uwvm2::utils::control::owned_file_image::admit_wasm_input(image, limit)) { return false; }
             source_image_ = ::std::move(image); return true;
         }
         [[nodiscard]] bool has_owned_source_image() const noexcept { return source_image_ != nullptr; }

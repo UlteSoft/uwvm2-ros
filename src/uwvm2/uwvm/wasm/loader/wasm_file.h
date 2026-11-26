@@ -66,56 +66,9 @@
 
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 {
+    namespace source_input = ::uwvm2::uwvm::wasm::storage::input;
     namespace details
     {
-        // Resolve the registered module identity before any declaration is
-        // admitted. Walk only section frames and the module-name subsection.
-        // The ordinary parser validates the whole file and confirms this name.
-        [[nodiscard]] inline constexpr ::uwvm2::utils::container::u8string_view policy_module_name(
-            char8_t const* begin, char8_t const* end, ::uwvm2::utils::container::u8string_view fallback) noexcept
-        {
-            using view = ::uwvm2::utils::container::u8string_view;
-            if(end - begin < 8) { return fallback; }
-            auto field = [](char8_t const*& cursor, char8_t const* limit, view& payload) noexcept
-            {
-                ::std::uint32_t length{};
-                auto parsed{::fast_io::parse_by_scan(cursor, limit, ::fast_io::mnp::leb128_get(length))};
-                if(parsed.code != ::fast_io::parse_code::ok || length > static_cast<::std::size_t>(limit - parsed.iter)) { return false; }
-                payload = view{parsed.iter, static_cast<::std::size_t>(length)};
-                cursor = parsed.iter + length;
-                return true;
-            };
-            auto cursor{begin + 8u};
-            while(cursor != end)
-            {
-                auto const id{*cursor++};
-                view section{};
-                if(!field(cursor, end, section)) { return fallback; }
-                if(id != 0u) { continue; }
-                auto inner{section.cbegin()};
-                view name{};
-                if(!field(inner, section.cend(), name) || name != u8"name") { continue; }
-                while(inner != section.cend())
-                {
-                    auto const sub_id{*inner++};
-                    view subsection{};
-                    if(!field(inner, section.cend(), subsection)) { return fallback; }
-                    if(sub_id != 0u) { continue; }
-                    auto contents{subsection.cbegin()};
-                    view module{};
-                    if(!field(contents, subsection.cend(), module) || module.empty()) { continue; }
-                    auto const [position, error]{::uwvm2::utils::utf::check_legal_utf8_unchecked<
-                        ::uwvm2::utils::utf::utf8_specification::utf8_rfc3629>(module.cbegin(), module.cend())};
-                    static_cast<void>(position);
-                    if(error == ::uwvm2::utils::utf::utf_error_code::success)
-                    { return module; }
-                }
-                // Only the first name section contributes a module name.
-                break;
-            }
-            return fallback;
-        }
-
         // Check guest metadata as soon as the declaration types are available.
         // The initializer later checks ranges against the actual linked owner.
         template<::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
@@ -175,7 +128,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         wasm_parser_error
     };
 
-    inline constexpr load_wasm_file_rtl load_wasm_file(::uwvm2::uwvm::wasm::type::wasm_file_t & wf,
+    inline constexpr load_wasm_file_rtl load_wasm_file(::uwvm2::uwvm::wasm::type::wasm_file_t & output,
                                                        ::uwvm2::utils::container::u8cstring_view load_file_name,
                                                        ::uwvm2::utils::container::u8string_view rename_module_name,
                                                        ::uwvm2::uwvm::wasm::type::wasm_parameter_t para,
@@ -183,25 +136,44 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
     {
         // Never reload a parsed immutable image through mutable native file
         // borrows. Its actual owner must retire after all source users drain.
-        if(wf.has_owned_source_image()) { return load_wasm_file_rtl::load_error; }
+        if(output.has_owned_source_image()) { return load_wasm_file_rtl::load_error; }
+        // Native custom handlers receive the final file address. On rejection
+        // release all candidate borrows/backing and restore the previous file.
+        using file_type = ::uwvm2::uwvm::wasm::type::wasm_file_t;
+        auto& wf{output};
+        file_type previous{::std::move(wf)};
+        wf = file_type{};
+        struct restore_on_failure
+        {
+            file_type& file;
+            file_type& previous;
+            bool committed{};
+            constexpr ~restore_on_failure() { if(!committed) { file = ::std::move(previous); } }
+        } transaction{wf, previous};
+        source_input::input_policy const input{para, load_file_name, rename_module_name};
+        auto const input_refusal = [] {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] parser: input refused by file extent, input-bytes, input-live-bytes or parser.limit.input-bytes.");
+            return load_wasm_file_rtl::load_error;
+        };
         wf.secure_required_ = ::uwvm2::utils::security::wsea::module_selected(
             ::std::string_view{reinterpret_cast<char const*>(load_file_name.cbegin()), load_file_name.size()});
+        if(wf.secure_required_ && !image)
+        {
+            auto snapshot{source_input::read_wasm_image({load_file_name.cbegin(), load_file_name.size()}, rename_module_name,
+                para, source_input::input_image::maximum_bytes)};
+            if(!snapshot)
+            {
+                if(snapshot.error == ::uwvm2::utils::control::owned_image_error::quota_exceeded) { return input_refusal(); }
+                ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                    u8"uwvm: [SIG_001] DENIED: unable to retain immutable secure WASM input.");
+                return load_wasm_file_rtl::load_error;
+            }
+            image = ::std::move(snapshot.image);
+        }
+        if(image && !source_input::admit_owned_input(image, input)) { return input_refusal(); }
         if(wf.secure_required_)
         {
-            // A selected module's verification and every parser/compiler borrow
-            // use the same private immutable snapshot, never a reopened path.
-            if(!image)
-            {
-                auto snapshot{::uwvm2::utils::control::owned_file_image::read(
-                    ::uwvm2::utils::container::std_u8string{load_file_name.cbegin(), load_file_name.size()}, ::uwvm2::utils::allocator::resource::module_file_bytes)};
-                if(!snapshot)
-                {
-                    ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                        u8"uwvm: [SIG_001] DENIED: unable to retain immutable secure WASM input.");
-                    return load_wasm_file_rtl::load_error;
-                }
-                image = ::std::move(snapshot.image);
-            }
             auto authorization{::uwvm2::utils::security::wsea::verify_module(
                 ::std::string_view{reinterpret_cast<char const*>(load_file_name.cbegin()), load_file_name.size()},
                 reinterpret_cast<::std::byte const*>(image->cbegin()), image->size())};
@@ -214,12 +186,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             }
             wf.execution_authorization_ = ::std::move(authorization.authorization);
         }
-        if(image && !wf.adopt_unparsed_source_image(::std::move(image)))
-        { return load_wasm_file_rtl::load_error; }
-
         wf.file_name = load_file_name;
-
         wf.wasm_parameter = para;
+        // This exact image was admitted above against its resolved scope.
+        wf.source_image_ = ::std::move(image);
 
         // verbose
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
@@ -263,6 +233,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         if(!wf.has_owned_source_image())
         {
+        auto open = [&](auto&&... path)
+        {
+            ::fast_io::native_file file{::std::forward<decltype(path)>(path)...,
+                ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
+            return wf.wasm_file.load(file, input.initial_limit(),
+                [&](::std::size_t extent, auto& read_at) { return input.probe(extent, read_at); });
+        };
 #if defined(_WIN32) && !defined(_WIN32_WINDOWS)
         if(load_file_name.starts_with(u8"::NT::"))
         {
@@ -314,9 +291,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                 // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
                 // allow symlink
-                wf.wasm_file =
-                    ::fast_io::native_file_loader{::fast_io::io_kernel, load_file_name_nt_subview,
-                                                 ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
+                if(!open(::fast_io::io_kernel, load_file_name_nt_subview)) { return input_refusal(); }
             }
 # ifdef UWVM_CPP_EXCEPTIONS
             catch(::fast_io::error e)
@@ -354,8 +329,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                 // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
                 // allow symlink
-                wf.wasm_file = ::fast_io::native_file_loader{load_file_name,
-                                                           ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
+                if(!open(load_file_name)) { return input_refusal(); }
             }
 # ifdef UWVM_CPP_EXCEPTIONS
             catch(::fast_io::error e)
@@ -392,8 +366,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
             // On platforms where CHAR_BIT is greater than 8, there is no need to clear the utf-8 non-low 8 bits here
             // allow symlink
-            wf.wasm_file = ::fast_io::native_file_loader{load_file_name,
-                                                           ::fast_io::open_mode::in | ::fast_io::open_mode::follow | ::fast_io::open_mode::no_write_attributes};
+            if(!open(load_file_name)) { return input_refusal(); }
         }
 # ifdef UWVM_CPP_EXCEPTIONS
         catch(::fast_io::error e)
@@ -424,12 +397,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         }
 
-        if(wf.source_size() > ::uwvm2::utils::allocator::resource::module_file_bytes)
+#if CHAR_BIT > 8
+        // Since files are either private page mapped or memory allocated and read, they can be modified directly.
+        // Prevents invalid content in non-low eight bits of char_bit not equal to 8 from causing an unknown error in the parser.
+        if(!wf.has_owned_source_image())
         {
-            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                u8"uwvm: [error] parser: input exceeds --wasm-set-resource-limit parser input-bytes.");
-            return load_wasm_file_rtl::load_error;
+        auto const wf_wasm_file_end{wf.wasm_file.end()};
+        for(auto wf_wasm_file_curr{wf.wasm_file.begin()}; wf_wasm_file_curr != wf_wasm_file_end; ++wf_wasm_file_curr) { *wf_wasm_file_curr &= 0xFFu; }
         }
+#endif
+
+        if(!input.accepts(wf.source_cbegin(), wf.source_size())) { return input_refusal(); }
 
         // binfmt_ver has to be modified by the change_binfmt_ver function.
         wf.change_binfmt_ver(::uwvm2::parser::wasm::binfmt::detect_wasm_binfmt_version(reinterpret_cast<::std::byte const*>(wf.source_cbegin()),
@@ -466,16 +444,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         // Instructs to read the file all the way into memory
         if(!wf.has_owned_source_image())
         { ::uwvm2::utils::madvise::my_madvise(wf.source_cbegin(), wf.source_size(), ::uwvm2::utils::madvise::madvise_flag::willneed); }
-
-#if CHAR_BIT > 8
-        // Since files are either private page mapped or memory allocated and read, they can be modified directly.
-        // Prevents invalid content in non-low eight bits of char_bit not equal to 8 from causing an unknown error in the parser.
-        if(!wf.has_owned_source_image())
-        {
-        auto const wf_wasm_file_end{wf.wasm_file.end()};
-        for(auto wf_wasm_file_curr{wf.wasm_file.begin()}; wf_wasm_file_curr != wf_wasm_file_end; ++wf_wasm_file_curr) { *wf_wasm_file_curr &= 0xFFu; }
-        }
-#endif
 
         switch(wf.binfmt_ver)
         {
@@ -520,7 +488,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         policy_identity = rename_module_name;
                         if(policy_identity.empty() && (!policy::singles.empty() || !policy::membership.empty()))
                         {
-                            policy_identity = details::policy_module_name(reinterpret_cast<char8_t const*>(wf.source_cbegin()),
+                            policy_identity = source_input::policy_module_name(reinterpret_cast<char8_t const*>(wf.source_cbegin()),
                                 reinterpret_cast<char8_t const*>(wf.source_cend()), load_file_name);
                         }
                         policy::resolve(policy_identity, wf.wasm_parameter);
@@ -1188,6 +1156,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 details::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
         }
 
+        transaction.committed = true;
         return load_wasm_file_rtl::ok;
     }
 

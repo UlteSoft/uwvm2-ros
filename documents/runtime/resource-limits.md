@@ -21,11 +21,14 @@ the tighter applicable limit wins.
 | Stage | Resource | Default | Meaning |
 |---|---|---:|---|
 | `parser` | `input-bytes` | 256 MiB | Maximum size of one input module image |
+| `parser` | `input-live-bytes` | 1 GiB | Simultaneous VM-owned Wasm input mapping and immutable source extents across the process |
 | `parser` | `type-metadata-bytes` | 512 MiB | Recursive type decoder's requested native metadata bytes per section |
 | `parser` | `function-body-bytes` | 8 MiB | Maximum encoded body size of one function |
 | `parser` | `module-code-bytes` | 64 MiB | Sum of encoded function body sizes in one module |
 | `validation` | `single-bytes` | 256 MiB | Maximum backing allocation for bounded validation/compiler stacks |
 | `validation` | `live-bytes` | 512 MiB | Process-wide live backing storage for these stacks |
+
+A module can further limit its source using `parser.limit.input-bytes` at global, group or single-module scope. Size is checked on the open handle before mapping or copying. Distinct old and new images share the process live budget during replacement and restoration. Parser views and source pins share their original owner's charge. Checkpoint envelope files use their own file quota.
 
 Module parser count limits from `parser.limit.TYPE` also apply. In
 particular `code_locals` checks both the declaration run count and the expanded

@@ -31,7 +31,7 @@ namespace uwvm2::utils::allocator::resource
     // Host deployment policy, independent of import permissions. Configure only
     // before loading modules or starting guest threads. Imported aliases retain
     // the original backing's charge; creating another module does not reset it.
-    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, initializer, count };
+    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, initializer, parser_input, count };
     inline constexpr ::std::size_t host_bytes(::std::uint64_t bytes) noexcept
     {
         constexpr auto maximum{static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
@@ -50,12 +50,21 @@ namespace uwvm2::utils::allocator::resource
         {host_bytes(256ull << 20u), host_bytes(1ull << 30u)},
         {host_bytes(256ull << 20u), host_bytes(512ull << 20u)},
         {host_bytes(256ull << 20u), host_bytes(4ull << 30u)},
+        {host_bytes(256ull << 20u), host_bytes(1ull << 30u)},
         {host_bytes(256ull << 20u), host_bytes(1ull << 30u)}
     };
     static_assert(sizeof(policies)/sizeof(policies[0]) == static_cast<unsigned>(pool::count));
     inline ::std::atomic_size_t live_bytes[static_cast<unsigned>(pool::count)]{};
     inline ::std::size_t parser_metadata_bytes{host_bytes(512ull << 20u)};
-    inline ::std::size_t module_file_bytes{host_bytes(256ull << 20u)};
+    inline ::std::size_t& module_file_bytes{policies[static_cast<unsigned>(pool::parser_input)].single};
+    [[nodiscard]] inline constexpr ::std::size_t parser_input_limit(::std::size_t module) noexcept
+    {
+        auto hard{host_bytes(256ull << 20u)};
+        if !consteval { hard = module_file_bytes; }
+        auto const representable{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
+        if(hard > representable) { hard = representable; }
+        return module < hard ? module : hard;
+    }
     inline ::std::size_t initializer_allocation_bytes{host_bytes(4ull << 30u)};
     inline ::std::size_t function_body_bytes{host_bytes(8ull << 20u)};
     inline ::std::size_t module_code_bytes{host_bytes(64ull << 20u)};

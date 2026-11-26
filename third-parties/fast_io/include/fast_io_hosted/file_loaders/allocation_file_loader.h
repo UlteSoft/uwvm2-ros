@@ -136,9 +136,8 @@ inline ::std::size_t allocation_file_loader_padded_capacity(::std::size_t file_s
 }
 
 inline allocation_file_loader_ret allocation_load_address_options_impl(int fd,
-																	   ::fast_io::allocation_mmap_options options)
+																	   ::fast_io::allocation_mmap_options options, ::std::size_t filesize)
 {
-	::std::size_t filesize{::fast_io::details::posix_loader_get_file_size(fd)};
 	::std::size_t capacity{allocation_file_loader_padded_capacity(filesize, options.extra_bytes)};
 	load_file_allocation_guard guard{capacity};
 	posix_io_observer piob{fd};
@@ -156,6 +155,11 @@ inline allocation_file_loader_ret allocation_load_address_options_impl(int fd,
 	}
 	guard.address = nullptr;
 	return {addr, addr_ed, addr_cap, -1};
+}
+
+inline allocation_file_loader_ret allocation_load_address_options_impl(int fd, ::fast_io::allocation_mmap_options options)
+{
+	return allocation_load_address_options_impl(fd, options, ::fast_io::details::posix_loader_get_file_size(fd));
 }
 
 inline allocation_file_loader_ret allocation_load_address_impl(int fd)
@@ -285,6 +289,14 @@ public:
 										   perms pm = static_cast<perms>(436))
 	{
 		auto ret{::fast_io::details::allocation_load_file_impl(false, ent, filename, om, pm)};
+		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity, ret.fd};
+	}
+	// Exact-length private input from an already open file.
+	inline explicit allocation_file_loader(allocation_mmap_options options, posix_at_entry pate, ::std::size_t extent)
+	{
+		if (options.write_back) { throw_posix_error(EINVAL); }
+		::fast_io::details::rewind_allocation_file_loader(pate.fd);
+		auto ret{::fast_io::details::allocation_load_address_options_impl(pate.fd, options, extent)};
 		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity, ret.fd};
 	}
 	inline explicit allocation_file_loader(allocation_mmap_options options, posix_at_entry pate)

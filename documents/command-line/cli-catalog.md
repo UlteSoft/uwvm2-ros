@@ -1982,7 +1982,7 @@ Set a preload module's memory access mode; omit <memory_index:list> to apply it 
 [--wasm-set-resource-limit] <stage:str> <resource:str> <bytes:size_t>
 ```
 
-Set host allocation budgets before loading: parser (input-bytes, type-metadata-bytes, function-body-bytes, module-code-bytes), validation (single-bytes, live-bytes), initializer (allocation-bytes), runtime (gc/table/memory/memtag/auxiliary/threads-single-bytes or -live-bytes). Bytes; 0 refuses new allocation. Shared by actual process backings, independent of import permissions.
+Set host allocation budgets before loading: parser (input-bytes, input-live-bytes, type-metadata-bytes, function-body-bytes, module-code-bytes), validation (single-bytes, live-bytes), initializer (allocation-bytes), runtime (gc/table/memory/memtag/auxiliary/threads-single-bytes or -live-bytes). Bytes; 0 refuses new allocation. Shared by actual process backings, independent of import permissions.
 
 ## `--wasm-set-start-func`
 

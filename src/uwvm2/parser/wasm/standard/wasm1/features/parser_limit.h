@@ -109,6 +109,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t max_const_expr_opcodes{default_max_const_expr_opcodes};
         ::std::size_t max_section_storage_bytes{default_max_section_storage_bytes};
         ::std::size_t max_custom_sections{default_max_custom_sections};
+        ::std::size_t max_input_bytes{(::std::numeric_limits<::std::size_t>::max)()};
     };
 
     inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t count, ::std::size_t limit,

@@ -45,6 +45,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         if(stage==u8"parser")
         {
             if(name==u8"input-bytes") { setting=&resource::module_file_bytes; }
+            else if(name==u8"input-live-bytes") { setting=&resource::policies[static_cast<unsigned>(resource::pool::parser_input)].live; }
             else if(name==u8"type-metadata-bytes") { setting=&resource::parser_metadata_bytes; }
             else if(name==u8"function-body-bytes") { setting=&resource::function_body_bytes; }
             else if(name==u8"module-code-bytes") { setting=&resource::module_code_bytes; }

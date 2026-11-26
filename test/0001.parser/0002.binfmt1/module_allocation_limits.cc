@@ -36,6 +36,12 @@ namespace
 
 int main()
 {
+    constexpr ::std::uint8_t header[]{0,97,115,109,1,0,0,0};
+    auto input = [](unsigned limit) {
+        return [=](auto& parameters)
+        { ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm>(parameters).parser_limit.max_input_bytes = limit; };
+    };
+    if(!check<wasm>(header, input(8)) || !check<wasm, proposals>(header, input(7), u8"input-bytes", 8, 7)) { return 6; }
     // A global and an active data offset each retain one opcode. Both end bytes are free.
     constexpr ::std::uint8_t offsets[]{
         0,97,115,109,1,0,0,0, 5,3,1,0,1, 6,6,1,0x7f,0,0x41,0,0x0b, 11,6,1,0,0x41,0,0x0b,0};

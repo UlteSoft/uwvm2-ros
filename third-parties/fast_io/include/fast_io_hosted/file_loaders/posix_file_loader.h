@@ -308,6 +308,12 @@ public:
 		auto ret{::fast_io::details::posix_load_address_options_impl(options, pate.fd)};
 		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity};
 	}
+	// Use the admitted extent on this open handle even if its file later grows.
+	inline explicit posix_file_loader(posix_mmap_options const &options, posix_at_entry pate, ::std::size_t extent)
+	{
+		auto ret{::fast_io::details::posix_load_address_options(pate.fd, extent, options)};
+		storage = native_handle_type{ret.address_begin, ret.address_end, ret.address_capacity};
+	}
 	inline explicit posix_file_loader(posix_mmap_options const &options, native_fs_dirent fsdirent,
 									  open_mode om = open_mode::in, perms pm = static_cast<perms>(436))
 	{
