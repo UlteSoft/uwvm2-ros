@@ -54,20 +54,43 @@ extern "C++"
         ::uwvm2::utils::container::std_unique_ptr<details::pending_llvm_jit_code_ranges> ranges_{};
         ::std::atomic_flag running_=ATOMIC_FLAG_INIT;
         bool bound_tables_{},ever_entered_{},reference_dispatch_{};
-        struct execution final
+        // The generated poll only reads this native layout. All fields except
+        // the stop byte itself belong exclusively to the active worker.
+        struct native_poll_state
         {
-            ThreadedLlvmChild* child{};lease_type* const lease{};
-            // The lease pins this group's exact stop state throughout run_entry,
-            // including synchronous imports into another module of its world.
-            ::uwvm2::utils::thread::stop_token const cancellation;
-            ::std::size_t function{SIZE_MAX},depth{};
-            bool rejected{},fp_active{},cross_module{};
+            ThreadedLlvmChild* child{};
+            ::std::size_t function{SIZE_MAX};
+            unsigned char const* stop_byte{};
+            unsigned char rejected{};
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             ThreadedLlvmChild const* authenticated_ros_child{};
             ::std::uintptr_t authenticated_ros_owner{};
 #endif
         };
+        static_assert(::std::is_standard_layout_v<native_poll_state>);
+        struct execution final : native_poll_state
+        {
+            lease_type* const lease;
+            ::uwvm2::utils::thread::stop_token const cancellation;
+            ::std::size_t depth{};
+            bool fp_active{},cross_module{};
+
+            execution(ThreadedLlvmChild& owner,lease_type& worker) noexcept :
+                lease{::std::addressof(worker)},cancellation{worker.cancellation()}
+            {
+                child=::std::addressof(owner);
+                stop_byte=cancellation.native_stop_byte();
+            }
+        };
         inline static thread_local execution* active_{};
+        [[nodiscard]] static native_poll_state const* current_poll_state() noexcept
+        {
+            // run_entry pins this execution and lease on this native thread
+            // until every synchronous native frame (including imports) returns.
+            // A missing scope or stop byte always takes the checked host path.
+            static constexpr native_poll_state unavailable{.rejected=1u};
+            return active_ && active_->stop_byte ? static_cast<native_poll_state const*>(active_) : &unavailable;
+        }
         explicit ThreadedLlvmChild(world_type::owner world):world_{::std::move(world)}{}
         ThreadedLlvmChild(ThreadedLlvmChild const&)=delete;
         ThreadedLlvmChild& operator=(ThreadedLlvmChild const&)=delete;
@@ -417,17 +440,15 @@ extern "C++"
 #include "uwvm_runtime_threaded_llvm_memory.h"
 #include "uwvm_runtime_threaded_llvm_stack.h"
 #include "uwvm_runtime_threaded_llvm_factory.h"
-    public:
-        // Only the actual Group-owned dedicated compiler pthread may compile.
-        // No synchronous Guest-stack fallback and no externally set ready bit.
-        [[nodiscard]] static preparation_result prepare(world_type::owner world,
+        [[nodiscard]] static preparation_result prepare_graph(world_type::owner const& world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
-            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+            ::std::size_t backend_storage_budget, ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
+            bool* native_poll_attempted) noexcept
         {
             if(!world)return {{},preparation_status::invalid_world};
             auto const& limits=world->admission().limits();
             if(!llvm_limits.valid(limits.max_child_code_bytes))return {{},preparation_status::invalid_world};
-            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits);
+            auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,native_poll_attempted);
             if(!result.child)return result;
             auto& root=*result.child;
             try
@@ -437,7 +458,7 @@ extern "C++"
                 for(::std::size_t m{1u};m<world->module_count();++m)
                 {
                     if(storage>=backend_storage_budget)return {{},preparation_status::budget};
-                    auto next=build(world,compiler,backend_storage_budget-storage,limits.max_child_code_bytes-code,m,llvm_limits);
+                    auto next=build(world,compiler,backend_storage_budget-storage,limits.max_child_code_bytes-code,m,llvm_limits,native_poll_attempted);
                     if(!next.child)return next;
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
@@ -491,6 +512,23 @@ extern "C++"
                 return result;
             }
             catch(::std::bad_alloc const&){return {{},preparation_status::budget};}
+        }
+    public:
+        // Only the group-owned compiler worker prepares this unpublished graph.
+        [[nodiscard]] static preparation_result prepare(world_type::owner world,
+            ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
+            ::std::size_t backend_storage_budget,::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+        {
+            bool attempted{};
+            auto result=prepare_graph(world,compiler,backend_storage_budget,llvm_limits,&attempted);
+            // An extra register/spill/relocation can exceed a caller's exact
+            // machine-stack or code budget, including the combined peer graph.
+            // Drop the private attempt and qualify the original calls under
+            // precisely the same limits before returning an admission failure.
+            if(attempted&&(result.status==preparation_status::budget||result.status==preparation_status::native_failure)&&
+               !compiler.cancellation().stop_requested())
+                return prepare_graph(world,compiler,backend_storage_budget,llvm_limits,nullptr);
+            return result;
         }
         // Cold actual-active-segment rebind. No compiler/type-walk/allocation,
         // no ordinary compact-view update and no second engine. Root owns the
@@ -554,7 +592,7 @@ extern "C++"
             ::uwvm2::runtime::memtag::deferred::entry_scope memtag_delivery{};
             if(!memtag_delivery.enter()) { return run_status::rejected; }
             ever_entered_=true;
-            execution e{this,::std::addressof(lease),lease.cancellation()};
+            execution e{*this,lease};
             if(e.cancellation.stop_requested())return run_status::group_stopped;
             ::uwvm2::extension::memtag::scoped_access_checks tag_checks{module_->memory_policy.check_tags};
             active_=::std::addressof(e);
