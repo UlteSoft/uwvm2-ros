@@ -13,12 +13,11 @@
 
         [[nodiscard]] shared_scalar_layout shared_scalar_owner(::llvm::CallInst const& call,shared_scalar_shape shape) const noexcept
         {
-            auto const* owner=::llvm::dyn_cast<::llvm::ConstantInt>(call.getArgOperand(0u));
             auto const* offset=::llvm::dyn_cast<::llvm::ConstantInt>(call.getArgOperand(1u));
-            if(!owner||!offset)return {};
+            if(!offset)return {};
             for(auto const& memory:memories_)
             {
-                if(!memory||owner->getZExtValue()!=address(memory))continue;
+                if(!memory||!matches_shared_scalar_owner(call.getArgOperand(0u),address(memory)))continue;
                 auto const& shadow=memory->memtag_shadow;
                 if(!shadow.stable_address()||shadow.hardware_selected()||!shadow.shared()||!shadow.ignored_bits()||
                    shadow.tag_data()==nullptr||shadow.shared_tag_gate_==nullptr||!memory->memory_begin||!memory->memory_length_p||

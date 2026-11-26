@@ -6,6 +6,18 @@
             ::std::uint64_t mask{};
             ::std::size_t base{},length{},prepared{},gate{};
         };
+        [[nodiscard]] static bool matches_shared_scalar_owner(::llvm::Value const* operand,::std::uintptr_t owner)
+        {
+            // Threaded emission materializes a native owner as a pointer, then
+            // converts it to a word for the bridge ABI. Before the target/layout
+            // pass, LLVM can retain both casts as one uniqued constant expression.
+            auto& context=operand->getContext();
+            auto* word=::llvm::Type::getIntNTy(context,sizeof(::std::uintptr_t)*CHAR_BIT);
+            auto* literal=::llvm::ConstantInt::get(word,owner);
+            if(operand==literal)return true;
+            auto* pointer=::llvm::ConstantExpr::getIntToPtr(literal,::llvm::PointerType::getUnqual(context));
+            return operand==::llvm::ConstantExpr::getPtrToInt(pointer,word);
+        }
         static void emit_shared_scalar(::llvm::CallInst& call,::llvm::Value* state,::std::uintptr_t child,
             shared_scalar_layout layout,shared_scalar_shape shape)
         {
@@ -32,8 +44,8 @@
             auto field=[&](::llvm::Value* from,::std::size_t at){return b.CreateConstGEP1_64(byte,from,at);};
             auto read=[&](::llvm::Type* type,::llvm::Value* address,bool live=false)
             {auto* load=b.CreateLoad(type,address);load->setVolatile(live);return load;};
-            auto atomic=[&](::llvm::Type* type,::llvm::Value* address,::llvm::AtomicOrdering order)
-            {auto* load=read(type,address,true);load->setAtomic(order);return load;};
+            auto atomic=[&](::llvm::Type* type,::llvm::Value* address,::llvm::AtomicOrdering order,::llvm::Align align=::llvm::Align{1})
+            {auto* load=b.CreateAlignedLoad(type,address,align,true);load->setAtomic(order);return load;};
             // The TLS operation at native entry proved the pthread, lease, world
             // and admission. Its execution cannot migrate or nest. Imports and
             // reference calls switch child/policy and restore them on return.
@@ -56,14 +68,18 @@
 #endif
             b.CreateCondBr(accepted,bounds,slow,likely);
             b.SetInsertPoint(bounds);
-            auto* length=b.CreateZExtOrTrunc(atomic(word,read(ptr,field(owner,layout.length)),::llvm::AtomicOrdering::Acquire),b.getInt64Ty());
-            auto* prepared=b.CreateZExtOrTrunc(atomic(word,field(owner,layout.prepared),::llvm::AtomicOrdering::Acquire),b.getInt64Ty());
+            // These are actual C++ atomic objects. The target layout has not
+            // been installed yet, so IRBuilder's default alignment can be
+            // smaller than the native word and force an out-of-line atomic.
+            auto const extent_align=::llvm::Align{alignof(::std::atomic_size_t)};
+            auto* length=b.CreateZExtOrTrunc(atomic(word,read(ptr,field(owner,layout.length)),::llvm::AtomicOrdering::Acquire,extent_align),b.getInt64Ty());
+            auto* prepared=b.CreateZExtOrTrunc(atomic(word,field(owner,layout.prepared),::llvm::AtomicOrdering::Acquire,extent_align),b.getInt64Ty());
             auto* effective=b.CreateAdd(b.CreateAnd(call.getArgOperand(2u),b.getInt64(layout.mask)),call.getArgOperand(1u));
             auto* fits=b.CreateICmpULE(b.CreateAdd(effective,b.getInt64(shape.bytes)),length);
             fits=b.CreateAnd(fits,b.CreateICmpULE(length,prepared));
             fits=b.CreateAnd(fits,b.CreateICmpULE(length,b.getInt64(layout.mask+1u)));
             auto* gate=read(ptr,field(owner,layout.gate));
-            auto* old=atomic(lock_type,gate,::llvm::AtomicOrdering::Monotonic);
+            auto* old=atomic(lock_type,gate,::llvm::AtomicOrdering::Monotonic,::llvm::Align{alignof(::std::atomic_uint)});
             auto* available=b.CreateIsNull(b.CreateAnd(old,locks::rwlock_writer_mask()|locks::rwlock_pending_mask()));
             available=b.CreateAnd(available,b.CreateICmpULE(old,::llvm::ConstantInt::get(lock_type,UINT_MAX-locks::rwlock_reader_mask())));
             b.CreateCondBr(b.CreateAnd(fits,available),claim,slow,likely);

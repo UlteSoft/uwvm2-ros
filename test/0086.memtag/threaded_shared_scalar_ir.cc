@@ -36,7 +36,6 @@ int main()
     require(!llvm::InitializeNativeTarget()&&!llvm::InitializeNativeTargetAsmPrinter());
     llvm::LLVMContext c;auto m=std::make_unique<llvm::Module>("shared-scalar",c);
     std::unique_ptr<llvm::TargetMachine> machine{llvm::EngineBuilder{}.selectTarget()};require(bool(machine));
-    m->setDataLayout(machine->createDataLayout());
     std::array<std::byte,34> data{};std::atomic_size_t length{32};locks::rwlock_t gate{};
     memory owner{data.data(),&length,32,&gate};auto* slot=&owner;
     int child{},peer{};bool checks{};unsigned char stop{};scope state{&child,0,&checks,&stop};
@@ -48,10 +47,27 @@ int main()
         auto* f=llvm::Function::Create(llvm::FunctionType::get(wide,{b.getPtrTy(),wide,wide},false),
             llvm::Function::ExternalLinkage,store?"store":"load",*m);
         b.SetInsertPoint(llvm::BasicBlock::Create(c,"entry",f));
-        auto* call=b.CreateCall(cold,{llvm::ConstantInt::get(word,codegen::address(&owner)),b.getInt64(1),f->getArg(1),f->getArg(2)});
+        // The production emitter creates a host pointer, then converts it to
+        // the integer bridge argument before LLVM assigns the target layout.
+        auto* literal=llvm::ConstantInt::get(word,codegen::address(&owner));
+        auto* operand=b.CreatePtrToInt(b.CreateIntToPtr(literal,b.getPtrTy()),word);
+        require(codegen::matches_shared_scalar_owner(literal,codegen::address(&owner)));
+        require(codegen::matches_shared_scalar_owner(operand,codegen::address(&owner)));
+        require(!codegen::matches_shared_scalar_owner(operand,codegen::address(&peer)));
+        require(!codegen::matches_shared_scalar_owner(f->getArg(1),codegen::address(&owner)));
+        auto* call=b.CreateCall(cold,{operand,b.getInt64(1),f->getArg(1),f->getArg(2)});
         b.CreateRet(call);
         codegen::emit_shared_scalar(*call,f->getArg(0),codegen::address(&child),layout,{64u,32u,2u,!store,store});
     }
+    unsigned extent_loads{};
+    for(auto const& function:*m)for(auto const& block:function)for(auto const& instruction:block)
+        if(auto const* load=llvm::dyn_cast<llvm::LoadInst>(&instruction);load&&load->getType()==word&&load->getOrdering()==llvm::AtomicOrdering::Acquire)
+        {
+            require(load->getAlign()>=llvm::Align{alignof(std::atomic_size_t)});
+            ++extent_loads;
+        }
+    require(extent_loads==4u);
+    m->setDataLayout(machine->createDataLayout());
     require(!llvm::verifyModule(*m,&llvm::errs()));
     std::unique_ptr<llvm::ExecutionEngine> jit{llvm::EngineBuilder(std::move(m)).setEngineKind(llvm::EngineKind::JIT).create()};
     require(bool(jit));jit->addGlobalMapping("scalar_bridge",codegen::address(&bridge));jit->finalizeObject();
