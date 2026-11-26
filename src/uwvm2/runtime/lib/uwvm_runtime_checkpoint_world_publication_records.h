@@ -113,7 +113,7 @@ template<typename Local>
     }
     using local_type=engine_type::local_storage;
     constexpr ::std::size_t slot_bytes=sizeof(local_type)+2u*sizeof(::std::uintptr_t)+sizeof(::std::uint_least64_t)+
-        sizeof(llvm_jit_debug_safe_point_view)+sizeof(::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>)+
+        sizeof(debug_full_function)+sizeof(::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>)+
         sizeof(llvm_jit_debug_replace_transaction const*)+sizeof(full_code_publication::checkpoint_resume_entry)
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         +sizeof(::std::size_t)
@@ -151,13 +151,13 @@ template<typename Local>
             auto const& metadata=engine.locals_[local];auto const& entry=engine.entries_[local];
             auto const begin=reinterpret_cast<::std::uintptr_t>(metadata.code_begin);
             auto const end=reinterpret_cast<::std::uintptr_t>(metadata.code_end);
-            if(begin==0u || end<=begin) { return fail(preparation_status::source_mismatch); }
+            if(!metadata.wasm_code_ptr || begin==0u || end<=begin) { return fail(preparation_status::source_mismatch); }
             record.llvm_jit_local_entry_addresses.index_unchecked(local)=entry.typed;
             record.llvm_jit_local_raw_entry_addresses.index_unchecked(local)=entry.raw;
             record.llvm_jit_debug_full_entry_generations[local]=engine.generations_[local];
             publication.checkpoint_resume_entries[local]={metadata.checkpoint_plan,entry.resume_raw};
-            record.llvm_jit_debug_full_safe_points[local]={metadata.debug_safe_point_bits.data(),
-                metadata.debug_safe_point_bits.size(),end-begin,engine.generations_[local]};
+            record.llvm_jit_debug_full_safe_points[local]={{metadata.debug_safe_point_bits.data(),
+                metadata.debug_safe_point_bits.size(),end-begin,engine.generations_[local]}, encoded_body_size(*metadata.wasm_code_ptr)};
             // FINAL empty metadata slots and retained-body slots are allocated
             // now. Joint commit can move each genuine source/bitmap/body owner
             // without allocation, preserving already embedded target addresses.

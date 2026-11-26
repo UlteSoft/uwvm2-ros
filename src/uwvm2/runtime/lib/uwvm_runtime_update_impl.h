@@ -21,7 +21,7 @@ namespace production_update_detail
     // from debugger permissions. Diagnostic continuation must never
     // masquerade as an enforcing crash policy in a signed update.
     namespace mt=::uwvm2::extension::memtag;
-    update::append_u64(material,6u);
+    update::append_u64(material,7u);
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     auto const& parameters{file.wasm_parameter};
     auto const& parser{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(parameters.binfmt1_para)};
@@ -31,7 +31,7 @@ namespace production_update_detail
     namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
     policy::visit_measured_parser_limits(parameters, [&](::std::size_t value) { update::append_u64(material, value); });
     for(auto const& count : policy::initializer_settings)
-    { update::append_u64(material, parameters.initializer_limits.*count.member); }
+    { update::append_u64(material, count.effective(parameters.initializer_limits)); }
     // The initializer owns the actual memory layouts before LLVM builds its module records.
     // Measure them on both sides of compilation, including the count for a memoryless module.
     auto const source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
@@ -43,6 +43,7 @@ namespace production_update_detail
     for(auto const& memory : memories)
     {
         update::append_u64(material, ::uwvm2::runtime::checkpoint::memory_layout::encode(memory.memory.memtag_shadow));
+        update::append_u64(material, static_cast<unsigned>(memory.memory.memtag_shadow.resolved_backend()));
         for(auto word : memory.effective_limits.policy_identity()) { update::append_u64(material, word); }
     }
     update::append_u64(material,static_cast<unsigned>(mt::selected_fault_delivery.load(::std::memory_order_relaxed)));
@@ -231,6 +232,7 @@ namespace production_update_detail
         if(g_runtime.modules.size() != 1 || !g_runtime.compiled_all.load(::std::memory_order_acquire)) { return false; }
         auto const& rec{g_runtime.modules.front_unchecked()}; auto const* module{rec.runtime_module};
         if(!module || !rec.llvm_jit_ready || rec.llvm_jit_debug_full_typed_entry_targets.empty() ||
+           rec.llvm_jit_debug_full_safe_points.size() != module->local_defined_function_vec_storage.size() ||
            (rec.llvm_jit_full_publication && (rec.llvm_jit_full_publication->plan ||
             (rec.llvm_jit_full_publication->checkpoint_profile &&
              rec.llvm_jit_full_publication->checkpoint_profile->purpose() != ::uwvm2::runtime::checkpoint::compilation_purpose::observe_values))) ||
@@ -494,6 +496,14 @@ static ::uwvm2::utils::update::status prepare_update_internal(
         if(!s.fence || !g_runtime.execution_domain.drain_update_until(s.maintenance, s.fence, deadline)) { return fail(u::status::busy); }
         if(!production_update_detail::supported_world()) { return fail(u::status::unsupported); }
         if(!s.policy_matches()) { return fail(u::status::unauthorized); }
+        auto& rec{g_runtime.modules.front_unchecked()};
+        auto const& slots{rec.llvm_jit_debug_full_safe_points};
+        // The scope comparison supplies every target body. For a policy-only change
+        // the byte-identical installed image already has a complete published roster.
+        if(!functions.empty() && bodies.size() != slots.size()) { return fail(u::status::scope_mismatch); }
+        if(!effective_code_body_limits(file.wasm_parameter.binfmt1_para).admits(slots.size(), [&](::std::size_t i) noexcept
+           { return functions.empty() ? slots[i].encoded_body_bytes : bodies[i].size; }))
+        { return fail(u::status::validation_failed); }
         if(transition && transition->changes_policy)
         {
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
@@ -526,7 +536,6 @@ static ::uwvm2::utils::update::status prepare_update_internal(
         if(s.module_plan && s.module_plan->reset_state && !u::measure_migrated_state(*s.module_plan, s.scalar_resets, s.pending_state_measurement))
         { return fail(u::status::exhausted); }
         if(!production_update_detail::prepare_global_binding(s)) { return fail(u::status::invalid_input); }
-        auto& rec{g_runtime.modules.front_unchecked()};
         if(rec.llvm_jit_debug_full_retained_generations.size() + functions.size() > u::maximum_transactions * u::maximum_functions) { return fail(u::status::exhausted); }
         s.functions.reserve(functions.size());
         for(auto index : functions)
@@ -640,6 +649,23 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(::uwv
     auto const first_new_generation{rec.llvm_jit_debug_full_retained_generations.size()};
     {
         runtime_state_publication_guard publication{};
+        auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+        auto const& slots{rec.llvm_jit_debug_full_safe_points};
+        if(slots.size() != rec.runtime_module->local_defined_function_vec_storage.size()) { return failed(); }
+        auto const limits{effective_code_body_limits(file.wasm_parameter.binfmt1_para)};
+        auto candidate{s.functions.begin()};
+        ::std::size_t total_body_bytes{};
+        for(::std::size_t i{}; i != slots.size(); ++i)
+        {
+            auto size{slots[i].encoded_body_bytes};
+            if(candidate != s.functions.end() && (*candidate)->local_index == i)
+            {
+                size = encoded_body_size((*candidate)->code);
+                ++candidate;
+            }
+            if(!limits.append(total_body_bytes, size)) { return failed(); }
+        }
+        if(candidate != s.functions.end()) { return failed(); }
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
         // The real generated owner-table proof remains mandatory for EVERY
         // candidate before the one publication. No debugger grant is substituted.
@@ -675,7 +701,8 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_decide_host_api(::uwv
             ::std::atomic_ref<::std::uintptr_t>{rec.llvm_jit_local_entry_addresses.index_unchecked(index)}.store(f->typed_entry, ::std::memory_order_release);
             ::std::atomic_ref<::std::uintptr_t>{rec.llvm_jit_debug_full_typed_entry_targets.index_unchecked(index)}.store(f->typed_entry, ::std::memory_order_release);
             auto const generation{++rec.llvm_jit_debug_full_entry_generations[index]};
-            rec.llvm_jit_debug_full_safe_points[index] = {f->debug_safe_point_bits.data(), f->debug_safe_point_bits.size(), f->debug_expression_size, generation};
+            rec.llvm_jit_debug_full_safe_points[index] = {
+                {f->debug_safe_point_bits.data(), f->debug_safe_point_bits.size(), f->debug_expression_size, generation}, encoded_body_size(f->code)};
         }
         s.current_global_binding = s.pending_global_binding;
         s.installed.swap(s.target); s.protocol.installed();

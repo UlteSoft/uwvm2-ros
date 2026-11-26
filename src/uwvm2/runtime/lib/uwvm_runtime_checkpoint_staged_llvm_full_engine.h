@@ -169,6 +169,8 @@ extern "C++"
                 if(code_section.codes.size() != count) { return {}; }
                 ::uwvm2::validation::error::code_validation_error_impl validation_error{};
                 emit::require_runtime_module_declaration_policy(runtime_module, features, validation_error);
+                auto const limits{effective_code_body_limits(features)};
+                ::std::size_t total_body_bytes{};
                 for(::std::size_t index{}; index != count; ++index)
                 {
                     // [0..count actual ordered body DATA] end
@@ -188,6 +190,8 @@ extern "C++"
                     if(!extent_contains(reinterpret_cast<::std::byte const*>(source_file.source_cbegin()), source_file.source_size(),
                         reinterpret_cast<::std::byte const*>(original->body.code_begin), local.code_begin, local.code_end))
                     { return {}; }
+                    auto const size{body.generation == 1u ? encoded_body_size(*original) : body.body.size()};
+                    if(!limits.append(total_body_bytes, size)) { return {{}, preparation_status::invalid_body}; }
                     if(body.generation != 1u)
                     {
                         auto parsed{::uwvm2::utils::container::make_unique<llvm_jit_debug_replace_transaction>()};

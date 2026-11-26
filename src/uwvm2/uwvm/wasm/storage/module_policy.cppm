@@ -1,5 +1,6 @@
 module;
 #include <uwvm2/utils/allocator/resource_limit.h>
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <limits>
@@ -11,6 +12,7 @@ module;
 export module uwvm2.uwvm.wasm.storage:module_policy;
 import fast_io;
 import uwvm2.uwvm.runtime.runtime_mode;
+import uwvm2.uwvm.runtime.initializer.limits;
 import uwvm2.parser.wasm.standard.wasm1.features;
 import uwvm2.parser.wasm_custom.customs;
 import uwvm2.extension.memtag.execution_policy;
