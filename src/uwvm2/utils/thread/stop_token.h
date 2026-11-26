@@ -29,13 +29,18 @@ namespace uwvm2::utils::thread
         };
         struct state
         {
-            ::std::atomic_bool requested{};
+            // Native worker code can acquire-load this exact byte while a
+            // stop_token owns the state. Give it an explicit representation
+            // instead of exposing a standard-library atomic object's layout.
+            alignas(::std::atomic_ref<unsigned char>::required_alignment) unsigned char requested{};
             ::std::atomic_size_t sources{1u};
             ::std::mutex mutex;
             ::std::condition_variable finished;
             callback_node* head{};
             callback_node* executing{};
             ::std::thread::id executor{};
+            [[nodiscard]] bool stop_requested() noexcept
+            { return ::std::atomic_ref{requested}.load(::std::memory_order_acquire)!=0u; }
             void unlink(callback_node& node) noexcept
             {
                 if(node.previous) { node.previous->next=node.next; }
@@ -46,7 +51,7 @@ namespace uwvm2::utils::thread
             void attach(callback_node& node) noexcept
             {
                 ::std::unique_lock lock{mutex};
-                if(requested.load(::std::memory_order_acquire))
+                if(stop_requested())
                 {
                     lock.unlock();
                     node.invoke(&node); // Already stopped: synchronous on the registering thread.
@@ -71,7 +76,7 @@ namespace uwvm2::utils::thread
             }
             bool request() noexcept
             {
-                if(requested.exchange(true,::std::memory_order_acq_rel)) { return false; }
+                if(::std::atomic_ref{requested}.exchange(1u,::std::memory_order_acq_rel)) { return false; }
                 ::std::unique_lock lock{mutex};
                 executor=::std::this_thread::get_id();
                 while(head)
@@ -102,9 +107,18 @@ namespace uwvm2::utils::thread
     public:
         stop_token() noexcept=default;
         [[nodiscard]] bool stop_requested() const noexcept
-        { return state_ && state_->requested.load(::std::memory_order_acquire); }
+        { return state_ && state_->stop_requested(); }
         [[nodiscard]] bool stop_possible() const noexcept
-        { return state_ && (state_->requested.load(::std::memory_order_acquire) || state_->sources.load(::std::memory_order_acquire)!=0u); }
+        { return state_ && (state_->stop_requested() || state_->sources.load(::std::memory_order_acquire)!=0u); }
+        // Borrowed for native acquire loads only. The caller retains this
+        // token throughout execution. Unsupported atomic ABIs use the host poll.
+        [[nodiscard]] unsigned char const* native_stop_byte() const & noexcept
+        {
+            if constexpr(::std::atomic_ref<unsigned char>::is_always_lock_free)
+                return state_ ? ::std::addressof(state_->requested) : nullptr;
+            else return nullptr;
+        }
+        unsigned char const* native_stop_byte() const &&=delete;
         void swap(stop_token& other) noexcept { state_.swap(other.state_); }
         friend bool operator==(stop_token const&,stop_token const&) noexcept=default;
     };
@@ -123,7 +137,7 @@ namespace uwvm2::utils::thread
         [[nodiscard]] stop_token get_token() const noexcept { return stop_token{state_}; }
         [[nodiscard]] bool stop_possible() const noexcept { return state_!=nullptr; }
         [[nodiscard]] bool stop_requested() const noexcept
-        { return state_ && state_->requested.load(::std::memory_order_acquire); }
+        { return state_ && state_->stop_requested(); }
         bool request_stop() const noexcept
         {
             // A callback is allowed to destroy the requesting source itself.

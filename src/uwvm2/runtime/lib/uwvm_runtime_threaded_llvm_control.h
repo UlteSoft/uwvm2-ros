@@ -664,11 +664,12 @@
             return target!=nullptr&&target->isDeclaration()&&target->getFunctionType()==call.getFunctionType()&&
                 target->getCallingConv()==call.getCallingConv()?target:nullptr;
         }
-        [[nodiscard]] static bool prove_stop_cycles(::llvm::Module const& module)
+#include "uwvm_runtime_threaded_llvm_native_poll.h"
+        [[nodiscard]] static bool prove_stop_cycles(::llvm::Module const& module,native_poll_witnesses const& native_polls)
         {
-            // After the actual optimizer: remove blocks with real poll/enter
-            // calls. Kahn's algorithm must consume the remaining entire CFG,
-            // including unreachable / irreducible cycles, without recursion.
+            // Remove real checked calls and the exact acquire instructions
+            // inserted after optimization. Kahn must consume the remaining
+            // CFG, including unreachable and irreducible cycles.
             for(auto const& f:module)
             {
                 if(f.isDeclaration())continue;
@@ -676,7 +677,24 @@
                 for(auto const& block:f)
                 {
                     bool has_probe{};
-                    for(auto const& i:block)if(auto const* call=::llvm::dyn_cast<::llvm::CallInst>(&i))
+                    for(auto const& i:block)
+                    {
+                        if(auto const* load=::llvm::dyn_cast<::llvm::LoadInst>(&i))
+                            if(auto const it=native_polls.find(load);it!=native_polls.end())
+                            {
+                                auto const* cmp=::llvm::dyn_cast_or_null<::llvm::ICmpInst>(load->getNextNode());
+                                auto const* branch=::llvm::dyn_cast<::llvm::CondBrInst>(block.getTerminator());
+                                auto const* slow=it->second;
+                                auto const* zero=cmp ? ::llvm::dyn_cast<::llvm::ConstantInt>(cmp->getOperand(1u)) : nullptr;
+                                if(!load->isVolatile()||load->getOrdering()!=::llvm::AtomicOrdering::Acquire||
+                                   !load->getType()->isIntegerTy(8u)||!cmp||cmp->getPredicate()!=::llvm::CmpInst::ICMP_EQ||
+                                   cmp->getOperand(0u)!=load||!zero||!zero->isZero()||!branch||
+                                   branch->getCondition()!=cmp||branch->getSuccessor(1u)!=slow->getParent()||
+                                   fixed_call_target(*slow)==nullptr)return false;
+                                has_probe=true;
+                            }
+                        auto const* call=::llvm::dyn_cast<::llvm::CallInst>(&i);
+                        if(!call)continue;
                         if(auto const* target=fixed_call_target(*call))
                         {
                             auto const name=target->getName();
@@ -685,6 +703,7 @@
                             has_probe|=name==ros_poll_name||name==ros_enter_name;
 #endif
                         }
+                    }
                     if(!has_probe)nodes.push_back(&block);
                 }
                 ::llvm::DenseMap<::llvm::BasicBlock const*,::std::size_t> degree;

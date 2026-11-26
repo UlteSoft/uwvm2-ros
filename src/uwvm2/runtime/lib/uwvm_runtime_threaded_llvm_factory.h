@@ -245,7 +245,8 @@
         [[nodiscard]] static preparation_result build(world_type::owner world,
             ::uwvm2::runtime::wasm_threads::ThreadedGroup::CompilerLease const& compiler,
             [[maybe_unused]] ::std::size_t backend_storage_budget, [[maybe_unused]] ::std::size_t code_budget, ::std::size_t module_index,
-            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits) noexcept
+            [[maybe_unused]] ::uwvm2::runtime::wasm_threads::threaded_llvm_limits const& llvm_limits,
+            [[maybe_unused]] bool* native_poll_attempted) noexcept
         {
             namespace compile=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -424,6 +425,7 @@
                     return {{},status::unsupported_bridge};
                 auto& llvm_module=*ir.llvm_module;
                 auto const& ir_limits=llvm_limits.ir;
+                auto ir_room=ir_limits;
                 // Pre- and post-pass finite IR quotas. These are NOT a claim of
                 // a hard bound on all LLVM optimizer heap allocations.
                 auto ir_fits=[&](char const* stage)
@@ -442,6 +444,8 @@
                         }
                         instructions+=count;
                     }
+                    ir_room.instructions=ir_limits.instructions-instructions;
+                    ir_room.blocks=ir_limits.blocks-blocks;
                     return true;
                 };
                 {
@@ -523,7 +527,11 @@
                 if(!ir_fits("after optimization"))return {{},status::budget};
                 data->reuse_control_targets(llvm_module);
                 if(!ir_fits("after control target loads"))return {{},status::budget};
-                if(!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module)||::llvm::verifyModule(llvm_module))
+                native_poll_witnesses native_polls;
+                if(native_poll_attempted)
+                    data->inline_cancellation_loops(llvm_module,ir_room,native_polls,*native_poll_attempted);
+                if(!native_polls.empty()&&!ir_fits("after native cancellation polls"))return {{},status::budget};
+                if(!data->check_static_stack_ir(llvm_module)||!prove_stop_cycles(llvm_module,native_polls)||::llvm::verifyModule(llvm_module))
                     return {{},status::native_failure};
                 if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                    !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
