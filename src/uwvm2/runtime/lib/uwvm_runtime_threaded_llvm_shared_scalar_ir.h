@@ -101,7 +101,7 @@
             }
         }
         static void emit_shared_scalar(::llvm::CallInst& call,::llvm::Value* state,::std::uintptr_t child,
-            shared_scalar_layout layout,shared_scalar_shape shape)
+            shared_scalar_layout layout,shared_scalar_shape shape,::llvm::Value* bound_child=nullptr,::llvm::Value* bound_slot=nullptr)
         {
             namespace locks=::uwvm2::utils::mutex;
             static_assert(offsetof(locks::rwlock_t,bits)==0);
@@ -133,9 +133,10 @@
             // reference calls switch child/policy and restore them on return.
             // Re-read the live child, canonical owner slot, scoped check policy,
             // local rejection and group stop for this particular operation.
-            b.CreateCondBr(b.CreateICmpEQ(read(ptr,field(state,offsetof(native_poll_state,child)),true),host(child)),scope,slow,likely);
+            b.CreateCondBr(b.CreateICmpEQ(read(ptr,field(state,offsetof(native_poll_state,child)),true),
+                bound_child ? bound_child : host(child)),scope,slow,likely);
             b.SetInsertPoint(scope);
-            auto* owner=read(ptr,host(address(layout.owner_slot)),true);
+            auto* owner=read(ptr,bound_slot ? bound_slot : host(address(layout.owner_slot)),true);
             auto* accepted=b.CreateICmpEQ(b.CreatePtrToInt(owner,word),call.getArgOperand(0u));
             accepted=b.CreateAnd(accepted,b.CreateIsNull(read(byte,field(state,offsetof(native_poll_state,rejected)),true)));
             auto* checks=read(ptr,field(state,offsetof(native_poll_state,access_checks)));

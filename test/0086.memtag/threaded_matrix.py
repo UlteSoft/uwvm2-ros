@@ -50,14 +50,14 @@ def growth():
  p.add(p.tagged(0)+m.c(37)+m.mem(0x36));p.eq(p.tagged(0)+m.mem(0x28),37)
  return m.module(p.code)
 
-def spawn_and_wait(p,while_running=b''):
+def spawn_and_wait(p,*,argument=0,while_running=b''):
  # Completion synchronization uses tag-zero storage outside the tagged object.
  # wasi.thread-spawn may return a negative error before admitting a child,
  # including transient registry contention. Retry only that side-effect-free
  # failure, at most 64 times; zero is not a valid TID. A persistent refusal
  # still executes unreachable, which must fail an expected-MTE (122) test.
  p.add(m.c(64)+b'\x21\0\x02\x40\x03\x40')
- p.add(m.c(0)+b'\x10\x01'+m.c(0)+b'\x4a\x0d\x01')
+ p.add(m.c(argument)+b'\x10\x01'+m.c(0)+b'\x4a\x0d\x01')
  p.add(b'\x20\0'+m.c(1)+b'\x6b\x22\0\x45\x04\x40\x00\x0b')
  # A distinct zero-tag word and finite 1 ms timeout let the registry owner run.
  p.add(p.n(4100)+m.c(0)+m.c(1000000,64)+b'\xfe\x01\x02\0\x1a\x0c\0\x0b\x0b')
@@ -65,7 +65,7 @@ def spawn_and_wait(p,while_running=b''):
  p.add(b'\x02\x40\x03\x40'+p.n(4096)+b'\xfe\x10\x02\0\x0d\x01')
  p.add(p.n(4096)+m.c(0)+m.c(-1,64)+b'\xfe\x01\x02\0\x1a\x0c\0\x0b\x0b')
 
-def worker_module(p,child,limits):
+def worker_module(p,child,limits,*,initial_global=None):
  child.add(child.n(4096)+m.c(1)+b'\xfe\x17\x02\0')
  child.add(child.n(4096)+m.c(1)+b'\xfe\x00\x02\0\x1a')
  result=b'\0asm\x01\0\0\0'
@@ -73,6 +73,7 @@ def worker_module(p,child,limits):
  result+=m.sec(2,m.u(3)+b'\x03env\x06memory\x02'+limits+
   b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02'+b'\x04wasi\x0cthread-spawn\x00\x03')
  result+=m.sec(3,b'\x02\x00\x01')
+ if initial_global is not None:result+=m.sec(6,b'\x01\x7f\x01'+m.c(initial_global)+b'\x0b')
  result+=m.sec(7,b'\x03\x06_start\x00\x02\x11wasi_thread_start\x00\x03\x06memory\x02\0')
  bodies=[b'\x01\x01\x7f'+p.code+b'\x0b',b'\0'+child.code+b'\x0b']
  return result+m.sec(10,m.u(2)+b''.join(m.u(len(body))+body for body in bodies))
@@ -160,7 +161,7 @@ def plain_scalar_race():
  reader.add(progress+m.c(16)+b'\x6a\x21\0\x03\x40'+checks)
  reader.add(progress+b'\x20\0\x49\x0d\0\x0b')
  reader.add(finished+m.c(1)+b'\xfe\x17\x02\0')
- spawn_and_wait(main,reader.code)
+ spawn_and_wait(main,while_running=reader.code)
  main.add(after)
  return worker_module(main,child,m.memory_limits(shared=True,tagged=False,minimum=1,maximum=3))
 

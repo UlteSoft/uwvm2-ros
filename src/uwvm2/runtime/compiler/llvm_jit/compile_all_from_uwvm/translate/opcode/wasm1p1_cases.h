@@ -1042,7 +1042,9 @@ case static_cast<wasm1_code>(::uwvm2::extension::memtag::opcode_prefix):
        ::uwvm2::extension::memtag::find_instruction(subopcode) != nullptr)
     { fail_invalid_immediate(op_begin, u8"obsolete FC memtag encoding; regenerate with FF packed-u32"); }
     auto const numeric_code{static_cast<wasm1p1_numeric_code>(subopcode)};
-    threaded_host_emission_scope::observe_template_numeric_prefix(subopcode);
+    if(*op_begin == ::std::byte{::uwvm2::extension::memtag::opcode_prefix})
+        threaded_host_emission_scope::observe_template_memtag(subopcode);
+    else threaded_host_emission_scope::observe_template_numeric_prefix(subopcode);
 
     auto const validate_nontrapping_float_to_int{
         [&](::uwvm2::utils::container::u8string_view op_name,

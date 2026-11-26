@@ -425,10 +425,11 @@
                     if(charged!=status::ok)return {{},charged};
                     return {::std::move(data),status::ok};
                 }
-                // Tagged memory can add native owner/slot immediates. Keep its
-                // existing lowering. A plain memory supports either access policy.
+                adm16_object_owner adm16{};
                 bool const relocatable=native_object_arch==::llvm::Triple::x86_64 && module_index==0u &&
-                    cache && cache->limit && lowering && !observing && !instruction_control && !has_tagged_memory && !data->world_->admission().initial_worker_only() && !module.module_name.empty();
+                    cache && cache->limit && lowering && !observing && !instruction_control &&
+                    !data->world_->admission().initial_worker_only() && !module.module_name.empty() &&
+                    (data->qualify_adm16_object_owner(adm16) || !has_tagged_memory);
                 if(relocatable)lowering->relocated=true;
                 // A failed optional graph is discarded and retried. Report the
                 // final qualification failure or verbose details of that probe.
@@ -448,7 +449,7 @@
                 bounded_object_stream key{cache_limit},output{data->code_limit_};
                 object_scope const scope{&data->world_->admission(),file,data->world_->source_module_id(),
                     ir_limits.instructions,ir_limits.blocks,llvm_limits.relocations,policy.pipeline,policy.codegen_opt_level,
-                    lowering && lowering->allow_shared_scalars,module.memory_policy.check_tags};
+                    lowering && lowering->allow_shared_scalars,module.memory_policy.check_tags,adm16};
                 prepared_object const* hit{};
                 ::uwvm2::utils::container::std_unique_ptr<prepared_object> fresh;
                 compile::llvm_jit_module_storage_t ir{};
@@ -458,7 +459,7 @@
                 if(cache_limit)
                 {
                     try { instance_shape=optional_preparation::prepare_candidate(
-                        [&]{return data->write_instance_inputs(*target,inputs);},[]{return false;}); }
+                        [&]{return data->write_instance_inputs(*target,inputs,adm16);},[]{return false;}); }
                     catch(::std::bad_alloc const&){}
                 }
                 bool instance_hit{};
@@ -532,7 +533,7 @@
                             instruction_control?&append_instruction_site:nullptr,
                             lowering && lowering->allow_shared_scalars && !observing && !instruction_control ? &lowering->shared_scalars : nullptr};
                         if(relocatable){owner.objects_=&objects;owner.emit_object_=&object_emission::bind;}
-                        if(instance_shape)owner.template_instructions_=&instance_shape;
+                        if(instance_shape){owner.template_instructions_=&instance_shape;owner.template_memtag_=adm16.tags!=nullptr;}
                         for(::std::size_t i{};i<count;++i)
                         {
                             if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
@@ -591,7 +592,7 @@
                     if(gc_inputs>data->storage_limit_/sizeof(::uwvm2::uwvm::runtime::storage::gc_object_value))return {{},status::budget};
                     data->gc_scratch_.resize(gc_inputs);
                     if(!data->bind_emitted_bridges())return {{},status::unsupported_bridge};
-                    if(lowering && lowering->allow_shared_scalars && data->inline_shared_scalars(llvm_module,ir_room,lowering->shared_scalars) &&
+                    if(lowering && lowering->allow_shared_scalars && data->inline_shared_scalars(llvm_module,ir_room,lowering->shared_scalars,adm16.tags!=nullptr) &&
                        !ir_fits("after native shared scalars"))return {{},status::budget};
                     set_llvm_module_target_triple_from_machine(llvm_module,*target);llvm_module.setDataLayout(target->createDataLayout());
                     apply_runtime_llvm_jit_native_target_function_attrs(llvm_module,cpu,cpu,*target);

@@ -14,13 +14,15 @@
             return &unavailable;
         }
 
-        [[nodiscard]] shared_scalar_layout shared_scalar_owner(::llvm::CallInst const& call,shared_scalar_shape shape,bool serial_checked) const noexcept
+        [[nodiscard]] shared_scalar_layout shared_scalar_owner(::llvm::CallInst const& call,shared_scalar_shape shape,
+            bool serial_checked,bool relocated) const noexcept
         {
             auto const* offset=::llvm::dyn_cast<::llvm::ConstantInt>(call.getArgOperand(1u));
             if(!offset)return {};
             for(auto const& memory:memories_)
             {
-                if(!memory||!matches_shared_scalar_owner(call.getArgOperand(0u),address(memory)))continue;
+                if(!memory || !(matches_shared_scalar_owner(call.getArgOperand(0u),address(memory)) ||
+                    (relocated && matches_bound_object(call.getArgOperand(0u),address(memory)))))continue;
                 auto const& shadow=memory->memtag_shadow;
                 if(!shadow.stable_address()||shadow.hardware_selected()||!shadow.shared()||!shadow.ignored_bits()||
                    shadow.tag_data()==nullptr||shadow.shared_tag_gate_==nullptr||!memory->memory_begin||!memory->memory_length_p||
@@ -48,7 +50,7 @@
         }
 
         [[nodiscard]] bool inline_shared_scalars(::llvm::Module& module,
-            ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits room,bool& attempted)
+            ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits room,bool& attempted,bool relocated)
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             namespace mt=::uwvm2::extension::memtag;
@@ -84,10 +86,12 @@
                     if(auto* call=::llvm::dyn_cast<::llvm::CallInst>(&instruction);call && declarations.contains(call->getCalledFunction()))
                         sites.push_back(call);
                 ::llvm::Value* state{};
+                ::llvm::Value* bound_child{};
+                ::llvm::Value* bound_slot{};
                 for(auto* call:sites)
                 {
                     auto const shape=declarations.find(call->getCalledFunction())->second;
-                    auto const layout=shared_scalar_owner(*call,shape,serial_checked);
+                    auto const layout=shared_scalar_owner(*call,shape,serial_checked,relocated);
                     if(!layout.owner_slot)continue;
                     // Six blocks and at most 64 fixed instructions plus six per
                     // byte, including the state call. The factory recounts exact
@@ -99,6 +103,28 @@
                         auto& entry=function.getEntryBlock();
                         ::llvm::IRBuilder<> b(&entry,entry.getFirstInsertionPt());
                         auto* word=b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT);
+                        ::llvm::Value* module_address{};
+                        if(relocated)
+                        {
+                            // The cache admits exactly one canonical tagged
+                            // memory. Only these three immutable loader pointers
+                            // move to the entry. All TLS, stop and owner reads
+                            // below still occur at their original access sites.
+                            if(serial_checked || memories_.size()!=1u || layout.owner_slot!=&memories_[0])continue;
+                            object_emission objects{*this,true};
+                            auto const prefix=emit::get_llvm_runtime_module_symbol_prefix(*module_);
+                            auto bind=[&](auto pointer,::uwvm2::utils::container::u8string_view suffix)
+                            {
+                                auto const name=::uwvm2::utils::container::u8concat_uwvm(prefix,suffix);
+                                return object_emission::bind(&objects,b,address(pointer),{name.data(),name.size()});
+                            };
+                            auto* mod=bind(module_,u8"_runtime_module");
+                            bound_child=bind(this,u8"_threaded_child");
+                            bound_slot=bind(layout.owner_slot,u8"_threaded_memory0_owner_slot");
+                            if(!mod || !bound_child || !bound_slot)return state_fn!=nullptr;
+                            module_address=b.CreatePtrToInt(mod,word);
+                        }
+                        else module_address=::llvm::ConstantInt::get(word,address(module_));
                         if(!state_fn)
                         {
                             state_fn=::llvm::Function::Create(::llvm::FunctionType::get(b.getPtrTy(),{word},false),
@@ -107,11 +133,11 @@
                             emit::apply_llvm_jit_host_calling_conv(*state_fn);
                             if(!add_external(*state_fn,address(&current_shared_scalar_state))){state_fn->eraseFromParent();return false;}
                         }
-                        state=emit::apply_llvm_jit_calling_conv(b.CreateCall(state_fn,{::llvm::ConstantInt::get(word,address(module_))}),emit::get_llvm_jit_host_calling_conv());
+                        state=emit::apply_llvm_jit_calling_conv(b.CreateCall(state_fn,{module_address}),emit::get_llvm_jit_host_calling_conv());
                     }
                     attempted=true;
                     if(serial_checked)emit_serial_checked_scalar(*call,state,address(this),layout,shape);
-                    else emit_shared_scalar(*call,state,address(this),layout,shape);
+                    else emit_shared_scalar(*call,state,address(this),layout,shape,bound_child,bound_slot);
                     room.instructions-=cost;room.blocks-=6u;
                 }
             }
