@@ -231,6 +231,8 @@ def main():
  for checked_peer in [False,True]:
   manifest.append(dict(name='shared-reader-peer-'+str(int(checked_peer)),file=str(guest),peer=str(peer),
    enabled=False,checked_peer=checked_peer,expected='memtag' if checked_peer else 'success',sha256=hashlib.sha256(reader_guest).hexdigest()))
+ from threaded_scalar_region import region_cases
+ manifest.extend(row for row,_ in region_cases(args.out))
  (args.out/'manifest.json').write_text(json.dumps(manifest,indent=2))
  if args.case:
   names={case['name'] for case in manifest}
@@ -247,12 +249,12 @@ def main():
     '--wasip1-single-interface','main','proc_exit','allow','--wasip1-single-grant','main','proc-exit',
     '--wasm-preload-library',str(case.get('owner',owner)),'env']
    if case.get('wide'):command+=['--wasm-policy-global','parser.memory64','on']
-   if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--wasm-policy-global', 'runtime.llvm.policy','debug']
+   if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable','--wasm-policy-global', 'runtime.llvm.policy','balanced' if case.get('balanced') else 'debug']
    if case['name'].startswith('spawn-'):
     command+=['--wasithread-single-create','main','--wasithread-single-enable','main','--wasithread-single-interface','main','thread-spawn','allow']
    if not case['enabled']:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
    if 'peer' in case:command+=['--wasm-preload-library',case['peer'],'peer']
-   if case.get('checked_peer'):command+=['--wasm-policy-single','peer','runtime.memtag-checks','on']
+   if 'checked_peer' in case:command+=['--wasm-policy-single','peer','runtime.memtag-checks','on' if case['checked_peer'] else 'off']
    command+=['--run',case['file']]
    completed=subprocess.run(command,capture_output=True,timeout=90)
    output=(completed.stdout+completed.stderr).decode('utf8','replace')

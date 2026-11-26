@@ -1,5 +1,6 @@
 """Exercise a real ADM16 reader, a concurrent tag writer/grower, and a checked import."""
 import argparse
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -66,14 +67,8 @@ def guest(negative):
     return module + wasm.sec(10, b'\x02' + body(main.code, b'\x01\x01\x7f') + body(child.code))
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--vm', type=Path, required=True)
-    parser.add_argument('--out', type=Path, required=True)
-    args = parser.parse_args()
-    out = args.out.resolve()
-    out.mkdir(parents=True, exist_ok=True)
-    owner, peer = out / 'owner.wasm', out / 'peer.wasm'
+def region_cases(out):
+    owner, peer = out / 'region-owner.wasm', out / 'region-peer.wasm'
     owner.write_bytes(HEADER + wasm.sec(5, b'\x01' + LIMITS) + wasm.sec(7, b'\x01\x06memory\x02\0'))
     peer.write_bytes(reader())
     for case, caller_checks, peer_checks, expected in (
@@ -81,8 +76,26 @@ def main():
         ('bounds', 'off', 'on', 121), ('second-tag', 'on', 'off', 122),
     ):
         label = f'{case}-{caller_checks}-{peer_checks}'
-        module = out / (case + '.wasm')
+        module = out / ('region-' + case + '.wasm')
         module.write_bytes(guest(case))
+        yield dict(name='spawn-region-' + label, file=str(module), owner=str(owner), peer=str(peer),
+                   enabled=caller_checks == 'on', checked_peer=peer_checks == 'on', wide=True,
+                   balanced=True, expected={0: 'success', 121: 'bounds', 122: 'memtag'}[expected],
+                   sha256=hashlib.sha256(module.read_bytes()).hexdigest()), expected
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--vm', type=Path, required=True)
+    parser.add_argument('--out', type=Path, required=True)
+    args = parser.parse_args()
+    out = args.out.resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    for row, expected in region_cases(out):
+        module, owner, peer = (row[key] for key in ('file', 'owner', 'peer'))
+        label = row['name'].removeprefix('spawn-region-')
+        caller_checks = 'on' if row['enabled'] else 'off'
+        peer_checks = 'on' if row['checked_peer'] else 'off'
         cmd = [str(args.vm.resolve()), '-Raot', '-Rct', '0', '-Rllvm-cache-path', 'disable',
                '--log-verbose', '--log-color', 'disable', '--debug-fault-action', 'exit']
         for key, value in [('parser.baseline', 'wasm3'), ('parser.threads', 'on'), ('parser.memory64', 'on'),

@@ -77,7 +77,12 @@ The executable VM suites are separate from those component claims:
   Plain memory32 and memory64 cases exchange unaligned i64 values with a
   spawned worker, observe its published growth, and check crossing stores
   and overflowing memargs through a weaker import of the shared owner.
-  Repeat `--case NAME` to select individual cases.
+  The `spawn-region-*` memory64 cases put a reader and a `claimz` writer on one
+  ADM16 owner. A reader spins on an ordinary scalar load until the writer retags,
+  grows the memory and publishes its result. The module alias independently enables
+  or disables checks. The negative cases reach the upper bound and a mismatched
+  second granule. Select `--engines aot --case spawn-region-good-off-on` for the
+  progress case. Repeat `--case NAME` to select individual cases.
 - `threaded_poll_scope_ir.cc` compiles the production LLVM cancellation pass
   against five small control-flow graphs. It checks the call-free loop,
   an incoming callback, changed function and owner, and a loop-varying token.
