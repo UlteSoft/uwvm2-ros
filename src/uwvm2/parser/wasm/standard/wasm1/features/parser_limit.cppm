@@ -23,6 +23,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 // std
 #include <cstddef>

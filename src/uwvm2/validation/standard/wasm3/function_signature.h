@@ -29,6 +29,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         ::std::size_t error_offset{};
         bool in_results{};
         ::std::uint_least32_t offending_type_index{};
+        ::std::size_t metadata_bytes{};
     };
     struct function_signature_policy
     {
@@ -47,13 +48,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     template<typename Carrier>
     [[nodiscard]] inline constexpr function_signature_result scan_core3_function_signature(
         ::std::byte const*& cursor, ::std::byte const* end, function_signature_policy policy,
-        ::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<Carrier>& output) noexcept
+        ::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<Carrier>& output,
+        ::std::size_t maximum_metadata_bytes = 512uz << 20u) noexcept
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         using e = function_signature_error;
         // [cursor ... end) is the caller-proven section allocation; an empty range may have null endpoints.
         // [safe         ] constructing this bounded view reads no bytes and advances no caller pointer.
         recursive_binary_details::reader input{{cursor, cursor == end ? 0uz : static_cast<::std::size_t>(end - cursor)}};
+        input.maximum_metadata_bytes = maximum_metadata_bytes;
         t::owned_function_signature<Carrier> temporary{};
         function_signature_result result{};
         auto read_value = [&](t::core_value_type& value) constexpr noexcept
@@ -127,10 +130,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             result.in_results = in_results;
             auto& values{in_results ? temporary.results : temporary.parameters};
             auto const count_offset{input.position};
-            if(!input.list(values, 1uz, read_value))
+            if(!input.list(values, 1uz, read_value, sizeof(t::core_value_type) + sizeof(Carrier)))
             {
                 if(result.error != e::ok) { return result; }
-                return {e::binary, input.status.error, input.status.error_offset, in_results};
+                return {e::binary, input.status.error, input.status.error_offset, in_results, 0u, input.status.requested};
             }
             // The existing result-vector traversal proves its complete size here.
             // Multiple parameters do not imply multi-value; only multiple results do.
@@ -138,6 +141,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             if(in_results && !policy.multi_value && values.size() > 1uz)
             { return {e::multi_value_disabled, {}, count_offset, true}; }
         }
+        if(!input.admit<Carrier>(1uz))
+        { return {e::binary, input.status.error, input.status.error_offset, true, 0u, input.status.requested}; }
         temporary.carriers.push_back(static_cast<Carrier>(0)); // Owned sentinel, excluded from both signature views.
         output = ::std::move(temporary);
         // [parameter vector][result vector] ... end
@@ -148,6 +153,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         // [parameter vector][result vector] next ... end
         // [safe                             ] unsafe (could be end)
         //                                     ^^ cursor: reader bounded every consumed byte before commit.
-        return {};
+        return {.metadata_bytes = input.allocated_metadata_bytes};
     }
 }

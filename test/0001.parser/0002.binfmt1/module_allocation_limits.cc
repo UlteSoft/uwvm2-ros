@@ -101,6 +101,52 @@ int main(int argc, char** argv)
            resource::live_bytes[pool].load() != after_insert) { return 13; }
     }
     if(resource::live_bytes[pool].load() != baseline) { return 14; }
+    // A Core 3 array has exactly one field record even though it carries no encoded field count.
+    constexpr ::std::uint8_t array_payload[]{1, 0x5e, 0x7f, 0};
+    constexpr auto array_bytes{sizeof(t3::recursive_group) + sizeof(t3::sub_type) + sizeof(t3::field_type)};
+    auto const* array_begin{reinterpret_cast<::std::byte const*>(array_payload)};
+    for(auto limit : {array_bytes, array_bytes - 1uz})
+    {
+        auto cursor{array_begin};
+        t3::recursive_type_section section{};
+        auto const result{v3::scan_core3_type_section(cursor, array_begin + sizeof(array_payload), section, 1uz, limit)};
+        if(limit == array_bytes)
+        {
+            if(result.error != v3::recursive_type_binary_error::ok || result.metadata_bytes != array_bytes || section.type_count != 1u) { return 18; }
+        }
+        else if(result.error != v3::recursive_type_binary_error::resource_limit || result.requested != array_bytes ||
+                result.limit != limit || cursor != array_begin || section.type_count != 0u) { return 19; }
+    }
+    constexpr ::std::uint8_t array_module[]{0,97,115,109,1,0,0,0, 1,4,1,0x5e,0x7f,0};
+    using tsec = wasm1::type_section_storage_t<wasm, proposals>;
+    constexpr auto full_array_bytes{array_bytes + sizeof(v3::recursive_type_record) + sizeof(decltype(tsec::types)::value_type) +
+        sizeof(decltype(tsec::owned_signatures)::value_type) + sizeof(t3::composite_kind) + sizeof(wasm1::final_value_type_t<wasm, proposals>)};
+    auto const gc_bytes = [](auto limit)
+    {
+        return [limit](auto& p)
+        {
+            ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm>(p).parser_limit.max_type_metadata_bytes = limit;
+            wasm1p1::get_wasm1p1_parameter(p).disable_gc = false;
+        };
+    };
+    if(!check<wasm, proposals>(array_module, gc_bytes(full_array_bytes)) ||
+       !check<wasm, proposals>(array_module, gc_bytes(full_array_bytes - 1uz), u8"type-metadata-bytes", full_array_bytes, full_array_bytes - 1uz)) { return 20; }
+    constexpr ::std::uint8_t bodies[]{0,97,115,109,1,0,0,0, 1,4,1,0x60,0,0, 3,3,2,0,0, 10,7,2,2,0,0x0b,2,0,0x0b};
+    auto const code_bytes = [](auto body, auto module)
+    {
+        return [=](auto& p)
+        {
+            auto& limits{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm>(p).parser_limit};
+            limits.max_function_body_bytes = body;
+            limits.max_module_code_bytes = module;
+        };
+    };
+    if(!check<wasm>(bodies, code_bytes(2, 4)) || !check<wasm>(bodies, code_bytes(1, 4), u8"function-body-bytes", 2, 1) ||
+       !check<wasm, proposals>(bodies, code_bytes(2, 3), u8"module-code-bytes", 4, 3)) { return 21; }
+    auto const saved_body{::std::exchange(resource::function_body_bytes, 1uz)};
+    auto const host_wins{check<wasm>(bodies, code_bytes(2, 4), u8"function-body-bytes", 2, 1)};
+    resource::function_body_bytes = saved_body;
+    if(!host_wins) { return 22; }
     using custom_record = ::uwvm2::parser::wasm::standard::wasm1::section::custom_section;
     constexpr auto bytes{2uz * sizeof(custom_record)};
     auto const sections = [](auto count, auto storage_bytes)

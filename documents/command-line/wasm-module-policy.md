@@ -31,6 +31,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `const_expr_opcodes` | Total instructions in constant expressions across globals, table initializers, element entries and active segment offsets (default 1,048,576). The final `end` consumes no entry. |
 | `custom_sections` | Custom section records per module (default 65,536), including repeated unknown names. |
 | `section_storage_bytes` | Cumulative native record bytes for section vectors, nested element entries, local declaration runs and constant instructions (default 256 MiB). Each entry costs its host record size. Import/export records also include their descriptor pointer. String and data views borrow the input bytes. |
+| `type-metadata-bytes`, `function-body-bytes`, `module-code-bytes` | The module inherits the process parser resource values. Each scoped override may tighten its effective limit. Type metadata includes recursive definitions, validation records and owned signature projections. The code limits count encoded body bytes per function and across the module. |
 | `typesec_types`, `tagsec_count` | Types and exception tags |
 | `importsec_imports`, `exportsec_exports` | Imports and exports |
 | `globalsec_globals`, `memorysec_memories`, `tablesec_tables` | Local global, memory and table declarations |

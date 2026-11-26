@@ -316,8 +316,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t maximum_types{262144uz};
         if constexpr((::std::same_as<wasm1, Fs> || ...))
         { maximum_types = ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit.max_type_sec_types; }
-        ::std::size_t maximum_metadata_bytes{512uz << 20u};
-        if !consteval { maximum_metadata_bytes=::uwvm2::utils::allocator::resource::parser_metadata_bytes; }
+        auto const maximum_metadata_bytes{remaining_type_storage(module_storage, parameters)};
         auto const& options{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(parameters)};
         if(options.disable_gc)
         {
@@ -412,8 +411,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             err.err_curr = section_begin == section_end ? section_begin : section_begin + decoded.error_offset;
             if(decoded.error == v3::recursive_type_binary_error::resource_limit)
             {
+                if(!decoded.type_count_limit)
+                { count_type_storage(module_storage, parameters, decoded.requested, 1uz, err.err_curr, err); }
                 err.err_code = base::wasm_parse_error_code::exceed_the_max_parser_limit;
-                err.err_selectable.exceed_the_max_parser_limit.name = decoded.type_count_limit ? ::fast_io::u8string_view{u8"max_type_sec_types"} : ::fast_io::u8string_view{u8"type-metadata-bytes"};
+                err.err_selectable.exceed_the_max_parser_limit.name = u8"typesec_types";
                 err.err_selectable.exceed_the_max_parser_limit.value = decoded.requested;
                 err.err_selectable.exceed_the_max_parser_limit.maxval = decoded.limit;
                 base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
@@ -426,6 +427,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             err.err_selectable.u8 = 0u;
             base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
         }
+        count_type_storage(module_storage, parameters, decoded.metadata_bytes, 1uz, section_begin, err);
+        count_type_storage(module_storage, parameters, static_cast<::std::size_t>(definitions.type_count), sizeof(v3::recursive_type_record), section_begin, err);
         v3::recursive_type_context context{};
         auto const valid{v3::validate_core3_type_section(definitions, context)};
         if(valid.error != v3::recursive_type_validation_error::ok) [[unlikely]]
@@ -473,6 +476,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             // [safe                                        ] offset < section_size precedes this read.
             return ::std::to_integer<unsigned>(section_begin[offset]);
         };
+        // Each flat record also owns an ABI carrier sentinel, including non-function composites.
+        constexpr auto projection_bytes{sizeof(typename decltype(section.types)::value_type) +
+            sizeof(typename decltype(section.owned_signatures)::value_type) + sizeof(t3::composite_kind) + sizeof(final_value_type_t<Fs...>)};
+        count_type_storage(module_storage, parameters, flat_count, projection_bytes, section_begin, err);
         section.types.reserve(flat_count);
         section.owned_signatures.reserve(flat_count);
         section.core3_type_kinds.reserve(flat_count);
@@ -569,6 +576,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                         err.err_code = base::wasm_parse_error_code::wasm1p1_feature_required;
                         base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
                     }
+                    constexpr auto value_bytes{sizeof(t3::core_value_type) + sizeof(carrier_t)};
+                    count_type_storage(module_storage, parameters, definition.parameters.size(), value_bytes, section_begin + definition.binary_offset, err);
+                    count_type_storage(module_storage, parameters, definition.results.size(), value_bytes, section_begin + definition.binary_offset, err);
                     signature.parameters = definition.parameters;
                     signature.results = definition.results;
                     for(auto value : signature.parameters)
@@ -704,7 +714,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
             }
         }
-        section.types.reserve(section.types.size() + count);
+        auto const required{section.types.size() + count};
+        if(required > section.types.capacity())
+        {
+            count_type_storage(module_storage, parameters, required - section.types.capacity(), sizeof(typename decltype(section.types)::value_type), cursor, err);
+            section.types.reserve(required);
+        }
         // All group members are syntactically required below to be function composites. The
         // owned signature scanner may therefore provisionally resolve their flat type indices.
         section.active_recursive_group_visible_types = section.types.size() + count;
@@ -793,6 +808,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // [safe] unsafe (could be end)
         //        ^^ begin borrows cursor; the transactional decoder proves each consumed byte.
         auto const begin{cursor};
+        count_type_storage(module_storage, parameters, 1uz, sizeof(signature), begin, err);
         auto const decoded{w3::scan_core3_function_signature(cursor, end,
             {.simd = !options.disable_simd, .reference_types = !options.disable_reference_types,
              .function_references = !options.disable_function_references,
@@ -801,7 +817,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
              .multi_value = !(options.disable_multi_value || options.controllable_allow_multi_result_vector),
              .function_type_context = true,
              .current_function_type_index = section.active_recursive_group_visible_types ?
-                 section.active_recursive_group_visible_types - 1uz : section.types.size()}, signature)};
+                 section.active_recursive_group_visible_types - 1uz : section.types.size()}, signature, remaining_type_storage(module_storage, parameters))};
         // [0x60][complete vectors] ... end on success; cursor is unchanged on any decoding/policy failure.
         // [safe                 ] unsafe (could be end)
         //                         ^^ cursor after success; no partial signature has been published.
@@ -811,6 +827,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             // [safe                     ] offset <= end - begin, including a truncation exactly at end.
             //            ^^ err_curr: diagnostic only; this assignment never dereferences an endpoint.
             err.err_curr = begin + decoded.error_offset;
+            if(decoded.binary_error == w3::recursive_type_binary_error::resource_limit)
+            { count_type_storage(module_storage, parameters, decoded.metadata_bytes, 1uz, err.err_curr, err); }
             if(decoded.error == w3::function_signature_error::rich_type_not_integrated)
             {
                 err.err_code = error::wasm3_rich_signature_not_integrated;
@@ -853,6 +871,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
             ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
         }
+        count_type_storage(module_storage, parameters, decoded.metadata_bytes, 1uz, begin, err);
         section.requires_function_references |= signature.requires_function_references;
         section.requires_exceptions |= signature.requires_exceptions;
         section.requires_simd |= signature.requires_simd;

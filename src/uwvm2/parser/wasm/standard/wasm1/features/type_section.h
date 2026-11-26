@@ -85,6 +85,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm1::features::final_type_type_t<Fs...>> types{};
         ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm::standard::wasm3::type::owned_function_signature<final_value_type_t<Fs...>>> owned_signatures{};
+        ::std::size_t type_storage_bytes{};
         // Exact Core 3 definitions are retained separately from the executable ABI projection.
         // Flat kind indices match `types` and `owned_signatures`, including aggregate slots.
         ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section core3_recursive_types{};
@@ -211,7 +212,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
             }
         }
-        typesec.types.reserve(typesec.types.size() + 1uz);
+        if(typesec.types.size() == typesec.types.capacity())
+        {
+            count_type_storage(module_storage, fs_para, 1uz, sizeof(typename decltype(typesec.types)::value_type), section_curr, err);
+            typesec.types.reserve(typesec.types.size() + 1uz);
+        }
 
         // A feature may replace the byte-borrowing function-signature decoder with an owned representation.
         // [0x60] vectors ... section_end
@@ -665,7 +670,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         }
 
         check_encoded_count(type_count, 1uz, type_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_type_count, err);
-        count_section_storage(module_storage, fs_para, type_count, sizeof(typename decltype(typesec.types)::value_type), section_curr, err);
+        count_type_storage(module_storage, fs_para, type_count, sizeof(typename decltype(typesec.types)::value_type), section_curr, err);
         typesec.types.reserve(static_cast<::std::size_t>(type_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 type_counter{};  // use for check
