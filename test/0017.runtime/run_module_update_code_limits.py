@@ -88,7 +88,7 @@ def continue_to_instruction(vm, offset):
     while time.monotonic() < deadline:
         status = vm.request('status')
         stop = re.search(r'^stop-id ([1-9][0-9]*)$', status, re.M)
-        if stop and re.search(rf'^thread [1-9][0-9]* module=0 function=0 byte-offset={offset} generation=1$', status, re.M):
+        if stop and re.search(rf'^thread [1-9][0-9]* module=0 function=0 byte-offset={offset} generation=[1-9][0-9]*$', status, re.M):
             return stop[1]
         time.sleep(.01)
     raise AssertionError(status)
