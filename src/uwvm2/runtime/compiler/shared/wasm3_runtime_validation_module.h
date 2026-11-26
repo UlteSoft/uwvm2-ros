@@ -306,7 +306,7 @@
     { require_runtime_module_declaration_policy(curr_module, parameters, err); }
 
     [[nodiscard]] inline constexpr validation_module_storage_t
-        build_runtime_validation_module(::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& curr_module) noexcept
+        build_runtime_validation_module(::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& curr_module) UWVM_THROWS
     {
         validate_runtime_module_storage(curr_module);
 

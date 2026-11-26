@@ -140,6 +140,7 @@ extern "C++"
             { return {{}, preparation_status::unsupported_native}; }
             try
             {
+                ::uwvm2::utils::allocator::resource::recoverable_parser_allocations parser_allocations{};
                 auto data{::uwvm2::utils::container::std_unique_ptr<runtime_checkpoint_staged_llvm_full_engine>{
                     ::uwvm2::utils::allocator::fast_io_strict::object<runtime_checkpoint_staged_llvm_full_engine>([&](runtime_checkpoint_staged_llvm_full_engine* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) runtime_checkpoint_staged_llvm_full_engine{actual_owner, ::std::move(actual_profile), actual_module_id}; })}};
                 data->native_budget_owner_=native_budget_owner;data->native_charge_=native_charge;

@@ -916,7 +916,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
-        inline constexpr vectypeidx_minimize_storage_t(vectypeidx_minimize_storage_t const& other) noexcept : mode{other.mode}
+        inline constexpr vectypeidx_minimize_storage_t(vectypeidx_minimize_storage_t const& other) : mode{other.mode}
         {
             switch(this->mode)
             {
@@ -1010,86 +1010,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
-        inline constexpr vectypeidx_minimize_storage_t& operator= (vectypeidx_minimize_storage_t const& other) noexcept
+        inline constexpr vectypeidx_minimize_storage_t& operator= (vectypeidx_minimize_storage_t const& other)
         {
-            if(::std::addressof(other) == this) [[unlikely]] { return *this; }
-
-            // Prevent type puns, must destruct union
-            switch(this->mode)
-            {
-                [[unlikely]] case vectypeidx_minimize_storage_mode::null:
-                {
-                    // do nothing
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u8_view:
-                {
-                    // The trivial destructor type does not require any destructors.
-                    static_assert(::std::is_trivially_destructible_v<decltype(this->storage.typeidx_u8_view)>);
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u8_vector:
-                {
-                    ::std::destroy_at(::std::addressof(this->storage.typeidx_u8_vector));
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u16_vector:
-                {
-                    ::std::destroy_at(::std::addressof(this->storage.typeidx_u16_vector));
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u32_vector:
-                {
-                    ::std::destroy_at(::std::addressof(this->storage.typeidx_u32_vector));
-                    break;
-                }
-                [[unlikely]] default:
-                {
-#if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                    ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-#endif
-                    ::std::unreachable();
-                }
-            }
-
-            this->mode = other.mode;
-
-            switch(this->mode)
-            {
-                [[unlikely]] case vectypeidx_minimize_storage_mode::null:
-                {
-                    // do nothing
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u8_view:
-                {
-                    ::new(::std::addressof(this->storage.typeidx_u8_view)) decltype(this->storage.typeidx_u8_view){other.storage.typeidx_u8_view};
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u8_vector:
-                {
-                    ::new(::std::addressof(this->storage.typeidx_u8_vector)) decltype(this->storage.typeidx_u8_vector){other.storage.typeidx_u8_vector};
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u16_vector:
-                {
-                    ::new(::std::addressof(this->storage.typeidx_u16_vector)) decltype(this->storage.typeidx_u16_vector){other.storage.typeidx_u16_vector};
-                    break;
-                }
-                case vectypeidx_minimize_storage_mode::u32_vector:
-                {
-                    ::new(::std::addressof(this->storage.typeidx_u32_vector)) decltype(this->storage.typeidx_u32_vector){other.storage.typeidx_u32_vector};
-                    break;
-                }
-                [[unlikely]] default:
-                {
-#if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                    ::uwvm2::utils::debug::trap_and_inform_bug_pos();
-#endif
-                    ::std::unreachable();
-                }
-            }
-
+            if(this != &other) { *this = vectypeidx_minimize_storage_t{other}; }
             return *this;
         }
 
@@ -2265,22 +2188,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         inline constexpr wasm1_element_t() noexcept { ::new(::std::addressof(this->storage.table_idx)) decltype(this->storage.table_idx){}; }
 
-        inline constexpr wasm1_element_t(wasm1_element_t const& other) noexcept : type{other.type}
+        inline constexpr wasm1_element_t(wasm1_element_t const& other) : type{other.type}
         { ::new(::std::addressof(this->storage.table_idx)) decltype(this->storage.table_idx){other.storage.table_idx}; }
 
         inline constexpr wasm1_element_t(wasm1_element_t&& other) noexcept : type{other.type}
         { ::new(::std::addressof(this->storage.table_idx)) decltype(this->storage.table_idx){::std::move(other.storage.table_idx)}; }
 
-        inline constexpr wasm1_element_t& operator= (wasm1_element_t const& other) noexcept
+        inline constexpr wasm1_element_t& operator= (wasm1_element_t const& other)
         {
-            if(::std::addressof(other) == this) [[unlikely]] { return *this; }
-
-            // The table_idx type in union is always valid regardless of the value of type.
-
-            this->type = other.type;
-
-            this->storage.table_idx = other.storage.table_idx;
-
+            if(this != &other) { *this = wasm1_element_t{other}; }
             return *this;
         }
 
@@ -2696,22 +2612,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
         inline constexpr wasm1_data_t() noexcept { ::new(::std::addressof(this->storage.memory_idx)) decltype(this->storage.memory_idx){}; }
 
-        inline constexpr wasm1_data_t(wasm1_data_t const& other) noexcept : type{other.type}
+        inline constexpr wasm1_data_t(wasm1_data_t const& other) : type{other.type}
         { ::new(::std::addressof(this->storage.memory_idx)) decltype(this->storage.memory_idx){other.storage.memory_idx}; }
 
         inline constexpr wasm1_data_t(wasm1_data_t&& other) noexcept : type{other.type}
         { ::new(::std::addressof(this->storage.memory_idx)) decltype(this->storage.memory_idx){::std::move(other.storage.memory_idx)}; }
 
-        inline constexpr wasm1_data_t& operator= (wasm1_data_t const& other) noexcept
+        inline constexpr wasm1_data_t& operator= (wasm1_data_t const& other)
         {
-            if(::std::addressof(other) == this) [[unlikely]] { return *this; }
-
-            // The memory_idx type in union is always valid regardless of the value of type.
-
-            this->type = other.type;
-
-            this->storage.memory_idx = other.storage.memory_idx;
-
+            if(this != &other) { *this = wasm1_data_t{other}; }
             return *this;
         }
 

@@ -2984,7 +2984,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::storage
                 canonical_guard guard{};
                 auto const result{canonical_registry_.validate_and_intern(section, ids)};
                 if(result.error != ::uwvm2::validation::standard::wasm3::recursive_type_validation_error::ok)
-                { valid_ = false; return; }
+                {
+                    allocation_failed_ = result.error == ::uwvm2::validation::standard::wasm3::recursive_type_validation_error::resource_limit;
+                    valid_ = false; return;
+                }
             }
             if(ids.size() != layout_count_) { valid_ = false; return; }
             if(!charge_metadata(layout_count_,sizeof(::std::size_t))) { valid_=false; return; }

@@ -20,7 +20,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     enum class recursive_type_validation_error : unsigned
     {
         ok, inconsistent_section, invalid_composite, invalid_value, unknown_type,
-        multiple_supertypes, forward_supertype, final_supertype, incompatible_supertype
+        multiple_supertypes, forward_supertype, final_supertype, incompatible_supertype, resource_limit
     };
     struct recursive_type_validation_result
     {
@@ -172,7 +172,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     template<typename Records>
     [[nodiscard]] inline recursive_type_validation_result validate_core3_type_section(
         ::uwvm2::parser::wasm::standard::wasm3::type::recursive_type_section const& section,
-        basic_recursive_type_context<Records>& output) noexcept
+        basic_recursive_type_context<Records>& output)
     {
         namespace d = recursive_validation_details;
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;

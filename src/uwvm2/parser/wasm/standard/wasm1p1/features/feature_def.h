@@ -705,18 +705,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
 
         inline constexpr wasm1p1_data_t() noexcept { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){}; }
 
-        inline constexpr wasm1p1_data_t(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...> const& other) noexcept : type{other.type}
+        inline constexpr wasm1p1_data_t(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...> const& other) : type{other.type}
         { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){other.storage.segment}; }
 
         inline constexpr wasm1p1_data_t(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...>&& other) noexcept : type{other.type}
         { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){::std::move(other.storage.segment)}; }
 
         inline constexpr ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...>&
-            operator= (::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...> const& other) noexcept
+            operator= (::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_data_t<Fs...> const& other)
         {
-            if(::std::addressof(other) == this) [[unlikely]] { return *this; }
-            this->type = other.type;
-            this->storage.segment = other.storage.segment;
+            if(this != &other) { *this = wasm1p1_data_t{other}; }
             return *this;
         }
 
@@ -978,7 +976,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
 
         inline constexpr wasm1p1_element_t() noexcept { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){}; }
 
-        inline constexpr wasm1p1_element_t(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_t<Fs...> const& other) noexcept :
+        inline constexpr wasm1p1_element_t(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_t<Fs...> const& other) :
             type{other.type}
         { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){other.storage.segment}; }
 
@@ -986,11 +984,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
         { ::new(::std::addressof(this->storage.segment)) decltype(this->storage.segment){::std::move(other.storage.segment)}; }
 
         inline constexpr ::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_t<Fs...>&
-            operator= (::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_t<Fs...> const& other) noexcept
+            operator= (::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_t<Fs...> const& other)
         {
-            if(::std::addressof(other) == this) [[unlikely]] { return *this; }
-            this->type = other.type;
-            this->storage.segment = other.storage.segment;
+            if(this != &other) { *this = wasm1p1_element_t{other}; }
             return *this;
         }
 
