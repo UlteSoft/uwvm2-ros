@@ -30,7 +30,8 @@
 # include <limits>
 # include <concepts>
 # include <bit>
-# include <vector>
+# include <mutex>
+# include <uwvm2/utils/allocator/resource_limit.h>
 # include <atomic>
 # include <memory>
 # include <utility>
@@ -122,7 +123,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
 # if defined(__linux__) && defined(__aarch64__)
         // Stable mmap shadow and byte base, published only during quiescent
         // activation. Both remain owned until the segment is unregistered.
-        ::std::byte const* memtag_base{};
+        alignas(::std::atomic_ref<::std::byte const*>::required_alignment) mutable ::std::byte const* memtag_base{};
         ::std::uint8_t const* memtag_tags{};
         bool memtag_shared{};
 # endif
@@ -144,12 +145,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
     ///             expected to be terminal; the dispatcher terminates immediately after invoking it.
     using mmap_memory_out_of_bounds_func_t = void (*)(::uwvm2::object::memory::error::mmap_memory_error_t const&) noexcept;
 
+    enum class registration_result { registered, metadata_refused, handler_unavailable, invalid_range };
+
     namespace detail
     {
-        /// @brief  Global registry of protected mmap-backed memory intervals.
-        /// @note   Structural mutations are intentionally restricted to VM/module setup and teardown.
-        ///         The platform fault handler reads this container without taking locks.
-        inline ::uwvm2::utils::container::vector<protected_memory_segment_t> segments{};  // [global]
+# include "segment_registry.h"
 
         /// @brief  Optional process-wide hook for translating mmap memory faults to a runtime-specific action.
         inline mmap_memory_out_of_bounds_func_t mmap_memory_out_of_bounds_func{};  // [global]
@@ -158,7 +158,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         // only. It must not invoke debugger locks, heap allocation or unwinding.
         using hardware_memtag_fault_func_t = void (*)(hardware_memtag_fault const&) noexcept;
         inline hardware_memtag_fault_func_t hardware_memtag_fault_func{};
-        inline bool expose_memtag_bits{};
+        inline ::std::atomic_bool expose_memtag_bits{};
 # endif
 
         /// @brief  Internal runtime hook that receives the unchanged public fault report plus a borrowed native context.
@@ -188,23 +188,33 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
 # if defined(_WIN32) || defined(__CYGWIN__)
 #  if defined(_WIN32_WINDOWS) || (defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0501)
             /// @brief  Previous Win32 unhandled-exception filter used on old Windows targets.
-            ::fast_io::win32::pvectored_exception_handler previous_unhandled_exception_filter{};
+            ::std::atomic<::fast_io::win32::pvectored_exception_handler> previous_unhandled_exception_filter{};
 #  else
             /// @brief  Handle returned by AddVectoredExceptionHandler for modern Windows targets.
             void* vectored_handler_handle{};
 #  endif
 # else
-            /// @brief  SIGSEGV handler active before UWVM installed its handler.
-            struct ::sigaction previous_sigsegv{};
+            struct prior_action
+            {
+                using action = struct ::sigaction;
+                action before_install{}, displaced{};
+                ::std::atomic<action const*> active{};
+                bool installed{}; // only the serialized registry writer reads or changes this flag
 
-            /// @brief  SIGBUS handler active before UWVM installed its handler.
-            struct ::sigaction previous_sigbus{};
-
-            /// @brief  True after previous_sigsegv contains a valid saved handler.
-            bool has_previous_sigsegv{};
-
-            /// @brief  True after previous_sigbus contains a valid saved handler.
-            bool has_previous_sigbus{};
+                [[nodiscard]] bool install(int number, action const& handler) noexcept
+                {
+                    if(installed) { return true; }
+                    if(posix::sigaction(number, nullptr, ::std::addressof(before_install)) != 0) { return false; }
+                    // A fault can already arrive during the installing syscall.
+                    // Chain to the observed action until it returns the actual displaced action.
+                    active.store(::std::addressof(before_install), ::std::memory_order_release);
+                    if(posix::sigaction(number, ::std::addressof(handler), ::std::addressof(displaced)) != 0) { return false; }
+                    active.store(::std::addressof(displaced), ::std::memory_order_release);
+                    installed = true;
+                    return true;
+                }
+            };
+            prior_action segv{}, bus{};
 # endif
         };
 
@@ -262,36 +272,35 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             if(fault_addr == nullptr) [[unlikely]] { return false; }
 
             auto const fault_address{reinterpret_cast<::std::uintptr_t>(fault_addr)};
-            for(auto const& seg: segments)
+            ::uwvm2::object::memory::error::mmap_memory_error_t mmapmemerr{};
+            if(!segments.any([&](protected_memory_segment_t const& seg) noexcept
             {
-                auto const segment_begin{reinterpret_cast<::std::uintptr_t>(seg.begin)};
-                auto const segment_end{reinterpret_cast<::std::uintptr_t>(seg.end)};
-                if(segment_begin <= fault_address && fault_address < segment_end)
-                {
-                    auto const mmapmemerr{make_mmap_memory_error(seg, fault_addr, instruction_address, frame_address, stack_pointer)};
-                    // Keep the public callback authoritative if direct internal slot manipulation leaves both hooks set.
-                    // Calls through either setter remain mutually exclusive because each setter clears the other slot.
-                    if(auto const handler{mmap_memory_out_of_bounds_func}; handler != nullptr) [[likely]]
-                    {
-                        handler(mmapmemerr);
-                        ::fast_io::fast_terminate();
-                        ::std::unreachable();
-                    }
-                    if(platform_context != nullptr && mmap_fault_redirect_func != nullptr &&
-                       mmap_fault_redirect_func(mmapmemerr, const_cast<void*>(platform_context))) { return true; }
-                    if(auto const handler{mmap_memory_out_of_bounds_with_context_func}; handler != nullptr) [[likely]]
-                    {
-                        handler(mmapmemerr, platform_context);
-                        ::fast_io::fast_terminate();
-                        ::std::unreachable();
-                    }
+                auto const begin{reinterpret_cast<::std::uintptr_t>(seg.begin)};
+                auto const end{reinterpret_cast<::std::uintptr_t>(seg.end)};
+                if(fault_address < begin || fault_address >= end) { return false; }
+                mmapmemerr = make_mmap_memory_error(seg, fault_addr, instruction_address, frame_address, stack_pointer);
+                return true;
+            })) { return false; }
 
-                    ::uwvm2::object::memory::error::output_mmap_memory_error_and_terminate(mmapmemerr);
-                    ::std::unreachable();
-                }
+            // Keep the public callback authoritative if direct internal slot manipulation leaves both hooks set.
+            // Calls through either setter remain mutually exclusive because each setter clears the other slot.
+            if(auto const handler{mmap_memory_out_of_bounds_func}; handler != nullptr) [[likely]]
+            {
+                handler(mmapmemerr);
+                ::fast_io::fast_terminate();
+                ::std::unreachable();
+            }
+            if(platform_context != nullptr && mmap_fault_redirect_func != nullptr &&
+               mmap_fault_redirect_func(mmapmemerr, const_cast<void*>(platform_context))) { return true; }
+            if(auto const handler{mmap_memory_out_of_bounds_with_context_func}; handler != nullptr) [[likely]]
+            {
+                handler(mmapmemerr, platform_context);
+                ::fast_io::fast_terminate();
+                ::std::unreachable();
             }
 
-            return false;
+            ::uwvm2::object::memory::error::output_mmap_memory_error_and_terminate(mmapmemerr);
+            ::std::unreachable();
         }
 
         /// @brief  ABI-stable fault-dispatch entry point for callers without a borrowed native context.
@@ -396,7 +405,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             auto const ret{vectored_exception_handler(exception_pointers)};
             if(ret != 0) { return ret; }
 
-            auto const prev{signal_handlers.previous_unhandled_exception_filter};
+            auto const prev{signal_handlers.previous_unhandled_exception_filter.load(::std::memory_order_acquire)};
             if(prev != nullptr && prev != unhandled_exception_filter) { return prev(exception_pointers); }
 
             return 0 /*EXCEPTION_CONTINUE_SEARCH*/;
@@ -407,14 +416,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         /// @details    The handler is process-wide because Windows exception dispatch is process/thread
         ///             global. register_protected_segment calls this lazily before publishing the first
         ///             protected interval.
-        inline constexpr void install_signal_handler() noexcept
+        [[nodiscard]] inline bool install_signal_handler() noexcept
         {
-            static ::std::atomic_bool signal_installed{};  // [global]
-
-            // call once
-            bool expected{false};
-            if(!signal_installed.compare_exchange_strong(expected, true, ::std::memory_order_acq_rel, ::std::memory_order_acquire)) { return; }
-
+            // Registry writers serialize installation and publication.
+            static bool installed{};
+            if(installed) { return true; }
             auto& handlers{signal_handlers};
 
             // NOTE: In C++17 and later, for `E1 = E2`, `E2` is sequenced before `E1`.
@@ -424,23 +430,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             handlers.previous_unhandled_exception_filter = ::fast_io::win32::SetUnhandledExceptionFilter(unhandled_exception_filter);
 #  else
             handlers.vectored_handler_handle = ::fast_io::win32::AddVectoredExceptionHandler(1u, vectored_exception_handler);
-            if(handlers.vectored_handler_handle == nullptr) [[unlikely]]
-            {
-#   ifdef UWVM
-                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                    u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
-                                    u8"[fatal] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
-                                    u8"Failed to install signal handler.\n\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-#   else
-                ::fast_io::io::perr(::fast_io::u8err(), u8"uwvm: [fatal] Failed to install signal handler.\n\n");
-#   endif
-                ::fast_io::fast_terminate();
-            }
+            if(handlers.vectored_handler_handle == nullptr) { return false; }
 #  endif
+            installed = true;
+            return true;
         }
 
 # else
@@ -630,6 +623,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         [[nodiscard]] inline bool dispatch_hardware_memtag_fault(::siginfo_t const* info,
             ::std::uintptr_t pc) noexcept
         {
+            static_assert(::std::atomic_ref<::std::byte const*>::is_always_lock_free);
             static_assert(::std::atomic_ref<::std::uint8_t>::is_always_lock_free);
             static_assert(::std::atomic_size_t::is_always_lock_free);
             if(info==nullptr) { return false; }
@@ -651,25 +645,25 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             if(info->si_code!=9 /* SEGV_MTESERR: synchronous */) { return false; }
             auto const raw{reinterpret_cast<::std::uintptr_t>(info->si_addr)};
             auto const address{raw&UINT64_C(0x00ffffffffffffff)};
-            for(auto const& segment:segments)
+            hardware_memtag_fault report{};
+            if(!segments.any([&](protected_memory_segment_t const& segment) noexcept
             {
-                if(segment.memtag_base==nullptr || segment.memtag_tags==nullptr || segment.length_p==nullptr) { continue; }
-                auto const base{reinterpret_cast<::std::uintptr_t>(segment.memtag_base)};
+                auto const* memtag_base{::std::atomic_ref{segment.memtag_base}.load(::std::memory_order_acquire)};
+                if(memtag_base == nullptr) { return false; }
+                auto const base{reinterpret_cast<::std::uintptr_t>(memtag_base)};
                 auto const length{segment.length_p->load(::std::memory_order_acquire)};
-                if(address<base || address-base>=length) { continue; }
-                auto const offset{address-base};
-                auto* tag_pointer{const_cast<::std::uint8_t*>(segment.memtag_tags)+offset/16u};
-                auto const tag{segment.memtag_shared?
-                    ::std::atomic_ref<::std::uint8_t>{*tag_pointer}.load(::std::memory_order_relaxed):*tag_pointer};
+                if(address < base || address - base >= length) { return false; }
+                auto const offset{address - base};
+                auto* tag_pointer{const_cast<::std::uint8_t*>(segment.memtag_tags) + offset / 16u};
+                auto const tag{segment.memtag_shared ?
+                    ::std::atomic_ref<::std::uint8_t>{*tag_pointer}.load(::std::memory_order_relaxed) : *tag_pointer};
                 auto const physical{::uwvm2::extension::memtag::hardware_mte::load_tag(
-                    const_cast<::std::byte*>(segment.memtag_base)+offset/16u*16u)};
-                hardware_memtag_fault const report{segment.memory_idx,offset,length,raw,pc,tag,physical,expose_memtag_bits};
-                if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
-                // No general runtime callback is safe here. Default standalone
-                // owner use still distinguishes MTE from a bounds fault.
-                ::_Exit(122);
-            }
-            return false;
+                    const_cast<::std::byte*>(memtag_base) + offset / 16u * 16u)};
+                report = {segment.memory_idx, offset, length, raw, pc, tag, physical, expose_memtag_bits};
+                return true;
+            })) { return false; }
+            if(hardware_memtag_fault_func) { hardware_memtag_fault_func(report); }
+            ::_Exit(122);
         }
 # endif
 
@@ -692,19 +686,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             if(siginfo != nullptr && siginfo->si_code > 0 &&
                handle_fault_address_with_context(fault_addr, instruction_address, 0u, 0u, context)) { return; }
 
-            if(signal == SIGSEGV && signal_handlers.has_previous_sigsegv)
-            {
-                dispatch_previous_handler(signal, siginfo, context, signal_handlers.previous_sigsegv);
-                return;
-            }
-
+            signal_handlers_t::prior_action::action const* previous{};
+            if(signal == SIGSEGV) { previous = signal_handlers.segv.active.load(::std::memory_order_acquire); }
 #  ifdef SIGBUS
-            if(signal == SIGBUS && signal_handlers.has_previous_sigbus)
-            {
-                dispatch_previous_handler(signal, siginfo, context, signal_handlers.previous_sigbus);
-                return;
-            }
+            if(signal == SIGBUS) { previous = signal_handlers.bus.active.load(::std::memory_order_acquire); }
 #  endif
+            if(previous != nullptr) { dispatch_previous_handler(signal, siginfo, context, *previous); return; }
 
             posix::signal(signal, SIG_DFL);
             posix::raise(signal);
@@ -713,13 +700,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
         /// @brief      Install POSIX SIGSEGV and, where available, SIGBUS handlers once for the process.
         /// @details    The handler is installed lazily by register_protected_segment. It uses SA_SIGINFO so
         ///             the fault address and optional machine context are available for diagnostics.
-        inline constexpr void install_signal_handler() noexcept
+        [[nodiscard]] inline bool install_signal_handler() noexcept
         {
-            static ::std::atomic_bool signal_installed{};  // [global]
-
-            bool expected{false};
-            if(!signal_installed.compare_exchange_strong(expected, true, ::std::memory_order_acq_rel, ::std::memory_order_acquire)) { return; }
-
+            // Keep successful individual installations across a partial failure.
+            // Each retry preserves the original host chain.
+            static bool installed{};
+            if(installed) { return true; }
             struct ::sigaction act{};
             act.sa_sigaction = posix_signal_handler;
             sigemptyset(::std::addressof(act.sa_mask));
@@ -736,48 +722,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
             act.sa_flags |= SA_ONSTACK;
 #endif
 
-            if(posix::sigaction(SIGSEGV, ::std::addressof(act), ::std::addressof(signal_handlers.previous_sigsegv)) != 0) [[unlikely]]
-            {
-#  ifdef UWVM
-                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                    u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
-                                    u8"[fatal] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
-                                    u8"Failed to install signal handler (SIGSEGV).\n\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-#  else
-                ::fast_io::io::perr(::fast_io::u8err(), u8"uwvm: [fatal] Failed to install signal handler (SIGSEGV).\n\n");
-#  endif
-                ::fast_io::fast_terminate();
-            }
-            signal_handlers.has_previous_sigsegv = true;
+            if(!signal_handlers.segv.install(SIGSEGV, act)) { return false; }
 # if defined(__linux__) && defined(__aarch64__)
-            struct ::sigaction installed{};
-            expose_memtag_bits = posix::sigaction(SIGSEGV,nullptr,::std::addressof(installed))==0 &&
-                (installed.sa_flags&0x400)==0 && (installed.sa_flags&0x800)!=0;
+            struct ::sigaction current{};
+            expose_memtag_bits = posix::sigaction(SIGSEGV, nullptr, ::std::addressof(current)) == 0 &&
+                (current.sa_flags & 0x400) == 0 && (current.sa_flags & 0x800) != 0;
 # endif
-
 #  ifdef SIGBUS
-            if(posix::sigaction(SIGBUS, ::std::addressof(act), ::std::addressof(signal_handlers.previous_sigbus)) != 0) [[unlikely]]
-            {
-#   ifdef UWVM
-                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                    u8"uwvm: ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
-                                    u8"[fatal] ",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
-                                    u8"Failed to install signal handler (SIGBUS).\n\n",
-                                    ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-#   else
-                ::fast_io::io::perr(::fast_io::u8err(), u8"uwvm: [fatal] Failed to install signal handler (SIGBUS).\n\n");
-#   endif
-                ::fast_io::fast_terminate();
-            }
-            signal_handlers.has_previous_sigbus = true;
+            if(!signal_handlers.bus.install(SIGBUS, act)) { return false; }
 #  endif
+            installed = true;
+            return true;
         }
 # endif
     }  // namespace detail
@@ -797,38 +752,32 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
     /// @param      end        One-past-the-last byte of the reserved virtual address interval.
     /// @param      length_p   Optional pointer to the live committed/valid length for growable memories.
     /// @param      memory_idx Wasm linear-memory index used in diagnostics.
-    /// @note       Protected memory segments are expected to be registered during VM/module initialization,
-    ///             before any guest code that may trigger memory access violations is executed. After
-    ///             initialization, the set of segments is treated as structurally immutable (only the
-    ///             dynamic length, when provided via @p length_p, may change), and no further calls to
-    ///             register_protected_segment, unregister_protected_segment, or clear_protected_segments
-    ///             are performed. This design ensures that the signal/exception handler can traverse the
-    ///             global segments container without additional synchronization, as there are no
-    ///             concurrent structural modifications.
-    inline constexpr void register_protected_segment(::std::byte const* begin,
-                                                     ::std::byte const* end,
-                                                     ::std::atomic_size_t const* length_p = nullptr,
-                                                     ::std::size_t memory_idx = 0uz) noexcept
+    /// @note       The owner and its optional live length must remain valid until unregistration returns.
+    [[nodiscard]] inline registration_result try_register_protected_segment(::std::byte const* begin, ::std::byte const* end,
+        ::std::atomic_size_t const* length_p = nullptr, ::std::size_t memory_idx = 0uz) noexcept
     {
-        if(begin == nullptr || end == nullptr || reinterpret_cast<::std::uintptr_t>(begin) >= reinterpret_cast<::std::uintptr_t>(end)) [[unlikely]]
-        {
-# ifdef UWVM
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                u8"uwvm: ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_LT_RED),
-                                u8"[fatal] ",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_WHITE),
-                                u8"Invalid protected memory segment.\n\n",
-                                ::fast_io::mnp::cond(::uwvm2::uwvm::utils::ansies::put_color, UWVM_COLOR_U8_RST_ALL));
-# else
-            ::fast_io::io::perr(::fast_io::u8err(), u8"uwvm: [fatal] Invalid protected memory segment.\n\n");
-# endif
-            ::fast_io::fast_terminate();
-        }
+        if(begin == nullptr || end == nullptr || reinterpret_cast<::std::uintptr_t>(begin) >= reinterpret_cast<::std::uintptr_t>(end))
+        { return registration_result::invalid_range; }
+        return detail::segments.insert({begin, end, length_p, memory_idx}, detail::install_signal_handler);
+    }
 
-        detail::install_signal_handler();
-        detail::segments.emplace_back(begin, end, length_p, memory_idx);
+    inline void register_protected_segment(::std::byte const* begin, ::std::byte const* end,
+        ::std::atomic_size_t const* length_p = nullptr, ::std::size_t memory_idx = 0uz) noexcept
+    {
+        switch(try_register_protected_segment(begin, end, length_p, memory_idx))
+        {
+            case registration_result::registered: return;
+            case registration_result::metadata_refused: ::uwvm2::utils::allocator::resource::initializer_metadata_limit();
+            case registration_result::handler_unavailable:
+                ::uwvm2::utils::allocator::resource::reject_allocation("uwvm: [error] initializer: cannot install the native mmap fault handler.\n");
+            case registration_result::invalid_range:
+# ifdef UWVM
+                ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"uwvm: [fatal] Invalid protected memory segment.\n\n");
+# else
+                ::fast_io::io::perr(::fast_io::u8err(), u8"uwvm: [fatal] Invalid protected memory segment.\n\n");
+# endif
+                ::fast_io::fast_terminate();
+        }
     }
 
 # if defined(__linux__) && defined(__aarch64__)
@@ -836,42 +785,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::object::memory::signal
     [[nodiscard]] inline bool register_hardware_memtag_owner(::std::byte const* reservation,
         ::std::byte const* base, ::std::uint8_t const* tags, bool shared) noexcept
     {
-        if(base==nullptr || tags==nullptr) { return false; }
-        for(auto& segment:detail::segments)
-        {
-            if(segment.begin!=reservation || segment.length_p==nullptr) { continue; }
-            auto const begin{reinterpret_cast<::std::uintptr_t>(segment.begin)};
-            auto const end{reinterpret_cast<::std::uintptr_t>(segment.end)};
-            auto const address{reinterpret_cast<::std::uintptr_t>(base)};
-            if(address<begin || address>=end || segment.length_p->load(::std::memory_order_acquire)>end-address) { return false; }
-            segment.memtag_base=base;segment.memtag_tags=tags;segment.memtag_shared=shared;return true;
-        }
-        return false;
+        return detail::segments.attach_memtag(reservation, base, tags, shared);
     }
 # endif
 
     /// @brief      Remove a previously registered protected memory interval.
     /// @details    The interval is matched by the exact begin/end pair used at registration time. Missing
     ///             entries are ignored because teardown paths may be reached after partial initialization.
-    /// @note       This must not run concurrently with guest execution or with platform fault handling.
-    inline constexpr void unregister_protected_segment(::std::byte const* begin, ::std::byte const* end) noexcept
+    /// @note       Stop guest use of this owner before teardown. Other mappings may still execute.
+    inline void unregister_protected_segment(::std::byte const* begin, ::std::byte const* end) noexcept
     {
-        if(begin == nullptr || end == nullptr) [[unlikely]] { return; }
-
-        auto& segments{detail::segments};
-        for(auto it{segments.begin()}; it != segments.end(); ++it)
-        {
-            if(it->begin == begin && it->end == end)
-            {
-                segments.erase(it);
-                return;
-            }
-        }
+        if(begin != nullptr && end != nullptr) { detail::segments.erase(begin, end); }
     }
 
-    /// @brief      Remove all protected memory intervals from the global registry.
-    /// @note       Intended for whole-runtime teardown or reinitialization outside guest execution.
-    inline constexpr void clear_protected_segments() noexcept { detail::segments.clear(); }
+    /// @brief      Remove all protected intervals during whole-runtime quiescent teardown.
+    inline void clear_protected_segments() noexcept { detail::segments.clear(); }
 
 }  // namespace uwvm2::object::memory::signal
 

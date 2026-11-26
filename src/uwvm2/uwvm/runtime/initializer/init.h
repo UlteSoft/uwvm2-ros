@@ -35,6 +35,7 @@
 # include <atomic>
 # include <array>
 # include <span>
+# include <string_view>
 # include <vector>
 # include <cstddef>
 # include <cstdlib>
@@ -132,6 +133,23 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if constexpr(Purpose != initialization_purpose::ordinary) { throw ::std::bad_alloc{}; }
 #endif
             ::uwvm2::utils::allocator::resource::initializer_metadata_limit();
+        }
+
+        // allocate_shared rebinds this allocator to the actual object/control block.
+        // It stays charged while an imported identity or a weak reference survives.
+        template<initialization_purpose Purpose, typename T, typename... Args>
+        [[nodiscard]] inline ::std::shared_ptr<T> make_initializer_shared(Args&&... args) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+#ifdef UWVM_CPP_EXCEPTIONS
+            try
+#endif
+            {
+                return ::std::allocate_shared<T>(::uwvm2::utils::container::initializer_std_allocator<::std::remove_cv_t<T>>{},
+                    ::std::forward<Args>(args)...);
+            }
+#ifdef UWVM_CPP_EXCEPTIONS
+            catch(::std::bad_alloc const&) { initializer_metadata_failure<Purpose>(); }
+#endif
         }
 
         template <initialization_purpose Purpose, typename T>
@@ -3606,12 +3624,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 auto const maximum{limits.present_max ? limits.max : SIZE_MAX};
                 if constexpr(Fallible)
                 {
-                    if(!memory.try_init_by_page_count(limits.min, maximum, instance_index)) [[unlikely]]
+                    auto const result{memory.initialize_pages(limits.min, maximum, instance_index)};
+                    if(result != Memory::initialization_result::initialized) [[unlikely]]
                     {
-                        ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
-                            u8"uwvm: [error] initializer: unable to reserve or commit the planned mmap memory (memory_idx=", instance_index,
-                            u8", reserved_bytes=", memory.reservation_budget_bytes, u8", initial_pages=", limits.min,
-                            u8"). Check available host address space and process memory limits.");
+                        ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                            u8"uwvm: mmap owner (memory_idx=", instance_index, u8", reserved_bytes=", memory.reservation_budget_bytes,
+                            u8", initial_pages=", limits.min, u8").\n",
+                            ::fast_io::mnp::code_cvt(::std::string_view{Memory::initialization_error(result)}));
                         return false;
                     }
                 }
@@ -5923,7 +5942,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             {
                 if constexpr(Purpose == initialization_purpose::threaded_child)
                 { out.gc_lease_roots = world.make_lease_owner(); }
-                else { out.gc_lease_roots = ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_lease_owner>(); }
+                else { out.gc_lease_roots = make_initializer_shared<Purpose, ::uwvm2::uwvm::runtime::storage::gc_lease_owner>(); }
                 if(!out.gc_lease_roots) [[unlikely]] { ::fast_io::fast_terminate(); }
                 out.gc_store = world.make_store(typesec.core3_recursive_types, out.gc_lease_roots,
                     linked_gc_function_reference_type_matches);
@@ -5987,7 +6006,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 out.local_defined_tag_vec_storage.push_back({::std::addressof(type), index,
                     [&] {
                         if constexpr(Purpose == initialization_purpose::threaded_child) { return world.make_tag_identity(); }
-                        else { return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::tag_instance_identity const>(); }
+                        else { return make_initializer_shared<Purpose, ::uwvm2::uwvm::runtime::storage::tag_instance_identity const>(); }
                     }()});
             }
 
@@ -6889,9 +6908,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                                                    effective_limits,
                                                    page_bytes);
 
+                    using memory_type_t = ::uwvm2::object::memory::linear::native_memory_t;
                     if constexpr(Purpose == initialization_purpose::threaded_child)
-                    { out.local_defined_memory_vec_storage.push_back({.memory=world.make_memory()}); }
-                    else { out.local_defined_memory_vec_storage.emplace_back(); }
+                    {
+                        if(!world.charge_metadata(sizeof(memory_type_t::owner_metadata))) { initializer_metadata_failure<Purpose>(); }
+                    }
+                    memory_type_t memory{memory_type_t::fallible_construction_t{}};
+                    if(!memory.metadata) [[unlikely]] { initializer_metadata_failure<Purpose>(); }
+                    out.local_defined_memory_vec_storage.push_back_unchecked({.memory = ::std::move(memory)});
                     auto& rec{out.local_defined_memory_vec_storage.back()};
                     rec.memory_type_ptr = ::std::addressof(memory_type);
                     rec.memory.custom_page_size_log2 = ::uwvm2::extension::adm::page_shift(memory_type);

@@ -219,6 +219,7 @@ namespace uwvm2::utils::allocator::resource
     {
         reject_allocation("uwvm: [error] LLVM compilation: native allocation failed; available host memory or virtual address space is exhausted. Reduce concurrent memory instances or use a 64-bit host with sufficient memory.\n");
     }
+    [[noreturn]] inline void initializer_metadata_limit() noexcept;
     // Standard containers return denied host scratch allocations through their
     // existing bad_alloc -> guest ENOMEM path. The guest cannot alter budgets.
     template<typename T, pool Kind = pool::auxiliary, bool Recoverable = Kind == pool::parser> struct std_allocator
@@ -242,6 +243,7 @@ namespace uwvm2::utils::allocator::resource
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                     throw ::std::bad_alloc{};
 #else
+                    if constexpr(Kind == pool::initializer) { initializer_metadata_limit(); }
                     reject_allocation("uwvm: [error] native scratch allocation exceeds resource budget.\n");
 #endif
                 }
@@ -253,6 +255,7 @@ namespace uwvm2::utils::allocator::resource
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
                 throw ::std::bad_alloc{}; // Existing caller maps recoverable scratch failure to guest ENOMEM.
 #else
+                if constexpr(Kind == pool::initializer) { initializer_metadata_limit(); }
                 reject_allocation("uwvm: [error] native scratch allocation failed.\n");
 #endif
             }
@@ -351,6 +354,27 @@ namespace uwvm2::utils::allocator::resource
         reject_allocation("uwvm: [error] initializer: native metadata allocation refused; check --wasm-set-resource-limit initializer metadata-single-bytes/metadata-live-bytes and available host memory.\n");
     }
 
+    // A fixed native owner has one strict allocation of sizeof(T). Its deleter
+    // also works when shared_ptr must roll back a failed control-block allocation.
+    template<typename T> struct initializer_object_deleter
+    {
+        void operator()(T* value) const noexcept
+        {
+            if(value == nullptr) { return; }
+            fast_io_strict::destroy_object(value);
+            release(pool::initializer, sizeof(T));
+        }
+    };
+    template<typename T, typename Construct>
+    [[nodiscard]] inline ::std::unique_ptr<T, initializer_object_deleter<T>> try_initializer_object(Construct construct) noexcept
+    {
+        static_assert(noexcept(construct(static_cast<T*>(nullptr))));
+        if(!acquire(pool::initializer, sizeof(T))) { return {}; }
+        auto* result{fast_io_strict::try_object<T>(construct)};
+        if(result == nullptr) { release(pool::initializer, sizeof(T)); }
+        return ::std::unique_ptr<T, initializer_object_deleter<T>>{result};
+    }
+
     // Runtime record vectors include over-aligned memory owners. Keep the
     // exact size in a prefix allocated and freed with the same alignment.
     struct initializer_metadata_allocator
@@ -394,15 +418,12 @@ namespace uwvm2::utils::allocator::resource
         static void deallocate(void* pointer) noexcept { deallocate_aligned(pointer, default_alignment); }
     };
 
-    [[noreturn]] inline void initializer_memory_limit() noexcept
-    {
-        // Diagnostics must not turn a closed stderr into an unrelated crash.
-        reject_allocation("uwvm: [error] initializer: linear memory exceeds the configured byte budget. Use --wasm-set-resource-limit runtime memory-single-bytes/memory-live-bytes to configure it.\n");
-    }
-    [[noreturn]] inline void initializer_memory_mapping_failure() noexcept
-    {
-        reject_allocation("uwvm: [error] initializer: native linear-memory address-space reservation or page commitment failed; reduce concurrent memory instances or initial sizes, or use a 64-bit host with sufficient memory.\n");
-    }
+    inline constexpr char initializer_memory_limit_message[]{
+        "uwvm: [error] initializer: linear memory exceeds the configured byte budget; check initializer allocation-bytes and runtime memory-single-bytes/memory-live-bytes.\n"};
+    inline constexpr char initializer_memory_mapping_message[]{
+        "uwvm: [error] initializer: native linear-memory address-space reservation or page commitment failed; check available host memory and address space.\n"};
+    [[noreturn]] inline void initializer_memory_limit() noexcept { reject_allocation(initializer_memory_limit_message); }
+    [[noreturn]] inline void initializer_memory_mapping_failure() noexcept { reject_allocation(initializer_memory_mapping_message); }
     // A byte allocation retains its exact charge in its fast_io backing block.
     // The same strict global allocator releases that block after owner teardown.
     struct alignas(::std::max_align_t) byte_header { ::std::size_t bytes; };
