@@ -137,6 +137,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         functionsec.funcs.change_mode(::uwvm2::parser::wasm::standard::wasm1::features::vectypeidx_minimize_storage_mode::u8_vector);
 
         // The size comparison between u32 and size_t has already been checked
+        count_section_storage(module_storage, fs_para, func_count, sizeof(typename decltype(functionsec.funcs.storage.typeidx_u8_vector)::value_type), section_curr, err);
         functionsec.funcs.storage.typeidx_u8_vector.reserve(static_cast<::std::size_t>(func_count));
 
         static_assert(sizeof(::std::byte) == sizeof(::uwvm2::parser::wasm::standard::wasm1::type::wasm_u8));
@@ -1600,6 +1601,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         functionsec.funcs.mode = ::uwvm2::parser::wasm::standard::wasm1::features::vectypeidx_minimize_storage_mode::u8_vector;
 
         // The size comparison between u32 and size_t has already been checked
+        count_section_storage(module_storage, fs_para, func_count, sizeof(typename decltype(functionsec.funcs.storage.typeidx_u8_vector)::value_type), section_curr, err);
         functionsec.funcs.storage.typeidx_u8_vector.reserve(static_cast<::std::size_t>(func_count));
 
         // [before_section ... | func_count ...] typeidx1 ... typeidx2 ...
@@ -4875,6 +4877,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         functionsec.funcs.mode = ::uwvm2::parser::wasm::standard::wasm1::features::vectypeidx_minimize_storage_mode::u16_vector;
 
         // The size comparison between u32 and size_t has already been checked
+        count_section_storage(module_storage, fs_para, func_count, sizeof(typename decltype(functionsec.funcs.storage.typeidx_u16_vector)::value_type), section_curr, err);
         functionsec.funcs.storage.typeidx_u16_vector.reserve(static_cast<::std::size_t>(func_count));
 
         // [before_section ... | func_count ...] typeidx1 ... typeidx2 ...
@@ -8167,6 +8170,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         functionsec.funcs.mode = ::uwvm2::parser::wasm::standard::wasm1::features::vectypeidx_minimize_storage_mode::u16_vector;
 
         // The size comparison between u32 and size_t has already been checked
+        count_section_storage(module_storage, fs_para, func_count, sizeof(typename decltype(functionsec.funcs.storage.typeidx_u16_vector)::value_type), section_curr, err);
         functionsec.funcs.storage.typeidx_u16_vector.reserve(static_cast<::std::size_t>(func_count));
 
         // [before_section ... | func_count ...] typeidx1 ... typeidx2 ...
@@ -8268,6 +8272,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         functionsec.funcs.mode = ::uwvm2::parser::wasm::standard::wasm1::features::vectypeidx_minimize_storage_mode::u32_vector;
 
         // The size comparison between u32 and size_t has already been checked
+        count_section_storage(module_storage, fs_para, func_count, sizeof(typename decltype(functionsec.funcs.storage.typeidx_u32_vector)::value_type), section_curr, err);
         functionsec.funcs.storage.typeidx_u32_vector.reserve(static_cast<::std::size_t>(func_count));
 
         // [before_section ... | func_count ...] typeidx1 ... typeidx2 ...
@@ -8593,6 +8598,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // [before_section ... | func_count ...] typeidx1 ...
         // [              safe                 ] unsafe (could be the section_end)
         //                                       ^^ section_curr
+
+        check_encoded_count(func_count, 1uz, section_curr, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_func_count, err);
 
         // handle it
         auto const type_section_count{static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(typesec.types.size())};

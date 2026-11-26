@@ -2427,6 +2427,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         auto& tablesec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<table_section_storage_t<Fs...>>(module_storage.sections)};
         // The original typed initializer has fully succeeded before this scalar publication.
         tablesec.requires_table_initializer |= explicit_initializer;
+        count_section_storage(module_storage, fs_para, 1uz, sizeof(expr), section_curr, err);
         tablesec.initializers.push_back(::std::move(expr));
         return section_curr;
     }

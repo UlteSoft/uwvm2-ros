@@ -90,6 +90,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
 
     inline constexpr ::std::size_t default_max_const_expr_opcodes{saturating_cast_size_t(1048576u)};
 
+    inline constexpr ::std::size_t default_max_section_storage_bytes{saturating_cast_size_t(256ull << 20u)};
+    inline constexpr ::std::size_t default_max_custom_sections{saturating_cast_size_t(65536u)};
+
     struct wasm1_parser_limit_t
     {
         ::std::size_t max_code_sec_codes{default_max_code_sec_codes};
@@ -104,21 +107,57 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         ::std::size_t max_table_sec_tables{default_max_table_sec_tables};
         ::std::size_t max_type_sec_types{default_max_type_sec_types};
         ::std::size_t max_const_expr_opcodes{default_max_const_expr_opcodes};
+        ::std::size_t max_section_storage_bytes{default_max_section_storage_bytes};
+        ::std::size_t max_custom_sections{default_max_custom_sections};
     };
 
-    inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t increment, ::std::size_t limit,
+    inline constexpr ::std::size_t checked_parser_total(::std::size_t previous, ::std::size_t count, ::std::size_t limit,
                                                         ::fast_io::u8string_view name, ::std::byte const* at,
-                                                        ::uwvm2::parser::wasm::base::error_impl& err) UWVM_THROWS
+                                                        ::uwvm2::parser::wasm::base::error_impl& err, ::std::size_t width = 1uz) UWVM_THROWS
     {
-        if(previous > limit || increment > limit - previous) [[unlikely]]
+        if(previous > limit || count > (limit - previous) / width) [[unlikely]]
         {
             constexpr auto maximum{::std::numeric_limits<::std::size_t>::max()};
+            auto const requested{count > (maximum - previous) / width ? maximum : previous + count * width};
             err.err_curr = at;
             err.err_code = ::uwvm2::parser::wasm::base::wasm_parse_error_code::exceed_the_max_parser_limit;
-            err.err_selectable.exceed_the_max_parser_limit = {name, increment > maximum - previous ? maximum : previous + increment, limit};
+            err.err_selectable.exceed_the_max_parser_limit = {name, requested, limit};
             ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
         }
-        return previous + increment;
+        return previous + count * width;
+    }
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    inline constexpr ::std::size_t section_storage_limit(::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters) noexcept
+    {
+        ::std::size_t limit{default_max_section_storage_bytes};
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        { limit = ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit.max_section_storage_bytes; }
+        return ::std::min(limit, static_cast<::std::size_t>(::std::numeric_limits<::std::ptrdiff_t>::max()));
+    }
+
+    template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
+    inline constexpr void count_section_storage(::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...>& module,
+                                                ::uwvm2::parser::wasm::concepts::feature_parameter_t<Fs...> const& parameters,
+                                                ::std::size_t count, ::std::size_t width, ::std::byte const* at,
+                                                ::uwvm2::parser::wasm::base::error_impl& err) UWVM_THROWS
+    {
+        module.section_storage_bytes = checked_parser_total(module.section_storage_bytes, count, section_storage_limit(parameters),
+                                                           u8"section_storage_bytes", at, err, width);
+    }
+
+    template <typename Char>
+    inline constexpr void check_encoded_count(::std::size_t count, ::std::size_t minimum_record_bytes, Char const* after_count,
+                                              ::std::byte const* end, ::uwvm2::parser::wasm::base::wasm_parse_error_code invalid_count,
+                                              ::uwvm2::parser::wasm::base::error_impl& err) UWVM_THROWS
+    {
+        auto const* records{reinterpret_cast<::std::byte const*>(after_count)};
+        if(count > static_cast<::std::size_t>(end - records) / minimum_record_bytes) [[unlikely]]
+        {
+            err.err_curr = records;
+            err.err_code = invalid_count;
+            ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
+        }
     }
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
@@ -132,6 +171,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 module.sections).const_expr_opcode_count};
             auto const limit{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(parameters).parser_limit.max_const_expr_opcodes};
             count = checked_parser_total(count, 1uz, limit, u8"const_expr_opcodes", opcode, err);
+            using expr = final_wasm_const_expr<Fs...>;
+            count_section_storage(module, parameters, 1uz, sizeof(typename decltype(expr::opcodes)::value_type), opcode, err);
         }
     }
 }

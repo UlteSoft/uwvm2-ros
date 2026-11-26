@@ -525,6 +525,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(funcidx_count, 1uz, funcidx_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_elem_funcidx_count, err);
+        count_section_storage(module_storage, fs_para, funcidx_count, sizeof(typename decltype(wet.vec_funcidx)::value_type), section_curr, err);
         wet.vec_funcidx.reserve(static_cast<::std::size_t>(funcidx_count));
 
         section_curr = reinterpret_cast<::std::byte const*>(funcidx_count_next);
@@ -669,6 +671,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(elem_count, 2uz, elem_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_elem_count, err);
+        count_section_storage(module_storage, fs_para, elem_count, sizeof(typename decltype(elemsec.elems)::value_type), section_curr, err);
         elemsec.elems.reserve(static_cast<::std::size_t>(elem_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 elem_counter{};  // use for check

@@ -283,6 +283,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(table_count, 3uz, table_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_table_count, err);
+        count_section_storage(module_storage, fs_para, table_count, sizeof(typename decltype(tablesec.tables)::value_type), section_curr, err);
         tablesec.tables.reserve(static_cast<::std::size_t>(table_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 table_counter{};  // use for check

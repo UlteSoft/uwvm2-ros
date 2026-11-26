@@ -77,6 +77,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
 #define UWVM_PARSER_COUNT(name, limits, member) {u8"" name, [](parameters& p) noexcept -> ::std::size_t& { return (limits).member; }}
         UWVM_PARSER_COUNT("codesec_codes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_sec_codes),
         UWVM_PARSER_COUNT("const_expr_opcodes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_const_expr_opcodes),
+        UWVM_PARSER_COUNT("section_storage_bytes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_section_storage_bytes),
+        UWVM_PARSER_COUNT("custom_sections", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_custom_sections),
         UWVM_PARSER_COUNT("code_locals", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_locals),
         UWVM_PARSER_COUNT("datacountsec_count", features::wasm_binfmt_ver1_wasm1p1_parameter(p.binfmt1_para).parser_limit, max_data_count_sec_count),
         UWVM_PARSER_COUNT("datasec_entries", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_data_sec_entries),

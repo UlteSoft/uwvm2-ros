@@ -176,6 +176,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1p1::features
             err.err_curr = curr; err.err_code = code::wasm3_invalid_tag_count; err.err_selectable.u8 = 0u;
             ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
         }
+        ::uwvm2::parser::wasm::standard::wasm1::features::count_section_storage(
+            module, parameters, count, sizeof(typename decltype(section.type_indices)::value_type), begin, err);
         section.type_indices.reserve(static_cast<::std::size_t>(count));
         for(::std::size_t i{}; i != count; ++i)
         {

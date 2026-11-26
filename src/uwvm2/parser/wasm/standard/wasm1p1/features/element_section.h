@@ -456,6 +456,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
         inline constexpr ::std::byte const*
             parse_funcidx_vector(::uwvm2::parser::wasm::standard::wasm1p1::features::wasm1p1_element_storage_t<Fs...>& element_storage,
+                                 ::uwvm2::parser::wasm::binfmt::ver1::wasm_binfmt_ver1_module_extensible_storage_t<Fs...>& module_storage,
                                  module_counts_t<Fs...> const counts,
                                  ::std::byte const* section_curr,
                                  ::std::byte const* const section_end,
@@ -482,6 +483,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
 
             check_elem_funcidx_vector_limit(funcidx_count, section_curr, err, fs_para);
+            check_encoded_count(funcidx_count, 1uz, funcidx_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_elem_funcidx_count, err);
+            count_section_storage(module_storage, fs_para, funcidx_count, sizeof(typename decltype(element_storage.vec_funcidx)::value_type), section_curr, err);
             element_storage.vec_funcidx.reserve(static_cast<::std::size_t>(funcidx_count));
             // parse_by_scan succeeded, so [section_curr, funcidx_count_next) is now proven safe and funcidx_count_next is inside [section_curr, section_end].
             // Proof view before moving section_curr: section_curr still points at the funcidx count, and funcidx_count_next marks the first vector element.
@@ -596,6 +599,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
 
             check_elem_expr_vector_limit(expr_count, section_curr, err, fs_para);
+            check_encoded_count(expr_count, 2uz, expr_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::wasm1p1_invalid_elem_expr_count, err);
+            count_section_storage(module_storage, fs_para, expr_count, sizeof(typename decltype(element_storage.vec_expr)::value_type), section_curr, err);
             element_storage.vec_expr.reserve(static_cast<::std::size_t>(expr_count));
             // parse_by_scan succeeded, so [section_curr, expr_count_next) is now proven safe and expr_count_next is inside [section_curr, section_end].
             // Proof view before moving section_curr: section_curr still points at the expression count, and expr_count_next marks the first expression.
@@ -770,7 +775,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 wasm1p1_element_details::check_active_table(element_storage, module_storage, counts, section_curr, err);
                 // parse_funcidx_vector checks the vector count and every funcidx against section_end before returning the tail pointer.
                 // Pointer move: replace section_curr with the first byte after the checked funcidx vector.
-                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, counts, section_curr, section_end, err, fs_para);
+                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, module_storage, counts, section_curr, section_end, err, fs_para);
 
                 // [before_element_payload ... offset_expr ... funcidx_vec] tail ... (section_end)
                 // [                         safe                       ] unsafe (could be the section_end)
@@ -790,7 +795,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 //                                      ^^ section_curr
                 // parse_funcidx_vector checks the vector count and every funcidx against section_end before returning the tail pointer.
                 // Pointer move: replace section_curr with the first byte after the checked funcidx vector.
-                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, counts, section_curr, section_end, err, fs_para);
+                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, module_storage, counts, section_curr, section_end, err, fs_para);
 
                 // [before_element_payload ... elemkind funcidx_vec] tail ... (section_end)
                 // [                    safe                     ] unsafe (could be the section_end)
@@ -814,7 +819,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 wasm1p1_element_details::check_active_table(element_storage, module_storage, counts, section_curr, err);
                 // parse_funcidx_vector checks the vector count and every funcidx against section_end before returning the tail pointer.
                 // Pointer move: replace section_curr with the first byte after the checked funcidx vector.
-                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, counts, section_curr, section_end, err, fs_para);
+                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, module_storage, counts, section_curr, section_end, err, fs_para);
 
                 // [before_element_payload ... tableidx ... offset_expr ... elemkind funcidx_vec] tail ... (section_end)
                 // [                                      safe                                ] unsafe (could be the section_end)
@@ -835,7 +840,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 //                                      ^^ section_curr
                 // parse_funcidx_vector checks the vector count and every funcidx against section_end before returning the tail pointer.
                 // Pointer move: replace section_curr with the first byte after the checked funcidx vector.
-                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, counts, section_curr, section_end, err, fs_para);
+                section_curr = wasm1p1_element_details::parse_funcidx_vector(element_storage, module_storage, counts, section_curr, section_end, err, fs_para);
 
                 // [before_element_payload ... elemkind funcidx_vec] tail ... (section_end)
                 // [                    safe                     ] unsafe (could be the section_end)

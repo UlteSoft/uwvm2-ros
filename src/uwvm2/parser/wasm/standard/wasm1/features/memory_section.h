@@ -266,6 +266,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(memory_count, 2uz, memory_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_memory_count, err);
+        count_section_storage(module_storage, fs_para, memory_count, sizeof(typename decltype(memorysec.memories)::value_type), section_curr, err);
         memorysec.memories.reserve(static_cast<::std::size_t>(memory_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 memory_counter{};  // use for check

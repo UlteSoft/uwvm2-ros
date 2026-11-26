@@ -49,6 +49,7 @@ import uwvm2.parser.wasm.standard.wasm3.type.custom_section_details;
 import uwvm2.parser.wasm.binfmt.binfmt_ver1;
 import :def;
 import :feature_def;
+import :parser_limit;
 
 #ifndef UWVM_MODULE
 # define UWVM_MODULE

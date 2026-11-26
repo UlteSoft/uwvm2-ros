@@ -56,4 +56,20 @@ int main()
         { wasm1p1::get_wasm1p1_parameter(parameters).disable_extended_const = false; opcodes(limit)(parameters); };
     };
     if(!check<wasm, proposals>(sum, extended(3)) || !check<wasm, proposals>(sum, extended(2), u8"const_expr_opcodes", 3, 2)) { return 4; }
+    // Two empty custom sections with distinct names require two retained section records.
+    constexpr ::std::uint8_t customs[]{0,97,115,109,1,0,0,0, 0,2,1,'a', 0,2,1,'b'};
+    using custom_record = ::uwvm2::parser::wasm::standard::wasm1::section::custom_section;
+    constexpr auto bytes{2uz * sizeof(custom_record)};
+    auto const sections = [](auto count, auto storage_bytes)
+    {
+        return [=](auto& parameters)
+        {
+            auto& limits{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm>(parameters).parser_limit};
+            limits.max_custom_sections = count;
+            limits.max_section_storage_bytes = storage_bytes;
+        };
+    };
+    if(!check<wasm>(customs, sections(2, bytes)) ||
+       !check<wasm>(customs, sections(1, bytes), u8"custom_sections", 2, 1) ||
+       !check<wasm, proposals>(customs, sections(2, bytes - 1), u8"section_storage_bytes", bytes, bytes - 1)) { return 5; }
 }

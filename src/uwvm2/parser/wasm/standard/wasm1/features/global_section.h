@@ -749,6 +749,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
         }
 
+        check_encoded_count(global_count, 3uz, global_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_global_count, err);
+        count_section_storage(module_storage, fs_para, global_count, sizeof(typename decltype(globalsec.local_globals)::value_type), section_curr, err);
         globalsec.local_globals.reserve(static_cast<::std::size_t>(global_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 global_counter{};  // use for check

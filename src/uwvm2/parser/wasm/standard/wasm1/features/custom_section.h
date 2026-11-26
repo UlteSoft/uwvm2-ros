@@ -48,6 +48,7 @@
 # include <uwvm2/parser/wasm/standard/wasm3/type/custom_section_details.h>
 # include "def.h"
 # include "feature_def.h"
+# include "parser_limit.h"
 #endif
 
 #ifndef UWVM_MODULE_EXPORT
@@ -184,7 +185,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // get custom_section_storage_t from storages
         auto& customsec{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<custom_section_storage_t>(module_storage.sections)};
 
-        // storage
+        ::std::size_t limit{default_max_custom_sections};
+        if constexpr((::std::same_as<wasm1, Fs> || ...))
+        { limit = ::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(fs_para).parser_limit.max_custom_sections; }
+        checked_parser_total(customsec.customs.size(), 1uz, limit, u8"custom_sections", sec_id_module_ptr, err);
+        count_section_storage(module_storage, fs_para, 1uz, sizeof(typename decltype(customsec.customs)::value_type), sec_id_module_ptr, err);
         customsec.customs.push_back(::std::move(cs));
     }
 

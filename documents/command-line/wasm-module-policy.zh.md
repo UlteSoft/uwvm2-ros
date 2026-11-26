@@ -26,6 +26,8 @@
 | --- | --- |
 | `codesec_codes`、`code_locals` | 函数体、局部变量 |
 | `const_expr_opcodes` | 模块内全局变量、表初值、元素条目和主动段偏移量的常量表达式指令总数（默认 1,048,576）。结尾的 `end` 不计数。 |
+| `custom_sections` | 每模块自定义节记录总数（默认 65,536），包括名称重复的未知自定义节。 |
+| `section_storage_bytes` | 节向量、嵌套元素条目、局部变量声明组及常量指令的宿主记录累计字节数（默认 256 MiB）。每条按宿主记录大小计费，导入导出记录另计描述符指针大小。字符串和数据视图借用输入字节。 |
 | `typesec_types`、`tagsec_count` | 类型、异常标签 |
 | `importsec_imports`、`exportsec_exports` | 导入、导出 |
 | `globalsec_globals`、`memorysec_memories`、`tablesec_tables` | 本地全局变量、线性内存、表 |

@@ -664,6 +664,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(type_count, 1uz, type_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_type_count, err);
+        count_section_storage(module_storage, fs_para, type_count, sizeof(typename decltype(typesec.types)::value_type), section_curr, err);
         typesec.types.reserve(static_cast<::std::size_t>(type_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 type_counter{};  // use for check

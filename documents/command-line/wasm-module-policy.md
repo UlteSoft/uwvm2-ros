@@ -29,6 +29,8 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | --- | --- |
 | `codesec_codes`, `code_locals` | Code bodies and locals |
 | `const_expr_opcodes` | Total instructions in constant expressions across globals, table initializers, element entries and active segment offsets (default 1,048,576). The final `end` consumes no entry. |
+| `custom_sections` | Custom section records per module (default 65,536), including repeated unknown names. |
+| `section_storage_bytes` | Cumulative native record bytes for section vectors, nested element entries, local declaration runs and constant instructions (default 256 MiB). Each entry costs its host record size. Import/export records also include their descriptor pointer. String and data views borrow the input bytes. |
 | `typesec_types`, `tagsec_count` | Types and exception tags |
 | `importsec_imports`, `exportsec_exports` | Imports and exports |
 | `globalsec_globals`, `memorysec_memories`, `tablesec_tables` | Local global, memory and table declarations |

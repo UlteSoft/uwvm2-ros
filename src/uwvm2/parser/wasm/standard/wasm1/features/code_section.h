@@ -219,6 +219,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         }
 
         // There is no need to check code_count > sz max here, as it automatically satisfies the condition since it matches the function size.
+        check_encoded_count(code_count, 2uz, code_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_code_count, err);
+        count_section_storage(module_storage, fs_para, code_count, sizeof(typename decltype(codesec.codes)::value_type), section_curr, err);
         codesec.codes.reserve(static_cast<::std::size_t>(code_count));
 
         // parse_by_scan succeeded, so [section_curr, code_count_next) is now proven safe and code_count_next is inside [section_curr, section_end].
@@ -395,6 +397,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 }
             }
 
+            check_encoded_count(local_count, 2uz, local_count_next, code_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_local_count, err);
+            count_section_storage(module_storage, fs_para, local_count, sizeof(typename decltype(code.locals)::value_type), section_curr, err);
             code.locals.reserve(static_cast<::std::size_t>(local_count));
 
             // parse_by_scan succeeded, so [section_curr, local_count_next) is now proven safe and local_count_next is inside [section_curr, code_end].
@@ -468,14 +472,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 if constexpr((::std::same_as<wasm1, Fs> || ...))
                 {
                     auto const limit{::uwvm2::parser::wasm::concepts::get_curr_feature_parameter<wasm1>(fs_para).parser_limit.max_code_locals};
-                    auto const expanded{static_cast<::std::size_t>(all_clocal_counter)+static_cast<::std::size_t>(clocal_n)};
-                    if(expanded>limit)
-                    {
-                        err.err_curr=section_curr;
-                        err.err_selectable.exceed_the_max_parser_limit={u8"expanded_code_locals",expanded,limit};
-                        err.err_code=::uwvm2::parser::wasm::base::wasm_parse_error_code::exceed_the_max_parser_limit;
-                        ::uwvm2::parser::wasm::base::throw_wasm_parse_code(::fast_io::parse_code::invalid);
-                    }
+                    checked_parser_total(all_clocal_counter, clocal_n, limit, u8"expanded_code_locals", section_curr, err);
                 }
 
                 all_clocal_counter += clocal_n;

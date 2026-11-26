@@ -356,6 +356,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
         }
 
+        check_encoded_count(export_count, 3uz, export_count_next, section_end, ::uwvm2::parser::wasm::base::wasm_parse_error_code::invalid_export_count, err);
+        using export_record = typename decltype(exportsec.exports)::value_type;
+        // Each record also gets one pointer in the descriptor buckets after parsing.
+        count_section_storage(module_storage, fs_para, export_count, sizeof(export_record) + sizeof(export_record const*), section_curr, err);
         exportsec.exports.reserve(static_cast<::std::size_t>(export_count));
 
         ::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32 export_counter{};  // use for check
