@@ -217,3 +217,19 @@ expression-form entries in all segments of each input module. Its default is
 instance allocates only the required function, opaque or GC element slots.
 Table and segment construction quotas for a worker apply across its provider
 graph. References to the same provider consume its backing once.
+
+## Loader graph
+
+The process `runtime_modules` ceiling includes the executable, Wasm
+preloads, native drivers and local providers. The command line applies the
+final host settings to all explicit preloads, in either option order.
+Registration checks again with the actual local providers. Private restore
+checks its newly built declarations before reserving the dependency graph.
+
+`--wasm-process-initializer-limit dependency_edges N` limits distinct
+importing-module/provider pairs across that graph (default 1,048,576).
+When dependency warnings are enabled, `cycle_path_entries` limits the sum of
+module names retained in cycle diagnostics, including the closing name
+(default 65,536). A self-loop uses two entries. Cycle enumeration, graph and
+export tables, the runtime registry, module preload records and linked
+memory-tag plans draw from the process initializer metadata byte pool.

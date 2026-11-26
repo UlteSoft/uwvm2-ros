@@ -76,6 +76,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
     inline constexpr ::std::size_t default_max_element_expressions{saturating_cast_size_t(1048576u)};
 
+    inline constexpr ::std::size_t default_max_dependency_edges{saturating_cast_size_t(1048576u)};
+    inline constexpr ::std::size_t default_max_cycle_path_entries{saturating_cast_size_t(65536u)};
+
     struct initializer_limit_t
     {
         ::std::size_t max_runtime_modules{default_max_runtime_modules};
@@ -95,6 +98,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         ::std::size_t max_local_defined_elements{default_max_local_defined_elements};
         ::std::size_t max_local_defined_datas{default_max_local_defined_datas};
         ::std::size_t max_element_expressions{default_max_element_expressions};
+        ::std::size_t max_dependency_edges{default_max_dependency_edges};
+        ::std::size_t max_cycle_path_entries{default_max_cycle_path_entries};
+
+        [[nodiscard]] constexpr bool permits_module_counts(::std::size_t wasm_preloads,
+            ::std::size_t native_drivers = 0uz, ::std::size_t local_providers = 0uz, ::std::size_t additional = 0uz) const noexcept
+        {
+            if(max_runtime_modules == 0uz || wasm_preloads >= max_runtime_modules) { return false; }
+            auto remaining{max_runtime_modules - 1uz - wasm_preloads}; // executable owns the first entry.
+            if(native_drivers > remaining) { return false; }
+            remaining -= native_drivers;
+            return local_providers <= remaining && additional <= remaining - local_providers;
+        }
     };
 
     inline initializer_limit_t initializer_limit{};

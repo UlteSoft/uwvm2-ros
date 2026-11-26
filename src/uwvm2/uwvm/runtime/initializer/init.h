@@ -9811,7 +9811,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         details::reset_configured_import_reset_match_counts();
         auto const all_module_size{::uwvm2::uwvm::wasm::storage::all_module.size()};
         details::check_reserve_limit(u8"runtime_modules", all_module_size, initializer_limit.max_runtime_modules);
-        ::uwvm2::uwvm::runtime::storage::active_runtime_registry().reserve(all_module_size);
+#ifdef UWVM_CPP_EXCEPTIONS
+        try
+#endif
+        { ::uwvm2::uwvm::runtime::storage::active_runtime_registry().reserve(all_module_size); }
+#ifdef UWVM_CPP_EXCEPTIONS
+        catch(::std::bad_alloc const&) { ::uwvm2::utils::allocator::resource::initializer_metadata_limit(); }
+#endif
         if(::uwvm2::uwvm::io::show_verbose) [[unlikely]]
         {
             details::verbose_info(u8"initializer: Reserve runtime storage (modules=",

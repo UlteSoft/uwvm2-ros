@@ -124,6 +124,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
             rename_module_name = ::uwvm2::utils::container::u8string_view{currp2_str};
         }
 
+        if(!::uwvm2::uwvm::wasm::loader::permits_registered_modules(1uz))
+        {
+            ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] preload exceeds the process runtime_modules limit.");
+            return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
+        }
         auto& new_preloaded_dl{::uwvm2::uwvm::wasm::storage::preloaded_dl.emplace_back()};
 
         auto const load_dl_rtl{

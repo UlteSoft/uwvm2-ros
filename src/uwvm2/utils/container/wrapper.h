@@ -352,6 +352,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         using map = ::uwvm2::utils::container::map<Key, Val, Compare, Alloc>;
     }  // namespace tlc
 
+    template <typename T>
+    using initializer_std_allocator = ::uwvm2::utils::allocator::resource::std_allocator<T, ::uwvm2::utils::allocator::resource::pool::initializer>;
+    template <typename T>
+    using initializer_std_vector = std_vector<T, initializer_std_allocator<T>>;
+
     /// @brief unordered
     template <typename Key,
               typename Hash = ::std::hash<Key>,
@@ -380,6 +385,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
     template <typename Key, typename Val, typename Compare>
     using validation_map = map<Key, Val, Compare, ::uwvm2::utils::allocator::resource::std_allocator<
         ::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation>>;
+
+    template <typename Key, typename T>
+    using initializer_map = unordered_flat_map<Key, T, ::std::hash<Key>, ::std::equal_to<Key>,
+        initializer_std_allocator<::std::pair<Key const, T>>>;
+    template <typename Key>
+    using initializer_set = unordered_flat_set<Key, ::std::hash<Key>, ::std::equal_to<Key>, initializer_std_allocator<Key>>;
 
     template <typename Key,
               typename Hash = ::std::hash<Key>,

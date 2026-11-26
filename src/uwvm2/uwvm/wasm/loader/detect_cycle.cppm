@@ -21,6 +21,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 
 // std
 #include <cstddef>
@@ -36,6 +37,7 @@ module;
 
 export module uwvm2.uwvm.wasm.loader:detect_cycle;
 
+import uwvm2.uwvm.runtime.initializer.limits;
 import fast_io;
 import uwvm2.utils.container;
 import uwvm2.utils.ansies;

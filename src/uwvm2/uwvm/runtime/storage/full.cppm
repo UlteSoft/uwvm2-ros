@@ -20,6 +20,7 @@
  ****************************************/
 
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #include <uwvm2/utils/container/standard.h>
@@ -39,6 +40,7 @@ module;
 
 export module uwvm2.uwvm.runtime.storage:full;
 
+import uwvm2.uwvm.runtime.initializer.limits;
 import fast_io;
 import uwvm2.uwvm.io;
 import uwvm2.utils.container;
