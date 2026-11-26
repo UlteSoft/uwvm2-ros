@@ -56,11 +56,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         if(comparison_mask==0u) { return true; } // Authenticated active MTE mapping checks the complete 4-bit tag.
         if(!tag_start) { tag_start=raw->getType()->getIntegerBitWidth()-4u; }
         auto const tag{b.CreateAnd(b.CreateTrunc(b.CreateLShr(raw,tag_start),b.getInt8Ty()),b.getInt8(15u),"memtag.pointer")};
-        auto const first{b.CreateLShr(offset,4u,"memtag.first")};
+        // The complete byte span already fits this native data mapping. On a
+        // narrow host discard the proven-zero high bits before the shift.
+        auto const native_offset{b.CreateZExtOrTrunc(offset,b.getIntNTy(bits))};
+        auto const first{b.CreateLShr(native_offset,4u,"memtag.first")};
         auto const check{[&](::llvm::Value* granule) noexcept
         {
-            auto const index{b.CreateZExtOrTrunc(granule,b.getIntNTy(bits))};
-            auto const address{b.CreateGEP(b.getInt8Ty(),tags,index,"memtag.address")};
+            auto const address{b.CreateGEP(b.getInt8Ty(),tags,granule,"memtag.address")};
             auto const stored{b.CreateLoad(b.getInt8Ty(),address,"memtag.allocation")};
             stored->setAlignment(::llvm::Align{1u});
             if(shared) {stored->setAtomic(::llvm::AtomicOrdering::Monotonic);}
@@ -93,7 +95,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             b.SetInsertPoint(bad);
             // The common fault ABI uses the granule's starting BYTE offset,
             // matching shadow_view::check, not the shadow-array element index.
-            fail(b.CreateZExtOrTrunc(raw,b.getInt64Ty()),b.CreateShl(granule,b.getInt64(4u)),
+            fail(b.CreateZExtOrTrunc(raw,b.getInt64Ty()),b.CreateShl(b.CreateZExtOrTrunc(granule,b.getInt64Ty()),4u),
                 b.CreateZExt(tag,b.getInt32Ty()),b.CreateZExt(stored,b.getInt32Ty()));
             // LLVM 23 getTerminator() requires a well-formed block and no
             // longer returns null for an unterminated block. Inspect the last
@@ -111,13 +113,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         if(!check(first)) {return false;}
         if(bytes!=1u)
         {
-            auto const last{b.CreateLShr(b.CreateAdd(offset,b.getInt64(bytes-1u)),4u,"memtag.last")};
             auto const fn{b.GetInsertBlock()->getParent()};
             auto const second{::llvm::BasicBlock::Create(b.getContext(),"memtag.second",fn)};
             auto const done{::llvm::BasicBlock::Create(b.getContext(),"memtag.checked",fn)};
-            // Contained accesses perform one tag load even for atomic shadows.
-            b.CreateCondBr(b.CreateICmpNE(first,last),second,done);b.SetInsertPoint(second);
-            if(!check(last)) {return false;}
+            // Only the low nibble decides whether the last byte lies in the
+            // next granule. Contained accesses still perform one shadow load.
+            auto const within{b.CreateAnd(b.CreateTrunc(native_offset,b.getInt8Ty()),b.getInt8(15u))};
+            b.CreateCondBr(b.CreateICmpUGT(within,b.getInt8(16u-bytes)),second,done);b.SetInsertPoint(second);
+            if(!check(b.CreateAdd(first,b.getIntN(bits,1u),"memtag.next"))) {return false;}
             b.CreateBr(done);b.SetInsertPoint(done);
         }
         return true;
