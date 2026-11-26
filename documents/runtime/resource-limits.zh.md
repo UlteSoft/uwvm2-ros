@@ -21,6 +21,8 @@
 | `parser` | `single-bytes`、`live-bytes` | 256 MiB、1 GiB | 解析后的记录、常量表达式、名称表和递归类型元数据的单次申请及同时存活的容量 |
 | `validation` | `single-bytes`、`live-bytes` | 256 MiB、512 MiB | 验证器及翻译过程中受限操作数栈、控制栈和临时缓冲区 |
 
+模块可用 `parser.limit.type-metadata-bytes`、`parser.limit.function-body-bytes` 和 `parser.limit.module-code-bytes` 收紧相应字节上限。三者都支持全局、组、单模块覆盖，最终取模块配置和进程硬上限中的较小值。
+
 模块的 `parser.limit.*` 数量上限也同时生效。以 `code_locals` 为例，解析器既检查局部变量声明组的数量，也检查所有声明组展开后的变量总数。模块的 `section_storage_bytes` 按记录的宿主类型计算逻辑大小。进程的 `parser live-bytes` 在容器实际申请和释放空间时计费，扩容期间新旧两块内存同时占用额度。多个模块复用一个已登记的递归类型时，注册表保留一份规范类型 ID。临时查找数据由验证器计费。
 
 ## 初始化与执行
@@ -36,7 +38,7 @@
 | `runtime` | `auxiliary-single-bytes` | `auxiliary-live-bytes` | 256 MiB | 1 GiB |
 | `runtime` | `threads-single-bytes` | `threads-live-bytes` | 256 MiB | 4 GiB |
 
-在较窄的宿主上，字节默认值最高取 `PTRDIFF_MAX`。初始线性内存和表同时受初始化单次额度与各自执行期字节池约束。初始化元数据包括模块实例的记录向量、声明的函数引用、表达式形式的元素段、LLVM 的间接调用表视图及常量表达式求值所需的工作区。恢复过程的私有副本和新工作线程各自计费。多个导入绑定同一张表或同一块线性内存时，表槽和内存页由实际所有者计费一次。
+在较窄的宿主上，字节默认值最高取 `PTRDIFF_MAX`。初始线性内存和表同时受初始化单次额度与各自执行期字节池约束。定义模块可通过 `init.allocation-bytes` 收紧单个表或内存的初始容量。线程实例及恢复的实例按定义模块的额度检查实际要创建的容量。初始化元数据包括模块实例的记录向量、声明的函数引用、表达式形式的元素段、LLVM 的间接调用表视图及常量表达式求值所需的工作区。恢复过程的私有副本和新工作线程各自计费。多个导入绑定同一张表或同一块线性内存时，表槽和内存页由实际所有者计费一次。
 
 | 设置 | 作用范围 |
 | --- | --- |
@@ -44,6 +46,8 @@
 | `--wasm-process-initializer-limit dependency_edges N` | 一个链接图中不同的“发起模块、提供模块”对数，默认 1,048,576 |
 | `--wasm-process-initializer-limit cycle_path_entries N` | 循环依赖诊断中保留的模块名总数，默认 65,536。一条自环路径记录两次同一个名字 |
 | `--wasm-process-initializer-limit element_expressions N` | 每个模块所有元素段的表达式项总数，默认 1,048,576。`init.element-expressions` 可按模块收紧 |
+
+通过 `global.get` 初始化相互依赖的全局变量时，初始化器把待求值的定义和操作数保存在受限工作栈中。根定义的深度为零，`--wasm-depend-recursion-limit` 默认允许 2,048 层依赖。把该参数设为零会解除层数限制，工作栈的字节额度依然生效。
 
 例如，同一模块从一个提供者导入两个函数，产生两个导入记录和一条依赖边。为该模块收紧初始化额度可以使用以下形式，其中 `camera` 是预载模块的显式注册名。
 
