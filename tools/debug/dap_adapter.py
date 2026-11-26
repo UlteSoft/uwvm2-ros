@@ -3836,7 +3836,13 @@ class Adapter:
         if restoring:
             completed = re.fullmatch(r"snapshot-restored stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}) source=(ready|unavailable); guest paused; external effects are not rewound\n", reply)
             reattached = re.fullmatch(r"snapshot-reattached stop=([1-9][0-9]{0,19}) epoch=([1-9][0-9]{0,19}); original native operation retained; guest paused; no external operation repeated\n", reply)
-            rejected = re.fullmatch(r"error: snapshot-restore rejected phase=([0-9]+) detail=([0-9]+) preparation=[0-9]+ state-error=[0-9]+ applied=0 retained=1; original stopped world retained; inspect status before further management\n", reply)
+            rejected = re.fullmatch(
+                r"error: snapshot-restore rejected phase=([0-9]{1,10}) detail=([0-9]{1,10}) preparation=([0-9]{1,10})"
+                r"(?P<engine> engine-error=[0-9]{1,10} resource=[0-9]{1,10} stage=(?:module|parse|lower|verify|optimize|qualify|emit|resolve|freeze)"
+                r" native-bytes=[0-9]{1,20}(?: module=[0-9]{1,20}(?: function=[0-9]{1,20})?)?)?"
+                r" state-error=[0-9]+ applied=0 retained=1; original stopped world retained; inspect status before further management\n", reply)
+            if rejected and rejected["engine"] and rejected.group(1, 2, 3) != ("6", "11", "6"):
+                rejected = None
             # Only authenticated preflight refusals can reopen read access.
             # A failed/pending publication or an unknown outcome must keep old
             # references retired even when its reply says applied=0.

@@ -152,7 +152,7 @@ extern "C++"
             auto const policy{runtime_llvm_jit_unwind_call_stack_requested()};
             auto const granularity{g_runtime.debug_granularity==llvm_jit_debug_safe_point_granularity::instruction?
                 compile::llvm_jit_debug_safe_point_granularity::instruction:compile::llvm_jit_debug_safe_point_granularity::entry_loop};
-            if(!profile || !prepared->prepare_all_native_engines(profile,policy,granularity,request.maximum_private_native_endpoint_functions))
+            if(!profile || !prepared->prepare_all_native_engines(profile,policy,granularity,request.maximum_private_native_endpoint_functions,out.engine_location))
             {
                 out.engine_diagnostic=prepared->engine_diagnostic_;out.native_payload_bytes=prepared->native_bytes_;
                 out.resource_diagnostic=static_cast<unsigned>(prepared->phase_);return;

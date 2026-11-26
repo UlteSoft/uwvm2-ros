@@ -726,6 +726,28 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         // Real precreated OS workers held with private roots/TLS. No guest entry.
         ::std::size_t maximum_private_closed_workers{256u};
     };
+    struct llvm_jit_checkpoint_engine_location
+    {
+        enum class stage : unsigned char { module, parse, lower, verify, optimize, qualify, emit, resolve, freeze };
+        stage operation{stage::module};
+        ::std::size_t module{SIZE_MAX}, function{SIZE_MAX};
+        [[nodiscard]] constexpr char const* operation_name() const noexcept
+        {
+            switch(operation)
+            {
+                case stage::module: return "module";
+                case stage::parse: return "parse";
+                case stage::lower: return "lower";
+                case stage::verify: return "verify";
+                case stage::optimize: return "optimize";
+                case stage::qualify: return "qualify";
+                case stage::emit: return "emit";
+                case stage::resolve: return "resolve";
+                case stage::freeze: return "freeze";
+            }
+            return "unknown";
+        }
+    };
     struct llvm_jit_checkpoint_prepare_result
     {
         llvm_jit_checkpoint_prepare_status status{llvm_jit_checkpoint_prepare_status::not_selected};
@@ -784,6 +806,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
         // BEFORE old retirement. These counts confer no execution authority.
         ::std::size_t started_private_closed_workers{}, held_private_closed_workers{};
         bool private_closed_worker_cohort_held{};
+        llvm_jit_checkpoint_engine_location engine_location{};
     };
     struct llvm_jit_checkpoint_native_retirement_result
     {
@@ -1429,7 +1452,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::lib
     // wait_milliseconds is clamped to 50; 0 is a nonwaiting actual-state query.
     // Timeout keeps admission closed and ALL actual owners retained. The state
     // resources_quiescent means admitted entry TLS/GC/native cleanup completed
-    // and actual full compiler workers/cache native worker physically retired.
+    // and full compiler, cache and published checkpoint workers physically retired.
     // Cache retirement uses the qualified FastIO native-owner join; timeout or
     // unsupported provider remains pending with its true native owner retained.
     // It is NOT caller guest-thread join, external service destruction or all

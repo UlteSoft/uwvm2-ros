@@ -180,6 +180,19 @@ class Restore(unittest.TestCase):
             self.assertTrue(adapter.snapshot_restore_pending)
             with self.assertRaises(dap.LocalRequestRefusal):adapter.command("status")
             self.assertEqual(broker.commands,["dump restore continue"])
+    def test_engine_diagnostic_preserves_retained_world_receipt(self):
+        details = "engine-error=5 resource=3 stage=lower native-bytes=1048576 module=0 function=2"
+        refusal = (f"error: snapshot-restore rejected phase=6 detail=11 preparation=6 {details} state-error=12 "
+                   "applied=0 retained=1; original stopped world retained; inspect status before further management\n")
+        response, _, adapter = self.run_request({"continue": True}, reply=refusal)
+        self.assertFalse(response["success"])
+        self.assertIn(details, response["message"])
+        self.assertFalse(adapter.snapshot_restore_pending)
+        self.assertIsNone(adapter.stop_key)
+        for invalid in (refusal.replace("phase=6", "phase=1"), refusal.replace("preparation=6", "preparation=5"),
+                        refusal.replace("stage=lower", "stage=unknown")):
+            _, _, adapter = self.run_request({"continue": True}, reply=invalid)
+            self.assertTrue(adapter.snapshot_restore_pending)
     def test_success_requires_unique_bounded_new_cohort(self):
         complete="snapshot-restored stop=8 epoch=3 source=ready; guest paused; external effects are not rewound\n"
         thread="thread 9 module=0 function=4 byte-offset=0 generation=3\n"

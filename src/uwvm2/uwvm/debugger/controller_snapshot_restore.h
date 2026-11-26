@@ -189,6 +189,13 @@ static void restored_complete(void* context,domain_type const* domain,
         initial.restore_detail=static_cast<unsigned>(result.status);
         initial.restore_preparation=static_cast<unsigned>(result.preparation.status);
         initial.restore_state_error=static_cast<unsigned>(result.preparation.data_error);
+        if(result.status==state::preparation_declined &&
+           result.preparation.status==lib::llvm_jit_checkpoint_prepare_status::engine_preparation_declined)
+        {
+            auto const& prepared=result.preparation;
+            initial.restore_engine=controller_reply::engine_decline{
+                prepared.engine_location,prepared.native_payload_bytes,prepared.engine_diagnostic,prepared.resource_diagnostic};
+        }
         if(result.status==state::pending_execution || result.status==state::pending_native_join || result.status==state::busy)
         {initial.restore_phase=7u;initial.restore_pending=true;return initial;}
         if(result.status!=state::restored_execution_started)

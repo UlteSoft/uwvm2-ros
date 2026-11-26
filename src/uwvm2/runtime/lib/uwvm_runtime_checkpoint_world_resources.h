@@ -26,8 +26,8 @@ extern "C++"
         friend class runtime_checkpoint_guest_worker_bridge;
         friend class runtime_checkpoint_continuation_dispatcher;
         friend class runtime_wasip1_debug_environment;
-        friend void checkpoint_join_published_workers_after_drain(
-            ::std::shared_ptr<runtime_checkpoint_world_transaction> const&) noexcept;
+        friend ::fast_io::thread_join_status checkpoint_join_published_workers_until(
+            ::std::shared_ptr<runtime_checkpoint_world_transaction> const&, ::std::chrono::steady_clock::time_point) noexcept;
         using source_type = ::uwvm2::uwvm::runtime::full::full_source_instance;
         using source_owner = source_type::owner;
         using module_type = checkpoint_world_data::st::wasm_module_storage_t;
@@ -1223,7 +1223,7 @@ extern "C++"
             ::uwvm2::runtime::checkpoint::compilation_profile::owner const& actual_profile,
             bool unwind_stack,
             ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::llvm_jit_debug_safe_point_granularity granularity,
-            ::std::size_t maximum_endpoint_functions)
+            ::std::size_t maximum_endpoint_functions, llvm_jit_checkpoint_engine_location& location)
         {
             namespace checkpoint=::uwvm2::runtime::checkpoint;
             if(!unwind_stack) { return false; } // Restored ROS worlds must retain checked crash stacks.
@@ -1247,6 +1247,7 @@ extern "C++"
             for(auto const owner:actual_dense_module_owners_)
             {
                 if(owner>=modules_.size() || modules_[owner].new_actual_id>=engines_.size()) { return fail(preparation_status::source_mismatch); }
+                location = {llvm_jit_checkpoint_engine_location::stage::module, modules_[owner].new_actual_id, SIZE_MAX};
                 auto actual_module{context_->prepare_compiler_module_owner(modules_[owner].actual)};
                 if(!actual_module || !actual_module->matches_unpublished_file() || actual_module->file()!=modules_[owner].file)
                 { return fail(preparation_status::source_mismatch); }
@@ -1277,7 +1278,7 @@ extern "C++"
                     if(!charge_native(function->bytes.size(),1u)) { return false; }
                     bodies[local].public_function_index=imported+local;bodies[local].generation=function->words[1u];bodies[local].body=function->bytes;
                 }
-                auto compiled{engine_type::prepare(*actual_module,modules_[owner].new_actual_id,actual_profile,bodies,stack_policy,granularity,this,&charge_staged_native_backing)};
+                auto compiled{engine_type::prepare(*actual_module,modules_[owner].new_actual_id,actual_profile,bodies,stack_policy,granularity,this,&charge_staged_native_backing,location)};
                 engine_diagnostic_=static_cast<unsigned>(compiled.status);
                 if(compiled.status!=engine_type::preparation_status::ok || !compiled.data)
                 {

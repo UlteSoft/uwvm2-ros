@@ -211,6 +211,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::debugger
         ::uwvm2::runtime::lib::llvm_jit_checkpoint_replay_status replay{};
         ::uwvm2::utils::container::std_string historical_environment{};
         unsigned restore_phase{},restore_detail{},restore_preparation{},restore_state_error{};
+        struct engine_decline
+        {
+            ::uwvm2::runtime::lib::llvm_jit_checkpoint_engine_location location{};
+            ::std::uint64_t native_bytes{};
+            unsigned engine{},resource{};
+        };
+        ::std::optional<engine_decline> restore_engine{};
         bool restore_applied{},restore_pending{},restore_original_retained{},restore_reattached{};
         ::std::uint_least64_t restore_epoch{};
         ::uwvm2::utils::control::error status{};

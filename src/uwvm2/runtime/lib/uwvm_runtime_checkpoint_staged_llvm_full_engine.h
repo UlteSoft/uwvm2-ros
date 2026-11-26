@@ -109,8 +109,9 @@ extern "C++"
             ::uwvm2::utils::container::std_vector<effective_function_body> const& effective,
             call_stack_policy stack_policy,
             ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::llvm_jit_debug_safe_point_granularity granularity,
-            void* native_budget_owner,native_budget_charge native_charge) noexcept
+            void* native_budget_owner,native_budget_charge native_charge, llvm_jit_checkpoint_engine_location& location) noexcept
         {
+            using stage = llvm_jit_checkpoint_engine_location::stage;
             namespace compile = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm;
             namespace emit = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             namespace checkpoint = ::uwvm2::runtime::checkpoint;
@@ -171,8 +172,10 @@ extern "C++"
                 emit::require_runtime_module_declaration_policy(runtime_module, features, validation_error);
                 auto const limits{effective_code_body_limits(features)};
                 ::std::size_t total_body_bytes{};
+                location.operation=stage::parse;
                 for(::std::size_t index{}; index != count; ++index)
                 {
+                    location.function=imported+index;
                     // [0..count actual ordered body DATA] end
                     // [safe] index<count selects DATA, module declaration and
                     // private code slot before any raw expression pointer borrow.
@@ -223,6 +226,8 @@ extern "C++"
                     data->locals_[index] = ::std::move(local);
                 }
 
+                location.function=SIZE_MAX;
+                location.operation=stage::module;
                 if(!data->security_allows_original_code()) { return {}; }
                 if(!ensure_llvm_jit_native_target_initialized())
                 { return {{}, preparation_status::unsupported_native}; }
@@ -230,7 +235,8 @@ extern "C++"
                 auto const attributes{get_llvm_jit_host_target_attribute_storage()};
                 ::llvm::SmallVector<::llvm::StringRef, 16> attribute_refs{};
                 append_llvm_jit_host_target_attribute_refs(attributes, attribute_refs);
-                auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(::llvm::CodeGenOptLevel::Aggressive, runtime_module.translation)};
+                auto const policy{resolve_runtime_llvm_jit_full_materialize_strategy(
+                    ::llvm::CodeGenOptLevel::Aggressive, runtime_module.translation, nullptr, data->profile_.get())};
                 ::llvm::EngineBuilder target_builder{};
                 target_builder.setEngineKind(::llvm::EngineKind::JIT).setOptLevel(policy.codegen_opt_level)
                     .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs);
@@ -263,8 +269,10 @@ extern "C++"
                 { return {{}, preparation_status::lowering_declined}; }
                 {
                 emit::private_host_object_emission_scope owned_objects{data->owner_, *ir.llvm_module};
+                location.operation=stage::lower;
                 for(::std::size_t index{}; index != count; ++index)
                 {
+                    location.function=imported+index;
                     auto& local{data->locals_[index]};
                     checkpoint::function_plan work{}; work.profile = data->profile_;
                     // [actual strong source-owned immutable registry] end
@@ -295,6 +303,8 @@ extern "C++"
                         plan.producer_availability != checkpoint::status::ok || plan.resume_abi_revision != 2u || plan.resume_sites.empty())
                     { return {{}, preparation_status::lowering_declined}; }
                 }
+                location.function=SIZE_MAX;
+                location.operation=stage::verify;
                 if(!owned_objects.valid() || !emit::finalize_runtime_llvm_jit_module_storage(ir, true) ||
                     ir.llvm_module == nullptr || ir.llvm_context_holder == nullptr)
                 { return {{}, preparation_status::lowering_declined}; }
@@ -304,8 +314,19 @@ extern "C++"
                 set_llvm_module_target_triple_from_machine(*module, *target);
                 module->setDataLayout(target->createDataLayout());
                 apply_runtime_llvm_jit_native_target_function_attrs(*module, cpu, cpu, *target);
+                location.operation=stage::optimize;
                 if(!optimize_runtime_llvm_jit_module(*module, *target, policy.pipeline, policy.codegen_opt_level, true, false))
                 { return {{}, preparation_status::native_failure}; }
+                auto native_level{policy.codegen_opt_level};
+                if(native_level != ::llvm::CodeGenOptLevel::None && policy.uses_debug_session_budget() &&
+                   runtime_llvm_jit_native_ir_size{*module}.exceeds_debug_budget())
+                {
+                    native_level = ::llvm::CodeGenOptLevel::None;
+                    target = make_runtime_llvm_jit_materialize_target_machine(cpu, attributes, native_level);
+                    if(!target) { return {{}, preparation_status::unsupported_native}; }
+                    target->setFastISel(true);
+                }
+                location.operation=stage::qualify;
                 for(auto& local : data->locals_) { for(auto& octet : local.debug_safe_point_bits) { octet = 0u; } }
                 if(!visit_optimized_llvm_jit_debug_safe_points(*module,
                     [&](::std::uint64_t module_id, ::std::uint64_t function, ::std::uint64_t offset) noexcept
@@ -345,6 +366,7 @@ extern "C++"
                 if(!data->prepare_native_endpoint_declarations(*module,*context,endpoint_declarations))
                 { return {{},preparation_status::native_endpoint_failure}; }
 #endif
+                location.operation=stage::emit;
                 // Stable host-function mappings are the same process ABI in
                 // both worlds; owned mutable objects use only private pointers.
                 ::uwvm2::runtime::compiler::shared::strict_float_jit::register_symbols();
@@ -356,7 +378,7 @@ extern "C++"
                 auto* const checkpoint_ir{module.get()};
 #endif
                 auto* const engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
-                    .setEngineKind(::llvm::EngineKind::JIT).setOptLevel(policy.codegen_opt_level)
+                    .setEngineKind(::llvm::EngineKind::JIT).setOptLevel(native_level)
                     .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs)
                     .setMCJITMemoryManager(llvm_jit_memory_manager_owner_t{memory.release()}).create(target.release())};
                 if(engine == nullptr) { return {{}, preparation_status::native_failure}; }
@@ -412,9 +434,11 @@ extern "C++"
                     if(!data->ranges_->owns_pending_loaded_function_entry(code)) { return 0u; }
                     return callable;
                 };
+                location.operation=stage::resolve;
                 for(::std::size_t index{}; index != count; ++index)
                 {
                     auto const public_index{imported + index};
+                    location.function=public_index;
                     auto const typed_name{get_runtime_llvm_jit_wasm_function_name(runtime_module, public_index)};
                     auto& entries{data->entries_[index]};
                     entries.typed = resolve(typed_name);
@@ -425,6 +449,8 @@ extern "C++"
                     if(entries.typed == 0u || entries.raw == 0u || entries.resume_typed == 0u || entries.resume_raw == 0u)
                     { return {{}, preparation_status::native_failure}; }
                 }
+                location.function=SIZE_MAX;
+                location.operation=stage::freeze;
                 if(data->ranges_->has_observation_failure()) { return {{}, preparation_status::native_failure}; }
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
                 if(!data->freeze_native_endpoint_capture())
