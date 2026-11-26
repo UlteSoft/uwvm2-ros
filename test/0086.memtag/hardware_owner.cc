@@ -45,23 +45,22 @@ static void mismatch_rejected(std::byte* pointer,bool store) {
 }
 template<typename Address,bool Shared>
 void exercise() {
- using View=mt::shadow_view<Address,Shared>;
  constexpr auto width=sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64;
  constexpr auto status=sizeof(Address)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64;
  linear::mmap_memory_t owner(65536,status);owner.init_by_page_count(1,4);
- CHECK(owner.enable_memtag(width,Shared)==mt::storage_error::none);
+ CHECK(owner.enable_memtag(width,Shared,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
  CHECK(!owner.memtag_shadow.hardware_active());
  CHECK(owner.memtag_shadow.hardware_selected());
  owner.memory_begin[0]=std::byte{42};
  auto view=owner.memtag_shadow.template view<Address,Shared>(65536);
- auto tag=View::insert(0,sizeof(Address)==4?9:0xb9);
+ CHECK(view.tag_start_bit()==sizeof(Address)*8u-8u);
+ auto tag=view.with_tag(Address{0xb} << (sizeof(Address)*8u-4u),9);
  CHECK(view.store(tag,32));
  CHECK(rt::activate_owner_hardware(owner));CHECK(owner.memtag_shadow.hardware_active());
  CHECK(rt::activate_owner_hardware(owner));
  CHECK(hw::load_tag(owner.memory_begin)==9 && hw::load_tag(owner.memory_begin+16)==9);
  CHECK(hw::load_tag(owner.memory_begin+32)==0);
- // A shadow tag may carry eight bits, but neighboring allocation colors must
- // also differ after projection into the four physical tag bits used by LDG.
+ // The directory and physical granules agree on each four-bit color.
  auto managed=[&](mt::opcode operation,Address pointer) {
   Address operands[]{pointer,16};
   return rt::execute<true,Address,Shared>(owner,operation,operands);
@@ -69,7 +68,7 @@ void exercise() {
  auto reserved=managed(mt::opcode::reserve,128);CHECK(reserved);
  CHECK(hw::load_tag(owner.memory_begin+128)==0);
  auto active=managed(mt::opcode::claimz,208);CHECK(active); // exactly 64 bytes between extents
- auto a=View::extract(active.operation.value)&15u, r=View::extract(reserved.operation.value)&15u;
+ auto a=view.pointer_tag(active.operation.value), r=view.pointer_tag(reserved.operation.value);
  CHECK(a && r && a!=r && hw::load_tag(owner.memory_begin+208)==a);
  CHECK(managed(mt::opcode::activate,reserved.operation.value));
  CHECK(hw::load_tag(owner.memory_begin+128)==r);
@@ -83,7 +82,7 @@ void exercise() {
   native=bytes.data(); // Stable mmap fixture retains it only while the owner lives.
  }));
  mismatch_rejected(native,false);mismatch_rejected(native,true);
- std::array<Address,2> args{View::insert(16,6),16};
+ std::array<Address,2> args{view.with_tag(16,6),16};
  CHECK(rt::execute<true,Address,Shared>(owner,mt::opcode::storez,args));
  CHECK(hw::load_tag(owner.memory_begin)==9 && hw::load_tag(owner.memory_begin+16)==6);
  CHECK(rt::with_checked_access<Address,Shared>(owner,args[0],0,16,[](std::span<std::byte> b) noexcept {
@@ -95,7 +94,7 @@ void exercise() {
  CHECK(owner.grow_strictly(1));CHECK(owner.get_page_size()==2);
  CHECK(hw::load_tag(owner.memory_begin)==9 && hw::load_tag(owner.memory_begin+16)==6);
  CHECK(hw::load_tag(owner.memory_begin+65536)==0);
- args={View::insert(65536,5),32};
+ args={view.with_tag(65536,5),32};
  CHECK(rt::execute<true,Address,Shared>(owner,mt::opcode::storez,args));
  CHECK(hw::load_tag(owner.memory_begin+65536)==5);
  CHECK(rt::with_host_access(owner,args[0],32,[](std::span<std::byte> b) noexcept {
@@ -112,10 +111,10 @@ void threaded_growth() {
 #if defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD)
  linear::mmap_memory_t owner(65536,linear::mmap_memory_status_t::wasm32);owner.init_by_page_count(1,4);
  owner.sequentially_consistent_size=true;
- CHECK(owner.enable_memtag(mt::address_width::i32,true)==mt::storage_error::none);
+ CHECK(owner.enable_memtag(mt::address_width::i32,true,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
  CHECK(rt::activate_owner_hardware(owner));
  auto view=owner.memtag_shadow.view<std::uint32_t,true>(65536);
- CHECK(view.store(view.insert(0,8),16));
+ CHECK(view.store(view.with_tag(0,8),16));
  uwvm2::utils::thread::stop_source stop;
  mt::details::storage_failure_test_hook=[](mt::storage_operation op,std::size_t){return op==mt::storage_operation::commit;};
  auto failed=owner.grow_threaded_profile(1,262144,stop.get_token());
@@ -127,7 +126,7 @@ void threaded_growth() {
  CHECK(owner.memtag_shadow.prepared_memory_bytes()>=131072);
  CHECK(hw::load_tag(owner.memory_begin+65536)==0);
  auto fresh=owner.memtag_shadow.view<std::uint32_t,true>(131072);
- CHECK(fresh.store(fresh.insert(65536,6),16));CHECK(hw::load_tag(owner.memory_begin+65536)==6);
+ CHECK(fresh.store(fresh.with_tag(65536,6),16));CHECK(hw::load_tag(owner.memory_begin+65536)==6);
  auto limited=owner.grow_threaded_profile(4096,1u<<29,stop.get_token());
  CHECK(limited.status==linear::threaded_grow_status::limit && owner.get_page_size()==2);
  stop.request_stop();
@@ -136,11 +135,11 @@ void threaded_growth() {
 }
 void partial_granule() {
  linear::mmap_memory_t owner(1,linear::mmap_memory_status_t::wasm32);owner.init_by_page_count(17,10000);
- CHECK(owner.enable_memtag(mt::address_width::i32,false)==mt::storage_error::none);
- auto v=owner.memtag_shadow.view<std::uint32_t>(17);CHECK(v.store(v.insert(0,7),17));
+ CHECK(owner.enable_memtag(mt::address_width::i32,false,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
+ auto v=owner.memtag_shadow.view<std::uint32_t>(17);CHECK(v.store(v.with_tag(0,7),17));
  CHECK(rt::activate_owner_hardware(owner));
  CHECK(owner.grow_strictly(14));CHECK(hw::load_tag(owner.memory_begin+16)==7);
- CHECK(rt::check_access<std::uint32_t,false>(owner,v.insert(0,7),0,31));
+ CHECK(rt::check_access<std::uint32_t,false>(owner,v.with_tag(0,7),0,31));
  CHECK(owner.grow_strictly(20));CHECK(hw::load_tag(owner.memory_begin+32)==0);
  CHECK(rt::check_access<std::uint32_t,false>(owner,32,0,19));
 }

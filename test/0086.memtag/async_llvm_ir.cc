@@ -31,7 +31,7 @@ static void emit(llvm::Module& module,unsigned bits,unsigned bytes,bool shared,b
     auto* function=llvm::Function::Create(type,llvm::Function::ExternalLinkage,name(bits,bytes,shared,deferred,mask),module);
     b.SetInsertPoint(llvm::BasicBlock::Create(module.getContext(),"entry",function));
     auto* offset=b.CreateAnd(b.CreateZExtOrTrunc(function->getArg(2),b.getInt64Ty()),
-        b.getInt64(bits==32u?0x0fffffffull:0x00ffffffffffffffull));
+        b.getInt64(bits==32u?0x0fffffffull:0x0fffffffffffffffull));
     auto* outside=llvm::BasicBlock::Create(module.getContext(),"outside",function);
     auto* bounded=llvm::BasicBlock::Create(module.getContext(),"bounded",function);
     b.CreateCondBr(b.CreateICmpUGT(offset,b.getInt64(64u-bytes)),outside,bounded);
@@ -73,15 +73,14 @@ static void exercise(llvm::ExecutionEngine& engine,unsigned bytes,bool shared,bo
     std::array<std::uint8_t,4u> tags{};
     std::array<std::uint8_t,64u> data{};
     std::array<std::uint64_t,5u> evidence{};
-    constexpr unsigned tag=sizeof(Address)==4u?7u:0xa3u;
+    constexpr unsigned tag=7u;
     for(unsigned offset:{0u,15u,16u,31u,48u,63u})
     {
         if(offset>data.size()-bytes) { continue; }
         auto pointer=view::insert(static_cast<Address>(offset),static_cast<Address>(tag));
         auto const first=offset/16u,last=(offset+bytes-1u)/16u;
-        for(unsigned target:{first,last}) for(unsigned change:{0u,1u,16u})
+        for(unsigned target:{first,last}) for(unsigned change:{0u,1u,8u})
         {
-            if(sizeof(Address)==4u && change==16u) { continue; }
             tags.fill(tag);tags[target]^=change;data.fill(0x3cu);evidence.fill(0u);
             bool const mismatches=(change&mask)!=0u;
             CHECK(function(tags.data(),data.data(),pointer,evidence.data())==(mismatches&&!deferred?1u:0u));
@@ -114,7 +113,7 @@ int main()
     for(unsigned bits:{32u,64u}) for(unsigned bytes:{1u,2u,4u,8u,16u}) for(bool shared:{false,true})
     {
         for(bool deferred:{false,true}) { emit(*module,bits,bytes,shared,deferred,0xffu); }
-        for(bool deferred:{false,true}) { emit(*module,bits,bytes,shared,deferred,bits==32u?0u:0xf0u); }
+        for(bool deferred:{false,true}) { emit(*module,bits,bytes,shared,deferred,0u); }
     }
     if(llvm::verifyModule(*module,&llvm::errs())) { return 3; }
     std::string error;
@@ -127,7 +126,7 @@ int main()
         for(bool deferred:{false,true})
         { exercise<std::uint32_t>(*engine,bytes,shared,deferred,0xffu,cases);exercise<std::uint64_t>(*engine,bytes,shared,deferred,0xffu,cases); }
         for(bool deferred:{false,true})
-        { exercise<std::uint32_t>(*engine,bytes,shared,deferred,0u,cases);exercise<std::uint64_t>(*engine,bytes,shared,deferred,0xf0u,cases); }
+        { exercise<std::uint32_t>(*engine,bytes,shared,deferred,0u,cases);exercise<std::uint64_t>(*engine,bytes,shared,deferred,0u,cases); }
     }
-    std::printf("PASS async LLVM verifier/native execution: %u cases, returning recorder, exact granule bytes, immediate bounds, full/partial tag masks\n",cases);
+    std::printf("PASS async LLVM verifier/native execution: %u cases, returning recorder, exact granule bytes, immediate bounds, software and delegated checks\n",cases);
 }

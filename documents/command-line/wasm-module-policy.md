@@ -65,7 +65,9 @@ uwvm2-ros \
 
 Here `camera` must define an MTE memory at local definition index zero. The index excludes imports. The per-memory choice overrides the owner's module default. All aliases share the owner's backend, tag field and allocation state. The calling module still masks addresses, checks bounds and executes explicit tag and zeroing operations when ordinary comparisons are off. Another module can check tags on the same memory.
 
-A new software memory uses the highest four pointer bits by default. A software owner rebuilt from a full snapshot preserves the saved four-bit field anywhere inside the ADM bits. For a memory64 owner with 16 ignored bits, its first bit can be 48 through 60. `auto` can select a compatible Linux/AArch64 checked mapping. A required Arm owner needs hardware support, compatible geometry, crash delivery and checked callers. The current VM rejects a required Intel MTT owner. The VM format admits ADM with either pointer width and variable ignored-bit counts. The SDK's instrumented release target is `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
+A new software memory uses the highest four pointer bits by default and requires at least four ignored bits. A software owner rebuilt from a full snapshot preserves the saved four-bit field anywhere inside the ADM bits. For a memory64 owner with 16 ignored bits, its first bit can be 48 through 60.
+
+Arm MTE requires at least eight ignored bits. Its guest field is [27:24] in memory32 and [59:56] in memory64. Both map to [59:56] on the AArch64 host. `auto` selects software when the geometry or host is ineligible. An explicit Arm request requires a compatible checked mapping, crash delivery and checked callers. Intel MTT reserves [28:25] in memory32 and [60:57] in memory64, with at least seven ignored bits. The current VM rejects an explicit Intel MTT request. The VM accepts these narrow guest declarations independently of the SDK's instrumented release ABI, `wasm64_adm16`. [Owner layout and delivery](../runtime/memtag-extension.md)
 
 ### Pointers shared between modules
 

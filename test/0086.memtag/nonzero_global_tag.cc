@@ -67,8 +67,7 @@ static void rejection_limits(width w)
 #endif
 
 #if defined(__linux__)
-// Replay must consume the same raw draws as a recording, even when one generation
-// rejects zero on memory32 but the same byte would be a valid memory64 tag.
+// Replay consumes each raw draw, including draws whose four tag bits are zero.
 static void observer_replay()
 {
     struct transcript
@@ -95,7 +94,7 @@ static void observer_replay()
     buffer.bytes[0] = 0x10;
     buffer.bytes[1] = 0xff;
     buffer.bytes[2] = 0;
-    buffer.bytes[3] = 0x90;
+    buffer.bytes[3] = 0x9d;
     rt::current_tag_entropy_observer = &source;
     for(bool replay : {false,true})
     {
@@ -103,8 +102,8 @@ static void observer_replay()
         log.position = 0;
         std::uint8_t tag{};
         CHECK(rt::next_nonzero_global_tag(width::i32,tag) && tag == 15 && log.position == 2);
-        CHECK(rt::next_nonzero_global_tag(width::i64,tag) && tag == 144 && log.position == 4);
-        CHECK(!rt::next_nonzero_global_tag(width::i32,tag) && tag == 144 && log.position == 4);
+        CHECK(rt::next_nonzero_global_tag(width::i64,tag) && tag == 13 && log.position == 4);
+        CHECK(!rt::next_nonzero_global_tag(width::i32,tag) && tag == 13 && log.position == 4);
         CHECK(buffer.position == 4);
     }
     rt::current_tag_entropy_observer = nullptr;
@@ -118,7 +117,7 @@ int main()
 #if defined(__linux__)
     rt::details::entropy_read_test_hook = byte_sequence;
     uniform_nonzero(width::i32,16);
-    uniform_nonzero(width::i64,256);
+    uniform_nonzero(width::i64,16);
     rejection_limits(width::i32);
     rejection_limits(width::i64);
     observer_replay();

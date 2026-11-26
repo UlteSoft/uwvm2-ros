@@ -24,11 +24,11 @@ static void wrong_bounds(uwvm2::object::memory::error::mmap_memory_error_t const
 static void previous(int,::siginfo_t*,void*) noexcept {::_Exit(91);}
 template<class Address,bool Shared> void test() {
  linear::mmap_memory_t memory(65536,sizeof(Address)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64);memory.init_by_page_count(1,2,99);
- CHECK(memory.enable_memtag(sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64,Shared)==mt::storage_error::none);
+ CHECK(memory.enable_memtag(sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64,Shared,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
  CHECK(rt::activate_owner_hardware(memory));
  auto view=memory.memtag_shadow.view<Address,Shared>(65536);
- constexpr unsigned tag=sizeof(Address)==4?11:171;
- CHECK(view.store(view.insert(0,tag),16));
+ constexpr unsigned tag=11u;
+ CHECK(view.store(view.with_tag(0,tag),16));
  auto* right=mt::hardware_mte::tagged_pointer(memory.memory_begin,tag);*right=std::byte{42};
  for(bool write:{false,true}) {
   int fds[2];CHECK(::pipe(fds)==0);auto pid=::fork();CHECK(pid>=0);

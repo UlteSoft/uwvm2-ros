@@ -547,7 +547,7 @@ template <typename LoadLength>
             bool const canonical{::uwvm2::extension::memtag::hardware_mte::canonical_native_span(
                 reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
                 info.stable_memory_reserved_span_bytes)};
-            pointer=emit_memtag_hardware_pointer(b,base,raw_address,pointer,static_offset,canonical);
+            pointer=emit_memtag_hardware_pointer(b,base,raw_address,pointer,shadow.tag_start_bit(),canonical);
             if(pointer==nullptr) { return nullptr; }
         }
 #endif

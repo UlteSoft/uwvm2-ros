@@ -18,16 +18,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
     // wrapping IR: even invalid inputs cannot manufacture poison/inbounds UB.
     [[nodiscard]] inline ::llvm::Value* emit_memtag_hardware_pointer(::llvm::IRBuilder<>& b,
         ::llvm::Value* base,::llvm::Value* raw,::llvm::Value* checked_pointer,
-        ::std::uint64_t /*static_offset*/,bool canonical_owner) noexcept
+        unsigned guest_tag_start,bool canonical_owner) noexcept
     {
         if(!base || !raw || !checked_pointer || !base->getType()->isPointerTy() ||
            !checked_pointer->getType()->isPointerTy() ||
            (!raw->getType()->isIntegerTy(32u) && !raw->getType()->isIntegerTy(64u)) ||
+           guest_tag_start > raw->getType()->getIntegerBitWidth()-4u ||
            b.GetInsertBlock()->getModule()->getDataLayout().getPointerSizeInBits()!=64u) { return nullptr; }
         auto* const i64{b.getInt64Ty()};
-        auto* const tag{raw->getType()->isIntegerTy(32u) ?
-            b.CreateZExt(b.CreateLShr(raw,28u),i64) :
-            b.CreateAnd(b.CreateLShr(raw,56u),b.getInt64(15u))};
+        // Only the owner's four guest tag bits enter the native Arm top byte.
+        auto* const tag{b.CreateZExtOrTrunc(b.CreateAnd(b.CreateLShr(raw,guest_tag_start),15u),i64)};
         auto* address{b.CreatePtrToInt(checked_pointer,i64)};
         if(!canonical_owner) { address=b.CreateAnd(address,b.getInt64(0x00ffffffffffffffull)); }
         return b.CreateIntToPtr(b.CreateOr(address,b.CreateShl(tag,b.getInt64(56u))),
@@ -82,9 +82,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             auto const fn{b.GetInsertBlock()->getParent()};
             auto const bad{::llvm::BasicBlock::Create(b.getContext(),"memtag.mismatch",fn)};
             auto const good{::llvm::BasicBlock::Create(b.getContext(),"memtag.matches",fn)};
-            // A partial hardware-assisted tag compares only the upper nibble.
-            // XOR/TST avoids two separate masks while retaining the full byte
-            // for diagnostics. The ordinary full-byte path keeps its exact IR.
+            // Software compares the byte containing each four-bit allocation
+            // tag. A masked comparison retains the loaded value for diagnostics.
             auto* const mismatch{comparison_mask==0xffu ? b.CreateICmpNE(tag,stored) :
                 b.CreateICmpNE(b.CreateAnd(b.CreateXor(tag,stored),b.getInt8(comparison_mask)),b.getInt8(0u))};
             // This is layout/profile information, never a tag assumption.

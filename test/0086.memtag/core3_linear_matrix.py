@@ -58,11 +58,11 @@ def globals_v2(entries, version=2):
     return u(version) + u(len(entries)) + b"".join(u(index) + u(address) + u(length) for index, address, length in entries)
 
 
-def module(code=b"", widths=(32,), *, imports=(), ordinary=(), sections=(), data=(), start=False, export_memory=False):
+def module(code=b"", widths=(32,), *, imports=(), ordinary=(), sections=(), data=(), start=False, export_memory=False, memory32_adm=4):
     """imports contains (module, field, address_bits); data uses None for passive."""
     result = HEADER + sec(1, b"\x01\x60\0\0")
     def limits(index, bits):
-        return memory_limits(bits == 64, tagged=index not in ordinary)
+        return memory_limits(bits == 64, tagged=index not in ordinary, memory32_adm=memory32_adm)
     if imports:
         types = (text(owner) + text(field) + b"\x02" + limits(i, bits)
                  for i, (owner, field, bits) in enumerate(imports))

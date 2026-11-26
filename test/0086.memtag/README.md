@@ -51,8 +51,8 @@ The executable VM suites are separate from those component claims:
   the entire data store; the failure granule is its starting byte offset.
 - `async_llvm_ir.cc` adds a returning fault recorder, verifies its control
   flow, then executes synchronous and deferred variants. It checks captured
-  pointer/tag/granule evidence, immediate bounds rejection, and full/partial
-  comparison masks. Deferred mismatch deliberately permits the data write;
+  pointer/tag/granule evidence, immediate bounds rejection, software comparison
+  and delegation of all four bits to a physical access. Deferred mismatch deliberately permits the data write;
   this component does not claim synchronous suppression for async mode or
   physical Arm MTE qualification. LLVM 23 `getTerminator()` requires an
   already terminated block, so open-block tests inspect the last instruction
@@ -79,10 +79,14 @@ The executable VM suites are separate from those component claims:
 - `hardware_initialization.py` exercises ordered preload starts followed by
   deferred active data segments. It checks imported aliases and independent
   owners with globals descriptors, memory32/memory64, and enabled/disabled MTE.
-  Native x86_64 runs qualify software behavior only. Hardware qualification
-  requires an AArch64 execution environment that explicitly reports MTE.
-- `hardware_plan.cc` checks that the unpublished owner's hardware selection
-  is stable before activation and through growth and moves. Compiler and cache
+  Use `--backend arm-mte` on a capable Linux/AArch64 host to require physical
+  checking. The fixture checks the owner's status, tag width, field position and
+  successful reads carrying other ADM metadata. An unchecked caller must be
+  refused for a required hardware owner. The default backend is software.
+- `hardware_plan.cc` checks Arm admission at eight ignored bits for both
+  widths, automatic software fallback below that threshold, saved tag fields
+  and explicit Intel MTT refusals. The selection is stable before activation
+  and through growth and moves. Compiler and cache
   policy must use that selection; a later activation failure must prevent
   guest publication. The component test does not replace actual CLI execution.
 - `hardware_signal_mask.cc` checks real Linux/AArch64 per-thread admission in

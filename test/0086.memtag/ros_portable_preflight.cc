@@ -35,7 +35,7 @@ namespace uwvm2::runtime::lib
  extern "C++" bool preload_memory_write_host_api(std::size_t index,std::uint_least64_t raw,void const* in,std::size_t size) noexcept
  { std::uint64_t at{};if(!preload_memory_normalize_range_host_api(index,raw,size,at)) { return false; }writes.push_back({raw,size});if(size) { std::memcpy(bytes.data()+at,in,size); }return true; }
 }
-static std::uint64_t pointer(std::uint64_t at,unsigned tag=5) { return enabled ? at|(std::uint64_t{tag}<<(wide?56u:28u)) : at; }
+static std::uint64_t pointer(std::uint64_t at,unsigned tag=5) { return enabled ? at|(std::uint64_t{tag}<<(wide?60u:28u)) : at; }
 static void reset() { tags.fill(5);bytes.fill(std::byte{0x7f});writes.clear();normalized=0; }
 int main()
 {

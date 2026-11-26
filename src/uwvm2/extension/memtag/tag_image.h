@@ -73,18 +73,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         }
 
         [[nodiscard]] bool valid(unsigned address_bits, unsigned tag_bits, ::std::uint64_t memory_bytes,
-                                 bool hardware = false) const noexcept
+                                 bool /*hardware*/ = false) const noexcept
         {
             if(!valid_tag_image(address_bits,tag_bits,memory_bytes,tags)) { return false; }
             if(records.empty()) { return true; }
             if(!tag_bits) { return false; }
-            unsigned const mask{hardware || tag_bits == 4u ? 15u : 255u};
             ::std::uint64_t next{};
-            ::std::array<::std::uint64_t,256u> color_ends{};
+            ::std::array<::std::uint64_t,16u> color_ends{};
             return visit_allocations([&](allocation_extent const& item) noexcept
             {
-                unsigned const color{item.tag & mask};
-                if(!color || (tag_bits == 4u && item.tag > 15u) || item.parent != 0u ||
+                unsigned const color{item.tag};
+                if(!color || color > 15u || item.parent != 0u ||
                    item.first < next || item.last < item.first || item.last >= tags.size() ||
                    (!item.permanent && item.last >= memory_bytes/granule_size)) { return false; }
                 // Reservations do not yet appear in the shadow. Check prior
@@ -97,7 +96,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
                 for(auto i{item.first}; i != next; ++i)
                 { if(tags[static_cast<::std::size_t>(i)] != expected) { return false; } }
                 return visit_allocation_neighbors(item.first,item.last,tags.size(),[&](::std::uint64_t i) noexcept
-                { return (::std::to_integer<unsigned>(tags[static_cast<::std::size_t>(i)]) & mask) != color; });
+                { return ::std::to_integer<unsigned>(tags[static_cast<::std::size_t>(i)]) != color; });
             });
         }
     };

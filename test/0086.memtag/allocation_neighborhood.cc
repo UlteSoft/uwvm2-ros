@@ -8,30 +8,29 @@ namespace mt = uwvm2::extension::memtag;
 
 static void check_distribution(mt::address_width width, bool physical, unsigned pattern)
 {
-    const unsigned limit = width == mt::address_width::i32 ? 16u : 256u;
+    constexpr unsigned limit = 16u;
     mt::allocation_neighborhood policy{width, physical};
-    std::array<bool, 256> legal{};
-    for (unsigned i = 1; i < limit; ++i) { legal[i] = !physical || (i & 15u) != 0u; }
+    std::array<bool, limit> legal{};
+    for (unsigned i = 1; i < limit; ++i) { legal[i] = true; }
     for (unsigned i = 1; i < limit; ++i)
     {
         if ((pattern == 1 && !(i & 1u)) || (pattern == 2 && i % 7u == 1u) ||
             (pattern == 3 && i != 7u) || pattern == 4)
         {
             policy.forbid(static_cast<std::uint8_t>(i));
-            for (unsigned j = 0; j < limit; ++j)
-                if (physical ? (i & 15u) == (j & 15u) : i == j) { legal[j] = false; }
+            legal[i] = false;
         }
     }
     unsigned count{}, rejections{};
     for (bool value : legal) { count += value; }
-    std::array<unsigned, 256> hits{};
+    std::array<unsigned, limit> hits{};
     for (unsigned bits = 0; bits < 65536; ++bits)
     {
         std::uint8_t result{91};
         auto selected = policy.select(static_cast<std::uint16_t>(bits), result);
         if (!count) { assert(selected == mt::tag_selection::no_color && result == 91); }
         else if (selected == mt::tag_selection::retry_entropy) { assert(result == 91); ++rejections; }
-        else { assert(selected == mt::tag_selection::selected && legal[result]); ++hits[result]; }
+        else { assert(selected == mt::tag_selection::selected && result < limit && legal[result]); ++hits[result]; }
     }
     if (count) { assert(rejections == 65536u % count); }
     for (unsigned i = 0; i < limit; ++i) { assert(hits[i] == (legal[i] ? 65536u / count : 0u)); }

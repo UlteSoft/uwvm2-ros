@@ -23,7 +23,7 @@ void emit(llvm::Module& m,unsigned bits,mt::instruction_descriptor const& descri
  auto r=jit::emit_enabled_memtag_ir(b,descriptor.operation,type,{args.data(),descriptor.operand_count},
   [&](mt::opcode op,std::span<llvm::Value* const> operands)noexcept->jit::enabled_memtag_ir_result{
    CHECK(op==descriptor.operation && operands.size()==descriptor.operand_count);++calls;
-   return {true,llvm::ConstantInt::get(type,bits==32?0xf0001234ull:0xff00000000001234ull)};
+   return {true,llvm::ConstantInt::get(type,bits==32?0xf0001234ull:0xf000000000001234ull)};
   });
  CHECK(r.valid);
  bool const effect=descriptor.reads_allocation_tags || descriptor.writes_allocation_tags || descriptor.randomizes_tag;
@@ -31,12 +31,12 @@ void emit(llvm::Module& m,unsigned bits,mt::instruction_descriptor const& descri
  b.CreateRet(descriptor.result_count?r.value:llvm::ConstantInt::get(type,0));
 }
 template<class A>A expected(mt::opcode op,A a,A b,A c,A d){
- constexpr A mask=sizeof(A)==4?A{0x0fffffffu}:static_cast<A>(0x00ffffffffffffffull);
- constexpr unsigned shift=sizeof(A)==4?28:56;
+ constexpr A mask=sizeof(A)==4?A{0x0fffffffu}:static_cast<A>(0x0fffffffffffffffull);
+ constexpr unsigned shift=sizeof(A)*8u-4u;
  constexpr A tagmask=static_cast<A>(~mask);
  auto ins=[&](A p,A t){return static_cast<A>((p&mask)|((t<<shift)&tagmask));};
  switch(op){
- case mt::opcode::status:return 2;case mt::opcode::tagbits:return sizeof(A)==4?4:8;case mt::opcode::startbit:return shift;
+ case mt::opcode::status:return 2;case mt::opcode::tagbits:return 4;case mt::opcode::startbit:return shift;
  case mt::opcode::extract:return a>>shift;case mt::opcode::insert:return ins(a,b);case mt::opcode::copy:return ins(a,b>>shift);
  case mt::opcode::untag:case mt::opcode::untagstore:case mt::opcode::untagstorez:return a&mask;
  case mt::opcode::sub:return static_cast<A>((a&mask)-(b&mask));

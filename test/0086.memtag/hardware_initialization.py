@@ -7,7 +7,7 @@ import vm_matrix as m
 def build(code,wide,*,owner=False,alias=False,globals_tag=False):
  body=b"\0"+code+b"\x0b"
  result=b"\0asm\x01\0\0\0"+m.sec(1,b"\x01\x60\0\0")
- limits=m.memory_limits(wide)
+ limits=m.memory_limits(wide,memory32_adm=8)
  if alias:result+=m.sec(2,b"\x01\x05owner\x06memory\x02"+limits)
  result+=m.sec(3,b"\x01\0")
  if not alias:result+=m.sec(5,b"\x01"+limits)
@@ -23,17 +23,25 @@ def build(code,wide,*,owner=False,alias=False,globals_tag=False):
 
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--vm',type=Path,required=True);parser.add_argument('--out',type=Path,required=True)
- parser.add_argument('--engines',default='int,aot');args=parser.parse_args();args.out.mkdir(parents=True,exist_ok=True);rows=[]
+ parser.add_argument('--engines',default='int,aot')
+ parser.add_argument('--backend',choices=('software','arm-mte'),default='software')
+ args=parser.parse_args();args.out.mkdir(parents=True,exist_ok=True);rows=[]
  for wide in [False,True]:
   owner_code=m.Program(wide);owner_code.add(owner_code.tags(80,32,7))
   owner=args.out/('owner'+str(64 if wide else 32)+'.wasm');owner.write_bytes(build(owner_code.code,wide,owner=True))
   for alias in [False,True]:
    for enabled in [False,True]:
     code=m.Program(wide)
+    physical=args.backend=='arm-mte'
+    code.eq(m.op(0x20),3 if physical else 2,code.bits)
+    code.eq(m.op(0x23),4,code.bits)
+    code.eq(m.op(0x24),code.bits-(8 if physical else 4),code.bits)
+    metadata=0xa << (code.bits-(4 if physical else 8))
+    code.eq(code.n(metadata|160)+m.mem(0x2d),0)
     # Alias: the preload start has set tag 7. Independent: the descriptor has
     # assigned a nonzero random tag before the first preload start activates all owners.
     for pos,value in enumerate(b"deferred active data spans tags!"):
-     expression=code.n(80+pos)+m.op(0x27)+m.mem(0x2d);code.eq(expression,value)
+     expression=code.n(metadata|(80+pos))+m.op(0x27)+m.mem(0x2d);code.eq(expression,value)
     if enabled:
      code.add(code.n(80)+m.op(0x27)+m.op(0x21)+bytes([0x50 if wide else 0x45])+b'\x04\x40\x00\x0b')
      if alias:code.eq(code.n(80)+m.op(0x27)+m.op(0x21),7,code.bits)
@@ -41,13 +49,16 @@ def main():
     name=('alias' if alias else 'independent')+'-'+str(code.bits)+'-'+str(int(enabled));file=args.out/(name+'.wasm');file.write_bytes(raw)
     for engine in args.engines.split(','):
      command=[str(args.vm),'-R'+engine,'--runtime-compile-threads','0',
+      '--wasm-policy-global','runtime.memtag-backend',args.backend,
       *(['--wasm-policy-global', 'parser.memory64', 'on'] if wide else []),'--wasm-preload-library',str(owner),'owner']
      if engine=='aot':command+=['--runtime-llvm-jit-cache-path','disable']
      if not enabled:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
      command+=['--run',str(file)]
      done=subprocess.run(command,capture_output=True,timeout=90);log=(done.stdout+done.stderr).decode('utf8','replace')
      (args.out/(name+'-'+engine+'.log')).write_text(log)
-     row=dict(name=name,engine=engine,passed=done.returncode==0,exit=done.returncode,command=command,sha256=hashlib.sha256(raw).hexdigest())
+     expected=127 if physical and not enabled else 0
+     passed=done.returncode==expected and (expected==0 or 'unchecked caller' in log)
+     row=dict(name=name,engine=engine,backend=args.backend,passed=passed,exit=done.returncode,expected=expected,command=command,sha256=hashlib.sha256(raw).hexdigest())
      rows.append(row);(args.out/'report.json').write_text(json.dumps(rows,indent=2));print(name,engine,done.returncode,row['passed'],flush=True)
  raise SystemExit(any(not r['passed'] for r in rows))
 if __name__=='__main__':main()

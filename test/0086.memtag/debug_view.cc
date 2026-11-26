@@ -19,7 +19,7 @@ template<typename Address,bool Shared> static void exercise()
  auto view{storage.view<Address,Shared>(4096)};
  for(unsigned i{};i!=16;++i) { CHECK(view.store(decltype(view)::insert(i*16u,i),16)); }
  auto value=mt::copy_debug_tags(storage,4096,1,255,destination);
- CHECK(value.status==mt::debug_tag_status::available && value.count==16 && value.first_granule==0 && value.tag_bits==(sizeof(Address)==4 ? 4u : 8u));
+ CHECK(value.status==mt::debug_tag_status::available && value.count==16 && value.first_granule==0 && value.tag_bits==4u);
  for(unsigned i{};i!=16;++i) { CHECK(destination[i]==i); }
  value=mt::copy_debug_tags(storage,4096,15,2,destination);CHECK(value.count==2 && destination[0]==0 && destination[1]==1);
  CHECK(mt::copy_debug_tags(storage,4096,0,256,std::span(destination).first(15)).status==mt::debug_tag_status::invalid_range);

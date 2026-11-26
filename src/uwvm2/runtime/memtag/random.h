@@ -120,8 +120,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
     /// @brief Draw a uniform nonzero allocation tag for a newly instantiated linear global.
     /// @details Each draw passes through the same entropy source as a random-tag instruction.
     /// Worker recording and replay therefore observe every rejected byte in order. Independent
-    /// uniform bytes exhaust 32 draws with probability 2^-128 for memory32 or 2^-256 for
-    /// memory64. A source failure or exhaustion leaves the destination unmodified.
+    /// uniform bytes exhaust 32 draws with probability 2^-128 at either address width.
+    /// A source failure or exhaustion leaves the destination unmodified.
     [[nodiscard]] inline bool next_nonzero_global_tag(::uwvm2::extension::memtag::address_width width,
                                                       ::std::uint8_t& tag) noexcept
     {

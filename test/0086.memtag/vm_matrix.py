@@ -27,14 +27,14 @@ def simd(n,offset=0,lane=None):
  return b'\xfd'+u(n)+u(0)+u(offset)+(u(lane) if lane is not None else b'')
 def assertion(expression,expected,bits=32):
  return expression+c(expected,bits)+bytes([0x47 if bits==32 else 0x52,0x04,0x40,0x00,0x0b])
-def memory_limits(wide=False,shared=False,*,tagged=True,minimum=1,maximum=2):
+def memory_limits(wide=False,shared=False,*,tagged=True,minimum=1,maximum=2,memory32_adm=4):
  flags=1 | (4 if wide else 0) | (2 if shared else 0) | (0x30 if tagged else 0)
- geometry=bytes([16 if wide else 4]) if tagged else b''
+ geometry=bytes([16 if wide else memory32_adm]) if tagged else b''
  return u(flags)+geometry+u(minimum)+u(maximum)
-def module(code,wide=False,passive=None,shared=False,memories=1):
+def module(code,wide=False,passive=None,shared=False,memories=1,*,memory32_adm=4):
  body=b'\x01\x01'+bytes([0x7e if wide else 0x7f])+code+b'\x0b'
  result=b'\0asm\x01\0\0\0'+sec(1,b'\x01\x60\0\0')+sec(3,b'\x01\0')
- result+=sec(5,u(memories)+b''.join(memory_limits(wide,shared) for _ in range(memories)))
+ result+=sec(5,u(memories)+b''.join(memory_limits(wide,shared,memory32_adm=memory32_adm) for _ in range(memories)))
  result+=sec(7,b'\x01\x06_start\0\0')
  if passive is not None:result+=sec(12,b'\x01')
  result+=sec(10,b'\x01'+u(len(body))+body)
@@ -80,7 +80,7 @@ def markers(wide):
   p.eq(b'\x20\0'+mem(0x28),0 if opcode==0x38 else 77)
   p.eq(b'\x20\0'+op(0x21),9,bits)
  return module(p.code,wide)
-def scalars(wide):
+def scalars(wide,*,memory32_adm=4):
  p=Program(wide);p.add(p.tags());data=bytes([0xff,0xee,0xdd,0xcc,0xbb,0xaa,0x99,0x88])
  loads=[(0x28,32,4,False,False),(0x29,64,8,False,False),(0x2a,32,4,False,True),(0x2b,64,8,False,True),
  (0x2c,32,1,True,False),(0x2d,32,1,False,False),(0x2e,32,2,True,False),(0x2f,32,2,False,False),
@@ -96,7 +96,7 @@ def scalars(wide):
   value=0x887766554433eeff&((1<<bits)-1)
   p.add(p.tagged(0)+c(value,bits)+(bytes([0xbe if bits==32 else 0xbf]) if floating else b'')+mem(opcode,15))
   p.check_bytes(15,value.to_bytes(bits//8,'little')[:width])
- return module(p.code,wide)
+ return module(p.code,wide,memory32_adm=memory32_adm)
 SIMD=[(0,16,0,False,False),(1,8,0,False,False),(2,8,0,False,False),(3,8,0,False,False),(4,8,0,False,False),
  (5,8,0,False,False),(6,8,0,False,False),(7,1,0,False,False),(8,2,0,False,False),(9,4,0,False,False),
  (10,8,0,False,False),(11,16,0,True,True),(84,1,15,True,False),(85,2,7,True,False),(86,4,3,True,False),
@@ -146,7 +146,7 @@ def atomics(wide):
   p.eq(p.tagged(0)+mem(0x2d),expected)
  p.add(b'\xfe\x03\0')
  return module(p.code,wide)
-def denial(wide,kind):
+def denial(wide,kind,*,memory32_adm=4):
  p=Program(wide);p.add(p.tags());bad=16 if kind in ['scalar','simd'] else 64
  p.add(p.tags(bad,16,4))
  if kind=='scalar':p.add(p.tagged(0)+c(17,64)+mem(0x37,15))
@@ -155,7 +155,7 @@ def denial(wide,kind):
  elif kind=='copy':p.add(p.tagged(128)+p.tagged(0)+p.n(128)+fc(10)+u(0))
  elif kind=='atomic':p.add(p.tagged(64)+c(55)+b'\xfe\x17\x02\0')
  elif kind=='bounds':p.add(p.tagged(65535)+mem(0x28)+b'\x1a')
- return module(p.code,wide)
+ return module(p.code,wide,memory32_adm=memory32_adm)
 def main():
  from vm_diagnostics import fault_matches
  a=argparse.ArgumentParser();a.add_argument('--vm',type=Path);a.add_argument('--out',type=Path,required=True)

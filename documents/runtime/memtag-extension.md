@@ -374,9 +374,17 @@ tag, with one allocation tag per 16-byte granule.
 | New software memory32 | [31:28] | k ≥ 4 |
 | New software memory64 | [63:60] | k ≥ 4 |
 | Restored software memory | [s+3:s] | W−k ≤ s ≤ W−4 |
-| Arm MTE memory32 | [31:28] | k ≥ 4. The host pointer carries the tag at [59:56]. |
+| Arm MTE memory32 | [27:24] | k ≥ 8 |
 | Arm MTE memory64 | [59:56] | k ≥ 8 |
-| Intel MTT memory64 | [60:57] | k ≥ 7. The VM currently rejects this backend. |
+| Reserved Intel MTT memory32 layout | [28:25] | k ≥ 7 |
+| Reserved Intel MTT memory64 layout | [60:57] | k ≥ 7 |
+
+Bit 0 is the least significant bit. A new owner starts its tag at W−4 for
+software, W−8 for Arm MTE, or W−7 in the reserved Intel MTT layout. The Arm
+backend extracts the four guest bits into bits [59:56] of the native AArch64
+pointer for both guest widths. The VM rejects an explicit Intel MTT request
+until a checked mapping implementation is available. These memory32 layouts
+are VM declaration options. The SDK's instrumented release ABI is `wasm64_adm16`.
 
 For example, memory32 with k = 4 has a 256 MiB address domain. Additional ignored
 bits reduce the domain to 2^(W−k) bytes. `memtag.tagbits` and `memtag.startbit`
@@ -384,7 +392,9 @@ report the active layout. The tag field stays fixed across memory growth,
 imports, child memory copies and same-owner hot updates. Software can reproduce
 any saved four-bit field wholly inside the ADM bits, including the Arm and Intel
 positions. For example, memory64 with k = 16 accepts any saved start from 48
-through 60. A required Arm backend also needs its hardware field. Finite tags
+through 60. An explicit Arm request requires the saved field to match W−8.
+For example, a memory32 snapshot with its tag at bit 28 keeps bit 28 on
+software under `auto`, including on an MTE-capable host. Finite tags
 can collide, and two objects can share an addressable granule.
 
 ## Whole-range software checks

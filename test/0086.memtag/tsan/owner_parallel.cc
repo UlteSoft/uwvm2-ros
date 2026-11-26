@@ -53,7 +53,7 @@ template<class Owner,class A> void exercise(unsigned cycle) {
         for(unsigned i=0;i<20000;++i)
             rt::details::with_snapshot(owner,[&](std::span<std::byte> data) noexcept {
                 auto view=owner.memtag_shadow.template view<A,true>(data.size());
-                CHECK(view.store(V::insert(0,(i&1)?3:(sizeof(A)==8?19:7)),256));
+                CHECK(view.store(V::insert(0,(i&1)?3:7),256));
             });
     });
     std::thread grower([&] {

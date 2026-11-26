@@ -169,10 +169,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         return {4u, static_cast<::std::uint_least8_t>(start), adm_address_mask(width,ignored_bits), UINT64_C(15) << start, 15u};
     }
 
-    inline constexpr auto memory32_geometry = make_tag_geometry(address_width::i32,4u,28u);
-    inline constexpr auto memory64_software_geometry = make_tag_geometry(address_width::i64,4u,60u);
-    inline constexpr auto memory64_arm_mte_geometry = make_tag_geometry(address_width::i64,8u,56u);
-    inline constexpr auto memory64_intel_mtt_geometry = make_tag_geometry(address_width::i64,7u,57u);
+    // At a backend's minimum ADM width its tag starts at the bottom of the
+    // ignored field. Additional ADM bits extend below that fixed position.
+    [[nodiscard]] inline constexpr tag_geometry minimum_tag_geometry(address_width width, unsigned minimum_adm_bits) noexcept
+    {
+        return make_tag_geometry(width,minimum_adm_bits,static_cast<unsigned>(width)-minimum_adm_bits);
+    }
+    inline constexpr auto memory32_geometry = minimum_tag_geometry(address_width::i32,4u);
+    inline constexpr auto memory64_software_geometry = minimum_tag_geometry(address_width::i64,4u);
+    inline constexpr auto memory32_arm_mte_geometry = minimum_tag_geometry(address_width::i32,8u);
+    inline constexpr auto memory64_arm_mte_geometry = minimum_tag_geometry(address_width::i64,8u);
+    inline constexpr auto memory32_intel_mtt_geometry = minimum_tag_geometry(address_width::i32,7u);
+    inline constexpr auto memory64_intel_mtt_geometry = minimum_tag_geometry(address_width::i64,7u);
 
     // Reference status values are ABI-observable. "full" must not be used as
     // permission to omit interior granules in this implementation.

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '0086.memtag'))
 import vm_matrix as mte
 
 
-def fixture(log=False,wide=False,shared=False,tag_value=3):
+def fixture(log=False,wide=False,shared=False,tag_value=3,*,memory32_adm=4):
     bits=64 if wide else 32;word=bits//8;kind=bytes([0x7e if wide else 0x7f])
     n=lambda value:mte.c(value,bits)
     op=mte.op;sec=mte.sec;u=mte.u
@@ -29,7 +29,7 @@ def fixture(log=False,wide=False,shared=False,tag_value=3):
     for name,index in [('random_get',0),('fd_write',1)]:
         if wide:name+='_wasm64'
         imports+=u(22)+b'wasi_snapshot_preview1'+u(len(name))+name.encode()+b'\x00'+u(index)
-    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+mte.memory_limits(wide,shared))
+    module+=sec(2,imports)+sec(3,b'\x01\x02')+sec(5,b'\x01'+mte.memory_limits(wide,shared,memory32_adm=memory32_adm))
     module+=sec(7,b'\x01\x06_start\x00\x02')+sec(10,b'\x01'+u(len(body))+body)
     payload=b'MTE-REPLAY-EFFECT\n'
     data=b'\x02\x00'+n(64)+b'\x0b'+u(word*2)+(128).to_bytes(word,'little')+len(payload).to_bytes(word,'little')
@@ -46,7 +46,9 @@ def main():
     parser.add_argument('--tag',type=lambda x:int(x,0),default=3)
     args=parser.parse_args();require(0<=args.tag<=15,'tag width');args.out=args.out.resolve();args.out.mkdir(parents=True,exist_ok=False)
     require('/docker-' in Path('/proc/self/cgroup').read_text(),'resource cgroup required')
-    wasm=args.out/'tagged.wasm';wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag));vm=None;result={'passed':False}
+    wasm=args.out/'tagged.wasm'
+    wasm.write_bytes(fixture(args.log,args.memory64,args.shared,args.tag,memory32_adm=8 if args.backend=='arm-mte' else 4))
+    vm=None;result={'passed':False}
     try:
         flags=['--wasm-policy-global', 'runtime.memtag-backend',args.backend,'--runtime-memtag-mode',args.mode]
         if args.log:flags+=['--runtime-memtag-action','silent-log','path',str(args.out/'violations.log')]

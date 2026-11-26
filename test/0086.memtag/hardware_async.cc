@@ -27,16 +27,20 @@ static void software_delivered(rt::deferred::fault const& value) noexcept
     static_cast<void>(::write(report_fd,&report,sizeof report));::_Exit(122);
 }
 static void previous(int,siginfo_t*,void*) noexcept { ::_Exit(91); }
-template<class Address,bool Shared> void test(bool high,bool store)
+template<class Address,bool Shared> void test(bool store)
 {
     linear::mmap_memory_t memory(65536,sizeof(Address)==4?linear::mmap_memory_status_t::wasm32:linear::mmap_memory_status_t::wasm64);
     memory.init_by_page_count(1,2,17);
-    CHECK(memory.enable_memtag(sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64,Shared)==mt::storage_error::none);
+    CHECK(memory.enable_memtag(sizeof(Address)==4?mt::address_width::i32:mt::address_width::i64,Shared,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
     auto view=memory.memtag_shadow.template view<Address,Shared>(65536);
-    unsigned const tag=sizeof(Address)==4?11:171;
-    CHECK(view.store(view.insert(32,tag),16));CHECK(rt::activate_owner_hardware(memory));
+    constexpr unsigned tag=11u;
+    CHECK(view.store(view.with_tag(32,tag),16));CHECK(rt::activate_owner_hardware(memory));
     auto* correct=mt::hardware_mte::tagged_pointer(memory.memory_begin+32,tag);
     good=reinterpret_cast<volatile unsigned char*>(correct);*good=42;
+    // The guest's uppermost nibble carries independent ADM metadata.
+    auto const offset{(Address{0xa} << (sizeof(Address)*8u-4u)) | Address{32u}};
+    CHECK(rt::with_guest_access<Address,Shared>(memory,view.with_tag(offset,tag),0,1,[&](std::span<std::byte> bytes) noexcept
+    { CHECK(bytes.data()==correct && bytes[0]==std::byte{42}); }));
     int pipefd[2];CHECK(::pipe(pipefd)==0);auto child=::fork();CHECK(child>=0);
     if(child==0)
     {
@@ -45,7 +49,7 @@ template<class Address,bool Shared> void test(bool high,bool store)
         rt::deferred::deliver_callback.store(software_delivered);
         CHECK(rt::prepare_hardware_thread());CHECK((::prctl(56,0ul,0ul,0ul,0ul)&6)==4);
         rt::deferred::entry_scope entry;CHECK(entry.enter());rt::deferred::set_origin(3,7,41);
-        auto const pointer=view.insert(32,high?187:(sizeof(Address)==4?1:161));
+        auto const pointer=view.with_tag(offset,1);
         auto const result=rt::with_guest_access<Address,Shared>(memory,pointer,0,1,[&](std::span<std::byte> bytes) noexcept
         {
             auto* actual=reinterpret_cast<volatile unsigned char*>(bytes.data());
@@ -56,8 +60,7 @@ template<class Address,bool Shared> void test(bool high,bool store)
     ::close(pipefd[1]);evidence result{};auto bytes=::read(pipefd[0],&result,sizeof result);::close(pipefd[0]);
     int status{};CHECK(::waitpid(child,&status,0)==child);CHECK(WIFEXITED(status) && WEXITSTATUS(status)==122 && bytes==sizeof result);
     CHECK(result.value==(store?77u:42u));
-    if(high) { CHECK(!result.hardware && result.tag==187 && result.actual==171 && result.granule==32); }
-    else { CHECK(result.hardware && result.unknown); }
+    CHECK(result.hardware && result.unknown);
 }
 int main()
 {
@@ -68,9 +71,8 @@ int main()
     CHECK(::sigaction(SIGSEGV,&handler,nullptr)==0);
     for(bool store:{false,true})
     {
-        test<std::uint32_t,false>(false,store);test<std::uint32_t,true>(false,store);
-        test<std::uint64_t,false>(false,store);test<std::uint64_t,true>(false,store);
-        test<std::uint64_t,false>(true,store);test<std::uint64_t,true>(true,store);
+        test<std::uint32_t,false>(store);test<std::uint32_t,true>(store);
+        test<std::uint64_t,false>(store);test<std::uint64_t,true>(store);
     }
     auto child=::fork();CHECK(child>=0);
     if(!child)
@@ -81,7 +83,7 @@ int main()
         asm volatile("dsb sy" ::: "memory");static_cast<void>(::prctl(56,0ul,0ul,0ul,0ul));::_Exit(99);
     }
     int status{};CHECK(::waitpid(child,&status,0)==child);CHECK(WIFEXITED(status) && WEXITSTATUS(status)==91);
-    std::puts("PASS: 12 actual async read/write faults, full memory64 upper tag, exact mode, unknown hardware location, unowned forwarding");
+    std::puts("PASS: 8 async read/write faults, four-bit tags, independent ADM metadata, exact mode, unknown hardware location, unowned forwarding");
 }
 #else
 int main(){std::puts("UNSUPPORTED: requires AArch64 Linux MTE");return 77;}

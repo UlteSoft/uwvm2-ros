@@ -457,7 +457,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             candidate.backend_ = backend;
             candidate.maximum_memory_bytes_ = maximum_bytes;
             if(requested == owner_backend::x86_mtt) { return storage_error::unsupported_backend; }
-            unsigned const arm_start{address64 ? 56u : 28u};
+            unsigned const arm_start{(address64 ? memory64_arm_mte_geometry : memory32_arm_mte_geometry).start_bit};
 #if defined(__linux__) && defined(__aarch64__)
             candidate.hardware_selected_ = (requested == owner_backend::arm_mte || requested == owner_backend::automatic) &&
                 backend == storage_backend::reserved && ::uwvm2::extension::adm::valid_tag_field(address64, ignored_bits, arm_start) &&

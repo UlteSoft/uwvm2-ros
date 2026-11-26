@@ -70,7 +70,7 @@ static void check_distant_extents(mt::address_width width, bool physical, unsign
         auto const index = n*step;
         std::uint8_t tag{};
         assert(rt::reserve_static_extent(directory,count,index,index,shadow,entropy,counts,tag));
-        auto const color = physical ? tag & 15u : unsigned(tag);
+        auto const color = unsigned(tag);
         assert(color > 0 && color <= classes && counts.counts()[color] == 1u + n/classes);
     }
     for (unsigned i{}; i <= classes; ++i) { assert(counts.counts()[i] == (i ? 2u : 0u)); }
@@ -79,7 +79,7 @@ static void check_distant_extents(mt::address_width width, bool physical, unsign
 static void check_excluded_minimum(mt::address_width width, bool physical)
 {
     rt::static_color_usage usage{width,physical};
-    for (unsigned i{2}; i <= (physical || width == mt::address_width::i32 ? 15u : 255u); ++i)
+    for (unsigned i{2}; i <= 15u; ++i)
     { usage.record(static_cast<std::uint8_t>(i)); }
     auto legal{usage.legal_colors()};
     legal.forbid(1);
@@ -114,7 +114,7 @@ int main()
     check_owner<std::uint64_t,false>();
     check_owner<std::uint64_t,true>();
     check_distant_extents(mt::address_width::i32,false,15);
-    check_distant_extents(mt::address_width::i64,false,255);
+    check_distant_extents(mt::address_width::i64,false,15);
     check_distant_extents(mt::address_width::i64,true,15);
     check_excluded_minimum(mt::address_width::i32,false);
     check_excluded_minimum(mt::address_width::i64,false);

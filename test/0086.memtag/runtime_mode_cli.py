@@ -21,7 +21,7 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
     fixture = args.out / "valid.wasm"
-    fixture.write_bytes(m.scalars(False))
+    fixture.write_bytes(m.scalars(False,memory32_adm=8))
     base = shlex.split(args.runner) + [str(args.vm.resolve()), "--runtime-" + args.engine,
                                       "--runtime-compile-threads", "0"]
     if args.engine == "aot":
@@ -68,13 +68,25 @@ def main():
             expected=0 if args.hardware_supported and action=="crash" else 127
             cases.append(("hardware-"+mode+"-"+action,["--wasm-policy-global", "runtime.memtag-backend","arm-mte","--runtime-memtag-mode",mode,"--runtime-memtag-action",action]+(["err"] if action=="silent-log" else []),expected))
             cases.append(("hardware-order-"+mode+"-"+action,["--runtime-memtag-action",action]+(["err"] if action=="silent-log" else [])+["--runtime-memtag-mode",mode,"--wasm-policy-global", "runtime.memtag-backend","arm-mte"],expected))
+    launches = [(name, flags, expected, fixture) for name, flags, expected in cases]
+    for ignored in (4, 7):
+        software = m.Program()
+        software.eq(m.op(0x20), 2)
+        software.eq(m.op(0x23), 4)
+        software.eq(m.op(0x24), 28)
+        narrow = args.out / f"memory32-adm{ignored}.wasm"
+        narrow.write_bytes(m.module(software.code, memory32_adm=ignored))
+        for backend, expected in (("auto", 0), ("arm-mte", 127), ("x86-mtt", 127)):
+            launches.append((f"memory32-adm{ignored}-{backend}",
+                             ["--wasm-policy-global", "runtime.memtag-backend", backend], expected, narrow))
     rows = []
-    for name, flags, expected in cases:
-        command = base + flags + ["--", str(fixture.resolve())]
+    for name, flags, expected, guest in launches:
+        command = base + flags + ["--", str(guest.resolve())]
         done = subprocess.run(command, capture_output=True, timeout=30)
         output = (done.stdout + done.stderr).decode(errors="replace")
         (args.out / (name + ".log")).write_text(output)
-        rows.append(dict(name=name, command=command, exit=done.returncode, expected=expected,
+        rows.append(dict(name=name, command=command, fixture_sha256=hashlib.sha256(guest.read_bytes()).hexdigest(),
+                         exit=done.returncode, expected=expected,
                          passed=done.returncode == expected and (expected == 0 or "[error]" in output)))
     import re
     help_result=subprocess.run(shlex.split(args.runner)+[str(args.vm.resolve()),"--help","all"],capture_output=True,timeout=30)

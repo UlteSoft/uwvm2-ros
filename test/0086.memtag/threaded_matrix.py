@@ -12,7 +12,7 @@ def leb(data,at):
   if not b&128:return value,at
   shift+=7
 
-def shared_module(original):
+def shared_module(original,*,memory32_adm=4):
  # Input comes only from the single-function regression builders. Preserve its
  # validated code/data exactly; add a genuine imported owner and thread entry.
  sections=[];at=8
@@ -23,7 +23,7 @@ def shared_module(original):
   if kind==1:
    count,pos=leb(payload,0);assert count==1
    result+=m.sec(1,m.u(3)+payload[pos:]+bytes.fromhex('60 02 7f 7f 00 60 01 7f 00'))
-   result+=m.sec(2,m.u(2)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True)+b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02')
+   result+=m.sec(2,m.u(2)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True,memory32_adm=memory32_adm)+b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02')
   elif kind==3:
    assert payload==b'\x01\x00';result+=m.sec(3,b'\x02\x00\x01')
   elif kind==5:pass
@@ -50,7 +50,7 @@ def growth():
  p.add(p.tagged(0)+m.c(37)+m.mem(0x36));p.eq(p.tagged(0)+m.mem(0x28),37)
  return m.module(p.code)
 
-def spawned(kind):
+def spawned(kind,*,memory32_adm=4):
  p=m.Program();p.add(p.tags())
  # Completion synchronization uses tag-zero storage outside the tagged object.
  # wasi.thread-spawn may return a negative error before admitting a child,
@@ -78,7 +78,7 @@ def spawned(kind):
  child.add(m.c(4096)+m.c(1)+b'\xfe\x00\x02\0\x1a')
  result=b'\0asm\x01\0\0\0'
  result+=m.sec(1,bytes.fromhex('04 60 00 00 60 02 7f 7f 00 60 01 7f 00 60 01 7f 01 7f'))
- result+=m.sec(2,m.u(3)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True)+
+ result+=m.sec(2,m.u(3)+b'\x03env\x06memory\x02'+m.memory_limits(shared=True,memory32_adm=memory32_adm)+
   b'\x16wasi_snapshot_preview1\x09proc_exit\x00\x02'+b'\x04wasi\x0cthread-spawn\x00\x03')
  result+=m.sec(3,b'\x02\x00\x01')
  result+=m.sec(7,b'\x03\x06_start\x00\x02\x11wasi_thread_start\x00\x03\x06memory\x02\0')

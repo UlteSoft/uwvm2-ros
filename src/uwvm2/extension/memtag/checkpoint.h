@@ -40,7 +40,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
     {
         auto const narrow{storage.width()==address_width::i32};
         if(!storage.enabled() || storage.hardware_active() || !storage.allocation_directory().empty() || memory_bytes>storage.prepared_memory_bytes() ||
-           !image.valid(narrow?32u:64u,4u,memory_bytes,storage.hardware_selected())) { return false; }
+           !image.valid(narrow?32u:64u,4u,memory_bytes)) { return false; }
         managed_allocations staged;
         if(!image.visit_allocations([&](allocation_extent const& item) noexcept { return staged.add(item); }))
         { return false; } // All directory allocations precede the first shadow write.

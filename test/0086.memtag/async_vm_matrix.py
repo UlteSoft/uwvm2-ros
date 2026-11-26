@@ -65,7 +65,7 @@ def source_matches(output,expected):
 
 def with_exit(code,wide):
  body=b'\0'+code+m.c(0)+b'\x10\0\x0b'
- return b'\0asm\x01\0\0\0'+m.sec(1,bytes.fromhex('02 60 00 00 60 01 7f 00'))+m.sec(2,b'\x01\x16wasi_snapshot_preview1\x09proc_exit\0\x01')+m.sec(3,b'\x01\0')+m.sec(5,b'\x01'+m.memory_limits(wide))+m.sec(7,b'\x01\x06_start\0\x01')+m.sec(10,b'\x01'+m.u(len(body))+body)
+ return b'\0asm\x01\0\0\0'+m.sec(1,bytes.fromhex('02 60 00 00 60 01 7f 00'))+m.sec(2,b'\x01\x16wasi_snapshot_preview1\x09proc_exit\0\x01')+m.sec(3,b'\x01\0')+m.sec(5,b'\x01'+m.memory_limits(wide,memory32_adm=8))+m.sec(7,b'\x01\x06_start\0\x01')+m.sec(10,b'\x01'+m.u(len(body))+body)
 def main():
  p=argparse.ArgumentParser();p.add_argument('--vm',required=True);p.add_argument('--engine',required=True)
  p.add_argument('--out',type=Path,required=True);p.add_argument('--runner',default='');p.add_argument('--modes',default='sync,software-async')
@@ -73,24 +73,24 @@ def main():
  cases=[]
  for wide in (False,True):
   for kind in ('scalar','simd','fill','copy','atomic','bounds'):
-   cases.append((f'{32 if not wide else 64}-{kind}',m.denial(wide,kind),121 if kind=='bounds' else 122,False))
+   cases.append((f'{32 if not wide else 64}-{kind}',m.denial(wide,kind,memory32_adm=8),121 if kind=='bounds' else 122,False))
   p=m.Program(wide);p.add(p.tags());p.add(p.tagged(32,4)+m.c(77)+m.mem(0x36))
-  cases.append((f'{p.bits}-spin',m.module(p.code+b'\x03\x40\x0c\0\x0b',wide),122,False))
-  cases.append((f'{p.bits}-valid',m.scalars(wide),0,False))
+  cases.append((f'{p.bits}-spin',m.module(p.code+b'\x03\x40\x0c\0\x0b',wide,memory32_adm=8),122,False))
+  cases.append((f'{p.bits}-valid',m.scalars(wide,memory32_adm=8),0,False))
   cases.append((f'{p.bits}-host-exit',with_exit(p.code,wide),122,False))
-  cases.append((f'{p.bits}-grow',m.module(p.code+p.n(1)+b'\x40\0\x1a',wide),122,False))
+  cases.append((f'{p.bits}-grow',m.module(p.code+p.n(1)+b'\x40\0\x1a',wide,memory32_adm=8),122,False))
  p=m.Program(True);p.add(p.tags(0,512,0xa3));p.add(p.tagged(32,0xb3)+m.c(77)+m.mem(0x36))
  cases.append(('64-tag-input-is-four-bits',m.module(p.code,True),0,False))
  for widths in ((32,64),(64,32)):
   code=linear.mark(0,widths[0])+linear.mark(1,widths[1])+linear.pointer(32,widths[1],1,4)+m.c(77)+linear.memory(0x36,1)
-  cases.append((f'multi-{widths[0]}-{widths[1]}',linear.module(code,widths),122,False))
+  cases.append((f'multi-{widths[0]}-{widths[1]}',linear.module(code,widths,memory32_adm=8),122,False))
  if a.threads:
   for kind in ('good','wrong-tag','tag-zero','grow'):
-   cases.append(('thread-'+kind,threaded.spawned(kind),122 if kind in ('wrong-tag','tag-zero') else 0,True))
+   cases.append(('thread-'+kind,threaded.spawned(kind,memory32_adm=8),122 if kind in ('wrong-tag','tag-zero') else 0,True))
   p=m.Program();p.add(p.tags());p.add(p.tagged(32,4)+m.c(77)+m.mem(0x36))
   p.add(m.c(4096)+m.c(0)+m.c(-1,64)+b'\xfe\x01\x02\0\x1a')
-  cases.append(('thread-before-infinite-wait',threaded.shared_module(m.module(p.code)),122,True))
- owner=a.out/'owner.wasm';owner.write_bytes(b'\0asm\x01\0\0\0'+m.sec(5,m.u(1)+m.memory_limits(shared=True))+m.sec(7,b'\x01\x06memory\x02\0'))
+  cases.append(('thread-before-infinite-wait',threaded.shared_module(m.module(p.code),memory32_adm=8),122,True))
+ owner=a.out/'owner.wasm';owner.write_bytes(b'\0asm\x01\0\0\0'+m.sec(5,m.u(1)+m.memory_limits(shared=True,memory32_adm=8))+m.sec(7,b'\x01\x06memory\x02\0'))
  rows=[]
  for name,raw,status,threads in cases:
   path=a.out/(name+'.wasm');path.write_bytes(raw)

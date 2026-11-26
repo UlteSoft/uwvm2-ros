@@ -34,8 +34,10 @@ def main():
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     require(digest == evidence['journalSha256'], 'recorded journal changed')
     wasm = out / 'tagged.wasm'
-    wasm.write_bytes(fixture(args.log, args.memory64, args.shared, args.tag))
-    require(wasm.read_bytes() == (recorded / 'tagged.wasm').read_bytes(), 'identical original module required')
+    source = (recorded / 'tagged.wasm').read_bytes()
+    require(any(source == fixture(args.log, args.memory64, args.shared, args.tag, memory32_adm=k)
+                for k in (4, 8)), 'identical original module required')
+    wasm.write_bytes(source)
     expected = evidence['rounds'][0]['observations']
     requests = ['memory 0 0 0 16', 'memory 0 0 256 32', 'memtags 0 0 256 32', 'memtags 0 0 512 32']
     result = {'passed': False, 'journalSha256': digest, 'recorded': str(recorded), 'rounds': []}

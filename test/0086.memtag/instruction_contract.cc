@@ -3,6 +3,7 @@
 // llvm/test/CodeGen/WebAssembly/memtag-addr{32,64}.ll and
 // llvm/lib/Target/WebAssembly/WebAssemblyInstrMemtag.td.
 #include <uwvm2/extension/memtag/impl.h>
+#include <uwvm2/extension/adm/types.h>
 #include <cstdint>
 #include <string_view>
 
@@ -84,18 +85,37 @@ namespace
     static_assert(contract_matches_reference());
     static_assert(effects_match_reference());
     static_assert(m::granule_size == 16u && m::granule_size_log2 == 4u);
-    static_assert(m::memory32_geometry.tag_bits == 4u && m::memory32_geometry.start_bit == 28u);
-    static_assert(m::memory32_geometry.address_mask == 268435455ull);
-    static_assert(m::memory32_geometry.pointer_tag_mask == 4026531840ull);
-    static_assert(m::memory32_geometry.tag_value_mask == 15u);
-    static_assert(m::memory64_software_geometry.tag_bits == 8u && m::memory64_software_geometry.start_bit == 56u);
-    static_assert(m::memory64_software_geometry.address_mask == 72057594037927935ull);
-    static_assert(m::memory64_software_geometry.pointer_tag_mask == 18374686479671623680ull);
-    static_assert(m::memory64_software_geometry.tag_value_mask == 255u);
-    static_assert(m::memory64_arm_mte_geometry.tag_bits == 4u && m::memory64_arm_mte_geometry.start_bit == 56u);
-    static_assert(m::memory64_arm_mte_geometry.pointer_tag_mask == 1080863910568919040ull);
-    static_assert((m::memory64_arm_mte_geometry.address_mask ^ m::memory64_arm_mte_geometry.pointer_tag_mask) == 18446744073709551615ull);
-    static_assert(m::memory64_arm_mte_geometry.tag_value_mask == 15u);
+    namespace adm = ::uwvm2::extension::adm;
+    static_assert(adm::memory_type_flag == 0x10u && m::memory_type_flag == 0x20u);
+    static_assert(m::adm_address_mask(m::address_width::i32,0u) == UINT32_MAX);
+    static_assert(m::adm_address_mask(m::address_width::i64,0u) == UINT64_MAX);
+
+    template<typename Address>
+    constexpr bool field_matches(m::tag_geometry geometry, unsigned minimum, unsigned start,
+                                 Address address_mask, Address tag_mask, Address raw, unsigned tag)
+    {
+        auto const width{sizeof(Address) == 8u ? m::address_width::i64 : m::address_width::i32};
+        if(geometry.tag_bits != 4u || geometry.tag_value_mask != 15u || geometry.start_bit != start ||
+           geometry.address_mask != address_mask || geometry.pointer_tag_mask != tag_mask) { return false; }
+        for(unsigned k{}; k < static_cast<unsigned>(width); ++k)
+        {
+            if(adm::valid_tag_field(width == m::address_width::i64,k,start) != (k >= minimum)) { return false; }
+        }
+        // The same ADM16 pointer has the same dynamic address in every layout.
+        // Tag operations preserve the metadata in the other twelve ignored bits.
+        m::shadow_view<Address> view{nullptr,0,0,nullptr,nullptr,static_cast<Address>(m::adm_address_mask(width,16u)),start};
+        return view.canonical_address(raw) == 0x1234u && view.pointer_tag(raw) == tag &&
+               view.clear_tag(raw) == (raw & ~tag_mask) && view.with_tag(raw,31u) == (raw | tag_mask) &&
+               view.with_tag(view.clear_tag(raw),tag) == raw;
+    }
+    constexpr ::std::uint32_t raw32{0xbda51234u};
+    constexpr ::std::uint64_t raw64{UINT64_C(0xbda5000000001234)};
+    static_assert(field_matches(m::memory32_geometry,4,28,UINT32_C(0x0fffffff),UINT32_C(0xf0000000),raw32,0xb));
+    static_assert(field_matches(m::memory32_arm_mte_geometry,8,24,UINT32_C(0x00ffffff),UINT32_C(0x0f000000),raw32,0xd));
+    static_assert(field_matches(m::memory32_intel_mtt_geometry,7,25,UINT32_C(0x01ffffff),UINT32_C(0x1e000000),raw32,0xe));
+    static_assert(field_matches(m::memory64_software_geometry,4,60,UINT64_C(0x0fffffffffffffff),UINT64_C(0xf000000000000000),raw64,0xb));
+    static_assert(field_matches(m::memory64_arm_mte_geometry,8,56,UINT64_C(0x00ffffffffffffff),UINT64_C(0x0f00000000000000),raw64,0xd));
+    static_assert(field_matches(m::memory64_intel_mtt_geometry,7,57,UINT64_C(0x01ffffffffffffff),UINT64_C(0x1e00000000000000),raw64,0xe));
     static_assert(m::encoding_version == 1u && m::linear_encoding_domain == 1u);
     static_assert(m::linear_globals_section_version == 2u);
     static_assert(::std::u8string_view{m::linear_globals_section_name} == u8"uwvm.memtag.linear.globals");

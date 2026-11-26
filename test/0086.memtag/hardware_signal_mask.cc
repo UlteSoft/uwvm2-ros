@@ -57,7 +57,7 @@ static void test_mode(bool asynchronous)
     CHECK(hw::enable_current_thread_selected());
     linear::mmap_memory_t memory(65536,linear::mmap_memory_status_t::wasm32);
     memory.init_by_page_count(1,2,19);
-    CHECK(memory.enable_memtag(mt::address_width::i32,false)==mt::storage_error::none);
+    CHECK(memory.enable_memtag(mt::address_width::i32,false,8,mt::owner_backend::arm_mte)==mt::storage_error::none);
     CHECK(rt::activate_owner_hardware(memory));
     // Main thread: querying admission preserves its signal mask, handler, and
     // existing control register. Explicit caller restoration re-enables entry.
@@ -84,7 +84,7 @@ static void test_mode(bool asynchronous)
     blocked.wait(false,std::memory_order_acquire);CHECK(::pthread_sigmask(SIG_SETMASK,&original,nullptr)==0);
     CHECK(rt::prepare_hardware_thread());release.store(true,std::memory_order_release);release.notify_all();inherited.join();
     auto view=memory.memtag_shadow.view<std::uint32_t,false>(65536);
-    CHECK(view.store(view.insert(32,7),16));
+    CHECK(view.store(view.with_tag(32,7),16));
     auto* good=reinterpret_cast<volatile unsigned char*>(hw::tagged_pointer(memory.memory_begin+32,7));
     *good=55;CHECK(*good==55);CHECK((::prctl(56,0ul,0ul,0ul,0ul)&6)==(asynchronous?4:2));
 }
