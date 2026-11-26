@@ -32,7 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 {
     namespace memtag_details
     {
-        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic, adm };
+        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic, adm, adm16_live, adm16_live_local };
         using native_memory_t = ::uwvm2::object::memory::linear::native_memory_t;
         using action_t = void(*)(native_memory_t const&, ::std::byte*&, ::std::uint64_t) noexcept;
 
@@ -136,15 +136,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 
 #if defined(UWVM_SUPPORT_MMAP)
         enum class adm_scalar_bounds : unsigned { unavailable, live_length, declared_minimum, full_guard };
+        inline constexpr auto wasm64_adm16_mask{
+            ::uwvm2::extension::memtag::adm_address_mask(::uwvm2::extension::memtag::address_width::i64,16u)};
 
         // Emitted for a private, stable mapping after proving mask+offset+Bytes
         // representable. A varying sub-OS-page tail always needs its byte length
         // unless the complete reachable access is below the declared minimum.
-        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store, bool Wasm64Adm16=false>
         UWVM_ALWAYS_INLINE inline void adm_scalar_access(adm_scalar_bounds bounds, native_memory_t const& memory,
             ::std::uint64_t raw, ::std::uint64_t offset, Value& value) noexcept
         {
-            auto const effective{(raw & memory.memtag_shadow.address_mask())+offset};
+            auto const mask{Wasm64Adm16 ? wasm64_adm16_mask : memory.memtag_shadow.address_mask()};
+            auto const effective{(raw & mask)+offset};
             if(bounds == adm_scalar_bounds::live_length)
             {
                 auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
@@ -261,7 +264,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         UWVM_ALWAYS_INLINE inline constexpr void checked_integer_access(native_memory_t const& memory, Address raw,
             ::std::uint64_t offset, Value& value, ::std::byte const*& ip) noexcept
         {
-            static_assert(Policy != scalar_policy::adm);
+            static_assert(Policy != scalar_policy::adm && Policy != scalar_policy::adm16_live && Policy != scalar_policy::adm16_live_local);
             ::std::byte const* encoded_origin{};
             if constexpr(Policy==scalar_policy::synchronous_log || Policy==scalar_policy::software_async)
             {
@@ -316,7 +319,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             if constexpr(Store)
             { value=get_curr_val_from_operand_stack_top<Option,Value,ValuePos>(args...); }
             wasm_address address{};
-            if constexpr(Store && merged)
+            if constexpr(Policy==scalar_policy::adm16_live_local)
+            {
+                static_assert(!Store && ::std::same_as<Address,::std::uint64_t>);
+                auto const local_offset{details::read_imm<::std::size_t>(args...[0])};
+                ::std::memcpy(::std::addressof(address),args...[2]+local_offset,sizeof(address));
+            }
+            else if constexpr(Store && merged)
             {
                 static_assert(ValuePos==AddressPos);
                 if constexpr(address_end-address_begin>=2uz)
@@ -334,10 +343,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             else { address=get_curr_val_from_operand_stack_top<Option,wasm_address,AddressPos>(args...); }
             auto const raw{static_cast<Address>(address)};
 #if defined(UWVM_SUPPORT_MMAP)
-            if constexpr(Policy==scalar_policy::adm)
+            if constexpr(Policy==scalar_policy::adm16_live || Policy==scalar_policy::adm16_live_local)
             {
-                // The site carries its proven bounds policy as data so another bounds
-                // specialization is unnecessary for each pair of register positions.
+                static_assert(::std::same_as<Address,::std::uint64_t>);
+                adm_scalar_access<Value,Bytes,Signed,Store,true>(adm_scalar_bounds::live_length,*memory,raw,offset,value);
+            }
+            else if constexpr(Policy==scalar_policy::adm)
+            {
+                // Other ADM geometries share one handler per pair of register positions.
                 auto const bounds{details::read_imm<adm_scalar_bounds>(args...[0])};
                 adm_scalar_access<Value,Bytes,Signed,Store>(bounds,*memory,raw,offset,value);
             }
@@ -350,7 +363,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             {
                 if constexpr(value_begin!=value_end)
                 {
-                    if constexpr(merged)
+                    if constexpr(merged && Policy!=scalar_policy::adm16_live_local)
                     {
                         static_assert(ValuePos==AddressPos);
                         details::set_curr_val_to_stacktop_cache<Option,Value,ValuePos>(value,args...);
@@ -514,7 +527,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
                 constexpr auto address_begin{op::stacktop_range_begin_pos<Option,wasm_address>()};
                 constexpr auto address_end{op::stacktop_range_end_pos<Option,wasm_address>()};
                 // Bounds and tag policy were selected by the emitter. Only the register positions vary here.
-                if constexpr(Store)
+                if constexpr(Policy==memtag_details::scalar_policy::adm16_live_local)
+                { return details::select_stacktop_fptr_or_default<Option,value_begin,value_end,typename operations::value_only,Type...>(
+                    details::stacktop_currpos_memory<Value>(positions)); }
+                else if constexpr(Store)
                 { return details::select_binary_fptr<Option,Value,wasm_address,value_begin,value_end,address_begin,address_end,
                     typename operations::one,typename operations::two,typename operations::address_only,Type...>(positions); }
                 else

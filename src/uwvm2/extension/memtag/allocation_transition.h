@@ -118,9 +118,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
         // A short software transition either commits in full or leaves both the
         // owner and the entropy stream untouched for the general transition.
         // try_entropy consumes its buffered word only when selection succeeds.
-        template<opcode Operation, ::std::unsigned_integral Address, typename TryEntropy>
+        template<opcode Operation, ::std::unsigned_integral Address, typename TryEntropy, typename View = shadow_view<Address,false>>
         [[nodiscard,gnu::always_inline]] inline bool try_short_private_transition(managed_allocations& directory,
-            Address input, Address length, ::std::span<::std::byte> data, shadow_view<Address,false> const& view,
+            Address input, Address length, ::std::span<::std::byte> data, View const& view,
             TryEntropy&& try_entropy, Address& value) noexcept
         {
             static_assert(is_allocation_operation(Operation));

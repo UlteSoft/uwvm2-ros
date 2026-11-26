@@ -196,11 +196,63 @@ static void reservations()
     auto const exhausted{rt::execute_private_allocation<op::reserve>(candidate,input,Address{16u})};
     CHECK(exhausted.error==mt::operation_error::allocation_entropy && used==32u && !directory.exact(56u,56u));
 }
+// The fast prefix and live-length paths both preserve the raw shadow,
+// unused ADM bits, the exact lifetime and every zeroed byte.
+static void adm16_committed_prefix()
+{
+    using address_type=std::uint64_t;
+    constexpr address_type base{24u*16u}, metadata{UINT64_C(0x057a000000000000)}, pointer{metadata|base};
+    constexpr std::size_t length{64u}, end{base+length}, window_end{end+5u*16u};
+    linear::mmap_memory_t memory{65536u,linear::mmap_memory_status_t::wasm64};
+    memory.init_by_page_count(1,2);
+    CHECK(memory.enable_memtag(mt::address_width::i64,false,16u,mt::owner_backend::software)==mt::storage_error::none);
+    auto& directory{memory.memtag_shadow.allocation_directory()};
+    auto const shadow{memory.memtag_shadow.view<address_type>(65536u)};
+    CHECK(directory.add_private({19u,20u,2u,0u,false,false})); // issued color with zero backing
+    CHECK(shadow.store(shadow.with_tag(end,4u),16u));         // raw color beyond the allocation
+    std::fill_n(memory.memory_begin+base-1u,length+2u,std::byte{0x5a});
+    auto& used{rt::details::entropy_buffer.position};
+    buffer_word(0xffffu);
+    address_type value{};
+    CHECK(!rt::try_short_adm16_private_allocation<op::claimz>(memory,metadata+65520u,length,window_end,value));
+    CHECK(!rt::try_short_adm16_private_allocation<op::claimz>(memory,pointer+1u,length,window_end,value));
+    CHECK(!rt::try_short_adm16_private_allocation<op::claimz>(memory,pointer,UINT64_MAX,window_end,value));
+    CHECK(!used && !directory.exact(base/16u,end/16u-1u) && memory.memory_begin[base]==std::byte{0x5a});
+    CHECK(rt::try_short_adm16_private_allocation<op::claimz>(memory,pointer,length,window_end-1u,value));
+    auto const tag{shadow.pointer_tag(value)};
+    CHECK(tag && tag!=2u && tag!=4u && shadow.clear_tag(value)==pointer && used==2u);
+    CHECK(std::all_of(memory.memory_begin+base,memory.memory_begin+end,[](std::byte byte){ return byte==std::byte{}; }));
+    CHECK(memory.memory_begin[base-1u]==std::byte{0x5a} && memory.memory_begin[end]==std::byte{0x5a});
+    for(address_type offset{};offset<length;offset+=16u) { CHECK(shadow.load(base+offset).allocation_tag==tag); }
+    address_type result{};
+    CHECK(!rt::try_short_adm16_private_allocation<op::release>(memory,pointer,length,end,result));
+    CHECK(shadow.store(base+32u,16u));
+    CHECK(!rt::try_short_adm16_private_allocation<op::release>(memory,value,length,end,result));
+    CHECK(directory.exact(base/16u,end/16u-1u)->active && shadow.load(base).allocation_tag==tag);
+    CHECK(shadow.store(value+32u,16u));
+    CHECK(rt::try_short_adm16_private_allocation<op::release>(memory,value,length,end-1u,result));
+    CHECK(result==pointer && !directory.exact(base/16u,end/16u-1u) && shadow.load(end).allocation_tag==4u);
+    CHECK(rt::try_short_adm16_private_allocation<op::reserve>(memory,pointer,length,window_end,value));
+    CHECK(!directory.exact(base/16u,end/16u-1u)->active && shadow.load(base).allocation_tag==0u);
+    CHECK(rt::try_short_adm16_private_allocation<op::activate>(memory,value,length,end,result) && result==value);
+    CHECK(rt::try_short_adm16_private_allocation<op::release>(memory,value,length,end,result) && result==pointer);
+
+    // Use a different directory index slot so this case takes the short path.
+    constexpr address_type grown{65536u+1024u+base}, grown_pointer{metadata|grown};
+    CHECK(!rt::try_short_adm16_private_allocation<op::claim>(memory,grown_pointer,length,65536u,value));
+    CHECK(memory.grow_strictly(1));
+    CHECK(directory.add_private({grown/16u-3u,grown/16u-3u,3u,0u,false,false}));
+    CHECK(rt::try_short_adm16_private_allocation<op::claim>(memory,grown_pointer,length,65536u,value));
+    CHECK(shadow.clear_tag(value)==grown_pointer && shadow.pointer_tag(value)!=3u);
+    CHECK(rt::try_short_adm16_private_allocation<op::release>(memory,value,length,65536u,result) && result==grown_pointer);
+}
+
 #endif
 
 int main()
 {
 #if defined(__linux__)
+    adm16_committed_prefix();
     cases<std::uint32_t>();
     cases<std::uint64_t>();
     reservations<std::uint32_t>();

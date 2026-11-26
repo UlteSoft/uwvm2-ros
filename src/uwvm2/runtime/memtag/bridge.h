@@ -402,6 +402,53 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::memtag
         });
     }
 
+    // The ordinary AOT emitter admits only a local, stable software memory64
+    // with 16 ignored bits and its tag in the high nibble. The declared minimum
+    // stays committed across growth and restore. A window beyond it borrows the
+    // current data length and prepared shadow from this same owner. Each shadow
+    // byte in the prefix covers a full granule, including both ends of the window.
+    template<::uwvm2::extension::memtag::opcode Operation, typename Memory>
+    [[nodiscard,gnu::always_inline]] inline bool try_short_adm16_private_allocation(
+        Memory const& memory, ::std::uint64_t input, ::std::uint64_t length,
+        ::std::size_t minimum, ::std::uint64_t& value) noexcept
+    {
+        namespace mt=::uwvm2::extension::memtag;
+        using view_type=mt::shadow_view<::std::uint64_t,false>;
+        static_assert(Memory::can_mmap);
+        constexpr auto geometry{mt::make_tag_geometry(mt::address_width::i64,16u,60u)};
+        using tags_type=view_type::short_allocation_tags;
+        if(!tags_type::supports(input,length)) { return false; }
+        auto const address{input & geometry.address_mask};
+        constexpr bool needs_neighbors{Operation!=mt::opcode::activate && Operation!=mt::opcode::release};
+        constexpr auto right{needs_neighbors ? mt::allocation_details::reach*mt::granule_size : 0u};
+        // The masked address and bounded short length leave room for the radius.
+        auto bytes{minimum};
+        if(address+length+right>minimum)
+        {
+            bytes=memory.memory_length_p->load(::std::memory_order_acquire);
+            if(bytes>memory.memtag_shadow.prepared_memory_bytes()) { return false; }
+        }
+        auto const prefix{::std::span{static_cast<::std::uint8_t*>(memory.memtag_shadow.tag_data()),bytes/static_cast<::std::size_t>(mt::granule_size)}};
+        // Both the allocation and its neighbors lie in the same committed
+        // shadow span. The lifecycle kernel still reads and writes their tags
+        // and validates the issued extents in this owner's directory.
+        struct committed_view : view_type
+        {
+            ::std::span<::std::uint8_t> prefix;
+            [[nodiscard]] tags_type short_software_allocation(::std::uint64_t pointer,::std::uint64_t size) const noexcept
+            { return tags_type::in_committed_prefix(prefix,canonical_address(pointer),size); }
+            [[nodiscard]] ::std::span<::std::uint8_t const> private_tag_window(::std::uint64_t lo,::std::uint64_t hi) const noexcept
+            {
+                if(lo>hi || hi>=prefix.size()) { return {}; }
+                return prefix.subspan(static_cast<::std::size_t>(lo),static_cast<::std::size_t>(hi-lo+1u));
+            }
+        };
+        auto const view{committed_view{view_type{prefix.data(),prefix.size(),bytes,nullptr,nullptr,geometry.address_mask,geometry.start_bit},prefix}};
+        auto buffered_entropy{[] [[gnu::always_inline]] (auto&& accept) noexcept { return try_buffered_allocation_entropy_if(accept); }};
+        return mt::allocation_details::try_short_private_transition<Operation>(memory.memtag_shadow.allocation_directory(),
+            input,length,::std::span<::std::byte>{memory.memory_begin,bytes},view,buffered_entropy,value);
+    }
+
     // Compiled private lifecycle instructions carry a fixed opcode and two
     // Wasm operands. A cached native draw can share the validation/commit
     // snapshot. Journal callbacks and OS refills must run after the pin ends.

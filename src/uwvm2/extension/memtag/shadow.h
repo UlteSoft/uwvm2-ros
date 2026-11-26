@@ -231,6 +231,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::extension::memtag
             static constexpr unsigned maximum_count{2u * sizeof(::std::uint32_t)};
             [[nodiscard]] static constexpr bool supports(Address input, Address bytes) noexcept
             { return bytes && bytes <= granule_size*maximum_count && !((input | bytes) & (granule_size-1u)); }
+            // Each supplied shadow byte backs one complete committed data granule.
+            [[nodiscard]] static short_allocation_tags in_committed_prefix(
+                ::std::span<::std::uint8_t> prefix, Address address, Address bytes) noexcept
+            {
+                if(!supports(address,bytes)) { return {nullptr,0u}; }
+                auto const first{address/granule_size}, count{bytes/granule_size};
+                if(first+count>prefix.size()) { return {nullptr,0u}; }
+                return {prefix.data()+static_cast<::std::size_t>(first),static_cast<::std::size_t>(count)};
+            }
             [[nodiscard]] explicit operator bool() const noexcept { return tags_ != nullptr; }
             [[nodiscard]] bool matches(::std::uint8_t expected) const noexcept
             {
