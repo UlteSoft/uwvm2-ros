@@ -10,6 +10,11 @@ namespace production_update_detail
     namespace update = ::uwvm2::utils::update;
 #if defined(UWVM_RUNTIME_LLVM_JIT) && defined(UWVM_UTILS_HAS_FAST_IO_NATIVE_THREAD) && defined(UWVM_CPP_EXCEPTIONS) && !defined(UWVM_TERMINATE_IMME_WHEN_PARSE)
     namespace immutable_globals = ::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details::immutable_globals;
+    [[nodiscard]] inline ::std::size_t update_input_limit(::uwvm2::uwvm::wasm::type::wasm_file_t const& file) noexcept
+    {
+        auto const& limits{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1_parameter(file.wasm_parameter.binfmt1_para).parser_limit};
+        return (::std::min)(::uwvm2::utils::allocator::resource::parser_input_limit(limits.max_input_bytes), update::maximum_image_bytes);
+    }
     [[nodiscard]] inline bool append_execution_safety_policy(::uwvm2::utils::container::std_vector<unsigned char>& material)
     {
     // The issuer authorizes this execution-safety contract, separately
@@ -134,7 +139,8 @@ namespace production_update_detail
         update::protocol protocol{};
         update::digest policy_fingerprint{};
         ::std::thread::id management_thread{::std::this_thread::get_id()};
-        ::uwvm2::utils::container::std_vector<unsigned char> installed{}, target{};
+        using image = ::uwvm2::utils::control::owned_file_image;
+        image::shared_owner installed{}, target{};
         ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_unique_ptr<llvm_jit_debug_replace_transaction>> functions{};
         ::uwvm2::utils::container::std_vector<update::scalar_reset_record> scalar_resets{};
         // A transition accepts at most 16 private memories. Directory nodes are allocated
@@ -142,7 +148,7 @@ namespace production_update_detail
         ::std::array<::uwvm2::extension::memtag::managed_allocations,16> pending_directories{};
         immutable_globals::owner current_global_binding{}, pending_global_binding{};
         ::uwvm2::utils::container::std_unique_ptr<update::module_transition_plan> module_plan{};
-        ::std::shared_ptr<::uwvm2::utils::container::std_vector<unsigned char> const> current_data_image{}, pending_data_image{};
+        image::shared_owner current_data_image{}, pending_data_image{};
 #if !defined(UWVM_DISABLE_LOCAL_IMPORTED_WASIP1) && defined(UWVM_IMPORT_WASI_WASIP1) && defined(UWVM_ROS_ZERO_HOST_DEFAULTS)
         using policy_plan_type = update::prepared_wasi_policy<::uwvm2::object::memory::linear::native_memory_t>;
         ::uwvm2::utils::container::std_unique_ptr<policy_plan_type> policy_plan{};
@@ -166,7 +172,7 @@ namespace production_update_detail
         }
         void discard_candidate() noexcept
         {
-            functions.clear(); scalar_resets.clear(); target.clear(); pending_global_binding.reset();
+            functions.clear(); scalar_resets.clear(); target.reset(); pending_global_binding.reset();
             for(auto& directory : pending_directories) { directory.reset(); }
             module_plan.reset(); pending_data_image.reset(); pending_contract = {}; pending_policy_fingerprint = {}; pending_state_measurement = {};
             pending_policy_generation = 0u; pending_revocation_generation = 0u;
@@ -328,12 +334,15 @@ extern "C++" ::uwvm2::utils::update::status runtime_update_configure_host_api(
     auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
     if(!file.has_owned_source_image() || file.source_size() > u::maximum_image_bytes || file.source_size() < 8 ||
        !::uwvm2::uwvm::wasm::storage::preloaded_wasm.empty()) { return u::status::unsupported; }
+    if(file.source_size() > production_update_detail::update_input_limit(file)) { return u::status::exhausted; }
     try
     {
         auto state{::uwvm2::utils::container::make_unique<production_update_detail::session>()};
-        auto const* first{reinterpret_cast<unsigned char const*>(file.source_cbegin())};
-        state->installed.assign(first, first + file.source_size()); u::digest base{};
-        if(!u::hash(state->installed, base)) { return u::status::unsupported; }
+        auto const source{::uwvm2::uwvm::runtime::full::selected_full_source_owner_pin()};
+        if(!source || ::std::addressof(source->file()) != ::std::addressof(file)) { return u::status::invalid_input; }
+        state->installed = ::uwvm2::uwvm::wasm::type::wasm_file_t::pin_owned_source_image({source, ::std::addressof(file)});
+        u::digest base{};
+        if(!state->installed || !u::hash(state->installed->unsigned_bytes(), base)) { return u::status::unsupported; }
         if(!production_update_detail::effective_policy_fingerprint(state->policy_fingerprint)) { return u::status::invalid_input; }
         auto measured_config{config}; ::std::array<unsigned char, 64> policy{};
         ::std::copy(config.contract.begin(), config.contract.end(), policy.begin());
@@ -452,22 +461,28 @@ static ::uwvm2::utils::update::status prepare_update_internal(
     }};
     try
     {
-        // Copy once. Hash, scope validation, compile and activation use this owner.
-        s.target.assign(target.begin(), target.end()); u::digest actual{}, scope{};
+        // The permit has been authenticated. Hash, scope validation and publication
+        // all use the same immutable bytes, including a policy-only update of the installed image.
+        auto const& file{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
+        s.target = production_update_detail::session::image::retain_or_copy_wasm_bytes(s.installed, ::std::as_bytes(target),
+            production_update_detail::update_input_limit(file));
+        if(!s.target) { return fail(u::status::exhausted); }
+        auto const installed_bytes{s.installed->unsigned_bytes()}, target_bytes{s.target->unsigned_bytes()};
+        u::digest actual{}, scope{};
         ::uwvm2::utils::container::std_vector<unsigned char> indices; indices.reserve(functions.size() * 8);
         for(auto index : functions) { u::append_u64(indices, index); }
-        if(!u::hash(s.target, actual) || actual != permit.target || !u::hash(declaration.empty() ? ::std::span<unsigned char const>{indices} : declaration, scope) || scope != permit.functions) { return fail(u::status::unauthorized); }
+        if(!u::hash(target_bytes, actual) || actual != permit.target || !u::hash(declaration.empty() ? ::std::span<unsigned char const>{indices} : declaration, scope) || scope != permit.functions) { return fail(u::status::unauthorized); }
         ::uwvm2::utils::container::std_vector<u::function_body> bodies;
         if(transition && (transition->module_reset || transition->module_preserve || transition->module_migrate))
         {
             s.module_plan = ::uwvm2::utils::container::make_unique<u::module_transition_plan>();
-            if(auto checked{u::compare_module_transition(s.installed, s.target, functions, transition->module_reset || transition->module_migrate, *s.module_plan)}; checked != u::status::ok) { return fail(checked); }
+            if(auto checked{u::compare_module_transition(installed_bytes, target_bytes, functions, transition->module_reset || transition->module_migrate, *s.module_plan)}; checked != u::status::ok) { return fail(checked); }
             bodies = ::std::move(s.module_plan->bodies); s.scalar_resets = ::std::move(s.module_plan->scalars);
-            if(s.module_plan->reset_state && !s.module_plan->data_segments.empty()) { s.pending_data_image = ::uwvm2::utils::container::make_shared<::uwvm2::utils::container::std_vector<unsigned char> const>(s.target); }
+            if(s.module_plan->reset_state && !s.module_plan->data_segments.empty()) { s.pending_data_image = s.target; }
         }
         else if(functions.empty())
-        { if(s.installed != s.target) { return fail(u::status::scope_mismatch); } }
-        else if(auto checked{u::compare_scope(s.installed, s.target, functions, bodies, s.scalar_resets)}; checked != u::status::ok) { return fail(checked); }
+        { if(s.installed != s.target && !::std::ranges::equal(installed_bytes, target_bytes)) { return fail(u::status::scope_mismatch); } }
+        else if(auto checked{u::compare_scope(installed_bytes, target_bytes, functions, bodies, s.scalar_resets)}; checked != u::status::ok) { return fail(checked); }
 #if UWVM2_HAS_THREADED_PROFILE_HOST_API
         s.threaded_exclusion.reset(::uwvm2::utils::allocator::fast_io_strict::object<threaded_management_exclusion>([&](threaded_management_exclusion* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) threaded_management_exclusion{runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)}; }));
         if(!*s.threaded_exclusion) { return fail(u::status::busy); }
@@ -519,7 +534,7 @@ static ::uwvm2::utils::update::status prepare_update_internal(
             if((index & (u::global_reset_tag | u::immutable_global_tag)) != 0) { continue; }
             if(index >= rec.llvm_jit_debug_full_entry_generations.size() || bodies[index].size > 65536) { return fail(u::status::unsupported); }
             auto result{prepare_function_replacement_internal(0u, index + rec.runtime_module->imported_function_vec_storage.size(),
-                rec.llvm_jit_debug_full_entry_generations[index], reinterpret_cast<::std::byte const*>(s.target.data() + bodies[index].offset), bodies[index].size, true, s.pending_global_binding)};
+                rec.llvm_jit_debug_full_entry_generations[index], reinterpret_cast<::std::byte const*>(target_bytes.data() + bodies[index].offset), bodies[index].size, true, s.pending_global_binding)};
             if(result.status != llvm_jit_debug_replace_status::replaced || !result.transaction)
             {
                 using preparation=llvm_jit_debug_replace_status;

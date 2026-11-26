@@ -211,7 +211,11 @@ not local device authority.
 ## Transaction and lifetime
 
 1. PREPARE authenticates the exact base, target, scope and declaration, and owns
-   immutable target bytes. No later path read can substitute the artifact.
+   immutable target bytes. The cold session pins the installed source. An identical
+   target can share that source. A changed target reserves its complete length
+   against the main module's effective input limit and the process live-input
+   budget before copying. A reset that retains data-segment views pins the same
+   target bytes. A refused reservation returns `exhausted` and discards the candidate.
 2. Actual maintenance ownership and root-admission fencing exclude another update,
    debug mutation or reset. Real execution leases drain; old callers finish on A.
    B and migration never read/write production mutable state while writers remain.

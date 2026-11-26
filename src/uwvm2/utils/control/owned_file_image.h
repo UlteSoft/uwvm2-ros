@@ -2,11 +2,13 @@
 #include <uwvm2/utils/allocator/fast_io_strict/object.h>
 #include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/utils/container/unique.h>
+#include <uwvm2/utils/container/shared.h>
 #include <uwvm2/utils/container/standard.h>
 #ifndef UWVM_MODULE
 # include <climits>
 # include <cstddef>
 # include <cstdint>
+# include <cstring>
 # include <limits>
 # include <memory>
 # include <new>
@@ -55,6 +57,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         [[nodiscard]] static owned_image_result copy_bytes(::std::span<::std::byte const>, ::std::size_t, bool) noexcept;
     public:
         using owner = ::uwvm2::utils::container::std_unique_ptr<owned_file_image const>;
+        using shared_owner = ::std::shared_ptr<owned_file_image const>;
         inline static constexpr ::std::size_t maximum_bytes{1uz << 30u};
         inline static constexpr ::std::size_t default_bytes{1uz << 28u};
         inline static constexpr ::std::size_t maximum_path_code_units{1uz << 20u};
@@ -69,6 +72,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         template<typename Select>
         [[nodiscard]] static owned_image_result read_wasm(::uwvm2::utils::container::std_u8string path, ::std::size_t limit, Select select);
         [[nodiscard]] static owned_image_result copy_wasm_bytes(::std::span<::std::byte const> input, ::std::size_t limit = default_bytes) noexcept;
+        // Return a pin to identical, already charged bytes or a new admitted immutable copy.
+        [[nodiscard]] static shared_owner retain_or_copy_wasm_bytes(shared_owner const& retained,
+            ::std::span<::std::byte const> input, ::std::size_t limit);
         template<typename Select>
         [[nodiscard]] static bool admit_wasm_input(owner& image, ::std::size_t limit, Select select) noexcept
         {
@@ -89,6 +95,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
         [[nodiscard]] static owned_image_result copy_owned_bytes(::std::span<::std::byte const> input,
                                                                  ::std::size_t limit = default_bytes) noexcept;
         [[nodiscard]] ::std::span<::std::byte const> bytes() const noexcept { return {bytes_.get(), size_}; }
+        [[nodiscard]] ::std::span<unsigned char const> unsigned_bytes() const noexcept
+        { return {reinterpret_cast<unsigned char const*>(bytes_.get()), size_}; }
         [[nodiscard]] ::std::size_t size() const noexcept { return size_; }
         [[nodiscard]] char const* cbegin() const noexcept
         {
@@ -282,6 +290,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::control
     { return copy_bytes(input, limit, false); }
     inline owned_image_result owned_file_image::copy_wasm_bytes(::std::span<::std::byte const> input, ::std::size_t limit) noexcept
     { return copy_bytes(input, limit, true); }
+    inline owned_file_image::shared_owner owned_file_image::retain_or_copy_wasm_bytes(shared_owner const& retained,
+        ::std::span<::std::byte const> input, ::std::size_t limit)
+    {
+        if(limit > maximum_bytes || input.empty() || !input.data() ||
+           input.size() > ::uwvm2::utils::allocator::resource::parser_input_limit(limit)) { return {}; }
+        if(retained && retained->size_ == input.size() && retained->wasm_charge_.bytes() == input.size() &&
+           ::std::memcmp(retained->bytes_.get(), input.data(), input.size()) == 0) { return retained; }
+        auto copied{copy_wasm_bytes(input, limit)};
+        if(!copied) { return {}; }
+        return ::uwvm2::utils::container::adopt_shared(copied.image.release());
+    }
     inline owned_image_result owned_file_image::copy_bytes(::std::span<::std::byte const> input, ::std::size_t limit, bool wasm) noexcept
     {
         if constexpr(CHAR_BIT != 8) { return {{}, owned_image_error::unsupported_character_width, {}}; }

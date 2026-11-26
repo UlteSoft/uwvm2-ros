@@ -216,7 +216,7 @@
     for(::std::size_t i{}; i < s.module_plan->data_segments.size(); ++i)
     {
         auto& actual{module.local_defined_data_vec_storage.index_unchecked(i).data}; auto const& proposed{s.module_plan->data_segments[i]};
-        actual.byte_begin = reinterpret_cast<::std::byte const*>(s.pending_data_image->data() + proposed.payload_offset);
+        actual.byte_begin = s.pending_data_image->bytes().data() + proposed.payload_offset;
         actual.byte_end = actual.byte_begin + proposed.payload_size; actual.offset = proposed.offset;
     }
     s.current_data_image = s.pending_data_image;

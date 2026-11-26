@@ -186,6 +186,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
             if(!::uwvm2::utils::control::owned_file_image::admit_wasm_input(image, limit)) { return false; }
             source_image_ = ::std::move(image); return true;
         }
+        [[nodiscard]] static ::uwvm2::utils::control::owned_file_image::shared_owner pin_owned_source_image(
+            ::std::shared_ptr<wasm_file_t const> const& file) noexcept
+        {
+            if(!file || !file->source_image_) { return {}; }
+            return {file, file->source_image_.get()};
+        }
         [[nodiscard]] bool has_owned_source_image() const noexcept { return source_image_ != nullptr; }
         [[nodiscard]] bool requires_verified_execution_authorization() const noexcept { return secure_required_; }
         [[nodiscard]] bool has_verified_execution_authorization() const noexcept

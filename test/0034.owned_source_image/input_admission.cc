@@ -82,6 +82,28 @@ int main(int argc, char** argv)
     auto direct{image::copy_owned_bytes(data)};
     if(!direct || !loaded.adopt_unparsed_source_image(::std::move(direct.image)) || live.load() != data.size()) { return 12; }
     loaded = {};
+    {
+        auto cold{::uwvm2::utils::container::make_shared<wasm::type::wasm_file_t>()};
+        auto first{image::copy_wasm_bytes(data, data.size())};
+        if(!first || !cold->adopt_unparsed_source_image(::std::move(first.image))) { return 22; }
+        auto installed{wasm::type::wasm_file_t::pin_owned_source_image(cold)};
+        auto alias{image::retain_or_copy_wasm_bytes(installed, data, data.size())};
+        if(!installed || alias != installed || alias->cbegin() != cold->source_cbegin() || live.load() != data.size() ||
+           image::retain_or_copy_wasm_bytes(installed, data, data.size() - 1uz)) { return 23; }
+        auto next{::std::to_array(named)};
+        next.back() = 'n';
+        auto changed{::std::as_bytes(::std::span{next})};
+        if(image::retain_or_copy_wasm_bytes(installed, changed, data.size()) || live.load() != data.size()) { return 24; }
+        cold.reset();
+        budget.live = 2 * data.size();
+        auto target{image::retain_or_copy_wasm_bytes(installed, changed, data.size())};
+        if(!target || target == installed || target->unsigned_bytes().back() != 'n' || live.load() != budget.live) { return 25; }
+        auto data_segments{target};
+        target.reset();
+        installed.reset();
+        alias.reset();
+        if(live.load() != data.size() || data_segments->unsigned_bytes().back() != 'n') { return 26; }
+    }
     policy::layer overflow{};
     budget.single = resource::host_bytes(512ull << 20u);
     if(resource::parser_input_limit(SIZE_MAX) != budget.single) { return 16; }
