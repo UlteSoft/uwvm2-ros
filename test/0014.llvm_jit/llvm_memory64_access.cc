@@ -34,6 +34,14 @@ void hardware_handler(int)
 {if(!expect_trap||!hardware_trap){_Exit(94);}untouched();_Exit(92);}
 namespace uwvm2::runtime::lib
 {
+ // The symbol table can reference debug-only wrappers even for an ordinary
+ // guest call. Executing such a wrapper in this fixture is a failure.
+ namespace details
+ {
+  std::uint64_t llvm_jit_debug_host_enter_abi_bridge() noexcept { std::abort(); }
+  void llvm_jit_debug_host_leave_abi_bridge(std::uint64_t) noexcept { std::abort(); }
+  void llvm_jit_debug_host_unwind_abi_bridge(std::uint64_t) noexcept { std::abort(); }
+ }
  void llvm_jit_runtime_trap(llvm_jit_trap_kind kind,std::uintptr_t,std::uintptr_t) noexcept
  {
   if(!expect_trap||!expected_unaligned||kind!=llvm_jit_trap_kind::unaligned_atomic){_Exit(97);}
@@ -63,12 +71,27 @@ void optimize(llvm::Module& module)
  p.registerModuleAnalyses(m);p.registerCGSCCAnalyses(c);p.registerFunctionAnalyses(f);p.registerLoopAnalyses(l);
  p.crossRegisterProxies(l,f,c,m);p.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3).run(module,m);
 }
-struct test_case{std::string name;unsigned width,value_width,address_bits;bool store,guard;std::uint64_t offset;};
+using protection=d::llvm_jit_memory_protection;
+struct test_case{std::string name;unsigned width,value_width,address_bits;bool store;protection mode;std::uint64_t offset;};
 int main(int argc,char** argv)
 {
  CHECK(argc==2||argc==3);bool optimized=argc==3;std::string out=argv[1];
  llvm::InitializeNativeTarget();llvm::InitializeNativeTargetAsmPrinter();llvm::LLVMContext context;
  auto module=std::make_unique<llvm::Module>("memory64-real-access",context);module->setDataLayout("e-p:64:64");
+ d::runtime_native_memory_t memory{65536,uwvm2::object::memory::linear::mmap_memory_status_t::wasm64};
+ memory.init_by_page_count(1,2);
+ d::runtime_memory_access_info_t info{};
+ d::populate_runtime_memory_access_info_mmap_fields(info,memory);
+ CHECK(info.mmap_data_capacity==2*65536 && info.mmap_partial_guard_limit>=info.mmap_data_capacity);
+ auto const last_offset=info.mmap_partial_guard_limit-info.mmap_data_capacity;
+ CHECK(info.mmap_guard_covers_base_offset(last_offset) && !info.mmap_guard_covers_base_offset(last_offset+1));
+ {
+  d::runtime_native_memory_t subpage{1,uwvm2::object::memory::linear::mmap_memory_status_t::wasm64};
+  subpage.init_by_page_count(1,2);
+  d::runtime_memory_access_info_t subpage_info{};
+  d::populate_runtime_memory_access_info_mmap_fields(subpage_info,subpage);
+  CHECK(subpage_info.mmap_requires_dynamic_bounds && !subpage_info.mmap_guard_covers_base_offset(0));
+ }
  std::vector<test_case> cases;
  for(unsigned address_bits:{64u,32u})
  for(bool guard:{false,true})for(bool store:{false,true})for(unsigned kind=0;kind<7;++kind)
@@ -86,8 +109,10 @@ int main(int argc,char** argv)
     llvm::Function::ExternalLinkage,name,*module);
   b.SetInsertPoint(llvm::BasicBlock::Create(context,"entry",fn));
   if constexpr(atomic_test){CHECK(d::emit_llvm_jit_atomic_alignment(b,fn->getArg(1),offset,width));}
-  auto pointer=d::emit_llvm_jit_memory_address(b,fn->getArg(0),fn->getArg(1),offset,width,
-    guard?d::llvm_jit_memory_protection::partial_guard:d::llvm_jit_memory_protection::software,1ull<<40,
+  auto mode=guard?protection::partial_guard:protection::software;
+  if(guard && address_bits==64 && info.mmap_guard_covers_base_offset(offset)){mode=protection::guarded_base;}
+  auto const limit=mode==protection::guarded_base?info.mmap_data_capacity:info.mmap_partial_guard_limit;
+  auto pointer=d::emit_llvm_jit_memory_address(b,fn->getArg(0),fn->getArg(1),offset,width,mode,limit,
     [&]()->llvm::Value*{return fn->getArg(2);},7);
   CHECK(pointer);
   if(store)
@@ -104,8 +129,26 @@ int main(int argc,char** argv)
    else {auto load=b.CreateLoad(type,pointer);load->setAlignment(llvm::Align{1});load->setVolatile(true);value=load;}
    auto output=b.CreateStore(value,fn->getArg(3));output->setAlignment(llvm::Align{1});
   }
-  b.CreateRetVoid();cases.push_back({name,width,value_width,address_bits,store,guard,offset});
+  b.CreateRetVoid();cases.push_back({name,width,value_width,address_bits,store,mode,offset});
  }
+ // The same base guards the three memarg offsets in cJSON parse_value.
+ llvm::IRBuilder<> fields_builder{context};
+ auto ptr_type=llvm::PointerType::getUnqual(context);
+ auto fields=llvm::Function::Create(llvm::FunctionType::get(fields_builder.getVoidTy(),
+   {ptr_type,fields_builder.getInt64Ty(),ptr_type},false),llvm::Function::ExternalLinkage,"read_fields",*module);
+ fields_builder.SetInsertPoint(llvm::BasicBlock::Create(context,"entry",fields));
+ for(unsigned offset:{0u,16u,8u})
+ {
+  CHECK(info.mmap_guard_covers_base_offset(offset));
+  auto pointer=d::emit_llvm_jit_memory_address(fields_builder,fields->getArg(0),fields->getArg(1),offset,8,
+    protection::guarded_base,info.mmap_data_capacity,[&] {
+     return fields_builder.CreateLoad(fields_builder.getInt64Ty(),fields->getArg(2));
+    },7);
+  CHECK(pointer);
+  auto load=fields_builder.CreateLoad(fields_builder.getInt64Ty(),pointer);
+  load->setAlignment(llvm::Align{1});load->setVolatile(true);
+ }
+ fields_builder.CreateRetVoid();
  // Exercise the actual i64 host bridge ABI via generated code, including
  // invalid high deltas. No guest address participates in the native-object ABI.
  for(bool grow:{false,true})
@@ -147,15 +190,19 @@ int main(int argc,char** argv)
  if(!engine){std::fprintf(stderr,"%s\n",error.c_str());return 2;}
  module_view->setDataLayout(engine->getDataLayout());
  if(optimized){optimize(*module_view);CHECK(!llvm::verifyModule(*module_view,&llvm::errs()));}
+ if(optimized)
+ {
+  unsigned conditional_branches{},volatile_fields{};
+  for(auto const& block:*fields)for(auto const& ins:block)
+  {
+   if(auto branch=llvm::dyn_cast<llvm::BranchInst>(&ins);branch && branch->isConditional()){++conditional_branches;}
+   if(auto load=llvm::dyn_cast<llvm::LoadInst>(&ins);load && load->isVolatile()){++volatile_fields;}
+  }
+  CHECK(conditional_branches==1 && volatile_fields==3);
+ }
  {std::error_code ec;llvm::raw_fd_ostream ir(out+"/memory64.ll",ec);CHECK(!ec);module_view->print(ir,nullptr);}
  engine->setObjectCache(&cache);engine->finalizeObject();
- d::runtime_native_memory_t memory{};
-#if defined(UWVM_SUPPORT_MMAP)
- memory.status=uwvm2::object::memory::linear::mmap_memory_status_t::wasm64;
-#else
-#error "Guard-path qualification requires a real mmap reservation"
-#endif
- memory.init_by_page_count(1);std::size_t checks{};
+ std::size_t checks{};
  for(auto const& test:cases)
  {
   auto entry=engine->getFunctionAddress(test.name);CHECK(entry);
@@ -175,7 +222,8 @@ int main(int argc,char** argv)
    if constexpr(atomic_test){if(!test.store){for(unsigned i=test.width;i<test.value_width;++i){CHECK(result[i]==std::byte{});}}}
    CHECK(memory.memory_begin[data_address-1]==std::byte{0xa5});CHECK(memory.memory_begin[data_address+test.width]==std::byte{0xa5});++checks;
   }
-  std::vector<std::uint64_t> addresses{~0ull,1ull<<32,1ull<<48,16,0xffffffffull,data_address+1};
+  std::vector<std::uint64_t> addresses{~0ull,1ull<<32,1ull<<48,16,0xffffffffull,data_address+1,
+    info.mmap_data_capacity-1,info.mmap_data_capacity};
   if(test.offset<=65536-test.width+1){addresses.push_back(65536-test.width+1-test.offset);}
   for(auto address:addresses)
   {
@@ -187,7 +235,9 @@ int main(int argc,char** argv)
    {
     expected_static=test.offset;expected_dynamic=address;expected_width=test.width;expected_address_bits=test.address_bits;expect_trap=1;
     expected_unaligned=atomic_test&&(std::uint64_t(sum)&(test.width-1));
-    hardware_trap=!expected_unaligned&&test.guard&&sum<(1ull<<40)&&(test.address_bits==64||sum<=0xffffffffull);suffix=memory.memory_begin+65536-32;
+    hardware_trap=!expected_unaligned&&((test.mode==protection::guarded_base && address<info.mmap_data_capacity) ||
+      (test.mode==protection::partial_guard && sum<info.mmap_partial_guard_limit && (test.address_bits==64||sum<=0xffffffffull)));
+    suffix=memory.memory_begin+65536-32;
     std::signal(SIGSEGV,hardware_handler);std::signal(SIGBUS,hardware_handler);
     std::array<std::byte,16> buffer{};fn(memory.memory_begin,address,65536,buffer.data());_Exit(96);
    }
@@ -199,6 +249,17 @@ int main(int argc,char** argv)
  }
  auto grow=reinterpret_cast<std::uint64_t(*)(std::uintptr_t,std::uint64_t)>(engine->getFunctionAddress("memory64_grow"));
  auto size=reinterpret_cast<std::uint64_t(*)(std::uintptr_t)>(engine->getFunctionAddress("memory64_size"));CHECK(grow&&size);
+ auto const owner=reinterpret_cast<std::uintptr_t>(&memory);
+ CHECK(grow(owner,1)==1 && size(owner)==2);
+ memory.memory_begin[65536]=std::byte{0x7b};
+ for(auto const& test:cases)
+ {
+  if(test.mode!=protection::guarded_base || test.store || test.width!=1 || test.offset!=0){continue;}
+  std::array<std::byte,16> payload{};
+  auto fn=reinterpret_cast<void(*)(std::byte*,std::uint64_t,std::size_t,std::byte*)>(engine->getFunctionAddress(test.name));
+  fn(memory.memory_begin,65536,2*65536,payload.data());
+  CHECK(payload[0]==std::byte{0x7b});++checks;
+ }
  for(bool strict:{false,true})
  {
   uwvm2::object::memory::flags::grow_strict=strict;

@@ -59,6 +59,7 @@ enum class llvm_jit_memory_protection
 {
     software,
     partial_guard,
+    guarded_base,
     full_wasm32_guard,
     full_adm_guard,
     masked_length
@@ -302,6 +303,24 @@ template <typename LoadLength>
     {
         if(!check()) { return nullptr; }
     }
+    else if(protection == llvm_jit_memory_protection::guarded_base)
+    {
+        // The caller proved that every base below the immutable data capacity
+        // leaves the entire memarg inside this mmap. The guard handles current
+        // length changes. A base at or above capacity can only trap, even if
+        // the 65-bit effective address would wrap back into the reservation.
+        auto function{b.GetInsertBlock()->getParent()};
+        auto trap{::llvm::BasicBlock::Create(b.getContext(), "memory.oob.trap", function)};
+        auto cont{::llvm::BasicBlock::Create(b.getContext(), "memory.partial.cont", function)};
+        b.CreateCondBr(b.CreateICmpUGE(dynamic, b.getInt64(partial_limit)), trap, cont);
+        b.SetInsertPoint(trap);
+        auto length{load_length()};
+        if(length == nullptr || !length->getType()->isIntegerTy(pointer_bits)) { return nullptr; }
+        emit_llvm_memory_out_of_bounds_trap(b, memory_index, static_offset, offset,
+            b.CreateICmpULT(offset, dynamic), length, access_size);
+        b.CreateUnreachable();
+        b.SetInsertPoint(cont);
+    }
     else if(protection == llvm_jit_memory_protection::partial_guard)
     {
         auto function{b.GetInsertBlock()->getParent()};
@@ -476,8 +495,21 @@ template <typename LoadLength>
         { protection = llvm_jit_memory_protection::masked_length; }
         else { protection = llvm_jit_memory_protection::software; }
     }
+    auto partial_limit{info.mmap_partial_guard_limit};
+    // A Wasm64 base below capacity and this static offset cannot leave the
+    // protected prefix. Field accesses at different offsets can therefore
+    // share one base comparison. Masked multibyte stores retain their single
+    // explicit end check instead of gaining a page-crossing preflight.
+    if(allow_fault_guard && !checked && address != nullptr && address->getType()->isIntegerTy(64u) &&
+       (protection == llvm_jit_memory_protection::partial_guard ||
+        (protection == llvm_jit_memory_protection::masked_length && (!is_store || access_size == 1uz))) &&
+       info.mmap_guard_covers_base_offset(static_offset))
+    {
+        protection = llvm_jit_memory_protection::guarded_base;
+        partial_limit = info.mmap_data_capacity;
+    }
     auto pointer{emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection,
-                                        info.mmap_partial_guard_limit, [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
+                                        partial_limit, [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
     if(pointer != nullptr && checked)
     {
         auto const tag_extent{shadow.maximum_memory_bytes() / 16u + (shadow.maximum_memory_bytes() % 16u != 0u)};
