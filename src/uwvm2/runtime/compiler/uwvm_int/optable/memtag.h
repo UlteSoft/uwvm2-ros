@@ -32,7 +32,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 {
     namespace memtag_details
     {
-        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic, adm };
+        enum class scalar_policy : unsigned { enforcing, synchronous_log, software_async, generic, adm, adm16_live };
         using native_memory_t = ::uwvm2::object::memory::linear::native_memory_t;
         using action_t = void(*)(native_memory_t const&, ::std::byte*&, ::std::uint64_t) noexcept;
 
@@ -136,15 +136,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
 
 #if defined(UWVM_SUPPORT_MMAP)
         enum class adm_scalar_bounds : unsigned { unavailable, live_length, declared_minimum, full_guard };
+        inline constexpr auto wasm64_adm16_mask{
+            ::uwvm2::extension::memtag::adm_address_mask(::uwvm2::extension::memtag::address_width::i64,16u)};
 
         // Emitted for a private, stable mapping after proving mask+offset+Bytes
         // representable. A varying sub-OS-page tail always needs its byte length
         // unless the complete reachable access is below the declared minimum.
-        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store>
+        template<typename Value, ::std::size_t Bytes, bool Signed, bool Store, bool Wasm64Adm16=false>
         UWVM_ALWAYS_INLINE inline void adm_scalar_access(adm_scalar_bounds bounds, native_memory_t const& memory,
             ::std::uint64_t raw, ::std::uint64_t offset, Value& value) noexcept
         {
-            auto const effective{(raw & memory.memtag_shadow.address_mask())+offset};
+            auto const mask{Wasm64Adm16 ? wasm64_adm16_mask : memory.memtag_shadow.address_mask()};
+            auto const effective{(raw & mask)+offset};
             if(bounds == adm_scalar_bounds::live_length)
             {
                 auto const length{memory.memory_length_p->load(::std::memory_order_acquire)};
@@ -261,7 +264,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
         UWVM_ALWAYS_INLINE inline constexpr void checked_integer_access(native_memory_t const& memory, Address raw,
             ::std::uint64_t offset, Value& value, ::std::byte const*& ip) noexcept
         {
-            static_assert(Policy != scalar_policy::adm);
+            static_assert(Policy != scalar_policy::adm && Policy != scalar_policy::adm16_live);
             ::std::byte const* encoded_origin{};
             if constexpr(Policy==scalar_policy::synchronous_log || Policy==scalar_policy::software_async)
             {
@@ -334,10 +337,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::uwvm_int::optable
             else { address=get_curr_val_from_operand_stack_top<Option,wasm_address,AddressPos>(args...); }
             auto const raw{static_cast<Address>(address)};
 #if defined(UWVM_SUPPORT_MMAP)
-            if constexpr(Policy==scalar_policy::adm)
+            if constexpr(Policy==scalar_policy::adm16_live)
             {
-                // The site carries its proven bounds policy as data so another bounds
-                // specialization is unnecessary for each pair of register positions.
+                static_assert(::std::same_as<Address,::std::uint64_t>);
+                adm_scalar_access<Value,Bytes,Signed,Store,true>(adm_scalar_bounds::live_length,*memory,raw,offset,value);
+            }
+            else if constexpr(Policy==scalar_policy::adm)
+            {
+                // Other ADM geometries share one handler per pair of register positions.
                 auto const bounds{details::read_imm<adm_scalar_bounds>(args...[0])};
                 adm_scalar_access<Value,Bytes,Signed,Store>(bounds,*memory,raw,offset,value);
             }

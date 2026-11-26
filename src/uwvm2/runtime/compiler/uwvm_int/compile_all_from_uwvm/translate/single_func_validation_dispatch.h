@@ -4855,6 +4855,11 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
 #endif
         if constexpr(integer)
         {
+#if defined(UWVM_SUPPORT_MMAP)
+            // Both the mask and the policy are immutable for this translated site.
+            bool const adm16_live{adm_bounds == bounds::live_length && current_memory_address64 &&
+                                  memory.memtag_shadow.address_mask() == mtopt::memtag_details::wasm64_adm16_mask};
+#endif
             [[maybe_unused]] auto const emit_cached{[&](auto select) constexpr
             {
                 auto const address_type{current_memory_address64 ? curr_operand_stack_value_type::i64 : curr_operand_stack_value_type::i32};
@@ -4870,7 +4875,10 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
                 emit_imm_to(bytecode,resolved_memory.memory_p);
                 emit_imm_to(bytecode,static_cast<::std::uint64_t>(offset));
 #if defined(UWVM_SUPPORT_MMAP)
-                if(adm_bounds != bounds::unavailable) { emit_imm_to(bytecode,adm_bounds); }
+                if(adm_bounds != bounds::unavailable)
+                {
+                    if(!adm16_live) { emit_imm_to(bytecode,adm_bounds); }
+                }
                 else
 #endif
                 if(memtag_sync_log || memtag_software_async)
@@ -4887,6 +4895,14 @@ auto const emit_memory64_scalar_if_selected{[&]<typename Value, ::std::size_t By
             {
                 emit_cached([&]<typename Address>() constexpr
                 {
+                    if constexpr(::std::same_as<Address,::std::uint64_t>)
+                    {
+                        if(adm16_live)
+                        {
+                            return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,
+                                mtopt::memtag_details::scalar_policy::adm16_live,CompileOption>(curr_stacktop,memory,interpreter_tuple);
+                        }
+                    }
                     return mtopt::translate::get_uwvmint_memtag_scalar_cached_from_tuple<Address,Value,Bytes,Signed,Store,
                         mtopt::memtag_details::scalar_policy::adm,CompileOption>(curr_stacktop,memory,interpreter_tuple);
                 });
