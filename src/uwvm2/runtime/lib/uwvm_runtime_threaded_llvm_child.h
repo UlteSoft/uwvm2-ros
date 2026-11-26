@@ -470,6 +470,7 @@ extern "C++"
             auto result=build(world,compiler,backend_storage_budget,limits.max_child_code_bytes,0u,llvm_limits,lowering,cache);
             if(!result.child)return result;
             auto& root=*result.child;
+            bool const diagnose=!lowering || !lowering->relocated || ::uwvm2::uwvm::io::show_verbose;
             try
             {
                 root.peers_.reserve(world->module_count()-1u);
@@ -482,7 +483,7 @@ extern "C++"
                     auto& peer=*next.child;
                     if(peer.native_bytes_>limits.max_child_code_bytes-code || peer.storage_bytes_>backend_storage_budget-storage)
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM module ",m," requires ",peer.native_bytes_,
+                        if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM module ",m," requires ",peer.native_bytes_,
                             " code bytes and ",peer.storage_bytes_," storage bytes, remaining ",limits.max_child_code_bytes-code,
                             " code bytes and ",backend_storage_budget-storage," storage bytes");
                         return {{},preparation_status::budget};
@@ -500,7 +501,7 @@ extern "C++"
                     root.guest_fixed_stack_charge_=frame*(root.call_limit_+1u);
                     if(root.guest_fixed_stack_charge_>root.guest_native_stack_usable_bytes_)
                     {
-                        root.report_native_stack_budget("module graph");
+                        if(diagnose)root.report_native_stack_budget("module graph");
                         return {{},preparation_status::budget};
                     }
                     auto const registry=root.peers_.capacity()*sizeof(::uwvm2::utils::container::std_unique_ptr<ThreadedLlvmChild>);

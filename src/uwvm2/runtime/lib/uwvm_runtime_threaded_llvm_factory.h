@@ -116,7 +116,7 @@
         }
         [[nodiscard]] preparation_status check_object(::llvm::object::ObjectFile const& object,::std::size_t relocation_limit,
             ::std::size_t& reservation,
-            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions)
+            ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string>& definitions,bool diagnose)
         {
             // A finite, deliberately conservative native ELF loader charge:
             // real section bytes, max alignment per section, relocation stub/GOT
@@ -127,7 +127,7 @@
             bool totals_complete{};
             auto reject=[&](char const* reason,status why=status::native_failure)
             {
-                ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
+                if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM object rejected in module ",module_index_,
                     " (",::fast_io::mnp::os_c_str(reason),") totals-complete=",static_cast<unsigned>(totals_complete),
                     " sections=",sections," relocations=",relocations," symbols=",symbols," relocation-limit=",relocation_limit,
                     " charged-bytes=",charge," arena-bytes=",arena_bytes," code-limit=",code_limit_);
@@ -220,7 +220,7 @@
                         if(pointer==0u)
                         {
                             auto const spelling=name->take_front(128u);
-                            ::fast_io::perrln("uwvm: [error] WASI Threads LLVM unbound native symbol ",
+                            if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM unbound native symbol ",
                                 ::fast_io::mnp::strvw(spelling.begin(),spelling.end()));
                             return reject("unbound native symbol");
                         }
@@ -237,7 +237,7 @@
             if(!check_static_stack_object(object))return reject("native stack witness");
             if(guest_fixed_stack_charge_>guest_native_stack_usable_bytes_)
             {
-                report_native_stack_budget("object");
+                if(diagnose)report_native_stack_budget("object");
                 return reject("native stack budget",status::budget);
             }
             reservation=static_cast<::std::size_t>(arena_bytes);
@@ -442,6 +442,9 @@
                 bool const relocatable=native_object_arch==::llvm::Triple::x86_64 && module_index==0u &&
                     cache && cache->limit && lowering && !observing && !instruction_control && !has_tagged_memory && !data->world_->admission().initial_worker_only() && !module.module_name.empty();
                 if(relocatable)lowering->relocated=true;
+                // A failed optional graph is discarded and retried. Report the
+                // final qualification failure or verbose details of that probe.
+                bool const diagnose=!lowering || !lowering->relocated || ::uwvm2::uwvm::io::show_verbose;
                 auto const& ir_limits=llvm_limits.ir;
                 auto ir_room=ir_limits;
                 // Pre- and post-pass finite IR quotas. These are NOT a claim of
@@ -455,7 +458,7 @@
                         if(++blocks>ir_limits.blocks || count>ir_limits.instructions-instructions)
                         {
                             auto const observed=count>SIZE_MAX-instructions ? SIZE_MAX : instructions+count;
-                            ::fast_io::perrln("uwvm: [error] WASI Threads LLVM IR limit in module ",module_index,
+                            if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM IR limit in module ",module_index,
                                 " (",::fast_io::mnp::os_c_str(stage),") blocks=",blocks,"/",ir_limits.blocks,
                                 " instructions=",observed,"/",ir_limits.instructions);
                             return false;
@@ -497,7 +500,14 @@
                     }
                     if(!owner.valid()||!emit::finalize_runtime_llvm_jit_module_storage(ir,true))return {{},status::invalid_body};
                     if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
-                    if(relocatable)hoist_object_bindings(llvm_module);
+                    if(relocatable)
+                    {
+                        // Control helpers also need entries in the finite native
+                        // registry. Preserve its full capacity for the original
+                        // path if object bindings have already consumed it.
+                        if(data->externals_.size()+data->emitted_bridges_.size()>=256u)return {{},status::unsupported_bridge};
+                        hoist_object_bindings(llvm_module);
+                    }
                     if((requires_shared_memtag_lease&&!emit::has_memtag_shared_lease_module_abi(llvm_module))||
                        !data->check_memtag_shared_lease_ir(llvm_module))return {{},status::unsupported_bridge};
                     // Bound the original translation before promoting private
@@ -505,13 +515,13 @@
                     if(!ir_fits("before control"))return {{},status::budget};
                     if(!data->add_control(llvm_module))
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM control insertion rejected in module ",module_index);
+                        if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM control insertion rejected in module ",module_index);
                         return {{},status::native_failure};
                     }
                     if(!ir_fits("after control"))return {{},status::budget};
                     if(!data->check_static_stack_ir(llvm_module))
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM static stack IR rejected in module ",module_index);
+                        if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM static stack IR rejected in module ",module_index);
                         return {{},status::native_failure};
                     }
                     if(!owner.valid())return {{},status::unsupported_bridge};
@@ -612,7 +622,7 @@
                     if(compiler.cancellation().stop_requested())return {{},status::invalid_world};
                     if(!output.valid())
                     {
-                        ::fast_io::perrln("uwvm: [error] WASI Threads LLVM object stream rejected in module ",module_index,
+                        if(diagnose)::fast_io::perrln("uwvm: [error] WASI Threads LLVM object stream rejected in module ",module_index,
                             " emitted-bytes=",output.tell()," code-limit=",data->code_limit_);
                         return {{},output.exceeded_budget() ? status::budget : status::native_failure};
                     }
@@ -626,7 +636,7 @@
                 if(!parsed){::llvm::consumeError(parsed.takeError());return {{},status::native_failure};}
                 ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> definitions;
                 ::std::size_t reservation{};
-                auto const checked=data->check_object(**parsed,llvm_limits.relocations,reservation,definitions);
+                auto const checked=data->check_object(**parsed,llvm_limits.relocations,reservation,definitions,diagnose);
                 if(checked!=status::ok)return {{},checked};
                 for(auto const& entry:data->entries_)
                 {
