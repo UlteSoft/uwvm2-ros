@@ -677,6 +677,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
             return true;
         }
     public:
+        // Under closed ordinary admission, qualify the initial worker against
+        // the complete source, including modules outside its dependency graph.
+        // Every native function leaf must be a concrete synchronous WASIp1
+        // adapter. In particular a re-export cannot hide a thread-spawn leaf.
+        [[nodiscard]] bool has_serial_unchecked_threaded_memories(::std::size_t id, ::std::uint_least64_t epoch) const noexcept
+        {
+            if(!has_actual_ordinary_cli_cache_origin() || !actual_builtin_provider_census(id,epoch,main_module_,true))
+            { return false; }
+            // Omit native ROS providers, including idle registrations with
+            // independent resources. Foreign modules and DLs failed the census.
+            for(auto const& identity:debug_ros_identities_)if(identity)return false;
+            bool shared_shadow{};
+            for(auto const& [name,module]:registry_)
+            {
+                auto const member=bound_initialized_module_id(&module);
+                if(!actual_validated_file(member,epoch,&module) || module.memory_policy.check_tags)return false;
+                for(auto const& local:module.local_defined_memory_vec_storage)
+                {
+                    auto const& shadow=local.memory.memtag_shadow;
+                    shared_shadow |= shadow.enabled() && shadow.shared();
+                }
+                using link=::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
+                for(::std::size_t i{};i<module.imported_function_vec_storage.size();++i)
+                {
+                    auto const kind=module.imported_function_vec_storage.index_unchecked(i).link_kind;
+                    if(kind==link::defined || kind==link::imported)continue;
+                    builtin_wasip1_function_data wasi{};
+                    if(kind!=link::local_imported || !actual_builtin_wasip1_function(member,epoch,&module,i,wasi))
+                    { return false; }
+                }
+            }
+            return shared_shadow;
+        }
+
         [[nodiscard]] bool actual_builtin_ros_function(::std::size_t actual_id,
             ::std::uint_least64_t actual_epoch,
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* actual_module,

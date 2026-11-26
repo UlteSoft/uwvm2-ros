@@ -101,6 +101,7 @@ namespace uwvm2::runtime::wasm_threads
         threaded_profile_limits limits_{};
         threaded_debug_observation observation_{threaded_debug_observation::none};
         bool instruction_control_{};
+        bool initial_worker_only_{};
         ::std::weak_ptr<ThreadedSpawnAdmission const> canonical_owner_;
 
         ThreadedSpawnAdmission(parent_owner source,
@@ -132,6 +133,7 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] ::std::size_t max_total_segment_bytes() const noexcept { return limits_.max_total_segment_bytes; }
         [[nodiscard]] ::std::shared_ptr<ThreadedSpawnAdmission const> retain() const noexcept
         { return canonical_owner_.lock(); }
+        [[nodiscard]] bool initial_worker_only() const noexcept { return initial_worker_only_; }
         [[nodiscard]] bool owns_actual_generation() const noexcept
         { return static_cast<bool>(provider_generation_); }
     };

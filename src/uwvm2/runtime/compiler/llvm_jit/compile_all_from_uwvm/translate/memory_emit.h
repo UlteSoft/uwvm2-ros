@@ -467,7 +467,7 @@ template<typename MaskedAddress>
 }
 
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_direct_memory_pointer(runtime_local_func_llvm_jit_emit_state_t& state,
-    ::std::uint64_t static_offset, ::std::size_t access_size, ::llvm::Value* address, bool is_store = false) noexcept
+    ::std::uint64_t static_offset, ::std::size_t access_size, ::llvm::Value* address, bool is_store = false, bool scalar = false) noexcept
 {
     if(state.ir_builder == nullptr || state.local_func_storage_ptr == nullptr) { return nullptr; }
     auto module{state.local_func_storage_ptr->runtime_module_ptr};
@@ -479,18 +479,28 @@ template<typename MaskedAddress>
     }
     auto const& info{state.selected_memory_access_info};
     if(info.memory_p == nullptr) { return nullptr; } // Provider-owned accesses must keep their callback/lock lifetime.
-    // Emit the authenticated lease call before registering any data or tag
-    // span. The private threaded compiler can later specialize a shared scalar
-    // with a complete owner, bounds and tag-reader proof around its effect.
-    if(info.memory_p->memtag_shadow.enabled() && info.memory_p->memtag_shadow.shared())
-    { return nullptr; }
     auto& b{*state.ir_builder};
     ::llvm::Value* base{};
+    if(info.memory_p->memtag_shadow.enabled() && info.memory_p->memtag_shadow.shared())
+    {
+        // Use the ordinary threaded ADM scalar lowering only for the private
+        // compiler's exact single-worker data span. This endpoint never admits
+        // a raw tag span, an atomic/SIMD opcode or a different memory owner.
+        if(!scalar || state.execute_memtag)return nullptr;
+        auto const serial=threaded_host_emission_scope::serial_scalar_base(b.GetInsertBlock()->getModule(),*module,
+            reinterpret_cast<::std::uintptr_t>(info.memory_p),reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
+            info.stable_memory_reserved_span_bytes);
+        if(!serial)return nullptr;
+        base=get_llvm_host_pointer_value(b,serial,b.getPtrTy());
+    }
     auto protection{llvm_jit_memory_protection::software};
     bool allow_fault_guard{};
-    auto name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module), u8"_memory", state.current_memory_index, u8"_begin")};
-    base = get_llvm_external_host_byte_span_pointer(b, reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
-                                                   info.stable_memory_reserved_span_bytes, ::uwvm2::utils::container::u8string_view{name.data(), name.size()});
+    if(!base)
+    {
+        auto name{::uwvm2::utils::container::u8concat_uwvm(get_llvm_runtime_module_symbol_prefix(*module), u8"_memory", state.current_memory_index, u8"_begin")};
+        base = get_llvm_external_host_byte_span_pointer(b, reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),
+            info.stable_memory_reserved_span_bytes, ::uwvm2::utils::container::u8string_view{name.data(), name.size()});
+    }
     // Instrumented Wasm failures must reach the cold runtime observer,
     // outside an OS signal handler. Ordinary JIT keeps its guard strategy.
     if(

@@ -13341,7 +13341,7 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
     // their access-lifetime bridge; stable mmap and single-thread native memory are directly addressable.
     auto const emit_direct_memory_byte_pointer{
         [&](::std::uint64_t offset, ::std::size_t size, ::llvm::Value* address, bool is_store = false) noexcept -> ::llvm::Value*
-        { return emit_llvm_jit_direct_memory_pointer(state, offset, size, address, is_store); }};
+        { return emit_llvm_jit_direct_memory_pointer(state, offset, size, address, is_store, true); }};
 
     // Emit a native-memory load bridge call for fallback paths.
     auto const emit_native_memory_load_bridge_call{

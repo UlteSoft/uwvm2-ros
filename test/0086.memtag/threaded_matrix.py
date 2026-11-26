@@ -86,6 +86,29 @@ def spawned(kind,*,memory32_adm=4):
  result+=m.sec(10,m.u(2)+b''.join(m.u(len(body))+body for body in bodies))
  return result
 
+def shared_reader_pair():
+ # The accessing module selects its own checks for the same tagged mmap.
+ # Main first reads through a mismatching pointer, then calls a peer's
+ # exported reader with that same pointer. A checked peer must fault there.
+ header=bytes.fromhex('00 61 73 6d 01 00 00 00')
+ limits=m.memory_limits(shared=True)
+ peer=header+m.sec(1,bytes.fromhex('01 60 01 7f 01 7f'))
+ peer+=m.sec(2,b'\x01\x03env\x06memory\x02'+limits)+m.sec(3,b'\x01\0')+m.sec(7,b'\x01\x04read\0\0')
+ reader=b'\0\x20\0'+m.mem(0x28)+b'\x0b'
+ peer+=m.sec(10,b'\x01'+m.u(len(reader))+reader)
+ main=header+m.sec(1,bytes.fromhex('03 60 00 00 60 02 7f 7f 00 60 01 7f 01 7f'))
+ main+=m.sec(2,b'\x02\x03env\x06memory\x02'+limits+b'\x04peer\x04read\0\x02')
+ main+=m.sec(3,b'\x02\0\x01')
+ main+=m.sec(7,b'\x03\x06_start\0\x01\x11wasi_thread_start\0\x02\x06memory\x02\0')
+ p=m.Program()
+ p.add(p.tags())
+ p.add(p.tagged(16)+m.c(8193)+m.mem(0x36))
+ p.eq(m.c(16)+m.mem(0x28),8193)
+ p.eq(m.c(16)+b'\x10\0',8193)
+ body=b'\0'+p.code+b'\x0b'
+ main+=m.sec(10,b'\x02'+m.u(len(body))+body+b'\x02\0\x0b')
+ return peer,main
+
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--vm',type=Path);parser.add_argument('--out',type=Path,required=True)
  parser.add_argument('--engines',default='int,aot');parser.add_argument('--code-budget',type=int,default=67108864)
@@ -109,6 +132,12 @@ def main():
    name='spawn-'+kind+'-'+str(int(enabled));raw=spawned(kind);file=args.out/(name+'.wasm');file.write_bytes(raw)
    expected='memtag' if enabled and kind in ['wrong-tag','tag-zero'] else 'success'
    manifest.append(dict(name=name,file=str(file),enabled=enabled,expected=expected,sha256=hashlib.sha256(raw).hexdigest()))
+ reader_module,reader_guest=shared_reader_pair()
+ peer=args.out/'reader-peer.wasm';peer.write_bytes(reader_module)
+ guest=args.out/'reader-main.wasm';guest.write_bytes(reader_guest)
+ for checked_peer in [False,True]:
+  manifest.append(dict(name='shared-reader-peer-'+str(int(checked_peer)),file=str(guest),peer=str(peer),
+   enabled=False,checked_peer=checked_peer,expected='memtag' if checked_peer else 'success',sha256=hashlib.sha256(reader_guest).hexdigest()))
  (args.out/'manifest.json').write_text(json.dumps(manifest,indent=2))
  if args.generate_only:return
  if args.vm is None:parser.error('--vm is required without --generate-only')
@@ -123,6 +152,8 @@ def main():
    if case['name'].startswith('spawn-'):
     command+=['--wasithread-single-create','main','--wasithread-single-enable','main','--wasithread-single-interface','main','thread-spawn','allow']
    if not case['enabled']:command+=['--wasm-policy-global', 'runtime.memtag-checks', 'off']
+   if 'peer' in case:command+=['--wasm-preload-library',case['peer'],'peer']
+   if case.get('checked_peer'):command+=['--wasm-policy-single','peer','runtime.memtag-checks','on']
    command+=['--run',case['file']]
    completed=subprocess.run(command,capture_output=True,timeout=90)
    output=(completed.stdout+completed.stderr).decode('utf8','replace')

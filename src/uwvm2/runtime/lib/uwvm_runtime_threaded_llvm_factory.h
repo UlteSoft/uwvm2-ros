@@ -297,11 +297,11 @@
                 ::uwvm2::utils::container::std_vector<emit::threaded_forbidden_memory_span> forbidden_memtag_spans(memory_count*2u);
                 ::std::size_t forbidden_memtag_count{};
                 bool requires_shared_memtag_lease{};
-                auto forbid_memtag_span=[&](::std::uintptr_t begin,::std::size_t bytes) noexcept
+                auto forbid_memtag_span=[&](::std::uintptr_t begin,::std::size_t bytes,::std::uintptr_t serial_owner=0u) noexcept
                 {
                     if(bytes==0u)return true;
                     if(begin==0u||bytes>UINTPTR_MAX-begin||forbidden_memtag_count==forbidden_memtag_spans.size())return false;
-                    forbidden_memtag_spans[forbidden_memtag_count++]={begin,bytes};return true;
+                    forbidden_memtag_spans[forbidden_memtag_count++]={begin,bytes,serial_owner};return true;
                 };
                 for(::std::size_t i{};i<memory_count;++i)
                 {
@@ -315,9 +315,20 @@
                     {
                         if(tags.shared()&&!tags.shared_tag_lease_ready())return {{},status::unsupported_shape};
                         requires_shared_memtag_lease|=tags.shared();
+                        // Preflight traced the complete import/re-export chain to
+                        // a local definition in this source. The actual parent
+                        // pins its mmap base. Growth prepares the shadow before
+                        // publishing the acquired data length; restore drains the group.
+                        bool const serial=lowering && lowering->allow_shared_scalars &&
+                            data->world_->admission().initial_worker_only() && data->world_->kind_==world_type::storage_kind::actual_parent &&
+                            !module.memory_policy.check_tags && tags.stable_address() && !tags.hardware_selected() &&
+                            tags.ignored_bits() && tags.tag_data() && tags.maximum_memory_bytes()<=tags.address_mask()+1u &&
+                            info.stable_memory_length_p->load(::std::memory_order_acquire)<=tags.prepared_memory_bytes();
+                        if(serial)lowering->shared_scalars=true;
                         auto const count=tags.maximum_memory_bytes()/16u+(tags.maximum_memory_bytes()%16u!=0u);
                         if(count>SIZE_MAX/sizeof(::std::atomic<::std::uint8_t>)||
-                           !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),info.stable_memory_reserved_span_bytes)||
+                           !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(info.stable_memory_begin),info.stable_memory_reserved_span_bytes,
+                               serial ? address(info.memory_p) : 0u)||
                            !forbid_memtag_span(reinterpret_cast<::std::uintptr_t>(tags.tag_data()),static_cast<::std::size_t>(count)*sizeof(::std::atomic<::std::uint8_t>)))
                             return {{},status::unsupported_shape};
                     }

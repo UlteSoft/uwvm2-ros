@@ -26,6 +26,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
     {
         ::std::uintptr_t begin{};
         ::std::size_t bytes{};
+        // Nonzero only for an exact linear data span in a sealed single-worker
+        // group. Tag storage and every other address remain forbidden.
+        ::std::uintptr_t serial_scalar_owner{};
         [[nodiscard]] constexpr bool contains(::std::uintptr_t address) const noexcept
         { return begin!=0u&&address>=begin&&address-begin<bytes; }
     };
@@ -71,9 +74,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         [[nodiscard]] bool valid() const noexcept{return valid_;}
         [[nodiscard]] static ::std::uintptr_t object_address(::std::uintptr_t original) noexcept
         {
-            // Tagged shared Guest data and allocation tags must never enter
-            // generated raw pointer IR. Owner/length objects remain legitimate
-            // authenticated helper operands; only actual backing spans refuse.
+            // The generic object emitter cannot materialize shared tagged data
+            // or tag storage. The separate scalar endpoint checks the exact
+            // module, owner and extent before admitting a single-worker span.
             if(current_!=nullptr&&!current_->valid_)return 0u;
             if(current_!=nullptr)
                 for(::std::size_t i{};i<current_->forbidden_count_;++i)
@@ -82,6 +85,18 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             if(current_!=nullptr&&original!=0u&&original==current_->original_views_)
             {if(current_->owned_views_==0u){current_->valid_=false;return 0u;}return current_->owned_views_;}
             return original;
+        }
+        [[nodiscard]] static ::std::uintptr_t serial_scalar_base(::llvm::Module const* ir,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module,
+            ::std::uintptr_t owner, ::std::uintptr_t base, ::std::size_t bytes) noexcept
+        {
+            if(!current_ || !current_->valid_ || current_->module_!=ir || current_->wasm_module_!=&module || !owner)return 0u;
+            for(::std::size_t i{};i<current_->forbidden_count_;++i)
+            {
+                auto const& span=current_->forbidden_[i];
+                if(span.serial_scalar_owner==owner && span.begin==base && span.bytes==bytes)return base;
+            }
+            return 0u;
         }
         [[nodiscard]] static bool owns_module(::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module) noexcept
         {

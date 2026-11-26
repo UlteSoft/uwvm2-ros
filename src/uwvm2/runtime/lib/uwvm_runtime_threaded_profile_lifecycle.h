@@ -1240,6 +1240,17 @@
                     auto admitted{::std::shared_ptr<admission>{::uwvm2::utils::container::adopt_shared(::uwvm2::utils::allocator::fast_io_strict::object<admission>([&](admission* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) admission{owner, *parent, id,
                         generation, validation, control_owner().configured, ::std::move(actual_generation), control_owner().observation,
                         control_owner().debug_control.kind==::uwvm2::runtime::wasm_threads::threaded_debug_control::cooperative_all_stop}; }))}};
+                    // The public execution domain remains closed through all joins.
+                    // Seal a strictly single-worker group only when no source leaf
+                    // can spawn and no observer, journal or signal adapter is active.
+#if defined(UWVM_RUNTIME_LLVM_JIT) && (defined(__x86_64__) || defined(__i386__))
+                    namespace mt=::uwvm2::extension::memtag;
+                    admitted->initial_worker_only_=state->selected==backend::llvm &&
+                        admitted->debug_observation()==::uwvm2::runtime::wasm_threads::threaded_debug_observation::none &&
+                        !admitted->instruction_control() && !control_owner().journal && !control_owner().signal_policy.read_fd &&
+                        !mt::asynchronous_requested() && !mt::logging_requested() && !mt::hardware_checked_access_requested() &&
+                        owner->has_serial_unchecked_threaded_memories(id,validation);
+#endif
                     admitted->canonical_owner_ = admitted; state->admitted = ::std::move(admitted);
                     if(control_owner().signal_policy.read_fd!=0u)
                     {

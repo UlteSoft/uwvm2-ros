@@ -608,7 +608,7 @@ namespace uwvm2::runtime::wasm_threads
         [[nodiscard]] SpawnReservation reserve_initial_main() noexcept { return reserve_selected(true); }
         [[nodiscard]] SpawnReservation reserve_selected(bool initial_main, ::std::uint32_t replay_tid=0u) noexcept
         {
-            if(initialization_error_ != 0 || !admission_) { return {}; }
+            if(initialization_error_ != 0 || !admission_ || (!initial_main && admission_->initial_worker_only())) { return {}; }
             auto retained{canonical_owner_.lock()};
             if(!retained) { return {}; }
             ::std::lock_guard lock{mutex_};
