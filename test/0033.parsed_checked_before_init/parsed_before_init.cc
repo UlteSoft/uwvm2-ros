@@ -82,6 +82,18 @@ namespace
             ::uwvm2::utils::container::u8concat(u8"typed-input-budget"), limited, failure, {}, ::std::addressof(resource));
         REQUIRE(!parsed && failure.err_code == error_code::ok &&
             resource.error == ::uwvm2::utils::control::owned_image_error::quota_exceeded);
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        namespace allocation = ::uwvm2::utils::allocator::resource;
+        constexpr auto parser{static_cast<unsigned>(allocation::pool::parser)};
+        auto& budget{allocation::policies[parser]};
+        auto const previous{budget};
+        budget.single = 0;
+        auto const before{allocation::live_bytes[static_cast<unsigned>(allocation::pool::parser_input)].load()};
+        parsed = load_checked(path, failure);
+        budget = previous;
+        REQUIRE(!parsed && failure.err_code == error_code::ok &&
+            allocation::live_bytes[static_cast<unsigned>(allocation::pool::parser_input)].load() == before);
+#endif
         REQUIRE(!full::selected_full_source_owner_pin() && runtime::storage::active_runtime_registry().empty());
         REQUIRE(wasm::storage::all_module.empty() && wasm::storage::all_module_export.empty());
         REQUIRE(::uwvm2::runtime::gc::published_initializer_serial.load(::std::memory_order_acquire) == serial &&

@@ -52,7 +52,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::custom
 {
     using handlefunc_ptr_t = void (*)(::uwvm2::uwvm::wasm::type::wasm_file_t&,
                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const*,
-                                      ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const*) noexcept;
+                                      ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const*) UWVM_THROWS;
 
     struct handlefunc_t
     {
@@ -62,7 +62,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::custom
 
     inline constexpr void handle_binfmtver1_custom_section(
         ::uwvm2::uwvm::wasm::type::wasm_file_t & wasm_file,
-        ::uwvm2::utils::container::unordered_flat_map<::uwvm2::utils::container::u8string_view, handlefunc_t> const& custom_handler) noexcept
+        ::uwvm2::utils::container::unordered_flat_map<::uwvm2::utils::container::u8string_view, handlefunc_t> const& custom_handler) UWVM_THROWS
     {
         if(wasm_file.binfmt_ver != 1u) [[unlikely]] { return; }
 

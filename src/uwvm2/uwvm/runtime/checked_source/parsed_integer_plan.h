@@ -192,7 +192,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::checked_source
             auto source{full_source::create_unparsed(::std::move(file_name), ::std::move(rename))};
             if(!full::select_unparsed_full_source_after_drain(source)) { return {}; }
             if(wasm::loader::load_wasm_file(source->file_for_native_initialization(), source->owned_file_name(),
-                source->owned_rename(), parameters, ::std::move(image.image)) != wasm::loader::load_wasm_file_rtl::ok) { return {}; }
+                source->owned_rename(), parameters, ::std::move(image.image)) != wasm::loader::load_wasm_file_rtl::ok)
+            {
+                // The loader rolled the unparsed file back. Release this candidate's
+                // empty selection so another drained preparation can acquire it.
+                if(full::selected_full_source_matches_owner(source)) { full::retire_selected_full_source_after_drain(); }
+                return {};
+            }
             // The real file has adopted the SAME exclusive image before parsing.
             // bytes/digest_end are const borrows of that now-file-owned allocation;
             // successful adoption preserves both endpoints, never a postparse copy.

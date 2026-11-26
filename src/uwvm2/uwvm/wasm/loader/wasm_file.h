@@ -133,6 +133,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                                        ::uwvm2::utils::container::u8string_view rename_module_name,
                                                        ::uwvm2::uwvm::wasm::type::wasm_parameter_t para,
                                                        ::uwvm2::utils::control::owned_file_image::owner image = {}) noexcept
+#ifdef UWVM_CPP_EXCEPTIONS
+    try
+#endif
     {
         // Never reload a parsed immutable image through mutable native file
         // borrows. Its actual owner must retire after all source users drain.
@@ -445,6 +448,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         if(!wf.has_owned_source_image())
         { ::uwvm2::utils::madvise::my_madvise(wf.source_cbegin(), wf.source_size(), ::uwvm2::utils::madvise::madvise_flag::willneed); }
 
+#ifdef UWVM_CPP_EXCEPTIONS
+        ::uwvm2::utils::allocator::resource::recoverable_parser_allocations recoverable{};
+#endif
         switch(wf.binfmt_ver)
         {
             [[unlikely]] case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::wasm_u32>(0u):
@@ -1159,6 +1165,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         transaction.committed = true;
         return load_wasm_file_rtl::ok;
     }
+#ifdef UWVM_CPP_EXCEPTIONS
+    catch(::std::bad_alloc const&)
+    {
+        // Unwinding restores the original file and returns all candidate input
+        // and parser reservations before a private reparse reports failure.
+        try
+        {
+            ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
+                u8"uwvm: [error] parser: native metadata or validation scratch allocation refused. Check parser and validation single-bytes/live-bytes and available host memory.");
+        }
+        catch(::fast_io::error) {}
+        return load_wasm_file_rtl::wasm_parser_error;
+    }
+#endif
 
     } // global C++ linkage: shared with the type module's private friend
 }  // namespace uwvm2::uwvm::wasm::loader

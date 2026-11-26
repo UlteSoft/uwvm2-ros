@@ -52,7 +52,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::custom::customs
 {
     inline constexpr void name_handler(::uwvm2::uwvm::wasm::type::wasm_file_t & file,
                                        ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const* const begin,
-                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const* const end) noexcept
+                                       ::uwvm2::parser::wasm::standard::wasm1::type::wasm_byte const* const end) UWVM_THROWS
     {
         ::uwvm2::utils::container::parser_vector<::uwvm2::parser::wasm_custom::customs::name_err_t> name_err{};
         ::uwvm2::parser::wasm_custom::customs::parse_name_storage(file.wasm_custom_name,
