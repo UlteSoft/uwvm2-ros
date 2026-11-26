@@ -504,7 +504,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         /// to support such overloading, and a WebAssembly module itself cannot implement an overloaded name
         constexpr bool curr_wasm_check_duplicate_imports{::uwvm2::parser::wasm::standard::wasm1::features::check_duplicate_imports<Fs...>()};
         ::std::conditional_t<curr_wasm_check_duplicate_imports,
-                             ::uwvm2::utils::container::parser_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
+                             ::uwvm2::utils::container::validation_flat_set<::uwvm2::parser::wasm::standard::wasm1::features::name_checker>,
                              ::uwvm2::parser::wasm::concepts::empty_t>
             duplicate_name_checker{};  // use for check duplicate name
 

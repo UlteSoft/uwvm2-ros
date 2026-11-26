@@ -62,7 +62,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
     {
         // This is not a bitmap, but vec(bool), because the number of types is usually not too large to require bool. Instead, access efficiency is what is most
         // needed.
-        ::uwvm2::utils::container::vector<bool> unused_type_checker{};
+        ::uwvm2::utils::container::validation_vector<bool> unused_type_checker{};
     };
 
     inline constexpr void init_binfmt_ver1_warning_storage(binfmt_ver1_warning_storage_t & storage, ::uwvm2::uwvm::wasm::type::wasm_file_t const& wasm) noexcept
@@ -71,7 +71,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::warning
 
         constexpr auto get_typesec_from_features_tuple{
             []<::uwvm2::parser::wasm::concepts::wasm_feature... Fs> UWVM_ALWAYS_INLINE(auto const& section,
-                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept
+                                                                                       ::uwvm2::utils::container::tuple<Fs...>) constexpr noexcept -> decltype(auto)
             {
                 return ::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
                     ::uwvm2::parser::wasm::standard::wasm1::features::type_section_storage_t<Fs...>>(section);

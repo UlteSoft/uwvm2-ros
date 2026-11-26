@@ -378,7 +378,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         // Each export is labeled by a unique name. Exportable definitions are functions, tables, memories, and globals, which are referenced through a
         // respective descriptor.
         // @see: WebAssembly Release 1.0 (2019-07-20) § 2.5.10
-        ::uwvm2::utils::container::parser_flat_set<::uwvm2::utils::container::u8string_view> duplicate_name_checker{};  // use for check duplicate name
+        ::uwvm2::utils::container::validation_flat_set<::uwvm2::utils::container::u8string_view> duplicate_name_checker{};  // use for check duplicate name
         duplicate_name_checker.reserve(export_count);
 
         // Each type is of unknown size, so it cannot be reserved.

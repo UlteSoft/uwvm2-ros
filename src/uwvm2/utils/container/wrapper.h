@@ -335,9 +335,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
     template <typename Key, typename Val>
     using parser_flat_map = unordered_flat_map<Key, Val, ::std::hash<Key>, ::std::equal_to<Key>,
         ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::parser>>;
+    template <typename Key, typename Val>
+    using validation_flat_map = unordered_flat_map<Key, Val, ::std::hash<Key>, ::std::equal_to<Key>,
+        ::uwvm2::utils::allocator::resource::std_allocator<::std::pair<Key const, Val>, ::uwvm2::utils::allocator::resource::pool::validation>>;
     template <typename Key>
-    using parser_flat_set = unordered_flat_set<Key, ::std::hash<Key>, ::std::equal_to<Key>,
-        ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::parser>>;
+    using validation_flat_set = unordered_flat_set<Key, ::std::hash<Key>, ::std::equal_to<Key>,
+        ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation>>;
     template <typename Key>
     using validation_set = set<Key, ::std::less<Key>, ::uwvm2::utils::allocator::resource::std_allocator<Key, ::uwvm2::utils::allocator::resource::pool::validation>>;
     template <typename Key, typename Val, typename Compare>
