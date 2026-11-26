@@ -608,7 +608,7 @@
                                 " module=",module_index," input-bytes=",key.tell());
                     }
                     instance_bindings=data->externals_.size();
-                    if(instance_shape)instance_shape=data->instance_functions_witnessed();
+                    if(instance_shape)instance_shape=data->instance_functions_witnessed(adm16);
                     if(!hit)
                     {
                         if(!optimize_runtime_llvm_jit_module(llvm_module,*target,policy.pipeline,policy.codegen_opt_level,true,false))
