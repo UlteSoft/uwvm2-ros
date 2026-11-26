@@ -102,6 +102,15 @@ owner's exclusive gate. Relocation pins precede tag leases, and operations
 involving two owners acquire them in canonical owner order. Imported aliases
 refer to the same gate.
 
+The x86-64 threaded compiler can retain one reader count between ordinary
+scalar operations on a pinned, single ADM16 software owner. An acquire on
+entry observes the preceding writer's release. The reader's release publishes
+the complete data operation before the next exclusive retag or zeroing.
+Every scalar and every possible cycle in the original control-flow graph
+tests for a pending writer. Calls, diagnostics and exits release the reader.
+The live cancellation byte and acquired memory length still guard each
+operation. Checking modules compare every touched tag before the data effect.
+
 A tag lease must not span a native I/O operation, a quota wait, debugger
 notification, trap reporting or stack unwinding. Host input uses owned staging
 storage and a fresh checked copy into Guest memory after input completes.
