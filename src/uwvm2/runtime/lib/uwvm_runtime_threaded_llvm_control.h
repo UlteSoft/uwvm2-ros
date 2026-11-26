@@ -414,7 +414,7 @@
             auto* ros_poll_type=::llvm::FunctionType::get(word,{word,word},false);
             auto* ros_leave_type=::llvm::FunctionType::get(::llvm::Type::getVoidTy(c),{word},false);
             auto* ros_poll_fn=declare(ros_poll_name,ros_poll_type,debug_function_boundaries?
-                address(&ros_control_probe<&poll>):address(&ros_control_probe<&cancellation_poll>));
+                address(&ros_control_probe<&poll>):address(&ros_cancellation_poll));
             auto* ros_enter_fn=declare(ros_enter_name,ros_poll_type,debug_function_boundaries?
                 address(&ros_control_probe<&enter>):address(&ros_control_probe<&cancellation_enter>));
             auto* ros_leave_fn=declare("uwvm.threaded.leave.ros.v1",ros_leave_type,address(&ros_control_leave));
@@ -642,7 +642,7 @@
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                    &&binding.address!=address(&publish_ros_provenance)
                    &&binding.address!=address(&ros_control_probe<&poll>)
-                   &&binding.address!=address(&ros_control_probe<&cancellation_poll>)
+                   &&binding.address!=address(&ros_cancellation_poll)
 #endif
                 )continue;
                 auto* target=module.getFunction(::uwvm2::runtime::compiler::llvm_jit::fast_io_support::ref(binding.name));
