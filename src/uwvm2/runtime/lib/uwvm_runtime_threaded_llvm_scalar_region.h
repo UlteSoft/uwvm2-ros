@@ -61,6 +61,35 @@
             return b.CreateIsNotNull(b.CreateAnd(bits,locks::rwlock_pending_mask()|locks::rwlock_writer_mask()));
         }
 
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+        static void inline_scalar_region_publication(::llvm::CallInst& call,scalar_region_ir const& r)
+        {
+            // publish_ros_provenance returns void. On an already authenticated
+            // token valid_ros_provenance only reads the worker's cached child
+            // and owner; accepts_ros_provenance then observes cancellation.
+            // A missing or changed witness must execute the real publisher.
+            auto* original=call.getParent();
+            auto* slow=original->splitBasicBlock(call.getIterator(),"tagged.provenance.publish");
+            auto* next=slow->splitBasicBlock(call.getNextNode()->getIterator(),"tagged.provenance.done");
+            original->getTerminator()->eraseFromParent();
+            ::llvm::IRBuilder<> b(original);
+            auto* word=b.getIntNTy(sizeof(::std::uintptr_t)*CHAR_BIT);
+            auto field=[&](::llvm::Type* type,::std::size_t offset)
+            { return b.CreateLoad(type,b.CreateConstGEP1_64(b.getInt8Ty(),r.state,offset),true); };
+            auto* token=b.CreateAnd(call.getArgOperand(0u),::llvm::ConstantInt::get(word,~::std::uintptr_t{1u}));
+            auto* owner=field(word,offsetof(native_poll_state,authenticated_ros_owner));
+            auto* current=field(b.getPtrTy(),offsetof(native_poll_state,child));
+            auto* authenticated=field(b.getPtrTy(),offsetof(native_poll_state,authenticated_ros_child));
+            auto* known=b.CreateAnd(b.CreateIsNotNull(token),b.CreateICmpEQ(token,owner));
+            known=b.CreateAnd(known,b.CreateAnd(b.CreateICmpEQ(current,r.child),b.CreateICmpEQ(current,authenticated)));
+            auto* rejected=field(b.getInt8Ty(),offsetof(native_poll_state,rejected));
+            auto* stop=b.CreateAlignedLoad(b.getInt8Ty(),r.stop,::llvm::Align{1u},true);
+            stop->setAtomic(::llvm::AtomicOrdering::Acquire);
+            known=b.CreateAnd(known,b.CreateIsNull(b.CreateOr(rejected,stop)));
+            b.CreateCondBr(known,next,slow,::llvm::MDBuilder{call.getContext()}.createBranchWeights(2000u,1u));
+        }
+#endif
+
         static void emit_scalar_region_access(::llvm::CallInst& call,scalar_region_ir const& r,
             shared_scalar_layout layout,shared_scalar_shape shape)
         {
@@ -166,6 +195,12 @@
             auto* poll=module.getFunction(poll_name);
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
             auto* ros_poll=module.getFunction(ros_poll_name);
+            ::llvm::Function* publisher{};
+            for(auto const& bridge:emitted_bridges_)
+                if(bridge.original==address(&llvm_jit_publish_ros_provenance))
+                    for(auto const& mapping:externals_)
+                        if(mapping.address==address(&publish_ros_provenance) && mapping.name==bridge.declaration->getName())
+                            publisher=bridge.declaration;
 #endif
             auto is_poll=[&](::llvm::CallInst const& c)
             {
@@ -192,6 +227,7 @@
                 struct site { ::llvm::CallInst* call;shared_scalar_layout layout;shared_scalar_shape shape; };
                 ::llvm::SmallVector<site,16> sites;
                 ::llvm::SmallVector<::llvm::Instruction*,32> boundaries,checkpoints;
+                ::llvm::SmallVector<::llvm::CallInst*,16> publications;
                 ::llvm::DenseMap<::llvm::BasicBlock*,unsigned> order;
                 unsigned rank{};
                 for(auto& block:function)order.try_emplace(&block,rank++);
@@ -209,6 +245,11 @@
                         {
                             if(is_poll(*call))continue;
                             boundaries.push_back(call);
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                            if(publisher && call->getCalledFunction()==publisher && !call->isMustTailCall() &&
+                               call->getType()->isVoidTy() && call->arg_size()==1u && call->getArgOperand(0u)->getType()==word)
+                                publications.push_back(call);
+#endif
                             auto it=declarations.find(call->getCalledFunction());
                             if(it==declarations.end())continue;
                             auto layout=shared_scalar_owner(*call,it->second,false,true);
@@ -219,8 +260,8 @@
                     }
                 }
                 if(sites.empty())continue;
-                auto const instructions=sites.size()*50u+boundaries.size()+checkpoints.size()*8u+16u;
-                auto const blocks=sites.size()*6u+checkpoints.size()*2u;
+                auto const instructions=sites.size()*50u+boundaries.size()+checkpoints.size()*8u+publications.size()*24u+16u;
+                auto const blocks=sites.size()*6u+checkpoints.size()*2u+publications.size()*2u;
                 if(instructions>room.instructions || blocks>room.blocks)continue;
                 room.instructions-=instructions;room.blocks-=blocks;
                 if(!state_fn)
@@ -267,6 +308,9 @@
                         ::llvm::MDBuilder{context}.createBranchWeights(1u,2000u));
                     b.SetInsertPoint(then);scalar_region_call(b,r.leave);
                 }
+#if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
+                for(auto* publication:publications)inline_scalar_region_publication(*publication,r);
+#endif
                 for(auto const& s:sites)emit_scalar_region_access(*s.call,r,s.layout,s.shape);
                 // The original scalar calls are now cold edges. A failing
                 // proof drops the lease before the complete diagnostic bridge.
