@@ -103,7 +103,9 @@ module retirement and hot update. Guest code cannot reset counters. Resource
 checks run when backing storage is allocated or grows, not on ordinary memory
 loads/stores or GC field access.
 
-Initial memory/table/GC metadata budget refusal is an input rejection (127).
+If the main module and explicit preloads already exceed the graph node limit,
+CLI argument processing returns 126 before opening a preload. Once loading
+starts, initial memory, table or GC metadata budget refusal returns 127.
 An inadmissible WASI Threads startup profile returns 126, including stack or
 construction budget refusal before the first guest entry. A refused later
 thread spawn is returned to the guest through the spawn failure result.
