@@ -14,26 +14,31 @@ using native_endpoint_observer=details::pending_actual_native_endpoints;
 bool native_endpoint_capture_qualified_{};
 
 [[nodiscard]] bool prepare_native_endpoint_declarations(::llvm::Module& ir,::llvm::LLVMContext const& actual_context,
+    ::std::size_t first, ::std::size_t last,
     ::uwvm2::utils::container::std_vector<native_endpoint_observer::expected_function>& expected)
 {
     auto const count=locals_.size();auto const imported=owner_.module()->imported_function_vec_storage.size();
     if(!owner_.matches_unpublished_file() || !profile_ || !native_budget_owner_ || !native_charge_ ||
        ir.getModuleFlag("uwvm.native.code-owner.table.version")!=nullptr ||
        ::std::addressof(ir.getContext())!=::std::addressof(actual_context) || generations_.size()!=count ||
-       count>details::native_owner_object_graph::detail::max_rows/2u || imported>SIZE_MAX-count)
+       count>details::native_owner_object_graph::detail::max_rows/2u || imported>SIZE_MAX-count ||
+       first>last || last>count || expected.size()!=first*2u)
     { return false; }
     if(count==0u) { return true; }
-    if(!native_charge_(native_budget_owner_,1u,sizeof(native_endpoint_observer)) ||
-       !native_charge_(native_budget_owner_,count*2u,
-           sizeof(native_endpoint_observer::expected_function)+sizeof(unsigned))) { return false; }
-    expected.reserve(count*2u);
+    if(first==0u)
+    {
+        if(!native_charge_(native_budget_owner_,1u,sizeof(native_endpoint_observer)) ||
+           !native_charge_(native_budget_owner_,count*2u,
+               sizeof(native_endpoint_observer::expected_function)+sizeof(unsigned))) { return false; }
+        expected.reserve(count*2u);
+    }
     for(auto& function:ir)
     {
         if(function.isDeclaration()) { continue; }
         if(function.getParent()!=::std::addressof(ir) || function.hasFnAttribute("uwvm.native.code-owner.role")) { return false; }
         function.addFnAttr("uwvm.native.code-owner.role","0");
     }
-    for(::std::size_t local{};local<count;++local)
+    for(auto local{first};local<last;++local)
     {
         auto const index=imported+local;auto const& plan=locals_[local].checkpoint_plan;
         if(!plan || plan->get().module!=module_id_ || plan->get().function!=index ||
@@ -65,7 +70,7 @@ bool native_endpoint_capture_qualified_{};
     }
     ir.addModuleFlag(::llvm::Module::Error,"uwvm.native.code-owner.table.version",
         ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ir.getContext()),2u));
-    return expected.size()==count*2u;
+    return expected.size()==last*2u;
 }
 
 [[nodiscard]] bool freeze_native_endpoint_capture() noexcept

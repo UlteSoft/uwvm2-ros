@@ -263,191 +263,285 @@ extern "C++"
                     if(::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::supports_itanium_dwarf_object(*target))
                     { options.native_exception_target_machine = target.get(); }
                 }
-                compile::llvm_jit_module_storage_t ir{};
-                if(!emit::try_prepare_runtime_llvm_jit_module_storage(runtime_module, ir,
-                    options.emit_unwind_call_stack_frames, options.native_exception_target_machine))
-                { return {{}, preparation_status::lowering_declined}; }
+                struct code_partition
                 {
-                emit::private_host_object_emission_scope owned_objects{data->owner_, *ir.llvm_module};
-                location.operation=stage::lower;
-                for(::std::size_t index{}; index != count; ++index)
+                    ::std::size_t first{}, last{};
+                    compile::llvm_jit_module_storage_t ir{};
+                    ::uwvm2::utils::container::u8string bitcode{};
+                    ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declarations imports{};
+                    ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::catch_runtime catches{};
+                };
+                ::uwvm2::utils::container::std_vector<code_partition> parts{};
+                parts.emplace_back();
+#if defined(__linux__) && defined(__i386__)
+                // Both worlds keep their complete guarded linear memories during preparation.
+                // LLVM's O0 machine debug passes allocate per function and retain assembler data
+                // until the end of each object. Keep large functions whole in their own partition.
+                if(policy.codegen_opt_level == ::llvm::CodeGenOptLevel::None &&
+                   policy.pipeline == runtime_llvm_jit_full_pipeline_kind::none)
                 {
-                    location.function=imported+index;
-                    auto& local{data->locals_[index]};
-                    checkpoint::function_plan work{}; work.profile = data->profile_;
-                    // [actual strong source-owned immutable registry] end
-                    // [safe] cold borrow for this single fused emit only; the
-                    // record/source and all aliases remain retained above.
-                    local.compiler_registry = options.compiler_registry;
-                    // Exactly one instruction walk validates this effective
-                    // body while emitting LLVM and its rich continuation plan.
-                    emit::validate_runtime_local_func(validation_module, local, validation_error, ::std::addressof(ir),
-                        true, false,
-                        options.emit_call_stack_frames, options.emit_unwind_call_stack_frames,
-                        options.validator_feature_parameter,
-                        true, options.compilation_mode, options.debug_safe_point_granularity,
-                        options.debug_full_patchable_typed_target_base_address, count,
-                        ::std::addressof(local.debug_safe_point_bits), true, nullptr,
-                        data->generations_[index], ::std::addressof(work), nullptr, nullptr, options.execute_memtag);
-                    // [finished emitter state] no remaining registry borrow
-                    // [safe] clear cold metadata before returning owned DATA.
-                    local.compiler_registry = nullptr;
-                    if(ir.llvm_module == nullptr || ir.llvm_context_holder == nullptr)
-                    { return {{}, preparation_status::lowering_declined}; }
-                    local.checkpoint_plan = checkpoint::sealed_function_plan::seal_compiler_metadata(::std::move(work));
-                    if(!local.checkpoint_plan) { return {{}, preparation_status::lowering_declined}; }
-                    auto const& plan{local.checkpoint_plan->get()};
-                    if(plan.module != actual_module_id || plan.function != imported + index ||
-                        plan.function_generation != data->generations_[index] || plan.profile.get() != data->profile_.get() ||
-                        plan.profile.owner_before(data->profile_) || data->profile_.owner_before(plan.profile) ||
-                        plan.producer_availability != checkpoint::status::ok || plan.resume_abi_revision != 2u || plan.resume_sites.empty())
-                    { return {{}, preparation_status::lowering_declined}; }
-                }
-                location.function=SIZE_MAX;
-                location.operation=stage::verify;
-                if(!owned_objects.valid() || !emit::finalize_runtime_llvm_jit_module_storage(ir, true) ||
-                    ir.llvm_module == nullptr || ir.llvm_context_holder == nullptr)
-                { return {{}, preparation_status::lowering_declined}; }
-                } // Restore compiler TLS before native optimization/materialization.
-                auto module{::std::move(ir.llvm_module)};
-                auto context{::std::move(ir.llvm_context_holder)};
-                set_llvm_module_target_triple_from_machine(*module, *target);
-                module->setDataLayout(target->createDataLayout());
-                apply_runtime_llvm_jit_native_target_function_attrs(*module, cpu, cpu, *target);
-                location.operation=stage::optimize;
-                if(!optimize_runtime_llvm_jit_module(*module, *target, policy.pipeline, policy.codegen_opt_level, true, false))
-                { return {{}, preparation_status::native_failure}; }
-                auto native_level{policy.codegen_opt_level};
-                if(native_level != ::llvm::CodeGenOptLevel::None && policy.uses_debug_session_budget() &&
-                   runtime_llvm_jit_native_ir_size{*module}.exceeds_debug_budget())
-                {
-                    native_level = ::llvm::CodeGenOptLevel::None;
-                    target = make_runtime_llvm_jit_materialize_target_machine(cpu, attributes, native_level);
-                    if(!target) { return {{}, preparation_status::unsupported_native}; }
-                    target->setFastISel(true);
-                }
-                location.operation=stage::qualify;
-                for(auto& local : data->locals_) { for(auto& octet : local.debug_safe_point_bits) { octet = 0u; } }
-                if(!visit_optimized_llvm_jit_debug_safe_points(*module,
-                    [&](::std::uint64_t module_id, ::std::uint64_t function, ::std::uint64_t offset) noexcept
+                    auto const target_bytes{(::std::max)(8192uz, total_body_bytes / 512u)};
+                    ::std::size_t used{};
+                    for(::std::size_t index{}; index != count; ++index)
                     {
-                        if(module_id != actual_module_id || function < imported || function - imported >= count) { return false; }
-                        auto& local{data->locals_[static_cast<::std::size_t>(function - imported)]};
-                        auto const& plan{local.checkpoint_plan->get()};
-                        auto& bits{local.debug_safe_point_bits};
-                        if(offset >= plan.expression_bytes || offset / 8u >= bits.size()) { return false; }
-                        // [actual optimized expression bitmap] end
-                        // [safe] checked local/byte index before writing retained
-                        // DATA; neither Wasm pointer nor a published PC advances.
-                        auto& octet{bits.index_unchecked(static_cast<::std::size_t>(offset / 8u))};
-                        octet = static_cast<::std::uint_least8_t>(octet | (1u << (offset % 8u)));
-                        return true;
-                    })) { return {{}, preparation_status::native_failure}; }
-                data->debug_shutdown_abi_revision_ = optimized_llvm_jit_debug_shutdown_ready(*module) ? 1u : 0u;
-                if(count != 0u && data->debug_shutdown_abi_revision_ != 1u) { return {{}, preparation_status::lowering_declined}; }
-                ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declarations imports{};
-                ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::catch_runtime catches{};
-                auto const native_eh_requested{module->getNamedValue(
-                    ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::type_info_symbol) != nullptr};
-                if constexpr(details::native_exception_host::available)
-                {
-                    if(::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::supports_itanium_dwarf_object(*target))
-                    {
-                        imports = ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declare_itanium_dwarf_symbols(*module, *target);
-                        catches = ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::declare_catch_runtime(*module);
-                        if(imports.status != ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::error::ok || !static_cast<bool>(catches))
-                        { return {{}, preparation_status::native_failure}; }
+                        auto const& local{data->locals_[index]};
+                        auto const bytes{static_cast<::std::size_t>(local.code_end - local.code_begin)};
+                        if(used != 0u && (used >= target_bytes || bytes > target_bytes - used))
+                        {
+                            parts.back().last = index;
+                            parts.emplace_back().first = index;
+                            used = 0u;
+                        }
+                        used += bytes;
                     }
-                    else if(native_eh_requested) { return {{}, preparation_status::unsupported_native}; }
                 }
-                else if(native_eh_requested) { return {{}, preparation_status::unsupported_native}; }
+#endif
+                parts.back().last = count;
+                auto native_level{policy.codegen_opt_level};
 #if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
                 ::uwvm2::utils::container::std_vector<details::pending_actual_native_endpoints::expected_function> endpoint_declarations{};
-                if(!data->prepare_native_endpoint_declarations(*module,*context,endpoint_declarations))
-                { return {{},preparation_status::native_endpoint_failure}; }
 #endif
-                location.operation=stage::emit;
-                // Stable host-function mappings are the same process ABI in
-                // both worlds; owned mutable objects use only private pointers.
-                ::uwvm2::runtime::compiler::shared::strict_float_jit::register_symbols();
-                auto memory{::uwvm2::utils::container::make_unique<
-                    ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
-                if(memory == nullptr) { return {{}, preparation_status::exhausted}; }
-                auto* const memory_observer{memory.get()};
-#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
-                auto* const checkpoint_ir{module.get()};
-#endif
-                auto* const engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
-                    .setEngineKind(::llvm::EngineKind::JIT).setOptLevel(native_level)
-                    .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs)
-                    .setMCJITMemoryManager(llvm_jit_memory_manager_owner_t{memory.release()}).create(target.release())};
-                if(engine == nullptr) { return {{}, preparation_status::native_failure}; }
-                data->context_ = ::std::move(context); data->engine_.reset(engine);
-                data->debug_cfi_manager_=memory_observer;
-                if(imports.type_info != nullptr && !details::native_exception_host::bind<::uwvm2::runtime::exception::guest_exception>(
-                    *data->engine_, imports, catches,
-                    +[]() UWVM_THROWS { return ::uwvm2::runtime::exception::guest_exception{
-                        ::uwvm2::runtime::exception::value::make(::uwvm2::utils::container::make_shared<unsigned char const>(0), {})}; }
-#if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX) && defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && \
-    UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
-                    , &runtime_source_exception_end_catch
-#endif
-                    )) { return {{}, preparation_status::native_failure}; }
-                // No object cache, old-code mapping, pending numeric plan,
-                // diagnostic/permission registration or future epoch exists.
-                data->ranges_ = ::uwvm2::utils::container::make_unique<details::pending_llvm_jit_code_ranges>(*data->engine_, true);
-                if(data->ranges_ == nullptr) { return {{}, preparation_status::exhausted}; }
-                data->ranges_->configure_debug_full_capture(true);
-#if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
-                if(count!=0u)
+                auto declare_eh = [](auto& module, auto& machine, auto& imports, auto& catches) -> preparation_status
                 {
-                    data->native_endpoints_.reset(::uwvm2::utils::allocator::fast_io_strict::object<details::pending_actual_native_endpoints>([&](details::pending_actual_native_endpoints* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) details::pending_actual_native_endpoints{
-                        *data->engine_,data.get(),data->owner_,data->profile_,actual_module_id,
-                        ::std::move(endpoint_declarations),native_budget_owner,native_charge}; }));
-                    if(!data->native_endpoints_->valid_ || !data->native_endpoints_->attached_)
-                    { return {{},preparation_status::native_endpoint_observer_failure}; }
-                }
-#endif
-                data->engine_->finalizeObject();
-                if(memory_observer->has_finalization_failure() || data->engine_->hasError() ||
-                   data->ranges_->has_observation_failure())
-                { return {{}, preparation_status::native_failure}; }
-                auto resolve = [&](::uwvm2::utils::container::u8string const& name) -> ::std::uintptr_t
-                {
-                    // Real engine-owned LLVM definition BEFORE native lookup.
-                    // Never accept a same-name process-global/old-world symbol
-                    // for a missing declaration in this private generation.
-                    auto* const function{data->engine_->FindFunctionNamed(emit::get_llvm_string_ref(name))};
-                    if(function == nullptr || function->isDeclaration()) { return 0u; }
-                    auto const callable{reinterpret_cast<::std::uintptr_t>(data->engine_->getPointerToFunction(function))};
-                    if(callable == 0u) { return 0u; }
-                    // This callable was obtained synchronously from this
-                    // engine's actual defined LLVM Function, never wire DATA,
-                    // an arbitrary integer or a process-global missing symbol.
-                    // Only this real loader-owned callable may name an ELFv1
-                    // entry/TOC/environment descriptor or carry a Thumb tag.
-                    auto const code{details::native_function_code_address(callable)};
-                    // [same private loaded object function entry/text extent]
-                    // [safe] the actual code address must exactly match this
-                    // engine listener's observed function and loaded text,
-                    // before retaining any callable address as private DATA.
-                    if(!data->ranges_->owns_pending_loaded_function_entry(code)) { return 0u; }
-                    return callable;
+                    auto const native_eh_requested{module.getNamedValue(
+                        ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::type_info_symbol) != nullptr};
+                    if constexpr(details::native_exception_host::available)
+                    {
+                        if(::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::supports_itanium_dwarf_object(machine))
+                        {
+                            imports = ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::declare_itanium_dwarf_symbols(module, machine);
+                            catches = ::uwvm2::runtime::compiler::llvm_jit::native_exception_landingpad::declare_catch_runtime(module);
+                            if(imports.status != ::uwvm2::runtime::compiler::llvm_jit::native_exception_symbols::error::ok || !static_cast<bool>(catches))
+                            { return preparation_status::native_failure; }
+                        }
+                        else if(native_eh_requested) { return preparation_status::unsupported_native; }
+                    }
+                    else if(native_eh_requested) { return preparation_status::unsupported_native; }
+                    return preparation_status::ok;
                 };
-                location.operation=stage::resolve;
-                for(::std::size_t index{}; index != count; ++index)
+                auto lower = [&](code_partition& part) -> preparation_status
                 {
-                    auto const public_index{imported + index};
-                    location.function=public_index;
-                    auto const typed_name{get_runtime_llvm_jit_wasm_function_name(runtime_module, public_index)};
-                    auto& entries{data->entries_[index]};
-                    entries.typed = resolve(typed_name);
-                    entries.raw = resolve(get_runtime_llvm_jit_wasm_raw_function_name(runtime_module, public_index));
-                    auto const resume_name{::uwvm2::utils::container::u8concat_uwvm(typed_name, u8".checkpoint.resume.v2")};
-                    entries.resume_typed = resolve(resume_name);
-                    entries.resume_raw = resolve(::uwvm2::utils::container::u8concat_uwvm(resume_name, u8".raw"));
-                    if(entries.typed == 0u || entries.raw == 0u || entries.resume_typed == 0u || entries.resume_raw == 0u)
-                    { return {{}, preparation_status::native_failure}; }
+                    auto& ir{part.ir};
+                    if(!emit::try_prepare_runtime_llvm_jit_module_storage(runtime_module, ir,
+                        options.emit_unwind_call_stack_frames, options.native_exception_target_machine))
+                    { return preparation_status::lowering_declined; }
+                    {
+                    emit::private_host_object_emission_scope owned_objects{data->owner_, *ir.llvm_module};
+                    location.operation=stage::lower;
+                    for(auto index{part.first}; index != part.last; ++index)
+                    {
+                        location.function=imported+index;
+                        auto& local{data->locals_[index]};
+                        checkpoint::function_plan work{}; work.profile = data->profile_;
+                        // [actual strong source-owned immutable registry] end
+                        // [safe] cold borrow for this single fused emit only; the
+                        // record/source and all aliases remain retained above.
+                        local.compiler_registry = options.compiler_registry;
+                        // Exactly one instruction walk validates this effective
+                        // body while emitting LLVM and its rich continuation plan.
+                        emit::validate_runtime_local_func(validation_module, local, validation_error, ::std::addressof(ir),
+                            true, false,
+                            options.emit_call_stack_frames, options.emit_unwind_call_stack_frames,
+                            options.validator_feature_parameter,
+                            true, options.compilation_mode, options.debug_safe_point_granularity,
+                            options.debug_full_patchable_typed_target_base_address, count,
+                            ::std::addressof(local.debug_safe_point_bits), true, nullptr,
+                            data->generations_[index], ::std::addressof(work), nullptr, nullptr, options.execute_memtag);
+                        // [finished emitter state] no remaining registry borrow
+                        // [safe] clear cold metadata before returning owned DATA.
+                        local.compiler_registry = nullptr;
+                        if(ir.llvm_module == nullptr || ir.llvm_context_holder == nullptr)
+                        { return preparation_status::lowering_declined; }
+                        local.checkpoint_plan = checkpoint::sealed_function_plan::seal_compiler_metadata(::std::move(work));
+                        if(!local.checkpoint_plan) { return preparation_status::lowering_declined; }
+                        auto const& plan{local.checkpoint_plan->get()};
+                        if(plan.module != actual_module_id || plan.function != imported + index ||
+                            plan.function_generation != data->generations_[index] || plan.profile.get() != data->profile_.get() ||
+                            plan.profile.owner_before(data->profile_) || data->profile_.owner_before(plan.profile) ||
+                            plan.producer_availability != checkpoint::status::ok || plan.resume_abi_revision != 2u || plan.resume_sites.empty())
+                        { return preparation_status::lowering_declined; }
+                    }
+                    location.function=SIZE_MAX;
+                    location.operation=stage::verify;
+                    if(!owned_objects.valid() || !emit::finalize_runtime_llvm_jit_module_storage(ir, true) ||
+                        ir.llvm_module == nullptr || ir.llvm_context_holder == nullptr)
+                    { return preparation_status::lowering_declined; }
+                    } // Restore compiler TLS before native optimization/materialization.
+                    auto& module{ir.llvm_module};
+                    set_llvm_module_target_triple_from_machine(*module, *target);
+                    module->setDataLayout(target->createDataLayout());
+                    apply_runtime_llvm_jit_native_target_function_attrs(*module, cpu, cpu, *target);
+                    location.operation=stage::optimize;
+                    if(!optimize_runtime_llvm_jit_module(*module, *target, policy.pipeline, policy.codegen_opt_level, true, false))
+                    { return preparation_status::native_failure; }
+                    if(native_level != ::llvm::CodeGenOptLevel::None && policy.uses_debug_session_budget() &&
+                       runtime_llvm_jit_native_ir_size{*module}.exceeds_debug_budget())
+                    {
+                        native_level = ::llvm::CodeGenOptLevel::None;
+                        target = make_runtime_llvm_jit_materialize_target_machine(cpu, attributes, native_level);
+                        if(!target) { return preparation_status::unsupported_native; }
+                        target->setFastISel(true);
+                    }
+                    location.operation=stage::qualify;
+                    for(auto index{part.first}; index != part.last; ++index)
+                    { for(auto& octet : data->locals_[index].debug_safe_point_bits) { octet = 0u; } }
+                    if(!visit_optimized_llvm_jit_debug_safe_points(*module,
+                        [&](::std::uint64_t module_id, ::std::uint64_t function, ::std::uint64_t offset) noexcept
+                        {
+                            if(module_id != actual_module_id || function < imported || function - imported < part.first || function - imported >= part.last) { return false; }
+                            auto& local{data->locals_[static_cast<::std::size_t>(function - imported)]};
+                            auto const& plan{local.checkpoint_plan->get()};
+                            auto& bits{local.debug_safe_point_bits};
+                            if(offset >= plan.expression_bytes || offset / 8u >= bits.size()) { return false; }
+                            // [actual optimized expression bitmap] end
+                            // [safe] checked local/byte index before writing retained
+                            // DATA; neither Wasm pointer nor a published PC advances.
+                            auto& octet{bits.index_unchecked(static_cast<::std::size_t>(offset / 8u))};
+                            octet = static_cast<::std::uint_least8_t>(octet | (1u << (offset % 8u)));
+                            return true;
+                        })) { return preparation_status::native_failure; }
+                    data->debug_shutdown_abi_revision_ = optimized_llvm_jit_debug_shutdown_ready(*module) ? 1u : 0u;
+                    if(count != 0u && data->debug_shutdown_abi_revision_ != 1u) { return preparation_status::lowering_declined; }
+                    auto const eh{declare_eh(*module, *target, part.imports, part.catches)};
+                    if(eh != preparation_status::ok) { return eh; }
+#if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
+                    if(!data->prepare_native_endpoint_declarations(*module, *ir.llvm_context_holder,
+                        part.first, part.last, endpoint_declarations)) { return preparation_status::native_endpoint_failure; }
+#endif
+                    if(parts.size() != 1u)
+                    {
+                        // Retain only this compiler's verified bitcode until all declarations and
+                        // sealed plans are known. No archive or persistent object cache supplies IR.
+                        if(!serialize_runtime_llvm_jit_module_bitcode(*module, part.bitcode) || part.bitcode.empty())
+                        { return preparation_status::native_failure; }
+                        part.imports = {}; part.catches = {}; ir.native_exception_imports = {};
+                        module.reset(); ir.llvm_context_holder.reset();
+                    }
+                    return preparation_status::ok;
+                };
+                for(auto& part : parts)
+                {
+                    auto const status{lower(part)};
+                    if(status != preparation_status::ok) { return {{}, status}; }
+                }
+                ::uwvm2::runtime::compiler::shared::strict_float_jit::register_symbols();
+                if(parts.size() == 1u) { data->context_ = ::std::move(parts.front().ir.llvm_context_holder); }
+                else { data->context_ = ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::make_context(); }
+                if(!data->context_) { return {{}, preparation_status::exhausted}; }
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
+                ::llvm::Module* last_ir{};
+#endif
+                for(auto& part : parts)
+                {
+                    location.operation=stage::emit;
+                    auto& module{part.ir.llvm_module};
+                    if(parts.size() != 1u)
+                    {
+                        auto const bytes{::std::move(part.bitcode)};
+                        auto restored{::llvm::parseBitcodeFile(::llvm::MemoryBufferRef{emit::get_llvm_string_ref(bytes),
+                            "uwvm.private.checkpoint"}, *data->context_)};
+                        if(!restored) { ::llvm::consumeError(restored.takeError());return {{}, preparation_status::native_failure}; }
+                        module.reset(restored->release());
+                        auto& machine{data->engine_ ? *data->engine_->getTargetMachine() : *target};
+                        if(module->getDataLayout() != machine.createDataLayout() || ::llvm::verifyModule(*module))
+                        { return {{}, preparation_status::native_failure}; }
+                        auto const eh{declare_eh(*module, machine, part.imports, part.catches)};
+                        if(eh != preparation_status::ok) { return {{}, eh}; }
+                    }
+                    auto* const actual_ir{module.get()};
+                    if(!data->engine_)
+                    {
+                        auto memory{::uwvm2::utils::container::make_unique<
+                            ::uwvm2::runtime::compiler::llvm_jit::details::runtime_llvm_jit_section_memory_manager>()};
+                        if(memory == nullptr) { return {{}, preparation_status::exhausted}; }
+                        auto* const memory_observer{memory.get()};
+                        auto* const engine{::llvm::EngineBuilder(llvm_module_owner_t{module.release()})
+                            .setEngineKind(::llvm::EngineKind::JIT).setOptLevel(native_level)
+                            .setMCPU(emit::get_llvm_string_ref(cpu)).setMAttrs(attribute_refs)
+                            .setMCJITMemoryManager(llvm_jit_memory_manager_owner_t{memory.release()}).create(target.release())};
+                        if(engine == nullptr) { return {{}, preparation_status::native_failure}; }
+                        data->engine_.reset(engine);
+                        data->debug_cfi_manager_=memory_observer;
+                        // No object cache, old-code mapping, pending numeric plan,
+                        // diagnostic/permission registration or future epoch exists.
+                        data->ranges_ = ::uwvm2::utils::container::make_unique<details::pending_llvm_jit_code_ranges>(*data->engine_, true);
+                        if(data->ranges_ == nullptr) { return {{}, preparation_status::exhausted}; }
+                        data->ranges_->configure_debug_full_capture(true);
+#if defined(UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2) && UWVM_EXPERIMENTAL_NATIVE_OWNER_TABLE_V2 == 1
+                        if(count!=0u)
+                        {
+                            data->native_endpoints_.reset(::uwvm2::utils::allocator::fast_io_strict::object<details::pending_actual_native_endpoints>([&](details::pending_actual_native_endpoints* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) details::pending_actual_native_endpoints{
+                                *data->engine_,data.get(),data->owner_,data->profile_,actual_module_id,
+                                ::std::move(endpoint_declarations),native_budget_owner,native_charge}; }));
+                            if(!data->native_endpoints_->valid_ || !data->native_endpoints_->attached_)
+                            { return {{},preparation_status::native_endpoint_observer_failure}; }
+                        }
+#endif
+                    }
+                    else { data->engine_->addModule(llvm_module_owner_t{module.release()}); }
+                    if(part.imports.type_info != nullptr && !details::native_exception_host::bind<::uwvm2::runtime::exception::guest_exception>(
+                        *data->engine_, part.imports, part.catches,
+                        +[]() UWVM_THROWS { return ::uwvm2::runtime::exception::guest_exception{
+                            ::uwvm2::runtime::exception::value::make(::uwvm2::utils::container::make_shared<unsigned char const>(0), {})}; }
+#if defined(UWVM_RUNTIME_NATIVE_EXCEPTION_HOST_GNU_CXX) && defined(UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION) && \
+        UWVM_EXPERIMENTAL_EXCEPTION_SOURCE_RETENTION == 1
+                        , &runtime_source_exception_end_catch
+#endif
+                        )) { return {{}, preparation_status::native_failure}; }
+                    // All objects and relocations belong to this private MCJIT. An early
+                    // partition can have unresolved calls into a later partition. Finalize
+                    // them together after the last load, before freezing any entry table.
+                    bool const last{part.last == count};
+                    if(last) { data->engine_->finalizeObject(); }
+                    else { data->engine_->generateCodeForModule(actual_ir); }
+                    if(data->debug_cfi_manager_->has_finalization_failure() || data->engine_->hasError() ||
+                       data->ranges_->has_observation_failure()) { return {{}, preparation_status::native_failure}; }
+                    auto resolve = [&](::uwvm2::utils::container::u8string const& name) -> ::std::uintptr_t
+                    {
+                        // Real engine-owned LLVM definition BEFORE native lookup.
+                        // Never accept a same-name process-global/old-world symbol
+                        // for a missing declaration in this private generation.
+                        auto* const function{data->engine_->FindFunctionNamed(emit::get_llvm_string_ref(name))};
+                        if(function == nullptr || function->getParent() != actual_ir || function->isDeclaration()) { return 0u; }
+                        auto const callable{reinterpret_cast<::std::uintptr_t>(data->engine_->getPointerToFunction(function))};
+                        if(callable == 0u) { return 0u; }
+                        // This callable was obtained synchronously from this
+                        // engine's actual defined LLVM Function, never wire DATA,
+                        // an arbitrary integer or a process-global missing symbol.
+                        // Only this real loader-owned callable may name an ELFv1
+                        // entry/TOC/environment descriptor or carry a Thumb tag.
+                        auto const code{details::native_function_code_address(callable)};
+                        // [same private loaded object function entry/text extent]
+                        // [safe] the actual code address must exactly match this
+                        // engine listener's observed function and loaded text,
+                        // before retaining any callable address as private DATA.
+                        if(!data->ranges_->owns_pending_loaded_function_entry(code)) { return 0u; }
+                        return callable;
+                    };
+                    location.operation=stage::resolve;
+                    for(auto index{part.first}; index != part.last; ++index)
+                    {
+                        auto const public_index{imported + index};
+                        location.function=public_index;
+                        auto const typed_name{get_runtime_llvm_jit_wasm_function_name(runtime_module, public_index)};
+                        auto& entries{data->entries_[index]};
+                        entries.typed = resolve(typed_name);
+                        entries.raw = resolve(get_runtime_llvm_jit_wasm_raw_function_name(runtime_module, public_index));
+                        auto const resume_name{::uwvm2::utils::container::u8concat_uwvm(typed_name, u8".checkpoint.resume.v2")};
+                        entries.resume_typed = resolve(resume_name);
+                        entries.resume_raw = resolve(::uwvm2::utils::container::u8concat_uwvm(resume_name, u8".raw"));
+                        if(entries.typed == 0u || entries.raw == 0u || entries.resume_typed == 0u || entries.resume_raw == 0u)
+                        { return {{}, preparation_status::native_failure}; }
+                    }
+                    part.imports = {}; part.catches = {}; part.ir.native_exception_imports = {};
+#if defined(__linux__) && (defined(__arm__) || defined(__i386__))
+                    if(last) { last_ir = actual_ir; }
+                    else
+                    {
+                        if(!data->engine_->removeModule(actual_ir)) { return {{}, preparation_status::native_failure}; }
+                        ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_deleter{}(actual_ir);
+                    }
+#endif
                 }
                 location.function=SIZE_MAX;
                 location.operation=stage::freeze;
@@ -460,14 +554,8 @@ extern "C++"
                 for(::std::size_t index{}; index != count; ++index)
                 { data->typed_targets_[index] = data->entries_[index].typed; }
 #if defined(__linux__) && (defined(__arm__) || defined(__i386__))
-                // A later module or a repeated restore can reuse the compiler
-                // storage. The loaded object, CFI, symbols and context stay
-                // with this engine through handoff and native retirement.
-                if(data->engine_->removeModule(checkpoint_ir))
-                {
-                    ir.native_exception_imports = {};
-                    ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_deleter{}(checkpoint_ir);
-                }
+                if(data->engine_->removeModule(last_ir))
+                { ::uwvm2::runtime::compiler::llvm_jit::fast_io_support::module_deleter{}(last_ir); }
 #endif
                 // DATA stays exclusively in the returned private nonmoving
                 // owner. No listener commit/provenance epoch/source validation
