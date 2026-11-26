@@ -75,6 +75,15 @@
             [[nodiscard]] bool valid() const noexcept{return arena_.base()!=nullptr&&!failed_;}
             [[nodiscard]] bool has_finalization_failure() const noexcept{return failed_||!finalized_;}
             [[nodiscard]] ::std::size_t owned_bytes() const noexcept{return arena_.allocatedSize();}
+            [[nodiscard]] bool loaded_section(void const* begin,::std::size_t size,bool& code,bool& read_only) const noexcept
+            {
+                for(auto const& s:sections_)
+                    if(s.bytes.base()==begin && size<=s.bytes.allocatedSize())
+                    {code=s.executable;read_only=s.read_only;return true;}
+                return false;
+            }
+            [[nodiscard]] bool matches_unwind(void const* begin,::std::size_t size) const noexcept
+            {return begin ? frame_count_==1u && frames_[0].Addr==begin && frames_[0].Size==size : frame_count_==0u;}
             [[nodiscard]] ::std::size_t retained_storage_bytes() const noexcept
             {return sizeof(*this)+sections_.capacity()*sizeof(section)
 #if defined(UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT) && UWVM2_ENABLE_LINUX_ARM_EHABI_PRODUCT == 1 && defined(__linux__) && defined(__arm__) && !defined(__ARM_DWARF_EH__) && defined(__GLIBC__)

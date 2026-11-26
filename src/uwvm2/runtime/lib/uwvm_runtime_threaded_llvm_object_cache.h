@@ -1,5 +1,4 @@
-// Private to the group compiler. RuntimeDyld always relocates a new, checked
-// object into the requesting child's own native arena.
+// Private to the group compiler. Each worker receives its own relocated native arena.
         struct object_emission
         {
             ThreadedLlvmChild& child;
@@ -171,6 +170,29 @@
         struct object_entries { ::std::size_t typed{},raw{}; };
         static constexpr ::std::size_t object_binding_limit=256u;
         using object_import_mask=::std::array<bool,object_binding_limit>;
+        // A plan is private to one checked object. Every operand is a byte offset,
+        // section index or index into that object's authenticated import names.
+        static constexpr unsigned planned_section_limit=64u;
+        enum class image_section_kind:unsigned char { absent,code,read_only,writable,unwind };
+        struct image_section
+        {
+            ::std::uint32_t file_offset{},size{},alignment{};
+            image_section_kind kind{};
+        };
+        enum class fixup_kind:unsigned char { absolute,relative,import };
+        struct image_fixup
+        {
+            ::std::uint32_t offset{},target_offset{};
+            ::std::uint16_t target{};
+            unsigned char section{};
+            fixup_kind kind{};
+        };
+        struct image_plan
+        {
+            ::std::array<image_section,planned_section_limit> sections{};
+            ::uwvm2::utils::container::std_vector<image_fixup> fixups;
+            unsigned section_count{},unwind{};
+        };
         struct prepared_object
         {
             object_scope scope;
@@ -180,6 +202,7 @@
             ::uwvm2::utils::container::std_vector<object_entries> entries;
             ::uwvm2::utils::container::std_vector<::uwvm2::utils::container::std_string> imports;
             ::uwvm2::utils::container::std_unique_ptr<instance_template> instance;
+            ::uwvm2::utils::container::std_unique_ptr<image_plan const> image;
             bool polls{},strict_fp{};
             ::std::size_t retained_bytes{};
         };
