@@ -964,20 +964,6 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             using tag = ::uwvm2::uwvm::runtime::storage::tag_instance_identity const;
             return ::std::allocate_shared<tag>(threaded_std_allocator<tag>{owner->allocation_});
         }
-        inline ::uwvm2::object::memory::linear::native_memory_t
-        initialization_context<initialization_purpose::threaded_child>::make_memory() const
-        {
-            return []<typename Memory>() -> Memory
-            {
-                if constexpr(requires {typename Memory::fallible_construction_t;})
-                {
-                    Memory memory{typename Memory::fallible_construction_t{}};
-                    if(!memory.memory_length_p||!memory.growing_mutex_p)throw ::std::bad_alloc{};
-                    return memory;
-                }
-                else throw ::std::bad_alloc{};
-            }.template operator()<::uwvm2::object::memory::linear::native_memory_t>();
-        }
         inline void initialization_context<initialization_purpose::threaded_child>::prepare_memory(
             ::uwvm2::uwvm::runtime::storage::local_defined_memory_storage_t& record,::std::size_t index) const
         {
@@ -990,12 +976,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     bool const wide=wasm_memory_is_address64(*record.memory_type_ptr);
                     bool const shared=wasm_memory_is_shared(*record.memory_type_ptr);
                     auto const pages=record.effective_limits.min;
-                    constexpr auto metadata=sizeof(::std::atomic_size_t)+sizeof(::uwvm2::utils::mutex::mutex_t);
+                    constexpr auto registry_bytes = ::uwvm2::object::memory::signal::detail::segment_registry::entry_bytes;
                     memory.custom_page_size_log2=original.custom_page_size_log2;
                     if(pages>(SIZE_MAX>>memory.custom_page_size_log2))throw ::std::bad_alloc{};
                     auto const bytes{static_cast<::std::size_t>(pages)<<memory.custom_page_size_log2};
                     auto const charge{memory.charged_memory_bytes(bytes)};
-                    if(charge>SIZE_MAX-metadata || !owner->allocation_.get().charge(charge+metadata))throw ::std::bad_alloc{};
+                    if(charge == SIZE_MAX || !owner->allocation_.get().charge(charge) || !owner->allocation_.get().charge(registry_bytes))
+                    { throw ::std::bad_alloc{}; }
                     memory.status=wide?decltype(memory.status)::wasm64:decltype(memory.status)::wasm32;
                     // Retain the concrete parent's plan, including its local override and any narrow-host fallback.
                     memory.reservation_budget_bytes = original.get_acquire_reserved_space_ceil();

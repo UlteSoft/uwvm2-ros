@@ -29,7 +29,8 @@ module;
 #include <limits>
 #include <concepts>
 #include <bit>
-#include <vector>
+#include <mutex>
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <atomic>
 #include <memory>
 #include <utility>

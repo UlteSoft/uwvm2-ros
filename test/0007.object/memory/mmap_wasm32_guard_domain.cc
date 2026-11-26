@@ -109,12 +109,11 @@ namespace
 
     [[nodiscard]] bool check_registered_memory(memory::mmap_memory_t const& mem)
     {
-        for(auto const& segment: memory_signal::detail::segments)
+        return memory_signal::detail::segments.any([&](auto const& segment) noexcept
         {
-            if(segment.begin == mem.memory_begin && segment.end == mem.reserved_begin + mem.get_acquire_reserved_space_ceil() &&
-               segment.length_p == mem.memory_length_p) { return true; }
-        }
-        return false;
+            return segment.begin == mem.memory_begin && segment.end == mem.reserved_begin + mem.get_acquire_reserved_space_ceil() &&
+                   segment.length_p == mem.memory_length_p;
+        });
     }
 
     [[nodiscard]] int check_live_guard_layout()

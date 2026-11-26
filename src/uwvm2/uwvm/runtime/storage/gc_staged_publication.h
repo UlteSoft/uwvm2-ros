@@ -309,11 +309,14 @@ class checkpoint_gc_staging final
         {
             if(!charge_private_backing(1u, sizeof(gc_object_store)) ||
                !charge_private_backing(1u, sizeof(store_owner))) { return {}; }
-            auto* const fresh{::uwvm2::utils::allocator::fast_io_strict::try_object<gc_object_store>([&](gc_object_store* uwvm_allocated) { return ::new(static_cast<void*>(uwvm_allocated)) gc_object_store(section,lease_owner,callback,gc_object_store::checkpoint_staged_tag{}); })};
-            if(fresh==nullptr) { return {}; }
-            // shared_ptr constructor deletes fresh if its control allocation
-            // throws; its actual canonical owner is never minted from an alias.
-            auto owned{store_owner{::uwvm2::utils::container::adopt_shared(fresh)}};
+            namespace budget = ::uwvm2::utils::allocator::resource;
+            auto fresh{budget::try_initializer_object<gc_object_store>([&](gc_object_store* raw) noexcept
+            { return ::new(static_cast<void*>(raw)) gc_object_store(section, lease_owner, callback, gc_object_store::checkpoint_staged_tag{}); })};
+            if(!fresh) { return {}; }
+            // The private constructor requires a separate object block. On control
+            // allocation failure shared_ptr invokes the same charged object deleter.
+            store_owner owned{fresh.release(), budget::initializer_object_deleter<gc_object_store>{},
+                budget::std_allocator<gc_object_store, budget::pool::initializer>{}};
             if(!owned->valid_ || owned->cohort_registered_) { return {}; }
             // [canonical strong source control block][new private unregistered store]
             // [safe] no source native address is cast or accepted from file DATA.

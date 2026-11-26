@@ -1152,7 +1152,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_lease_owner> const& leases,
             ::uwvm2::uwvm::runtime::storage::gc_function_type_match_callback callback) const noexcept
         {
-            return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback);
+            return make_initializer_shared<initialization_purpose::ordinary, ::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback);
         }
         template<initialization_purpose Purpose>
         inline ::std::shared_ptr<::uwvm2::uwvm::runtime::storage::gc_object_store>
@@ -1162,7 +1162,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::uwvm2::uwvm::runtime::storage::gc_function_type_match_callback callback) const noexcept(Purpose == initialization_purpose::ordinary)
         {
             if constexpr(Purpose == initialization_purpose::ordinary)
-            { return ::uwvm2::utils::container::make_shared<::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback); }
+            { return make_initializer_shared<initialization_purpose::ordinary, ::uwvm2::uwvm::runtime::storage::gc_object_store>(section, leases, callback); }
             else
             {
                 if(restoration_ == nullptr) { ::fast_io::fast_terminate(); }
