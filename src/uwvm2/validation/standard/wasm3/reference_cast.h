@@ -47,7 +47,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_cast(Stack& stack,
         ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type target,
-        recursive_type_context const& context, bool test_only, bool gc_enabled) noexcept
+        recursive_type_context const& context, bool test_only, bool gc_enabled)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         using e = core3_reference_error;
@@ -61,7 +62,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_convert_reference(Stack& stack,
-        recursive_type_context const& context, bool extern_to_any, bool gc_enabled) noexcept
+        recursive_type_context const& context, bool extern_to_any, bool gc_enabled)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         using e = core3_reference_error;
@@ -80,7 +82,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type from,
         ::uwvm2::parser::wasm::standard::wasm3::type::core_value_type to,
         ::std::span<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type const> label,
-        recursive_type_context const& context, bool branch_on_failure, bool gc_enabled) noexcept
+        recursive_type_context const& context, bool branch_on_failure, bool gc_enabled)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         using e = core3_reference_error;

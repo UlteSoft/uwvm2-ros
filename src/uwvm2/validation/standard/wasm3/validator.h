@@ -130,7 +130,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     };
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
-    using operand_stack_type = ::uwvm2::utils::container::vector<operand_stack_storage_t<Fs...>, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>>;
+    using operand_stack_type = ::uwvm2::utils::container::validation_scratch_vector<operand_stack_storage_t<Fs...>>;
 
     template <typename T>
     struct fast_io_native_typed_global_allocator_guard
@@ -568,7 +568,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
 
         // control-flow stack
         using curr_block_type = block_t<Fs...>;
-        ::uwvm2::utils::container::vector<curr_block_type, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>> control_flow_stack{};
+        ::uwvm2::utils::container::validation_scratch_vector<curr_block_type> control_flow_stack{};
 
         // operand stack
         using curr_operand_stack_value_type = operand_stack_value_type<Fs...>;
@@ -6271,7 +6271,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
                             return operand.is_unknown ||
                                 context.matches(v3::core3_operand_effective_type(operand), expected) ? e::ok : e::type_mismatch;
                         }
-                        inline void push([[maybe_unused]] t3::core_value_type result) noexcept
+                        inline void push([[maybe_unused]] t3::core_value_type result)
                         { values.push_back({curr_operand_stack_value_type::i32}); }
                     };
                     ref_eq_stack_adapter stack{operand_stack, concrete_operand_count,
@@ -6679,7 +6679,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
 
                             return error;
                         }
-                        inline void push(t3::core_value_type value) noexcept
+                        inline void push(t3::core_value_type value)
                         {
                             unsigned carrier{};
                             switch(value.kind)

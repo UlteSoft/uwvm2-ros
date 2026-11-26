@@ -84,7 +84,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_gc_instruction(Stack& stack,
         ::std::uint_least32_t opcode, ::std::uint_least32_t first, ::std::uint_least32_t second,
-        core3_gc_environment const& environment, recursive_type_context const& context, bool gc_enabled) noexcept
+        core3_gc_environment const& environment, recursive_type_context const& context, bool gc_enabled)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace d = gc_validation_details;
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
@@ -206,7 +207,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_eq(Stack& stack,
-        recursive_type_context const& context, bool gc_enabled) noexcept
+        recursive_type_context const& context, bool gc_enabled)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         using e = core3_reference_error;
         if(!gc_enabled) { return e::feature_disabled; }
