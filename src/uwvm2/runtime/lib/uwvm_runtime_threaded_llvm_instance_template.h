@@ -106,7 +106,7 @@
             return 0u;
         }
 
-        [[nodiscard]] bool instance_functions_witnessed() const noexcept
+        [[nodiscard]] bool instance_functions_witnessed(adm16_object_owner const& adm16) const noexcept
         {
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
             for(auto const& binding:externals_)
@@ -116,7 +116,7 @@
                 auto const target=binding.address;
                 if((name==poll_name && target==address(&cancellation_poll)) ||
                    (name==enter_name && target==address(&cancellation_enter)) ||
-                   (name=="uwvm.threaded.scalar.state.v1" && target==address(&current_shared_scalar_state)) ||
+                   (adm16.tags && name=="uwvm.threaded.scalar.state.v1" && target==address(&current_shared_scalar_state)) ||
                    (name=="uwvm.threaded.leave.v1" && target==address(&leave)))continue;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                 if((name==ros_poll_name && target==address(&ros_cancellation_poll)) ||
@@ -131,7 +131,6 @@
                 {
                     if(bridge.declaration->getName()!=name)continue;
                     recognized=target==linear_memory_bridge_replacement(bridge.original) ||
-                        target==memtag_bridge_replacement(*bridge.declaration,bridge.original) ||
                         target==address(&trap) || target==address(&memory_trap) || target==address(&import_call) ||
                         (bridge.original==address(&threaded_exception_bridge_api::pending) && target==bridge.original) ||
                         target==address(&indirect_target) || target==address(&resolve_reference) ||
@@ -144,6 +143,7 @@
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                     recognized|=target==address(&seed_ros_provenance) || target==address(&publish_ros_provenance);
 #endif
+                    if(!recognized && adm16.memory)recognized=target==memtag_bridge_replacement(*bridge.declaration,bridge.original);
                     break;
                 }
                 if(!recognized)

@@ -116,12 +116,13 @@
                             auto bind=[&](auto pointer,::uwvm2::utils::container::u8string_view suffix)
                             {
                                 auto const name=::uwvm2::utils::container::u8concat_uwvm(prefix,suffix);
-                                return object_emission::bind(&objects,b,address(pointer),{name.data(),name.size()});
+                                ::uwvm2::utils::container::u8string_view const semantic{name.data(),name.size()};
+                                return object_emission::bind(&objects,b,address(pointer),semantic);
                             };
                             auto* mod=bind(module_,u8"_runtime_module");
                             bound_child=bind(this,u8"_threaded_child");
                             bound_slot=bind(layout.owner_slot,u8"_threaded_memory0_owner_slot");
-                            if(!mod || !bound_child || !bound_slot)return state_fn!=nullptr;
+                            if(!mod || !bound_child || !bound_slot)return true; // recount any partial carrier loads
                             module_address=b.CreatePtrToInt(mod,word);
                         }
                         else module_address=::llvm::ConstantInt::get(word,address(module_));
@@ -131,7 +132,7 @@
                                 ::llvm::Function::ExternalLinkage,name,module);
                             state_fn->addFnAttr(::llvm::Attribute::NoUnwind);
                             emit::apply_llvm_jit_host_calling_conv(*state_fn);
-                            if(!add_external(*state_fn,address(&current_shared_scalar_state))){state_fn->eraseFromParent();return false;}
+                            if(!add_external(*state_fn,address(&current_shared_scalar_state))){state_fn->eraseFromParent();return relocated;}
                         }
                         state=emit::apply_llvm_jit_calling_conv(b.CreateCall(state_fn,{module_address}),emit::get_llvm_jit_host_calling_conv());
                     }
