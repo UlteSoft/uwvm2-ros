@@ -113,6 +113,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         {u8"init.local-defined-tags", &init_limits::local_defined_tags},
         {u8"init.local-defined-elements", &init_limits::local_defined_elements},
         {u8"init.local-defined-datas", &init_limits::local_defined_datas},
+        {u8"init.element-expressions", &init_limits::element_expressions},
     };
 
     struct layer

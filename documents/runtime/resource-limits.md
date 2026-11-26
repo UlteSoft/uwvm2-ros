@@ -42,6 +42,7 @@ Input rejection and validation storage refusal exit with status 127.
 
 | Stage | Resource | Single default | Live default |
 |---|---|---:|---:|
+| `initializer` | `metadata-single-bytes`, `metadata-live-bytes` | 256 MiB | 1 GiB |
 | `initializer` | `allocation-bytes` | 4 GiB | Per initial memory/table allocation; runtime pool limits also apply |
 | `runtime` | `gc-single-bytes`, `gc-live-bytes` | 256 MiB | 1 GiB |
 | `runtime` | `table-single-bytes`, `table-live-bytes` | 128 MiB | 512 MiB |
@@ -193,3 +194,22 @@ stack, or in the LLVM unwind capability probe, is diagnosed as a resource
 refusal (127). The resource diagnostic does not require another allocation
 and does not block indefinitely on an unavailable stderr. Unrelated setup
 errors and broken internal invariants retain their distinct failure policy.
+
+## Initializer metadata
+
+The initializer charges each runtime record vector, expression-form element
+payload, declared-function reference vector, LLVM table-view vector and
+constant-expression operand or GC input buffer when it allocates backing.
+Fast-io vectors charge their aligned allocation prefix. Replacement storage
+overlaps the original charge until the original block is freed. Staged restore
+also charges its resource roster and element plan. A fresh worker draws from
+the same process pool and its construction account. Each linked module owns
+its descriptors, while imported table and memory aliases share the original
+element or page backing.
+
+`--wasm-process-initializer-limit element_expressions N` bounds the sum of
+expression-form entries in all segments of each input module. Its default is
+1,048,576. Module policy can lower it with `init.element-expressions`. Each
+instance allocates only the required function, opaque or GC element slots.
+Table and segment construction quotas for a worker apply across its provider
+graph. References to the same provider consume its backing once.

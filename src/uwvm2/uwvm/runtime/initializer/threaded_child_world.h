@@ -156,6 +156,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             return nullptr;
         }
         initializer_limit_t limits_{};
+        ::std::size_t declared_table_elements_{}, declared_segment_bytes_{};
+        ::std::uint_least64_t declared_local_memory_bytes_{};
         ::uwvm2::uwvm::wasm::type::all_module_t declaration_{};
         threaded_single_entry_view<::uwvm2::uwvm::wasm::type::all_module_t> declarations_{};
         decltype(::uwvm2::uwvm::wasm::storage::all_module_export) exports_{};
@@ -1024,6 +1026,11 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 else throw ::std::bad_alloc{};
             };prepare(record.memory, source.memory);
         }
+        inline bool initialization_context<initialization_purpose::threaded_child>::charge_metadata(::std::size_t bytes) const noexcept
+        {
+            auto owner{owner_->lock()};
+            return owner && owner->allocation_.get().charge(bytes);
+        }
         inline void initialization_context<initialization_purpose::threaded_child>::prepare_table(
             ::uwvm2::uwvm::runtime::storage::local_defined_table_storage_t& table, ::std::size_t index) const noexcept
         {
@@ -1053,7 +1060,12 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         // Deallocation later goes through this EXACT allocator implementation.
         // No malloc block is adopted by a mimalloc/custom/Windows allocator.
         using compatible = ::fast_io::native_global_allocator;
-        if constexpr(!::std::is_same_v<typename Vector::allocator_type, compatible>) { return false; }
+        if constexpr(::std::is_same_v<typename Vector::allocator_type, ::uwvm2::utils::container::initializer_allocator>)
+        {
+            return ::uwvm2::utils::container::try_reserve_initializer_vector(vector, count,
+                [&](::std::size_t bytes) noexcept { return allocation_.get().charge(bytes); });
+        }
+        else if constexpr(!::std::is_same_v<typename Vector::allocator_type, compatible>) { return false; }
         else
         {
             if(!vector.empty() || vector.capacity() != 0uz ||
@@ -1100,18 +1112,19 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(!preallocate_vector(prepared_tables_[i],static_cast<::std::size_t>(count)))
             { return false; }
         }
-        ::std::size_t expressions{};
+        details::element_expression_counts counts{};
+        auto const limit{(::std::min)(limits_.max_element_expressions, file_->wasm_parameter.initializer_limits.element_expressions)};
         for(auto const& segment : p.local_defined_element_vec_storage)
         {
-            auto const count{segment.element_type_ptr->storage.segment.vec_expr.size()};
-            if(count > (::std::numeric_limits<::std::size_t>::max)() - expressions) { return false; }
-            expressions += count;
+            auto const& declaration{segment.element_type_ptr->storage.segment};
+            // The child replays active/passive declarations even after the parent drops them.
+            if(declaration.declarative) { continue; }
+            if(!counts.add(::uwvm2::uwvm::runtime::storage::runtime_element_family(segment, p), declaration.vec_expr.size(), limit))
+            { return false; }
         }
-        // Every reference family uses separately accounted, preallocated
-        // storage before the shared initializer evaluates an element payload.
-        return preallocate_vector(out.element_expr_funcref_vec_storage, expressions) &&
-            preallocate_vector(out.element_expr_externref_vec_storage, expressions) &&
-            preallocate_vector(out.element_expr_gc_ref_vec_storage, expressions);
+        return preallocate_vector(out.element_expr_funcref_vec_storage, counts.functions) &&
+            preallocate_vector(out.element_expr_externref_vec_storage, counts.opaque) &&
+            preallocate_vector(out.element_expr_gc_ref_vec_storage, counts.gc);
     }
 
     inline threaded_child_error ThreadedChildWorld::preflight()
@@ -1264,7 +1277,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(m.memory_type_ptr == nullptr) { return threaded_child_error::declaration_mismatch; }
             auto const minimum{static_cast<::std::uint_least64_t>(m.effective_limits.min)};
             auto const shift{m.memory.custom_page_size_log2};
-            if(minimum > ((admission_->max_local_memory_bytes() - local_bytes) >> shift))
+            if(shift >= ::std::numeric_limits<::std::uint_least64_t>::digits || minimum > ((admission_->max_local_memory_bytes() - local_bytes) >> shift))
             { return threaded_child_error::memory_limit; }
             local_bytes += minimum << shift;
         }
@@ -1296,6 +1309,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             { return threaded_child_error::segment_limit; }
             segment_bytes += count * slot_size;
         }
+        declared_table_elements_ = table_elements;
+        declared_segment_bytes_ = static_cast<::std::size_t>(segment_bytes);
+        declared_local_memory_bytes_ = local_bytes;
         auto const& start{::uwvm2::parser::wasm::concepts::operation::get_first_type_in_tuple<
             ::uwvm2::parser::wasm::standard::wasm1::features::start_section_storage_t>(
                 file_->wasm_module_storage.wasm_binfmt_ver1_storage.sections)};

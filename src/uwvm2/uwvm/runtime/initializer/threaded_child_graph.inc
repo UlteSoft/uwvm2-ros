@@ -71,6 +71,9 @@
     inline threaded_child_error ThreadedChildWorld::build_graph()
     {
         using kind=::uwvm2::uwvm::runtime::storage::imported_function_link_kind;
+        auto tables_left{admission().max_table_elements() - declared_table_elements_};
+        auto segments_left{admission().max_total_segment_bytes() - declared_segment_bytes_};
+        auto memory_left{admission().max_local_memory_bytes() - declared_local_memory_bytes_};
         // Discover a finite transitive graph from authenticated import records.
         // Cycles are represented once; no native call can enter ordinary code.
         for(::std::size_t m{};m<module_count();++m)
@@ -85,6 +88,12 @@
                 peer->self_=peer;peer->parent_=parent;peer->graph_=this;peer->kind_=kind_;
                 peer->source_id_=source_->bound_initialized_module_id(parent);
                 auto check=peer->preflight();if(check!=threaded_child_error::ok)return check;
+                if(peer->declared_table_elements_ > tables_left) { return threaded_child_error::table_limit; }
+                if(peer->declared_segment_bytes_ > segments_left) { return threaded_child_error::segment_limit; }
+                if(peer->declared_local_memory_bytes_ > memory_left) { return threaded_child_error::memory_limit; }
+                tables_left -= peer->declared_table_elements_;
+                segments_left -= peer->declared_segment_bytes_;
+                memory_left -= peer->declared_local_memory_bytes_;
                 if(kind_==storage_kind::actual_parent)
                 {peer->module_view_=parent;peer->public_modules_.bind(peer->file_->module_name,*parent);}
                 else {check=peer->build();if(check!=threaded_child_error::ok)return check;}
@@ -108,21 +117,18 @@
             {auto const check=admit(locate_source_tag(tag.resolved_tag).parent);if(check!=threaded_child_error::ok)return check;}
         }
         ::uwvm2::utils::container::std_vector<memory_type const*,threaded_std_allocator<memory_type const*>> shared_owners{threaded_std_allocator<memory_type const*>{allocation_}};
-        ::std::uint64_t shared_bytes{},private_bytes{};
+        ::std::uint64_t shared_bytes{};
         for(::std::size_t m{};m<module_count();++m)
         {
             for(auto const* memory:node(m)->shared_memories_)
             {
                 if(::std::find(shared_owners.begin(),shared_owners.end(),memory)!=shared_owners.end())continue;
                 auto const pages=static_cast<::std::uint64_t>(memory->effective_limits.max);
-                if(pages>(admission().max_shared_memory_bytes()-shared_bytes)/65536u)return threaded_child_error::memory_limit;
-                shared_bytes+=pages*65536u;shared_owners.push_back(memory);
-            }
-            for(auto const& memory:node(m)->parent_->local_defined_memory_vec_storage)
-            {
-                auto const pages=static_cast<::std::uint64_t>(memory.effective_limits.min);
-                if(pages>(admission().max_local_memory_bytes()-private_bytes)/65536u)return threaded_child_error::memory_limit;
-                private_bytes+=pages*65536u;
+                auto const shift{memory->memory.custom_page_size_log2};
+                if(shift >= ::std::numeric_limits<::std::uint64_t>::digits ||
+                   pages > ((admission().max_shared_memory_bytes()-shared_bytes) >> shift)) { return threaded_child_error::memory_limit; }
+                shared_bytes += pages << shift;
+                shared_owners.push_back(memory);
             }
         }
         // Determine one dependency order before effects or native launch. The

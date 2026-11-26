@@ -147,6 +147,40 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
         using vector = ::uwvm2::utils::container::vector<T, Alloc>;
     }
 
+    using initializer_allocator = ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::initializer_metadata_allocator>;
+    template <::std::movable T>
+    using initializer_vector = vector<T, initializer_allocator>;
+
+    // Staged worlds can decline an allocation and discard their unpublished
+    // state. Preallocate the exact block consumed by the same vector allocator.
+    template <typename T, typename Charge>
+    [[nodiscard]] inline constexpr bool try_reserve_initializer_vector(initializer_vector<T>& current, ::std::size_t count, Charge charge) noexcept
+    {
+        if(count <= current.capacity()) { return true; }
+        if consteval { current.reserve(count); return true; }
+        else
+        {
+            namespace budget = ::uwvm2::utils::allocator::resource;
+            constexpr auto alignment{alignof(T) > initializer_allocator::default_alignment ? alignof(T) : initializer_allocator::default_alignment};
+            ::std::size_t bytes{}, total{};
+            if(!budget::checked_bytes(count, sizeof(T), bytes) ||
+               !budget::initializer_metadata_allocator::allocation_size(alignment, bytes, total) || !charge(total)) { return false; }
+            auto* fresh{static_cast<T*>(budget::initializer_metadata_allocator::try_allocate_aligned(alignment, bytes))};
+            if(fresh == nullptr) { return false; }
+            initializer_vector<T> next;
+            // [fresh, fresh+count) is an aligned block with no constructed T.
+            next.imp = {fresh, fresh, fresh + count};
+            for(auto& value : current) { next.emplace_back_unchecked(::std::move(value)); }
+            current.swap(next);
+            return true; // the old block remains charged until next is destroyed.
+        }
+    }
+    template <typename T>
+    [[nodiscard]] inline constexpr bool try_reserve_initializer_vector(initializer_vector<T>& current, ::std::size_t count) noexcept
+    {
+        return try_reserve_initializer_vector(current, count, [](::std::size_t) noexcept { return true; });
+    }
+
     // Compiler/validator scratch, charged only when backing storage grows.
     template <::std::movable T>
     using validation_vector = vector<T, ::fast_io::generic_allocator_adapter<::uwvm2::utils::allocator::resource::bounded_allocator<::uwvm2::utils::allocator::resource::pool::validation>>>;

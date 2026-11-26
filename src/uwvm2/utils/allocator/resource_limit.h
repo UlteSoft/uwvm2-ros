@@ -31,7 +31,7 @@ namespace uwvm2::utils::allocator::resource
     // Host deployment policy, independent of import permissions. Configure only
     // before loading modules or starting guest threads. Imported aliases retain
     // the original backing's charge; creating another module does not reset it.
-    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, count };
+    enum class pool : unsigned { gc, table, memory, memtag, auxiliary, validation, threads, initializer, count };
     inline constexpr ::std::size_t host_bytes(::std::uint64_t bytes) noexcept
     {
         constexpr auto maximum{static_cast<::std::uint64_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
@@ -49,7 +49,8 @@ namespace uwvm2::utils::allocator::resource
         {host_bytes(256ull << 20u), host_bytes(512ull << 20u)},
         {host_bytes(256ull << 20u), host_bytes(1ull << 30u)},
         {host_bytes(256ull << 20u), host_bytes(512ull << 20u)},
-        {host_bytes(256ull << 20u), host_bytes(4ull << 30u)}
+        {host_bytes(256ull << 20u), host_bytes(4ull << 30u)},
+        {host_bytes(256ull << 20u), host_bytes(1ull << 30u)}
     };
     static_assert(sizeof(policies)/sizeof(policies[0]) == static_cast<unsigned>(pool::count));
     inline ::std::atomic_size_t live_bytes[static_cast<unsigned>(pool::count)]{};
@@ -251,6 +252,54 @@ namespace uwvm2::utils::allocator::resource
         [[nodiscard]] constexpr explicit operator bool() const noexcept { return ready_; }
         constexpr void commit() noexcept { committed_=true; }
     };
+    [[noreturn]] inline void initializer_metadata_limit() noexcept
+    {
+        reject_allocation("uwvm: [error] initializer: native metadata allocation refused; check --wasm-set-resource-limit initializer metadata-single-bytes/metadata-live-bytes and available host memory.\n");
+    }
+
+    // Runtime record vectors include over-aligned memory owners. Keep the
+    // exact size in a prefix allocated and freed with the same alignment.
+    struct initializer_metadata_allocator
+    {
+        static constexpr ::std::size_t default_alignment{alignof(::std::max_align_t)};
+        [[nodiscard]] static constexpr bool allocation_size(::std::size_t alignment, ::std::size_t bytes,
+                                                             ::std::size_t& total) noexcept
+        {
+            auto const prefix{alignment < default_alignment ? default_alignment : alignment};
+            constexpr auto maximum{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
+            if(prefix > maximum || bytes > maximum - prefix) { return false; }
+            total = prefix + bytes;
+            return true;
+        }
+        [[nodiscard]] static void* try_allocate_aligned(::std::size_t alignment, ::std::size_t bytes) noexcept
+        {
+            ::std::size_t total{};
+            if(!allocation_size(alignment, bytes, total) || !acquire(pool::initializer, total)) { return nullptr; }
+            auto const prefix{total - bytes};
+            auto* raw{static_cast<::std::byte*>(fast_io_strict::native_strict_global_allocator::allocate_aligned(prefix, total))};
+            if(raw == nullptr) { release(pool::initializer, total); return nullptr; }
+            ::new(static_cast<void*>(raw)) ::std::size_t{total};
+            return raw + prefix;
+        }
+        [[nodiscard]] static void* allocate_aligned(::std::size_t alignment, ::std::size_t bytes) noexcept
+        {
+            auto* result{try_allocate_aligned(alignment, bytes)};
+            if(result == nullptr) { initializer_metadata_limit(); }
+            return result;
+        }
+        [[nodiscard]] static void* allocate(::std::size_t bytes) noexcept { return allocate_aligned(default_alignment, bytes); }
+        static void deallocate_aligned(void* pointer, ::std::size_t alignment) noexcept
+        {
+            if(pointer == nullptr) { return; }
+            auto const prefix{alignment < default_alignment ? default_alignment : alignment};
+            auto* raw{static_cast<::std::byte*>(pointer) - prefix};
+            auto const bytes{*reinterpret_cast<::std::size_t*>(raw)};
+            fast_io_strict::native_strict_global_allocator::deallocate_aligned(raw, prefix);
+            release(pool::initializer, bytes);
+        }
+        static void deallocate(void* pointer) noexcept { deallocate_aligned(pointer, default_alignment); }
+    };
+
     [[noreturn]] inline void initializer_memory_limit() noexcept
     {
         // Diagnostics must not turn a closed stderr into an unrelated crash.
