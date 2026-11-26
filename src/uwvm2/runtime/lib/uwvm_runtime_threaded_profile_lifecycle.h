@@ -1186,7 +1186,10 @@
                     // The CLI derives its aggregate grant from per-worker and group
                     // costs. Preserve explicit embedding caps and all space reserved
                     // for guest GC, exception, table and compiler-job allocations.
-                    if(runtime_compiler_requests_llvm_jit_translation() && !control_owner().journal && !signal_limits.read_fd &&
+                    // An explicitly tight relocation cap is measured on the
+                    // original object, without adding per-instance data relocations.
+                    if(control_owner().llvm_limits.relocations>=llvm_limits_type::default_relocations &&
+                       runtime_compiler_requests_llvm_jit_translation() && !control_owner().journal && !signal_limits.read_fd &&
                        control_owner().observation==::uwvm2::runtime::wasm_threads::threaded_debug_observation::none)
                     {
                         auto const bytes=(::std::min)(ThreadedLlvmChild::maximum_cached_object_storage,completed.max_child_storage_bytes/4u);
