@@ -64,6 +64,7 @@ for(;;)
     // No witness can turn into a loop-carried or cross-generation GC pointer.
     {
         auto const op=static_cast<::std::uint_least8_t>(curr_opbase);
+        threaded_host_emission_scope::observe_template_opcode(op);
         // SIMD effects are decided from the authoritative typed event before
         // emission. Pure vector arithmetic preserves the same borrow; SIMD
         // memory operations revoke it before MTE/host/linear-memory handling.

@@ -73,6 +73,7 @@
             }
         }
 
+#include "uwvm_runtime_threaded_llvm_instance_template.h"
         struct object_scope
         {
             void const* admission{};
@@ -90,6 +91,7 @@
             decltype(native_frames_) frames;
             decltype(native_call_names_) names;
             decltype(native_call_edges_) edges;
+            ::uwvm2::utils::container::std_unique_ptr<instance_template> instance;
             bool known_graph{},polls{},strict_fp{};
             ::std::size_t retained_bytes{};
         };
@@ -147,6 +149,23 @@
             saved->retained_bytes=measure(saved->frames,saved->names,saved->edges,saved->input.capacity(),saved->object.capacity());
             if(!saved->retained_bytes)return {};
             return saved;
+        }
+        void remember_instance_template(prepared_object& saved,::llvm::StringRef inputs,::std::size_t bindings,
+            bool shared_scalars,::std::size_t limit) const
+        {
+            if(inputs.empty() || !gc_scratch_.empty() || bindings>externals_.size())return;
+            auto room=limit-saved.retained_bytes;
+            auto fits=[&](::std::size_t n){if(n>room)return false;room-=n;return true;};
+            if(!fits(sizeof(instance_template)) || !fits(inputs.size()+1u) || !fits(bindings*sizeof(instance_binding)))return;
+            for(::std::size_t i{};i<bindings;++i)if(!fits(externals_[i].name.size()+1u))return;
+            auto plan=::uwvm2::utils::container::make_unique<instance_template>();
+            plan->inputs=::uwvm2::utils::container::copy_string(inputs);
+            if(!capture_instance_bindings(*plan,bindings))return;
+            plan->reference_dispatch=reference_dispatch_;plan->shared_scalars=shared_scalars;
+            if(!fits(plan->inputs.capacity()-inputs.size()) ||
+               !fits((plan->bindings.capacity()-bindings)*sizeof(instance_binding)))return;
+            for(auto const& b:plan->bindings)if(!fits(b.name.capacity()-b.name.size()))return;
+            saved.retained_bytes=limit-room;saved.instance=::std::move(plan);
         }
         [[nodiscard]] bool restore_object_witness(prepared_object const& saved)
         {

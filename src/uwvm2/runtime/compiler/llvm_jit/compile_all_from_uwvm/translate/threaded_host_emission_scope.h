@@ -47,6 +47,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             ::uwvm2::utils::container::u8string_view);
         void* objects_{};
         object_emitter emit_object_{};
+        bool* template_instructions_{};
         threaded_host_emission_scope* previous_{};
         bool valid_{true};
         ::std::uintptr_t instruction_target_{};
@@ -115,6 +116,30 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         {return current_!=nullptr&&current_->valid_?current_->owned_views_:0u;}
         [[nodiscard]] static bool selected() noexcept{return current_!=nullptr;}
         [[nodiscard]] static bool relocates_objects() noexcept { return current_ && current_->emit_object_; }
+        // The validator reports every primary opcode, including unreachable
+        // instructions. Unlisted lowering families still use the exact IR key.
+        static void observe_template_opcode(unsigned op) noexcept
+        {
+            if(current_ && current_->template_instructions_ &&
+               !(op<=0x05u || (op>=0x0bu && op<=0x13u) || (op>=0x1au && op<=0x1cu) ||
+                 (op>=0x20u && op<=0x26u) || (op>=0x28u && op<=0xc4u) || op==0xd2u || op==0xfcu || op==0xfeu))
+                *current_->template_instructions_=false;
+        }
+        static void observe_template_numeric_prefix(unsigned subopcode) noexcept
+        {
+            if(current_ && current_->template_instructions_ && subopcode>11u)
+                *current_->template_instructions_=false;
+        }
+        static void observe_template_atomic(unsigned subopcode) noexcept
+        {
+            if(current_ && current_->template_instructions_ &&
+               !(subopcode<=3u || (subopcode>=0x10u && subopcode<=0x4eu)))
+                *current_->template_instructions_=false;
+        }
+        static void observe_absolute_pointer() noexcept
+        {
+            if(current_ && current_->template_instructions_)*current_->template_instructions_=false;
+        }
         [[nodiscard]] static ::llvm::Value* emit_object(::llvm::IRBuilder<>& builder,::std::uintptr_t address,
             ::uwvm2::utils::container::u8string_view name)
         {

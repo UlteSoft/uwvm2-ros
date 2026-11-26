@@ -254,6 +254,7 @@ public:
 [[nodiscard]] inline constexpr ::llvm::Constant* get_llvm_host_pointer_constant(::std::uintptr_t host_address, ::llvm::Type* pointer_type) noexcept
 {
     if(pointer_type == nullptr) [[unlikely]] { return nullptr; }
+    threaded_host_emission_scope::observe_absolute_pointer();
 
     auto& llvm_context{pointer_type->getContext()};
     auto llvm_intptr_type{::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
@@ -282,6 +283,7 @@ template <typename FunctionPtr>
 
     auto const function_address{get_llvm_runtime_bridge_function_address(function_pointer)};
     if(function_address == 0u) [[unlikely]] { return nullptr; }
+    threaded_host_emission_scope::observe_absolute_pointer();
     auto llvm_intptr_type{::llvm::Type::getIntNTy(llvm_context, static_cast<unsigned>(sizeof(::std::uintptr_t) * 8u))};
     auto llvm_address{::llvm::ConstantInt::get(llvm_intptr_type, function_address)};
     return ::llvm::ConstantExpr::getIntToPtr(llvm_address, get_llvm_pointer_type(function_type));
