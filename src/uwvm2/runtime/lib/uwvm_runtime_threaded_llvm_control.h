@@ -478,7 +478,8 @@
                         if(call->isInlineAsm())
                         {
                             auto* a=::llvm::cast<::llvm::InlineAsm>(call->getCalledOperand());
-                            if(!a->getAsmString().empty()||a->getConstraintString()!="~{memory}")return false;
+                            if(!emit::is_threaded_scalar_move(*call) &&
+                               (!a->getAsmString().empty()||a->getConstraintString()!="~{memory}"))return false;
                             continue;
                         }
                         if(target!=nullptr&&target->isIntrinsic())

@@ -50,7 +50,7 @@ def growth():
  p.add(p.tagged(0)+m.c(37)+m.mem(0x36));p.eq(p.tagged(0)+m.mem(0x28),37)
  return m.module(p.code)
 
-def spawn_and_wait(p):
+def spawn_and_wait(p,while_running=b''):
  # Completion synchronization uses tag-zero storage outside the tagged object.
  # wasi.thread-spawn may return a negative error before admitting a child,
  # including transient registry contention. Retry only that side-effect-free
@@ -61,6 +61,7 @@ def spawn_and_wait(p):
  p.add(b'\x20\0'+m.c(1)+b'\x6b\x22\0\x45\x04\x40\x00\x0b')
  # A distinct zero-tag word and finite 1 ms timeout let the registry owner run.
  p.add(p.n(4100)+m.c(0)+m.c(1000000,64)+b'\xfe\x01\x02\0\x1a\x0c\0\x0b\x0b')
+ p.add(while_running)
  p.add(b'\x02\x40\x03\x40'+p.n(4096)+b'\xfe\x10\x02\0\x0d\x01')
  p.add(p.n(4096)+m.c(0)+m.c(-1,64)+b'\xfe\x01\x02\0\x1a\x0c\0\x0b\x0b')
 
@@ -109,6 +110,59 @@ def plain_bounds(wide,failure):
  if failure=='wrap':publish(main,-2)
  if failure:main.add(read_index+m.c(0,64)+m.mem(0x37,3))
  return worker_module(main,child,m.memory_limits(wide,True,tagged=False,minimum=1,maximum=3))
+
+def plain_scalar_race():
+ # Each width visits every alignment, including a split cache line. The
+ # eight-byte access in slot eight also crosses an interior Wasm page.
+ main,child,reader=m.Program(),m.Program(),m.Program()
+ progress=m.c(4120)+b'\xfe\x10\x02\0'
+ finished=m.c(4124)
+ base=m.c(8)+m.mem(0x28)
+ main.add(m.c(8)+m.c(65536-9*128)+m.mem(0x36))
+ first=0x7ff123457fa432fe  # Includes signaling NaN payloads for the FP bit copies.
+ change=0x8040201008040201 # Exactly one selectable bit in each byte.
+ writes=[b'',b'']
+ checks=after=b''
+ slot=0
+ for width,load,store in ((2,0x33,0x3d),(4,0x35,0x3e),(8,0x29,0x37)):
+  bits=8*width
+  low=(1<<bits)-1
+  for skew in range(width):
+   offset=(slot+1)*128-width+skew
+   slot+=1
+   # The natural memarg hint is legal at an unaligned address.
+   arg=m.u(width.bit_length()-1)+m.u(offset)
+   fp=width>=4 and skew%2
+   def write(value):
+    if fp:
+     return base+m.c(value,bits)+bytes([0xbe if width==4 else 0xbf,0x38 if width==4 else 0x39])+arg
+    return base+m.c(value,64)+bytes([store])+arg
+   if fp:
+    read=base+bytes([0x2a if width==4 else 0x2b])+arg+(b'\xbc\xad' if width==4 else b'\xbd')
+   else:read=base+bytes([load])+arg
+   main.add(write(first))
+   for guard,value in ((offset-1,0x5a),(offset+width,0xa5)):
+    main.add(base+m.c(value)+m.mem(0x3a,guard))
+    after+=m.assertion(base+m.mem(0x2d,guard),value)
+   writes[0]+=write(first)
+   writes[1]+=write(first^change)
+   # Each byte must be one of the two bytes ever stored at that address.
+   # Every combination of those bytes is valid, including torn words.
+   mask=low&~change
+   checks+=m.assertion(read+m.c(mask,64)+b'\x83',first&mask,64)
+   after+=m.assertion(read,(first^change)&low,64)
+ child.add(b'\x03\x40'+writes[0]+writes[1])
+ child.add(m.c(4120)+m.c(1)+b'\xfe\x1e\x02\0\x1a')
+ child.add(finished+b'\xfe\x10\x02\0\x45\x0d\0\x0b')
+ # Observe the writer running, then check data until another sixteen whole
+ # sweeps complete. Only SC control words communicate completion.
+ reader.add(b'\x03\x40'+progress+b'\x45\x0d\0\x0b')
+ reader.add(progress+m.c(16)+b'\x6a\x21\0\x03\x40'+checks)
+ reader.add(progress+b'\x20\0\x49\x0d\0\x0b')
+ reader.add(finished+m.c(1)+b'\xfe\x17\x02\0')
+ spawn_and_wait(main,reader.code)
+ main.add(after)
+ return worker_module(main,child,m.memory_limits(shared=True,tagged=False,minimum=1,maximum=3))
 
 def shared_reader_pair():
  # The accessing module selects its own checks for the same tagged mmap.
@@ -166,6 +220,10 @@ def main():
    raw=plain_bounds(wide,failure);file=args.out/(name+'.wasm');file.write_bytes(raw)
    manifest.append(dict(name=name,file=str(file),owner=str(plain_owner),memory_bytes=3*65536,wide=wide,enabled=False,
     expected='bounds' if failure else 'success',sha256=hashlib.sha256(raw).hexdigest()))
+ raw=plain_scalar_race()
+ guest=args.out/'spawn-plain-scalar-race.wasm';guest.write_bytes(raw)
+ manifest.append(dict(name='spawn-plain-scalar-race',file=str(guest),owner=str(args.out/'plain-owner-32.wasm'),
+  memory_bytes=3*65536,enabled=False,expected='success',sha256=hashlib.sha256(raw).hexdigest()))
  reader_module,reader_guest=shared_reader_pair()
  peer=args.out/'reader-peer.wasm';peer.write_bytes(reader_module)
  guest=args.out/'reader-main.wasm';guest.write_bytes(reader_guest)
