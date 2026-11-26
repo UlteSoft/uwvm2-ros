@@ -23,6 +23,7 @@
 #pragma once
 
 #ifndef UWVM_MODULE
+# include <uwvm2/uwvm/runtime/initializer/init_limit.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -72,20 +73,39 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
     ///        thus avoiding rotation duplicates like A->B->A and B->A->B.
     /// @param adjacency_list The adjacency list of the dependency graph
     /// @return All unique cycles (each cycle has same start and end: v0 -> ... -> v0)
-    inline constexpr auto detect_cycles(
-        ::uwvm2::utils::container::unordered_flat_map<::uwvm2::utils::container::u8string_view,
-                                                      ::uwvm2::utils::container::vector<::uwvm2::utils::container::u8string_view>> const&
-            adjacency_list) noexcept
+    template<typename AdjacencyList>
+    inline constexpr auto detect_cycles(AdjacencyList const& adjacency_list) noexcept
+#ifdef UWVM_CPP_EXCEPTIONS
+    try
+#endif
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer detect_cycles_timer{u8"detect cycles"};
 #endif
 
         using module_name_t = ::uwvm2::utils::container::u8string_view;
-        using cycle_t = ::uwvm2::utils::container::vector<module_name_t>;
-        using cycles_t = ::uwvm2::utils::container::vector<cycle_t>;
+        using cycle_t = ::uwvm2::utils::container::initializer_vector<module_name_t>;
+        using cycles_t = ::uwvm2::utils::container::initializer_vector<cycle_t>;
 
         auto const curr_recursion_depth_limit{::uwvm2::uwvm::utils::depend::recursion_depth_limit};
+
+        auto const& limits{::uwvm2::uwvm::runtime::initializer::initializer_limit};
+        if(adjacency_list.size() > limits.max_runtime_modules)
+        { ::uwvm2::utils::allocator::resource::reject_allocation("uwvm: [error] loader: runtime_modules limit exceeded before cycle analysis.\n"); }
+        auto edges_left{limits.max_dependency_edges};
+        for(auto const& [name, dependencies] : adjacency_list)
+        {
+            if(dependencies.size() > edges_left)
+            { ::uwvm2::utils::allocator::resource::reject_allocation("uwvm: [error] loader: dependency_edges limit exceeded before cycle analysis.\n"); }
+            edges_left -= dependencies.size();
+        }
+        auto path_entries_left{limits.max_cycle_path_entries};
+        auto admit_path = [&](::std::size_t entries)
+        {
+            if(entries > path_entries_left)
+            { ::uwvm2::utils::allocator::resource::reject_allocation("uwvm: [error] loader: cycle_path_entries limit exceeded.\n"); }
+            path_entries_left -= entries;
+        };
 
         cycles_t all_cycles{};
         if(adjacency_list.empty()) [[unlikely]] { return all_cycles; }
@@ -138,8 +158,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         // 1) Compress names to integer ids for efficient computation (avoid frequent hashing of string_view)
         // unordered_flat_map use xxh3 hash
-        ::uwvm2::utils::container::unordered_flat_map<module_name_t, ::std::size_t> name_to_id{};
-        ::uwvm2::utils::container::vector<module_name_t> id_to_name{};
+        ::uwvm2::utils::container::initializer_map<module_name_t, ::std::size_t> name_to_id{};
+        ::uwvm2::utils::container::initializer_vector<module_name_t> id_to_name{};
         auto const adjacency_list_size{adjacency_list.size()};
         id_to_name.reserve(adjacency_list_size);
         name_to_id.reserve(adjacency_list_size);
@@ -153,7 +173,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         }
 
         // 2) Build compact adjacency list (by id)
-        ::uwvm2::utils::container::vector<::uwvm2::utils::container::vector<::std::size_t>> graph{};
+        ::uwvm2::utils::container::initializer_vector<::uwvm2::utils::container::initializer_vector<::std::size_t>> graph{};
         graph.resize(id_to_name.size());
         for(auto const& [u_name, outs]: adjacency_list)
         {
@@ -220,10 +240,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             return all_cycles;
         }
 
-        ::uwvm2::utils::container::vector<signed_size_t> index(graph_size, static_cast<signed_size_t>(-1));
-        ::uwvm2::utils::container::vector<signed_size_t> low(graph_size, signed_size_t{});
-        ::uwvm2::utils::container::vector<bool> on_stack(graph_size, false);
-        ::uwvm2::utils::container::vector<::std::size_t> st{};
+        ::uwvm2::utils::container::initializer_vector<signed_size_t> index(graph_size, static_cast<signed_size_t>(-1));
+        ::uwvm2::utils::container::initializer_vector<signed_size_t> low(graph_size, signed_size_t{});
+        ::uwvm2::utils::container::initializer_vector<bool> on_stack(graph_size, false);
+        ::uwvm2::utils::container::initializer_vector<::std::size_t> st{};
         st.reserve(graph_size);
         // index, low, on_stack, st are all of size graph_size
 
@@ -234,7 +254,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         ::std::size_t dfs_idx{};
 
-        ::uwvm2::utils::container::vector<::uwvm2::utils::container::vector<::std::size_t>> sccs{};
+        ::uwvm2::utils::container::initializer_vector<::uwvm2::utils::container::initializer_vector<::std::size_t>> sccs{};
 
         for(::std::size_t v{}; v != graph_size; ++v)
         {
@@ -256,7 +276,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             };
 
             // Use explicit stack to avoid recursion with depth limit
-            ::uwvm2::utils::container::vector<stack_frame_t> call_stack{};
+            ::uwvm2::utils::container::initializer_vector<stack_frame_t> call_stack{};
             call_stack.reserve(graph_size);  // Reserve maximum possible depth, so we can use push_back_unchecked
 
             // size of graph_size != 0
@@ -350,7 +370,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     // All neighbors processed - check if this is a root of SCC
                     if(low.index_unchecked(frame.v) == index.index_unchecked(frame.v))
                     {
-                        ::uwvm2::utils::container::vector<::std::size_t> comp{};
+                        ::uwvm2::utils::container::initializer_vector<::std::size_t> comp{};
                         for(;;)
                         {
                             auto const w{st.back()};
@@ -378,18 +398,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         // 4) Perform ordered DFS within each SCC, only starting from the minimum id vertex on the cycle, avoiding rotation duplicates
         //    Additionally maintain a 64-bit signature set for safe deduplication (based on xxh3), with extremely low collision probability
-        ::uwvm2::utils::container::unordered_flat_set<::std::uint_least64_t> seen_signatures{};
-        seen_signatures.reserve(256uz);  // Reserve space for cycle signatures to avoid reallocations
+        ::uwvm2::utils::container::initializer_set<::std::uint_least64_t> seen_signatures{};
 
         // Temporary buffer for signatures (avoid repeated allocation)
-        ::uwvm2::utils::container::vector<::std::size_t> temp_cycle_ids{};
-        temp_cycle_ids.reserve(256uz);
+        ::uwvm2::utils::container::initializer_vector<::std::size_t> temp_cycle_ids{};
 
         // DFS (restricted to only visit points >= start_id, ensuring minimum id is start_id)
         // Use bool for boolean flags to save memory and improve cache locality
-        ::uwvm2::utils::container::vector<bool> in_scc(graph_size, false);
-        ::uwvm2::utils::container::vector<bool> on_path(graph_size, false);
-        ::uwvm2::utils::container::vector<::std::size_t> path{};
+        ::uwvm2::utils::container::initializer_vector<bool> in_scc(graph_size, false);
+        ::uwvm2::utils::container::initializer_vector<bool> on_path(graph_size, false);
+        ::uwvm2::utils::container::initializer_vector<::std::size_t> path{};
         path.reserve(graph_size);
 
         // Iterative DFS implementation with recursion depth limit
@@ -427,6 +445,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                 {
                     // A -> A
                     temp_cycle_ids.clear();
+                    temp_cycle_ids.reserve(2uz);
                     temp_cycle_ids.push_back_unchecked(u);
                     temp_cycle_ids.push_back_unchecked(u);
 
@@ -435,6 +454,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                     auto const sig{::uwvm2::utils::hash::xxh3_64bits(bytes_ptr, bytes_len)};
                     if(!seen_signatures.contains(sig))
                     {
+                        admit_path(2uz);
                         seen_signatures.insert(sig);
                         cycle_t cyc{};
                         cyc.reserve(2uz);
@@ -477,7 +497,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                 auto start_v{start_id};
                 // Use explicit stack to avoid recursion with depth limit
-                ::uwvm2::utils::container::vector<DfsStackFrame> dfs_stack{};
+                ::uwvm2::utils::container::initializer_vector<DfsStackFrame> dfs_stack{};
                 dfs_stack.reserve(graph_size);  // Reserve maximum possible depth
 
                 dfs_stack.emplace_back_unchecked(start_v, start_id, 0uz, true);
@@ -557,7 +577,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         if(w < frame.start_id) { continue; }
                         if(w == frame.start_id)
                         {
-                            ::uwvm2::utils::container::vector<::std::size_t> const& path_ids{path};
+                            ::uwvm2::utils::container::initializer_vector<::std::size_t> const& path_ids{path};
                             // Normalize to cycle representation starting with minimum id (i.e., start_id): start, ..., start
                             temp_cycle_ids.clear();
                             // size_t operations never wrap around, because the maximum size is signed size_t max.
@@ -578,6 +598,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                             auto const sig{::uwvm2::utils::hash::xxh3_64bits(bytes_ptr, bytes_len)};
 
                             if(seen_signatures.contains(sig)) { continue; }
+                            admit_path(temp_cycle_ids_size);
                             seen_signatures.insert(sig);
 
                             // Convert back to names and write to result
@@ -622,6 +643,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
         return all_cycles;
     }
+#ifdef UWVM_CPP_EXCEPTIONS
+    catch(::std::bad_alloc const&) { ::uwvm2::utils::allocator::resource::initializer_metadata_limit(); }
+#endif
 
 }  // namespace uwvm2::uwvm::wasm::loader
 

@@ -28,6 +28,7 @@
 #include <uwvm2/uwvm/io/host_diagnostics.h>
 
 #ifndef UWVM_MODULE
+# include <uwvm2/uwvm/runtime/initializer/init_limit.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -86,12 +87,37 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         local_imported_module_init_error
     };
 
+    [[nodiscard]] inline constexpr bool permits_registered_modules(::std::size_t additional = 0uz, ::std::size_t* count = nullptr) noexcept
+    {
+        ::std::size_t native_drivers{};
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+        native_drivers = ::uwvm2::uwvm::wasm::storage::preloaded_dl.size();
+#endif
+        auto const preloads{::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().size()};
+        auto const local{::uwvm2::uwvm::wasm::storage::preload_local_imported.size()};
+        if(!::uwvm2::uwvm::runtime::initializer::initializer_limit.permits_module_counts(preloads, native_drivers, local, additional))
+        { return false; }
+        if(count != nullptr) { *count = 1uz + preloads + native_drivers + local + additional; }
+        return true;
+    }
+
     inline constexpr load_and_check_modules_rtl construct_all_module_and_check_duplicate_module(bool initialize_local_imports = true) noexcept
+#ifdef UWVM_CPP_EXCEPTIONS
+    try
+#endif
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer parsing_timer{u8"construct all module and check duplicate module"};
 #endif
 
+        auto& modules{::uwvm2::uwvm::wasm::storage::all_module};
+        ::std::size_t declared_count{};
+        if(!permits_registered_modules(modules.size(), ::std::addressof(declared_count)))
+        {
+            ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: runtime_modules limit exceeded by the linked module graph.");
+            return load_and_check_modules_rtl::module_dependency_error;
+        }
+        modules.reserve(declared_count); // allocate all registry buckets before any native provider initializes.
         // preloaded wasm
         for(auto const& lwc: ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm())
         {
@@ -250,12 +276,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
         return load_and_check_modules_rtl::ok;
     }
 
+#ifdef UWVM_CPP_EXCEPTIONS
+    catch(::std::bad_alloc const&)
+    {
+        ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: module registry exceeds the initializer metadata budget.");
+        return load_and_check_modules_rtl::module_dependency_error;
+    }
+#endif
+
     // this struct is utilized for temporary variables on the stack and doesnt store the global variables
     struct build_dependency_graph_and_check_import_exist_ret_t
     {
         using module_name_t = ::uwvm2::utils::container::u8string_view;
         using import_export_name_t = ::uwvm2::utils::container::u8string_view;
-        using adjacency_list_t = ::uwvm2::utils::container::unordered_flat_map<module_name_t, ::uwvm2::utils::container::vector<module_name_t>>;
+        using adjacency_list_t = ::uwvm2::utils::container::initializer_map<module_name_t, ::uwvm2::utils::container::initializer_std_vector<module_name_t>>;
 
         load_and_check_modules_rtl ok;
         adjacency_list_t adj;
@@ -283,29 +317,41 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
     template<typename GraphContext>
     inline constexpr build_dependency_graph_and_check_import_exist_ret_t
         build_dependency_graph_and_check_import_exist_and_construct_all_module_export_in_context(GraphContext& world) noexcept
+#ifdef UWVM_CPP_EXCEPTIONS
+    try
+#endif
     {
 #ifdef UWVM_TIMER
         ::uwvm2::utils::debug::timer build_dependency_graph_and_check_import_exist_timer{u8"build dependency graph and check import exist"};
 #endif
 
         using module_name_t = ::uwvm2::utils::container::u8string_view;
-        using adjacency_list_t = ::uwvm2::utils::container::unordered_flat_map<module_name_t, ::uwvm2::utils::container::vector<module_name_t>>;
+        using adjacency_list_t = build_dependency_graph_and_check_import_exist_ret_t::adjacency_list_t;
 
         auto const all_module_size{world.declarations().size()};
 
+        auto const& limits{::uwvm2::uwvm::runtime::initializer::initializer_limit};
+        if(all_module_size > limits.max_runtime_modules)
+        {
+            ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: runtime_modules limit exceeded before graph allocation.");
+            return {load_and_check_modules_rtl::module_dependency_error, {}};
+        }
+        ::std::size_t remaining_edges{limits.max_dependency_edges};
         adjacency_list_t adjacency_list{};
         adjacency_list.reserve(all_module_size);  // Reserve space for all modules
 
         // Initialize all module nodes
         for(auto const& module: world.declarations())
         {
-            adjacency_list.emplace(module.first, ::uwvm2::utils::container::vector<module_name_t>{});
+            adjacency_list.try_emplace(module.first);
         }
 
         // Used to record the contents exported by each module. Persist globally.
         // Rebuild every run to avoid stale `u8string_view` keys and mismatched module sets.
-        world.exports().clear();
-        world.exports().reserve(all_module_size);  // Reserve space for all modules to avoid reallocations
+        ::std::remove_reference_t<decltype(world.exports())> next_exports{};
+        // Drop stale borrowed names and publish only a complete new export table.
+        world.exports() = {};
+        next_exports.reserve(all_module_size);  // Reserve space for all modules to avoid reallocations
 
 #ifndef UWVM_DISABLE_LOCAL_IMPORTED_WASIP1
 # if defined(UWVM_IMPORT_WASI_WASIP1)
@@ -399,7 +445,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 auto const& exec_wasm_module_storage_exportsec{
                                     get_exec_wasm_module_storage_exportsec_from_feature_tuple(::uwvm2::uwvm::wasm::feature::all_features)};
 
-                                auto [curr_exported_module, inserted]{world.exports().try_emplace(curr_module_name)};
+                                auto [curr_exported_module, inserted]{next_exports.try_emplace(curr_module_name)};
                                 if(inserted) [[unlikely]]
                                 {
                                     curr_exported_module->second.reserve(exec_wasm_module_storage_exportsec.exports.size());  // Reserve space for exports
@@ -428,8 +474,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 get_exec_wasm_module_storage_importsec_from_feature_tuple(::uwvm2::uwvm::wasm::feature::all_features)};
 
                             // Deduplicate dependency edges per current module to avoid repeated edges to the same import module
-                            ::uwvm2::utils::container::unordered_flat_set<module_name_t> seen_import_modules{};
-                            seen_import_modules.reserve(exec_wasm_module_storage_importsec.imports.size());
+                            ::uwvm2::utils::container::initializer_set<module_name_t> seen_import_modules{};
 
                             for(auto const& imports: exec_wasm_module_storage_importsec.imports)
                             {
@@ -453,15 +498,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                 if(adjacency_list.contains(import_module_name))
                                 {
                                     // Only insert one edge per unique import module for the current module
-                                    if(seen_import_modules.insert(import_module_name).second)
+                                    if(!seen_import_modules.contains(import_module_name))
                                     {
-                                        auto& deps{adjacency_list[curr_module_name]};
-                                        if(deps.empty())
+                                        if(remaining_edges == 0uz)
                                         {
-                                            deps.reserve(exec_wasm_module_storage_importsec.imports.size());  // Reserve space for all imports
+                                            ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: dependency_edges limit exceeded.");
+                                            return {load_and_check_modules_rtl::module_dependency_error, {}};
                                         }
-                                        // Safe: we just reserved space for all imports
-                                        deps.push_back_unchecked(import_module_name);
+                                        --remaining_edges;
+                                        seen_import_modules.insert(import_module_name);
+                                        adjacency_list[curr_module_name].push_back(import_module_name);
                                     }
                                 }
 
@@ -613,7 +659,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     return {load_and_check_modules_rtl::module_dependency_error, ::std::move(adjacency_list)};
                                 }
 
-                                using exported_iterator = typename ::std::remove_reference_t<decltype(world.exports())>::iterator;
+                                using exported_iterator = typename ::std::remove_reference_t<decltype(next_exports)>::iterator;
 
                                 exported_iterator curr_exported;  // No init
 
@@ -643,7 +689,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
                                                 // Check if there is an exported map. If not, build one.
                                                 auto [curr_exported_module,
-                                                      inserted]{world.exports().try_emplace(import_module_name)};
+                                                      inserted]{next_exports.try_emplace(import_module_name)};
                                                 if(inserted) [[unlikely]]
                                                 {
                                                     curr_exported_module->second.reserve(
@@ -684,7 +730,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                         auto const imported_dl_ptr{imported_module.second.module_storage_ptr.wd};
 
                                         // Check if there is an exported map. If not, build one.
-                                        auto [curr_exported_module, inserted]{world.exports().try_emplace(import_module_name)};
+                                        auto [curr_exported_module, inserted]{next_exports.try_emplace(import_module_name)};
                                         if(inserted) [[unlikely]]
                                         {
                                             auto const dl_func{imported_dl_ptr->wasm_dl_storage.capi_function_vec};
@@ -719,7 +765,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                                     {
                                         auto const imported_local_ptr{imported_module.second.module_storage_ptr.li};
 
-                                        auto [curr_exported_module, inserted]{world.exports().try_emplace(import_module_name)};
+                                        auto [curr_exported_module, inserted]{next_exports.try_emplace(import_module_name)};
 
                                         if(inserted) [[unlikely]]
                                         {
@@ -784,7 +830,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
 
 // curr_exported should never be end() here
 #if (defined(_DEBUG) || defined(DEBUG)) && defined(UWVM_ENABLE_DETAILED_DEBUG_CHECK)
-                                if(curr_exported == world.exports().end()) [[unlikely]]
+                                if(curr_exported == next_exports.end()) [[unlikely]]
                                 {
                                     ::uwvm2::utils::debug::trap_and_inform_bug_pos();
                                 }
@@ -884,7 +930,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         auto const dl_ptr{curr_module.second.module_storage_ptr.wd};
                         if(dl_ptr != nullptr)
                         {
-                            auto [curr_exported_module, inserted]{world.exports().try_emplace(curr_module_name)};
+                            auto [curr_exported_module, inserted]{next_exports.try_emplace(curr_module_name)};
                             if(inserted) [[unlikely]]
                             {
                                 auto const dl_func_vec{dl_ptr->wasm_dl_storage.capi_function_vec};
@@ -920,7 +966,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
                         auto const imported_local_ptr{curr_module.second.module_storage_ptr.li};
                         if(imported_local_ptr != nullptr)
                         {
-                            auto [curr_exported_module, inserted]{world.exports().try_emplace(curr_module_name)};
+                            auto [curr_exported_module, inserted]{next_exports.try_emplace(curr_module_name)};
                             if(inserted) [[unlikely]]
                             {
                                 auto const fn_all{imported_local_ptr->get_all_function_information()};
@@ -979,8 +1025,17 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::loader
             }
         }
 
+        world.exports().swap(next_exports);
         return {load_and_check_modules_rtl::ok, ::std::move(adjacency_list)};
     }
+
+#ifdef UWVM_CPP_EXCEPTIONS
+    catch(::std::bad_alloc const&)
+    {
+        ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] loader: dependency/export graph exceeds the initializer metadata budget.");
+        return {load_and_check_modules_rtl::module_dependency_error, {}};
+    }
+#endif
 
     namespace details
     {

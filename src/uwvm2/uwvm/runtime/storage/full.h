@@ -25,6 +25,7 @@
 #include <uwvm2/utils/container/standard.h>
 
 #ifndef UWVM_MODULE
+# include <uwvm2/uwvm/runtime/initializer/init_limit.h>
 // std
 # include <cstddef>
 # include <cstdint>
@@ -161,14 +162,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
         // prepared code owner therefore retains its original parser/store graph
         // even after the selected source is retired and replaced.
         ::uwvm2::utils::container::std_vector<full_preload_input> preload_inputs_{};
-        ::uwvm2::utils::container::vector<::uwvm2::uwvm::wasm::type::wasm_file_t> preload_files_{};
+        decltype(::uwvm2::uwvm::wasm::storage::preloaded_wasm) preload_files_{};
         struct preload_binding
         {
             ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const* module{};
             ::std::size_t id{(::std::numeric_limits<::std::size_t>::max)()};
             ::std::uint_least64_t validation_epoch{};
         };
-        mutable ::uwvm2::utils::container::std_vector<preload_binding> preload_bindings_{};
+        mutable ::uwvm2::utils::container::initializer_std_vector<preload_binding> preload_bindings_{};
         // Actual final source owns isolated declaration/export and rewritten-name
         // buffers beyond context teardown; maps are not global-selector credentials.
         decltype(::uwvm2::uwvm::wasm::storage::all_module) checkpoint_declarations_{};
@@ -228,6 +229,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::full
                 ::fast_io::io::perrln(::uwvm2::uwvm::io::u8log_output,
                     u8"uwvm: [error] preload graph exceeds the supported 4095-module admission limit");
                 ::uwvm2::uwvm::io::fast_exit(::uwvm2::uwvm::io::diagnostic_exit_status::invalid_option);
+            }
+            if(!::uwvm2::uwvm::runtime::initializer::initializer_limit.permits_module_counts(preload_inputs_.size()) ||
+               !::uwvm2::utils::container::try_reserve_initializer_vector(preload_files_, preload_inputs_.size()))
+            {
+#ifdef UWVM_CPP_EXCEPTIONS
+                throw ::std::bad_alloc{};
+#else
+                ::uwvm2::utils::allocator::resource::initializer_metadata_limit();
+#endif
             }
             preload_files_.resize(preload_inputs_.size()); preload_bindings_.resize(preload_inputs_.size());
             // FINAL array extents established BEFORE any filename borrow or parse.

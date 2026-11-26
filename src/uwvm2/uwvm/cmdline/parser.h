@@ -45,6 +45,7 @@
 # include <uwvm2/uwvm/utils/ansies/impl.h>
 # include <uwvm2/uwvm/cmdline/params/impl.h>
 # include <uwvm2/uwvm/wasm/loader/dl.h>
+# include <uwvm2/uwvm/wasm/loader/load_and_check_modules.h>
 # include "params.h"
 #endif
 
@@ -396,14 +397,31 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
         }
 #endif
 
-        // Resolve the complete feature policy before ANY Wasm preload parses
-        // declarations. Baselines and explicit overrides compose in either order;
-        // a late disable must not leave an earlier preload admitted more broadly.
+        // Final host policy applies to all explicit preloads, in either CLI order.
+        // end_pos excludes --run and the guest argument tail.
+        auto before_preload = [](auto const* parameter) constexpr noexcept
+        {
+            return params::is_wasm_module_policy_parameter(parameter) ||
+                parameter == ::std::addressof(params::wasm_set_initializer_limit) ||
+                parameter == ::std::addressof(params::wasm_set_resource_limit);
+        };
+        ::std::size_t requested_preloads{};
         for(auto current{pr.begin() + 1u}; current != end_pos; ++current)
         {
-            if(!params::is_wasm_module_policy_parameter(current->para)) { continue; }
+            if(current->para == ::std::addressof(params::wasm_preload_library)
+#if defined(UWVM_SUPPORT_PRELOAD_DL)
+               || current->para == ::std::addressof(params::wasm_register_dl)
+#endif
+            ) { ++requested_preloads; } // one counted callback per argv record.
+            if(!before_preload(current->para)) { continue; }
             if(current->para->handle(pr.begin(), current, end_pos) != ::uwvm2::utils::cmdline::parameter_return_type::def)
             { return parsing_return_val::returnm1; }
+        }
+        if((requested_preloads != 0uz || wasm_file_ppos != nullptr) &&
+           !::uwvm2::uwvm::wasm::loader::permits_registered_modules(requested_preloads))
+        {
+            ::uwvm2::uwvm::io::host_diagnostic_write("uwvm: [error] requested module graph exceeds the process runtime_modules limit.");
+            return parsing_return_val::returnm1;
         }
 
 #if defined(UWVM_SUPPORT_PRELOAD_DL)
@@ -526,7 +544,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline
             {
                 auto const cp{curr_pr->para};
 
-                if(cp == nullptr || params::is_wasm_module_policy_parameter(cp))
+                if(cp == nullptr || before_preload(cp))
                 {
                     // nonparametric
                     continue;

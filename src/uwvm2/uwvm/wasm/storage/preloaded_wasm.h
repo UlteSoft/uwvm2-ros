@@ -41,7 +41,7 @@
 UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage
 {
     /// @note  Must remain unchanged before initialization (to prevent iterator invalidation).
-    inline ::uwvm2::utils::container::vector<::uwvm2::uwvm::wasm::type::wasm_file_t>
+    inline ::uwvm2::utils::container::initializer_vector<::uwvm2::uwvm::wasm::type::wasm_file_t>
         preloaded_wasm{};  // [global] No global variable dependencies from other translation units
     namespace details
     {

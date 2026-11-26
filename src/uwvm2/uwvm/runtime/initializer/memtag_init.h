@@ -8,8 +8,8 @@ namespace mt_init
     struct global_plan { owner* memory{}; ::std::uint64_t address{},bytes{}; ::std::uint8_t tag{}; };
     struct linked_plan
     {
-        ::uwvm2::utils::container::std_vector<global_plan> globals{};
-        ::uwvm2::utils::container::std_vector<mt::global_tag_range> global_ranges{};
+        ::uwvm2::utils::container::initializer_std_vector<global_plan> globals{};
+        ::uwvm2::utils::container::initializer_std_vector<mt::global_tag_range> global_ranges{};
     };
     inline bool error(::uwvm2::utils::container::u8string_view module,char8_t const* message) noexcept
     {
@@ -49,12 +49,15 @@ namespace mt_init
 // descriptors are bound to that same definition after type-checked linking.
 template<initialization_purpose Purpose>
 [[nodiscard]] inline bool plan_linked_memtag(initialization_context<Purpose>& world, mt_init::linked_plan& linked) noexcept
+#ifdef UWVM_CPP_EXCEPTIONS
+try
+#endif
 {
     namespace mt=::uwvm2::extension::memtag;
     auto& globals{linked.globals};
     using name_view = ::uwvm2::utils::container::u8string_view;
     struct owner_name { name_view name; ::std::size_t index; };
-    ::uwvm2::utils::container::unordered_flat_map<mt_init::owner const*, owner_name> owner_names{};
+    ::uwvm2::utils::container::initializer_map<mt_init::owner const*, owner_name> owner_names{};
     if(::uwvm2::uwvm::io::show_verbose)
     {
         for(auto& [name,module] : world.modules())
@@ -79,8 +82,9 @@ template<initialization_purpose Purpose>
         auto const& module{file->wasm_module_storage.wasm_binfmt_ver1_storage};
         auto const& features{file->wasm_parameter.binfmt1_para};
         auto const& policy{::uwvm2::parser::wasm::standard::wasm1p1::features::get_wasm1p1_parameter(features)};
-        auto const count{runtime.imported_memory_vec_storage.size()+runtime.local_defined_memory_vec_storage.size()};
-        auto const imports{runtime.imported_memory_vec_storage.size()};
+        auto const imports{runtime.imported_memory_vec_storage.size()}, locals{runtime.local_defined_memory_vec_storage.size()};
+        if(locals > SIZE_MAX - imports) { return mt_init::error(name,u8"memory owner count exceeds the native range"); }
+        auto const count{imports + locals};
         for(::std::size_t i{}; i != count; ++i)
         {
             auto const& type{::uwvm2::uwvm::runtime::storage::runtime_memory_type(runtime,i)};
@@ -171,6 +175,10 @@ template<initialization_purpose Purpose>
     }
     return true;
 }
+
+#ifdef UWVM_CPP_EXCEPTIONS
+catch(::std::bad_alloc const&) { return mt_init::error({},u8"linked memory metadata exceeds the initializer byte budget"); }
+#endif
 
 [[nodiscard]] inline bool configure_owner_addressing(mt_init::owner& record, ::uwvm2::utils::container::u8string_view module_name,
     bool caller_checks, ::std::optional<unsigned> saved_tag_start) noexcept

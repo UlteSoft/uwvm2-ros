@@ -134,6 +134,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         else if(set_type_name == u8"local_defined_globals") { lim.max_local_defined_globals = limit; }
         else if(set_type_name == u8"local_defined_tags") { lim.max_local_defined_tags = limit; }
         else if(set_type_name == u8"local_defined_elements") { lim.max_local_defined_elements = limit; }
+        else if(set_type_name == u8"dependency_edges") { lim.max_dependency_edges = limit; }
+        else if(set_type_name == u8"cycle_path_entries") { lim.max_cycle_path_entries = limit; }
         else if(set_type_name == u8"element_expressions") { lim.max_element_expressions = limit; }
         else if(set_type_name == u8"local_defined_datas") { lim.max_local_defined_datas = limit; }
         else
@@ -182,6 +184,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
                                 ::uwvm2::uwvm::runtime::initializer::default_max_local_defined_elements,
                                 u8")\n" u8"              - local_defined_datas (default=",
                                 ::uwvm2::uwvm::runtime::initializer::default_max_local_defined_datas,
+                                u8")\n" u8"              - dependency_edges (default=",
+                                ::uwvm2::uwvm::runtime::initializer::default_max_dependency_edges,
+                                u8")\n" u8"              - cycle_path_entries (default=",
+                                ::uwvm2::uwvm::runtime::initializer::default_max_cycle_path_entries,
                                 u8")\n" u8"              - element_expressions (default=",
                                 ::uwvm2::uwvm::runtime::initializer::default_max_element_expressions,
                                 u8")\n\n",
