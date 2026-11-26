@@ -48,6 +48,39 @@ namespace
         return result;
     }
 
+    void check_global_dependency_depth()
+    {
+        namespace runtime = uwvm2::uwvm::runtime;
+        using state = runtime::storage::wasm_global_init_state;
+        auto wasm = module({3,
+            0x7f, 0, 0x41, 2, 0x0b,
+            0x7f, 0, 0x41, 4, 0x23, 0, 0x6a, 0x0b,
+            0x7f, 0, 0x41, 5, 0x23, 1, 0x6a, 0x0b});
+        auto prepared = strict::prepare_runtime_from_wasm(wasm, u8"depth", {}, features(true));
+        auto found = runtime::storage::wasm_module_runtime_storage.find(u8"depth");
+        require(found != runtime::storage::wasm_module_runtime_storage.end());
+        auto& globals = found->second.local_defined_global_vec_storage;
+        require(globals.size() == 3 && globals.back_unchecked().global.storage.i32 == 11);
+
+        // Ask for the last definition first, as may happen when a linked module reads it.
+        for(auto& g: globals) { g.global.storage.i32 = 0; g.init_state = state::uninitialized; }
+        auto& limit = uwvm2::uwvm::utils::depend::recursion_depth_limit;
+        auto const previous = limit;
+#if defined(__unix__) || defined(__APPLE__)
+        require(strict::run_in_child_expect_trap_message("global dependency depth exceeds", [&]
+        {
+            limit = 1;
+            runtime::initializer::details::ensure_wasm1_local_defined_global_initialized(globals.back_unchecked());
+        }) == 0);
+#endif
+        limit = 2;
+        runtime::initializer::details::ensure_wasm1_local_defined_global_initialized(globals.back_unchecked());
+        limit = previous;
+        require(globals.front_unchecked().global.storage.i32 == 2 && globals.index_unchecked(1).global.storage.i32 == 6 &&
+                globals.back_unchecked().global.storage.i32 == 11);
+        for(auto const& g: globals) { require(g.init_state == state::initialized); }
+    }
+
     bool valid(bytes const& wasm, bool enabled, bool table_initializer = false)
     {
         uwvm2::parser::wasm::base::error_impl error{};
@@ -74,6 +107,7 @@ int main(int argc, char** argv)
         if(!file.eof()) { return 2; }
         return valid(wasm, true, true) ? 0 : 1;
     }
+    check_global_dependency_depth();
     namespace policy = uwvm2::uwvm::wasm::storage::module_policy;
     policy::layer settings{};
     require(policy::set(settings, u8"parser.extended-const", u8"on"));

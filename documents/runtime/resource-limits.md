@@ -221,6 +221,12 @@ workers use the retained defining module policy. An importing module's budget
 covers its own definitions. Address-space reservation policy and runtime
 growth use their respective process limits.
 
+A constant expression can read an immutable global that still needs initialization.
+The initializer keeps the pending definitions and partially evaluated operands
+in the process metadata pool. The `--wasm-depend-recursion-limit N` setting
+also limits the number of pending definitions below the expression being evaluated.
+Its default is 2,048. A value of zero leaves the metadata byte limits in force.
+
 ## Loader graph
 
 The process `runtime_modules` ceiling includes the executable, Wasm

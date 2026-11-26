@@ -77,6 +77,7 @@
 # include <uwvm2/object/impl.h>
 # include <uwvm2/uwvm/io/impl.h>
 # include <uwvm2/uwvm/utils/ansies/impl.h>
+# include <uwvm2/uwvm/utils/depend/impl.h>
 # include <uwvm2/uwvm/imported/wasi/wasip1/storage/impl.h>
 # include <uwvm2/uwvm/wasm/impl.h>
 # include <uwvm2/uwvm/runtime/storage/impl.h>
@@ -2095,9 +2096,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         inline void ensure_wasm1_local_defined_global_initialized(::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t& g) noexcept;
 
         template <initialization_purpose Purpose>
-        inline constexpr void try_resolve_wasm1_imported_global_value_in_context(initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const* imported_global_ptr,
-                                                                      ::uwvm2::object::global::wasm_global_storage_t const*& out,
-                                                                      ::uwvm2::object::global::wasm_global_storage_t& local_imported_scratch) noexcept(Purpose == initialization_purpose::ordinary)
+        inline constexpr void try_resolve_wasm1_imported_global_value_in_context(initialization_context<Purpose>& world,
+            ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const* imported_global_ptr,
+            ::uwvm2::object::global::wasm_global_storage_t const*& out, ::uwvm2::object::global::wasm_global_storage_t& local_imported_scratch,
+            ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t** pending = nullptr) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using imported_global_ptr_t = ::uwvm2::uwvm::runtime::storage::imported_global_storage_t const*;
             using global_link_kind = ::uwvm2::uwvm::runtime::storage::imported_global_storage_t::imported_global_link_kind;
@@ -2303,8 +2305,15 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                     ::fast_io::fast_terminate();
                 }
 
-                ensure_wasm1_local_defined_global_initialized_in_context(world, *def);
-
+                if(def->init_state != ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized)
+                {
+                    if(pending != nullptr)
+                    {
+                        *pending = def;
+                        return;
+                    }
+                    ensure_wasm1_local_defined_global_initialized_in_context(world, *def);
+                }
                 out = ::std::addressof(def->global);
                 return;
             }
@@ -2371,12 +2380,20 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             }
         }
 
-        // Evaluate only parser-validated Core 3.0 constant expressions, after imports have been linked.
-        // Host/global values remain typed; arithmetic never touches guest pointers or native call frames.
+        struct constant_expression_cursor
+        {
+            ::std::size_t next_opcode{};
+            ::uwvm2::utils::container::initializer_vector<::uwvm2::object::global::wasm_global_storage_t> operands{};
+        };
+
+        // Return an unresolved definition at the current global.get, preserving the evaluated prefix.
+        // This matters for host reads and GC instructions that must execute exactly once.
         template <initialization_purpose Purpose>
-        [[nodiscard]] inline constexpr ::uwvm2::object::global::wasm_global_storage_t evaluate_wasm3_constant_expression_in_context(initialization_context<Purpose>& world,
-            ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
-            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt) noexcept(Purpose == initialization_purpose::ordinary)
+        [[nodiscard]] inline constexpr ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t*
+            resume_constant_expression(initialization_context<Purpose>& world,
+                ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
+                ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& curr_rt, constant_expression_cursor& cursor,
+                ::uwvm2::object::global::wasm_global_storage_t& result_value) noexcept(Purpose == initialization_purpose::ordinary)
         {
             using value = ::uwvm2::object::global::wasm_global_storage_t;
             using kind = ::uwvm2::object::global::global_type;
@@ -2384,7 +2401,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             using slot = ::uwvm2::uwvm::runtime::storage::gc_object_value;
             using reference = ::uwvm2::uwvm::runtime::storage::gc_reference;
             using gc_status = ::uwvm2::uwvm::runtime::storage::gc_object_status;
-            ::uwvm2::utils::container::initializer_vector<value> stack{};
+            auto& stack{cursor.operands};
             auto const pop{[&]() noexcept -> value
             {
                 if(stack.empty()) [[unlikely]] { ::fast_io::fast_terminate(); }
@@ -2426,8 +2443,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 result.storage.ref = ref;
                 return result;
             }};
-            for(auto const& op: expr.opcodes)
+            for(; cursor.next_opcode != expr.opcodes.size(); ++cursor.next_opcode)
             {
+                auto const& op{expr.opcodes.index_unchecked(cursor.next_opcode)};
                 auto const opcode{static_cast<::std::uint_least8_t>(op.opcode)};
                 auto const width{::uwvm2::validation::standard::wasm3::constant_integer_width(opcode)};
                 if(width != 0u)
@@ -2592,9 +2610,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                         {
                             // [imported globals ... idx ... count) is a checked live vector.
                             //                       ^^ addressof selects a record, without pointer arithmetic.
+                            ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t* pending{};
                             try_resolve_wasm1_imported_global_value_in_context(world,
-                                ::std::addressof(curr_rt.imported_global_vec_storage.index_unchecked(idx)), resolved, scratch);
-                            // Resolver either produces a live record/scratch address or fails; check before dereference.
+                                ::std::addressof(curr_rt.imported_global_vec_storage.index_unchecked(idx)), resolved, scratch, &pending);
+                            if(pending != nullptr) { return pending; }
                             if(resolved == nullptr || resolved->is_mutable) [[unlikely]] { ::fast_io::fast_terminate(); }
                             next = *resolved;
                         }
@@ -2603,7 +2622,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                             auto const local_idx{idx - imported_count};
                             if(local_idx >= curr_rt.local_defined_global_vec_storage.size()) [[unlikely]] { ::fast_io::fast_terminate(); }
                             auto& local{curr_rt.local_defined_global_vec_storage.index_unchecked(local_idx)};
-                            ensure_wasm1_local_defined_global_initialized_in_context(world, local);
+                            if(local.init_state != ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initialized)
+                            { return ::std::addressof(local); }
                             if(local.global.is_mutable) [[unlikely]] { ::fast_io::fast_terminate(); }
                             next = local.global;
                         }
@@ -2615,7 +2635,84 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 stack.push_back_unchecked(next);
             }
             if(stack.size() != 1uz) [[unlikely]] { ::fast_io::fast_terminate(); }
-            return stack.front_unchecked();
+            result_value = stack.front_unchecked();
+            return nullptr;
+        }
+
+        [[noreturn]] inline void report_global_initialization_cycle() noexcept
+        {
+            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                                u8"uwvm: ",
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
+                                u8"[fatal] ",
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                                u8"initializer: Global initialization encountered a circular dependency.\n\n",
+                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+            ::fast_io::fast_terminate();
+        }
+
+        inline void retain_wasm1_local_global_reference(::uwvm2::object::global::wasm_global_storage_t const& global) noexcept;
+
+        template <initialization_purpose Purpose>
+        [[nodiscard]] inline constexpr ::uwvm2::object::global::wasm_global_storage_t evaluate_wasm3_constant_expression_in_context(
+            initialization_context<Purpose>& world, ::uwvm2::uwvm::runtime::storage::wasm_binfmt1_final_wasm_const_expr_t const& expr,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t& module) noexcept(Purpose == initialization_purpose::ordinary)
+        {
+            using state = ::uwvm2::uwvm::runtime::storage::wasm_global_init_state;
+            using definition = ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t;
+            struct frame
+            {
+                definition* owner{};
+                constant_expression_cursor cursor{};
+            };
+            struct pending_definitions
+            {
+                ::uwvm2::utils::container::initializer_vector<frame> frames{};
+                constexpr ~pending_definitions()
+                {
+                    // A private worker can refuse a later frame. It must leave each unfinished definition retryable.
+                    for(auto& item: frames) { item.owner->init_state = state::uninitialized; }
+                }
+            } pending{};
+            constant_expression_cursor root{};
+            auto const max_depth{::uwvm2::uwvm::utils::depend::recursion_depth_limit};
+
+            for(;;)
+            {
+                auto* const top{pending.frames.empty() ? nullptr : ::std::addressof(pending.frames.back_unchecked())};
+                ::uwvm2::object::global::wasm_global_storage_t value{};
+                auto* const dependency{top == nullptr ? resume_constant_expression(world, expr, module, root, value) :
+                    resume_constant_expression(world, top->owner->local_global_type_ptr->expr, *top->owner->owner_module_rt_ptr, top->cursor, value)};
+                if(dependency != nullptr)
+                {
+                    if(dependency->init_state == state::initializing) [[unlikely]] { report_global_initialization_cycle(); }
+                    if(dependency->init_state != state::uninitialized || dependency->local_global_type_ptr == nullptr ||
+                       dependency->owner_module_rt_ptr == nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
+                    if(max_depth != 0uz && pending.frames.size() >= max_depth) [[unlikely]]
+                    {
+#ifdef UWVM_CPP_EXCEPTIONS
+                        if constexpr(Purpose != initialization_purpose::ordinary) { throw ::std::bad_alloc{}; }
+#endif
+                        ::uwvm2::utils::allocator::resource::reject_allocation(
+                            "uwvm: [error] initializer: global dependency depth exceeds --wasm-depend-recursion-limit.\n");
+                    }
+                    grow_initializer_records(world, pending.frames);
+                    pending.frames.emplace_back_unchecked(dependency);
+                    dependency->init_state = state::initializing;
+                    continue;
+                }
+
+                if(top == nullptr) { return value; }
+                auto& global{top->owner->global};
+                if(value.kind != global.kind ||
+                   (value.kind == ::uwvm2::object::global::global_type::wasm_ref &&
+                    value.storage.ref.kind == ::uwvm2::object::global::wasm_ref_kind::wasm_func)) [[unlikely]] { ::fast_io::fast_terminate(); }
+                global.storage = value.storage;
+                retain_wasm1_local_global_reference(global);
+                top->owner->init_state = state::initialized;
+                pending.frames.pop_back_unchecked();
+            }
         }
 
         [[nodiscard]] inline constexpr ::uwvm2::object::global::wasm_global_storage_t evaluate_wasm3_constant_expression(
@@ -7110,15 +7207,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 }
                 case ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initializing:
                 {
-                    ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                        u8"uwvm: ",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_RED),
-                                        u8"[fatal] ",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                        u8"initializer: Global initialization encountered a circular dependency.\n\n",
-                                        ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-                    ::fast_io::fast_terminate();
+                    report_global_initialization_cycle();
                 }
                 case ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::uninitialized:
                 {
@@ -7141,7 +7230,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 ::fast_io::fast_terminate();
             }
 
-            g.init_state = ::uwvm2::uwvm::runtime::storage::wasm_global_init_state::initializing;
+            using state = ::uwvm2::uwvm::runtime::storage::wasm_global_init_state;
+            g.init_state = state::initializing;
+            struct reset_unfinished
+            {
+                decltype(g) definition;
+                ~reset_unfinished() { if(definition.init_state == state::initializing) { definition.init_state = state::uninitialized; } }
+            } guard{g};
 
             auto const& expr{g.local_global_type_ptr->expr};
             if(expr.opcodes.size() > 1uz ||
@@ -7288,7 +7383,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
 
                     ::uwvm2::object::global::wasm_global_storage_t const* resolved_global{};
                     ::uwvm2::object::global::wasm_global_storage_t local_imported_scratch{};
-                    try_resolve_wasm1_imported_global_value_in_context(world, imported_global_ptr, resolved_global, local_imported_scratch);
+                    ::uwvm2::uwvm::runtime::storage::local_defined_global_storage_t* pending{};
+                    try_resolve_wasm1_imported_global_value_in_context(world, imported_global_ptr, resolved_global, local_imported_scratch, &pending);
+                    if(pending != nullptr)
+                    {
+                        local_imported_scratch = evaluate_wasm3_constant_expression_in_context(world, expr, *g.owner_module_rt_ptr);
+                        resolved_global = ::std::addressof(local_imported_scratch);
+                    }
 
                     if(resolved_global == nullptr) [[unlikely]]
                     {
