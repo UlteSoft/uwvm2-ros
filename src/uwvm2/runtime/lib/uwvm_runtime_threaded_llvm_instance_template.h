@@ -116,10 +116,14 @@
                 auto const target=binding.address;
                 if((name==poll_name && target==address(&cancellation_poll)) ||
                    (name==enter_name && target==address(&cancellation_enter)) ||
+                   (adm16.tags && name==poll_name && target==address(&scalar_region_poll)) ||
+                   (adm16.tags && name=="uwvm.threaded.scalar.enter.v1" && target==address(&enter_scalar_region)) ||
+                   (adm16.tags && name=="uwvm.threaded.scalar.leave.v1" && target==address(&leave_scalar_region)) ||
                    (adm16.tags && name=="uwvm.threaded.scalar.state.v1" && target==address(&current_shared_scalar_state)) ||
                    (name=="uwvm.threaded.leave.v1" && target==address(&leave)))continue;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                 if((name==ros_poll_name && target==address(&ros_cancellation_poll)) ||
+                   (adm16.tags && name==ros_poll_name && target==address(&scalar_region_ros_poll)) ||
                    (name==ros_enter_name && target==address(&ros_control_probe<&cancellation_enter>)) ||
                    (name=="uwvm.threaded.leave.ros.v1" && target==address(&ros_control_leave)))continue;
 #endif

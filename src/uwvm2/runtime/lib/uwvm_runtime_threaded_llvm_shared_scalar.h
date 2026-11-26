@@ -6,7 +6,7 @@
             auto* e=active_;
             if(e && e->child && e->stop_byte &&
                (!e->child->module_->memory_policy.check_tags ||
-                (e->child->world_->admission().initial_worker_only() && mt::access_checks_enabled && !mt::logging_requested())) &&
+                (mt::access_checks_enabled && !mt::logging_requested())) &&
                !mt::asynchronous_requested() && !mt::hardware_checked_access_requested() &&
                owns_gc_module(module))return e;
             alignas(::std::atomic_ref<unsigned char>::required_alignment) static constexpr unsigned char stopped_byte{1u};
@@ -56,7 +56,10 @@
             namespace mt=::uwvm2::extension::memtag;
             auto const& admission=world_->admission();
             bool const serial_checked=module_->memory_policy.check_tags;
-            if(serial_checked && (!admission.initial_worker_only() || world_->kind_!=world_type::storage_kind::actual_parent ||
+            bool const region=relocated && !admission.initial_worker_only() && !mt::logging_requested() &&
+                ::std::endian::native==::std::endian::little && ::std::atomic<::std::uint8_t>::is_always_lock_free &&
+                sizeof(::std::atomic<::std::uint8_t>)==1u;
+            if(serial_checked && !region && (!admission.initial_worker_only() || world_->kind_!=world_type::storage_kind::actual_parent ||
                 mt::logging_requested() || ::std::endian::native!=::std::endian::little ||
                 !::std::atomic<::std::uint8_t>::is_always_lock_free || sizeof(::std::atomic<::std::uint8_t>)!=1u))return false;
             if(mt::asynchronous_requested()||mt::hardware_checked_access_requested()||
@@ -77,6 +80,7 @@
             }
             char const name[]{"uwvm.threaded.scalar.state.v1"};
             if(declarations.empty()||module.getNamedValue(name)||externals_.size()>=256u)return false;
+            if(region)return inline_scalar_regions(module,declarations,room,attempted);
             ::llvm::Function* state_fn{};
             for(auto& function:module)
             {

@@ -81,6 +81,7 @@ extern "C++"
             ThreadedLlvmChild const* authenticated_ros_child{};
             ::std::uintptr_t authenticated_ros_owner{};
 #endif
+            ::uwvm2::utils::mutex::rwlock_t* scalar_gate{};
         };
         static_assert(::std::is_standard_layout_v<native_poll_state>);
         struct execution final : native_poll_state
@@ -456,6 +457,7 @@ extern "C++"
 #include "uwvm_runtime_threaded_llvm_linear_memory.h"
 #include "uwvm_runtime_threaded_llvm_control.h"
 #include "uwvm_runtime_threaded_llvm_shared_scalar.h"
+#include "uwvm_runtime_threaded_llvm_scalar_region.h"
 #include "uwvm_runtime_threaded_llvm_memory.h"
 #include "uwvm_runtime_threaded_llvm_stack.h"
 #include "uwvm_runtime_threaded_llvm_factory.h"
@@ -634,7 +636,7 @@ extern "C++"
             if(e.cancellation.stop_requested())return run_status::group_stopped;
             ::uwvm2::extension::memtag::scoped_access_checks tag_checks{module_->memory_policy.check_tags};
             active_=::std::addressof(e);
-            struct reset_active{~reset_active(){active_=nullptr;}} reset_scope;
+            struct reset_active{~reset_active(){leave_scalar_region();active_=nullptr;}} reset_scope;
             ::uwvm2::runtime::wasm_threads::execution_scope waits{lease.waits(),e.cancellation,lease.debug_wait_attachment()};
             details::scoped_llvm_wasm_fp_environment guest_fp{e.fp_active};
             if(!guest_fp.ready()){fail(static_cast<::std::uint32_t>(llvm_jit_trap_kind::runtime_invariant_failure));return run_status::rejected;}
