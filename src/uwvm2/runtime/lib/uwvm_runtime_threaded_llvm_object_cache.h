@@ -80,7 +80,7 @@
             ::std::size_t source_id{},instructions{},blocks{},relocations{};
             runtime_llvm_jit_full_pipeline_kind pipeline{};
             ::llvm::CodeGenOptLevel level{};
-            bool scalar_lowering{};
+            bool scalar_lowering{},check_tags{};
             bool operator==(object_scope const&) const = default;
         };
         struct prepared_object

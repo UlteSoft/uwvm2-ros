@@ -297,7 +297,7 @@
                 data->memories_.reserve(memory_count);
                 ::uwvm2::utils::container::std_vector<emit::threaded_forbidden_memory_span> forbidden_memtag_spans(memory_count*2u);
                 ::std::size_t forbidden_memtag_count{};
-                bool requires_shared_memtag_lease{};
+                bool requires_shared_memtag_lease{},has_tagged_memory{};
                 auto forbid_memtag_span=[&](::std::uintptr_t begin,::std::size_t bytes,::std::uintptr_t serial_owner=0u) noexcept
                 {
                     if(bytes==0u)return true;
@@ -312,6 +312,7 @@
                        info.stable_memory_length_p==nullptr||(info.custom_page_size_log2!=0u && info.custom_page_size_log2!=16u))return {{},status::unsupported_shape};
                     data->memories_.push_back(info.memory_p);
                     auto const& tags=info.memory_p->memtag_shadow;
+                    has_tagged_memory|=tags.enabled();
                     if(tags.enabled()&&tags.shared())
                     {
                         if(tags.shared()&&!tags.shared_tag_lease_ready())return {{},status::unsupported_shape};
@@ -436,11 +437,10 @@
                 if(requires_shared_memtag_lease&&!emit::set_memtag_shared_lease_module_abi(*ir.llvm_module))
                     return {{},status::unsupported_bridge};
                 auto& llvm_module=*ir.llvm_module;
-                // Shared tagged scalars have additional owner/slot immediates.
-                // Their existing lowering stays on the original checked path.
+                // Tagged memory can add native owner/slot immediates. Keep its
+                // existing lowering. A plain memory supports either access policy.
                 bool const relocatable=native_object_arch==::llvm::Triple::x86_64 && module_index==0u &&
-                    cache && cache->limit && lowering && !observing && !instruction_control && !requires_shared_memtag_lease &&
-                    !module.memory_policy.check_tags && !data->world_->admission().initial_worker_only() && !module.module_name.empty();
+                    cache && cache->limit && lowering && !observing && !instruction_control && !has_tagged_memory && !data->world_->admission().initial_worker_only() && !module.module_name.empty();
                 if(relocatable)lowering->relocated=true;
                 auto const& ir_limits=llvm_limits.ir;
                 auto ir_room=ir_limits;
@@ -550,7 +550,7 @@
                 bounded_object_stream key{cache_limit},output{data->code_limit_};
                 object_scope const scope{&data->world_->admission(),file,data->world_->source_module_id(),
                     ir_limits.instructions,ir_limits.blocks,llvm_limits.relocations,policy.pipeline,policy.codegen_opt_level,
-                    lowering && lowering->allow_shared_scalars};
+                    lowering && lowering->allow_shared_scalars,module.memory_policy.check_tags};
                 prepared_object const* hit{};
                 ::uwvm2::utils::container::std_unique_ptr<prepared_object> fresh;
                 if(cache_limit)
