@@ -106,6 +106,8 @@ loads/stores or GC field access.
 If the main module and explicit preloads already exceed the graph node limit,
 CLI argument processing returns 126 before opening a preload. Once loading
 starts, initial memory, table or GC metadata budget refusal returns 127.
+If the ordinary initializer finds a module entity count above its configured
+reserve limit, it rejects the runtime configuration with status 126.
 An inadmissible WASI Threads startup profile returns 126, including stack or
 construction budget refusal before the first guest entry. A refused later
 thread spawn is returned to the guest through the spawn failure result.
@@ -146,6 +148,14 @@ Compare the same original module and entry, and report engine configuration,
 cache state, warmup and repetition counts separately.
 
 ## Scope
+
+Follow each declaration through to its storage owner. A custom section borrows
+the input image for its payload and charges the parser pool for the capacity of
+its record vector. Each admitted local exception tag owns a fixed-size identity
+and a shared control block. Each mapped linear memory owns fixed synchronization
+state that all its imported aliases share. Each Wasm module instance owns a GC
+store and a lease owner. Graph and instance construction limits bound their
+counts. Dynamic GC storage draws on the corresponding byte pools.
 
 These counters bound specified requested native allocations, not total RSS.
 They do not include every C++ library allocation, LLVM allocation, allocator
