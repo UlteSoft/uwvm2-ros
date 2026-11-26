@@ -42,19 +42,23 @@ def guest(wide, adm_bits, physical, alias, checked):
     code.eq(m.op(0x24), start, bits)
     ignored = ((1 << adm_bits) - 1) << (bits - adm_bits)
     metadata = ignored & ~(15 << start)
-    code.eq(code.n(metadata | 160) + m.mem(0x2d), 0)
+    # The permanent globals at [80, 112) receive a random nonzero tag.
+    # Keep the fixed tag outside their four-granule exclusion neighborhood.
+    probe = 1024
+    pointer = metadata | (probe + 3)
+    code.eq(code.n(metadata | probe) + m.mem(0x2d), 0)
 
     # Exercise ordinary guest stores and loads with a literal nonzero logical tag.
     # Each other ADM bit is set, including the high guest nibble in the direct layout.
-    raw = metadata | (9 << start) | 163
-    code.eq(code.tagged(metadata | 163, 9), raw, bits)
+    raw = pointer | (9 << start)
+    code.eq(code.tagged(pointer, 9), raw, bits)
     code.eq(code.n(raw) + m.op(0x21), 9, bits)
-    code.eq(code.n(raw) + m.op(0x28), metadata | 163, bits)
-    code.add(code.tags(160, 16, 9))
+    code.eq(code.n(raw) + m.op(0x28), pointer, bits)
+    code.add(code.tags(probe, 16, 9))
     code.add(code.n(raw) + m.c(0x5a) + m.mem(0x3a))
     code.eq(code.n(raw) + m.mem(0x2d), 0x5a)
     if not checked:
-        code.eq(code.n(metadata | 163) + m.mem(0x2d), 0x5a)
+        code.eq(code.n(pointer) + m.mem(0x2d), 0x5a)
     # The preloaded start tagged the alias. A global descriptor tagged the
     # independent owner before the first preload start activated all owners.
     for pos, value in enumerate(b"deferred active data spans tags!"):
