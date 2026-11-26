@@ -8,12 +8,14 @@
 # include <algorithm>
 # include <cstddef>
 # include <memory>
+# include <optional>
 # include <string>
 # include <utility>
 # include <vector>
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/uwvm/runtime/macro/push_macros.h>
 # include <fast_io.h>
+# include <uwvm2/utils/allocator/resource_limit.h>
 # include <uwvm2/utils/control/impl.h>
 # include <uwvm2/uwvm/cmdline/impl.h>
 # include <uwvm2/uwvm/wasm/impl.h>
@@ -163,11 +165,63 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
             state.path = ::uwvm2::utils::container::u8concat(path);
             state.rename = ::uwvm2::utils::container::u8concat(rename);
             auto remaining_bytes{source_input::input_image::maximum_bytes};
+            using image_error = ::uwvm2::utils::control::owned_image_error;
+            ::std::optional<::std::size_t> module_limit{};
+            auto input_failure = [&](::std::size_t index, ::uwvm2::utils::container::std_u8string const& file,
+                                     image_error error, ::fast_io::error native = {})
+            {
+                using name = source_input::input_name;
+                auto const kind{index ? name{u8"preload"} : name{u8"main module"}};
+                if(error == image_error::quota_exceeded)
+                {
+                    namespace resource = ::uwvm2::utils::allocator::resource;
+                    constexpr auto pool{static_cast<unsigned>(resource::pool::parser_input)};
+                    auto const caps{resource::policies[pool]};
+                    auto const used{resource::live_bytes[pool].load(::std::memory_order_relaxed)};
+                    ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [error] parser: input byte limit refused immutable Wasm ", kind, u8" \"", file,
+                        u8"\" (owned-image status=", static_cast<unsigned>(error),
+                        u8", input-bytes=", caps.single, u8", input-live-bytes=", caps.live,
+                        u8", live bytes in use=", used, u8", effective parser.limit.input-bytes=",
+                        ::fast_io::mnp::cond(module_limit.has_value(), ::fast_io::mnp::dec(module_limit.value_or(0)), u8"unresolved"),
+                        u8", immutable image bytes remaining=", remaining_bytes, u8").\n\n");
+                }
+                else
+                {
+                    auto reason = [&]() -> name
+                    {
+                        switch(error)
+                        {
+                            case image_error::invalid_path: return u8"invalid path";
+                            case image_error::unsupported_provider: return u8"unsupported file provider";
+                            case image_error::unsupported_character_width: return u8"unsupported character width";
+                            case image_error::open_failed: return u8"open failed";
+                            case image_error::status_failed: return u8"file status failed";
+                            case image_error::not_regular: return u8"file is not regular";
+                            case image_error::empty_file: return u8"empty input";
+                            case image_error::allocation_failed: return u8"allocation failed";
+                            case image_error::read_failed: return u8"read failed";
+                            case image_error::short_read: return u8"short read";
+                            case image_error::file_changed: return u8"file changed during read";
+                            case image_error::close_failed: return u8"close failed";
+                            case image_error::invalid_bytes: return u8"invalid input bytes";
+                            default: return u8"unavailable image";
+                        }
+                    };
+                    ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                        u8"uwvm: [error] Unable to retain immutable Wasm ", kind, u8" \"", file, u8"\" before parsing: ",
+                        reason(), u8" (owned-image status=", static_cast<unsigned>(error),
+                        ::fast_io::mnp::cond(native.code != 0u, u8", native error="),
+                        ::fast_io::mnp::cond(native.code != 0u, ::fast_io::mnp::dec(native.code)), u8").\n\n");
+                }
+                return static_cast<int>(retval::load_main_module_error);
+            };
             auto const& original_main{::uwvm2::uwvm::wasm::storage::active_execute_wasm()};
             state.main_parameters = rebuild ? original_main.wasm_parameter : ::uwvm2::uwvm::wasm::storage::wasm_parameter;
             auto copy_original = [&](auto const& file)
             {
-                source_input::input_policy policy{file.wasm_parameter, file.file_name, file.module_name};
+                module_limit.reset();
+                source_input::input_policy policy{file.wasm_parameter, file.file_name, file.module_name, &module_limit};
                 return source_input::input_image::copy_wasm_bytes(
                     {reinterpret_cast<::std::byte const*>(file.source_cbegin()), file.source_size()},
                     ::std::min(remaining_bytes, policy.initial_limit()));
@@ -177,9 +231,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 // The replacement is already live while the other original modules are copied.
                 auto const& target{rebuild->module_index == 0u ? original_main :
                     ::uwvm2::uwvm::wasm::storage::active_preloaded_wasm().index_unchecked(rebuild->module_index - 1u)};
-                source_input::input_policy policy{target.wasm_parameter, target.file_name, target.module_name};
+                source_input::input_policy policy{target.wasm_parameter, target.file_name, target.module_name, &module_limit};
                 if(rebuild->image->size() > remaining_bytes || !source_input::admit_owned_input(rebuild->image, policy))
-                { return static_cast<int>(retval::load_main_module_error); }
+                { return input_failure(rebuild->module_index, rebuild->path, image_error::quota_exceeded); }
                 remaining_bytes -= rebuild->image->size();
                 if(rebuild->module_index == 0u)
                 { state.path = ::std::move(rebuild->path); state.image = ::std::move(rebuild->image); }
@@ -187,7 +241,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 {
                     state.path = ::uwvm2::utils::container::u8concat(original_main.file_name);
                     auto input{copy_original(original_main)};
-                    if(!input) { return static_cast<int>(retval::load_main_module_error); }
+                    if(!input) { return input_failure(0u, state.path, input.error, input.native_error); }
                     state.image = ::std::move(input.image);
                 }
             }
@@ -197,14 +251,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 // any parser/initializer body/type/segment pointer can escape.
                 // Never hash/copy an already parsed map and pretend its borrows
                 // were rebound. This performs no code-body validation/translation.
-                auto loaded{source_input::read_wasm_image(state.path, rename, state.main_parameters, remaining_bytes)};
+                auto loaded{source_input::read_wasm_image(state.path, rename, state.main_parameters, remaining_bytes, &module_limit)};
                 if(!loaded)
-                {
-                    ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                        u8"uwvm: [error] Unable to retain immutable debugger Wasm input before parsing; owned-image status=",
-                        ::fast_io::mnp::dec(static_cast<unsigned>(loaded.error)), u8".\n\n");
-                    return static_cast<int>(retval::load_main_module_error);
-                }
+                { return input_failure(0u, state.path, loaded.error, loaded.native_error); }
                 state.image = ::std::move(loaded.image);
             }
             // Copy command-line preload INPUTS before old source selection is
@@ -229,12 +278,10 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::run
                 else if(retain_immutable_image)
                 {
                     auto loaded{rebuild ? copy_original(original) :
-                        source_input::read_wasm_image(input.file_name, original.module_name, input.parameters, remaining_bytes)};
+                        source_input::read_wasm_image(input.file_name, original.module_name, input.parameters, remaining_bytes, &module_limit)};
                     if(!loaded || loaded.image->size() > remaining_bytes)
                     {
-                        ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                            u8"uwvm: [error] Unable to retain immutable debugger preload before parsing; shared owned-image quota=1 GiB.\n\n");
-                        return static_cast<int>(retval::load_main_module_error);
+                        return input_failure(preload_index, input.file_name, loaded ? image_error::quota_exceeded : loaded.error, loaded.native_error);
                     }
                     remaining_bytes -= loaded.image->size(); input.image = ::std::move(loaded.image);
                 }

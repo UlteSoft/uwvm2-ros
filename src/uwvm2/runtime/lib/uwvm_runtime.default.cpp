@@ -13648,11 +13648,20 @@ namespace uwvm2::runtime::lib
         // its retained maintenance fence. Recheck that exact owner instead of
         // recursively trying to lock the same maintenance mutex. Public callers
         // cannot provide this private argument and retain the ordinary guard.
-        auto threaded_cold_exclusion{retained_cold_exclusion ? threaded_management_exclusion{} :
+        // An initial debugger worker already pins the controller's compiled graph.
+        // Its read of that publication can overlap an authorized function replacement.
+        // Entry admission and the locked compilation signature check still run below.
+#  if defined(UWVM_RUNTIME_LLVM_JIT)
+        auto const prepared_startup{!private_compile_lease && !retained_cold_exclusion &&
+            runtime_checkpoint_guest_worker_bridge::owns_prepared_startup_graph()};
+#  else
+        constexpr bool prepared_startup{};
+#  endif
+        auto threaded_cold_exclusion{retained_cold_exclusion || prepared_startup ? threaded_management_exclusion{} :
             runtime_threaded_profile_try_management_host_api(threaded_management_kind::incremental_mutation)};
         if(retained_cold_exclusion ?
             !runtime_threaded_profile_recheck_management_host_api(*retained_cold_exclusion, threaded_management_kind::incremental_mutation) :
-            !threaded_cold_exclusion) { return false; }
+            !prepared_startup && !threaded_cold_exclusion) { return false; }
 # endif
         namespace mode = ::uwvm2::uwvm::runtime::runtime_mode;
         if(mode::global_runtime_mode != mode::runtime_mode_t::full_compile ||

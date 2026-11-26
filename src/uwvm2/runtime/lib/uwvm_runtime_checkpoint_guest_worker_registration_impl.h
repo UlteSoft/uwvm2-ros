@@ -193,6 +193,15 @@ extern "C++"
         // Clear before participant unregister/ID retirement. A sealed cohort
         // separately owns its exact native objects and canonical old request.
     }
+    bool runtime_checkpoint_guest_worker_bridge::owns_prepared_startup_graph() noexcept
+    {
+        auto const actual{actual_worker_};
+        // launch() pinned this compiled generation before starting the native thread.
+        // The startup operation expires when its first real participant is admitted.
+        return actual && actual->origin_ == worker::origin::initial_current && actual->startup_ &&
+            actual->execution_ && !stopping_current() && get_runtime_execution_entry_depth() == 0u &&
+            actual_tuple_current(*actual) && g_runtime.compiled_all.load(::std::memory_order_acquire);
+    }
     bool runtime_checkpoint_guest_worker_bridge::stopping_current() noexcept
     {
         auto const actual{actual_worker_};

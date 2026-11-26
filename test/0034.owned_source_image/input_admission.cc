@@ -44,11 +44,15 @@ int main(int argc, char** argv)
        !policy::set(group.settings, u8"parser.limit.input-bytes", u8"18")) { return 1; }
     wasm::type::wasm_file_t loaded{};
     if(wasm::loader::load_wasm_file(loaded, filename, {}, config) != result::load_error || live.load()) { return 2; }
-    auto denied{source::read_wasm_image(path, {}, config, image::maximum_bytes)};
-    if(denied.error != control::owned_image_error::quota_exceeded || live.load()) { return 3; }
+    ::std::optional<::std::size_t> observed_limit{};
+    auto denied{source::read_wasm_image(path, {}, config, image::maximum_bytes, &observed_limit)};
+    if(denied.error != control::owned_image_error::quota_exceeded || observed_limit != 18uz || live.load()) { return 3; }
     auto& single{policy::singles.try_emplace(policy::owned_name{u8"m"}).first->second};
     if(!policy::set(single, u8"parser.limit.input-bytes", u8"20") ||
        wasm::loader::load_wasm_file(loaded, filename, {}, config) != result::ok || live.load() != data.size()) { return 4; }
+    // The full live pool refuses this read before its scoped name can be probed.
+    denied = source::read_wasm_image(path, {}, config, image::maximum_bytes, &observed_limit);
+    if(denied.error != control::owned_image_error::quota_exceeded || observed_limit || live.load() != data.size()) { return 27; }
     auto measured_input = [&]
     {
         ::std::array<::std::size_t, ::std::size(policy::parser_counts)> words{};

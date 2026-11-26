@@ -1,8 +1,10 @@
 module;
+#include <uwvm2/utils/allocator/resource_limit.h>
 #include <uwvm2/utils/container/standard.h>
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>

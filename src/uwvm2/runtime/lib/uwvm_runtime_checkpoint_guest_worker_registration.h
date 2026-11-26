@@ -139,6 +139,7 @@ extern "C++"
             llvm_jit_debug_guest_worker_owner const&, ::std::chrono::steady_clock::time_point) noexcept;
         [[nodiscard]] static bool matches_control(llvm_jit_debug_guest_worker_owner const&,
             ::std::shared_ptr<domain> const&) noexcept;
+        [[nodiscard]] static bool owns_prepared_startup_graph() noexcept;
         [[nodiscard]] static bool stopping_current() noexcept;
         [[nodiscard]] static ::std::uint_least32_t completion_code() noexcept;
 #if defined(UWVM_CPP_EXCEPTIONS)

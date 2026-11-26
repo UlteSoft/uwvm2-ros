@@ -54,6 +54,10 @@ def signed(binary, root, image):
             launch = permit(key, current, 4, bytes.fromhex(current['installed']), sha(b'launch'))
             current = request(host, 9, launch)
             assert current['status'] == 0 and current['epoch'] == 1, current
+            # LAUNCH may acknowledge while _start still holds its execution pin.
+            value_call = struct.pack('<III', 1, 0, 4)
+            initial = call_export(host, value_call)
+            assert initial['status'] == 0 and initial['result'] == '07000000', initial
             scope = struct.pack('<QQ', 1, 2)
             for target, expected in ((module(LOCAL, NOP), 10), (module(LOCAL, SHORT), 0)):
                 transaction = sha(target + b'batch')
@@ -62,7 +66,7 @@ def signed(binary, root, image):
                 assert outcome['status'] == expected, outcome
                 if expected:
                     assert outcome['active'] and outcome['installed'] == current['installed'], outcome
-                    assert call_export(host, struct.pack('<III', 1, 0, 4))['result'] == '07000000'
+                    assert call_export(host, value_call)['result'] == '07000000'
             ready = request(host, 2)
             assert ready['status'] == 0, ready
             commit = permit(key, current, 2, sha(target), transaction, declaration=scope,
@@ -70,7 +74,7 @@ def signed(binary, root, image):
             for _ in range(2):
                 outcome = request(host, 3, commit)
                 assert outcome['status'] == 0 and outcome['epoch'] == 2 and outcome['installed'] == sha(target).hex(), outcome
-            assert call_export(host, struct.pack('<III', 1, 0, 4))['result'] == '09000000'
+            assert call_export(host, value_call)['result'] == '09000000'
             assert request(host, 6)['status'] == 0 and vm.wait(timeout=15) == 0
         finally:
             if vm.poll() is None:
@@ -78,14 +82,13 @@ def signed(binary, root, image):
                 vm.wait()
 
 
-def stop_at_entry(vm):
-    assert 'breakpoint 1 ' in vm.request('breakwasm 0 0 0')
+def continue_to_instruction(vm, offset):
     assert not vm.request('continue').startswith('error:')
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
         status = vm.request('status')
         stop = re.search(r'^stop-id ([1-9][0-9]*)$', status, re.M)
-        if stop and re.search(r'^thread [1-9]', status, re.M):
+        if stop and re.search(rf'^thread [1-9][0-9]* module=0 function=0 byte-offset={offset} generation=1$', status, re.M):
             return stop[1]
         time.sleep(.01)
     raise AssertionError(status)
@@ -111,10 +114,14 @@ def debug(binary, root, image):
                  '--wasip1-single-create', 'main', '--wasip1-single-disable', 'main', '--wasm-set-main-module-name', 'main',
                  '--wasm-policy-single', 'main', KEY, str(limit), '--run', str(image)], folder, stdin=subprocess.DEVNULL)
         try:
+            assert 'breakpoint 1 ' in vm.request('breakwasm 0 0 0')
+            stop = continue_to_instruction(vm, 0)
             if limit == 20:
                 assert 'function replaced; generation 2' in vm.request(f'replace 0 1 1 {root / "local"}')
-            stop = stop_at_entry(vm)
-            if limit == 20:
+                # The first call has returned and its result has been dropped at offset 3.
+                assert 'breakpoint 2 ' in vm.request('breakwasm 0 0 3')
+                assert not vm.request('delete 1').startswith('error:')
+                stop = continue_to_instruction(vm, 3)
                 assert 'wasm-dump saved' in vm.request(f'dump wasm full {stop} {archive}')
                 assert restore(vm, stop, archive).startswith('snapshot-restored')
                 # Replacing either restored 6-byte body with 4 bytes releases two logical bytes.

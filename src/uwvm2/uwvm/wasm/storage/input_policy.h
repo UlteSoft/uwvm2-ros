@@ -176,6 +176,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::input
     {
         input_parameters const& parameters;
         input_name path, rename;
+        // An implicit name can be unknown when the process live budget refuses the read.
+        ::std::optional<::std::size_t>* observed_limit{};
 
         bool needs_name() const noexcept
         {
@@ -190,7 +192,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::input
                 input_options::visit_layers(name, [&](input_options::layer const& layer)
                 { limit = layer.counts[input_options::parser_input_index].value_or(limit); });
             }
-            return input_resource::parser_input_limit(limit);
+            limit = input_resource::parser_input_limit(limit);
+            if(observed_limit) { *observed_limit = limit; }
+            return limit;
         }
         ::std::size_t initial_limit() const noexcept
         { return needs_name() ? input_resource::parser_input_limit(SIZE_MAX) : limit_for(rename); }
@@ -211,11 +215,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::input
     };
 
     [[nodiscard]] inline input_result read_wasm_image(::uwvm2::utils::container::std_u8string const& path,
-        input_name rename, input_parameters const& parameters, ::std::size_t maximum)
+        input_name rename, input_parameters const& parameters, ::std::size_t maximum,
+        ::std::optional<::std::size_t>* observed_limit = nullptr)
     {
         using error = ::uwvm2::utils::control::owned_image_error;
+        if(observed_limit) { observed_limit->reset(); }
         if(maximum > input_image::maximum_bytes) { return {{}, error::quota_exceeded, {}}; }
-        input_policy const policy{parameters, input_name{path.data(), path.size()}, rename};
+        input_policy const policy{parameters, input_name{path.data(), path.size()}, rename, observed_limit};
         auto image{input_image::read_wasm(path, ::std::min(maximum, policy.initial_limit()),
             [&](::std::size_t extent, auto& read_at) { return policy.probe(extent, read_at); })};
         if(image && !policy.accepts(image.image->cbegin(), image.image->size()))
