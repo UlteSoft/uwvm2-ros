@@ -74,8 +74,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
     };
 
     inline constexpr parser_count_setting parser_counts[]{
-#define UWVM_PARSER_COUNT(name, limits, member) {u8"parser.limit." name, [](parameters& p) noexcept -> ::std::size_t& { return (limits).member; }}
+#define UWVM_PARSER_COUNT(name, limits, member) {u8"" name, [](parameters& p) noexcept -> ::std::size_t& { return (limits).member; }}
         UWVM_PARSER_COUNT("codesec_codes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_sec_codes),
+        UWVM_PARSER_COUNT("const_expr_opcodes", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_const_expr_opcodes),
         UWVM_PARSER_COUNT("code_locals", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_code_locals),
         UWVM_PARSER_COUNT("datacountsec_count", features::wasm_binfmt_ver1_wasm1p1_parameter(p.binfmt1_para).parser_limit, max_data_count_sec_count),
         UWVM_PARSER_COUNT("datasec_entries", features::wasm_binfmt_ver1_wasm1_parameter(p.binfmt1_para).parser_limit, max_data_sec_entries),
@@ -170,8 +171,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
 
     [[nodiscard]] inline constexpr bool set(layer& target, option_view key, option_view value) noexcept
     {
-        for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
-        { if(key == parser_counts[i].name) { return set_count(target.counts[i], value); } }
+        constexpr option_view parser_prefix{u8"parser.limit."};
+        if(key.starts_with(parser_prefix))
+        {
+            auto const name{key.substr(parser_prefix.size())};
+            for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
+            { if(name == parser_counts[i].name) { return set_count(target.counts[i], value); } }
+            return false;
+        }
         for(::std::size_t i{}; i != ::std::size(initializer_settings); ++i)
         { if(key == initializer_settings[i].name) { return set_count(target.limits[i], value); } }
         if(key == u8"runtime.memory-pages")

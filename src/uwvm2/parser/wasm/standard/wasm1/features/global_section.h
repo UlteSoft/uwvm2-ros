@@ -82,6 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
         bool requires_reference_types{}, requires_simd{};
         // Module-wide aggregate from successful constexpr decoding, including
         // table/element/data expressions even when no Global section is encoded.
+        ::std::size_t const_expr_opcode_count{};
         bool constant_expressions_require_extended_const{};
         unsigned extended_const_diagnostic_value{};
         ::uwvm2::parser::wasm::base::wasm1p1_error_subject extended_const_diagnostic_subject{};
@@ -194,6 +195,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
             else
             {
+                count_const_expr_opcode(module_storage, fs_para, section_curr, err);
                 switch(section_curr_c8)
                 {
                     [[unlikely]] case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(

@@ -151,6 +151,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
             }
             else
             {
+                count_const_expr_opcode(module_storage, fs_para, section_curr, err);
                 switch(section_curr_c8)
                 {
                     [[unlikely]] case static_cast<::uwvm2::parser::wasm::standard::wasm1::type::op_basic_type>(

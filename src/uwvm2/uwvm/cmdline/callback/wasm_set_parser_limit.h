@@ -180,96 +180,42 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::cmdline::params::details
         // binfmt 1
         static_assert(::uwvm2::uwvm::wasm::feature::max_binfmt_version == 1u, "missing implementation of other binfmt version");
 
-        // wasm1
-        auto& wasm1_feapara_r{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1_parameter(
-            ::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
-        auto& wasm1_parser_limit{wasm1_feapara_r.parser_limit};
-
-        // wasm1.1
-        auto& wasm1p1_feapara_r{::uwvm2::uwvm::wasm::feature::wasm_binfmt_ver1_wasm1p1_parameter(
-            ::uwvm2::uwvm::wasm::storage::wasm_parameter.binfmt1_para)};
-        auto& wasm1p1_parser_limit{wasm1p1_feapara_r.parser_limit};
-
-        // custom name
-        auto& name_parser_para{::uwvm2::uwvm::wasm::storage::wasm_parameter.name_parser};
-        auto& name_parser_limit{name_parser_para.name_parser_limit};
-
-        if(set_type_name == u8"codesec_codes") { wasm1_parser_limit.max_code_sec_codes = limit; }
-        else if(set_type_name == u8"code_locals") { wasm1_parser_limit.max_code_locals = limit; }
-        else if(set_type_name == u8"datacountsec_count") { wasm1p1_parser_limit.max_data_count_sec_count = limit; }
-        else if(set_type_name == u8"datasec_entries") { wasm1_parser_limit.max_data_sec_entries = limit; }
-        else if(set_type_name == u8"tagsec_count") { wasm1p1_parser_limit.max_tag_sec_entries = limit; }
-        else if(set_type_name == u8"elemsec_expr") { wasm1p1_parser_limit.max_elem_sec_expr = limit; }
-        else if(set_type_name == u8"elemsec_funcidx") { wasm1_parser_limit.max_elem_sec_funcidx = limit; }
-        else if(set_type_name == u8"elemsec_elems") { wasm1_parser_limit.max_elem_sec_elems = limit; }
-        else if(set_type_name == u8"exportsec_exports") { wasm1_parser_limit.max_export_sec_exports = limit; }
-        else if(set_type_name == u8"globalsec_globals") { wasm1_parser_limit.max_global_sec_globals = limit; }
-        else if(set_type_name == u8"importsec_imports") { wasm1_parser_limit.max_import_sec_imports = limit; }
-        else if(set_type_name == u8"memorysec_memories") { wasm1_parser_limit.max_memory_sec_memories = limit; }
-        else if(set_type_name == u8"tablesec_tables") { wasm1_parser_limit.max_table_sec_tables = limit; }
-        else if(set_type_name == u8"typesec_types") { wasm1_parser_limit.max_type_sec_types = limit; }
-        else if(set_type_name == u8"custom_name_funcnames") { name_parser_limit.max_name_sec_function_names = limit; }
-        else if(set_type_name == u8"custom_name_codelocal_funcs") { name_parser_limit.max_name_sec_code_local_functions = limit; }
-        else if(set_type_name == u8"custom_name_codelocal_name_per_funcs") { name_parser_limit.max_name_sec_code_local_names_per_function = limit; }
-        else
+        namespace policy = ::uwvm2::uwvm::wasm::storage::module_policy;
+        policy::option_view const name{set_type_name.data(), set_type_name.size()};
+        for(auto const& setting : policy::parser_counts)
         {
-            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
-                                u8"uwvm: ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
-                                u8"[error] ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"Invalid type: \"",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
-                                set_type_name,
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"\".\n" u8"uwvm: ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
-                                u8"[info]  ",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
-                                u8"Available types: \n",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW),
-                                u8"              - codesec_codes (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_code_sec_codes,
-                                u8")\n" u8"              - code_locals (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_code_locals,
-                                u8")\n" u8"              - datacountsec_count (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1p1::features::default_max_data_count_sec_count,
-                                u8")\n" u8"              - datasec_entries (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_data_sec_entries,
-                                u8")\n" u8"              - tagsec_count (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1p1::features::default_max_tag_sec_entries,
-                                u8")\n" u8"              - elemsec_expr (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1p1::features::default_max_elem_sec_expr,
-                                u8")\n" u8"              - elemsec_funcidx (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_elem_sec_funcidx,
-                                u8")\n" u8"              - elemsec_elems (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_elem_sec_elems,
-                                u8")\n" u8"              - exportsec_exports (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_export_sec_exports,
-                                u8")\n" u8"              - globalsec_globals (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_global_sec_globals,
-                                u8")\n" u8"              - importsec_imports (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_import_sec_imports,
-                                u8")\n" u8"              - memorysec_memories (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_memory_sec_memories,
-                                u8")\n" u8"              - tablesec_tables (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_table_sec_tables,
-                                u8")\n" u8"              - typesec_types (default=",
-                                ::uwvm2::parser::wasm::standard::wasm1::features::default_max_type_sec_types,
-                                u8")\n" u8"              - custom_name_funcnames (default=",
-                                ::uwvm2::parser::wasm_custom::customs::default_max_name_sec_function_names,
-                                u8")\n" u8"              - custom_name_codelocal_funcs (default=",
-                                ::uwvm2::parser::wasm_custom::customs::default_max_name_sec_code_local_functions,
-                                u8")\n" u8"              - custom_name_codelocal_name_per_funcs (default=",
-                                ::uwvm2::parser::wasm_custom::customs::default_max_name_sec_code_local_names_per_function,
-                                u8")\n\n",
-                                ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
-
-            return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
+            if(setting.name == name)
+            {
+                setting.get(::uwvm2::uwvm::wasm::storage::wasm_parameter) = limit;
+                return ::uwvm2::utils::cmdline::parameter_return_type::def;
+            }
         }
 
-        return ::uwvm2::utils::cmdline::parameter_return_type::def;
+        ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output,
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL_AND_SET_WHITE),
+                            u8"uwvm: ",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RED),
+                            u8"[error] ",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                            u8"Invalid type: \"",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_CYAN),
+                            set_type_name,
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                            u8"\".\n" u8"uwvm: ",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_LT_GREEN),
+                            u8"[info]  ",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_WHITE),
+                            u8"Available types:\n",
+                            ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_YELLOW));
+        policy::parameters defaults{};
+        for(auto const& setting : policy::parser_counts)
+        {
+            ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"              - ",
+                                ::fast_io::u8string_view{setting.name.data(), setting.name.size()},
+                                u8" (default=", setting.get(defaults), u8")\n");
+        }
+        ::fast_io::io::perr(::uwvm2::uwvm::io::u8log_output, u8"\n", ::uwvm2::uwvm::utils::ansies::diagnostic_color(UWVM_COLOR_U8_RST_ALL));
+        return ::uwvm2::utils::cmdline::parameter_return_type::return_m1_imme;
     }
 }  // namespace uwvm2::uwvm::cmdline::params::details
 

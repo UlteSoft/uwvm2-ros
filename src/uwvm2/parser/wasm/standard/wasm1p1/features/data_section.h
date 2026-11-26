@@ -121,6 +121,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                     break;
                 }
 
+                count_const_expr_opcode(module_storage, fs_para, section_curr, err);
                 if(has_data_on_type_stack) [[unlikely]]
                 {
                     err.err_curr = section_curr;

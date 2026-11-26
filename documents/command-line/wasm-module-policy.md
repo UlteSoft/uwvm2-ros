@@ -28,6 +28,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | Parser limit type | Counted records |
 | --- | --- |
 | `codesec_codes`, `code_locals` | Code bodies and locals |
+| `const_expr_opcodes` | Total instructions in constant expressions across globals, table initializers, element entries and active segment offsets (default 1,048,576). The final `end` consumes no entry. |
 | `typesec_types`, `tagsec_count` | Types and exception tags |
 | `importsec_imports`, `exportsec_exports` | Imports and exports |
 | `globalsec_globals`, `memorysec_memories`, `tablesec_tables` | Local global, memory and table declarations |

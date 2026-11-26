@@ -25,6 +25,7 @@
 | 类型 | 计数对象 |
 | --- | --- |
 | `codesec_codes`、`code_locals` | 函数体、局部变量 |
+| `const_expr_opcodes` | 模块内全局变量、表初值、元素条目和主动段偏移量的常量表达式指令总数（默认 1,048,576）。结尾的 `end` 不计数。 |
 | `typesec_types`、`tagsec_count` | 类型、异常标签 |
 | `importsec_imports`、`exportsec_exports` | 导入、导出 |
 | `globalsec_globals`、`memorysec_memories`、`tablesec_tables` | 本地全局变量、线性内存、表 |

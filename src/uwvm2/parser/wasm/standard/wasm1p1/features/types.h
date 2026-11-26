@@ -1638,6 +1638,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::parser::wasm::standard::wasm1::features
                 break;
             }
 
+            // Each instruction retains one opcode and pushes at most one scratch stack value.
+            count_const_expr_opcode(module_storage, fs_para, section_curr, err);
+
             // Core 3 GC constructors are constant instructions in their own
             // right. They may consume earlier constant operands even when the
             // extended-const feature is disabled (for example, i32.const
