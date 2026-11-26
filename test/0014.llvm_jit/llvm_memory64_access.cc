@@ -131,6 +131,25 @@ int main(int argc,char** argv)
   }
   b.CreateRetVoid();cases.push_back({name,width,value_width,address_bits,store,mode,offset});
  }
+ // The raw-prefix branch may use the original i64 only after proving its
+ // ignored bits zero. An arbitrary upper-bit pattern keeps the masked ABI.
+ {
+  llvm::IRBuilder<> b{context};
+  auto fn=llvm::Function::Create(llvm::FunctionType::get(b.getVoidTy(),
+    {b.getPtrTy(),b.getInt64Ty(),b.getInt64Ty(),b.getPtrTy()},false),llvm::Function::ExternalLinkage,"adm_store_field",*module);
+  b.SetInsertPoint(llvm::BasicBlock::Create(context,"entry",fn));
+  auto raw=fn->getArg(1);
+  auto masked=b.CreateAnd(raw,b.getInt64(UINT64_C(0xffffffffffff)));
+  auto pointer=d::emit_llvm_jit_adm_raw_prefix(b,fn->getArg(0),raw,16u,65536u-64u+1u,[&] {
+   b.CreateStore(b.getInt8(1),fn->getArg(3))->setVolatile(true);
+   return d::emit_llvm_jit_memory_address(b,fn->getArg(0),masked,16u,8u,protection::masked_length,0u,
+     [&]{return fn->getArg(2);},7,65536u);
+  });
+  CHECK(pointer);
+  auto store=b.CreateStore(b.getInt64(UINT64_C(0x0101010101010101)),pointer);
+  store->setVolatile(true);store->setAlignment(llvm::Align{1});
+  b.CreateRetVoid();
+ }
  // The same base guards the three memarg offsets in cJSON parse_value.
  llvm::IRBuilder<> fields_builder{context};
  auto ptr_type=llvm::PointerType::getUnqual(context);
@@ -259,6 +278,21 @@ int main(int argc,char** argv)
   auto fn=reinterpret_cast<void(*)(std::byte*,std::uint64_t,std::size_t,std::byte*)>(engine->getFunctionAddress(test.name));
   fn(memory.memory_begin,65536,2*65536,payload.data());
   CHECK(payload[0]==std::byte{0x7b});++checks;
+ }
+ {
+  auto store=reinterpret_cast<void(*)(std::byte*,std::uint64_t,std::uint64_t,std::uint8_t*)>(
+    engine->getFunctionAddress("adm_store_field"));
+  CHECK(store);
+  for(std::uint64_t start:{513u,65515u,65547u})for(auto metadata:{UINT64_C(0),UINT64_C(0xa5b7)<<48u})
+  {
+   std::uint8_t masked_path{};
+   std::memset(memory.memory_begin+start+15,0,10);
+   store(memory.memory_begin,metadata|start,2u*65536u,&masked_path);
+   CHECK(masked_path==(metadata!=0 || start>65536u-64u));
+   CHECK(memory.memory_begin[start+15]==std::byte{} && memory.memory_begin[start+24]==std::byte{});
+   for(unsigned i=0;i!=8;++i){CHECK(memory.memory_begin[start+16+i]==std::byte{1});}
+   ++checks;
+  }
  }
  for(bool strict:{false,true})
  {

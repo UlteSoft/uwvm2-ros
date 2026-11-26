@@ -433,6 +433,39 @@ template <typename LoadLength>
     return b.CreateOr(clear,b.CreateShl(b.CreateZExt(stored,input->getType()),geometry.start_bit),"memtag.load.pointer");
 }
 
+// Every raw base below limit has zero ADM bits and its complete memarg
+// fits either a qualified guard or the committed minimum. Preserve the
+// normal masked address and its exact bounds/diagnostics on the other edge.
+template<typename MaskedAddress>
+[[nodiscard]] inline ::llvm::Value* emit_llvm_jit_adm_raw_prefix(::llvm::IRBuilder<>& b,
+    ::llvm::Value* base, ::llvm::Value* raw, ::std::uint64_t static_offset,
+    ::std::uint64_t limit, MaskedAddress&& masked_address) noexcept
+{
+    if(limit == 0u) { return masked_address(); }
+    if(base == nullptr || raw == nullptr || !raw->getType()->isIntegerTy(64u)) { return nullptr; }
+    auto const function{b.GetInsertBlock()->getParent()};
+    auto const fast{::llvm::BasicBlock::Create(b.getContext(), "memory.adm.raw", function)};
+    auto const slow{::llvm::BasicBlock::Create(b.getContext(), "memory.adm.masked", function)};
+    auto const ready{::llvm::BasicBlock::Create(b.getContext(), "memory.adm.ready", function)};
+    b.CreateCondBr(b.CreateICmpULT(raw, b.getInt64(limit)), fast, slow,
+        ::llvm::MDBuilder{b.getContext()}.createBranchWeights(8u, 1u));
+    b.SetInsertPoint(fast);
+    auto const offset{b.CreateAdd(raw, b.getInt64(static_offset))};
+    auto const bits{function->getParent()->getDataLayout().getPointerSizeInBits()};
+    auto const direct{b.CreateGEP(b.getInt8Ty(), base, b.CreateZExtOrTrunc(offset, b.getIntNTy(bits)))};
+    b.CreateBr(ready);
+    b.SetInsertPoint(slow);
+    auto const masked{masked_address()};
+    if(masked == nullptr) { return nullptr; }
+    auto const bounded{b.GetInsertBlock()};
+    b.CreateBr(ready);
+    b.SetInsertPoint(ready);
+    auto const result{b.CreatePHI(direct->getType(), 2u, "memory.adm.addr")};
+    result->addIncoming(direct, fast);
+    result->addIncoming(masked, bounded);
+    return result;
+}
+
 [[nodiscard]] inline ::llvm::Value* emit_llvm_jit_direct_memory_pointer(runtime_local_func_llvm_jit_emit_state_t& state,
     ::std::uint64_t static_offset, ::std::size_t access_size, ::llvm::Value* address, bool is_store = false) noexcept
 {
@@ -508,8 +541,34 @@ template <typename LoadLength>
         protection = llvm_jit_memory_protection::guarded_base;
         partial_limit = info.mmap_data_capacity;
     }
-    auto pointer{emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection,
-                                        partial_limit, [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length)};
+    ::std::uint64_t raw_prefix{};
+#if defined(UWVM_SUPPORT_MMAP)
+    if(allow_fault_guard && access_size != 0uz && access_size <= ::uwvm2::object::memory::linear::mmap_guard_max_access_size &&
+       shadow.ignored_bits() && !shadow.enabled() && !shadow.shared() &&
+       raw_address->getType()->isIntegerTy(64u) && !::llvm::isa<::llvm::ConstantInt>(raw_address))
+    {
+        auto const mask{shadow.address_mask()};
+        if(protection == llvm_jit_memory_protection::guarded_base && partial_limit != 0u && partial_limit - 1u <= mask)
+        { raw_prefix = partial_limit; }
+        else if(is_store && protection == llvm_jit_memory_protection::masked_length)
+        {
+            auto const minimum{info.declared_minimum_byte_length};
+            if(static_offset <= minimum && access_size <= minimum - static_offset && minimum - 1u <= mask &&
+               !llvm_jit_memory_span_within_declared_minimum(info, address, static_offset, access_size))
+            {
+                // A common base predicate covers adjacent small fields. The
+                // tail of the minimum and grown pages still use live length.
+                constexpr ::std::uint64_t small_fields{64u};
+                auto const span{static_offset + access_size};
+                raw_prefix = minimum - (span <= small_fields && small_fields <= minimum ? small_fields : span) + 1u;
+            }
+        }
+    }
+#endif
+    auto pointer{emit_llvm_jit_adm_raw_prefix(b, base, raw_address, static_offset, raw_prefix, [&] {
+        return emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection, partial_limit,
+            [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length);
+    })};
     if(pointer != nullptr && checked)
     {
         auto const tag_extent{shadow.maximum_memory_bytes() / 16u + (shadow.maximum_memory_bytes() % 16u != 0u)};
