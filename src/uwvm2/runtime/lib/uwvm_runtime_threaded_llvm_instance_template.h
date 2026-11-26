@@ -1,7 +1,7 @@
 // Included inside ThreadedLlvmChild. A group owns one unopened native object.
 // The instance template contains process code addresses and recipes for data
 // relocations, never a pointer into a previous worker's private instance.
-        enum class instance_slot : unsigned char { function, module, memory, base, length, global, reference };
+        enum class instance_slot : unsigned char { function, module, memory, base, length, global, reference, child, memory_slot };
         struct instance_binding
         {
             ::uwvm2::utils::container::std_string name;
@@ -16,9 +16,11 @@
         };
 
         // For this closed instruction family the frontend reads immutable Wasm
-        // declarations, the selected target/profile, and one plain shared
-        // native memory. All other instance data is accessed by relocation.
-        [[nodiscard]] bool write_instance_inputs(::llvm::TargetMachine const& target,bounded_object_stream& key) const
+        // declarations, the selected target/profile and one shared native
+        // memory. Tagged code additionally requires the exact pinned shadow
+        // and tag layout in object_scope. Worker-private data is relocated.
+        [[nodiscard]] bool write_instance_inputs(::llvm::TargetMachine const& target,bounded_object_stream& key,
+            adm16_object_owner const& adm16) const
         {
             namespace mt=::uwvm2::extension::memtag;
             namespace emit=::uwvm2::runtime::compiler::llvm_jit::compile_all_from_uwvm::details;
@@ -32,7 +34,7 @@
             auto const info=emit::resolve_runtime_memory_access_info(mod,0u);
             auto* memory=info.memory_p;
             if(!memory || memory!=memories_[0] || !::uwvm2::runtime::wasm_threads::is_shared(*memory) ||
-               memory->memtag_shadow.enabled() || memory->memtag_shadow.ignored_bits() ||
+               ((memory->memtag_shadow.enabled() || memory->memtag_shadow.ignored_bits()) && adm16.memory!=memory) ||
                !info.effective_page_limits || !info.stable_memory_length_p ||
                !info.stable_memory_begin || info.local_imported_module_ptr)return false;
             // The only live-memory specialization is the shared scalar minimum.
@@ -82,6 +84,8 @@
             switch(b.slot)
             {
                 case instance_slot::function:return b.operand;
+                case instance_slot::child:return address(this);
+                case instance_slot::memory_slot:return address(&memories_[0]);
                 case instance_slot::module:return address(module_);
                 case instance_slot::memory:return address(memories_[0]);
                 case instance_slot::base:return address(memories_[0]->memory_begin);
@@ -112,6 +116,7 @@
                 auto const target=binding.address;
                 if((name==poll_name && target==address(&cancellation_poll)) ||
                    (name==enter_name && target==address(&cancellation_enter)) ||
+                   (name=="uwvm.threaded.scalar.state.v1" && target==address(&current_shared_scalar_state)) ||
                    (name=="uwvm.threaded.leave.v1" && target==address(&leave)))continue;
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
                 if((name==ros_poll_name && target==address(&ros_cancellation_poll)) ||
@@ -126,6 +131,7 @@
                 {
                     if(bridge.declaration->getName()!=name)continue;
                     recognized=target==linear_memory_bridge_replacement(bridge.original) ||
+                        target==memtag_bridge_replacement(*bridge.declaration,bridge.original) ||
                         target==address(&trap) || target==address(&memory_trap) || target==address(&import_call) ||
                         (bridge.original==address(&threaded_exception_bridge_api::pending) && target==bridge.original) ||
                         target==address(&indirect_target) || target==address(&resolve_reference) ||
@@ -166,6 +172,8 @@
                     if(!name.consume_front(emit::get_llvm_string_ref(prefix)))return false;
                     slot.operand=0u;
                     if(name=="_runtime_module")slot.slot=instance_slot::module;
+                    else if(name=="_threaded_child")slot.slot=instance_slot::child;
+                    else if(name=="_threaded_memory0_owner_slot")slot.slot=instance_slot::memory_slot;
                     else if(name=="_memory_0_native_memory")slot.slot=instance_slot::memory;
                     else if(name=="_memory0_begin")slot.slot=instance_slot::base;
                     else if(name=="_memory0_length")slot.slot=instance_slot::length;

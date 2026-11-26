@@ -48,6 +48,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         void* objects_{};
         object_emitter emit_object_{};
         bool* template_instructions_{};
+        bool template_memtag_{};
         threaded_host_emission_scope* previous_{};
         bool valid_{true};
         ::std::uintptr_t instruction_target_{};
@@ -122,12 +123,22 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         {
             if(current_ && current_->template_instructions_ &&
                !(op<=0x05u || (op>=0x0bu && op<=0x13u) || (op>=0x1au && op<=0x1cu) ||
-                 (op>=0x20u && op<=0x26u) || (op>=0x28u && op<=0xc4u) || op==0xd2u || op==0xfcu || op==0xfeu))
+                 (op>=0x20u && op<=0x26u) || (op>=0x28u && op<=0xc4u) || op==0xd2u || op==0xfcu || op==0xfeu ||
+                 (op==0xffu && current_->template_memtag_)))
                 *current_->template_instructions_=false;
         }
         static void observe_template_numeric_prefix(unsigned subopcode) noexcept
         {
             if(current_ && current_->template_instructions_ && subopcode>11u)
+                *current_->template_instructions_=false;
+        }
+        static void observe_template_memtag(unsigned subopcode) noexcept
+        {
+            // The current arithmetic, shadow operations and allocation
+            // operations use only the qualified geometry or the live owner.
+            if(current_ && current_->template_instructions_ &&
+               !(current_->template_memtag_ && ((subopcode>=0x20u && subopcode<=0x2fu) ||
+                 (subopcode>=0x36u && subopcode<=0x38u) || (subopcode>=0x40u && subopcode<=0x44u))))
                 *current_->template_instructions_=false;
         }
         static void observe_template_atomic(unsigned subopcode) noexcept
