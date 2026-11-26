@@ -81,6 +81,18 @@ template<::uwvm2::extension::memtag::opcode Operation,typename Address>
     return llvm_jit_private_allocation_full<Operation>(*memory,input,length);
 }
 
+template<::uwvm2::extension::memtag::opcode Operation>
+[[nodiscard]] inline ::std::uint64_t llvm_jit_adm16_private_allocation_bridge(::std::uintptr_t owner,
+    ::std::uint64_t input,::std::uint64_t length,::std::size_t minimum) noexcept
+{
+    auto const* memory{reinterpret_cast<runtime_native_memory_t const*>(owner)};
+    if(memory==nullptr) [[unlikely]] { ::fast_io::fast_terminate(); }
+    ::std::uint64_t value;
+    if(::uwvm2::runtime::memtag::try_short_adm16_private_allocation<Operation>(*memory,input,length,minimum,value))
+    { return value; }
+    return llvm_jit_private_allocation_full<Operation>(*memory,input,length);
+}
+
 template<::uwvm2::extension::memtag::opcode Operation,typename Address,bool Shared,bool ManagedTraps=false,bool Journal=false>
 [[nodiscard]] inline ::std::uint64_t llvm_jit_memtag_operation_bridge(::std::uintptr_t owner,
     ::std::uint64_t first,::std::uint64_t second,::std::uint64_t third,::std::uint64_t fourth) noexcept(!ManagedTraps)

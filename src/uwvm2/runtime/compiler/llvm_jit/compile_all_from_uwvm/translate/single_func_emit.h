@@ -14898,6 +14898,23 @@ template<bool NormalizedScalarMemory, bool NormalizedPageMemory = false, bool No
                         {
                             if(private_ordinary)
                             {
+                                auto const& info{selected_memory_access_info};
+                                auto const minimum{info.declared_minimum_byte_length};
+                                if(!state.execute_memtag && address_type->getBitWidth()==64u &&
+                                   shadow.ignored_bits()==16u && shadow.tag_start_bit()==60u && shadow.stable_address() &&
+                                   shadow.tag_data() && info.stable_memory_begin && info.stable_memory_length_p &&
+                                   minimum>=mt::granule_size && minimum<=shadow.prepared_memory_bytes())
+                                {
+                                    auto const type{::llvm::FunctionType::get(wide,{native,wide,wide,native},false)};
+                                    auto const name{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-adm16-private-allocation-v1-",
+                                        static_cast<unsigned>(Operation))};
+                                    auto const tag{::uwvm2::utils::container::u8string_view{name.data(),name.size()}};
+                                    auto* const target{get_llvm_runtime_bridge_function_symbol_value<
+                                        llvm_jit_adm16_private_allocation_bridge<Operation>>(ir_builder,type,tag)};
+                                    if(!target) { return nullptr; }
+                                    return apply_llvm_jit_host_calling_conv(ir_builder.CreateCall(type,target,
+                                        {owner,operands[0],operands[1],::llvm::ConstantInt::get(native,minimum)}));
+                                }
                                 auto const type{::llvm::FunctionType::get(address_type,{native,address_type,address_type},false)};
                                 auto const name{::uwvm2::utils::container::u8concat_uwvm(u8"memtag-private-allocation-v1-",
                                     static_cast<unsigned>(Operation),u8"-",address_type->getBitWidth())};
