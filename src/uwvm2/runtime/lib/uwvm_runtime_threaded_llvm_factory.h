@@ -465,7 +465,8 @@
                         reinterpret_cast<::std::uintptr_t>(data->table_views_.data()),
                         forbidden_memtag_spans.data(),forbidden_memtag_count,
                         instruction_control?address(&instruction_point):0u,instruction_control?data.get():nullptr,
-                        instruction_control?&append_instruction_site:nullptr};
+                        instruction_control?&append_instruction_site:nullptr,
+                        lowering && lowering->allow_shared_scalars && !observing && !instruction_control ? &lowering->shared_scalars : nullptr};
                     for(::std::size_t i{};i<count;++i)
                     {
                         if(compiler.cancellation().stop_requested())return {{},status::invalid_world};

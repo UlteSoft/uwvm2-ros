@@ -46,6 +46,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         threaded_host_emission_scope* previous_{};
         bool valid_{true};
         ::std::uintptr_t instruction_target_{};
+        bool* scalar_lowered_{};
         void* instruction_context_{};
         bool (*instruction_site_)(void*,::std::size_t,::std::size_t,::std::size_t&) noexcept {};
         threaded_host_emission_scope(
@@ -55,7 +56,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             ::std::uintptr_t original_views, ::std::uintptr_t owned_views,
             threaded_forbidden_memory_span const* forbidden,::std::size_t forbidden_count,
             ::std::uintptr_t instruction_target=0u,void* instruction_context=nullptr,
-            bool (*instruction_site)(void*,::std::size_t,::std::size_t,::std::size_t&) noexcept=nullptr) noexcept
+            bool (*instruction_site)(void*,::std::size_t,::std::size_t,::std::size_t&) noexcept=nullptr,
+            bool* scalar_lowered=nullptr) noexcept
             : world_{::std::addressof(world)},module_{::std::addressof(module)},wasm_module_{::std::addressof(wasm_module)},original_views_{original_views},owned_views_{owned_views},bridges_{::std::addressof(bridges)},forbidden_{forbidden},forbidden_count_{forbidden_count},previous_{current_}
         {
             // The factory has already checked genuine owner/module membership
@@ -63,6 +65,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
             if(previous_!=nullptr || bridges.capacity()<256u || !bridges.empty() ||
                forbidden_count>32u || (forbidden_count!=0u&&forbidden==nullptr))valid_=false;
             instruction_target_=instruction_target;instruction_context_=instruction_context;instruction_site_=instruction_site;
+            scalar_lowered_=scalar_lowered;
             if((instruction_target!=0u)!=(instruction_context!=nullptr&&instruction_site!=nullptr))valid_=false;
             current_=this;
         }
@@ -107,6 +110,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::llvm_jit::compile_all_fro
         [[nodiscard]] static ::std::uintptr_t owned_table_views() noexcept
         {return current_!=nullptr&&current_->valid_?current_->owned_views_:0u;}
         [[nodiscard]] static bool selected() noexcept{return current_!=nullptr;}
+        [[nodiscard]] static bool record_scalar_bounds(::llvm::Module const* ir,
+            ::uwvm2::uwvm::runtime::storage::wasm_module_storage_t const& module) noexcept
+        {
+            if(!current_ || !current_->valid_ || !current_->scalar_lowered_ ||
+               current_->module_!=ir || current_->wasm_module_!=&module)return false;
+            *current_->scalar_lowered_=true;
+            return true;
+        }
         // Cold compiler-only configuration. The callback and native target are
         // supplied solely by the genuine private Child compiler, never by file
         // DATA or a Guest. Nonselected compilation emits no instruction hook.

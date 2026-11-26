@@ -237,7 +237,8 @@ template <typename LoadLength>
     ::llvm::IRBuilder<>& b, ::llvm::Value* base, ::llvm::Value* address,
     ::std::uint64_t static_offset, ::std::size_t access_size,
     llvm_jit_memory_protection protection, ::std::uint64_t partial_limit, LoadLength&& load_length,
-    ::std::size_t memory_index = 0uz, ::std::uint64_t declared_minimum = 0u) noexcept
+    ::std::size_t memory_index = 0uz, ::std::uint64_t declared_minimum = 0u,
+    ::std::uint64_t threaded_scalar_limit = 0u) noexcept
 {
     if(base == nullptr || address == nullptr || !address->getType()->isIntegerTy() || access_size == 0uz) { return nullptr; }
     auto address_bits{address->getType()->getIntegerBitWidth()};
@@ -277,11 +278,26 @@ template <typename LoadLength>
         if((pointer_bits == 64u || declared_minimum <= 0xffff'ffffull) &&
            llvm_jit_address_span_within_minimum(address, static_offset, access_size,
                declared_minimum, module.getDataLayout())) { return true; }
+        // The private threaded world pins this exact shared native owner.
+        // Every raw index below the limit fits the complete access in its
+        // committed declared minimum. A peer may grow it beyond that prefix.
         auto length{load_length()};
         if(length == nullptr) { return false; }
         // The native memory extent is size_t. Reject an inconsistent bridge ABI
         // before using its range as a proof for a narrower host pointer.
         if(!length->getType()->isIntegerTy(pointer_bits)) { return false; }
+        auto* const start=b.GetInsertBlock();
+        ::llvm::BasicBlock* live{};
+        if(threaded_scalar_limit && protection==llvm_jit_memory_protection::software)
+        {
+            if(auto* load=::llvm::dyn_cast<::llvm::LoadInst>(length);
+               load && !load->isVolatile() && load->getOrdering()==::llvm::AtomicOrdering::Acquire && load->getParent()==start)
+            {
+                live=::llvm::BasicBlock::Create(b.getContext(),"threaded.memory.length",start->getParent());
+                load->moveBefore(*live,live->end());
+                b.SetInsertPoint(live);
+            }
+        }
         auto length64{b.CreateZExtOrTrunc(length, b.getInt64Ty())};
         auto width{b.getInt64(access_size)};
         if(protection == llvm_jit_memory_protection::masked_length)
@@ -293,10 +309,32 @@ template <typename LoadLength>
                 memory_index, static_offset, offset, nullptr, length, access_size);
             return true;
         }
-        auto small{b.CreateICmpULT(length64, width)};
-        auto outside{b.CreateICmpUGT(offset, b.CreateSub(length64, width))};
-        emit_llvm_conditional_memory_out_of_bounds_trap(module, b,
-            b.CreateOr(overflow, b.CreateOr(small, outside)), memory_index, static_offset, offset, overflow, length, access_size);
+        ::llvm::Value* outside{};
+        if(live)
+        {
+            // offset + width fits the immutable minimum, so this subtraction
+            // cannot underflow. Comparing the original index also rejects a
+            // 65-bit effective address before any native pointer is formed.
+            auto const tail=static_offset+access_size-1u;
+            auto* const start_limit=tail ? b.CreateNUWSub(length64,b.getInt64(tail)) : length64;
+            outside=b.CreateICmpUGE(dynamic,start_limit);
+            if(address_bits==32u && static_offset)outside=b.CreateOr(overflow,outside);
+        }
+        else
+        {
+            auto small{b.CreateICmpULT(length64, width)};
+            outside=b.CreateOr(overflow,b.CreateOr(small,b.CreateICmpUGT(offset,b.CreateSub(length64,width))));
+        }
+        emit_llvm_conditional_memory_out_of_bounds_trap(module,b,outside,memory_index,static_offset,offset,overflow,length,access_size);
+        if(live)
+        {
+            auto* const ready=b.GetInsertBlock();
+            live->getTerminator()->setMetadata("uwvm.threaded.scalar.bounds",::llvm::MDNode::get(b.getContext(),{}));
+            b.SetInsertPoint(start);
+            b.CreateCondBr(b.CreateICmpULT(dynamic,b.getInt64(threaded_scalar_limit)),ready,live,
+                ::llvm::MDBuilder{b.getContext()}.createBranchWeights(8u,1u));
+            b.SetInsertPoint(ready);
+        }
         return true;
     }};
     if(protection == llvm_jit_memory_protection::software || protection == llvm_jit_memory_protection::masked_length)
@@ -575,9 +613,30 @@ template<typename MaskedAddress>
         }
     }
 #endif
+    ::std::uint64_t threaded_scalar_limit{};
+    if(scalar && address && threaded_host_emission_scope::selected() && protection==llvm_jit_memory_protection::software &&
+       !shadow.enabled() && !shadow.ignored_bits() && info.effective_page_limits && info.stable_memory_length_p &&
+       ::uwvm2::runtime::wasm_threads::is_shared(*info.memory_p))
+    {
+        // The child's factory verified that even an imported Wasm alias ends
+        // at this world's native definition. Its minimum and page size belong
+        // to that definition. A provider or a rebinding cache has no witness.
+        auto const shift=info.custom_page_size_log2;
+        auto const pages=static_cast<::std::uint_least64_t>(info.effective_page_limits->min);
+        if(shift<::std::numeric_limits<::std::size_t>::digits && pages<=(info.stable_memory_reserved_span_bytes>>shift))
+        {
+            auto const minimum=static_cast<::std::size_t>(pages)<<shift;
+            if(static_offset<minimum && access_size<=minimum-static_offset &&
+               (address->getType()->isIntegerTy(64u) || minimum<=UINT64_C(0x100000000)) &&
+               minimum<=info.stable_memory_length_p->load(::std::memory_order_acquire) &&
+               threaded_host_emission_scope::record_scalar_bounds(b.GetInsertBlock()->getModule(),*module))
+                threaded_scalar_limit=minimum-static_offset-access_size+1u;
+        }
+    }
     auto pointer{emit_llvm_jit_adm_raw_prefix(b, base, raw_address, static_offset, raw_prefix, [&] {
         return emit_llvm_jit_memory_address(b, base, address, static_offset, access_size, protection, partial_limit,
-            [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index, info.declared_minimum_byte_length);
+            [&]() noexcept { return emit_llvm_jit_memory_length(state, true); }, state.current_memory_index,
+            info.declared_minimum_byte_length, threaded_scalar_limit);
     })};
     if(pointer != nullptr && checked)
     {

@@ -557,6 +557,25 @@
                 };
                 for(auto* block:blocks)
                 {
+                    if(block->getTerminator()->getMetadata("uwvm.threaded.scalar.bounds"))
+                    {
+                        // This additional edge of one scalar's bounds check
+                        // only reads the live extent. Its original trap and
+                        // continuation still receive their original probes.
+                        if(block==&entry || !::llvm::isa<::llvm::CondBrInst>(block->getTerminator()))return false;
+                        unsigned extents{};
+                        for(auto& inst:*block)
+                        {
+                            if(auto* load=::llvm::dyn_cast<::llvm::LoadInst>(&inst))
+                            {
+                                if(load->getType()!=word || load->isVolatile() || load->getOrdering()!=::llvm::AtomicOrdering::Acquire)return false;
+                                ++extents;
+                            }
+                            else if(!::llvm::isa<::llvm::BinaryOperator,::llvm::CastInst,::llvm::ICmpInst,::llvm::CondBrInst>(inst))return false;
+                        }
+                        if(extents!=1u)return false;
+                        continue;
+                    }
                     if(block->getTerminator()->getMetadata("uwvm.gc.scalar.local.region")!=nullptr)
                     {
                         // One finite checked numeric instruction. No raw GC
