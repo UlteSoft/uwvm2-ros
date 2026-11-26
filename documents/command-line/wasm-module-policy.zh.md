@@ -34,6 +34,7 @@
 | `datasec_entries`、`datacountsec_count` | 数据段条目、声明的数据段数 |
 | `elemsec_elems`、`elemsec_funcidx`、`elemsec_expr` | 元素段条目、函数索引、初始化表达式 |
 | `custom_name_funcnames`、`custom_name_codelocal_funcs`、`custom_name_codelocal_name_per_funcs` | 可选名称节中的函数名、带局部名的函数数量、每个函数的局部名数量 |
+| `custom_name_local_names`、`custom_name_diagnostics` | 全部函数的局部名称总条数（默认 1,048,576）和每模块详细名称警告总数（默认 256）。超出警告上限时另记一条截断提示。 |
 
 宿主 `--wasm-set-resource-limit parser single-bytes`（默认 256 MiB）限制每次元数据分配，`live-bytes`（默认 1 GiB）限制全进程同时存活的解析元数据，包括扩容时同时存活的新旧缓冲区。模块释放后归还其独占分配。全局递归类型注册表仅为新增规范类型保留键和编号，直至注册表销毁。
 

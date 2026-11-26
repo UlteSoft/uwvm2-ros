@@ -37,6 +37,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `datasec_entries`, `datacountsec_count` | Data entries and declared data count |
 | `elemsec_elems`, `elemsec_funcidx`, `elemsec_expr` | Element entries, function indices and initializer expressions |
 | `custom_name_funcnames`, `custom_name_codelocal_funcs`, `custom_name_codelocal_name_per_funcs` | Function names, functions with local names and local names per function in the optional name section |
+| `custom_name_local_names`, `custom_name_diagnostics` | Total local-name rows across functions (default 1,048,576) and detailed name warnings per module (default 256). A further warning emits one truncation notice. |
 
 ## Initializer and runtime keys
 

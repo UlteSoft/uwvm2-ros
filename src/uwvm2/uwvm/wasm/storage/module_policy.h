@@ -95,6 +95,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         UWVM_PARSER_COUNT("custom_name_funcnames", p.name_parser.name_parser_limit, max_name_sec_function_names),
         UWVM_PARSER_COUNT("custom_name_codelocal_funcs", p.name_parser.name_parser_limit, max_name_sec_code_local_functions),
         UWVM_PARSER_COUNT("custom_name_codelocal_name_per_funcs", p.name_parser.name_parser_limit, max_name_sec_code_local_names_per_function),
+        UWVM_PARSER_COUNT("custom_name_local_names", p.name_parser.name_parser_limit, max_local_names),
+        UWVM_PARSER_COUNT("custom_name_diagnostics", p.name_parser.name_parser_limit, max_diagnostics),
 #undef UWVM_PARSER_COUNT
     };
 
