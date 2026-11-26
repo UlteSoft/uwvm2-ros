@@ -68,3 +68,14 @@ source, arguments and binary SHA-256 to match. Stable tags are used. These
 cases do not establish concurrent retag/access safety, other modules' WASI
 call support, cross-process authority isolation, or new cross-platform
 qualification.
+
+`test_llvm_object_reuse.py` runs on native Linux x86-64 with `--vm`, `--wrc`,
+`--wasm-tools` and a project `.tmp` directory passed to `--out`. It checks the
+group's initial LLVM object generation and each subsequent load using verbose
+compiler decisions. The C guest compares live TLS and stack addresses across
+two pthreads, checks thread-specific keys, joins both, then creates another
+pthread. Two existing Wasm fixtures exercise private tables, GC references,
+`try_table` and rethrow on the same path. A one-spawn permission grant checks
+that a later denied request cannot use the cached object. A binding-cap case
+checks both the verbose fallback decision and default output. Each fixture saves
+stdout and stderr.

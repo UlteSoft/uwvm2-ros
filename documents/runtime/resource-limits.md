@@ -98,7 +98,9 @@ original backing owner's charge and do not charge the same memory twice.
   construction account. The construction account conservatively retains all
   charged requests until its last owner dies, even if construction scratch
   has already been freed. The existing per-child and per-group limits remain
-  additional constraints.
+  additional constraints. Native Linux x86-64 CLI AOT can also reserve up to
+  16 MiB per group for a relocatable root object.
+  [Threaded CLI storage accounting](threaded-cli-storage-budget.md#llvm-object-reuse-across-pthreads)
 
 Limits follow actual ownership through moves, failed allocation, destruction,
 module retirement and hot update. Guest code cannot reset counters. Resource
