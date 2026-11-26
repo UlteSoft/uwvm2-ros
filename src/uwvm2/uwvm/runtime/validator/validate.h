@@ -27,12 +27,14 @@
 # include <cstdint>
 # include <limits>
 # include <memory>
+# include <new>
 # include <utility>
 // macro
 # include <uwvm2/utils/macro/push_macros.h>
 # include <uwvm2/uwvm/utils/ansies/uwvm_color_push_macro.h>
 // import
 # include <fast_io.h>
+# include <uwvm2/utils/allocator/resource_limit.h>
 # include <uwvm2/utils/container/impl.h>
 # include <uwvm2/utils/debug/impl.h>
 # include <uwvm2/parser/wasm/concepts/impl.h>
@@ -78,7 +80,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
             ::uwvm2::parser::wasm::standard::wasm1::features::code_section_storage_t<Fs...>>(module_storage.sections)};
 
         ::uwvm2::validation::error::code_validation_error_impl v_err{};
-#ifdef UWVM_CPP_EXCEPTIONS
+        using admission = ::uwvm2::utils::allocator::resource::recoverable_parser_allocations;
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
         try
 #endif
         {
@@ -123,8 +126,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
                 }
             }
         }
-#ifdef UWVM_CPP_EXCEPTIONS
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+        catch(::std::bad_alloc const&)
+        {
+            admission::record_validation_refusal();
+            return false;
+        }
         catch(::fast_io::error)
+        {
+            if(admission::allocation_refused()) { return false; }
+            try
             {
                 auto const module_begin{module_storage.module_span.module_begin};
                 auto const module_end{module_storage.module_span.module_end};
@@ -226,11 +237,14 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::validator
                 }
 #endif
 
-                return false;
             }
+            // Validation has already failed. A diagnostic stream failure must preserve the verdict.
+            catch(...) {}
+            return false;
+        }
 #endif
 
-        return true;
+        return !admission::allocation_refused();
     }
 
     /// Validate memory-tag source declarations, including importers. A legacy

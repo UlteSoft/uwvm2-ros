@@ -143,7 +143,7 @@ namespace uwvm2::utils::allocator::resource
     {
         inline static thread_local recoverable_parser_allocations* current_{};
         recoverable_parser_allocations* parent_{};
-        bool comparison_refused_{};
+        bool allocation_refused_{};
     public:
         constexpr recoverable_parser_allocations() noexcept
         { if !consteval { parent_ = ::std::exchange(current_, this); } }
@@ -152,12 +152,24 @@ namespace uwvm2::utils::allocator::resource
         {
             if !consteval
             {
-                if(parent_ != nullptr) { parent_->comparison_refused_ |= comparison_refused_; }
+                if(parent_ != nullptr) { parent_->allocation_refused_ |= allocation_refused_; }
                 current_ = parent_;
             }
         }
         [[nodiscard]] static bool active() noexcept { return current_ != nullptr; }
-        [[nodiscard]] static bool comparison_refused() noexcept { return current_ != nullptr && current_->comparison_refused_; }
+        [[nodiscard]] static constexpr bool allocation_refused() noexcept
+        {
+            if consteval { return false; }
+            else { return current_ != nullptr && current_->allocation_refused_; }
+        }
+        [[nodiscard]] static bool comparison_refused() noexcept { return allocation_refused(); }
+        // A Boolean validation boundary cannot throw. Its caller can still distinguish
+        // an exhausted candidate from an invalid module or a genuine type mismatch.
+        static void record_validation_refusal() noexcept
+        {
+            if(current_ == nullptr) { validation_limit(); }
+            current_->allocation_refused_ = true;
+        }
 
         // A native type-comparison callback has a noexcept Boolean ABI. An unproved
         // comparison refuses the candidate, including when used as an optimization hint.
@@ -167,8 +179,7 @@ namespace uwvm2::utils::allocator::resource
             try { return compare(); }
             catch(::std::bad_alloc const&)
             {
-                if(current_ == nullptr) { validation_limit(); }
-                current_->comparison_refused_ = true;
+                record_validation_refusal();
                 return false;
             }
 #else
@@ -184,13 +195,13 @@ namespace uwvm2::utils::allocator::resource
 #endif
             {
                 auto result{prepare()};
-                if(stage.comparison_refused_) { return refused(); }
+                if(stage.allocation_refused_) { return refused(); }
                 return result;
             }
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
             catch(...)
             {
-                if(stage.comparison_refused_) { return refused(); }
+                if(stage.allocation_refused_) { return refused(); }
                 throw;
             }
 #endif

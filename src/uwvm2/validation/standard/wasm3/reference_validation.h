@@ -44,7 +44,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     // validator. The concrete implementation supports standalone consumers and conformance fixtures.
     class core3_operand_stack
     {
-        ::uwvm2::utils::container::validation_vector<core3_operand> values_{};
+        ::uwvm2::utils::container::validation_scratch_vector<core3_operand> values_{};
         ::std::size_t height_{};
         bool unreachable_{};
     public:
@@ -54,7 +54,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
             if(height > values_.size()) { return false; }
             height_ = height; unreachable_ = unreachable; return true;
         }
-        inline constexpr void push(::uwvm2::parser::wasm::standard::wasm3::type::core_value_type type) noexcept
+        inline constexpr void push(::uwvm2::parser::wasm::standard::wasm3::type::core_value_type type)
         { values_.push_back({type, false}); }
         [[nodiscard]] inline constexpr bool pop(core3_operand& value) noexcept
         {
@@ -120,6 +120,13 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     {
         namespace types = ::uwvm2::parser::wasm::standard::wasm3::type;
         template<typename Stack>
+        concept nothrow_operand_push = requires(Stack& stack, types::core_value_type value, types::core_value_type const immutable)
+        {
+            { stack.push(value) } noexcept;
+            { stack.push(immutable) } noexcept;
+            { stack.push(types::core_value_type{}) } noexcept;
+        };
+        template<typename Stack>
         [[nodiscard]] inline constexpr core3_reference_error pop_reference(Stack& stack, types::core_value_type& output) noexcept
         {
             core3_operand operand{};
@@ -135,7 +142,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_null(Stack& stack,
-        ::uwvm2::parser::wasm::standard::wasm3::type::heap_type heap, recursive_type_context const& context) noexcept
+        ::uwvm2::parser::wasm::standard::wasm3::type::heap_type heap, recursive_type_context const& context)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         if(heap.is_defined() ? !context.contains(static_cast<::std::uint_least64_t>(heap.code)) : !recursive_validation_details::abstract_valid(heap))
         { return core3_reference_error::unknown_type; }
@@ -144,7 +152,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     }
     template<typename Stack>
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_func_type(Stack& stack,
-        ::std::uint_least32_t type_index, recursive_type_context const& context) noexcept
+        ::std::uint_least32_t type_index, recursive_type_context const& context)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         if(!context.contains(type_index)) { return core3_reference_error::unknown_type; }
@@ -154,7 +163,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         stack.push({t::value_kind::reference, {type_index}, false}); return core3_reference_error::ok;
     }
     template<typename Stack>
-    [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_is_null(Stack& stack) noexcept
+    [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_is_null(Stack& stack)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         reference_validation_details::types::core_value_type value{};
         auto const error{reference_validation_details::pop_reference(stack, value)};
@@ -162,7 +172,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
         stack.push({reference_validation_details::types::value_kind::i32}); return core3_reference_error::ok;
     }
     template<typename Stack>
-    [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_as_non_null(Stack& stack) noexcept
+    [[nodiscard]] inline constexpr core3_reference_error validate_core3_ref_as_non_null(Stack& stack)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         core3_operand operand{};
         if(!stack.pop(operand)) { return core3_reference_error::stack_underflow; }
@@ -175,7 +186,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_call_ref(Stack& stack,
         ::std::uint_least32_t type_index, ::uwvm2::parser::wasm::standard::wasm3::type::sub_type const& signature,
         recursive_type_context const& context, bool tail,
-        ::std::span<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type const> caller_results = {}) noexcept
+        ::std::span<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type const> caller_results = {})
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         if(!context.contains(type_index)) { return core3_reference_error::unknown_type; }
@@ -205,7 +217,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm3
     [[nodiscard]] inline constexpr core3_reference_error validate_core3_branch_on_null(Stack& stack,
         bool branch_on_non_null,
         ::std::span<::uwvm2::parser::wasm::standard::wasm3::type::core_value_type const> label,
-        recursive_type_context const& context) noexcept
+        recursive_type_context const& context)
+        noexcept(reference_validation_details::nothrow_operand_push<Stack>)
     {
         namespace t = ::uwvm2::parser::wasm::standard::wasm3::type;
         t::core_value_type reference{};

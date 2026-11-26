@@ -82,7 +82,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
     };
 
     template <::uwvm2::parser::wasm::concepts::wasm_feature... Fs>
-    using operand_stack_type = ::uwvm2::utils::container::validation_vector<operand_stack_storage_t<Fs...>>;
+    using operand_stack_type = ::uwvm2::utils::container::validation_scratch_vector<operand_stack_storage_t<Fs...>>;
 
     template <typename T>
     struct fast_io_native_typed_global_allocator_guard
@@ -452,7 +452,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::validation::standard::wasm1p1
 
         // control-flow stack
         using curr_block_type = block_t<Fs...>;
-        ::uwvm2::utils::container::validation_vector<curr_block_type> control_flow_stack{};
+        ::uwvm2::utils::container::validation_scratch_vector<curr_block_type> control_flow_stack{};
 
         // operand stack
         using curr_operand_stack_value_type = operand_stack_value_type<Fs...>;

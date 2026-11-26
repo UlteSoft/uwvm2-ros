@@ -295,7 +295,9 @@ UWVM_MODULE_EXPORT namespace uwvm2::utils::container
     template <::std::movable T>
     using parser_vector = metadata_vector<T, ::uwvm2::utils::allocator::resource::pool::parser>;
     template <::std::movable T>
-    using parser_scratch_vector = metadata_vector<T, ::uwvm2::utils::allocator::resource::pool::validation>;
+    using validation_scratch_vector = metadata_vector<T, ::uwvm2::utils::allocator::resource::pool::validation>;
+    template <::std::movable T>
+    using parser_scratch_vector = validation_scratch_vector<T>;
 
     // Compiler/validator scratch, charged only when backing storage grows.
     template <::std::movable T>

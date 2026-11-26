@@ -13,7 +13,7 @@
 # include <uwvm2/validation/standard/wasm3/exception_policy.h>
 # include <uwvm2/validation/standard/wasm3/exception_validation.h>
 # include <uwvm2/validation/standard/wasm3/reference_policy.h>
-# include <uwvm2/uwvm/runtime/storage/impl.h>
+# include <uwvm2/uwvm/runtime/storage/wasm_module.h>
 #endif
 #ifndef UWVM_MODULE_EXPORT
 # define UWVM_MODULE_EXPORT
@@ -37,7 +37,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_co
         ::std::size_t target_frame{}; // absolute OUTER control-frame index
         bool with_reference{}; // catch_ref/catch_all_ref appends one non-null exnref
     };
-    using handlers = ::uwvm2::utils::container::vector<handler>;
+    using handlers = ::uwvm2::utils::container::validation_scratch_vector<handler>;
 
     [[noreturn]] inline constexpr void unsupported(::std::byte const* opcode, unsigned value,
         ::uwvm2::validation::error::code_validation_error_impl& error) UWVM_THROWS
@@ -138,7 +138,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::runtime::compiler::shared::wasm_exception_co
         //                                      ^^ next after complete decoding, unchanged on malformed input.
         if(decoded.error != validation::exception_immediate_error::ok) [[unlikely]] { unsupported(opcode, 0x1fu, error); }
         handlers result{};
-        result.reserve(decoded.clauses.size()); // decoder already bounded count against input and PTRDIFF_MAX
+        // Decoded clauses remain live while the linked handler owner acquires its own validation backing.
+        result.reserve(decoded.clauses.size());
         for(auto const& clause: decoded.clauses)
         {
             auto const tagged{clause.kind == validation::exception_catch_kind::tagged ||
