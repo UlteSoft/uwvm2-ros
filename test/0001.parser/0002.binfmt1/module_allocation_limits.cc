@@ -3,6 +3,7 @@
 #include <cstring>
 #include <utility>
 #include <uwvm2/utils/allocator/resource_limit.h>
+#include <uwvm2/parser/wasm_custom/customs/name.h>
 #include <uwvm2/validation/standard/wasm3/recursive_type_registry.h>
 #include <fast_io.h>
 #include <uwvm2/parser/wasm/standard/wasm1/features/binfmt.h>
@@ -114,4 +115,29 @@ int main(int argc, char** argv)
     if(!check<wasm>(customs, sections(2, bytes)) ||
        !check<wasm>(customs, sections(1, bytes), u8"custom_sections", 2, 1) ||
        !check<wasm, proposals>(customs, sections(2, bytes - 1), u8"section_storage_bytes", bytes, bytes - 1)) { return 5; }
+    namespace names = ::uwvm2::parser::wasm_custom::customs;
+    // Two distinct function-local name maps each contain one local.
+    constexpr ::std::uint8_t subsection[]{2, 11, 2, 0, 1, 0, 1, 'a', 1, 1, 0, 1, 'b'};
+    auto const* name_begin{reinterpret_cast<::std::byte const*>(subsection)};
+    for(unsigned limit : {1u, 2u})
+    {
+        names::name_storage_t names_section{};
+        ::uwvm2::utils::container::parser_vector<names::name_err_t> diagnostics{};
+        names::name_parser_param_t parameters{};
+        parameters.name_parser_limit.max_local_names = limit;
+        parameters.name_parser_limit.max_diagnostics = 1;
+        auto const parse = [&]{ names::parse_name_storage(names_section, name_begin, name_begin + sizeof(subsection), diagnostics, parameters); };
+        parse();
+        if(limit == 1)
+        {
+            if(diagnostics.size() != 1 || diagnostics.front_unchecked().type != names::name_err_type_t::exceed_the_max_name_parser_limit ||
+               diagnostics.front_unchecked().err.exceed_the_max_name_parser_limit.name != u8"custom_name_local_names" ||
+               names_section.code_local_name.size() != 1) { return 15; }
+            parse();
+            parse();
+            if(diagnostics.size() != 2 || diagnostics.back_unchecked().type != names::name_err_type_t::exceed_the_max_name_parser_limit ||
+               diagnostics.back_unchecked().err.exceed_the_max_name_parser_limit.name != u8"custom_name_diagnostics") { return 16; }
+        }
+        else if(!diagnostics.empty() || names_section.code_local_name.size() != 2) { return 17; }
+    }
 }
