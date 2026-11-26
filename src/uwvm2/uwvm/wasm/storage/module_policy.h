@@ -111,6 +111,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         {u8"init.local-defined-elements", &init_limits::local_defined_elements},
         {u8"init.local-defined-datas", &init_limits::local_defined_datas},
         {u8"init.element-expressions", &init_limits::element_expressions},
+        {u8"init.allocation-bytes", &init_limits::allocation_bytes},
     };
 
     struct layer
@@ -174,7 +175,16 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::storage::module_policy
         for(::std::size_t i{}; i != ::std::size(parser_counts); ++i)
         { if(key == parser_counts[i].name) { return set_count(target.counts[i], value); } }
         for(::std::size_t i{}; i != ::std::size(initializer_settings); ++i)
-        { if(key == initializer_settings[i].name) { return set_count(target.limits[i], value); } }
+        {
+            auto const setting{initializer_settings[i]};
+            if(key != setting.name) { continue; }
+            auto const parsed{parse_count(value)};
+            if(target.limits[i] || !parsed ||
+               (setting.member == &init_limits::allocation_bytes &&
+                *parsed > static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)()))) { return false; }
+            target.limits[i] = *parsed;
+            return true;
+        }
         if(key == u8"runtime.memory-pages")
         {
             if(target.memory_pages) { return false; }

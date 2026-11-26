@@ -214,6 +214,13 @@ instance allocates only the required function, opaque or GC element slots.
 Table and segment construction quotas for a worker apply across its provider
 graph. References to the same provider consume its backing once.
 
+The defining module may lower the maximum initial backing of a single table
+or memory with `init.allocation-bytes`. Memory uses its configured initial
+page count and the declared page width. Restore checks the saved extent and
+workers use the retained defining module policy. An importing module's budget
+covers its own definitions. Address-space reservation policy and runtime
+growth use their respective process limits.
+
 ## Loader graph
 
 The process `runtime_modules` ceiling includes the executable, Wasm

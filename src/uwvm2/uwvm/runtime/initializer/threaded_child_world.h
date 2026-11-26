@@ -156,7 +156,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             return nullptr;
         }
         initializer_limit_t limits_{};
-        ::std::size_t declared_table_elements_{}, declared_segment_bytes_{};
+        ::std::size_t declared_table_elements_{}, declared_segment_bytes_{}, dependency_count_{};
         ::std::uint_least64_t declared_local_memory_bytes_{};
         ::uwvm2::uwvm::wasm::type::all_module_t declaration_{};
         threaded_single_entry_view<::uwvm2::uwvm::wasm::type::all_module_t> declarations_{};
@@ -677,9 +677,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
         {return position<initialization_order_.size()?initialization_order_[position]:SIZE_MAX;}
         [[nodiscard]] ::std::size_t initialization_dependency_count(::std::size_t index) const noexcept
         {
-            auto const* n=node(index);if(!n)return 0u;
-            return n->parent_->imported_function_vec_storage.size()+n->shared_globals_.size()+
-                n->parent_->imported_tag_vec_storage.size()+n->imported_table_targets_.size()+n->imported_memory_targets_.size();
+            auto const* n{node(index)};
+            return n == nullptr ? 0uz : n->dependency_count_;
         }
         [[nodiscard]] bool initialization_dependency(::std::size_t index,::std::size_t ordinal,
             ::std::size_t& output) const noexcept
@@ -1107,7 +1106,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             ::std::size_t bytes{};
             if(count > SIZE_MAX || !::uwvm2::utils::allocator::resource::checked_bytes(static_cast<::std::size_t>(count),
                 sizeof(::uwvm2::uwvm::runtime::storage::local_defined_table_elem_storage_t),bytes) ||
-                bytes > ::uwvm2::utils::allocator::resource::initializer_allocation_bytes ||
+                bytes > details::initializer_backing_limit(file_->wasm_parameter.initializer_limits) ||
                 !prepared_table_charges_[i].resize(bytes)) { return false; }
             if(!preallocate_vector(prepared_tables_[i],static_cast<::std::size_t>(count)))
             { return false; }
@@ -1262,12 +1261,21 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
                 break;
             }
         }
+        ::std::size_t dependencies{};
+        for(auto count : {p.imported_function_vec_storage.size(), shared_globals_.size(), p.imported_tag_vec_storage.size(),
+                          imported_table_targets_.size(), imported_memory_targets_.size()})
+        {
+            if(count > SIZE_MAX - dependencies) { return threaded_child_error::count_limit; }
+            dependencies += count;
+        }
+        dependency_count_ = dependencies;
+        auto const backing_limit{details::initializer_backing_limit(file_->wasm_parameter.initializer_limits)};
         ::std::size_t table_elements{};
         for(auto const& t : p.local_defined_table_vec_storage)
         {
             if(t.table_type_ptr == nullptr) { return threaded_child_error::declaration_mismatch; }
             auto const minimum{t.table_type_ptr->limits.min};
-            if(minimum > admission_->max_table_elements() - table_elements)
+            if(minimum > backing_limit / sizeof(local_defined_table_elem_storage_t) || minimum > admission_->max_table_elements() - table_elements)
             { return threaded_child_error::table_limit; }
             table_elements += static_cast<::std::size_t>(minimum);
         }
@@ -1277,7 +1285,8 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::runtime::initializer
             if(m.memory_type_ptr == nullptr) { return threaded_child_error::declaration_mismatch; }
             auto const minimum{static_cast<::std::uint_least64_t>(m.effective_limits.min)};
             auto const shift{m.memory.custom_page_size_log2};
-            if(shift >= ::std::numeric_limits<::std::uint_least64_t>::digits || minimum > ((admission_->max_local_memory_bytes() - local_bytes) >> shift))
+            if(shift >= ::std::numeric_limits<::std::size_t>::digits || minimum > (backing_limit >> shift) ||
+               minimum > ((admission_->max_local_memory_bytes() - local_bytes) >> shift))
             { return threaded_child_error::memory_limit; }
             local_bytes += minimum << shift;
         }

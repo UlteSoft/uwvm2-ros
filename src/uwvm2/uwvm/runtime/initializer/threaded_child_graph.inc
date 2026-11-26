@@ -74,14 +74,23 @@
         auto tables_left{admission().max_table_elements() - declared_table_elements_};
         auto segments_left{admission().max_total_segment_bytes() - declared_segment_bytes_};
         auto memory_left{admission().max_local_memory_bytes() - declared_local_memory_bytes_};
+        auto edges_left{limits_.max_dependency_edges};
+        using provider = module_type const*;
+        ::uwvm2::utils::container::unordered_flat_set<provider, ::std::hash<provider>, ::std::equal_to<provider>, threaded_std_allocator<provider>>
+            direct_providers{threaded_std_allocator<provider>{allocation_}};
         // Discover a finite transitive graph from authenticated import records.
         // Cycles are represented once; no native call can enter ordinary code.
         for(::std::size_t m{};m<module_count();++m)
         {
             auto const* current=node(m);
+            direct_providers.clear();
             auto admit=[&](module_type const* parent)->threaded_child_error
             {
                 if(!parent)return threaded_child_error::unsupported_import;
+                if(direct_providers.contains(parent)) { return threaded_child_error::ok; }
+                if(edges_left == 0uz) { return threaded_child_error::count_limit; }
+                --edges_left;
+                direct_providers.insert(parent);
                 if(node_for_parent(parent))return threaded_child_error::ok;
                 if(module_count()>=limits_.max_runtime_modules)return threaded_child_error::count_limit;
                 auto peer=::std::allocate_shared<ThreadedChildWorld>(threaded_std_allocator<ThreadedChildWorld>{allocation_},admission_,allocation_);

@@ -42,6 +42,7 @@ Feature names are `adm`, `memtag`, `custom-page-sizes`, `multi-value`, `referenc
 | `init.imported-FIELD` | Nonnegative decimal count. Fields are `functions`, `tables`, `memories`, `globals`, `tags`. |
 | `init.local-defined-FIELD` | Nonnegative decimal count. Fields are `functions`, `codes`, `tables`, `memories`, `globals`, `tags`, `elements`, `datas`. |
 | `init.element-expressions` | Total expression-form entries in all element segments of one module. The process default is 1,048,576. Index-form entries borrow parser storage. |
+| `init.allocation-bytes` | Initial backing bytes per locally defined memory or table, at most the process `initializer allocation-bytes` ceiling. Applies to the defining module and to restored extents. |
 | `runtime.memory-pages` | `MIN` or `MIN:MAX` in the defined memory’s Wasm pages. Each count is a nonnegative decimal `size_t`, with `MAX >= MIN`. |
 | `runtime.memtag-checks` | `on` (default) or `off`. The accessing module controls ordinary pointer/allocation-tag comparisons, including access through imports. |
 | `runtime.memtag-backend` | `auto` (default), `software`, `arm-mte`, `x86-mtt`. Supplies the backend for tagged memories defined by this module. |

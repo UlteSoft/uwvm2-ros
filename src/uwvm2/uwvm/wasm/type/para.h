@@ -68,6 +68,7 @@ UWVM_MODULE_EXPORT namespace uwvm2::uwvm::wasm::type
         ::std::size_t local_defined_elements{inherited};
         ::std::size_t local_defined_datas{inherited};
         ::std::size_t element_expressions{inherited};
+        ::std::size_t allocation_bytes{inherited};
     };
 
     struct wasm_parameter_t
