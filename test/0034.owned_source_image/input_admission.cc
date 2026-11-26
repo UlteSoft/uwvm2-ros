@@ -20,6 +20,18 @@ int main(int argc, char** argv)
         ::fast_io::native_file file{filename, ::fast_io::open_mode::out | ::fast_io::open_mode::excl};
         ::fast_io::operations::write_all_bytes(file, data.data(), data.data() + data.size());
     }
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
+    {
+        ::fast_io::native_file file{filename, ::fast_io::open_mode::in};
+        ::fast_io::native_mmap_options options{::fast_io::mmap_prot::prot_read, ::fast_io::mmap_flags::map_private};
+        for(auto extent : {data.size() + 1uz, SIZE_MAX})
+        {
+            try { ::fast_io::native_file_loader bad{options, ::fast_io::at(file), extent}; return 14; }
+            catch(::fast_io::error) {}
+        }
+        if(::fast_io::file_size(file) != data.size()) { return 15; }
+    }
+#endif
     constexpr auto pool{static_cast<unsigned>(resource::pool::parser_input)};
     auto& budget{resource::policies[pool]};
     auto& live{resource::live_bytes[pool]};
@@ -59,6 +71,8 @@ int main(int argc, char** argv)
     if(!direct || !loaded.adopt_unparsed_source_image(::std::move(direct.image)) || live.load() != data.size()) { return 12; }
     loaded = {};
     policy::layer overflow{};
+    budget.single = resource::host_bytes(512ull << 20u);
+    if(resource::parser_input_limit(SIZE_MAX) != budget.single) { return 16; }
     budget.single = SIZE_MAX;
     if(live.load() || resource::parser_input_limit(SIZE_MAX) != static_cast<::std::size_t>(PTRDIFF_MAX) ||
        policy::set(overflow, u8"parser.limit.input-bytes", u8"340282366920938463463374607431768211456")) { return 13; }

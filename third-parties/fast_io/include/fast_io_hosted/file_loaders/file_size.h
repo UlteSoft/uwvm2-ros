@@ -71,6 +71,14 @@ inline ::std::size_t nt_load_file_get_file_size(void *handle)
 
 namespace details
 {
+// A sized loader accepts a prefix of this actual file. Both end pointers
+// must be representable before any mapping, allocation or native conversion.
+inline constexpr bool valid_file_loader_extent(::std::size_t file_size, ::std::size_t extent, ::std::size_t padding) noexcept
+{
+	constexpr auto maximum{static_cast<::std::size_t>((::std::numeric_limits<::std::ptrdiff_t>::max)())};
+	return extent <= file_size && extent <= maximum && padding <= maximum - extent;
+}
+
 struct linux_statx_timestamp
 {
 	::std::int_least64_t tv_sec;
