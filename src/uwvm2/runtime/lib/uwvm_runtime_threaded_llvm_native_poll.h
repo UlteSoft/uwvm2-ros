@@ -24,6 +24,61 @@
             return branch->getSuccessor(cmp->getPredicate()==::llvm::CmpInst::ICMP_EQ?0u:1u);
         }
 
+        struct poll_scope
+        {
+            ::llvm::ConstantInt const* function{};
+            ::llvm::Value const* token{};
+            bool operator==(poll_scope const&) const noexcept=default;
+        };
+        [[nodiscard]] static poll_scope fixed_poll_scope(::llvm::CallInst const& call) noexcept
+        {
+            auto* function=::llvm::dyn_cast<::llvm::ConstantInt>(call.getArgOperand(0u));
+            auto* token=call.arg_size()==2u?call.getArgOperand(1u):nullptr;
+            // SSA definitions in a loop can supply different values on its
+            // next iteration. Only compare tokens fixed for the activation.
+            if(token&&!::llvm::isa<::llvm::ConstantInt,::llvm::Argument>(token))
+            {
+                auto* instruction=::llvm::dyn_cast<::llvm::Instruction>(token);
+                if(!instruction||instruction->getParent()!=&call.getFunction()->getEntryBlock())return {};
+            }
+            return {function,token};
+        }
+        struct poll_block
+        {
+            poll_scope incoming{},checked{};
+            ::llvm::BasicBlock* continued{};
+            bool has_call{},reached{};
+        };
+        // A zero-result poll has published its function and (for ROS) checked
+        // the owner against the active child. Rejection, PC and authentication
+        // are worker-private. Any intervening call, including a Wasm call or
+        // host callback, invalidates that fact. The stop byte is always live.
+        static void propagate_poll_scopes(::llvm::BasicBlock& entry,::llvm::DenseMap<::llvm::BasicBlock*,poll_block>& blocks)
+        {
+            ::llvm::SmallVector<::llvm::BasicBlock*,32> pending{&entry};
+            blocks.find(&entry)->second.reached=true;
+            while(!pending.empty())
+            {
+                auto* block=pending.pop_back_val();
+                auto const& from=blocks.find(block)->second;
+                for(auto* next: ::llvm::successors(block))
+                {
+                    auto const scope=from.continued==next ? from.checked : (from.has_call ? poll_scope{} : from.incoming);
+                    auto& to=blocks.find(next)->second;
+                    if(!to.reached)
+                    {
+                        to.reached=true;
+                        to.incoming=scope;
+                    }
+                    else if(to.incoming.function&&to.incoming!=scope)to.incoming={};
+                    else continue;
+                    // Each block enters the worklist for its first path and
+                    // at most once for a mismatch. Unreachable cycles prove nothing.
+                    pending.push_back(next);
+                }
+            }
+        }
+
         void inline_cancellation_loops(::llvm::Module& module,
             ::uwvm2::runtime::wasm_threads::threaded_llvm_module_limits room,native_poll_witnesses& witnesses,bool& attempted)
         {
@@ -45,18 +100,23 @@
             if(module.getNamedValue(state_name)||externals_.size()>=256u)return;
             ::llvm::Function* state_fn{};
             auto* likely=::llvm::MDBuilder{context}.createBranchWeights(2000u,1u);
-            struct site { ::llvm::CallInst* call; ::llvm::BasicBlock* continued; };
+            struct site { ::llvm::CallInst* call; ::llvm::BasicBlock* continued; poll_scope expected; };
             for(auto& function:module)
             {
                 if(function.isDeclaration())continue;
                 ::llvm::DominatorTree dominators{function};
                 ::llvm::LoopInfo loops{dominators};
+                if(loops.empty())continue;
                 ::llvm::SmallVector<site,16> sites;
+                ::llvm::DenseMap<::llvm::BasicBlock*,poll_block> blocks;
                 for(auto& block:function)
                 {
-                    if(!loops.getLoopFor(&block))continue;
+                    auto& summary=blocks[&block];
                     for(auto& inst:block)
                     {
+                        if(!::llvm::isa<::llvm::CallBase>(inst))continue;
+                        bool const first=!summary.has_call;
+                        summary.has_call=true;
                         auto* call=::llvm::dyn_cast<::llvm::CallInst>(&inst);
                         if(!call)continue;
                         auto* target=fixed_call_target(*call);
@@ -65,12 +125,19 @@
                            &&target!=ros
 #endif
                         ))continue;
-                        if(auto* continued=poll_continuation(*call))sites.push_back({call,continued});
+                        if(auto* continued=poll_continuation(*call))
+                        {
+                            summary.continued=continued;
+                            summary.checked=fixed_poll_scope(*call);
+                            if(loops.getLoopFor(&block))sites.push_back({call,continued,first?summary.checked:poll_scope{}});
+                        }
                     }
                 }
                 if(sites.empty())continue;
+                auto& entry=function.getEntryBlock();
+                propagate_poll_scopes(entry,blocks);
                 // One context call, GEP and pointer load per native activation.
-                // Each site below adds two blocks and at most 32 instructions.
+                // A site below adds at most two blocks and 32 instructions.
                 if(room.instructions<35u||room.blocks<2u)return;
                 attempted=true;
                 if(!state_fn)
@@ -81,53 +148,55 @@
                     emit::apply_llvm_jit_host_calling_conv(*state_fn);
                     if(!add_external(*state_fn,address(&current_poll_state))){state_fn->eraseFromParent();return;}
                 }
-                auto& entry=function.getEntryBlock();
                 ::llvm::IRBuilder<> start(&entry,entry.getFirstInsertionPt());
                 auto* state=emit::apply_llvm_jit_calling_conv(start.CreateCall(state_fn,{}),emit::get_llvm_jit_host_calling_conv());
                 auto* stop_byte=start.CreateLoad(ptr,start.CreateConstGEP1_64(byte,state,offsetof(native_poll_state,stop_byte)));
                 room.instructions-=3u;
-                for(auto const& [call,continued]:sites)
+                for(auto const& [call,continued,expected]:sites)
                 {
-                    if(room.instructions<32u||room.blocks<2u)return;
                     auto* block=call->getParent();
+                    bool const known=expected.function&&blocks.find(block)->second.incoming==expected;
+                    auto const cost=known?3u:32u;
+                    auto const block_cost=known?1u:2u;
+                    if(room.instructions<cost||room.blocks<block_cost)return;
                     auto* slow=block->splitBasicBlock(call->getIterator(),"threaded.poll.slow");
-                    auto* fast=::llvm::BasicBlock::Create(context,"threaded.poll.acquire",&function,slow);
                     block->getTerminator()->eraseFromParent();
                     ::llvm::IRBuilder<> b(block);
-                    auto field=[&](::llvm::Type* type,::std::size_t offset)
+                    if(!known)
                     {
-                        auto* load=b.CreateLoad(type,b.CreateConstGEP1_64(byte,state,offset));
-                        load->setVolatile(true);
-                        return load;
-                    };
-                    // Only elide a publication of the identical function. A
-                    // changed PC, rejection or provenance miss stays in the
-                    // original host poll, including its fault-before-PC order.
-                    auto* ready=b.CreateAnd(b.CreateIsNull(field(byte,offsetof(native_poll_state,rejected))),
-                        b.CreateICmpEQ(field(word,offsetof(native_poll_state,function)),call->getArgOperand(0u)));
+                        auto field=[&](::llvm::Type* type,::std::size_t offset)
+                        {
+                            auto* load=b.CreateLoad(type,b.CreateConstGEP1_64(byte,state,offset));
+                            load->setVolatile(true);
+                            return load;
+                        };
+                        auto* ready=b.CreateAnd(b.CreateIsNull(field(byte,offsetof(native_poll_state,rejected))),
+                            b.CreateICmpEQ(field(word,offsetof(native_poll_state,function)),call->getArgOperand(0u)));
 #if defined(UWVM_IMPORT_ROS1) || defined(UWVM_IMPORT_ROS2) || defined(UWVM_IMPORT_ROSV2)
-                    if(call->arg_size()==2u)
-                    {
-                        auto* owner=b.CreateAnd(call->getArgOperand(1u),::llvm::ConstantInt::get(word,~::std::uintptr_t{1u}));
-                        auto* valid_owner=b.CreateAnd(b.CreateIsNotNull(owner),
-                            b.CreateICmpEQ(owner,field(word,offsetof(native_poll_state,authenticated_ros_owner))));
-                        auto* same_child=b.CreateICmpEQ(field(ptr,offsetof(native_poll_state,child)),
-                            field(ptr,offsetof(native_poll_state,authenticated_ros_child)));
-                        ready=b.CreateAnd(ready,b.CreateAnd(valid_owner,same_child));
-                    }
+                        if(call->arg_size()==2u)
+                        {
+                            auto* owner=b.CreateAnd(call->getArgOperand(1u),::llvm::ConstantInt::get(word,~::std::uintptr_t{1u}));
+                            auto* valid_owner=b.CreateAnd(b.CreateIsNotNull(owner),
+                                b.CreateICmpEQ(owner,field(word,offsetof(native_poll_state,authenticated_ros_owner))));
+                            auto* same_child=b.CreateICmpEQ(field(ptr,offsetof(native_poll_state,child)),
+                                field(ptr,offsetof(native_poll_state,authenticated_ros_child)));
+                            ready=b.CreateAnd(ready,b.CreateAnd(valid_owner,same_child));
+                        }
 #endif
-                    b.CreateCondBr(ready,fast,slow,likely);
-                    b.SetInsertPoint(fast);
+                        auto* acquire=::llvm::BasicBlock::Create(context,"threaded.poll.acquire",&function,slow);
+                        b.CreateCondBr(ready,acquire,slow,likely);
+                        b.SetInsertPoint(acquire);
+                    }
                     auto* requested=b.CreateAlignedLoad(byte,stop_byte,::llvm::Align{1u});
                     requested->setAtomic(::llvm::AtomicOrdering::Acquire);
                     requested->setVolatile(true);
                     b.CreateCondBr(b.CreateIsNull(requested),continued,slow,likely);
                     // splitBasicBlock already transferred the former incoming
                     // edge to slow. The success edge carries the same values.
-                    for(auto& phi:continued->phis())phi.addIncoming(phi.getIncomingValueForBlock(slow),fast);
+                    for(auto& phi:continued->phis())phi.addIncoming(phi.getIncomingValueForBlock(slow),b.GetInsertBlock());
                     witnesses.try_emplace(requested,call);
-                    room.instructions-=32u;
-                    room.blocks-=2u;
+                    room.instructions-=cost;
+                    room.blocks-=block_cost;
                 }
             }
         }

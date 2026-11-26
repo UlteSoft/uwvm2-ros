@@ -95,7 +95,8 @@ extern "C++"
             // run_entry pins this execution and lease on this native thread
             // until every synchronous native frame (including imports) returns.
             // A missing scope or stop byte always takes the checked host path.
-            static constexpr native_poll_state unavailable{.rejected=1u};
+            alignas(::std::atomic_ref<unsigned char>::required_alignment) static unsigned char const always_slow{1u};
+            static constexpr native_poll_state unavailable{.stop_byte=&always_slow,.rejected=1u};
             return active_ && active_->stop_byte ? static_cast<native_poll_state const*>(active_) : &unavailable;
         }
         explicit ThreadedLlvmChild(world_type::owner world):world_{::std::move(world)}{}
